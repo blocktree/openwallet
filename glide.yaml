@@ -1,0 +1,6 @@
+package: github.com/blocktree/OpenWallet
+import:
+- package: github.com/asdine/storm
+- package: github.com/ethereum/go-ethereum
+  subpackages:
+  - common
