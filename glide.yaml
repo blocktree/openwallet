@@ -1,6 +1,9 @@
 package: github.com/blocktree/OpenWallet
 import:
 - package: github.com/asdine/storm
+- package: github.com/astaxie/beego
+  subpackages:
+  - logs
 - package: github.com/ethereum/go-ethereum
   subpackages:
   - common

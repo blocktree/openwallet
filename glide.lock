@@ -1,5 +1,5 @@
-hash: 705813b9ff1e7fb4830ec85718272f4b3fdc3510499b047e9715e482afe1c963
-updated: 2018-04-11T18:39:09.307043+08:00
+hash: 080cd02bd03726c309bd48a9eaa5b128b396d1cb57445bfc7036e3f6ae976dbd
+updated: 2018-04-11T19:06:39.017896+08:00
 imports:
 - name: github.com/asdine/storm
   version: a86fa5e09c9c50a06416b08fd9acd4839fb2d62e
@@ -9,6 +9,10 @@ imports:
   - index
   - internal
   - q
+- name: github.com/astaxie/beego
+  version: cab8458c1c4a5a3b4bf5192922be620e6dede15b
+  subpackages:
+  - logs
 - name: github.com/coreos/bbolt
   version: af9db2027c98c61ecd8e17caa5bd265792b9b9a2
 - name: github.com/ethereum/go-ethereum

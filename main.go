@@ -1,16 +1,17 @@
-package OpenWallet
+package main
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"fmt"
-	"github.com/asdine/storm"
+	"github.com/blocktree/OpenWallet/assets"
+	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 func main() {
 
-	address := common.HexToAddress("0xb9b94b8a1453becda8bb18677439bd23c554445a")
-	fmt.Printf("address: %s",address.Hex())
+	//添加eth进行资产路由中
+	eth := &assets.EthereumAssets{}
+	openwallet.Router(eth.Name(), eth)
 
-	db, _ := storm.Open("my.db")
-	defer db.Close()
+	//运行应用
+	openwallet.Run()
+
 }
