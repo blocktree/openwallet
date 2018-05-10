@@ -13,23 +13,10 @@
  * GNU Lesser General Public License for more details.
  */
 
-package commands
+package common
 
-import "gopkg.in/urfave/cli.v1"
-
-var (
-	CmdRun = cli.Command{
-		Name:      "run",
-		Usage:     "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true] [-vendor=true] [-e=folderToExclude] [-ex=extraPackageToWatch] [-tags=goBuildTags] [-runmode=BEEGO_RUNMODE]",
-		ArgsUsage: "",
-		Category:  "Application COMMANDS",
-		Description: `
-Run command will supervise the filesystem of the application for any changes, and recompile/restart it.
-
-`,
-		Action:  func(c *cli.Context) error {
-			return nil
-		},
-	}
-
-)
+//FloatProtocal 强化float的扩展方法
+type FloatProtocal interface {
+	Float32(def ...float32) float32
+	Float64(def ...float64) float64
+}

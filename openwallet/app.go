@@ -50,7 +50,6 @@ func (app *App) Run() {
 		//l          net.Listener
 		endRunning = make(chan bool, 1)
 	)
-	Debug("openw app is runing")
 	<-endRunning
 }
 

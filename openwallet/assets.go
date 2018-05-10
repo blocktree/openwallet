@@ -48,7 +48,7 @@ type AssetsController struct {
 }
 
 //Init 初始化资产控制器
-func (a *AssetsController) Init(w Wallet, app interface{}){
+func (a *AssetsController) Init(w *Wallet, app interface{}){
 
 }
 

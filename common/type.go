@@ -13,23 +13,19 @@
  * GNU Lesser General Public License for more details.
  */
 
-package commands
+package common
 
-import "gopkg.in/urfave/cli.v1"
+//公钥
+type PublicKey []byte
 
-var (
-	CmdRun = cli.Command{
-		Name:      "run",
-		Usage:     "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true] [-vendor=true] [-e=folderToExclude] [-ex=extraPackageToWatch] [-tags=goBuildTags] [-runmode=BEEGO_RUNMODE]",
-		ArgsUsage: "",
-		Category:  "Application COMMANDS",
-		Description: `
-Run command will supervise the filesystem of the application for any changes, and recompile/restart it.
+//字节流
+type Bytes []byte
 
-`,
-		Action:  func(c *cli.Context) error {
-			return nil
-		},
-	}
 
-)
+func BytesToPublicKey(b []byte) PublicKey {
+	var pk PublicKey
+	copy(pk, b)
+	return pk
+}
+
+

@@ -13,23 +13,27 @@
  * GNU Lesser General Public License for more details.
  */
 
-package commands
+package common
 
-import "gopkg.in/urfave/cli.v1"
+import "strconv"
 
-var (
-	CmdRun = cli.Command{
-		Name:      "run",
-		Usage:     "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true] [-vendor=true] [-e=folderToExclude] [-ex=extraPackageToWatch] [-tags=goBuildTags] [-runmode=BEEGO_RUNMODE]",
-		ArgsUsage: "",
-		Category:  "Application COMMANDS",
-		Description: `
-Run command will supervise the filesystem of the application for any changes, and recompile/restart it.
+/***************** 数值类型转字符串 *****************/
 
-`,
-		Action:  func(c *cli.Context) error {
-			return nil
-		},
-	}
+//Int 强化int类型
+type Int int
 
-)
+//IntProtocal 强化int的扩展方法
+type IntProtocal interface {
+	Int(def ...int) int
+	Int8(def ...int8) int8
+	Int16(def ...int16) int16
+	Int32(def ...int32) int32
+	Int64(def ...int64) int64
+}
+
+// ToString int转为string类型
+func (v Int) String() string {
+	string := strconv.FormatInt(int64(v), 10)
+	return string
+}
+

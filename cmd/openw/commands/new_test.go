@@ -15,21 +15,9 @@
 
 package commands
 
-import "gopkg.in/urfave/cli.v1"
+import "testing"
 
-var (
-	CmdRun = cli.Command{
-		Name:      "run",
-		Usage:     "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true] [-vendor=true] [-e=folderToExclude] [-ex=extraPackageToWatch] [-tags=goBuildTags] [-runmode=BEEGO_RUNMODE]",
-		ArgsUsage: "",
-		Category:  "Application COMMANDS",
-		Description: `
-Run command will supervise the filesystem of the application for any changes, and recompile/restart it.
+func TestNewApp(t *testing.T) {
 
-`,
-		Action:  func(c *cli.Context) error {
-			return nil
-		},
-	}
 
-)
+}

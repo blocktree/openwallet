@@ -94,6 +94,12 @@ func NewApp(gitCommit, usage string) *cli.App {
 
 
 var (
+
+	AppNameFlag = cli.StringFlag{
+		Name: "name",
+		Usage: "Application Name",
+	}
+
 	// General settings
 	DataDirFlag = DirectoryFlag{
 		Name:  "datadir",

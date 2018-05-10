@@ -17,19 +17,18 @@ package openwallet
 
 import (
 	"errors"
-	"github.com/ethereum/go-ethereum/common"
 	"reflect"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type Wallet struct {
-	//应用
-	App *App
 	//资产地址表
 	AssetsAddress map[string]string
 	//类型类型： 单签，多签
 	Type WalletType
 	//公钥
-	PublicKey []PublicKey
+	PublicKey []Bytes
 	//拥有者列表, 公钥hex与用户key映射
 	Owners map[string]string
 	//创建者
@@ -38,14 +37,15 @@ type Wallet struct {
 	ContractAddress string
 	//必要签名数
 	Required uint
+	//OpenWallet的统一地址
+	OpenwAddress string
 }
 
-
 //NewWallet 创建钱包
-func NewWallet(publickeys []PublicKey, users []*User, required uint, creator *User) (*Wallet, error) {
+func NewWallet(publickeys []Bytes, users []*User, required uint, creator *User) (*Wallet, error) {
 
 	var (
-		owner = make(map[string]string, 0)
+		owner    = make(map[string]string, 0)
 		firstApp *App
 	)
 
@@ -77,11 +77,10 @@ func NewWallet(publickeys []PublicKey, users []*User, required uint, creator *Us
 	}
 
 	w := &Wallet{
-		App: firstApp,
+		App:       firstApp,
 		PublicKey: publickeys,
-		Required: required,
-		Owners: owner,
-
+		Required:  required,
+		Owners:    owner,
 	}
 
 	return w, nil
@@ -91,7 +90,7 @@ func NewWallet(publickeys []PublicKey, users []*User, required uint, creator *Us
 func NewHDWallet(users []*User, derivedPath string, required uint, creator *User) (*Wallet, error) {
 
 	var (
-		publicKeys []PublicKey = make([]PublicKey, 0)
+		publicKeys []Bytes = make([]Bytes, 0)
 	)
 
 	//通过用户根公钥和衍生路径，生成确定的子公钥
@@ -100,12 +99,12 @@ func NewHDWallet(users []*User, derivedPath string, required uint, creator *User
 }
 
 //GetUserByPublicKey 通过公钥获取用户
-func (w *Wallet)GetUserByPublicKey(publickey PublicKey) *User {
+func (w *Wallet) GetUserByPublicKey(publickey PublicKey) *User {
 
 	pkHex := common.Bytes2Hex(publickey)
 
 	user := &User{
-		UserKey:  w.Owners[pkHex],
+		UserKey: w.Owners[pkHex],
 	}
 
 	return user
@@ -120,12 +119,12 @@ func (w *Wallet) Deposit(assets string) []byte {
 }
 
 //FindAssets 寻找资产
-func  (w *Wallet) FindAssets(assets string) AssetsInferface {
+func (w *Wallet) FindAssets(assets string) AssetsInferface {
 
 	var (
-		runAssets    reflect.Type
-		findAssets    bool
-		assetsInfo   *AssetsInfo
+		runAssets  reflect.Type
+		findAssets bool
+		assetsInfo *AssetsInfo
 	)
 
 	assetsInfo, findAssets = OpenWalletApp.Handlers.FindAssetsInfo(assets)
