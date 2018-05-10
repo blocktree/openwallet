@@ -15,3 +15,48 @@
 
 package openwallet
 
+import (
+	"crypto/ecdsa"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/btcsuite/btcutil/base58"
+)
+
+const (
+	//地址首字节的标识
+	AddressVersion = 0x48
+	//地址协议头
+	AddressProtocol = "openw:"
+)
+
+type Address common.Address
+
+// String 把地址使用base58编码成字符串格式
+func (a Address) String(addProtocol ...bool) string {
+	s := base58.CheckEncode(a[:common.AddressLength], AddressVersion)
+	if len(addProtocol) > 0 && addProtocol[0] {
+		s = AddressProtocol + s
+	}
+	return s
+}
+
+//PubkeyToOpenwAddress 公钥转为openw统一地址
+func PubkeyToAddress (p ecdsa.PublicKey) Address {
+	pubBytes :=  crypto.FromECDSAPub(&p)
+	pkHash := btcutil.Hash160(pubBytes)
+	var a common.Address
+	a.SetBytes(pkHash)
+	return Address(a)
+}
+
+//ExtendedKeyToAddress 扩展密钥转地址
+func ExtendedKeyToAddress (k *hdkeychain.ExtendedKey) Address {
+	var a Address
+	pubkey, err := k.ECPubKey()
+	if err != nil {
+		return a
+	}
+	return PubkeyToAddress(ecdsa.PublicKey(*pubkey))
+}

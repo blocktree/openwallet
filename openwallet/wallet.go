@@ -28,7 +28,7 @@ type Wallet struct {
 	//类型类型： 单签，多签
 	Type WalletType
 	//公钥
-	PublicKey []Bytes
+	PublicKeys []Bytes
 	//拥有者列表, 公钥hex与用户key映射
 	Owners map[string]string
 	//创建者
@@ -77,8 +77,7 @@ func NewWallet(publickeys []Bytes, users []*User, required uint, creator *User) 
 	}
 
 	w := &Wallet{
-		App:       firstApp,
-		PublicKey: publickeys,
+		PublicKeys: publickeys,
 		Required:  required,
 		Owners:    owner,
 	}

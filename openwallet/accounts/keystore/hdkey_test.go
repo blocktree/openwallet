@@ -92,7 +92,7 @@ func TestNewHDKey(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewHDKey failed unexpected error: %v", err)
 		}
-		t.Logf("Key[%d] address = %s", i, key.Address.Hex())
+		t.Logf("Key[%d] address = %s", i, key.Address)
 	}
 }
 

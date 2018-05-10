@@ -15,13 +15,6 @@
 
 package openwallet
 
-import (
-	"path/filepath"
-	"github.com/blocktree/OpenWallet/openwallet/accounts/keystore"
-	"io/ioutil"
-	"fmt"
-)
-
 type User struct {
 	//应用
 	App *App
@@ -41,43 +34,40 @@ func NewUser(userKey, name string, app *App) *User {
 		app,
 		name,
 		userKey,
-		&UserAccount{
-			UserKey:userKey,
-		},
 	}
 
 	return user
 }
 
 //GetUsersFromKeydir 从keystore路径中加载客户端用户，使用命令行工具
-func GetUsersFromKeydir(keydir string, app *App) []*User {
-
-}
+//func GetUsersFromKeydir(keydir string, app *App) []*User {
+//
+//}
 
 // NewUserByFile 通过keystore文件加载用户
-func NewUserByKeyFile(filename string, app *App) *User {
-
-	// Load the key from the keystore and decrypt its contents
-	keyjson, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-	key, err := DecryptKey(keyjson, auth)
-	if err != nil {
-		return nil, err
-	}
-	// Make sure we're really operating on the requested key (no swap attacks)
-	if key.Address != addr {
-		return nil, fmt.Errorf("key content mismatch: have account %x, want %x", key.Address, addr)
-	}
-	return key, nil
-
-	user := &User{
-		app,
-		"",
-		userKey,
-		NewUserAccount(userKey, keydir),
-	}
-
-	return user
-}
+//func NewUserByKeyFile(filename string, app *App) *User {
+//
+//	// Load the key from the keystore and decrypt its contents
+//	keyjson, err := ioutil.ReadFile(filename)
+//	if err != nil {
+//		return nil, err
+//	}
+//	key, err := DecryptKey(keyjson, auth)
+//	if err != nil {
+//		return nil, err
+//	}
+//	// Make sure we're really operating on the requested key (no swap attacks)
+//	if key.Address != addr {
+//		return nil, fmt.Errorf("key content mismatch: have account %x, want %x", key.Address, addr)
+//	}
+//	return key, nil
+//
+//	user := &User{
+//		app,
+//		"",
+//		userKey,
+//		NewUserAccount(userKey, keydir),
+//	}
+//
+//	return user
+//}

@@ -42,6 +42,7 @@ import (
 	t "github.com/blocktree/OpenWallet/common"
 	"errors"
 	"crypto/ecdsa"
+	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 const (
@@ -88,7 +89,7 @@ type HDKey struct {
 	// 所持密钥的用户key
 	UserKey string
 	// 用于校验私钥的地址
-	Address common.Address
+	Address openwallet.Address
 	//账户路径
 	HDPath string
 	//账户数量
@@ -331,7 +332,7 @@ func DecryptHDKey(keyjson []byte, auth string) (*HDKey, error) {
 
 	return &HDKey{
 		UserKey: userKey,
-		Address: common.HexToAddress(rootkey.String()),
+		Address: openwallet.ExtendedKeyToAddress(rootkey),
 		HDPath: common.Bytes2Hex(hdpath),
 		AccountNum: 0,
 		MasterKey: master,
@@ -480,7 +481,7 @@ func NewHDKey(userKey string, seed []byte, startPath string) (*HDKey, error) {
 	//地址不正确
 	hdkey := &HDKey{
 		UserKey: userKey,
-		Address: crypto.PubkeyToAddress(ecdsa.PublicKey(*pubKey)),
+		Address: openwallet.PubkeyToAddress(ecdsa.PublicKey(*pubKey)),
 		HDPath: common.Bytes2Hex(hdPath),
 		AccountNum: 0,
 		MasterKey: master,

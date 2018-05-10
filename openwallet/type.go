@@ -13,7 +13,7 @@
  * GNU Lesser General Public License for more details.
  */
 
-package common
+package openwallet
 
 //公钥
 type PublicKey []byte
