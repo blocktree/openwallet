@@ -16,7 +16,6 @@
 package accounts
 
 import (
-	"github.com/blocktree/OpenWallet/openwallet/accounts/keystore"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/blocktree/OpenWallet/openwallet"
 )
@@ -31,8 +30,8 @@ type unlocked struct {
 type UserAccount struct {
 	//用户
 	*openwallet.User
-	//储存的账户钥匙
-	store *keystore.HDKeystore
+	//账户ID，相当与用于账户的扩展密钥的根地址
+	AccountId string
 	//钱包数组
 	Wallets []*openwallet.Wallet
 	// 已解锁的钱包，集合（钱包地址, 钱包私钥）
@@ -40,21 +39,30 @@ type UserAccount struct {
 }
 
 
-// NewUserAccount 创建账户
-//func NewUserAccount(userKey, keydir string) *UserAccount {
-//	keydir, _ = filepath.Abs(keydir)
-//	acount := &UserAccount{
-//		UserKey: userKey,
-//		store: &keystore.HDKeystore{
-//			userKey,
-//			keydir,
-//			keystore.StandardScryptN,
-//			keystore.StandardScryptP,
-//		},
-//	}
-//
-//	return acount
-//}
+//NewUserAccount 创建账户
+func NewUserAccount(user openwallet.User) *UserAccount {
+	//TODO:实现从节点配置文件中读取私钥的存粗文件夹
+	//cfg := gethConfig{Node: defaultNodeConfig()}
+	//// Load config file.
+	//if file := ctx.GlobalString(configFileFlag.Name); file != "" {
+	//	if err := loadConfig(file, &cfg); err != nil {
+	//		utils.Fatalf("%v", err)
+	//	}
+	//}
+	//utils.SetNodeConfig(ctx, &cfg.Node)
+	//scryptN, scryptP, keydir, err := cfg.Node.AccountConfig()
+	//
+	//if err != nil {
+	//	utils.Fatalf("Failed to read configuration: %v", err)
+	//}
+	//
+	//password := getPassPhrase("Your new account is locked with a password. Please give a password. Do not forget this password.", true, 0, utils.MakePasswordList(ctx))
+	//
+
+	//keystore.GenerateHDKey()
+	account := &UserAccount{}
+	return account
+}
 
 // init 初始化用户账户
 func (u *UserAccount)init() {

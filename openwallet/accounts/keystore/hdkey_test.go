@@ -71,28 +71,28 @@ func TestGenerateSeed(t *testing.T) {
 func TestNewHDKey(t *testing.T) {
 
 	tests := []struct {
-		userkey string
+		accountId string
 		seed   string
 		startPath 	string
 	}{
 		{
-			userkey:   "hello",
+			accountId:   "hello",
 			seed: "4b68b20a5d3ac671a61e6e94b4de309530a12439b7c3ee548d20966674696656",
 			startPath:   "m/44'/88",
 		},
 		{
-			userkey:   "hello2",
+			accountId:   "hello2",
 			seed: "dfac3098fd7c3cd9b9cdf44e3e1ae912e3d2ce05795a857a53ebff6111b1580b",
 			startPath:   "m/44'/88'",
 		},
 	}
 
 	for i, test := range tests {
-		key, err := NewHDKey(test.userkey, common.Hex2Bytes(test.seed), test.startPath)
+		key, err := NewHDKey(common.Hex2Bytes(test.seed), test.startPath)
 		if err != nil {
 			t.Fatalf("NewHDKey failed unexpected error: %v", err)
 		}
-		t.Logf("Key[%d] address = %s", i, key.Address)
+		t.Logf("Key[%d] address = %s", i, key.AccountId)
 	}
 }
 

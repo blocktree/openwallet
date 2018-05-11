@@ -16,33 +16,32 @@
 package keystore
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/btcsuite/btcutil/hdkeychain"
-	"os"
-	"path/filepath"
-	"io/ioutil"
-	"fmt"
-	"encoding/hex"
-	"time"
-	"github.com/ethereum/go-ethereum/crypto/randentropy"
-	"golang.org/x/crypto/scrypt"
-	"github.com/ethereum/go-ethereum/common/math"
-	"crypto/aes"
-	"github.com/ethereum/go-ethereum/crypto"
-	"encoding/json"
 	"bytes"
-	"golang.org/x/crypto/pbkdf2"
-	"crypto/sha256"
+	"crypto/aes"
 	"crypto/cipher"
 	"crypto/hmac"
+	"crypto/sha256"
 	"crypto/sha512"
-	"math/big"
-	"github.com/btcsuite/btcd/btcec"
-	"strings"
-	t "github.com/blocktree/OpenWallet/common"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
-	"crypto/ecdsa"
+	"fmt"
+	t "github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/crypto/randentropy"
+	"golang.org/x/crypto/pbkdf2"
+	"golang.org/x/crypto/scrypt"
+	"io/ioutil"
+	"math/big"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 )
 
 const (
@@ -66,7 +65,6 @@ const (
 	// BIP0044，m/44'/
 	//openwallet coin type is 88': m/44'/88'
 	openwCoinTypePath = "m/44'/88'"
-
 )
 
 var (
@@ -86,28 +84,25 @@ var (
 
 // HDKey 分层确定性密钥，基于BIP32模型创建的账户模型
 type HDKey struct {
-	// 所持密钥的用户key
-	UserKey string
-	// 用于校验私钥的地址
-	Address openwallet.Address
+	// 账户的扩展ID
+	AccountId string
 	//账户路径
 	HDPath string
 	//账户数量
 	AccountNum uint
 	// 根私钥
 	MasterKey *hdkeychain.ExtendedKey
-
 }
 
+// 加密后的HDKey的JSON结构
 type encryptedHDKeyJSON struct {
-	UserKey string 		`json:userkey`
-	Address string     `json:"address"`
-	Crypto  cryptoJSON `json:"crypto"`
-	HDPath 	string 		`json:"hdpath"`
-	Version int     `json:"version"`
+	AccountId string     `json:"AccountId"`
+	Crypto    cryptoJSON `json:"crypto"`
+	HDPath    string     `json:"hdpath"`
+	Version   int        `json:"version"`
 }
 
-
+// 加密内容的JSON结构
 type cryptoJSON struct {
 	Cipher       string                 `json:"cipher"`
 	CipherText   string                 `json:"ciphertext"`
@@ -117,14 +112,15 @@ type cryptoJSON struct {
 	MAC          string                 `json:"mac"`
 }
 
+// 加密初始向量IV
 type cipherparamsJSON struct {
 	IV string `json:"iv"`
 }
 
 type miningJSON struct {
-	Cycle       uint              `json:"cycle"`
-	Algorithm   string            `json:"algorithm"`
-	Delay 		uint       		  `json:"delay"`
+	Cycle     uint   `json:"cycle"`
+	Algorithm string `json:"algorithm"`
+	Delay     uint   `json:"delay"`
 }
 
 // getDerivedKeyWithPath
@@ -174,9 +170,9 @@ func getDerivedKeyWithPath(key *hdkeychain.ExtendedKey, path string) (*hdkeychai
 		}
 		var value t.String
 		hardened := false
-		if strings.Index(elem, "'") == len(elem) - 1 {
+		if strings.Index(elem, "'") == len(elem)-1 {
 			hardened = true
-			elem = elem[0:len(elem) - 1]
+			elem = elem[0 : len(elem)-1]
 		}
 
 		value = t.NewString(elem)
@@ -195,12 +191,12 @@ func getDerivedKeyWithPath(key *hdkeychain.ExtendedKey, path string) (*hdkeychai
 }
 
 // DerivedKeyWithPath 根据BIP32的规则获取子密钥，例如：m/<purpose>'/*
-func (k *HDKey)DerivedKeyWithPath(path string) (*hdkeychain.ExtendedKey, error) {
+func (k *HDKey) DerivedKeyWithPath(path string) (*hdkeychain.ExtendedKey, error) {
 	return getDerivedKeyWithPath(k.MasterKey, path)
 }
 
 // RootKey 获取用于管理账户的根私钥
-func (k *HDKey)RootKey() *hdkeychain.ExtendedKey {
+func (k *HDKey) RootKey() *hdkeychain.ExtendedKey {
 
 	var (
 		rootkey = k.MasterKey
@@ -223,12 +219,12 @@ func getRootKeyWithHDPath(key *hdkeychain.ExtendedKey, hdPath []byte) *hdkeychai
 
 	index := int(hdPath[0])
 
-	if len(hdPath) - 1 < index {
+	if len(hdPath)-1 < index {
 		return rootkey
 	}
 
 	for i := 0; i < index; i++ {
-		value := uint32(hdPath[i+1])	//首字节记录开始位置，所以i+1
+		value := uint32(hdPath[i+1]) //首字节记录开始位置，所以i+1
 		if value >= HDKeystoreHardenedKeyStart {
 			rootkey, _ = rootkey.Child(hdkeychain.HardenedKeyStart + value)
 		} else {
@@ -289,12 +285,10 @@ func EncryptKey(hdkey *HDKey, auth string, scryptN, scryptP int) ([]byte, error)
 	}
 
 	encryptedHDKeyJSON := encryptedHDKeyJSON{
-		UserKey:hdkey.UserKey,
-		Address: rootPub.String(),
-		Crypto:cryptoStruct,
-		HDPath: hdkey.HDPath,
-		Version: version,
-
+		AccountId: rootPub.String(),
+		Crypto:    cryptoStruct,
+		HDPath:    hdkey.HDPath,
+		Version:   version,
 	}
 	return json.Marshal(encryptedHDKeyJSON)
 }
@@ -308,16 +302,15 @@ func DecryptHDKey(keyjson []byte, auth string) (*HDKey, error) {
 	}
 	// Depending on the version try to parse one way or another
 	var (
-		hdpath			[]byte
-		keyBytes 		[]byte
-		userKey 		string
-		err             error
+		hdpath   []byte
+		keyBytes []byte
+		err      error
 	)
 	k := new(encryptedHDKeyJSON)
 	if err := json.Unmarshal(keyjson, k); err != nil {
 		return nil, err
 	}
-	keyBytes, userKey, hdpath, err = decryptHDKey(k, auth)
+	keyBytes, hdpath, err = decryptHDKey(k, auth)
 	// Handle any decryption errors and return the key
 	if err != nil {
 		return nil, err
@@ -331,52 +324,50 @@ func DecryptHDKey(keyjson []byte, auth string) (*HDKey, error) {
 	rootkey := getRootKeyWithHDPath(master, hdpath)
 
 	return &HDKey{
-		UserKey: userKey,
-		Address: openwallet.ExtendedKeyToAddress(rootkey),
-		HDPath: common.Bytes2Hex(hdpath),
+		AccountId:  openwallet.ExtendedKeyToAddress(rootkey).String(),
+		HDPath:     common.Bytes2Hex(hdpath),
 		AccountNum: 0,
-		MasterKey: master,
+		MasterKey:  master,
 	}, nil
 }
 
 // decryptHDKey 解密HDKey的文件内容
-func decryptHDKey(keyProtected *encryptedHDKeyJSON, auth string) (keyBytes []byte, userKey string, hdPath []byte, err error) {
+func decryptHDKey(keyProtected *encryptedHDKeyJSON, auth string) (keyBytes []byte, hdPath []byte, err error) {
 
 	if keyProtected.Crypto.Cipher != "aes-128-ctr" {
-		return nil, "", nil, fmt.Errorf("Cipher not supported: %v", keyProtected.Crypto.Cipher)
+		return nil, nil, fmt.Errorf("Cipher not supported: %v", keyProtected.Crypto.Cipher)
 	}
 
-	userKey = keyProtected.UserKey
 	mac, err := hex.DecodeString(keyProtected.Crypto.MAC)
 	if err != nil {
-		return nil, "", nil, err
+		return nil, nil, err
 	}
 
 	iv, err := hex.DecodeString(keyProtected.Crypto.CipherParams.IV)
 	if err != nil {
-		return nil, "", nil, err
+		return nil, nil, err
 	}
 
 	cipherText, err := hex.DecodeString(keyProtected.Crypto.CipherText)
 	if err != nil {
-		return nil, "", nil, err
+		return nil, nil, err
 	}
 
 	derivedKey, err := getKDFKey(keyProtected.Crypto, auth)
 	if err != nil {
-		return nil, "", nil, err
+		return nil, nil, err
 	}
 
 	calculatedMAC := crypto.Keccak256(derivedKey[16:32], cipherText)
 	if !bytes.Equal(calculatedMAC, mac) {
-		return nil, "", nil, ErrDecrypt
+		return nil, nil, ErrDecrypt
 	}
 
 	plainText, err := aesCTRXOR(derivedKey[:16], cipherText, iv)
 	if err != nil {
-		return nil, "", nil, err
+		return nil, nil, err
 	}
-	return plainText, userKey, nil, err
+	return plainText, nil, err
 }
 
 // getKDFKey
@@ -449,7 +440,7 @@ func newKeyFromBIP32(seed []byte) (*hdkeychain.ExtendedKey, error) {
 }
 
 // NewHDKey 通过userkey，私钥种子，账户路径，创建HDKey
-func NewHDKey(userKey string, seed []byte, startPath string) (*HDKey, error) {
+func NewHDKey(seed []byte, startPath string) (*HDKey, error) {
 
 	var (
 		err error
@@ -473,30 +464,23 @@ func NewHDKey(userKey string, seed []byte, startPath string) (*HDKey, error) {
 		return nil, err
 	}
 
-	pubKey, err := key.ECPubKey()
-	if err != nil {
-		return nil, err
-	}
-
-	//地址不正确
+	//实例化密钥
 	hdkey := &HDKey{
-		UserKey: userKey,
-		Address: openwallet.PubkeyToAddress(ecdsa.PublicKey(*pubKey)),
-		HDPath: common.Bytes2Hex(hdPath),
+		AccountId:  openwallet.ExtendedKeyToAddress(key).String(),	//存储账户扩展密钥的地址作为accountId
+		HDPath:     common.Bytes2Hex(hdPath),
 		AccountNum: 0,
-		MasterKey: master,
+		MasterKey:  master,
 	}
 
 	return hdkey, nil
 }
 
-
 // encodeStartPath 编码账户开始位置路径
 func encodeStartPath(path string) ([]byte, error) {
 
 	var (
-		err error
-		hdPath []byte = make([]byte,0)
+		err    error
+		hdPath []byte = make([]byte, 0)
 	)
 
 	// m/44'/<coin type>' 分解路径
@@ -516,9 +500,9 @@ func encodeStartPath(path string) ([]byte, error) {
 		}
 		value := uint8(0)
 		hardened := false
-		if strings.Index(elem, "'") == len(elem) - 1 {
+		if strings.Index(elem, "'") == len(elem)-1 {
 			hardened = true
-			elem = elem[0:len(elem) - 1]
+			elem = elem[0 : len(elem)-1]
 		}
 
 		if elem == "m" {
@@ -536,19 +520,7 @@ func encodeStartPath(path string) ([]byte, error) {
 	return hdPath, err
 }
 
-//func storeNewKey(ks keyStore, rand io.Reader, auth string) (*Key, accounts.Account, error) {
-//	key, err := newKey(rand)
-//	if err != nil {
-//		return nil, accounts.Account{}, err
-//	}
-//	a := accounts.Account{Address: key.Address, URL: accounts.URL{Scheme: KeyStoreScheme, Path: ks.JoinPath(keyFileName(key.Address))}}
-//	if err := ks.StoreKey(a.URL.Path, key, auth); err != nil {
-//		zeroKey(key.PrivateKey)
-//		return nil, a, err
-//	}
-//	return key, a, err
-//}
-
+//writeKeyFile 写入HDKey结构内容到文件
 func writeKeyFile(file string, content []byte) error {
 	// Create the keystore directory with appropriate permissions
 	// in case it is not present yet.
@@ -572,10 +544,10 @@ func writeKeyFile(file string, content []byte) error {
 }
 
 // keyFileName implements the naming convention for keyfiles:
-// UTC--<created_at UTC ISO8601>-<address hex>
-func keyFileName(keyAddr common.Address) string {
+// UTC--<created_at UTC ISO8601>-<accountId hex>
+func keyFileName(accountId string) string {
 	ts := time.Now().UTC()
-	return fmt.Sprintf("UTC--%s--%s", toISO8601(ts), hex.EncodeToString(keyAddr[:]))
+	return fmt.Sprintf("UTC--%s--%s", toISO8601(ts), accountId)
 }
 
 func toISO8601(t time.Time) string {
@@ -588,7 +560,6 @@ func toISO8601(t time.Time) string {
 	}
 	return fmt.Sprintf("%04d-%02d-%02dT%02d-%02d-%02d.%09d%s", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), tz)
 }
-
 
 func aesCTRXOR(key, inText, iv []byte) ([]byte, error) {
 	// AES-128 is selected due to size of encryptKey.

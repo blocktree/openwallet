@@ -17,8 +17,11 @@ package keystore
 
 import (
 	"path/filepath"
-	"github.com/ethereum/go-ethereum/accounts"
 	"errors"
+	"io/ioutil"
+	"fmt"
+	"github.com/blocktree/OpenWallet/openwallet/accounts"
+	"github.com/btcsuite/btcutil/hdkeychain"
 )
 
 const (
@@ -42,15 +45,20 @@ const (
 
 	scryptR     = 8
 	scryptDKLen = 32
+
+	//种子长度
+	SeedLen = 32
 )
 
 
 var (
-	ErrLocked  = accounts.NewAuthNeededError("password or unlock")
+	//ErrLocked  = accounts.NewAuthNeededError("password or unlock")
 	ErrNoMatch = errors.New("no key for given address or file")
+	//ErrDecrypt 机密出错
 	ErrDecrypt = errors.New("could not decrypt key with given passphrase")
 )
 
+//HDKeystore HDKey的存粗工具类
 type HDKeystore struct {
 	keysDirPath string
 	scryptN     int
@@ -64,41 +72,65 @@ func NewHDKeystore(keydir string, scryptN, scryptP int) *HDKeystore {
 	return ks
 }
 
-//func (ks HDKeystore) GetKey(userKey string, filename, auth string) (*openwallet.UserAccount, error) {
-//	// Load the key from the keystore and decrypt its contents
-//	keyjson, err := ioutil.ReadFile(filename)
-//	if err != nil {
-//		return nil, err
-//	}
-//	key, err := DecryptHDKey(keyjson, auth)
-//	if err != nil {
-//		return nil, err
-//	}
-//	// Make sure we're really operating on the requested key (no swap attacks)
-//	if key.us != addr {
-//		return nil, fmt.Errorf("key content mismatch: have account %x, want %x", key.Address, addr)
-//	}
-//	return key, nil
-//}
-//
-//// StoreKey generates a key, encrypts with 'auth' and stores in the given directory
-//func StoreKey(dir, auth string, scryptN, scryptP int) (common.Address, error) {
-//	_, a, err := storeNewKey(&HDKeystore{dir, scryptN, scryptP}, crand.Reader, auth)
-//	return a.Address, err
-//}
-//
-//func (ks keyStorePassphrase) StoreKey(filename string, key *Key, auth string) error {
-//	keyjson, err := EncryptKey(key, auth, ks.scryptN, ks.scryptP)
-//	if err != nil {
-//		return err
-//	}
-//	return writeKeyFile(filename, keyjson)
-//}
-//
-//func (ks keyStorePassphrase) JoinPath(filename string) string {
-//	if filepath.IsAbs(filename) {
-//		return filename
-//	} else {
-//		return filepath.Join(ks.keysDirPath, filename)
-//	}
-//}
+//GetKey 通过accountId读取钥匙
+func (ks HDKeystore) GetKey(accountId string, filename, auth string) (*HDKey, error) {
+	// Load the key from the keystore and decrypt its contents
+	keyjson, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	key, err := DecryptHDKey(keyjson, auth)
+	if err != nil {
+		return nil, err
+	}
+	// Make sure we're really operating on the requested key (no swap attacks)
+	if key.AccountId != accountId {
+		return nil, fmt.Errorf("key content mismatch: have account %s, want %s", key.AccountId, accountId)
+	}
+	return key, nil
+}
+
+// GenerateHDKey 创建HDKey
+func GenerateHDKey(dir, auth string, scryptN, scryptP int) (string, error) {
+	key, err := storeNewKey(&HDKeystore{dir, scryptN, scryptP}, auth)
+	return key.AccountId, err
+}
+
+//storeNewKey 用随机种子生成HDKey
+func storeNewKey(ks *HDKeystore, auth string) (*HDKey, error) {
+
+	seed, err := hdkeychain.GenerateSeed(SeedLen)
+	if err != nil {
+		return nil, err
+	}
+	key, err := NewHDKey(seed, openwCoinTypePath)
+	if err != nil {
+		return nil, err
+	}
+	return key, err
+}
+
+//StoreKey 把HDKey重写加密写入到文件中
+func (ks *HDKeystore) StoreKey(filename string, key *HDKey, auth string) error {
+	keyjson, err := EncryptKey(key, auth, ks.scryptN, ks.scryptP)
+	if err != nil {
+		return err
+	}
+	return writeKeyFile(filename, keyjson)
+}
+
+//JoinPath 文件路径组合
+func (ks *HDKeystore) JoinPath(filename string) string {
+	if filepath.IsAbs(filename) {
+		return filename
+	} else {
+		return filepath.Join(ks.keysDirPath, filename)
+	}
+}
+
+//getDecryptedKey 获取解密后的钥匙
+func (ks *HDKeystore) getDecryptedKey(a accounts.UserAccount, auth string) (accounts.UserAccount, *HDKey, error) {
+	path := ks.JoinPath(keyFileName(a.UserKey))
+	key, err := ks.GetKey(a.UserKey, path, auth)
+	return a, key, err
+}
