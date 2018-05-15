@@ -42,6 +42,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"github.com/tyler-smith/go-bip39"
 )
 
 const (
@@ -208,6 +209,13 @@ func (k *HDKey) RootKey() *hdkeychain.ExtendedKey {
 	}
 
 	return getRootKeyWithHDPath(k.MasterKey, pathBytes)
+}
+
+//Mnemonic 密钥助记词
+func (k *HDKey) Mnemonic() string {
+	entropy, _ := bip39.NewEntropy(256)
+	mnemonic, _ := bip39.NewMnemonic(entropy)
+	return mnemonic
 }
 
 // getRootKeyWithHDPath 通过HDPath获取账户管理的根私钥
@@ -466,7 +474,7 @@ func NewHDKey(seed []byte, startPath string) (*HDKey, error) {
 
 	//实例化密钥
 	hdkey := &HDKey{
-		AccountId:  openwallet.ExtendedKeyToAddress(key).String(),	//存储账户扩展密钥的地址作为accountId
+		AccountId:  openwallet.ExtendedKeyToAddress(key).String(), //存储账户扩展密钥的地址作为accountId
 		HDPath:     common.Bytes2Hex(hdPath),
 		AccountNum: 0,
 		MasterKey:  master,

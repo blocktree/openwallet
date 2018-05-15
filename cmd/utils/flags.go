@@ -100,6 +100,11 @@ var (
 		Usage: "Application Name",
 	}
 
+	SymbolFlag = cli.StringFlag{
+		Name: "symbol, s",
+		Usage: "Currency symbol",
+	}
+
 	// General settings
 	DataDirFlag = DirectoryFlag{
 		Name:  "datadir",

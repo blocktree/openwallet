@@ -1039,6 +1039,12 @@
 			"revisionTime": "2018-05-08T23:20:20Z"
 		},
 		{
+			"checksumSHA1": "5SFRzrVflqK1ptx4jWEbnZgaVtg=",
+			"path": "github.com/imroc/req",
+			"revision": "b02e5d142b5043456f0420df2ca3b652116fb6d1",
+			"revisionTime": "2018-02-07T07:03:13Z"
+		},
+		{
 			"checksumSHA1": "0+f8HmJQuwsFWQO0tPxYpeyObh8=",
 			"origin": "github.com/ethereum/go-ethereum/vendor/github.com/influxdata/influxdb/client",
 			"path": "github.com/influxdata/influxdb/client",
@@ -1282,6 +1288,24 @@
 			"path": "github.com/syndtr/goleveldb/leveldb/util",
 			"revision": "714f901b98fdb3aa954b4193d8cbd64a28d80cad",
 			"revisionTime": "2018-03-31T01:49:30Z"
+		},
+		{
+			"checksumSHA1": "h4eEqs9PVKXMf+Qgr46AlGdR57E=",
+			"path": "github.com/tidwall/gjson",
+			"revision": "ac7b6ae6f2e8e4469803ec0afe946d1f1d90f463",
+			"revisionTime": "2017-10-18T12:19:20Z"
+		},
+		{
+			"checksumSHA1": "Tk+aXpWRuTQhURlO79bd7YogcU0=",
+			"path": "github.com/tidwall/match",
+			"revision": "1731857f09b1f38450e2c12409748407822dc6be",
+			"revisionTime": "2017-10-02T07:59:45Z"
+		},
+		{
+			"checksumSHA1": "vW7IiPtoA4hQQ/ScHlbmRktY89U=",
+			"path": "github.com/tyler-smith/go-bip39",
+			"revision": "8e7a99b3e716f36d3b080a9a70f9eb45abe4edcc",
+			"revisionTime": "2016-06-29T16:38:56Z"
 		},
 		{
 			"checksumSHA1": "TT1rac6kpQp2vz24m5yDGUNQ/QQ=",
