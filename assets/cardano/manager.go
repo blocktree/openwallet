@@ -181,31 +181,127 @@ func CreateBatchAddress(aid, passphrase string, count uint) ([]*Address, error) 
 
 	var (
 		err   error
-		addrs = make([]*Address, 0)
+		done uint
+		producerDone uint
+		synCount uint  = 50
 	)
 
 	//建立文件名，时间格式2006-01-02 15:04:05
 	filename := "address-" + common.TimeFormat("20060102150405") + ".txt"
 
-	//批量生成地址
-	for i := uint(0); i < count; i++ {
-		result := callCreateNewAddressAPI(aid, passphrase)
-		err = isError(result)
-		if err != nil {
-			log.Printf("第%i个地址个创建失败！\n", i)
-			continue
+	//生产通道
+	producer := make(chan *Address)
+
+	//消费通道
+	worker := createAddressSaveChan(count,filename)
+
+	values := make([]*Address, 0)
+	addresses := make([]*Address, 0)
+
+	//完成标记
+	done = 0
+
+	//生产完成标记
+	producerDone = 0
+
+	// 以下使用线程数量以及线程负载均衡
+
+	//每个线程内循环的数量
+	runCount := count/synCount
+
+
+	if runCount == 0{
+		for i := uint(0); i < count; i++ {
+
+			go func() {
+				// 请求地址
+				getAddressWrok(aid,passphrase,producer,err)
+			}()
 		}
-		content := gjson.GetBytes(result, "Right")
-		a := NewAddressV0(content)
-		//log.Printf("[%i]	%s\n", i, a.Address)
+	}else{
+		for i := uint(0); i < synCount; i++ {
 
-		//写入新地址到文件
-		exportAddressToFile(a, filename)
+			go func(runCount uint) {
+				for i := uint(0); i < runCount; i++ {
+						getAddressWrok(aid,passphrase,producer,err)
 
-		addrs = append(addrs, a)
+				}
+			}(runCount)
+		}
+		//余数不为0，泽直接开启线程运行余下数量
+		if otherCount := count%synCount;otherCount!=0{
+			go func(otherCount uint) {
+				for i := uint(0); i < otherCount; i++ {
+						getAddressWrok(aid,passphrase,producer,err)
+
+				}
+			}(otherCount)
+		}
 	}
-	return addrs, nil
+
+	//以下使用生产消费模式
+
+	for {
+		var activeWorker chan<- *Address
+		var activeValue *Address
+		if len(values) > 0 {
+			activeWorker = worker
+			activeValue = values[0]
+		}
+
+		select {
+		case n := <-producer:
+			values = append(values, n)
+			addresses = append(addresses,n)
+			producerDone++
+			log.Printf("生成 %d",done)
+		case activeWorker <- activeValue:
+			values = values[1:]
+			done++
+			log.Printf("完成多线程 %d",done)
+			if done == count {
+				log.Printf("完成多线程!")
+				return addresses, nil
+			}
+
+		}
+	}
+	return addresses, nil
 }
+
+//http获取地址
+func getAddressWrok(aid string,passphrase string,producer chan *Address,err error){
+	result := callCreateNewAddressAPI(aid, passphrase)
+	err = isError(result)
+	if err != nil {
+		log.Printf("生成地址发生错误")
+		return
+	}
+	content := gjson.GetBytes(result, "Right")
+	a := NewAddressV0(content)
+	log.Printf("生成地址：	%s\n", a.Address)
+	producer <- a
+}
+
+//保存地址
+func saveAddressWork (address chan *Address,count uint,filename string){
+
+	addrs := make([]*Address, 0)
+
+	for a := range address{
+		exportAddressToFile(a, filename)
+		addrs = append(addrs, a)
+		log.Printf("save	%s\n", a.Address)
+	}
+}
+
+//保存地址通道
+func createAddressSaveChan (count uint,filename string)chan<- *Address{
+	address := make(chan *Address)
+	go saveAddressWork(address,count,filename)
+	return address
+}
+
 
 //CreateNewAccount 根据钱包wid创建单个账户
 func CreateNewAccount(name, wid, passphrase string) error {

@@ -142,12 +142,12 @@ func TestCreateBatchAddress(t *testing.T) {
 	}{
 		{
 			aid:   "Ae2tdPwUPEYynni3SmWmLnDkgMkyXFraSz2MJqhgqFiAWHXtacmE9Dpk23z@2147483648",
-			count: 10,
+			count: 101,
 		},
-		{
-			aid:   "",
-			count: 1,
-		},
+		//{
+		//	aid:   "",
+		//	count: 1,
+		//},
 	}
 
 	for i, test := range tests {
