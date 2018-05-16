@@ -87,20 +87,34 @@ func (s String) Int(def ...int) int {
 
 // UInt8 String类型转为uint8类型
 func (s String) UInt8(def ...int) uint8 {
-	value := s.Int64(def...)
+	value := s.UInt64(def...)
 	return uint8(value)
 }
 
 // UInt16 String类型转为uint32类型
 func (s String) UInt16(def ...int) uint16 {
-	value := s.Int64(def...)
+	value := s.UInt64(def...)
 	return uint16(value)
 }
 
 // UInt32 String类型转为uint32类型
 func (s String) UInt32(def ...int) uint32 {
-	value := s.Int64(def...)
+	value := s.UInt64(def...)
 	return uint32(value)
+}
+
+// UInt64 String类型转为uint64类型
+func (s String) UInt64(def ...int) uint64 {
+	var (
+		value uint64
+		err   error
+	)
+	if value, err = strconv.ParseUint(s.String(), 10, 64); err != nil {
+		if len(def) > 0 {
+			value = uint64(def[0])
+		}
+	}
+	return value
 }
 
 // Int8 String类型转为int8类型

@@ -208,8 +208,8 @@ func callCreateNewAccountAPI(name, wid, passphrase string) []byte {
 	return r.Bytes()
 }
 
-// callGetAccounts 获取账户信息
-func callGetAccounts(accountId ...string) []byte {
+// callGetAccountsAPI 获取账户信息
+func callGetAccountsAPI(accountId ...string) []byte {
 
 	var (
 		//result map[string]interface{}
@@ -228,7 +228,29 @@ func callGetAccounts(accountId ...string) []byte {
 		return nil
 	}
 	//r.ToJSON(&result)
-	log.Printf("%+v\n", r)
+	//log.Printf("%+v\n", r)
+
+	return r.Bytes()
+
+}
+
+// callGetAccountByIDAPI 获取置顶aid账户的信息
+func callGetAccountByIDAPI(accountId string) []byte {
+
+	var (
+	//result map[string]interface{}
+	//param = make(req.QueryParam, 0)
+	)
+
+	method := "accounts"
+	url := fmt.Sprintf("%s%s/%s", serverAPI, method, accountId)
+	r, err := api.Get(url)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	//r.ToJSON(&result)
+	//log.Printf("%+v\n", r)
 
 	return r.Bytes()
 
@@ -279,6 +301,46 @@ func callCreateNewAddressAPI(aid, passphrase string) []byte {
 
 	*/
 	//r.ToJSON(&result)
+
+	return r.Bytes()
+}
+
+// callSendTxAPI 发送交易
+// @param from
+// @param to
+// @param amount
+// @param passphrase
+func callSendTxAPI(from, to string, amount uint64, passphrase string) []byte {
+	var (
+		//result map[string]interface{}
+		body  map[string]interface{}
+		param = make(req.QueryParam, 0)
+	)
+
+	//https://127.0.0.1:8090/api/txs/payments/{from}/{to}/{amount}
+	method := "txs/payments"
+	url := fmt.Sprintf("%s%s/%s/%s/%d", serverAPI, method, from, to, amount)
+
+	/*
+		传入参数
+		CAccountId
+	*/
+
+	body = map[string]interface{}{
+		"groupingPolicy": "OptimizeForHighThroughput",
+	}
+
+	//设置密码
+	param["passphrase"] = passphrase
+
+	r, err := api.Post(url, param, req.BodyJSON(&body))
+
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	log.Printf("%v\n", r)
 
 	return r.Bytes()
 }

@@ -95,31 +95,6 @@ func CreateNewWallet(name, mnemonic, password string) error {
 	return exportWalletToFile(wallet)
 }
 
-//InputNumber 输入地址数量
-func InputNumber() int {
-
-	var (
-		count = 0 // 输入的创建数量
-	)
-
-	for {
-		// 等待用户输入参数
-		line, err := console.Stdin.PromptInput("输入需要创建的地址数量: ")
-		if err != nil {
-			openwLogger.Log.Errorf("unexpected error: %v", err)
-			return 0
-		}
-		count = common.NewString(line).Int()
-		if count < 1 {
-			log.Printf("输入地址数量必须大于0")
-			continue
-		}
-		break
-	}
-
-	return count
-}
-
 //CreateNewWalletFlow 创建钱包流程
 func CreateNewWalletFlow() error {
 
@@ -177,7 +152,7 @@ func CreateNewWalletFlow() error {
 }
 
 //CreateBatchAddress 批量创建地址
-func CreateBatchAddress(aid, passphrase string, count uint) ([]*Address, error) {
+func CreateBatchAddress(aid, password string, count uint) ([]*Address, string, error) {
 
 	var (
 		err   error
@@ -186,29 +161,29 @@ func CreateBatchAddress(aid, passphrase string, count uint) ([]*Address, error) 
 
 	//建立文件名，时间格式2006-01-02 15:04:05
 	filename := "address-" + common.TimeFormat("20060102150405") + ".txt"
-
+	filepath := exportBackupDir + filename
 	//批量生成地址
 	for i := uint(0); i < count; i++ {
-		result := callCreateNewAddressAPI(aid, passphrase)
+		result := callCreateNewAddressAPI(aid, password)
 		err = isError(result)
 		if err != nil {
-			log.Printf("第%i个地址个创建失败！\n", i)
-			continue
+			log.Printf("第%d个地址个创建失败！\n", i)
+			return nil, "", err
 		}
 		content := gjson.GetBytes(result, "Right")
 		a := NewAddressV0(content)
-		//log.Printf("[%i]	%s\n", i, a.Address)
+		log.Printf("[%d]	%s\n", i, a.Address)
 
 		//写入新地址到文件
 		exportAddressToFile(a, filename)
 
 		addrs = append(addrs, a)
 	}
-	return addrs, nil
+	return addrs, filepath, nil
 }
 
 //CreateNewAccount 根据钱包wid创建单个账户
-func CreateNewAccount(name, wid, passphrase string) error {
+func CreateNewAccount(name, wid, passphrase string) (*Account, error) {
 
 	var (
 		err error
@@ -217,8 +192,12 @@ func CreateNewAccount(name, wid, passphrase string) error {
 	//调用服务创建新账户
 	result := callCreateNewAccountAPI(name, wid, passphrase)
 	err = isError(result)
-
-	return err
+	if err != nil {
+		return nil, err
+	}
+	content := gjson.GetBytes(result, "Right")
+	a := NewAccountV0(content)
+	return a, err
 }
 
 //GetAccountInfo 获取用户信息
@@ -230,7 +209,7 @@ func GetAccountInfo(aid ...string) ([]*Account, error) {
 	)
 
 	//调用服务
-	result := callGetAccounts(aid...)
+	result := callGetAccountsAPI(aid...)
 	err = isError(result)
 
 	content := gjson.GetBytes(result, "Right")
@@ -247,25 +226,116 @@ func GetAccountInfo(aid ...string) ([]*Account, error) {
 	return accounts, err
 }
 
-//CreateAddressFlow
+
+//GetAddressInfo 获取指定aid用户的地址组
+func GetAddressInfo(aid string) ([]*Address, error) {
+
+	var (
+		err      error
+		address = make([]*Address, 0)
+	)
+
+	//调用服务
+	result := callGetAccountByIDAPI(aid)
+	err = isError(result)
+
+	content := gjson.GetBytes(result, "Right.caAddresses")
+	if content.IsArray() {
+		//解析如果是数组
+		for _, obj := range content.Array() {
+			address = append(address, NewAddressV0(obj))
+		}
+	} else if content.IsObject() {
+		//解析如果是单个对象
+		address = append(address, NewAddressV0(content))
+	}
+
+	return address, err
+}
+
+//CreateAddressFlow 创建地址流程
 func CreateAddressFlow() error {
 
 	var (
-		err error
+		newAccountName string
+		selectAccount  *Account
 	)
 
-	count := InputNumber()
-	if count < 1 {
-		err = errors.New("输入地址数量必须大于0")
-		return err
-	}
-	//获取钱包所有账户
-	_, err = GetWalletInfo()
+	//输入钱包ID
+	wid := inputWID()
+
+	//输入钱包地址，查询账户信息
+	accounts, err := GetAccountInfo(wid)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	// 输入地址数量
+	count := inputNumber()
+	if count > maxAddresNum {
+		return errors.Errorf("创建地址数量不能超过%d\n", maxAddresNum)
+	}
+
+	//没有账户创建新的
+	if len(accounts) > 0 {
+		//选择一个账户创建地址
+		for _, a := range accounts {
+			//限制每个账户的最大地址数不超过maxAddresNum
+			if a.AddressNumber+count > maxAddresNum {
+				continue
+			} else {
+				selectAccount = a
+			}
+		}
+	}
+
+	//输入密码
+	password, err := console.InputPassword(false)
+	h := common.NewString(password).SHA256()
+
+	//没有可选账户，需要创建新的
+	if selectAccount == nil {
+
+		newAccountName = fmt.Sprintf("account %d", len(accounts))
+
+		log.Printf("没有可用账户，创新账户[%s]\n", newAccountName)
+
+		selectAccount, err = CreateNewAccount(newAccountName, wid, h)
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Printf("开始批量创建地址\n")
+	log.Printf("================================================\n")
+
+	_, filePath, err := CreateBatchAddress(selectAccount.AcountID, h, uint(count))
+
+	log.Printf("================================================\n")
+	log.Printf("地址批量创建成功，导出路径:%s\n", filePath)
+
+	return err
+}
+
+//SendTx 发送交易
+func SendTx(from, to string, amount uint64, password string) (*Transaction, error) {
+
+	var (
+		err error
+	)
+	//输入密码
+	//password, err := console.InputPassword(false)
+	//h := common.NewString(password).SHA256()
+
+	//调用服务创建新账户
+	result := callSendTxAPI(from, to, amount, password)
+	err = isError(result)
+	if err != nil {
+		return nil, err
+	}
+	content := gjson.GetBytes(result, "Right")
+	t := NewTransactionV0(content)
+	return t, nil
 }
 
 //genMnemonic 随机创建密钥
@@ -273,6 +343,11 @@ func genMnemonic() string {
 	entropy, _ := bip39.NewEntropy(256)
 	mnemonic, _ := bip39.NewMnemonic(entropy)
 	return mnemonic
+}
+
+//SummaryTxFlow
+func SummaryTxFlow() {
+
 }
 
 //isError 是否报错
@@ -333,16 +408,57 @@ func exportWalletToFile(w *Wallet) error {
 
 	log.Printf("================================================\n")
 
-	log.Printf("钱包创建成功，导出路径:%s\n",filepath)
+	log.Printf("钱包创建成功，导出路径:%s\n", filepath)
 
 	return nil
 }
 
-func WriteSomething() {
-	content := "Hello, openwallet\n"
-	filename := exportBackupDir + "testfile.txt"
-	file.MkdirAll(exportBackupDir)
-	file.WriteFile(filename, []byte(content), true)
-	file.WriteFile(filename, []byte(content), true)
-	file.WriteFile(filename, []byte(content), true)
+//inputNumber 输入地址数量
+func inputNumber() uint64 {
+
+	var (
+		count uint64 = 0 // 输入的创建数量
+	)
+
+	for {
+		// 等待用户输入参数
+		line, err := console.Stdin.PromptInput("输入需要创建的地址数量: ")
+		if err != nil {
+			openwLogger.Log.Errorf("unexpected error: %v", err)
+			return 0
+		}
+		count = common.NewString(line).UInt64()
+		if count < 1 {
+			log.Printf("输入地址数量必须大于0")
+			continue
+		}
+		break
+	}
+
+	return count
+}
+
+//inputWID 输入钱包ID
+func inputWID() string {
+
+	var (
+		wid string
+	)
+
+	for {
+		// 等待用户输入参数
+		line, err := console.Stdin.PromptInput("输入钱包WID: ")
+		if err != nil {
+			openwLogger.Log.Errorf("unexpected error: %v", err)
+			return ""
+		}
+		if len(line) == 0 {
+			log.Printf("钱包WID不能为空，请重新输入")
+			continue
+		}
+		wid = line
+		break
+	}
+
+	return wid
 }
