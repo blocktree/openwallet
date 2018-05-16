@@ -18,6 +18,8 @@ package cardano
 import (
 	"github.com/blocktree/OpenWallet/common"
 	"testing"
+	"log"
+	"github.com/tidwall/gjson"
 )
 
 func TestGetWalletInfo(t *testing.T) {
@@ -34,7 +36,7 @@ func TestGetWalletInfo(t *testing.T) {
 			tag: "id no exist",
 		},
 		{
-			wid: "Ae2tdPwUPEZ2CVLXYWiatEb2aSwaR573k4NY581fMde9N2GiCqtL7h6ybhU",
+			wid: "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj",
 			tag: "id exist",
 		},
 	}
@@ -233,4 +235,46 @@ func TestSendTx(t *testing.T) {
 
 
 	}
+}
+
+func TestSummaryFollow(t *testing.T) {
+	SummaryFollow()
+}
+
+func TestEstimateFees(t *testing.T) {
+
+	tests := []struct {
+		aid    string
+		to     string
+		amount uint64
+		tag    string
+	}{
+		//{
+		//	aid: "",
+		//	tag: "all",
+		//},
+		//{
+		//	aid: "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj@999",
+		//	tag: "id no exist",
+		//},
+		{
+			aid:    "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj@2147483648",
+			to:     "DdzFFzCqrhtAFVdoEx9jtTUhovkRnuMNUiCnuv8pQ2WYxhDVXAAhYJCVuydGSa1qJeSCYH8x6ZV8QjCaTiAHr9QReMaMRVtUQk9fMNTW",
+			amount: 5134348,
+			tag:    "sendTx by acount id",
+		},
+	}
+
+	for _, test := range tests {
+
+		result := callEstimateFeesAPI(test.aid, test.to, test.amount)
+		err := isError(result)
+		if err != nil {
+			log.Printf("%v\n", err)
+		}
+		fees := gjson.GetBytes(result, "Right.getCCoin")
+		log.Printf("fees %s\n", fees.String())
+	}
+
+
 }

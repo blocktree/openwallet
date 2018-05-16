@@ -68,6 +68,26 @@ This command will create batch address for your given wallet id.
 
 	`,
 			},
+
+			{
+				//启动定时器汇总钱包
+				Name:      "startsum",
+				Usage:     "Start a timer to sum wallet balance",
+				Action:    startSummary,
+				Category:  "WALLET COMMANDS",
+				Flags: []cli.Flag{
+					utils.SymbolFlag,
+					utils.BatchFlag,
+				},
+				Description: `
+	wmd wallet startsum -s ada
+
+This command will Start a timer to sum wallet balance.
+When the total balance over the threshold, wallet will send money
+to a sum address.
+
+	`,
+			},
 		},
 	}
 )
@@ -101,4 +121,20 @@ func createAddress(c *cli.Context) error {
 		openwLogger.Log.Fatalf("%v", err)
 	}
 	return err
+}
+
+//startSummary 启动汇总定时器
+func startSummary(c *cli.Context) error {
+
+	symbol := c.String("symbol")
+	if len(symbol) == 0 {
+		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+	}
+
+	err := cardano.SummaryFollow()
+	if err != nil {
+		openwLogger.Log.Fatalf("%v", err)
+	}
+	return err
+
 }

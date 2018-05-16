@@ -26,10 +26,24 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/tyler-smith/go-bip39"
 	"log"
+	"strings"
 )
 
 const (
 	exportBackupDir = "./data/"
+)
+
+var (
+	//参与汇总的钱包
+	walletsInSum = make(map[string]*Wallet)
+	//汇总阀值
+	threshold uint64 = 3 * 1000000
+	//最小转账额度
+	minSendAmount uint64 = 1 * 1000000
+	//最小矿工费
+	minFees uint64 = 0.3 * 1000000
+	//汇总地址
+	sumAddress = "DdzFFzCqrhsgCwX9VGWZAdAnPfeVwUzoPDAqQJfXE3DxKKFCTYmtGD9CrKjvGu7VjebGoCqPHN7DtkF1VhEvJbPhg2BrfhT5hkyBvjvZ"
 )
 
 //StartWalletProcess 启动钱包进程
@@ -226,12 +240,11 @@ func GetAccountInfo(aid ...string) ([]*Account, error) {
 	return accounts, err
 }
 
-
 //GetAddressInfo 获取指定aid用户的地址组
 func GetAddressInfo(aid string) ([]*Address, error) {
 
 	var (
-		err      error
+		err     error
 		address = make([]*Address, 0)
 	)
 
@@ -338,16 +351,139 @@ func SendTx(from, to string, amount uint64, password string) (*Transaction, erro
 	return t, nil
 }
 
+//SummaryTxFlow 执行汇总流程
+func SummaryWallets() {
+
+	//读取参与汇总的钱包
+	for wid, wallet := range walletsInSum {
+
+		//统计钱包最新余额
+		ws, err := GetWalletInfo(wid)
+		if err != nil {
+			log.Printf("无法查找钱包信息：%v\n", err)
+			continue
+		}
+		if len(ws) > 0 {
+			w := ws[0]
+			balance := common.NewString(w.Balance).UInt64()
+			//如果余额大于阀值，汇总的地址
+			if balance > threshold {
+				//汇总所有有钱的账户
+				accounts, err := GetAccountInfo(w.WalletID)
+				if err != nil {
+					log.Printf("无法查找账户信息：%v\n", err)
+					continue
+				}
+
+				for _, a := range accounts {
+					//大于最小额度才转账
+					sendAmount := common.NewString(a.Amount).UInt64()
+					if sendAmount > minSendAmount {
+						log.Printf("汇总账户[%s]余额 = %d \n", a.AcountID, sendAmount)
+						log.Printf("汇总账户[%s]开始发送交易\n", a.AcountID)
+						tx, err := SendTx(a.AcountID, sumAddress, sendAmount - minFees, wallet.Password)
+						if err != nil {
+							log.Printf("汇总账户[%s]出错：%v\n", a.AcountID, err)
+							continue
+						} else {
+							log.Printf("汇总账户[%s]成功，发送地址[%s], TXID：%s\n", a.AcountID, sumAddress, tx.TxID)
+						}
+					}
+				}
+			} else {
+				log.Printf("钱包[%s]-[%s]当前余额%s，未达到阀值%d\n", w.Name, w.WalletID, w.Balance, threshold)
+			}
+		}
+	}
+}
+
+/*
+
+汇总执行流程：
+1. 执行启动汇总某个币种命令。
+2. 列出该币种的全部可用钱包信息。
+3. 输入需要汇总的钱包序号数组（以,号分隔）。
+4. 输入每个汇总钱包的密码，完成汇总登记。
+5. 工具启动定时器监听钱包，并输出日志到log文件夹。
+6. 待已登记的汇总钱包达到阀值，发起账户汇总到配置下的地址。
+
+*/
+
+// SummaryFollow 汇总流程
+func SummaryFollow() error {
+
+	//查询所有钱包信息
+	wallets, err := GetWalletInfo()
+	if err != nil {
+		log.Printf("客户端没有创建任何钱包\n")
+		return err
+	}
+
+	log.Printf("序号\tWID\t\t\t\t\t\t\t\t名字\n")
+	log.Printf("-----------------------------------------------------------------------------------------\n")
+
+	for i, w := range wallets {
+		log.Printf("%d\t%s\t%s\n", i, w.WalletID, w.Name)
+	}
+	log.Printf("-----------------------------------------------------------------------------------------\n")
+
+	log.Printf("[请选择需要汇总的钱包，输入序号组，以,分隔。例如: 0,1,2,3] \n")
+
+	// 等待用户输入钱包名字
+	nums, err := console.Stdin.PromptInput("输入需要汇总的钱包序号: ")
+	if err != nil {
+		openwLogger.Log.Errorf("unexpect error: %v", err)
+		return err
+	}
+
+	if len(nums) == 0 {
+		return errors.New("输入不能为空")
+	}
+
+	//分隔数组
+	array := strings.Split(nums, ",")
+
+	for _, numIput := range array {
+		if common.IsNumberString(numIput) {
+			numInt := common.NewString(numIput).Int()
+			if numInt < len(wallets)-1 {
+				w := wallets[numInt]
+
+				log.Printf("登记汇总钱包[%s]-[%s]\n", w.Name, w.WalletID)
+				//输入钱包密码完成登记
+				password, err := console.InputPassword(false)
+				if err != nil {
+					openwLogger.Log.Errorf("unexpect error: %v", err)
+					return err
+				}
+
+				//配置钱包密码
+				w.Password = common.NewString(password).SHA256()
+
+				AddWalletInSummary(w.WalletID, w)
+			} else {
+				return errors.New("输入的序号越界")
+			}
+		} else {
+			return errors.New("输入的序号不是数字")
+		}
+	}
+
+	//启动钱包汇总程序
+	SummaryWallets()
+
+	return nil
+}
+
+func AddWalletInSummary(wid string, wallet *Wallet) {
+	walletsInSum[wid] = wallet
+}
+
 //genMnemonic 随机创建密钥
 func genMnemonic() string {
 	entropy, _ := bip39.NewEntropy(256)
 	mnemonic, _ := bip39.NewMnemonic(entropy)
 	return mnemonic
-}
-
-//SummaryTxFlow
-func SummaryTxFlow() {
-
 }
 
 //isError 是否报错
