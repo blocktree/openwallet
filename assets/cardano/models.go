@@ -126,3 +126,19 @@ func NewAddressV0(json gjson.Result) *Address {
 
 	return a
 }
+
+type Transaction struct {
+	TxID          string
+	Amount        string
+	Confirmations uint64
+}
+
+func NewTransactionV0(json gjson.Result) *Transaction {
+	t := &Transaction{}
+	//解析json
+	t.TxID = gjson.Get(json.Raw, "ctId").String()
+	t.Amount = gjson.Get(json.Raw, "ctAmount.getCCoin").String()
+	t.Confirmations = gjson.Get(json.Raw, "ctConfirmations").Uint()
+
+	return t
+}

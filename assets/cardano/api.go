@@ -30,6 +30,7 @@ const (
 
 var (
 	api = req.New()
+	apiDebug = false
 )
 
 func init() {
@@ -38,8 +39,6 @@ func init() {
 	trans, _ := api.Client().Transport.(*http.Transport)
 	trans.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	//开启调试
-	req.Debug = false
 }
 
 //callCreateWalletAPI 调用创建钱包接口
@@ -79,7 +78,7 @@ func callCreateWalletAPI(name, words string, passphrase ...string) []byte {
 		return nil
 	}
 	//r.ToJSON(&result)
-	log.Printf("%v\n", r)
+	if apiDebug {log.Printf("%v\n", r)}
 	return r.Bytes()
 }
 
@@ -106,7 +105,7 @@ func callGetWalletAPI(wid ...string) []byte {
 		return nil
 	}
 
-	log.Printf("%+v\n", r)
+	if apiDebug {log.Printf("%v\n", r)}
 
 	/*
 		//success 返回结果
@@ -171,7 +170,7 @@ func callCreateNewAccountAPI(name, wid, passphrase string) []byte {
 		return nil
 	}
 
-	log.Printf("%+v\n", r)
+	if apiDebug {log.Printf("%v\n", r)}
 
 	/*
 		success 返回结果
@@ -208,8 +207,8 @@ func callCreateNewAccountAPI(name, wid, passphrase string) []byte {
 	return r.Bytes()
 }
 
-// callGetAccounts 获取账户信息
-func callGetAccounts(accountId ...string) []byte {
+// callGetAccountsAPI 获取账户信息
+func callGetAccountsAPI(accountId ...string) []byte {
 
 	var (
 		//result map[string]interface{}
@@ -228,7 +227,29 @@ func callGetAccounts(accountId ...string) []byte {
 		return nil
 	}
 	//r.ToJSON(&result)
-	log.Printf("%+v\n", r)
+	if apiDebug {log.Printf("%v\n", r)}
+
+	return r.Bytes()
+
+}
+
+// callGetAccountByIDAPI 获取置顶aid账户的信息
+func callGetAccountByIDAPI(accountId string) []byte {
+
+	var (
+	//result map[string]interface{}
+	//param = make(req.QueryParam, 0)
+	)
+
+	method := "accounts"
+	url := fmt.Sprintf("%s%s/%s", serverAPI, method, accountId)
+	r, err := api.Get(url)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	//r.ToJSON(&result)
+	if apiDebug {log.Printf("%v\n", r)}
 
 	return r.Bytes()
 
@@ -279,6 +300,70 @@ func callCreateNewAddressAPI(aid, passphrase string) []byte {
 
 	*/
 	//r.ToJSON(&result)
+
+	return r.Bytes()
+}
+
+// callSendTxAPI 发送交易
+// @param from
+// @param to
+// @param amount
+// @param passphrase
+func callSendTxAPI(from, to string, amount uint64, passphrase string) []byte {
+	var (
+		//result map[string]interface{}
+		body  map[string]interface{}
+		param = make(req.QueryParam, 0)
+	)
+
+	//https://127.0.0.1:8090/api/txs/payments/{from}/{to}/{amount}
+	method := "txs/payments"
+	url := fmt.Sprintf("%s%s/%s/%s/%d", serverAPI, method, from, to, amount)
+
+	body = map[string]interface{}{
+		"groupingPolicy": "OptimizeForHighThroughput",
+	}
+
+	//设置密码
+	param["passphrase"] = passphrase
+
+	r, err := api.Post(url, param, req.BodyJSON(&body))
+
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	if apiDebug {log.Printf("%v\n", r)}
+
+	return r.Bytes()
+}
+
+//callEstimateFeesAPI 计算矿工费
+func callEstimateFeesAPI(from, to string, amount uint64) []byte {
+	var (
+		//result map[string]interface{}
+		body  map[string]interface{}
+		param = make(req.QueryParam, 0)
+	)
+
+	//https://127.0.0.1:8090/api/txs/payments/{from}/{to}/{amount}
+	method := "txs/fee"
+	url := fmt.Sprintf("%s%s/%s/%s/%d", serverAPI, method, from, to, amount)
+
+
+	body = map[string]interface{}{
+		"groupingPolicy": "OptimizeForHighThroughput",
+	}
+
+	r, err := api.Post(url, param, req.BodyJSON(&body))
+
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	if apiDebug {log.Printf("%v\n", r)}
 
 	return r.Bytes()
 }

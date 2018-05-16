@@ -51,20 +51,44 @@ This command will start the wallet node, and create new wallet.
 
 	`,
 			},
+			{
+				//批量创建地址
+				Name:      "newaddr",
+				Usage:     "Create batch address for wallet",
+				Action:    createAddress,
+				Category:  "WALLET COMMANDS",
+				Flags: []cli.Flag{
+					utils.SymbolFlag,
+					utils.BatchFlag,
+				},
+				Description: `
+	wmd wallet newaddr -batch
+
+This command will create batch address for your given wallet id.
+
+	`,
+			},
+
+			{
+				//启动定时器汇总钱包
+				Name:      "startsum",
+				Usage:     "Start a timer to sum wallet balance",
+				Action:    startSummary,
+				Category:  "WALLET COMMANDS",
+				Flags: []cli.Flag{
+					utils.SymbolFlag,
+					utils.BatchFlag,
+				},
+				Description: `
+	wmd wallet startsum -s ada
+
+This command will Start a timer to sum wallet balance.
+When the total balance over the threshold, wallet will send money
+to a sum address.
+
+	`,
+			},
 		},
-	}
-
-	// 写入命令
-	CmdWrite = cli.Command{
-		Name:      "write, w",
-		Usage:     "write something",
-		ArgsUsage: "",
-		Category:  "Application COMMANDS",
-		Description: `
-write something into file
-
-`,
-		Action:    writeSomething,
 	}
 )
 
@@ -83,6 +107,34 @@ func createNewWallet(c *cli.Context) error {
 	return err
 }
 
-func writeSomething() {
-	cardano.WriteSomething()
+//createAddress 为钱包创建批量地址
+func createAddress(c *cli.Context) error {
+
+	symbol := c.String("symbol")
+	if len(symbol) == 0 {
+		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+	}
+
+	//为钱包创建批量地址
+	err := cardano.CreateAddressFlow()
+	if err != nil {
+		openwLogger.Log.Fatalf("%v", err)
+	}
+	return err
+}
+
+//startSummary 启动汇总定时器
+func startSummary(c *cli.Context) error {
+
+	symbol := c.String("symbol")
+	if len(symbol) == 0 {
+		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+	}
+
+	err := cardano.SummaryFollow()
+	if err != nil {
+		openwLogger.Log.Fatalf("%v", err)
+	}
+	return err
+
 }

@@ -23,8 +23,6 @@ import (
 	"encoding"
 	"gopkg.in/urfave/cli.v1"
 	"math/big"
-	"github.com/ethereum/go-ethereum/common/math"
-	"errors"
 	"os"
 	"os/user"
 )
@@ -147,15 +145,6 @@ func (b *bigValue) String() string {
 	return (*big.Int)(b).String()
 }
 
-func (b *bigValue) Set(s string) error {
-	int, ok := math.ParseBig256(s)
-	if !ok {
-		return errors.New("invalid integer syntax")
-	}
-	*b = (bigValue)(*int)
-	return nil
-}
-
 func (f BigFlag) GetName() string {
 	return f.Name
 }
@@ -166,12 +155,6 @@ func (f BigFlag) String() string {
 		fmtString = "%s \"%v\"\t%v"
 	}
 	return fmt.Sprintf(fmtString, prefixedNames(f.Name), f.Value, f.Usage)
-}
-
-func (f BigFlag) Apply(set *flag.FlagSet) {
-	eachName(f.Name, func(name string) {
-		set.Var((*bigValue)(f.Value), f.Name, f.Usage)
-	})
 }
 
 // GlobalBig returns the value of a BigFlag from the global flag set.
