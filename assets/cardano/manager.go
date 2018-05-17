@@ -18,32 +18,38 @@ package cardano
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/console"
 	"github.com/blocktree/OpenWallet/logger"
-	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
 	"github.com/tyler-smith/go-bip39"
 	"log"
+	"path/filepath"
 	"strings"
+	"errors"
 )
 
 const (
-	exportBackupDir = "./data/"
+	maxAddresNum = 1000000
 )
 
 var (
+	//钱包服务API
+	serverAPI = "https://127.0.0.1:10026/api/"
+	//小数位长度
+	decimal uint64 = 1000000
 	//参与汇总的钱包
 	walletsInSum = make(map[string]*Wallet)
 	//汇总阀值
-	threshold uint64 = 3 * 1000000
+	threshold uint64 = 10000 * decimal
 	//最小转账额度
-	minSendAmount uint64 = 1 * 1000000
+	minSendAmount uint64 = 100 * decimal
 	//最小矿工费
-	minFees uint64 = 0.3 * 1000000
+	minFees uint64 = uint64(0.3 * float64(decimal))
 	//汇总地址
-	sumAddress = "DdzFFzCqrhsgCwX9VGWZAdAnPfeVwUzoPDAqQJfXE3DxKKFCTYmtGD9CrKjvGu7VjebGoCqPHN7DtkF1VhEvJbPhg2BrfhT5hkyBvjvZ"
+	sumAddress = ""
 )
 
 //StartWalletProcess 启动钱包进程
@@ -94,7 +100,7 @@ func CreateNewWallet(name, mnemonic, password string) error {
 	h := common.NewString(password).SHA256()
 
 	//调用服务创建钱包
-	result := callCreateWalletAPI(name, mnemonic, h)
+	result := callCreateWalletAPI(name, mnemonic, h, true)
 	err = isError(result)
 	if err != nil {
 		return err
@@ -118,6 +124,12 @@ func CreateNewWalletFlow() error {
 		name     string
 		err      error
 	)
+
+	//先加载是否有配置文件
+	err = loadConfig()
+	if err != nil {
+		return err
+	}
 
 	for {
 
@@ -175,7 +187,7 @@ func CreateBatchAddress(aid, password string, count uint) ([]*Address, string, e
 
 	//建立文件名，时间格式2006-01-02 15:04:05
 	filename := "address-" + common.TimeFormat("20060102150405") + ".txt"
-	filepath := exportBackupDir + filename
+	filepath := filepath.Join(addressDir, filename)
 	//批量生成地址
 	for i := uint(0); i < count; i++ {
 		result := callCreateNewAddressAPI(aid, password)
@@ -274,6 +286,12 @@ func CreateAddressFlow() error {
 		selectAccount  *Account
 	)
 
+	//先加载是否有配置文件
+	err := loadConfig()
+	if err != nil {
+		return err
+	}
+
 	//输入钱包ID
 	wid := inputWID()
 
@@ -286,7 +304,7 @@ func CreateAddressFlow() error {
 	// 输入地址数量
 	count := inputNumber()
 	if count > maxAddresNum {
-		return errors.Errorf("创建地址数量不能超过%d\n", maxAddresNum)
+		return errors.New(fmt.Sprintf("创建地址数量不能超过%d\n", maxAddresNum))
 	}
 
 	//没有账户创建新的
@@ -381,7 +399,7 @@ func SummaryWallets() {
 					if sendAmount > minSendAmount {
 						log.Printf("汇总账户[%s]余额 = %d \n", a.AcountID, sendAmount)
 						log.Printf("汇总账户[%s]开始发送交易\n", a.AcountID)
-						tx, err := SendTx(a.AcountID, sumAddress, sendAmount - minFees, wallet.Password)
+						tx, err := SendTx(a.AcountID, sumAddress, sendAmount-minFees, wallet.Password)
 						if err != nil {
 							log.Printf("汇总账户[%s]出错：%v\n", a.AcountID, err)
 							continue
@@ -412,22 +430,28 @@ func SummaryWallets() {
 // SummaryFollow 汇总流程
 func SummaryFollow() error {
 
-	//查询所有钱包信息
-	wallets, err := GetWalletInfo()
+	//先加载是否有配置文件
+	err := loadConfig()
 	if err != nil {
-		log.Printf("客户端没有创建任何钱包\n")
 		return err
 	}
 
-	log.Printf("序号\tWID\t\t\t\t\t\t\t\t名字\n")
-	log.Printf("-----------------------------------------------------------------------------------------\n")
+	//查询所有钱包信息
+	wallets, err := GetWalletInfo()
+	if err != nil {
+		fmt.Printf("客户端没有创建任何钱包\n")
+		return err
+	}
+
+	fmt.Printf("序号\tWID\t\t\t\t\t\t\t\t名字\n")
+	fmt.Printf("-----------------------------------------------------------------------------------------\n")
 
 	for i, w := range wallets {
-		log.Printf("%d\t%s\t%s\n", i, w.WalletID, w.Name)
+		fmt.Printf("%d\t%s\t%s\n", i, w.WalletID, w.Name)
 	}
-	log.Printf("-----------------------------------------------------------------------------------------\n")
+	fmt.Printf("-----------------------------------------------------------------------------------------\n")
 
-	log.Printf("[请选择需要汇总的钱包，输入序号组，以,分隔。例如: 0,1,2,3] \n")
+	fmt.Printf("[请选择需要汇总的钱包，输入序号组，以,分隔。例如: 0,1,2,3] \n")
 
 	// 等待用户输入钱包名字
 	nums, err := console.Stdin.PromptInput("输入需要汇总的钱包序号: ")
@@ -449,7 +473,7 @@ func SummaryFollow() error {
 			if numInt < len(wallets)-1 {
 				w := wallets[numInt]
 
-				log.Printf("登记汇总钱包[%s]-[%s]\n", w.Name, w.WalletID)
+				fmt.Printf("登记汇总钱包[%s]-[%s]\n", w.Name, w.WalletID)
 				//输入钱包密码完成登记
 				password, err := console.InputPassword(false)
 				if err != nil {
@@ -479,9 +503,11 @@ func AddWalletInSummary(wid string, wallet *Wallet) {
 	walletsInSum[wid] = wallet
 }
 
+//钱包恢复机制
+
 //genMnemonic 随机创建密钥
 func genMnemonic() string {
-	entropy, _ := bip39.NewEntropy(256)
+	entropy, _ := bip39.NewEntropy(128)
 	mnemonic, _ := bip39.NewMnemonic(entropy)
 	return mnemonic
 }
@@ -530,7 +556,7 @@ func exportWalletToFile(w *Wallet) error {
 	filename := fmt.Sprintf("wallet-%s-%s.json", w.Name, w.WalletID)
 
 	file.MkdirAll(exportBackupDir)
-	filepath := exportBackupDir + filename
+	filepath := filepath.Join(keyDir, filename)
 
 	//把钱包写入到文件进行备份
 	content, err = json.MarshalIndent(w, "", "\t")
@@ -597,4 +623,28 @@ func inputWID() string {
 	}
 
 	return wid
+}
+
+//loadConfig 读取配置
+func loadConfig() error {
+
+	var (
+		c   config.Configer
+		err error
+	)
+
+	//读取配置
+	absFile := filepath.Join(configFilePath, configFileName)
+	c, err = config.NewConfig("json", absFile)
+	if err != nil {
+		return errors.New("配置文件未创建，请执行 wmd config -s <symbol> ")
+	}
+
+	serverAPI = c.String("apiURL")
+	threshold = common.NewString(c.String("threshold")).UInt64()
+	minSendAmount = common.NewString(c.String("minSendAmount")).UInt64()
+	minFees = common.NewString(c.String("minFees")).UInt64()
+	sumAddress = c.String("sumAddress")
+
+	return nil
 }

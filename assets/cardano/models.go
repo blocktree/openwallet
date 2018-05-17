@@ -17,10 +17,6 @@ package cardano
 
 import "github.com/tidwall/gjson"
 
-const (
-	maxAddresNum = 1000000
-)
-
 //Wallet ada的钱包模型
 type Wallet struct {
 	WalletID       string `json:"walletID"`

@@ -49,6 +49,7 @@ func init() {
 	app.Copyright = "Copyright 2018 The openwallet Authors"
 	app.Commands = []cli.Command{
 		commands.CmdWallet,
+		commands.CmdConfig,
 	}
 
 	sort.Sort(cli.CommandsByName(app.Commands))

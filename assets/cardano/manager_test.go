@@ -31,14 +31,14 @@ func TestGetWalletInfo(t *testing.T) {
 			wid: "",
 			tag: "all",
 		},
-		{
-			wid: "124556",
-			tag: "id no exist",
-		},
-		{
-			wid: "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj",
-			tag: "id exist",
-		},
+		//{
+		//	wid: "124556",
+		//	tag: "id no exist",
+		//},
+		//{
+		//	wid: "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj",
+		//	tag: "id exist",
+		//},
 	}
 
 	for i, test := range tests {
@@ -59,7 +59,7 @@ func TestCreateNewWallet(t *testing.T) {
 	password := common.NewString("12345678").SHA256()
 	words := genMnemonic()
 	//annual only pact client fatigue choice arrive achieve country indoor engage coil spatial engine among paper dawn tackle bonus task lock pepper deny eye
-	result := callCreateWalletAPI("test wallet", words, password)
+	result := callCreateWalletAPI("12 words wallet", words, password, true)
 	t.Logf("%v\n", result)
 }
 
@@ -77,10 +77,10 @@ func TestGetAccountInfo(t *testing.T) {
 			aid: "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj",
 			tag: "id no exist",
 		},
-		//{
-		//	aid: "Ae2tdPwUPEYynni3SmWmLnDkgMkyXFraSz2MJqhgqFiAWHXtacmE9Dpk23z",
-		//	tag: "search by wallet id",
-		//},
+		{
+			aid: "Ae2tdPwUPEZMYbseGswFLCyN1vG6CjyGNcAvNujB3JXbuovD6GVc535GTtB",
+			tag: "mywll",
+		},
 	}
 
 	for i, test := range tests {
@@ -105,17 +105,17 @@ func TestCreateAccount(t *testing.T) {
 		tag      string
 	}{
 		{
-			wid:      "Ae2tdPwUPEZKrS6hL1E9XgKSet8ydFYHQkV3gmEG8RGUwh5XKugoUFEk7Lx",
+			wid:      "Ae2tdPwUPEZMYbseGswFLCyN1vG6CjyGNcAvNujB3JXbuovD6GVc535GTtB",
 			name:     "chance2",
 			password: common.NewString("12345678").SHA256(),
 			tag:      "normal",
 		},
-		{
-			wid:      "Ae2tdPwUPEZKrS6hL1E9XgKSet8ydFYHQkV3gmEG8RGUwh5XKugoUFEk7Lx",
-			name:     "zhiquan911",
-			password: "",
-			tag:      "Passphrase doesn't match",
-		},
+		//{
+		//	wid:      "Ae2tdPwUPEZKrS6hL1E9XgKSet8ydFYHQkV3gmEG8RGUwh5XKugoUFEk7Lx",
+		//	name:     "zhiquan911",
+		//	password: "",
+		//	tag:      "Passphrase doesn't match",
+		//},
 	}
 
 	for i, test := range tests {
@@ -143,13 +143,13 @@ func TestCreateBatchAddress(t *testing.T) {
 		count uint
 	}{
 		{
-			aid:   "Ae2tdPwUPEYynni3SmWmLnDkgMkyXFraSz2MJqhgqFiAWHXtacmE9Dpk23z@2147483648",
-			count: 10,
+			aid:   "Ae2tdPwUPEZMYbseGswFLCyN1vG6CjyGNcAvNujB3JXbuovD6GVc535GTtB@2147483648",
+			count: 20,
 		},
-		{
-			aid:   "",
-			count: 1,
-		},
+		//{
+		//	aid:   "",
+		//	count: 1,
+		//},
 	}
 
 	for i, test := range tests {
@@ -175,14 +175,14 @@ func TestGetAddressInfo(t *testing.T) {
 		//	aid: "",
 		//	tag: "all",
 		//},
-		//{
-		//	aid: "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj@999",
-		//	tag: "id no exist",
-		//},
 		{
 			aid: "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj@2147483648",
-			tag: "search by wallet id",
+			tag: "chance2",
 		},
+		//{
+		//	aid: "Ae2tdPwUPEZMYbseGswFLCyN1vG6CjyGNcAvNujB3JXbuovD6GVc535GTtB@2147483648",
+		//	tag: "search by wallet id",
+		//},
 	}
 
 	for i, test := range tests {
@@ -277,4 +277,44 @@ func TestEstimateFees(t *testing.T) {
 	}
 
 
+}
+
+func TestExportWallet(t *testing.T) {
+	tests := []struct {
+		wid    string
+	}{
+		//{
+		//	aid: "",
+		//	tag: "all",
+		//},
+		//{
+		//	aid: "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj@999",
+		//	tag: "id no exist",
+		//},
+		{
+			wid:    "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj",
+		},
+	}
+
+	for _, test := range tests {
+
+		callExportWalletAPI(test.wid, "1.key")
+	}
+}
+
+func TestDeleteWallet(t *testing.T) {
+	wid := "Ae2tdPwUPEZMYbseGswFLCyN1vG6CjyGNcAvNujB3JXbuovD6GVc535GTtB"
+	result := callDeleteWallet(wid)
+	content := gjson.ParseBytes(result)
+	t.Logf("DeleteWalle %v\n", content)
+}
+
+func TestRestoreWallet(t *testing.T) {
+	//密钥32
+	password := common.NewString("12345678").SHA256()
+	words := "traffic horror food daughter account satisfy alley stuff paddle urge hollow cook arena there include know catalog sting brother crack math buddy identify demise"
+	//annual only pact client fatigue choice arrive achieve country indoor engage coil spatial engine among paper dawn tackle bonus task lock pepper deny eye
+	result := callCreateWalletAPI("test wallet", words, password, true)
+	content := gjson.ParseBytes(result)
+	t.Logf("RestoreWallet %v\n", content)
 }
