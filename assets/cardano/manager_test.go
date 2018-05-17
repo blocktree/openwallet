@@ -144,7 +144,7 @@ func TestCreateBatchAddress(t *testing.T) {
 	}{
 		{
 			aid:   "Ae2tdPwUPEYynni3SmWmLnDkgMkyXFraSz2MJqhgqFiAWHXtacmE9Dpk23z@2147483648",
-			count: 101,
+			count: 100000,
 		},
 		//{
 		//	aid:   "",
@@ -164,6 +164,7 @@ func TestCreateBatchAddress(t *testing.T) {
 
 	}
 }
+
 
 func TestGetAddressInfo(t *testing.T) {
 

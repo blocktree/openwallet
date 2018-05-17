@@ -172,7 +172,7 @@ func CreateBatchAddress(aid, password string, count uint) ([]*Address, string, e
 		err   error
 		done uint
 		producerDone uint
-		synCount uint  = 50
+		synCount uint  = 100
 	)
 
 	//建立文件名，时间格式2006-01-02 15:04:05
@@ -200,6 +200,7 @@ func CreateBatchAddress(aid, password string, count uint) ([]*Address, string, e
 
 
 	if runCount == 0{
+		log.Printf("runCount 小于线程数",)
 		for i := uint(0); i < count; i++ {
 
 			go func() {
@@ -208,8 +209,9 @@ func CreateBatchAddress(aid, password string, count uint) ([]*Address, string, e
 			}()
 		}
 	}else{
-		for i := uint(0); i < synCount; i++ {
 
+		for i := uint(0); i < synCount; i++ {
+			log.Printf("runCount 启动线程 %d 共：%d ",i,runCount)
 			go func(runCount uint) {
 				for i := uint(0); i < runCount; i++ {
 						getAddressWrok(aid,password,producer,err)
@@ -219,8 +221,10 @@ func CreateBatchAddress(aid, password string, count uint) ([]*Address, string, e
 		}
 		//余数不为0，泽直接开启线程运行余下数量
 		if otherCount := count%synCount;otherCount!=0{
+			log.Printf("余数为 %d ",otherCount)
 			go func(otherCount uint) {
 				for i := uint(0); i < otherCount; i++ {
+					log.Printf("余数运行 %d ",i)
 						getAddressWrok(aid,password,producer,err)
 
 				}
@@ -243,11 +247,11 @@ func CreateBatchAddress(aid, password string, count uint) ([]*Address, string, e
 			values = append(values, n)
 			addresses = append(addresses,n)
 			producerDone++
-			log.Printf("生成 %d",done)
+			//log.Printf("生成 %d",done)
 		case activeWorker <- activeValue:
 			values = values[1:]
 			done++
-			log.Printf("完成多线程 %d",done)
+			//log.Printf("完成多线程 %d",done)
 			if done == count {
 				log.Printf("完成多线程!")
 				return addresses, filename, nil
