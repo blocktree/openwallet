@@ -49,6 +49,8 @@ $ gox -h
 
 ```
 
+## wmd--多币种钱包维护工具
+
 ### 编译wmd工具
 
 ```shell
@@ -64,25 +66,33 @@ $ gox -osarch="linux/amd64"
 
 ```
 
-## WMD工具使用
+### wmd具使用
+
+wmd是一款多币种钱包维护工具。你只需要在服务器安装某币种的官方全节点钱包，并且wmd已经支持的币种。
+你就可以使用wmd的规范的命令完成钱包维护工作。
 
 ```shell
 
-# -s <symbol> 是对某个币种的钱包发起操作
+# 上传wmd文件到你的钱包服务器
 
-#执行初始化配置文件
-$ ./wmd config init -s ada
+# 命令行中： -s <symbol> 是针对某个币
+
+#执行初始化配置文件，文件保存在./conf/<symbol>.json
+$ ./wmd config init -s <symbol>
 
 #执行查看钱包管理工具的配置文件
-$ ./wmd config see -s ada
+$ ./wmd config see -s <symbol>
 
-#创建钱包
-$ ./wmd wallet new -s ada
+#创建钱包，成功后，文件保存在./data/<symbol>/key/
+$ ./wmd wallet new -s <symbol>
 
-#执行批量创建地址命令
-$ ./wmd wallet newaddr -s ada
+#备份钱包私钥和账户相关文件，文件保存在./data/<symbol>/key/backup/
+$ ./wmd wallet backup -s <symbol>
+
+#执行批量创建地址命令，文件保存在./conf/<symbol>/address/
+$ ./wmd wallet batchaddr -s <symbol>
 
 #启动批量汇总监听器
-$ ./wmd wallet startsum -s ada
+$ ./wmd wallet startsum -s <symbol>
 
 ```

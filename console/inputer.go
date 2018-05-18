@@ -36,12 +36,12 @@ func InputPassword(isConfirm bool) (string, error) {
 		// 等待用户输入密码
 		password, err = Stdin.PromptPassword("输入钱包密码: ")
 		if err != nil {
-			openwLogger.Log.Errorf("unexpect error: %v", err)
+			openwLogger.Log.Errorf("unexpect error: %v\n", err)
 			return "", err
 		}
 
 		if len(password) < 8 {
-			fmt.Printf("不合法的密码长度, 建议设置不小于8位的密码, 请重新输入")
+			fmt.Printf("不合法的密码长度, 建议设置不小于8位的密码, 请重新输入\n")
 			continue
 		}
 
@@ -51,7 +51,7 @@ func InputPassword(isConfirm bool) (string, error) {
 			confirm, err = Stdin.PromptPassword("再次确认钱包密码: ")
 
 			if password != confirm {
-				fmt.Printf("两次输入密码不一致, 请重新输入")
+				fmt.Printf("两次输入密码不一致, 请重新输入\n")
 				continue
 			}
 
@@ -76,12 +76,12 @@ func InputText(prompt string) (string, error) {
 		// 等待用户输入
 		text, err = Stdin.PromptInput(prompt)
 		if err != nil {
-			openwLogger.Log.Errorf("unexpected error: %v", err)
+			openwLogger.Log.Errorf("unexpected error: %v\n", err)
 			return "", err
 		}
 
 		if len(text) == 0 {
-			fmt.Printf("内容不能为空")
+			fmt.Printf("内容不能为空\n")
 			continue
 		}
 
@@ -103,7 +103,7 @@ func InputNumber(prompt string) (uint64, error) {
 		// 等待用户输入参数
 		line, err := Stdin.PromptInput(prompt)
 		if err != nil {
-			openwLogger.Log.Errorf("unexpected error: %v", err)
+			openwLogger.Log.Errorf("unexpected error: %v\n", err)
 			return 0, err
 		}
 		num = common.NewString(line).UInt64()

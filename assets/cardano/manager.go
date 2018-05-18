@@ -567,7 +567,7 @@ func SummaryFollow() error {
 	// 等待用户输入钱包名字
 	nums, err := console.Stdin.PromptInput("输入需要汇总的钱包序号: ")
 	if err != nil {
-		openwLogger.Log.Errorf("unexpect error: %v", err)
+		//openwLogger.Log.Errorf("unexpect error: %v", err)
 		return err
 	}
 
@@ -588,12 +588,22 @@ func SummaryFollow() error {
 				//输入钱包密码完成登记
 				password, err := console.InputPassword(false)
 				if err != nil {
-					openwLogger.Log.Errorf("unexpect error: %v", err)
+					//openwLogger.Log.Errorf("unexpect error: %v", err)
 					return err
 				}
 
 				//配置钱包密码
-				w.Password = common.NewString(password).SHA256()
+				h := common.NewString(password).SHA256()
+
+				// 创建一个地址用于验证密码是否可以,默认账户ID = 2147483648 = 0x80000000
+				testAccountid := fmt.Sprintf("%s@2147483648", w.WalletID, )
+				_, err = CreateAddress(testAccountid, h)
+				if err != nil {
+					openwLogger.Log.Errorf("输入的钱包密码错误")
+					continue
+				}
+
+				w.Password = h
 
 				AddWalletInSummary(w.WalletID, w)
 			} else {
@@ -602,6 +612,10 @@ func SummaryFollow() error {
 		} else {
 			return errors.New("输入的序号不是数字")
 		}
+	}
+
+	if len(walletsInSum) == 0 {
+		return errors.New("没有汇总钱包完成登记")
 	}
 
 	fmt.Printf("钱包汇总定时器开启，间隔%f秒运行一次\n", cycleSeconds.Seconds())
@@ -666,6 +680,19 @@ func BackupWalletkey() error {
 	fmt.Printf("钱包文件备份路径: %s", backupPath)
 
 	return nil
+}
+
+//CreateAddress 给指定账户创建地址
+func CreateAddress(aid string, passphrase string) (*Address, error) {
+	result := callCreateNewAddressAPI(aid, passphrase)
+	err := isError(result)
+	if err != nil {
+		log.Printf("生成地址发生错误")
+		return nil, err
+	}
+	content := gjson.GetBytes(result, "Right")
+	a := NewAddressV0(content)
+	return a, nil
 }
 
 //钱包恢复机制
