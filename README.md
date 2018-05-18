@@ -68,10 +68,21 @@ $ gox -osarch="linux/amd64"
 
 ```shell
 
+# -s <symbol> 是对某个币种的钱包发起操作
+
+#执行初始化配置文件
+$ ./wmd config init -s ada
+
+#执行查看钱包管理工具的配置文件
+$ ./wmd config see -s ada
+
 #创建钱包
 $ ./wmd wallet new -s ada
 
 #执行批量创建地址命令
 $ ./wmd wallet newaddr -s ada
+
+#启动批量汇总监听器
+$ ./wmd wallet startsum -s ada
 
 ```

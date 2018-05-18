@@ -24,12 +24,8 @@ import (
 	"strings"
 )
 
-const (
-	serverAPI = "https://192.168.2.224:10026/api/"
-)
-
 var (
-	api = req.New()
+	api      = req.New()
 	apiDebug = false
 )
 
@@ -42,21 +38,27 @@ func init() {
 }
 
 //callCreateWalletAPI 调用创建钱包接口
-func callCreateWalletAPI(name, words string, passphrase ...string) []byte {
+func callCreateWalletAPI(name, words, passphrase string, create bool) []byte {
 
 	var (
 		//result         map[string]interface{}
 		cwInitMeta     = make(map[string]interface{}, 0)
 		body           = make(map[string]interface{}, 0)
 		cwBackupPhrase = make(map[string]interface{}, 0)
+		method         string
 	)
 
-	method := "wallets/new"
+	if create {
+		method = "wallets/new"
+	} else {
+		method = "wallets/restore"
+	}
+
 	url := serverAPI + method
 	param := make(req.QueryParam, 0)
 	if len(passphrase) > 0 {
 		//设置密码
-		param["passphrase"] = passphrase[0]
+		param["passphrase"] = passphrase
 	}
 
 	//分割助记词
@@ -78,7 +80,9 @@ func callCreateWalletAPI(name, words string, passphrase ...string) []byte {
 		return nil
 	}
 	//r.ToJSON(&result)
-	if apiDebug {log.Printf("%v\n", r)}
+	if apiDebug {
+		log.Printf("%+v\n", r)
+	}
 	return r.Bytes()
 }
 
@@ -105,7 +109,9 @@ func callGetWalletAPI(wid ...string) []byte {
 		return nil
 	}
 
-	if apiDebug {log.Printf("%v\n", r)}
+	if apiDebug {
+		log.Printf("%v\n", r)
+	}
 
 	/*
 		//success 返回结果
@@ -170,7 +176,9 @@ func callCreateNewAccountAPI(name, wid, passphrase string) []byte {
 		return nil
 	}
 
-	if apiDebug {log.Printf("%v\n", r)}
+	if apiDebug {
+		log.Printf("%v\n", r)
+	}
 
 	/*
 		success 返回结果
@@ -227,7 +235,9 @@ func callGetAccountsAPI(accountId ...string) []byte {
 		return nil
 	}
 	//r.ToJSON(&result)
-	if apiDebug {log.Printf("%v\n", r)}
+	if apiDebug {
+		log.Printf("%v\n", r)
+	}
 
 	return r.Bytes()
 
@@ -249,7 +259,9 @@ func callGetAccountByIDAPI(accountId string) []byte {
 		return nil
 	}
 	//r.ToJSON(&result)
-	if apiDebug {log.Printf("%v\n", r)}
+	if apiDebug {
+		log.Printf("%+v\n", r)
+	}
 
 	return r.Bytes()
 
@@ -334,7 +346,9 @@ func callSendTxAPI(from, to string, amount uint64, passphrase string) []byte {
 		return nil
 	}
 
-	if apiDebug {log.Printf("%v\n", r)}
+	if apiDebug {
+		log.Printf("%v\n", r)
+	}
 
 	return r.Bytes()
 }
@@ -351,7 +365,6 @@ func callEstimateFeesAPI(from, to string, amount uint64) []byte {
 	method := "txs/fee"
 	url := fmt.Sprintf("%s%s/%s/%s/%d", serverAPI, method, from, to, amount)
 
-
 	body = map[string]interface{}{
 		"groupingPolicy": "OptimizeForHighThroughput",
 	}
@@ -363,7 +376,62 @@ func callEstimateFeesAPI(from, to string, amount uint64) []byte {
 		return nil
 	}
 
-	if apiDebug {log.Printf("%v\n", r)}
+	if apiDebug {
+		log.Printf("%v\n", r)
+	}
+
+	return r.Bytes()
+}
+
+//callExportWalletAPI 导出钱包	[这个API不起作用]
+func callExportWalletAPI(wid, fileName string) {
+
+	var (
+		body interface{}
+	)
+
+	//https://127.0.0.1:8090/api/backup/export/{walletId}
+	method := "backup/export"
+	url := fmt.Sprintf("%s%s/%s", serverAPI, method, wid)
+
+	//home/chbtc/openwallet/
+	body = "/home/chbtc/openwallet/"
+
+	r, err := api.Get(url, req.BodyJSON(&body))
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	if apiDebug {
+		log.Printf("%+v\n", r)
+	}
+
+	r.ToFile(fileName)
+}
+
+//callDeleteWallet 调用删除钱包所有信息API
+func callDeleteWallet(wid string) []byte {
+	var (
+	//result map[string]interface{}
+	//body  map[string]interface{}
+	//param = make(req.QueryParam, 0)
+	)
+
+	//https://127.0.0.1:8090/api/wallets/{walletId}
+	method := "wallets"
+	url := fmt.Sprintf("%s%s/%s", serverAPI, method, wid)
+
+	r, err := api.Delete(url)
+
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	if apiDebug {
+		log.Printf("%v\n", r)
+	}
 
 	return r.Bytes()
 }

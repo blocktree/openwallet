@@ -248,6 +248,12 @@ func NewStringByInt(v int64) String {
 	return String(str)
 }
 
+// NewStringByUInt 通过int初始化字符串
+func NewStringByUInt(v uint64) String {
+	str := strconv.FormatUint(v, 10)
+	return String(str)
+}
+
 // NewStringByBool 通过bool初始化字符串
 func NewStringByBool(v bool) String {
 	str := strconv.FormatBool(v)
@@ -269,6 +275,8 @@ func NewString(value interface{}, def ...String) String {
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return NewStringByInt(val.Int())
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return NewStringByUInt(val.Uint())
 	case reflect.Float32, reflect.Float64:
 		return NewStringByFloat(val.Float())
 	case reflect.Bool:
