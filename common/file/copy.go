@@ -69,10 +69,10 @@ func Copy(src, dst string) error {
 		defer func() { walks++ }()
 
 		if file.IsDir() {
-			fmt.Printf("copy dir from '%s' to '%s'\n", srcPath, dstPath(srcPath))
+			//fmt.Printf("copy dir from '%s' to '%s'\n", srcPath, dstPath(srcPath))
 			os.MkdirAll(dstPath(srcPath), 0755)
 		} else {
-			fmt.Printf("copy file from '%s' to '%s'\n", srcPath, dstPath(srcPath))
+			//fmt.Printf("copy file from '%s' to '%s'\n", srcPath, dstPath(srcPath))
 			err = copyFile(srcPath, dstPath(srcPath))
 			if err != nil {
 				fmt.Println(err)

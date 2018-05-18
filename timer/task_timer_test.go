@@ -12,8 +12,8 @@ func now() {
 }
 
 func TestTimer(t *testing.T) {
-	timer := newTask(time.Second*1, now)
-	timer1 := newTask(time.Second*2, now)
+	timer := NewTask(time.Second*1, now)
+	timer1 := NewTask(time.Second*2, now)
 	timer.Start()
 	timer1.Start()
 

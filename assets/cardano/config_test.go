@@ -37,7 +37,7 @@ func TestNewConfigFile(t *testing.T) {
 		sumAddress = "DdzFFzCqrhsgCwX9VGWZAdAnPfeVwUzoPDAqQJfXE3DxKKFCTYmtGD9CrKjvGu7VjebGoCqPHN7DtkF1VhEvJbPhg2BrfhT5hkyBvjvZ"
 	)
 
-	_, err := newConfigFile(apiURL, walletPath, sumAddress, threshold, minSendAmount, minFees)
+	_, _, err := newConfigFile(apiURL, walletPath, sumAddress, threshold, minSendAmount, minFees)
 	if err != nil {
 		t.Fatalf("%v\n", err)
 	}

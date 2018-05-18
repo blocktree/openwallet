@@ -53,9 +53,9 @@ This command will start the wallet node, and create new wallet.
 			},
 			{
 				//批量创建地址
-				Name:      "newaddr",
+				Name:      "batchaddr",
 				Usage:     "Create batch address for wallet",
-				Action:    createAddress,
+				Action:    batchAddress,
 				Category:  "WALLET COMMANDS",
 				Flags: []cli.Flag{
 					utils.SymbolFlag,
@@ -88,6 +88,22 @@ to a sum address.
 
 	`,
 			},
+			{
+				//备份钱包私钥
+				Name:      "backup",
+				Usage:     "Backup wallet key in filePath: ./data/<symbol>/key/",
+				Action:    backupWalletKey,
+				Category:  "WALLET COMMANDS",
+				Flags: []cli.Flag{
+					utils.SymbolFlag,
+				},
+				Description: `
+	wmd wallet backup -s ada
+
+This command will Backup wallet key in filePath: ./data/<symbol>/key/.
+
+	`,
+			},
 		},
 	}
 )
@@ -107,8 +123,8 @@ func createNewWallet(c *cli.Context) error {
 	return err
 }
 
-//createAddress 为钱包创建批量地址
-func createAddress(c *cli.Context) error {
+//batchAddress 为钱包创建批量地址
+func batchAddress(c *cli.Context) error {
 
 	symbol := c.String("symbol")
 	if len(symbol) == 0 {
@@ -137,4 +153,18 @@ func startSummary(c *cli.Context) error {
 	}
 	return err
 
+}
+
+//backupWalletKey 备份钱包
+func backupWalletKey(c *cli.Context) error  {
+	symbol := c.String("symbol")
+	if len(symbol) == 0 {
+		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+	}
+
+	err := cardano.BackupWalletkey()
+	if err != nil {
+		openwLogger.Log.Fatalf("%v", err)
+	}
+	return err
 }

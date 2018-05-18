@@ -162,7 +162,7 @@ func GetAbsolutePath(subfolder ...string) (string, error) {
 //@param file 文件夹路径
 func MkdirAll(file string) bool {
 
-	if err := os.MkdirAll(filepath.Dir(file), os.ModePerm); err != nil {
+	if err := os.MkdirAll(file, os.ModePerm); err != nil {
 		log.Printf("%v\n", err)
 		return false
 	}

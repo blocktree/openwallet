@@ -39,7 +39,7 @@ import (
 
 const (
 	//备份路径
-	exportBackupDir = "./data/ada/"
+	//exportBackupDir = "./data/ada/"
 	//钥匙备份路径
 	keyDir = "./data/ada/key/"
 	//地址导出路径

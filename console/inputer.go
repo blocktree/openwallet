@@ -17,7 +17,6 @@ package console
 
 import (
 	"github.com/blocktree/OpenWallet/logger"
-	"github.com/ethereum/go-ethereum/console"
 	"github.com/blocktree/OpenWallet/common"
 	"fmt"
 )
@@ -102,7 +101,7 @@ func InputNumber(prompt string) (uint64, error) {
 
 	for {
 		// 等待用户输入参数
-		line, err := console.Stdin.PromptInput(prompt)
+		line, err := Stdin.PromptInput(prompt)
 		if err != nil {
 			openwLogger.Log.Errorf("unexpected error: %v", err)
 			return 0, err

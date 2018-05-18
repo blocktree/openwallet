@@ -10,7 +10,7 @@ type TaskTimer struct {
 }
 
 //新建定时器
-func newTask(duration time.Duration,function func()) *TaskTimer{
+func NewTask(duration time.Duration,function func()) *TaskTimer{
 	t := &TaskTimer{
 		timer: time.NewTicker(duration),
 		f:function,

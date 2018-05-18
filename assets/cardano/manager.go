@@ -17,18 +17,20 @@ package cardano
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/console"
 	"github.com/blocktree/OpenWallet/logger"
+	timer2 "github.com/blocktree/OpenWallet/timer"
 	"github.com/tidwall/gjson"
 	"github.com/tyler-smith/go-bip39"
 	"log"
 	"path/filepath"
 	"strings"
-	"errors"
+	"time"
 )
 
 const (
@@ -38,6 +40,8 @@ const (
 var (
 	//钱包服务API
 	serverAPI = "https://127.0.0.1:10026/api/"
+	//钱包主链私钥文件路径
+	walletPath = ""
 	//小数位长度
 	decimal uint64 = 1000000
 	//参与汇总的钱包
@@ -50,6 +54,8 @@ var (
 	minFees uint64 = uint64(0.3 * float64(decimal))
 	//汇总地址
 	sumAddress = ""
+	//汇总执行间隔时间
+	cycleSeconds = time.Second * 10
 )
 
 //StartWalletProcess 启动钱包进程
@@ -181,21 +187,20 @@ func CreateNewWalletFlow() error {
 func CreateBatchAddress(aid, password string, count uint) ([]*Address, string, error) {
 
 	var (
-		err   error
-		done uint
+		err          error
+		done         uint
 		producerDone uint
-		synCount uint  = 100
+		synCount     uint = 100
 	)
 
 	//建立文件名，时间格式2006-01-02 15:04:05
 	filename := "address-" + common.TimeFormat("20060102150405") + ".txt"
-//<<<<<<< HEAD
 
 	//生产通道
 	producer := make(chan *Address)
 
 	//消费通道
-	worker := createAddressSaveChan(count,filename)
+	worker := createAddressSaveChan(filename)
 
 	values := make([]*Address, 0)
 	addresses := make([]*Address, 0)
@@ -209,37 +214,36 @@ func CreateBatchAddress(aid, password string, count uint) ([]*Address, string, e
 	// 以下使用线程数量以及线程负载均衡
 
 	//每个线程内循环的数量
-	runCount := count/synCount
+	runCount := count / synCount
 
-
-	if runCount == 0{
-		log.Printf("runCount 小于线程数",)
+	if runCount == 0 {
+		//fmt.Printf("runCount 小于线程数")
 		for i := uint(0); i < count; i++ {
 
 			go func() {
 				// 请求地址
-				getAddressWrok(aid,password,producer,err)
+				getAddressWrok(aid, password, producer, err)
 			}()
 
 		}
-	}else{
+	} else {
 
 		for i := uint(0); i < synCount; i++ {
-			log.Printf("runCount 启动线程 %d 共：%d ",i,runCount)
+			//fmt.Printf("runCount 启动线程 %d 共：%d ", i, runCount)
 			go func(runCount uint) {
 				for i := uint(0); i < runCount; i++ {
-						getAddressWrok(aid,password,producer,err)
+					getAddressWrok(aid, password, producer, err)
 
 				}
 			}(runCount)
 		}
 		//余数不为0，泽直接开启线程运行余下数量
-		if otherCount := count%synCount;otherCount!=0{
-			log.Printf("余数为 %d ",otherCount)
+		if otherCount := count % synCount; otherCount != 0 {
+			//fmt.Printf("余数为 %d ", otherCount)
 			go func(otherCount uint) {
 				for i := uint(0); i < otherCount; i++ {
-					log.Printf("余数运行 %d ",i)
-						getAddressWrok(aid,password,producer,err)
+					fmt.Printf("余数运行 %d ", i)
+					getAddressWrok(aid, password, producer, err)
 
 				}
 			}(otherCount)
@@ -259,7 +263,7 @@ func CreateBatchAddress(aid, password string, count uint) ([]*Address, string, e
 		select {
 		case n := <-producer:
 			values = append(values, n)
-			addresses = append(addresses,n)
+			addresses = append(addresses, n)
 			producerDone++
 			//log.Printf("生成 %d",done)
 		case activeWorker <- activeValue:
@@ -267,7 +271,7 @@ func CreateBatchAddress(aid, password string, count uint) ([]*Address, string, e
 			done++
 			//log.Printf("完成多线程 %d",done)
 			if done == count {
-				log.Printf("完成多线程!")
+				fmt.Printf("完成多线程!")
 				return addresses, filename, nil
 			}
 
@@ -277,7 +281,7 @@ func CreateBatchAddress(aid, password string, count uint) ([]*Address, string, e
 }
 
 //http获取地址
-func getAddressWrok(aid string,passphrase string,producer chan *Address,err error){
+func getAddressWrok(aid string, passphrase string, producer chan *Address, err error) {
 	result := callCreateNewAddressAPI(aid, passphrase)
 	err = isError(result)
 	if err != nil {
@@ -286,30 +290,26 @@ func getAddressWrok(aid string,passphrase string,producer chan *Address,err erro
 	}
 	content := gjson.GetBytes(result, "Right")
 	a := NewAddressV0(content)
-	log.Printf("生成地址：	%s\n", a.Address)
+	fmt.Printf("生成地址：	%s\n", a.Address)
 	producer <- a
 }
 
 //保存地址
-func saveAddressWork (address chan *Address,count uint,filename string){
+func saveAddressWork(address chan *Address, filename string) {
 
-	addrs := make([]*Address, 0)
-
-	for a := range address{
+	for a := range address {
 		exportAddressToFile(a, filename)
-		addrs = append(addrs, a)
-		log.Printf("save	%s\n", a.Address)
+		fmt.Printf("保存地址:	%s\n", a.Address)
 	}
 	//return addrs, filename, nil
 }
 
 //保存地址通道
-func createAddressSaveChan (count uint,filename string)chan<- *Address{
+func createAddressSaveChan(filename string) chan<- *Address {
 	address := make(chan *Address)
-	go saveAddressWork(address,count,filename)
+	go saveAddressWork(address, filename)
 	return address
 }
-
 
 //CreateNewAccount 根据钱包wid创建单个账户
 func CreateNewAccount(name, wid, passphrase string) (*Account, error) {
@@ -475,6 +475,8 @@ func SendTx(from, to string, amount uint64, password string) (*Transaction, erro
 //SummaryTxFlow 执行汇总流程
 func SummaryWallets() {
 
+	log.Printf("[钱包汇总计算开始]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+
 	//读取参与汇总的钱包
 	for wid, wallet := range walletsInSum {
 
@@ -516,6 +518,8 @@ func SummaryWallets() {
 			}
 		}
 	}
+
+	log.Printf("[钱包汇总计算结束]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
 }
 
 /*
@@ -532,6 +536,10 @@ func SummaryWallets() {
 
 // SummaryFollow 汇总流程
 func SummaryFollow() error {
+
+	var (
+		endRunning = make(chan bool, 1)
+	)
 
 	//先加载是否有配置文件
 	err := loadConfig()
@@ -573,7 +581,7 @@ func SummaryFollow() error {
 	for _, numIput := range array {
 		if common.IsNumberString(numIput) {
 			numInt := common.NewString(numIput).Int()
-			if numInt < len(wallets)-1 {
+			if numInt < len(wallets) {
 				w := wallets[numInt]
 
 				fmt.Printf("登记汇总钱包[%s]-[%s]\n", w.Name, w.WalletID)
@@ -596,14 +604,68 @@ func SummaryFollow() error {
 		}
 	}
 
+	fmt.Printf("钱包汇总定时器开启，间隔%f秒运行一次\n", cycleSeconds.Seconds())
+
 	//启动钱包汇总程序
-	SummaryWallets()
+	sumTimer := timer2.NewTask(cycleSeconds, SummaryWallets)
+	sumTimer.Start()
+
+	<-endRunning
 
 	return nil
 }
 
 func AddWalletInSummary(wid string, wallet *Wallet) {
 	walletsInSum[wid] = wallet
+}
+
+//BackupWalletkey 备份钱包密钥文件
+func BackupWalletkey() error {
+
+	var (
+		err error
+	)
+
+	//先加载是否有配置文件
+	err = loadConfig()
+	if err != nil {
+		return err
+	}
+
+	//建立备份路径
+	backupPath := filepath.Join(keyDir, "backup")
+	file.MkdirAll(backupPath)
+
+	//linux
+	//备份secret.key, secret.key.lock, wallet-db
+	err = file.Copy(filepath.Join(walletPath, "secret.key"), backupPath)
+	if err != nil {
+		return err
+	}
+	err = file.Copy(filepath.Join(walletPath, "secret.key.lock"), backupPath)
+	if err != nil {
+		return err
+	}
+	err = file.Copy(filepath.Join(walletPath, "wallet-db"), backupPath)
+	if err != nil {
+		return err
+	}
+
+	//macOS
+	//备份secret.key, secret.key.lock, wallet-db
+	//err = file.Copy(filepath.Join(walletPath, "Secrets-1.0"), filepath.Join(backupPath))
+	//if err != nil {
+	//	return err
+	//}
+	//err = file.Copy(filepath.Join(walletPath, "Wallet-1.0"), filepath.Join(backupPath))
+	//if err != nil {
+	//	return err
+	//}
+
+	//输出备份导出目录
+	fmt.Printf("钱包文件备份路径: %s", backupPath)
+
+	return nil
 }
 
 //钱包恢复机制
@@ -643,8 +705,8 @@ func isError(result []byte) error {
 
 //exportAddressToFile 导出地址到文件中
 func exportAddressToFile(a *Address, filename string) {
-	file.MkdirAll(exportBackupDir)
-	filepath := exportBackupDir + filename
+	file.MkdirAll(addressDir)
+	filepath := addressDir + filename
 	file.WriteFile(filepath, []byte(a.Address+"\n"), true)
 }
 
@@ -658,7 +720,7 @@ func exportWalletToFile(w *Wallet) error {
 
 	filename := fmt.Sprintf("wallet-%s-%s.json", w.Name, w.WalletID)
 
-	file.MkdirAll(exportBackupDir)
+	file.MkdirAll(keyDir)
 	filepath := filepath.Join(keyDir, filename)
 
 	//把钱包写入到文件进行备份
@@ -744,6 +806,7 @@ func loadConfig() error {
 	}
 
 	serverAPI = c.String("apiURL")
+	walletPath = c.String("walletPath")
 	threshold = common.NewString(c.String("threshold")).UInt64()
 	minSendAmount = common.NewString(c.String("minSendAmount")).UInt64()
 	minFees = common.NewString(c.String("minFees")).UInt64()

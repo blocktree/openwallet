@@ -69,7 +69,7 @@ func TestCopy(t *testing.T) {
 
 	// 4. dir to file should give an error
 	err = Copy(testDir, exampleFile)
-	if err == nil {
+	if err != nil {
 		t.Errorf("4: %s\n", err)
 	}
 

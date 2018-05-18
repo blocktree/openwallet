@@ -22,6 +22,10 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+func init() {
+	serverAPI = "https://192.168.2.224:10026/api/"
+}
+
 func TestGetWalletInfo(t *testing.T) {
 	tests := []struct {
 		wid string
@@ -73,12 +77,12 @@ func TestGetAccountInfo(t *testing.T) {
 		//	aid: "",
 		//	tag: "all",
 		//},
+		//{
+		//	aid: "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj",
+		//	tag: "id no exist",
+		//},
 		{
-			aid: "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj",
-			tag: "id no exist",
-		},
-		{
-			aid: "Ae2tdPwUPEZMYbseGswFLCyN1vG6CjyGNcAvNujB3JXbuovD6GVc535GTtB",
+			aid: "Ae2tdPwUPEZNDjP7mHvu52r66jKw2pXhJqNb3psf48x1oXMekozd5D5W3NE",
 			tag: "mywll",
 		},
 	}
@@ -143,13 +147,8 @@ func TestCreateBatchAddress(t *testing.T) {
 		count uint
 	}{
 		{
-//<<<<<<< HEAD
 			aid:   "Ae2tdPwUPEYynni3SmWmLnDkgMkyXFraSz2MJqhgqFiAWHXtacmE9Dpk23z@2147483648",
 			count: 100000,
-//=======
-//			aid:   "Ae2tdPwUPEZMYbseGswFLCyN1vG6CjyGNcAvNujB3JXbuovD6GVc535GTtB@2147483648",
-//			count: 20,
-//>>>>>>> origin/master
 		},
 		//{
 		//	aid:   "",
@@ -182,7 +181,7 @@ func TestGetAddressInfo(t *testing.T) {
 		//	tag: "all",
 		//},
 		{
-			aid: "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj@2147483648",
+			aid: "Ae2tdPwUPEZNDjP7mHvu52r66jKw2pXhJqNb3psf48x1oXMekozd5D5W3NE@2147483648",
 			tag: "chance2",
 		},
 
@@ -319,4 +318,8 @@ func TestRestoreWallet(t *testing.T) {
 	result := callCreateWalletAPI("test wallet", words, password, true)
 	content := gjson.ParseBytes(result)
 	t.Logf("RestoreWallet %v\n", content)
+}
+
+func TestBackupWalletkey(t *testing.T) {
+	BackupWalletkey()
 }
