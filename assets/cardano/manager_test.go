@@ -233,9 +233,8 @@ func TestSendTx(t *testing.T) {
 		} else {
 			t.Logf("SendTx[%d] tx = %v", i, tx)
 		}
-
-
 	}
+
 }
 
 func TestSummaryFollow(t *testing.T) {
