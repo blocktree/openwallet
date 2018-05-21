@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/blocktree/OpenWallet/console"
 	"github.com/shopspring/decimal"
 	"path/filepath"
 )
@@ -49,7 +48,7 @@ const (
 	//配置文件名
 	configFileName = "ADA.json"
 	//币种
-	coinSymbol = "ADA"
+	Symbol = "ADA"
 )
 
 //isExistConfigFile 检查配置文件是否存在
@@ -101,115 +100,6 @@ func newConfigFile(
 	return c, absFile, nil
 }
 
-//InitConfigFlow 初始化配置流程
-func InitConfigFlow() error {
-
-	var (
-		err        error
-		apiURL     string
-		walletPath string
-		//汇总阀值
-		threshold float64
-		//最小转账额度
-		minSendAmount float64
-		//最小矿工费
-		minFees float64
-		//汇总地址
-		sumAddress string
-		filePath   string
-	)
-
-	for {
-
-		fmt.Printf("[开始进行初始化配置流程]\n")
-
-		apiURL, err = console.InputText("设置钱包API地址: ")
-		if err != nil {
-			return err
-		}
-
-		walletPath, err = console.InputText("设置钱包主链文件目录: ")
-		if err != nil {
-			return err
-		}
-
-		sumAddress, err = console.InputText("设置汇总地址: ")
-		if err != nil {
-			return err
-		}
-
-		fmt.Printf("[请输入以%s为单位的个数，必须正实数]\n", coinSymbol)
-
-		//threshold, err = console.InputNumber("设置汇总阀值: ")
-		//if err != nil {
-		//	return err
-		//}
-
-		threshold, err = console.InputRealNumber("设置汇总阀值: ", true)
-		if err != nil {
-			return err
-		}
-
-		minSendAmount, err = console.InputRealNumber("设置账户最小转账额度: ", true)
-		if err != nil {
-			return err
-		}
-
-		fmt.Printf("[汇总手续费建议不少于%f]\n", 0.3)
-
-		minFees, err = console.InputRealNumber("设置转账矿工费: ", true)
-		if err != nil {
-			return err
-		}
-
-		//最小发送数量不能超过汇总阀值
-		if minSendAmount > threshold {
-			return errors.New("汇总阀值必须大于账户最小转账额度!")
-		}
-
-		if minFees > minSendAmount {
-			return errors.New("账户最小转账额度必须大于手续费!")
-		}
-
-		//换两行
-		fmt.Println()
-		fmt.Println()
-
-		//打印输入内容
-		fmt.Printf("请检查以下内容是否正确?\n")
-		fmt.Printf("-----------------------------------------------------------\n")
-		fmt.Printf("钱包API地址: %s\n", apiURL)
-		fmt.Printf("钱包主链文件目录: %s\n", walletPath)
-		fmt.Printf("汇总地址: %s\n", sumAddress)
-		fmt.Printf("汇总阀值: %f\n", threshold)
-		fmt.Printf("账户最小转账额度: %f\n", minSendAmount)
-		fmt.Printf("转账矿工费: %f\n", minFees)
-		fmt.Printf("-----------------------------------------------------------\n")
-
-		flag, err := console.Stdin.PromptConfirm("确认生成配置文件")
-		if err != nil {
-			return err
-		}
-
-		if !flag {
-			continue
-		} else {
-			break
-		}
-
-	}
-
-	//换两行
-	fmt.Println()
-	fmt.Println()
-
-	_, filePath, err = newConfigFile(apiURL, walletPath, sumAddress, threshold, minSendAmount, minFees)
-
-	fmt.Printf("配置已生成, 文件路径: %s\n", filePath)
-
-	return nil
-}
-
 func printConfig() error {
 
 	//读取配置
@@ -237,9 +127,4 @@ func printConfig() error {
 
 	return nil
 
-}
-
-//ConfigSee 查看配置文件
-func ConfigSee() error {
-	return printConfig()
 }

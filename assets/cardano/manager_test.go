@@ -239,7 +239,7 @@ func TestSendTx(t *testing.T) {
 }
 
 func TestSummaryFollow(t *testing.T) {
-	SummaryFollow()
+	//SummaryFollow()
 }
 
 func TestEstimateFees(t *testing.T) {
@@ -321,5 +321,5 @@ func TestRestoreWallet(t *testing.T) {
 }
 
 func TestBackupWalletkey(t *testing.T) {
-	BackupWalletkey()
+	//BackupWalletkey()
 }

@@ -19,7 +19,7 @@ import (
 	"github.com/blocktree/OpenWallet/cmd/utils"
 	"github.com/blocktree/OpenWallet/logger"
 	"gopkg.in/urfave/cli.v1"
-	"github.com/blocktree/OpenWallet/assets/cardano"
+	"github.com/blocktree/OpenWallet/assets"
 )
 
 var (
@@ -114,9 +114,12 @@ func createNewWallet(c *cli.Context) error {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
+	m := assets.GetWMD(symbol)
+	if m == nil {
+		openwLogger.Log.Fatalf("%s wallet manager is not register\n", symbol)
+	}
 
-	//创建钱包
-	err := cardano.CreateNewWalletFlow()
+	err := m.CreateWalletFlow()
 	if err != nil {
 		openwLogger.Log.Fatalf("%v", err)
 	}
@@ -130,9 +133,12 @@ func batchAddress(c *cli.Context) error {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-
+	m := assets.GetWMD(symbol)
+	if m == nil {
+		openwLogger.Log.Fatalf("%s wallet manager is not register\n", symbol)
+	}
 	//为钱包创建批量地址
-	err := cardano.CreateAddressFlow()
+	err := m.CreateAddressFlow()
 	if err != nil {
 		openwLogger.Log.Fatalf("%v", err)
 	}
@@ -146,8 +152,11 @@ func startSummary(c *cli.Context) error {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-
-	err := cardano.SummaryFollow()
+	m := assets.GetWMD(symbol)
+	if m == nil {
+		openwLogger.Log.Fatalf("%s wallet manager is not register\n", symbol)
+	}
+	err := m.SummaryFollow()
 	if err != nil {
 		openwLogger.Log.Fatalf("%v", err)
 	}
@@ -161,8 +170,11 @@ func backupWalletKey(c *cli.Context) error  {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-
-	err := cardano.BackupWalletkey()
+	m := assets.GetWMD(symbol)
+	if m == nil {
+		openwLogger.Log.Fatalf("%s wallet manager is not register\n", symbol)
+	}
+	err := m.BackupWalletFlow()
 	if err != nil {
 		openwLogger.Log.Fatalf("%v", err)
 	}
