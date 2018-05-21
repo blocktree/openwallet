@@ -42,6 +42,8 @@ const (
 	mailPattern = `^[a-z0-9A-Z]+([\-_\.][a-z0-9A-Z]+)*@([a-z0-9A-Z]+(-[a-z0-9A-Z]+)*\.)+[a-zA-Z]{2,4}$`
 	//是否整数值
 	numberPattern = `^[0-9]*$`
+	//验证实数
+	realNumberPattern = `^-?[0-9]+\.{0,1}[0-9]+$`
 )
 
 var (
@@ -50,6 +52,7 @@ var (
 	usernameRegexp    = regexp.MustCompile(usernamePattern)
 	mailRegexp        = regexp.MustCompile(mailPattern)
 	numberRegexp        = regexp.MustCompile(numberPattern)
+	realNumberRegexp        = regexp.MustCompile(realNumberPattern)
 )
 
 // 检验是否为合法的中国手机号, 不是那么太精细
@@ -142,3 +145,21 @@ func IsNumberString(str string) bool {
 	}
 	return numberRegexp.MatchString(str)
 }
+
+
+//IsRealNumber 是否实数值
+func IsRealNumber(b []byte) bool {
+	if len(b) == 0 { // x@x.xx
+		return false
+	}
+	return realNumberRegexp.Match(b)
+}
+
+// 同 func IsRealNumber(b []byte) bool
+func IsRealNumberString(str string) bool {
+	if len(str) == 0 { // 1
+		return false
+	}
+	return realNumberRegexp.MatchString(str)
+}
+

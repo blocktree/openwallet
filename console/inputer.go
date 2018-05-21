@@ -118,3 +118,31 @@ func InputNumber(prompt string) (uint64, error) {
 
 	return num, nil
 }
+
+
+//InputRealNumber 输入实数值
+func InputRealNumber(prompt string, p bool) (float64, error) {
+
+	var (
+		num  float64
+	)
+
+	for {
+		// 等待用户输入参数
+		line, err := Stdin.PromptInput(prompt)
+		if err != nil {
+			openwLogger.Log.Errorf("unexpected error: %v\n", err)
+			return 0, err
+		}
+		num = common.NewString(line).Float64()
+
+		if p && num <= 0 {
+			fmt.Printf("内容必须数字，而且必须大于0\n")
+			continue
+		}
+
+		break
+	}
+
+	return num, nil
+}

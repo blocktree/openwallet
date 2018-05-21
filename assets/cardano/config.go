@@ -17,13 +17,13 @@ package cardano
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common/file"
-	"path/filepath"
-	"fmt"
 	"github.com/blocktree/OpenWallet/console"
-	"errors"
-	"github.com/blocktree/OpenWallet/common"
+	"github.com/shopspring/decimal"
+	"path/filepath"
 )
 
 /*
@@ -65,16 +65,16 @@ func isExistConfigFile() bool {
 //newConfigFile 创建配置文件
 func newConfigFile(
 	apiURL, walletPath, sumAddress string,
-	threshold, minSendAmount, minFees uint64) (config.Configer, string, error) {
+	threshold, minSendAmount, minFees float64) (config.Configer, string, error) {
 
 	//	生成配置
 	configMap := map[string]interface{}{
 		"apiURL":        apiURL,
 		"walletPath":    walletPath,
 		"sumAddress":    sumAddress,
-		"threshold":     common.NewString(threshold).String(),
-		"minSendAmount": common.NewString(minSendAmount).String(),
-		"minFees":       common.NewString(minFees).String(),
+		"threshold":     decimal.NewFromFloat(threshold).String(),
+		"minSendAmount": decimal.NewFromFloat(minSendAmount).String(),
+		"minFees":       decimal.NewFromFloat(minFees).StringFixed(6),
 	}
 
 	filepath.Join()
@@ -109,11 +109,11 @@ func InitConfigFlow() error {
 		apiURL     string
 		walletPath string
 		//汇总阀值
-		threshold uint64
+		threshold float64
 		//最小转账额度
-		minSendAmount uint64
+		minSendAmount float64
 		//最小矿工费
-		minFees uint64
+		minFees float64
 		//汇总地址
 		sumAddress string
 		filePath   string
@@ -138,21 +138,26 @@ func InitConfigFlow() error {
 			return err
 		}
 
-		fmt.Printf("[1个%s = %d，请输入整数*%d的数量]\n", coinSymbol, decimal, decimal)
+		fmt.Printf("[请输入以%s为单位的个数，必须正实数]\n", coinSymbol)
 
-		threshold, err = console.InputNumber("设置汇总阀值: ")
+		//threshold, err = console.InputNumber("设置汇总阀值: ")
+		//if err != nil {
+		//	return err
+		//}
+
+		threshold, err = console.InputRealNumber("设置汇总阀值: ", true)
 		if err != nil {
 			return err
 		}
 
-		minSendAmount, err = console.InputNumber("设置账户最小转账额度: ")
+		minSendAmount, err = console.InputRealNumber("设置账户最小转账额度: ", true)
 		if err != nil {
 			return err
 		}
 
-		fmt.Printf("[汇总手续费建议不少于%d]\n", uint64(0.3*float64(decimal)))
+		fmt.Printf("[汇总手续费建议不少于%f]\n", 0.3)
 
-		minFees, err = console.InputNumber("设置转账矿工费: ")
+		minFees, err = console.InputRealNumber("设置转账矿工费: ", true)
 		if err != nil {
 			return err
 		}
@@ -176,9 +181,9 @@ func InitConfigFlow() error {
 		fmt.Printf("钱包API地址: %s\n", apiURL)
 		fmt.Printf("钱包主链文件目录: %s\n", walletPath)
 		fmt.Printf("汇总地址: %s\n", sumAddress)
-		fmt.Printf("汇总阀值: %d\n", threshold)
-		fmt.Printf("账户最小转账额度: %d\n", minSendAmount)
-		fmt.Printf("转账矿工费: %d\n", minFees)
+		fmt.Printf("汇总阀值: %f\n", threshold)
+		fmt.Printf("账户最小转账额度: %f\n", minSendAmount)
+		fmt.Printf("转账矿工费: %f\n", minFees)
 		fmt.Printf("-----------------------------------------------------------\n")
 
 		flag, err := console.Stdin.PromptConfirm("确认生成配置文件")

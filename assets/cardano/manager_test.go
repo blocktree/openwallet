@@ -82,8 +82,8 @@ func TestGetAccountInfo(t *testing.T) {
 		//	tag: "id no exist",
 		//},
 		{
-			aid: "Ae2tdPwUPEZNDjP7mHvu52r66jKw2pXhJqNb3psf48x1oXMekozd5D5W3NE",
-			tag: "mywll",
+			aid: "Ae2tdPwUPEZNLK16NQbAqeTRQxo6EzDu57DxPNDd1C9Zj4u9bGQTgr3yb6K",
+			tag: "KKK",
 		},
 	}
 
@@ -181,7 +181,7 @@ func TestGetAddressInfo(t *testing.T) {
 		//	tag: "all",
 		//},
 		{
-			aid: "Ae2tdPwUPEZNDjP7mHvu52r66jKw2pXhJqNb3psf48x1oXMekozd5D5W3NE@2147483648",
+			aid: "Ae2tdPwUPEZNLK16NQbAqeTRQxo6EzDu57DxPNDd1C9Zj4u9bGQTgr3yb6K@2147483648",
 			tag: "chance2",
 		},
 

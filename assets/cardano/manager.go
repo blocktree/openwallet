@@ -24,7 +24,8 @@ import (
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/console"
 	"github.com/blocktree/OpenWallet/logger"
-	timer2 "github.com/blocktree/OpenWallet/timer"
+	"github.com/blocktree/OpenWallet/timer"
+	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
 	"github.com/tyler-smith/go-bip39"
 	"log"
@@ -43,15 +44,15 @@ var (
 	//钱包主链私钥文件路径
 	walletPath = ""
 	//小数位长度
-	decimal uint64 = 1000000
+	coinDecimal decimal.Decimal = decimal.NewFromFloat(1000000)
 	//参与汇总的钱包
 	walletsInSum = make(map[string]*Wallet)
 	//汇总阀值
-	threshold uint64 = 10000 * decimal
+	threshold decimal.Decimal = decimal.NewFromFloat(10000).Mul(coinDecimal)
 	//最小转账额度
-	minSendAmount uint64 = 100 * decimal
+	minSendAmount decimal.Decimal = decimal.NewFromFloat(100).Mul(coinDecimal)
 	//最小矿工费
-	minFees uint64 = uint64(0.3 * float64(decimal))
+	minFees decimal.Decimal = decimal.NewFromFloat(0.3).Mul(coinDecimal)
 	//汇总地址
 	sumAddress = ""
 	//汇总执行间隔时间
@@ -277,7 +278,8 @@ func CreateBatchAddress(aid, password string, count uint) ([]*Address, string, e
 
 		}
 	}
-	return addresses, filename, nil
+	filePath := addressDir + filename
+	return addresses, filePath, nil
 }
 
 //http获取地址
@@ -488,9 +490,9 @@ func SummaryWallets() {
 		}
 		if len(ws) > 0 {
 			w := ws[0]
-			balance := common.NewString(w.Balance).UInt64()
+			balance, _ := decimal.NewFromString(common.NewString(w.Balance).String())
 			//如果余额大于阀值，汇总的地址
-			if balance > threshold {
+			if balance.GreaterThan(threshold) {
 				//汇总所有有钱的账户
 				accounts, err := GetAccountInfo(w.WalletID)
 				if err != nil {
@@ -500,11 +502,11 @@ func SummaryWallets() {
 
 				for _, a := range accounts {
 					//大于最小额度才转账
-					sendAmount := common.NewString(a.Amount).UInt64()
-					if sendAmount > minSendAmount {
-						log.Printf("汇总账户[%s]余额 = %d \n", a.AcountID, sendAmount)
+					sendAmount, _ := decimal.NewFromString(common.NewString(a.Amount).String())
+					if sendAmount.GreaterThan(minSendAmount) {
+						log.Printf("汇总账户[%s]余额 = %v \n", a.AcountID, sendAmount.Div(coinDecimal))
 						log.Printf("汇总账户[%s]开始发送交易\n", a.AcountID)
-						tx, err := SendTx(a.AcountID, sumAddress, sendAmount-minFees, wallet.Password)
+						tx, err := SendTx(a.AcountID, sumAddress, uint64(sendAmount.Sub(minFees).IntPart()), wallet.Password)
 						if err != nil {
 							log.Printf("汇总账户[%s]出错：%v\n", a.AcountID, err)
 							continue
@@ -514,7 +516,7 @@ func SummaryWallets() {
 					}
 				}
 			} else {
-				log.Printf("钱包[%s]-[%s]当前余额%s，未达到阀值%d\n", w.Name, w.WalletID, w.Balance, threshold)
+				log.Printf("钱包[%s]-[%s]当前余额%v，未达到阀值%v\n", w.Name, w.WalletID, balance.Div(coinDecimal), threshold.Div(coinDecimal))
 			}
 		}
 	}
@@ -596,7 +598,7 @@ func SummaryFollow() error {
 				h := common.NewString(password).SHA256()
 
 				// 创建一个地址用于验证密码是否可以,默认账户ID = 2147483648 = 0x80000000
-				testAccountid := fmt.Sprintf("%s@2147483648", w.WalletID, )
+				testAccountid := fmt.Sprintf("%s@2147483648", w.WalletID)
 				_, err = CreateAddress(testAccountid, h)
 				if err != nil {
 					openwLogger.Log.Errorf("输入的钱包密码错误")
@@ -621,7 +623,7 @@ func SummaryFollow() error {
 	fmt.Printf("钱包汇总定时器开启，间隔%f秒运行一次\n", cycleSeconds.Seconds())
 
 	//启动钱包汇总程序
-	sumTimer := timer2.NewTask(cycleSeconds, SummaryWallets)
+	sumTimer := timer.NewTask(cycleSeconds, SummaryWallets)
 	sumTimer.Start()
 
 	<-endRunning
@@ -834,9 +836,12 @@ func loadConfig() error {
 
 	serverAPI = c.String("apiURL")
 	walletPath = c.String("walletPath")
-	threshold = common.NewString(c.String("threshold")).UInt64()
-	minSendAmount = common.NewString(c.String("minSendAmount")).UInt64()
-	minFees = common.NewString(c.String("minFees")).UInt64()
+	thresholdTemp := common.NewString(c.String("threshold")).Float64()
+	threshold = decimal.NewFromFloat(thresholdTemp).Mul(coinDecimal)
+	minSendAmountTemp := common.NewString(c.String("minSendAmount")).Float64()
+	minSendAmount = decimal.NewFromFloat(minSendAmountTemp).Mul(coinDecimal)
+	minFeesTemp := common.NewString(c.String("minFees")).Float64()
+	minFees = decimal.NewFromFloat(minFeesTemp).Mul(coinDecimal)
 	sumAddress = c.String("sumAddress")
 
 	return nil
