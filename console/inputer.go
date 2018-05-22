@@ -64,7 +64,7 @@ func InputPassword(isConfirm bool) (string, error) {
 }
 
 //InputText 输入文本
-func InputText(prompt string) (string, error) {
+func InputText(prompt string, required bool) (string, error) {
 
 	var (
 		text  string
@@ -80,7 +80,7 @@ func InputText(prompt string) (string, error) {
 			return "", err
 		}
 
-		if len(text) == 0 {
+		if len(text) == 0 && required {
 			fmt.Printf("内容不能为空\n")
 			continue
 		}

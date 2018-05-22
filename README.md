@@ -38,13 +38,28 @@ $ export GO15VENDOREXPERIMENT=1
 
 ## 源码编译跨平台工具
 
-### 安装gox
+### 安装gox（无法跨平台编译C代码，弃用）
 
 ```shell
 
 $ go get github.com/mitchellh/gox
 ...
 $ gox -h
+...
+
+```
+
+### 安装xgo（支持跨平台编译C代码）
+
+[官方github](https://github.com/karalabe/xgo)
+
+xgo的使用依赖docker。并且把要跨平台编译的项目文件加入到File sharing。
+
+```shell
+
+$ go get github.com/karalabe/xgo
+...
+$ xgo -h
 ...
 
 ```
@@ -69,10 +84,10 @@ wmd为了实现对多币种的钱包操作，规范了以下接口：
 $ $GOPATH/OpenWallet/cmd/wmd
 
 # 全部平台版本编译
-$ gox
+$ xgo .
 
 # 或自编译某个系统的版本
-$ gox -osarch="linux/amd64"
+$ xgo --targets=linux/amd64 .
 
 ```
 

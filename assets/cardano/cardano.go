@@ -52,17 +52,17 @@ func (w *WalletManager) InitConfigFlow() error {
 
 		fmt.Printf("[开始进行初始化配置流程]\n")
 
-		apiURL, err = console.InputText("设置钱包API地址: ")
+		apiURL, err = console.InputText("设置钱包API地址: ", true)
 		if err != nil {
 			return err
 		}
 
-		walletPath, err = console.InputText("设置钱包主链文件目录: ")
+		walletPath, err = console.InputText("设置钱包主链文件目录: ", false)
 		if err != nil {
 			return err
 		}
 
-		sumAddress, err = console.InputText("设置汇总地址: ")
+		sumAddress, err = console.InputText("设置汇总地址: ", false)
 		if err != nil {
 			return err
 		}
@@ -304,6 +304,11 @@ func (w *WalletManager) SummaryFollow() error {
 		return err
 	}
 
+	//判断汇总地址是否存在
+	if len(sumAddress) == 0 {
+		return errors.New("汇总地址还没设置，请在./conf/ADA.json中配置")
+	}
+
 	//查询所有钱包信息
 	wallets, err := GetWalletInfo()
 	if err != nil {
@@ -435,3 +440,7 @@ func (w *WalletManager) BackupWalletFlow() error {
 	return nil
 
 }
+
+//func ShowWallets() error {
+//
+//}
