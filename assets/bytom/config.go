@@ -19,7 +19,6 @@ import (
 	"path/filepath"
 	"strings"
 	"github.com/astaxie/beego/config"
-	"github.com/shopspring/decimal"
 	"encoding/json"
 	"github.com/blocktree/OpenWallet/common/file"
 	"fmt"
@@ -67,17 +66,15 @@ func isExistConfigFile() bool {
 
 //newConfigFile 创建配置文件
 func newConfigFile(
-	apiURL, walletPath, sumAddress string,
-	threshold, minSendAmount, minFees float64) (config.Configer, string, error) {
+	apiURL, walletPath, sumAddress,
+	threshold string) (config.Configer, string, error) {
 
 	//	生成配置
 	configMap := map[string]interface{}{
 		"apiURL":        apiURL,
-		"walletPath":    walletPath,
+		//"walletPath":    walletPath,
 		"sumAddress":    sumAddress,
-		"threshold":     decimal.NewFromFloat(threshold).String(),
-		"minSendAmount": decimal.NewFromFloat(minSendAmount).String(),
-		"minFees":       decimal.NewFromFloat(minFees).StringFixed(6),
+		"threshold":     threshold,
 	}
 
 	filepath.Join()
@@ -117,8 +114,8 @@ func printConfig() error {
 	apiURL := c.String("apiURL")
 	walletPath := c.String("walletPath")
 	threshold := c.String("threshold")
-	minSendAmount := c.String("minSendAmount")
-	minFees := c.String("minFees")
+	//minSendAmount := c.String("minSendAmount")
+	//minFees := c.String("minFees")
 	sumAddress := c.String("sumAddress")
 
 	fmt.Printf("-----------------------------------------------------------\n")
@@ -126,8 +123,8 @@ func printConfig() error {
 	fmt.Printf("Wallet Data FilePath: %s\n", walletPath)
 	fmt.Printf("Summary Address: %s\n", sumAddress)
 	fmt.Printf("Summary Threshold: %s\n", threshold)
-	fmt.Printf("Min Send Amount: %s\n", minSendAmount)
-	fmt.Printf("Transfer Fees: %s\n", minFees)
+	//fmt.Printf("Min Send Amount: %s\n", minSendAmount)
+	//fmt.Printf("Transfer Fees: %s\n", minFees)
 	fmt.Printf("-----------------------------------------------------------\n")
 
 	return nil

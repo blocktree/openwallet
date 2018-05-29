@@ -16,16 +16,16 @@
 package bytom
 
 import (
+	"encoding/base64"
 	"github.com/imroc/req"
 	"log"
-	"encoding/base64"
 )
 
 var (
-	client *Client
-	url    = "http://192.168.2.224:10031"
-	//rpcuser = "wallet"
-	//rpcpassword = "walletPassword2017"
+//client *Client
+//url    = "http://192.168.2.224:10031"
+//rpcuser = "wallet"
+//rpcpassword = "walletPassword2017"
 )
 
 // A Client is a Bitcoin RPC client. It performs RPCs over HTTP using JSON
@@ -45,14 +45,6 @@ type Response struct {
 	Result  interface{} `json:"result,omitempty"`
 	Message string      `json:"message,omitempty"`
 	Id      string      `json:"id,omitempty"`
-}
-
-func init() {
-
-	client = &Client{
-		BaseURL:     url,
-		Debug:       false,
-	}
 }
 
 // Call calls a remote procedure on another node, specified by the path.
@@ -75,7 +67,7 @@ func (c *Client) Call(path string, request interface{}) []byte {
 
 	url := c.BaseURL + "/" + path
 
-	log.Println("Start Request API...")
+	if c.Debug {log.Println("Start Request API...")}
 
 	r, err := req.Post(url, req.BodyJSON(&request))
 	if err != nil {
@@ -83,8 +75,7 @@ func (c *Client) Call(path string, request interface{}) []byte {
 		return nil
 	}
 
-	log.Println("Request API Completed")
-
+	if c.Debug {log.Println("Request API Completed")}
 
 	if c.Debug {
 		log.Printf("%+v\n", r)

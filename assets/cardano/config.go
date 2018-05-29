@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/shopspring/decimal"
 	"path/filepath"
 )
 
@@ -63,17 +62,17 @@ func isExistConfigFile() bool {
 
 //newConfigFile 创建配置文件
 func newConfigFile(
-	apiURL, walletPath, sumAddress string,
-	threshold, minSendAmount, minFees float64) (config.Configer, string, error) {
+	apiURL, walletPath, sumAddress,
+	threshold, minSendAmount, minFees string) (config.Configer, string, error) {
 
 	//	生成配置
 	configMap := map[string]interface{}{
 		"apiURL":        apiURL,
 		"walletPath":    walletPath,
 		"sumAddress":    sumAddress,
-		"threshold":     decimal.NewFromFloat(threshold).String(),
-		"minSendAmount": decimal.NewFromFloat(minSendAmount).String(),
-		"minFees":       decimal.NewFromFloat(minFees).StringFixed(6),
+		"threshold":     threshold,
+		"minSendAmount": minSendAmount,
+		"minFees":       minFees,
 	}
 
 	filepath.Join()
@@ -106,7 +105,7 @@ func printConfig() error {
 	absFile := filepath.Join(configFilePath, configFileName)
 	c, err := config.NewConfig("json", absFile)
 	if err != nil {
-		return errors.New("配置文件未创建，请执行 wmd config -s <symbol> ")
+		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
 	}
 
 	apiURL := c.String("apiURL")
@@ -117,12 +116,12 @@ func printConfig() error {
 	sumAddress := c.String("sumAddress")
 
 	fmt.Printf("-----------------------------------------------------------\n")
-	fmt.Printf("钱包API地址: %s\n", apiURL)
-	fmt.Printf("钱包主链文件目录: %s\n", walletPath)
-	fmt.Printf("汇总地址: %s\n", sumAddress)
-	fmt.Printf("汇总阀值: %s\n", threshold)
-	fmt.Printf("账户最小转账额度: %s\n", minSendAmount)
-	fmt.Printf("转账矿工费: %s\n", minFees)
+	fmt.Printf("Node API url: %s\n", apiURL)
+	fmt.Printf("Wallet main net filePath: %s\n", walletPath)
+	fmt.Printf("Summary address: %s\n", sumAddress)
+	fmt.Printf("Summary threshold: %s\n", threshold)
+	fmt.Printf("Minimum transfer amount: %s\n", minSendAmount)
+	fmt.Printf("Transfer fees: %s\n", minFees)
 	fmt.Printf("-----------------------------------------------------------\n")
 
 	return nil

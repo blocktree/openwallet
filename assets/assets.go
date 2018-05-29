@@ -18,6 +18,7 @@ package assets
 import (
 	"github.com/blocktree/OpenWallet/assets/cardano"
 	"strings"
+	"github.com/blocktree/OpenWallet/assets/bytom"
 )
 
 //WalletManager 钱包管理器
@@ -34,6 +35,10 @@ type WalletManager interface {
 	SummaryFollow() error
 	//备份钱包流程
 	BackupWalletFlow() error
+	//查看钱包列表，显示信息
+	GetWalletList() error
+	//发送交易
+	TransferFlow() error
 }
 
 //钱包管理器组
@@ -64,6 +69,7 @@ func GetWMD(symbol string) WalletManager {
 
 //注册钱包管理工具
 func init() {
-	//注册ADA的钱包管理工具
+	//注册钱包管理工具
 	RegWMD(strings.ToLower(cardano.Symbol), &cardano.WalletManager{})
+	RegWMD(strings.ToLower(bytom.Symbol), &bytom.WalletManager{})
 }

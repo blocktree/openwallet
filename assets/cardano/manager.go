@@ -30,10 +30,11 @@ import (
 	"log"
 	"path/filepath"
 	"time"
+	"github.com/bndr/gotabulate"
 )
 
 const (
-	maxAddresNum = 1000000
+	maxAddresNum = 10000000
 )
 
 var (
@@ -179,7 +180,7 @@ func CreateBatchAddress(aid, password string, count uint) ([]*Address, string, e
 			//fmt.Printf("余数为 %d ", otherCount)
 			go func(otherCount uint) {
 				for i := uint(0); i < otherCount; i++ {
-					fmt.Printf("余数运行 %d ", i)
+					//fmt.Printf("余数运行 %d ", i)
 					getAddressWrok(aid, password, producer, err)
 
 				}
@@ -208,7 +209,7 @@ func CreateBatchAddress(aid, password string, count uint) ([]*Address, string, e
 			done++
 			//log.Printf("完成多线程 %d",done)
 			if done == count {
-				fmt.Printf("完成多线程!")
+				fmt.Printf("All thread completed!")
 				return addresses, filePath, nil
 			}
 
@@ -223,12 +224,12 @@ func getAddressWrok(aid string, passphrase string, producer chan *Address, err e
 	result := callCreateNewAddressAPI(aid, passphrase)
 	err = isError(result)
 	if err != nil {
-		log.Printf("生成地址发生错误")
+		log.Printf("Create address failed! ")
 		return
 	}
 	content := gjson.GetBytes(result, "Right")
 	a := NewAddressV0(content)
-	fmt.Printf("生成地址：	%s\n", a.Address)
+	fmt.Printf("Create：	%s\n", a.Address)
 	producer <- a
 }
 
@@ -237,7 +238,7 @@ func saveAddressWork(address chan *Address, filename string) {
 
 	for a := range address {
 		exportAddressToFile(a, filename)
-		fmt.Printf("保存地址:	%s\n", a.Address)
+		fmt.Printf("Save:	%s\n", a.Address)
 	}
 	//return addrs, filename, nil
 }
@@ -343,7 +344,7 @@ func SendTx(from, to string, amount uint64, password string) (*Transaction, erro
 //SummaryTxFlow 执行汇总流程
 func SummaryWallets() {
 
-	log.Printf("[钱包汇总计算开始]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+	log.Printf("[Summary Wallet Start]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
 
 	//读取参与汇总的钱包
 	for wid, wallet := range walletsInSum {
@@ -351,7 +352,7 @@ func SummaryWallets() {
 		//统计钱包最新余额
 		ws, err := GetWalletInfo(wid)
 		if err != nil {
-			log.Printf("无法查找钱包信息：%v\n", err)
+			log.Printf("Can not find wallet information：%v\n", err)
 			continue
 		}
 		if len(ws) > 0 {
@@ -362,7 +363,7 @@ func SummaryWallets() {
 				//汇总所有有钱的账户
 				accounts, err := GetAccountInfo(w.WalletID)
 				if err != nil {
-					log.Printf("无法查找账户信息：%v\n", err)
+					log.Printf("Can not find account information：%v\n", err)
 					continue
 				}
 
@@ -370,24 +371,24 @@ func SummaryWallets() {
 					//大于最小额度才转账
 					sendAmount, _ := decimal.NewFromString(common.NewString(a.Amount).String())
 					if sendAmount.GreaterThan(minSendAmount) {
-						log.Printf("汇总账户[%s]余额 = %v \n", a.AcountID, sendAmount.Div(coinDecimal))
-						log.Printf("汇总账户[%s]开始发送交易\n", a.AcountID)
+						log.Printf("Summary account[%s]balance = %v \n", a.AcountID, sendAmount.Div(coinDecimal))
+						log.Printf("Summary account[%s]Start Send Transaction\n", a.AcountID)
 						tx, err := SendTx(a.AcountID, sumAddress, uint64(sendAmount.Sub(minFees).IntPart()), wallet.Password)
 						if err != nil {
-							log.Printf("汇总账户[%s]出错：%v\n", a.AcountID, err)
+							log.Printf("Summary account[%s]unexpected error: %v\n", a.AcountID, err)
 							continue
 						} else {
-							log.Printf("汇总账户[%s]成功，发送地址[%s], TXID：%s\n", a.AcountID, sumAddress, tx.TxID)
+							log.Printf("Summary account[%s]successfully，Received Address[%s], TXID：%s\n", a.AcountID, sumAddress, tx.TxID)
 						}
 					}
 				}
 			} else {
-				log.Printf("钱包[%s]-[%s]当前余额%v，未达到阀值%v\n", w.Name, w.WalletID, balance.Div(coinDecimal), threshold.Div(coinDecimal))
+				log.Printf("Wallet Account[%s]-[%s]Current Balance: %v，below threshold: %v\n", w.Name, w.WalletID, balance.Div(coinDecimal), threshold.Div(coinDecimal))
 			}
 		}
 	}
 
-	log.Printf("[钱包汇总计算结束]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+	log.Printf("[Summary Wallet end]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
 }
 
 func AddWalletInSummary(wid string, wallet *Wallet) {
@@ -399,12 +400,26 @@ func CreateAddress(aid string, passphrase string) (*Address, error) {
 	result := callCreateNewAddressAPI(aid, passphrase)
 	err := isError(result)
 	if err != nil {
-		log.Printf("生成地址发生错误")
+		log.Printf("Create address failed! ")
 		return nil, err
 	}
 	content := gjson.GetBytes(result, "Right")
 	a := NewAddressV0(content)
 	return a, nil
+}
+
+//EstimateFees 计算预估手续费
+func EstimateFees(from, to string, amount uint64) (uint64, error) {
+
+	result := callEstimateFeesAPI(from, to, amount)
+	err := isError(result)
+	if err != nil {
+		return 0, nil
+	}
+
+	fees := gjson.GetBytes(result, "Right.getCCoin")
+
+	return fees.Uint(), nil
 }
 
 //钱包恢复机制
@@ -465,16 +480,16 @@ func exportWalletToFile(w *Wallet) error {
 	//把钱包写入到文件进行备份
 	content, err = json.MarshalIndent(w, "", "\t")
 	if err != nil {
-		return errors.New("钱包信息序列化json失败")
+		return errors.New("Wallet key encode json failed! ")
 	}
 
 	if !file.WriteFile(filepath, content, true) {
-		return errors.New("钱包密钥信息写入文件失败")
+		return errors.New("Wallet key write to file failed! ")
 	}
 
 	log.Printf("================================================\n")
 
-	log.Printf("钱包创建成功，导出路径:%s\n", filepath)
+	log.Printf("Wallet key backup successfully，file path: %s\n", filepath)
 
 	return nil
 }
@@ -488,14 +503,14 @@ func inputNumber() uint64 {
 
 	for {
 		// 等待用户输入参数
-		line, err := console.Stdin.PromptInput("输入需要创建的地址数量: ")
+		line, err := console.Stdin.PromptInput("Enter the number of addresses you want: ")
 		if err != nil {
 			openwLogger.Log.Errorf("unexpected error: %v", err)
 			return 0
 		}
 		count = common.NewString(line).UInt64()
 		if count < 1 {
-			log.Printf("输入地址数量必须大于0")
+			log.Printf("Input number must be greater than 0!\n")
 			continue
 		}
 		break
@@ -513,13 +528,13 @@ func inputWID() string {
 
 	for {
 		// 等待用户输入参数
-		line, err := console.Stdin.PromptInput("输入钱包WID: ")
+		line, err := console.Stdin.PromptInput("Enter wallet ID: ")
 		if err != nil {
 			openwLogger.Log.Errorf("unexpected error: %v", err)
 			return ""
 		}
 		if len(line) == 0 {
-			log.Printf("钱包WID不能为空，请重新输入")
+			log.Printf("Wallet ID is empty, please re-enter!\n")
 			continue
 		}
 		wid = line
@@ -541,18 +556,43 @@ func loadConfig() error {
 	absFile := filepath.Join(configFilePath, configFileName)
 	c, err = config.NewConfig("json", absFile)
 	if err != nil {
-		return errors.New("配置文件未创建，请执行 wmd config -s <symbol> ")
+		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
 	}
 
 	serverAPI = c.String("apiURL")
 	walletPath = c.String("walletPath")
-	thresholdTemp := common.NewString(c.String("threshold")).Float64()
-	threshold = decimal.NewFromFloat(thresholdTemp).Mul(coinDecimal)
-	minSendAmountTemp := common.NewString(c.String("minSendAmount")).Float64()
-	minSendAmount = decimal.NewFromFloat(minSendAmountTemp).Mul(coinDecimal)
-	minFeesTemp := common.NewString(c.String("minFees")).Float64()
-	minFees = decimal.NewFromFloat(minFeesTemp).Mul(coinDecimal)
+	threshold, _ = decimal.NewFromString(c.String("threshold"))
+	threshold = threshold.Mul(coinDecimal)
+	minSendAmount, _ = decimal.NewFromString(c.String("minSendAmount"))
+	minSendAmount = minSendAmount.Mul(coinDecimal)
+	minFees, _ = decimal.NewFromString(c.String("minFees"))
+	minFees = minFees.Mul(coinDecimal)
 	sumAddress = c.String("sumAddress")
 
 	return nil
+}
+
+//打印钱包列表
+func printWalletList(list []*Wallet) {
+
+	tableInfo := make([][]interface{}, 0)
+
+	for i, w := range list {
+		balance, err := decimal.NewFromString(w.Balance)
+		if err != nil {
+			continue
+		}
+		balance = balance.Div(coinDecimal)
+		tableInfo = append(tableInfo, []interface{}{
+			i,w.WalletID,w.Name,balance,
+		})
+	}
+
+	t := gotabulate.Create(tableInfo)
+	// Set Headers
+	t.SetHeaders([]string{"No.", "WID", "Name", "Balance"})
+
+	//打印信息
+	fmt.Println(t.Render("simple"))
+
 }

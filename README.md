@@ -120,4 +120,10 @@ $ ./wmd wallet batchaddr -s <symbol>
 #启动批量汇总监听器
 $ ./wmd wallet startsum -s <symbol>
 
+#查询钱包列表
+$ ./wmd wallet list -s <symbol>
+
+#发起转行交易
+$ ./wmd wallet transfer -s <symbol>
+
 ```

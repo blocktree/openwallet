@@ -20,6 +20,15 @@ import (
 	"testing"
 )
 
+func init() {
+
+	serverAPI = "http://192.168.2.224:10031"
+	client = &Client{
+		BaseURL:     serverAPI,
+		Debug:       false,
+	}
+}
+
 func TestCreateNewWallet(t *testing.T) {
 	tests := []struct {
 		alias    string
@@ -164,7 +173,7 @@ func TestCreateReceiverAddress(t *testing.T) {
 }
 
 func TestGetAddressInfo(t *testing.T) {
-	addresses, err := GetAddressInfo("john", "0E6MHCTMG0A04")
+	addresses, err := GetAddressInfo("bytom_" +testAccount, "")
 	if err != nil {
 		t.Errorf("GetAddressInfo failed unexpected error: %v", err)
 	} else {
@@ -207,12 +216,12 @@ func TestBuildTransaction(t *testing.T) {
 
 func TestSendTransaction(t *testing.T) {
 
-	amount := decimal.NewFromFloat(1).Mul(coinDecimal)
+	amount := decimal.NewFromFloat(3).Mul(coinDecimal)
 
 	//建立交易单
-	txID, err := SendTransaction("0E6MV60100A08",
+	txID, err := SendTransaction("0ED1KKLHG0A0M",
 		"bm1qjf6v463sj3w04zyk8vq0aefjrzug0jtwz62mz0",
-		assetsID_btm, uint64(amount.IntPart()), "1234567", true)
+		assetsID_btm, uint64(amount.IntPart()), "12345", true)
 	if err != nil {
 		t.Errorf("SendTransaction failed unexpected error: %v", err)
 		return
@@ -232,12 +241,74 @@ func TestGetTransactions(t *testing.T) {
 
 func TestSummaryWallets(t *testing.T) {
 	a := &AccountBalance{}
-	a.AccountID = "0E6MV60100A08"
-	a.Password = "1234567"
+	a.AccountID = "0ED1KKLHG0A0M"
+	a.Password = "12345678"
 
 	sumAddress = "bm1qjf6v463sj3w04zyk8vq0aefjrzug0jtwz62mz0"
+	threshold = decimal.NewFromFloat(5).Mul(coinDecimal)
+	//最小转账额度
 	//添加汇总钱包的账户
-	AddWalletInSummary("0E6MV60100A08", a)
+	AddWalletInSummary("0ED1KKLHG0A0M", a)
 
 	SummaryWallets()
+}
+
+func TestBackupWallet(t *testing.T) {
+	_, err := BackupWallet()
+	if err != nil {
+		t.Errorf("BackupWallet failed unexpected error: %v", err)
+	}
+}
+
+
+func TestGetWalletList(t *testing.T) {
+	accounts, err := GetWalletList(assetsID_btm)
+	if err != nil {
+		t.Errorf("GetWalletList failed unexpected error: %v", err)
+	} else {
+		for i, a := range accounts {
+			t.Logf("GetWalletList account[%d] = %v", i, a)
+		}
+
+	}
+}
+
+func TestSignMessage(t *testing.T) {
+	tests := []struct {
+		accountAlias string
+		message    string
+		password    string
+		tag          string
+	}{
+		{
+			accountAlias: "bytom",
+			message:    "hello world",
+			password:    "12345678",
+			tag:          "valid",
+		},
+		{
+			accountAlias: "bytom",
+			message:    "hello world",
+			password:    "12345",
+			tag:          "invalid",
+		},
+		{
+			accountAlias: "john",
+			message:    "hello world",
+			password:    "12345",
+			tag:          "not test account",
+		},
+	}
+
+	for i, test := range tests {
+		addresses, _ := GetAddressInfo(test.accountAlias + "_" +testAccount, "")
+		if len(addresses) > 0 {
+			signature, err := SignMessage(addresses[0].Address, test.message, test.password)
+			if err != nil {
+				t.Errorf("SignMessage[%d] failed unexpected error: %v", i, err)
+			} else {
+				t.Logf("SignMessage[%d] signature = %v", i, signature)
+			}
+		}
+	}
 }

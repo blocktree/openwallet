@@ -82,7 +82,7 @@ func TestGetAccountInfo(t *testing.T) {
 		//	tag: "id no exist",
 		//},
 		{
-			aid: "Ae2tdPwUPEZNLK16NQbAqeTRQxo6EzDu57DxPNDd1C9Zj4u9bGQTgr3yb6K",
+			aid: "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj",
 			tag: "KKK",
 		},
 	}
@@ -181,7 +181,7 @@ func TestGetAddressInfo(t *testing.T) {
 		//	tag: "all",
 		//},
 		{
-			aid: "Ae2tdPwUPEZNLK16NQbAqeTRQxo6EzDu57DxPNDd1C9Zj4u9bGQTgr3yb6K@2147483648",
+			aid: "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj@2147483648",
 			tag: "chance2",
 		},
 
@@ -261,7 +261,7 @@ func TestEstimateFees(t *testing.T) {
 		{
 			aid:    "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj@2147483648",
 			to:     "DdzFFzCqrhtAFVdoEx9jtTUhovkRnuMNUiCnuv8pQ2WYxhDVXAAhYJCVuydGSa1qJeSCYH8x6ZV8QjCaTiAHr9QReMaMRVtUQk9fMNTW",
-			amount: 5134348,
+			amount: 6113197 - 255381,
 			tag:    "sendTx by acount id",
 		},
 	}

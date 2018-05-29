@@ -16,10 +16,14 @@
 package bytom
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
+	"github.com/bndr/gotabulate"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
 	"log"
@@ -33,7 +37,7 @@ const (
 
 var (
 	//钱包服务API
-	serverAPI = "https://127.0.0.1:10026/api/"
+	serverAPI = "http://127.0.0.1:10031"
 	//钱包主链私钥文件路径
 	walletPath = ""
 	//小数位长度
@@ -50,6 +54,8 @@ var (
 	sumAddress = ""
 	//汇总执行间隔时间
 	cycleSeconds = time.Second * 10
+	// 节点客户端
+	client *Client
 )
 
 //CreateNewWallet 创建钱包
@@ -225,10 +231,10 @@ func CreateReceiverAddress(alias, accountID string) (*Address, error) {
 }
 
 //CreateBatchAddress 批量创建地址
-func CreateBatchAddress(alias, accountID string, count uint) (string, error) {
+func CreateBatchAddress(alias, accountID string, count uint64) (string, error) {
 
 	var (
-		synCount   uint = 100
+		synCount   uint64 = 100
 		quit            = make(chan struct{})
 		done            = 0 //完成标记
 		shouldDone      = 0 //需要完成的总数
@@ -247,11 +253,11 @@ func CreateBatchAddress(alias, accountID string, count uint) (string, error) {
 	defer close(worker)
 
 	//创建地址过程
-	createAddressWork := func(runCount uint) {
+	createAddressWork := func(runCount uint64) {
 
 		runAddress := make([]*Address, 0)
 
-		for i := uint(0); i < runCount; i++ {
+		for i := uint64(0); i < runCount; i++ {
 			// 请求地址
 			address, errRun := CreateReceiverAddress(alias, accountID)
 			if errRun != nil {
@@ -294,7 +300,7 @@ func CreateBatchAddress(alias, accountID string, count uint) (string, error) {
 
 	if runCount > 0 {
 
-		for i := uint(0); i < synCount; i++ {
+		for i := uint64(0); i < synCount; i++ {
 
 			//开始创建地址
 			log.Printf("Start create address thread[%d]\n", i)
@@ -373,7 +379,7 @@ func GetAddressInfo(alias, accountID string) ([]*Address, error) {
 
 	array := gjson.GetBytes(result, "data").Array()
 	for _, a := range array {
-		addresses = append(addresses, NewAddress("", "", a))
+		addresses = append(addresses, NewAddress(accountID, alias, a))
 	}
 
 	return addresses, err
@@ -402,6 +408,9 @@ func SummaryWallets() {
 
 				log.Printf("Summary account[%s]balance = %v \n", w.AccountID, balance.Div(coinDecimal))
 				log.Printf("Summary account[%s]Start Send Transaction\n", w.AccountID)
+
+				//避免临界值的错误，减去1个
+				//balance = balance.Sub(coinDecimal)
 
 				txID, err := SendTransaction(w.AccountID, sumAddress, assetsID_btm, uint64(balance.IntPart()), wallet.Password, false)
 				if err != nil {
@@ -607,7 +616,7 @@ func SendTransaction(accountID, to, assetsID string, amount uint64, password str
 	fmt.Printf("-----------------------------------------------\n")
 
 	//签名交易单
-	signTx, err := SignTransaction(txAddFees, "1234567")
+	signTx, err := SignTransaction(txAddFees, password)
 	if err != nil {
 		return "", err
 	}
@@ -622,7 +631,6 @@ func SendTransaction(accountID, to, assetsID string, amount uint64, password str
 	}
 
 	fmt.Printf("Submit Transaction Successfully\n")
-	fmt.Printf("Transaction ID: %s\n", txID)
 
 	return txID, nil
 }
@@ -652,6 +660,129 @@ func EstimateTransactionGas(txForm string) (uint64, error) {
 
 	return totalNeu, nil
 
+}
+
+//BackupWallet 备份钱包私钥数据
+func BackupWallet() (string, error) {
+
+	var (
+		err error
+	)
+
+	result := client.Call("backup-wallet", nil)
+
+	err = isError(result)
+	if err != nil {
+		return "", err
+	}
+
+	content := gjson.GetBytes(result, "data")
+
+	var buf bytes.Buffer
+	err = json.Indent(&buf, []byte(content.Raw), "", "\t")
+	if err != nil {
+		return "", err
+	}
+
+	return exportKeystoreToFile(buf.Bytes())
+}
+
+//RestoreWallet 通过keystore恢复钱包
+func RestoreWallet(keystore []byte) error {
+
+	var (
+		err error
+	)
+
+	request, ok := gjson.ParseBytes(keystore).Value().(map[string]interface{})
+	if !ok {
+		return errors.New("Can not parse keystore file! ")
+	}
+
+	result := client.Call("restore-wallet", request)
+
+	err = isError(result)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//GetWalletList 获取钱包资产信息列表
+func GetWalletList(assetsID string) ([]*AccountBalance, error) {
+
+	accounts, err := GetAccountInfo()
+
+	balances := make([]*AccountBalance, 0)
+	accMap := make(map[string]*AccountBalance)
+
+	//收集资产信息
+	for _, a :=  range accounts {
+		ab := &AccountBalance{}
+		ab.AccountID = a.ID
+		ab.Alias = a.Alias
+
+		balances = append(balances, ab)
+		accMap[a.ID] = ab
+	}
+
+	//查询钱包资产
+	list, err := GetAccountBalance("", assetsID)
+	if err != nil {
+		return nil, err
+	}
+
+	//合并资产
+	for _, a := range list {
+		ac := accMap[a.AccountID]
+		ac.AssetAlias = a.AssetAlias
+		ac.AssetID = a.AssetID
+		ac.Amount = a.Amount
+	}
+
+	return balances, nil
+}
+
+//SignMessage 消息签名
+func SignMessage(address, message, password string) (string, error) {
+
+	var (
+		err error
+	)
+
+	request := struct {
+		Address string `json:"address"`
+		Message string `json:"message"`
+		Password string `json:"password"`
+	}{address, message, password}
+
+	result := client.Call("sign-message", request)
+
+	err = isError(result)
+	if err != nil {
+		return "", err
+	}
+
+	signature := gjson.GetBytes(result, "data.signature").String()
+
+	return signature, nil
+}
+
+//exportWalletToFile 导出钱包到文件
+func exportKeystoreToFile(content []byte) (string, error) {
+
+	filename := fmt.Sprintf("wallet-%s.json", common.TimeFormat("20060102150405"))
+
+	file.MkdirAll(keyDir)
+	filePath := filepath.Join(keyDir, filename)
+
+	//把钱包写入到文件进行备份
+	if !file.WriteFile(filePath, content, true) {
+		return "", errors.New("Keystore write to file failed! ")
+	}
+
+	return filePath, nil
 }
 
 //isError 是否报错
@@ -689,4 +820,59 @@ func exportAddressToFile(addrs []*Address, filePath string) {
 
 	file.MkdirAll(addressDir)
 	file.WriteFile(filePath, []byte(content), true)
+}
+
+//loadConfig 读取配置
+func loadConfig() error {
+
+	var (
+		c   config.Configer
+		err error
+	)
+
+	//读取配置
+	absFile := filepath.Join(configFilePath, configFileName)
+	c, err = config.NewConfig("json", absFile)
+	if err != nil {
+		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
+	}
+
+	serverAPI = c.String("apiURL")
+	walletPath = c.String("walletPath")
+	threshold, _ = decimal.NewFromString(c.String("threshold"))
+	threshold = threshold.Mul(coinDecimal)
+	//minSendAmount, _ = decimal.NewFromString(c.String("minSendAmount"))
+	//minSendAmount = minSendAmount.Mul(coinDecimal)
+	//minFees, _ = decimal.NewFromString(c.String("minFees"))
+	//minFees = minFees.Mul(coinDecimal)
+	sumAddress = c.String("sumAddress")
+
+	client = &Client{
+		BaseURL:     serverAPI,
+		Debug:       false,
+	}
+
+	return nil
+}
+
+//打印钱包列表
+func printWalletList(list []*AccountBalance) {
+
+	tableInfo := make([][]interface{}, 0)
+
+	for i, w := range list {
+		balance := decimal.New(int64(w.Amount), 0)
+		balance = balance.Div(coinDecimal)
+		tableInfo = append(tableInfo, []interface{}{
+			i, w.AccountID, w.Alias, balance,
+		})
+	}
+
+	t := gotabulate.Create(tableInfo)
+	// Set Headers
+	t.SetHeaders([]string{"No.", "ID", "Name", "Balance"})
+
+	//打印信息
+	fmt.Println(t.Render("simple"))
+
 }

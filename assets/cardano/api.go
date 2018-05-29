@@ -72,7 +72,7 @@ func callCreateWalletAPI(name, words, passphrase string, create bool) []byte {
 	body["cwInitMeta"] = cwInitMeta
 	body["cwBackupPhrase"] = cwBackupPhrase
 
-	log.Println("开始请求钱包API")
+	//log.Println("开始请求钱包API")
 
 	r, err := api.Post(url, param, req.BodyJSON(&body))
 	if err != nil {

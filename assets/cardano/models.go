@@ -20,7 +20,7 @@ import "github.com/tidwall/gjson"
 //Wallet ada的钱包模型
 type Wallet struct {
 	WalletID       string `json:"walletID"`
-	Name           string `json:"namme"`
+	Name           string `json:"name"`
 	Balance        string `json:"balance"`
 	AccountsNumber uint64 `json:"accountsNumber"`
 	Password       string `json:"password"`

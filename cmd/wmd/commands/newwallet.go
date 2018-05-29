@@ -104,6 +104,26 @@ This command will Backup wallet key in filePath: ./data/<symbol>/key/.
 
 	`,
 			},
+			{
+				//获取钱包列表信息
+				Name:      "list",
+				Usage:     "Get all wallet information",
+				Action:    getWalletList,
+				Category:  "WALLET COMMANDS",
+				Flags: []cli.Flag{
+					utils.SymbolFlag,
+				},
+			},
+			{
+				//发起交易单
+				Name:      "transfer",
+				Usage:     "Select a wallet transfer assets",
+				Action:    sendTransaction,
+				Category:  "WALLET COMMANDS",
+				Flags: []cli.Flag{
+					utils.SymbolFlag,
+				},
+			},
 		},
 	}
 )
@@ -175,6 +195,40 @@ func backupWalletKey(c *cli.Context) error  {
 		openwLogger.Log.Fatalf("%s wallet manager is not register\n", symbol)
 	}
 	err := m.BackupWalletFlow()
+	if err != nil {
+		openwLogger.Log.Fatalf("%v", err)
+	}
+	return err
+}
+
+//getWalletList 获取钱包列表信息
+func getWalletList(c *cli.Context) error  {
+	symbol := c.String("symbol")
+	if len(symbol) == 0 {
+		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+	}
+	m := assets.GetWMD(symbol)
+	if m == nil {
+		openwLogger.Log.Fatalf("%s wallet manager is not register\n", symbol)
+	}
+	err := m.GetWalletList()
+	if err != nil {
+		openwLogger.Log.Fatalf("%v", err)
+	}
+	return err
+}
+
+//sendTransaction 发起交易单
+func sendTransaction(c *cli.Context) error  {
+	symbol := c.String("symbol")
+	if len(symbol) == 0 {
+		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+	}
+	m := assets.GetWMD(symbol)
+	if m == nil {
+		openwLogger.Log.Fatalf("%s wallet manager is not register\n", symbol)
+	}
+	err := m.TransferFlow()
 	if err != nil {
 		openwLogger.Log.Fatalf("%v", err)
 	}

@@ -34,24 +34,24 @@ func InputPassword(isConfirm bool) (string, error) {
 	for {
 
 		// 等待用户输入密码
-		password, err = Stdin.PromptPassword("输入钱包密码: ")
+		password, err = Stdin.PromptPassword("Enter wallet password: ")
 		if err != nil {
-			openwLogger.Log.Errorf("unexpect error: %v\n", err)
+			openwLogger.Log.Errorf("unexpected error: %v\n", err)
 			return "", err
 		}
 
 		if len(password) < 8 {
-			fmt.Printf("不合法的密码长度, 建议设置不小于8位的密码, 请重新输入\n")
+			fmt.Printf("The length of the password is less than 8 chars. Please re-enter it.\n")
 			continue
 		}
 
 		// 二次确认密码
 		if isConfirm {
 
-			confirm, err = Stdin.PromptPassword("再次确认钱包密码: ")
+			confirm, err = Stdin.PromptPassword("Confirm wallet password: ")
 
 			if password != confirm {
-				fmt.Printf("两次输入密码不一致, 请重新输入\n")
+				fmt.Printf("The two password is not equal, please rre-enter it.\n")
 				continue
 			}
 
@@ -81,7 +81,7 @@ func InputText(prompt string, required bool) (string, error) {
 		}
 
 		if len(text) == 0 && required {
-			fmt.Printf("内容不能为空\n")
+			fmt.Printf("Input can not be empty!\n")
 			continue
 		}
 
@@ -109,7 +109,7 @@ func InputNumber(prompt string) (uint64, error) {
 		num = common.NewString(line).UInt64()
 
 		if num <= 0 {
-			fmt.Printf("内容必须数字，而且必须大于0\n")
+			fmt.Printf("Input can not be empty, and must be greater than 0.\n")
 			continue
 		}
 
@@ -121,10 +121,12 @@ func InputNumber(prompt string) (uint64, error) {
 
 
 //InputRealNumber 输入实数值
-func InputRealNumber(prompt string, p bool) (float64, error) {
+//@param p 是否正数
+func InputRealNumber(prompt string, p bool) (string, error) {
 
 	var (
 		num  float64
+		realNum string
 	)
 
 	for {
@@ -132,17 +134,19 @@ func InputRealNumber(prompt string, p bool) (float64, error) {
 		line, err := Stdin.PromptInput(prompt)
 		if err != nil {
 			openwLogger.Log.Errorf("unexpected error: %v\n", err)
-			return 0, err
+			return "0", err
 		}
 		num = common.NewString(line).Float64()
 
 		if p && num <= 0 {
-			fmt.Printf("内容必须数字，而且必须大于0\n")
+			fmt.Printf("Input can not be empty, and must be greater than 0.\n")
 			continue
 		}
+
+		realNum = line
 
 		break
 	}
 
-	return num, nil
+	return realNum, nil
 }
