@@ -93,7 +93,7 @@ func InputText(prompt string, required bool) (string, error) {
 
 
 //InputNumber 输入数值
-func InputNumber(prompt string) (uint64, error) {
+func InputNumber(prompt string, zero bool) (uint64, error) {
 
 	var (
 		num  uint64
@@ -108,7 +108,7 @@ func InputNumber(prompt string) (uint64, error) {
 		}
 		num = common.NewString(line).UInt64()
 
-		if num <= 0 {
+		if !zero && num <= 0 {
 			fmt.Printf("Input can not be empty, and must be greater than 0.\n")
 			continue
 		}

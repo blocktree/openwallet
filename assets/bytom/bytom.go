@@ -210,7 +210,7 @@ func (w *WalletManager) CreateAddressFlow() error {
 	fmt.Printf("[Please select a wallet account to create address] \n")
 
 	//选择钱包
-	num, err := console.InputNumber("Enter wallet number: ")
+	num, err := console.InputNumber("Enter wallet number: ", true)
 	if err != nil {
 		return err
 	}
@@ -222,7 +222,7 @@ func (w *WalletManager) CreateAddressFlow() error {
 	account := wallets[num]
 
 	// 输入地址数量
-	count, err := console.InputNumber("Enter the number of addresses you want: ")
+	count, err := console.InputNumber("Enter the number of addresses you want: ", false)
 	if err != nil {
 		return err
 	}
@@ -389,7 +389,7 @@ func (w *WalletManager) TransferFlow() error {
 	fmt.Printf("[Please select a wallet to send transaction] \n")
 
 	//选择钱包
-	num, err := console.InputNumber("Enter wallet No. : ")
+	num, err := console.InputNumber("Enter wallet No. : ", true)
 	if err != nil {
 		return err
 	}

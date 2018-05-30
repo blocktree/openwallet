@@ -423,7 +423,7 @@ func (w *WalletManager) TransferFlow() error {
 	fmt.Printf("[Please select a wallet to send transaction] \n")
 
 	//选择钱包
-	num, err := console.InputNumber("Enter wallet No. : ")
+	num, err := console.InputNumber("Enter wallet No. : ", true)
 	if err != nil {
 		return err
 	}

@@ -28,11 +28,11 @@ func TestNewConfigFile(t *testing.T) {
 		apiURL     = "https://192.168.2.224:10026/api/"
 		walletPath = "/home/ada/cardano-sl/state-wallet-mainnet"
 		//汇总阀值
-		threshold float64 = 9
+		threshold string = "9"
 		//最小转账额度
-		minSendAmount float64 = 1
+		minSendAmount string = "1"
 		//最小矿工费
-		minFees float64 = 0.3
+		minFees string = "0.3"
 		//汇总地址
 		sumAddress = "DdzFFzCqrhsgCwX9VGWZAdAnPfeVwUzoPDAqQJfXE3DxKKFCTYmtGD9CrKjvGu7VjebGoCqPHN7DtkF1VhEvJbPhg2BrfhT5hkyBvjvZ"
 	)
