@@ -210,6 +210,12 @@
 			"revisionTime": "2017-10-14T08:28:56Z"
 		},
 		{
+			"checksumSHA1": "APzA8rkuz7X5P2yh2uy22DG+rA8=",
+			"path": "github.com/bndr/gotabulate",
+			"revision": "bc555436bfd5d4e93a2dd35b462ce37e067afdda",
+			"revisionTime": "2017-03-15T14:24:10Z"
+		},
+		{
 			"checksumSHA1": "tmTwnJZMpwYat5xtkhAJCGxEf3w=",
 			"path": "github.com/btcsuite/btcd/btcec",
 			"revision": "675abc5df3c5531bc741b56a765e35623459da6d",
@@ -1099,6 +1105,12 @@
 			"path": "github.com/mattn/go-isatty",
 			"revision": "c60f6f62147048f80a0e092b483318af88b5d78b",
 			"revisionTime": "2018-05-08T23:20:20Z"
+		},
+		{
+			"checksumSHA1": "KGCifxxR5cm2gz94i2iha+RIZlk=",
+			"path": "github.com/mattn/go-runewidth",
+			"revision": "ce7b0b5c7b45a81508558cd1dba6bb1e4ddb51bb",
+			"revisionTime": "2018-04-08T05:53:51Z"
 		},
 		{
 			"checksumSHA1": "Se195FlZ160eaEk/uVx4KdTPSxU=",
