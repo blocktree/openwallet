@@ -114,6 +114,9 @@ $ ./wmd wallet new -s <symbol>
 #备份钱包私钥和账户相关文件，文件保存在./data/<symbol>/key/backup/
 $ ./wmd wallet backup -s <symbol>
 
+# 执行恢复钱包，提供钱包的备份文件
+$ ./wmd wallet restore -s <symbol>
+
 #执行批量创建地址命令，文件保存在./conf/<symbol>/address/
 $ ./wmd wallet batchaddr -s <symbol>
 

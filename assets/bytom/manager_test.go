@@ -18,10 +18,12 @@ package bytom
 import (
 	"github.com/shopspring/decimal"
 	"testing"
+	"path/filepath"
+	"io/ioutil"
 )
 
 func init() {
-
+	//serverAPI = "http://192.168.2.224:10056"
 	serverAPI = "http://192.168.2.224:10031"
 	client = &Client{
 		BaseURL:     serverAPI,
@@ -36,8 +38,8 @@ func TestCreateNewWallet(t *testing.T) {
 		tag      string
 	}{
 		{
-			alias:    "hello",
-			password: "1234567",
+			alias:    "Get Get",
+			password: "12345678",
 			tag:      "normal",
 		},
 		{
@@ -173,7 +175,7 @@ func TestCreateReceiverAddress(t *testing.T) {
 }
 
 func TestGetAddressInfo(t *testing.T) {
-	addresses, err := GetAddressInfo("bytom_" +testAccount, "")
+	addresses, err := GetAddressInfo("john", "")
 	if err != nil {
 		t.Errorf("GetAddressInfo failed unexpected error: %v", err)
 	} else {
@@ -310,5 +312,22 @@ func TestSignMessage(t *testing.T) {
 				t.Logf("SignMessage[%d] signature = %v", i, signature)
 			}
 		}
+	}
+}
+
+func TestRestoreWallet(t *testing.T) {
+	backupFile := filepath.Join(".", "data", "btm", "key", "wallet-20180604181919.json")
+	keyjson, err := ioutil.ReadFile(backupFile)
+	if err != nil {
+		t.Errorf("RestoreWallet failed unexpected error: %v\n", err)
+	} else {
+		t.Logf("%s", string(keyjson))
+	}
+
+	err = RestoreWallet(keyjson)
+	if err != nil {
+		t.Errorf("RestoreWallet failed unexpected error: %v\n", err)
+	} else {
+		t.Logf("RestoreWallet success")
 	}
 }

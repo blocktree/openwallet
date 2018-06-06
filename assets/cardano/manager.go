@@ -323,15 +323,16 @@ func GetAddressInfo(aid string) ([]*Address, error) {
 //SendTx 发送交易
 func SendTx(from, to string, amount uint64, password string) (*Transaction, error) {
 
-	var (
-		err error
-	)
 	//输入密码
 	//password, err := console.InputPassword(false)
 	//h := common.NewString(password).SHA256()
 
 	//调用服务创建新账户
-	result := callSendTxAPI(from, to, amount, password)
+	result, err := callSendTxAPI(from, to, amount, password)
+	if err != nil {
+		return nil, err
+	}
+
 	err = isError(result)
 	if err != nil {
 		return nil, err

@@ -124,6 +124,16 @@ This command will Backup wallet key in filePath: ./data/<symbol>/key/.
 					utils.SymbolFlag,
 				},
 			},
+			{
+				//恢复钱包
+				Name:      "restore",
+				Usage:     "Restore a wallet by backup data",
+				Action:    restoreWallet,
+				Category:  "WALLET COMMANDS",
+				Flags: []cli.Flag{
+					utils.SymbolFlag,
+				},
+			},
 		},
 	}
 )
@@ -136,12 +146,12 @@ func createNewWallet(c *cli.Context) error {
 	}
 	m := assets.GetWMD(symbol)
 	if m == nil {
-		openwLogger.Log.Fatalf("%s wallet manager is not register\n", symbol)
+		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
 
 	err := m.CreateWalletFlow()
 	if err != nil {
-		openwLogger.Log.Fatalf("%v", err)
+		openwLogger.Log.Errorf("%v", err)
 	}
 	return err
 }
@@ -155,12 +165,12 @@ func batchAddress(c *cli.Context) error {
 	}
 	m := assets.GetWMD(symbol)
 	if m == nil {
-		openwLogger.Log.Fatalf("%s wallet manager is not register\n", symbol)
+		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
 	//为钱包创建批量地址
 	err := m.CreateAddressFlow()
 	if err != nil {
-		openwLogger.Log.Fatalf("%v", err)
+		openwLogger.Log.Errorf("%v", err)
 	}
 	return err
 }
@@ -174,11 +184,11 @@ func startSummary(c *cli.Context) error {
 	}
 	m := assets.GetWMD(symbol)
 	if m == nil {
-		openwLogger.Log.Fatalf("%s wallet manager is not register\n", symbol)
+		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
 	err := m.SummaryFollow()
 	if err != nil {
-		openwLogger.Log.Fatalf("%v", err)
+		openwLogger.Log.Errorf("%v", err)
 	}
 	return err
 
@@ -192,11 +202,11 @@ func backupWalletKey(c *cli.Context) error  {
 	}
 	m := assets.GetWMD(symbol)
 	if m == nil {
-		openwLogger.Log.Fatalf("%s wallet manager is not register\n", symbol)
+		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
 	err := m.BackupWalletFlow()
 	if err != nil {
-		openwLogger.Log.Fatalf("%v", err)
+		openwLogger.Log.Errorf("%v", err)
 	}
 	return err
 }
@@ -209,11 +219,11 @@ func getWalletList(c *cli.Context) error  {
 	}
 	m := assets.GetWMD(symbol)
 	if m == nil {
-		openwLogger.Log.Fatalf("%s wallet manager is not register\n", symbol)
+		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
 	err := m.GetWalletList()
 	if err != nil {
-		openwLogger.Log.Fatalf("%v", err)
+		openwLogger.Log.Errorf("%v", err)
 	}
 	return err
 }
@@ -226,11 +236,28 @@ func sendTransaction(c *cli.Context) error  {
 	}
 	m := assets.GetWMD(symbol)
 	if m == nil {
-		openwLogger.Log.Fatalf("%s wallet manager is not register\n", symbol)
+		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
 	err := m.TransferFlow()
 	if err != nil {
-		openwLogger.Log.Fatalf("%v", err)
+		openwLogger.Log.Errorf("%v", err)
+	}
+	return err
+}
+
+//restoreWallet 恢复钱包
+func restoreWallet(c *cli.Context) error  {
+	symbol := c.String("symbol")
+	if len(symbol) == 0 {
+		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+	}
+	m := assets.GetWMD(symbol)
+	if m == nil {
+		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
+	}
+	err := m.RestoreWalletFlow()
+	if err != nil {
+		openwLogger.Log.Errorf("%v", err)
 	}
 	return err
 }

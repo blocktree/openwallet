@@ -529,3 +529,11 @@ func (w *WalletManager) GetWalletList() error {
 
 	return nil
 }
+
+//RestoreWalletFlow 恢复钱包
+func (w *WalletManager) RestoreWalletFlow() error {
+
+	fmt.Printf("Restore wallet is unavailable now.\n")
+
+	return nil
+}

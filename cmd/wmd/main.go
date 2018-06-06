@@ -27,7 +27,7 @@ import (
 
 const (
 	clientIdentifier = "wmd" // Client identifier to advertise over the network
-	version = "0.1.0"
+	version = "0.1.1"
 )
 
 
@@ -47,12 +47,13 @@ func init() {
 	// Initialize the CLI app and start openw
 	app.Action = wmd
 	app.HideVersion = true // we have a command to print the version
-	app.Copyright = "Copyright 2018 The openwallet Authors"
+	app.Copyright = "Copyright 2018 The OpenWallet Authors"
 	app.Version = version
 	app.Commands = []cli.Command{
 		commands.CmdWallet,
 		commands.CmdConfig,
 	}
+
 
 	sort.Sort(cli.CommandsByName(app.Commands))
 }

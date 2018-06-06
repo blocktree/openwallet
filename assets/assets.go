@@ -39,6 +39,8 @@ type WalletManager interface {
 	GetWalletList() error
 	//发送交易
 	TransferFlow() error
+	//恢复钱包
+	RestoreWalletFlow() error
 }
 
 //钱包管理器组

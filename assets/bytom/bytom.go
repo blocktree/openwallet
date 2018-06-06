@@ -25,6 +25,7 @@ import (
 	"log"
 	"strings"
 	"github.com/blocktree/OpenWallet/logger"
+	"io/ioutil"
 )
 
 const (
@@ -454,4 +455,38 @@ func (w *WalletManager) GetWalletList() error {
 	printWalletList(list)
 
 	return nil
+}
+
+//RestoreWalletFlow 恢复钱包流程
+func (w *WalletManager) RestoreWalletFlow() error {
+
+	var (
+		err        error
+		filename string
+	)
+
+	//先加载是否有配置文件
+	err = loadConfig()
+	if err != nil {
+		return err
+	}
+
+	//输入恢复文件路径
+	filename, err = console.InputText("Enter backup file path: ", true)
+	keyjson, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Wallet restoring, please wait a moment...\n")
+	err = RestoreWallet(keyjson)
+	if err != nil {
+		return err
+	}
+
+	//输出备份导出目录
+	fmt.Printf("Restore wallet successfully.\n")
+
+	return nil
+
 }

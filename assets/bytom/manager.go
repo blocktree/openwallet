@@ -61,18 +61,20 @@ var (
 //CreateNewWallet 创建钱包
 func CreateNewWallet(alias, password string) (*Wallet, error) {
 
-	var (
-		err error
-	)
-
 	request := struct {
 		Alias    string `json:"alias"`
 		Password string `json:"password"`
 	}{alias, password}
 
-	result := client.Call("create-key", request)
+	result, err := client.Call("create-key", request)
+	if err != nil {
+		return nil, err
+	}
 
 	err = isError(result)
+	if err != nil {
+		return nil, err
+	}
 
 	w := NewWallet(gjson.GetBytes(result, "data"))
 
@@ -84,11 +86,13 @@ func CreateNewWallet(alias, password string) (*Wallet, error) {
 func GetWalletInfo() ([]*Wallet, error) {
 
 	var (
-		err     error
 		wallets = make([]*Wallet, 0)
 	)
 
-	result := client.Call("list-keys", nil)
+	result, err := client.Call("list-keys", nil)
+	if err != nil {
+		return nil, err
+	}
 
 	err = isError(result)
 	if err != nil {
@@ -107,9 +111,6 @@ func GetWalletInfo() ([]*Wallet, error) {
 //CreateNormalAccount 创建一个单签普通账户
 func CreateNormalAccount(xpub, alias string) (*Account, error) {
 
-	var (
-		err error
-	)
 	/*
 		{
 			"root_xpubs": ["2d6c07cb1ff7800b0793e300cd62b6ec5c0943d308799427615be451ef09c0304bee5dd492c6b13aaa854d303dc4f1dcb229f9578786e19c52d860803efa3b9a"],
@@ -124,7 +125,10 @@ func CreateNormalAccount(xpub, alias string) (*Account, error) {
 		Alias     string   `json:"alias"`
 	}{[]string{xpub}, 1, alias}
 
-	result := client.Call("create-account", request)
+	result, err := client.Call("create-account", request)
+	if err != nil {
+		return nil, err
+	}
 
 	err = isError(result)
 	if err != nil {
@@ -141,11 +145,13 @@ func CreateNormalAccount(xpub, alias string) (*Account, error) {
 func GetAccountInfo() ([]*Account, error) {
 
 	var (
-		err      error
 		accounts = make([]*Account, 0)
 	)
 
-	result := client.Call("list-accounts", nil)
+	result, err := client.Call("list-accounts", nil)
+	if err != nil {
+		return nil, err
+	}
 
 	err = isError(result)
 	if err != nil {
@@ -165,11 +171,13 @@ func GetAccountInfo() ([]*Account, error) {
 func GetAccountBalance(accountID string, assetsID string) ([]*AccountBalance, error) {
 
 	var (
-		err      error
 		accounts = make([]*AccountBalance, 0)
 	)
 
-	result := client.Call("list-balances", nil)
+	result, err := client.Call("list-balances", nil)
+	if err != nil {
+		return nil, err
+	}
 
 	err = isError(result)
 	if err != nil {
@@ -202,9 +210,6 @@ func GetAccountBalance(accountID string, assetsID string) ([]*AccountBalance, er
 //CreateReceiverAddress 给指定账户创建地址
 func CreateReceiverAddress(alias, accountID string) (*Address, error) {
 
-	var (
-		err error
-	)
 	/*
 		{
 			"account_alias": "alice",
@@ -217,7 +222,10 @@ func CreateReceiverAddress(alias, accountID string) (*Address, error) {
 		Account_id    string `json:"account_id"`
 	}{alias, accountID}
 
-	result := client.Call("create-account-receiver", request)
+	result, err := client.Call("create-account-receiver", request)
+	if err != nil {
+		return nil, err
+	}
 
 	err = isError(result)
 	if err != nil {
@@ -235,9 +243,9 @@ func CreateBatchAddress(alias, accountID string, count uint64) (string, error) {
 
 	var (
 		synCount   uint64 = 100
-		quit            = make(chan struct{})
-		done            = 0 //完成标记
-		shouldDone      = 0 //需要完成的总数
+		quit              = make(chan struct{})
+		done              = 0 //完成标记
+		shouldDone        = 0 //需要完成的总数
 	)
 
 	//建立文件名，时间格式2006-01-02 15:04:05
@@ -361,7 +369,6 @@ func CreateBatchAddress(alias, accountID string, count uint64) (string, error) {
 func GetAddressInfo(alias, accountID string) ([]*Address, error) {
 
 	var (
-		err       error
 		addresses = make([]*Address, 0)
 	)
 
@@ -370,7 +377,10 @@ func GetAddressInfo(alias, accountID string) ([]*Address, error) {
 		Account_id    string `json:"account_id"`
 	}{alias, accountID}
 
-	result := client.Call("list-addresses", request)
+	result, err := client.Call("list-addresses", request)
+	if err != nil {
+		return nil, err
+	}
 
 	err = isError(result)
 	if err != nil {
@@ -438,9 +448,6 @@ func AddWalletInSummary(wid string, wallet *AccountBalance) {
 //CreateReceiverAddress 给指定账户创建地址
 func BuildTransaction(from, to, assetsID string, amount, fees uint64) (string, error) {
 
-	var (
-		err error
-	)
 	/*
 		{
 			"base_transaction": null,
@@ -491,7 +498,10 @@ func BuildTransaction(from, to, assetsID string, amount, fees uint64) (string, e
 			},
 		}, 1, 0}
 
-	result := client.Call("build-transaction", request)
+	result, err := client.Call("build-transaction", request)
+	if err != nil {
+		return "", err
+	}
 
 	err = isError(result)
 	if err != nil {
@@ -507,9 +517,6 @@ func BuildTransaction(from, to, assetsID string, amount, fees uint64) (string, e
 //SignTransaction 签名交易
 func SignTransaction(txForm, password string) (string, error) {
 
-	var (
-		err error
-	)
 	tx := gjson.Parse(txForm).Value().(map[string]interface{})
 
 	request := struct {
@@ -517,7 +524,10 @@ func SignTransaction(txForm, password string) (string, error) {
 		Password    string                 `json:"password"`
 	}{tx, password}
 
-	result := client.Call("sign-transaction", request)
+	result, err := client.Call("sign-transaction", request)
+	if err != nil {
+		return "", err
+	}
 
 	err = isError(result)
 	if err != nil {
@@ -533,15 +543,14 @@ func SignTransaction(txForm, password string) (string, error) {
 //SubmitTransaction 提交新交易单
 func SubmitTransaction(txRaw string) (string, error) {
 
-	var (
-		err error
-	)
-
 	request := struct {
 		RawTransaction string `json:"raw_transaction"`
 	}{txRaw}
 
-	result := client.Call("submit-transaction", request)
+	result, err := client.Call("submit-transaction", request)
+	if err != nil {
+		return "", err
+	}
 
 	err = isError(result)
 	if err != nil {
@@ -557,17 +566,15 @@ func SubmitTransaction(txRaw string) (string, error) {
 //GetTransactions 获取交易列表
 func GetTransactions(accountID string) (string, error) {
 
-	var (
-		err error
-		//addresses = make([]*Address, 0)
-	)
-
 	request := struct {
 		Account_id string `json:"account_id"`
 		Detail     bool   `json:"detail"`
 	}{accountID, true}
 
-	result := client.Call("list-transactions", request)
+	result, err := client.Call("list-transactions", request)
+	if err != nil {
+		return "", err
+	}
 
 	err = isError(result)
 	if err != nil {
@@ -638,18 +645,16 @@ func SendTransaction(accountID, to, assetsID string, amount uint64, password str
 //GetTransactions 获取交易列表
 func EstimateTransactionGas(txForm string) (uint64, error) {
 
-	var (
-		err error
-		//addresses = make([]*Address, 0)
-	)
-
 	tx := gjson.Parse(txForm).Value().(map[string]interface{})
 
 	request := struct {
 		Transaction map[string]interface{} `json:"transaction_template"`
 	}{tx}
 
-	result := client.Call("estimate-transaction-gas", request)
+	result, err := client.Call("estimate-transaction-gas", request)
+	if err != nil {
+		return 0, err
+	}
 
 	err = isError(result)
 	if err != nil {
@@ -665,11 +670,10 @@ func EstimateTransactionGas(txForm string) (uint64, error) {
 //BackupWallet 备份钱包私钥数据
 func BackupWallet() (string, error) {
 
-	var (
-		err error
-	)
-
-	result := client.Call("backup-wallet", nil)
+	result, err := client.Call("backup-wallet", nil)
+	if err != nil {
+		return "", err
+	}
 
 	err = isError(result)
 	if err != nil {
@@ -690,16 +694,15 @@ func BackupWallet() (string, error) {
 //RestoreWallet 通过keystore恢复钱包
 func RestoreWallet(keystore []byte) error {
 
-	var (
-		err error
-	)
-
 	request, ok := gjson.ParseBytes(keystore).Value().(map[string]interface{})
 	if !ok {
 		return errors.New("Can not parse keystore file! ")
 	}
 
-	result := client.Call("restore-wallet", request)
+	result, err := client.Call("restore-wallet", request)
+	if err != nil {
+		return err
+	}
 
 	err = isError(result)
 	if err != nil {
@@ -718,7 +721,7 @@ func GetWalletList(assetsID string) ([]*AccountBalance, error) {
 	accMap := make(map[string]*AccountBalance)
 
 	//收集资产信息
-	for _, a :=  range accounts {
+	for _, a := range accounts {
 		ab := &AccountBalance{}
 		ab.AccountID = a.ID
 		ab.Alias = a.Alias
@@ -747,17 +750,16 @@ func GetWalletList(assetsID string) ([]*AccountBalance, error) {
 //SignMessage 消息签名
 func SignMessage(address, message, password string) (string, error) {
 
-	var (
-		err error
-	)
-
 	request := struct {
-		Address string `json:"address"`
-		Message string `json:"message"`
+		Address  string `json:"address"`
+		Message  string `json:"message"`
 		Password string `json:"password"`
 	}{address, message, password}
 
-	result := client.Call("sign-message", request)
+	result, err := client.Call("sign-message", request)
+	if err != nil {
+		return "", err
+	}
 
 	err = isError(result)
 	if err != nil {
@@ -848,8 +850,8 @@ func loadConfig() error {
 	sumAddress = c.String("sumAddress")
 
 	client = &Client{
-		BaseURL:     serverAPI,
-		Debug:       false,
+		BaseURL: serverAPI,
+		Debug:   false,
 	}
 
 	return nil

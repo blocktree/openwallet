@@ -321,7 +321,7 @@ func callCreateNewAddressAPI(aid, passphrase string) []byte {
 // @param to
 // @param amount
 // @param passphrase
-func callSendTxAPI(from, to string, amount uint64, passphrase string) []byte {
+func callSendTxAPI(from, to string, amount uint64, passphrase string) ([]byte, error) {
 	var (
 		//result map[string]interface{}
 		body  map[string]interface{}
@@ -343,14 +343,14 @@ func callSendTxAPI(from, to string, amount uint64, passphrase string) []byte {
 
 	if err != nil {
 		log.Println(err)
-		return nil
+		return nil, err
 	}
 
 	if apiDebug {
 		log.Printf("%v\n", r)
 	}
 
-	return r.Bytes()
+	return r.Bytes(), nil
 }
 
 //callEstimateFeesAPI 计算矿工费

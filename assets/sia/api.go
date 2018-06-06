@@ -13,21 +13,25 @@
  * GNU Lesser General Public License for more details.
  */
 
-package bytom
+package sia
 
 import (
 	"encoding/base64"
+	"fmt"
 	"github.com/imroc/req"
+	"github.com/pkg/errors"
+	"github.com/tidwall/gjson"
 	"log"
+	"net/http"
 )
 
 // A Client is a Bitcoin RPC client. It performs RPCs over HTTP using JSON
 // request and responses. A Client must be configured with a secret token
 // to authenticate with other Cores on the network.
 type Client struct {
-	BaseURL     string
-	AccessToken string
-	Debug       bool
+	BaseURL string
+	Auth    string
+	Debug   bool
 
 	//Client *req.Req
 }
@@ -41,37 +45,42 @@ type Response struct {
 }
 
 // Call calls a remote procedure on another node, specified by the path.
-func (c *Client) Call(path string, request interface{}) ([]byte, error) {
-
-	//var (
-	//	body = make(map[string]interface{}, 0)
-	//)
-
-	//authHeader := req.Header{
-	//	"Accept":        "application/json",
-	//	"Authorization": "Basic " + basicAuth(rpcuser, rpcpassword),
-	//}
-
-	//json-rpc
-	//body["jsonrpc"] = "2.0"
-	//body["id"] = "1"
-	//body["method"] = path
-	//body["params"] = request
+func (c *Client) Call(path, method string, request interface{}) ([]byte, error) {
 
 	url := c.BaseURL + "/" + path
 
-	if c.Debug {log.Println("Start Request API...")}
-
-	r, err := req.Post(url, req.BodyJSON(&request))
-	if err != nil {
-		log.Printf("unexpected err: %v\n", err)
-		return nil, err
+	authHeader := req.Header{
+		"Accept":        "application/json",
+		"User-Agent":    "Sia-Agent",
+		"Authorization": "Basic " + basicAuth("", c.Auth),
 	}
 
-	if c.Debug {log.Println("Request API Completed")}
+	if c.Debug {
+		log.Println("Start Request API...")
+	}
+
+	r, err := req.Do(
+		method,
+		url,
+		request,
+		authHeader)
+
+	if c.Debug {
+		log.Println("Request API Completed")
+	}
 
 	if c.Debug {
 		log.Printf("%+v\n", r)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if r.Response().StatusCode != http.StatusOK {
+		message := gjson.GetBytes(r.Bytes(), "message").String()
+		message = fmt.Sprintf("[%s]%s", r.Response().Status, message)
+		return nil, errors.New(message)
 	}
 
 	return r.Bytes(), nil

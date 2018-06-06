@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"github.com/blocktree/OpenWallet/openwallet/accounts"
 	"github.com/btcsuite/btcutil/hdkeychain"
+	"crypto/hmac"
+	"crypto/sha256"
 )
 
 const (
@@ -61,39 +63,22 @@ var (
 //HDKeystore HDKey的存粗工具类
 type HDKeystore struct {
 	keysDirPath string
+	MasterKey string
 	scryptN     int
 	scryptP     int
 }
 
 // NewHDKeystore 实例化HDKeystore
-func NewHDKeystore(keydir string, scryptN, scryptP int) *HDKeystore {
+func NewHDKeystore(keydir, masterKey string, scryptN, scryptP int) *HDKeystore {
 	keydir, _ = filepath.Abs(keydir)
-	ks := &HDKeystore{keydir, scryptN, scryptP}
+	ks := &HDKeystore{keydir, masterKey, scryptN, scryptP}
 	return ks
 }
 
-//GetKey 通过accountId读取钥匙
-func (ks HDKeystore) GetKey(accountId string, filename, auth string) (*HDKey, error) {
-	// Load the key from the keystore and decrypt its contents
-	keyjson, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-	key, err := DecryptHDKey(keyjson, auth)
-	if err != nil {
-		return nil, err
-	}
-	// Make sure we're really operating on the requested key (no swap attacks)
-	if key.AccountId != accountId {
-		return nil, fmt.Errorf("key content mismatch: have account %s, want %s", key.AccountId, accountId)
-	}
-	return key, nil
-}
-
-// GenerateHDKey 创建HDKey
-func GenerateHDKey(dir, auth string, scryptN, scryptP int) (string, error) {
-	key, err := storeNewKey(&HDKeystore{dir, scryptN, scryptP}, auth)
-	return key.AccountId, err
+// StoreHDKey 创建HDKey
+func StoreHDKey(dir, masterKey, auth string, scryptN, scryptP int) (string, error) {
+	key, err := storeNewKey(&HDKeystore{dir, masterKey, scryptN, scryptP}, auth)
+	return key.RootId, err
 }
 
 //storeNewKey 用随机种子生成HDKey
@@ -103,11 +88,39 @@ func storeNewKey(ks *HDKeystore, auth string) (*HDKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	key, err := NewHDKey(seed, openwCoinTypePath)
+
+	extSeed, err := GetExtendSeed(seed, ks.MasterKey)
 	if err != nil {
 		return nil, err
 	}
+
+	key, err := NewHDKey(extSeed, openwCoinTypePath)
+	if err != nil {
+		return nil, err
+	}
+	filePath := ks.JoinPath(keyFileName(key.RootId))
+	ks.StoreKey(filePath, key, auth)
 	return key, err
+}
+
+
+//GetKey 通过accountId读取钥匙
+func (ks HDKeystore) GetKey(rootId, filename, auth string) (*HDKey, error) {
+	// Load the key from the keystore and decrypt its contents
+	keyPath := ks.JoinPath(filename)
+	keyjson, err := ioutil.ReadFile(keyPath)
+	if err != nil {
+		return nil, err
+	}
+	key, err := DecryptHDKey(keyjson, auth)
+	if err != nil {
+		return nil, err
+	}
+	// Make sure we're really operating on the requested key (no swap attacks)
+	if key.RootId != rootId {
+		return nil, fmt.Errorf("key content mismatch: have account %s, want %s", key.RootId, rootId)
+	}
+	return key, nil
 }
 
 //StoreKey 把HDKey重写加密写入到文件中
@@ -133,4 +146,17 @@ func (ks *HDKeystore) getDecryptedKey(a accounts.UserAccount, auth string) (acco
 	path := ks.JoinPath(keyFileName(a.UserKey))
 	key, err := ks.GetKey(a.UserKey, path, auth)
 	return a, key, err
+}
+
+//GetExtendSeed 获得某个币种的扩展种子
+func GetExtendSeed(seed []byte, masterKey string) ([]byte, error) {
+
+	if len(seed) < hdkeychain.MinSeedBytes || len(seed) > hdkeychain.MaxSeedBytes {
+		return nil, hdkeychain.ErrInvalidSeedLen
+	}
+
+	hmac256 := hmac.New(sha256.New, []byte(masterKey))
+	hmac256.Write(seed)
+	ext := hmac256.Sum(nil)
+	return ext, nil
 }

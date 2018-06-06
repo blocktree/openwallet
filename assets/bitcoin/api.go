@@ -16,15 +16,19 @@
 package bitcoin
 
 import (
-	"github.com/imroc/req"
-	"log"
 	"encoding/base64"
+	"errors"
+	"fmt"
+	"github.com/imroc/req"
+	"github.com/tidwall/gjson"
+	"log"
+	"net/http"
 )
 
 var (
-	client *Client
-	url    = "http://192.168.2.192:10000"
-	rpcuser = "wallet"
+	client      *Client
+	url         = "http://192.168.2.192:10000"
+	rpcuser     = "wallet"
 	rpcpassword = "walletPassword2017"
 )
 
@@ -57,7 +61,7 @@ func init() {
 }
 
 // Call calls a remote procedure on another node, specified by the path.
-func (c *Client) Call(path string, request interface{}) []byte {
+func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error) {
 
 	var (
 		body = make(map[string]interface{}, 0)
@@ -74,22 +78,37 @@ func (c *Client) Call(path string, request interface{}) []byte {
 	body["method"] = path
 	body["params"] = request
 
-	log.Println("Start Request API...")
-
-	r, err := req.Post(c.BaseURL, req.BodyJSON(&body), authHeader)
-	if err != nil {
-		log.Printf("unexpected err: %v\n", err)
-		return nil
+	if c.Debug {
+		log.Println("Start Request API...")
 	}
 
-	log.Println("Request API Completed")
+	r, err := req.Post(c.BaseURL, req.BodyJSON(&body), authHeader)
 
+	if c.Debug {
+		log.Println("Request API Completed")
+	}
 
 	if c.Debug {
 		log.Printf("%+v\n", r)
 	}
 
-	return r.Bytes()
+	if err != nil {
+		return nil, err
+	}
+
+	if r.Response().StatusCode != http.StatusOK {
+		return nil, errors.New(r.Response().Status)
+	}
+
+	resp := gjson.ParseBytes(r.Bytes())
+	err = isError(&resp)
+	if err != nil {
+		return nil, err
+	}
+
+	result := resp.Get("result")
+
+	return &result, nil
 }
 
 // See 2 (end of page 4) http://www.ietf.org/rfc/rfc2617.txt
@@ -100,4 +119,34 @@ func (c *Client) Call(path string, request interface{}) []byte {
 func basicAuth(username, password string) string {
 	auth := username + ":" + password
 	return base64.StdEncoding.EncodeToString([]byte(auth))
+}
+
+//isError 是否报错
+func isError(result *gjson.Result) error {
+	var (
+		err error
+	)
+
+	/*
+		//failed 返回错误
+		{
+			"result": null,
+			"error": {
+				"code": -8,
+				"message": "Block height out of range"
+			},
+			"id": "foo"
+		}
+	*/
+
+	if !result.Get("error").IsObject() {
+		return nil
+	}
+
+	errInfo := fmt.Sprintf("[%d]%s",
+		result.Get("error.code").Int(),
+		result.Get("error.message").String())
+	err = errors.New(errInfo)
+
+	return err
 }

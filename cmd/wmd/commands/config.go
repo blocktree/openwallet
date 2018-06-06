@@ -78,12 +78,12 @@ func configWallet(c *cli.Context) error {
 	}
 	m := assets.GetWMD(symbol)
 	if m == nil {
-		openwLogger.Log.Fatalf("%s wallet manager is not register\n", symbol)
+		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
 	//配置钱包
 	err := m.InitConfigFlow()
 	if err != nil {
-		openwLogger.Log.Fatalf("%v", err)
+		openwLogger.Log.Errorf("%v", err)
 	}
 	return err
 }
@@ -96,11 +96,11 @@ func configSee(c *cli.Context) error {
 	}
 	m := assets.GetWMD(symbol)
 	if m == nil {
-		openwLogger.Log.Fatalf("%s wallet manager is not register\n", symbol)
+		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
 	err := m.ShowConfig()
 	if err != nil {
-		openwLogger.Log.Fatalf("%v", err)
+		openwLogger.Log.Errorf("%v", err)
 	}
 	return err
 }
