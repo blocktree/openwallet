@@ -88,7 +88,7 @@ func TestNewHDKey(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		key, err := NewHDKey(common.Hex2Bytes(test.seed), test.startPath)
+		key, err := NewHDKey(common.Hex2Bytes(test.seed), "hello", test.startPath)
 		if err != nil {
 			t.Fatalf("NewHDKey failed unexpected error: %v", err)
 		}

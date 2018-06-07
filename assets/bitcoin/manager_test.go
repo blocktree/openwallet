@@ -20,6 +20,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 	"testing"
+	"time"
 )
 
 func TestImportPrivKey(t *testing.T) {
@@ -42,7 +43,7 @@ func TestImportPrivKey(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		key, err := keystore.NewHDKey(test.seed, "m/44'/88'")
+		key, err := keystore.NewHDKey(test.seed, test.name, "m/44'/88'")
 		if err != nil {
 			t.Errorf("ImportPrivKey[%d] failed unexpected error: %v\n", i, err)
 			continue
@@ -93,8 +94,8 @@ func TestImportPrivKey(t *testing.T) {
 
 }
 
-func TestGetWalletinfo(t *testing.T) {
-	GetWalletinfo()
+func TestGetCoreWalletinfo(t *testing.T) {
+	GetCoreWalletinfo()
 }
 
 func TestKeyPoolRefill(t *testing.T) {
@@ -141,7 +142,7 @@ func TestCreateReceiverAddress(t *testing.T) {
 }
 
 func TestGetAddressesByAccount(t *testing.T) {
-	addresses, err := GetAddressesByAccount("john")
+	addresses, err := GetAddressesByAccount("John Test")
 	if err != nil {
 		t.Errorf("GetAddressesByAccount failed unexpected error: %v\n", err)
 		return
@@ -153,5 +154,196 @@ func TestGetAddressesByAccount(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	CreateBatchAddress("john", 300)
+	CreateBatchAddress("John Test", "1234qwer", 10000)
+}
+
+func TestEncryptWallet(t *testing.T) {
+	err := EncryptWallet("11111111")
+	if err != nil {
+		t.Errorf("EncryptWallet failed unexpected error: %v\n", err)
+		return
+	}
+}
+
+func TestUnlockWallet(t *testing.T) {
+	err := UnlockWallet("1234qwer",1)
+	if err != nil {
+		t.Errorf("UnlockWallet failed unexpected error: %v\n", err)
+		return
+	}
+}
+
+func TestCreateNewWallet(t *testing.T) {
+	err := CreateNewWallet("John Test", "1234qwer")
+	if err != nil {
+		t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
+		return
+	}
+}
+
+func TestGetWalletKeys(t *testing.T) {
+	wallets, err := GetWalletKeys(keyDir)
+	if err != nil {
+		t.Errorf("GetWalletKeys failed unexpected error: %v\n", err)
+		return
+	}
+
+	for i, w := range wallets {
+		t.Logf("GetWalletKeys wallet[%d] = %v", i, w)
+	}
+}
+
+func TestGetWalletBalance(t *testing.T) {
+
+	tests := []struct {
+		name string
+		tag  string
+	}{
+		{
+			name: "Chance",
+			tag:  "first",
+		},
+		{
+			name: "Zhiquan Test",
+			tag:  "second",
+		},
+		{
+			name: "*",
+			tag:  "all",
+		},
+		{
+			name: "llllll",
+			tag:  "account not exist",
+		},
+	}
+
+	for i, test := range tests {
+		balance, err := GetWalletBalance(test.name)
+		if err != nil {
+			t.Errorf("GetWalletBalance[%d] failed unexpected error: %v\n", i, err)
+		} else {
+			t.Logf("GetWalletBalance[%d] %s balance = %s \n", i, test.name, balance)
+		}
+	}
+
+}
+
+func TestGetWalleList(t *testing.T) {
+	wallets, err := GetWalleList()
+	if err != nil {
+		t.Errorf("GetWalleList failed unexpected error: %v\n", err)
+		return
+	}
+
+	for i, w := range wallets {
+		t.Logf("GetWalleList wallet[%d] = %v", i, w)
+	}
+}
+
+func TestCreateNewPrivateKey(t *testing.T) {
+
+	tests := []struct {
+		name string
+		password string
+		tag  string
+	}{
+		{
+			name: "Chance",
+			password: "1234qwer",
+			tag:  "wallet not exist",
+		},
+		{
+			name: "Zhiquan Test",
+			password: "1234qwer",
+			tag:  "normal",
+		},
+		{
+			name: "Zhiquan Test",
+			password: "121212121212",
+			tag:  "wrong password",
+		},
+	}
+
+	for i, test := range tests {
+		w, err := GetWalletInfo(test.name)
+		if err != nil {
+			t.Errorf("CreateNewPrivateKey[%d] failed unexpected error: %v\n", i, err)
+			continue
+		}
+
+		key, err := w.HDKey(test.password)
+		if err != nil {
+			t.Errorf("CreateNewPrivateKey[%d] failed unexpected error: %v\n", i, err)
+			continue
+		}
+
+		timestamp := time.Now().Unix()
+		t.Logf("CreateNewPrivateKey[%d] timestamp = %v \n", i, timestamp)
+		wif, a, err := CreateNewPrivateKey(key, uint64(timestamp), 0)
+		if err != nil {
+			t.Errorf("CreateNewPrivateKey[%d] failed unexpected error: %v\n", i, err)
+			continue
+		}
+
+		t.Logf("CreateNewPrivateKey[%d] wif = %v \n", i, wif)
+		t.Logf("CreateNewPrivateKey[%d] address = %v \n", i, a)
+	}
+}
+
+func TestGetWalleInfo(t *testing.T) {
+	w, err := GetWalletInfo("Zhiquan Test")
+	if err != nil {
+		t.Errorf("GetWalletInfo failed unexpected error: %v\n", err)
+		return
+	}
+
+	t.Logf("GetWalletInfo wallet = %v \n", w)
+}
+
+func TestCreateBatchPrivateKey(t *testing.T) {
+
+	w, err := GetWalletInfo("Zhiquan Test")
+	if err != nil {
+		t.Errorf("CreateBatchPrivateKey failed unexpected error: %v\n", err)
+		return
+	}
+
+	key, err := w.HDKey("1234qwer")
+	if err != nil {
+		t.Errorf("CreateBatchPrivateKey failed unexpected error: %v\n", err)
+		return
+	}
+
+	wifs, err := CreateBatchPrivateKey(key, 10000)
+	if err != nil {
+		t.Errorf("CreateBatchPrivateKey failed unexpected error: %v\n", err)
+		return
+	}
+
+	for i, wif := range wifs {
+		t.Logf("CreateBatchPrivateKey[%d] wif = %v \n", i, wif)
+	}
+
+
+}
+
+func TestImportMulti(t *testing.T) {
+
+	addresses := []string{
+		"1CoRcQGjPEyWmB1ZyG6CEDN3SaMsaD3ERa",
+		"1ESGCsXkNr3h5wvWScdCpVHu2GP3KJtCdV",
+	}
+
+	keys := []string{
+		"L5k8VYSvuZxC5FCczGVC8MmnKKix3Mcs6t185eUJVKTzZb1f6bsX",
+		"L3RVDjPVBSc7DD4WtmzbHkAHJW4kDbyXbw4vBppZ4DRtPt5u8Naf",
+	}
+
+	UnlockWallet("1234qwer", 120)
+	failed, err := ImportMulti(addresses, keys, "Zhiquan Test")
+	if err != nil {
+		t.Errorf("ImportMulti failed unexpected error: %v\n", err)
+	} else {
+		t.Errorf("ImportMulti result: %v\n", failed)
+	}
 }

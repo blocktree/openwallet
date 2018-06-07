@@ -22,7 +22,6 @@ import (
 	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
 	"log"
-	"net/http"
 )
 
 var (
@@ -56,7 +55,7 @@ func init() {
 	client = &Client{
 		BaseURL:     url,
 		AccessToken: "wallet:walletPassword2017",
-		Debug:       true,
+		Debug:       false,
 	}
 }
 
@@ -89,15 +88,11 @@ func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error)
 	}
 
 	if c.Debug {
-		log.Printf("%+v\n", r)
+		log.Printf("%v\n", r)
 	}
 
 	if err != nil {
 		return nil, err
-	}
-
-	if r.Response().StatusCode != http.StatusOK {
-		return nil, errors.New(r.Response().Status)
 	}
 
 	resp := gjson.ParseBytes(r.Bytes())
@@ -140,8 +135,15 @@ func isError(result *gjson.Result) error {
 	*/
 
 	if !result.Get("error").IsObject() {
+
+		if !result.Get("result").Exists() {
+			return errors.New("Response is empty! ")
+		}
+
 		return nil
 	}
+
+
 
 	errInfo := fmt.Sprintf("[%d]%s",
 		result.Get("error.code").Int(),

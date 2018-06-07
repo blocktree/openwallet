@@ -76,31 +76,31 @@ func NewHDKeystore(keydir, masterKey string, scryptN, scryptP int) *HDKeystore {
 }
 
 // StoreHDKey 创建HDKey
-func StoreHDKey(dir, masterKey, auth string, scryptN, scryptP int) (string, error) {
-	key, err := storeNewKey(&HDKeystore{dir, masterKey, scryptN, scryptP}, auth)
-	return key.RootId, err
+func StoreHDKey(dir, masterKey, alias, auth string, scryptN, scryptP int) (string, error) {
+	_, filePath, err := storeNewKey(&HDKeystore{dir, masterKey, scryptN, scryptP}, alias, auth)
+	return filePath, err
 }
 
 //storeNewKey 用随机种子生成HDKey
-func storeNewKey(ks *HDKeystore, auth string) (*HDKey, error) {
+func storeNewKey(ks *HDKeystore, alias, auth string) (*HDKey, string, error) {
 
 	seed, err := hdkeychain.GenerateSeed(SeedLen)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	extSeed, err := GetExtendSeed(seed, ks.MasterKey)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	key, err := NewHDKey(extSeed, openwCoinTypePath)
+	key, err := NewHDKey(extSeed, alias, openwCoinTypePath)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	filePath := ks.JoinPath(keyFileName(key.RootId))
+	filePath := ks.JoinPath(keyFileName(key.Alias, key.RootId))
 	ks.StoreKey(filePath, key, auth)
-	return key, err
+	return key, filePath, err
 }
 
 
@@ -142,10 +142,10 @@ func (ks *HDKeystore) JoinPath(filename string) string {
 }
 
 //getDecryptedKey 获取解密后的钥匙
-func (ks *HDKeystore) getDecryptedKey(a accounts.UserAccount, auth string) (accounts.UserAccount, *HDKey, error) {
-	path := ks.JoinPath(keyFileName(a.UserKey))
-	key, err := ks.GetKey(a.UserKey, path, auth)
-	return a, key, err
+func (ks *HDKeystore) getDecryptedKey(alias, rootId, auth string) (*accounts.UserAccount, *HDKey, error) {
+	path := ks.JoinPath(keyFileName(alias, rootId))
+	key, err := ks.GetKey(rootId, path, auth)
+	return nil, key, err
 }
 
 //GetExtendSeed 获得某个币种的扩展种子

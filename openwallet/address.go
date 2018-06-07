@@ -16,12 +16,11 @@
 package openwallet
 
 import (
-	"crypto/ecdsa"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/btcsuite/btcd/btcec"
 )
 
 const (
@@ -43,8 +42,17 @@ func (a Address) String(addProtocol ...bool) string {
 }
 
 //PubkeyToOpenwAddress 公钥转为openw统一地址
-func PubkeyToAddress(p ecdsa.PublicKey) Address {
-	pubBytes := crypto.FromECDSAPub(&p)
+func PubkeyToAddress(p btcec.PublicKey, compressed bool) Address {
+
+	var (
+		pubBytes []byte
+	)
+
+	if compressed {
+		pubBytes = btcutil.Hash160(p.SerializeCompressed())
+	} else {
+		pubBytes = btcutil.Hash160(p.SerializeUncompressed())
+	}
 	pkHash := btcutil.Hash160(pubBytes)
 	var a common.Address
 	a.SetBytes(pkHash)
@@ -52,11 +60,11 @@ func PubkeyToAddress(p ecdsa.PublicKey) Address {
 }
 
 //ExtendedKeyToAddress 扩展密钥转地址
-func ExtendedKeyToAddress(k *hdkeychain.ExtendedKey) Address {
+func ExtendedKeyToAddress(k *hdkeychain.ExtendedKey, compressed bool) Address {
 	var a Address
 	pubkey, err := k.ECPubKey()
 	if err != nil {
 		return a
 	}
-	return PubkeyToAddress(ecdsa.PublicKey(*pubkey))
+	return PubkeyToAddress(*pubkey, compressed)
 }

@@ -16,14 +16,14 @@
 package bitcoin
 
 import (
-	"path/filepath"
-	"github.com/astaxie/beego/config"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/shopspring/decimal"
-	"encoding/json"
+	"path/filepath"
 	"strings"
-	"errors"
 )
 
 /*
@@ -39,7 +39,7 @@ import (
 
 const (
 	//币种
-	Symbol = "BTC"
+	Symbol    = "BTC"
 	MasterKey = "Bitcoin seed"
 )
 
@@ -52,6 +52,8 @@ var (
 	configFilePath = filepath.Join("conf")
 	//配置文件名
 	configFileName = Symbol + ".json"
+	//是否测试网络
+	isTestNet = false
 )
 
 //isExistConfigFile 检查配置文件是否存在
@@ -67,7 +69,7 @@ func isExistConfigFile() bool {
 //newConfigFile 创建配置文件
 func newConfigFile(
 	apiURL, walletPath, sumAddress string,
-	threshold, minSendAmount, minFees float64) (config.Configer, string, error) {
+	threshold, minSendAmount, minFees float64, isTestNet bool) (config.Configer, string, error) {
 
 	//	生成配置
 	configMap := map[string]interface{}{
@@ -77,6 +79,7 @@ func newConfigFile(
 		"threshold":     decimal.NewFromFloat(threshold).String(),
 		"minSendAmount": decimal.NewFromFloat(minSendAmount).String(),
 		"minFees":       decimal.NewFromFloat(minFees).StringFixed(6),
+		"isTestNet":     isTestNet,
 	}
 
 	filepath.Join()
@@ -119,6 +122,7 @@ func printConfig() error {
 	minSendAmount := c.String("minSendAmount")
 	minFees := c.String("minFees")
 	sumAddress := c.String("sumAddress")
+	isTestNet, _ := c.Bool("isTestNet")
 
 	fmt.Printf("-----------------------------------------------------------\n")
 	fmt.Printf("Wallet API URL: %s\n", apiURL)
@@ -127,6 +131,11 @@ func printConfig() error {
 	fmt.Printf("Summary Threshold: %s\n", threshold)
 	fmt.Printf("Min Send Amount: %s\n", minSendAmount)
 	fmt.Printf("Transfer Fees: %s\n", minFees)
+	if isTestNet {
+		fmt.Printf("Network: TestNet\n")
+	} else {
+		fmt.Printf("Network: MainNet\n")
+	}
 	fmt.Printf("-----------------------------------------------------------\n")
 
 	return nil

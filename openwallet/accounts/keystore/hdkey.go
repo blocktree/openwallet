@@ -84,6 +84,10 @@ var (
 
 // HDKey 分层确定性密钥，基于BIP32模型创建的账户模型
 type HDKey struct {
+	//私钥别名
+	Alias string
+	//账户公钥
+	RootPub string
 	// 账户的扩展ID
 	RootId string
 	//账户路径
@@ -92,12 +96,14 @@ type HDKey struct {
 	AccountNum uint
 	// 根私钥
 	MasterKey *hdkeychain.ExtendedKey
-	//种子
+	//种子，加密保存
 	seed []byte
 }
 
 // 加密后的HDKey的JSON结构
 type encryptedHDKeyJSON struct {
+	Alias    string     `json:"alias"`
+	RootPub  string     `json:"rootpub"`
 	RootId   string     `json:"rootid"`
 	Crypto   cryptoJSON `json:"crypto"`
 	RootPath string     `json:"rootpath"`
@@ -165,7 +171,7 @@ func getDerivedKeyWithPath(key *hdkeychain.ExtendedKey, path string) (*hdkeychai
 
 	// m/<purpose>'/<coin type>' 分解路径
 	elements := strings.Split(path, "/")
-
+	//log.Println(elements)
 	for i, elem := range elements {
 		if len(elem) == 0 {
 			continue
@@ -180,9 +186,12 @@ func getDerivedKeyWithPath(key *hdkeychain.ExtendedKey, path string) (*hdkeychai
 		value = t.NewString(elem)
 		if i >= 0 && value.String() == elem {
 			if hardened {
-				derivedKey.Child(hdkeychain.HardenedKeyStart + value.UInt32())
+				derivedKey, err = derivedKey.Child(hdkeychain.HardenedKeyStart + value.UInt32())
 			} else {
-				derivedKey.Child(value.UInt32())
+				derivedKey, err = derivedKey.Child(value.UInt32())
+			}
+			if err != nil {
+				return nil, err
 			}
 		} else {
 			return nil, ErrInvalidDerivedPath
@@ -293,7 +302,9 @@ func EncryptKey(hdkey *HDKey, auth string, scryptN, scryptP int) ([]byte, error)
 	//}
 
 	encryptedHDKeyJSON := encryptedHDKeyJSON{
+		Alias:    hdkey.Alias,
 		RootId:   hdkey.RootId,
+		RootPub:  hdkey.RootPub,
 		Crypto:   cryptoStruct,
 		RootPath: hdkey.RootPath,
 		Version:  version,
@@ -333,10 +344,17 @@ func DecryptHDKey(keyjson []byte, auth string) (*HDKey, error) {
 		return nil, err
 	}
 
+	rootPub, err := rootkey.Neuter()
+	if err != nil {
+		return nil, err
+	}
+
 	return &HDKey{
-		RootId:     openwallet.ExtendedKeyToAddress(rootkey).String(),
-		RootPath:   k.RootPath,
-		MasterKey:  master,
+		Alias:     k.Alias,
+		RootId:    openwallet.ExtendedKeyToAddress(rootkey, true).String(),
+		RootPub:   rootPub.String(),
+		RootPath:  k.RootPath,
+		MasterKey: master,
 	}, nil
 }
 
@@ -450,7 +468,7 @@ func newKeyFromBIP32(seed []byte) (*hdkeychain.ExtendedKey, error) {
 }
 
 // NewHDKey 通过userkey，私钥种子，根私钥标识符，账户路径，创建HDKey
-func NewHDKey(seed []byte, rootPath string) (*HDKey, error) {
+func NewHDKey(seed []byte, alias, rootPath string) (*HDKey, error) {
 
 	var (
 		err error
@@ -476,9 +494,16 @@ func NewHDKey(seed []byte, rootPath string) (*HDKey, error) {
 		return nil, err
 	}
 
+	rootPub, err := key.Neuter()
+	if err != nil {
+		return nil, err
+	}
+
 	//实例化密钥
 	hdkey := &HDKey{
-		RootId:     openwallet.ExtendedKeyToAddress(key).String(), //存储账户扩展密钥的地址作为accountId
+		Alias:      alias,
+		RootPub:    rootPub.String(),
+		RootId:     openwallet.ExtendedKeyToAddress(key, true).String(), //存储账户扩展密钥的地址作为accountId
 		RootPath:   rootPath,
 		AccountNum: 0,
 		MasterKey:  master,
@@ -557,10 +582,10 @@ func writeKeyFile(file string, content []byte) error {
 }
 
 // keyFileName implements the naming convention for keyfiles:
-// UTC--<created_at UTC ISO8601>-<accountId hex>
-func keyFileName(accountId string) string {
-	ts := time.Now().UTC()
-	return fmt.Sprintf("UTC--%s--%s", toISO8601(ts), accountId)
+// wallet--<alias>-<rootId>
+func keyFileName(alias, rootId string) string {
+	//ts := time.Now().UTC()
+	return fmt.Sprintf("wallet-%s-%s.json", alias, rootId)
 }
 
 func toISO8601(t time.Time) string {
