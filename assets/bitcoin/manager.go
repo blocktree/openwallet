@@ -599,6 +599,55 @@ func CreateBatchPrivateKey(key *keystore.HDKey, count uint64) ([]string, error) 
 
 }
 
+//BackupWallet 备份钱包
+func BackupWallet(dest string) error {
+
+	request := []interface{}{
+		dest,
+	}
+
+	_, err := client.Call("backupwallet", request)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+//DumpWallet 导出钱包所有私钥文件
+func DumpWallet(filename string) error {
+
+	request := []interface{}{
+		filename,
+	}
+
+	_, err := client.Call("dumpwallet", request)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+//ImportWallet 导入钱包私钥文件
+func ImportWallet(filename string) error {
+
+	request := []interface{}{
+		filename,
+	}
+
+	_, err := client.Call("importwallet", request)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+
 //generateSeed 创建种子
 func generateSeed() []byte {
 	seed, err := hdkeychain.GenerateSeed(32)

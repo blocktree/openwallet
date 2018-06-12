@@ -55,7 +55,7 @@ func init() {
 	client = &Client{
 		BaseURL:     url,
 		AccessToken: "wallet:walletPassword2017",
-		Debug:       false,
+		Debug:       true,
 	}
 }
 
@@ -88,7 +88,7 @@ func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error)
 	}
 
 	if c.Debug {
-		log.Printf("%v\n", r)
+		log.Printf("%+v\n", r)
 	}
 
 	if err != nil {

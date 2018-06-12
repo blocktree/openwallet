@@ -21,6 +21,8 @@ import (
 	"github.com/btcsuite/btcutil"
 	"testing"
 	"time"
+	"path/filepath"
+	"github.com/codeskyblue/go-sh"
 )
 
 func TestImportPrivKey(t *testing.T) {
@@ -345,5 +347,39 @@ func TestImportMulti(t *testing.T) {
 		t.Errorf("ImportMulti failed unexpected error: %v\n", err)
 	} else {
 		t.Errorf("ImportMulti result: %v\n", failed)
+	}
+}
+
+func TestBackupWallet(t *testing.T) {
+	UnlockWallet("1234qwer", 120)
+	//backupFile := "/home/chbtc/openwallet/backup.dat"
+	backupFile := filepath.Join(".", "backup.dat")
+	err := BackupWallet(backupFile)
+	if err != nil {
+		t.Errorf("BackupWallet failed unexpected error: %v\n", err)
+	} else {
+		t.Errorf("BackupWallet filePath: %v\n", backupFile)
+	}
+}
+
+func TestDumpWallet(t *testing.T) {
+	UnlockWallet("1234qwer", 120)
+	file := filepath.Join(".", "openwallet", "")
+	err := DumpWallet(file)
+	if err != nil {
+		t.Errorf("DumpWallet failed unexpected error: %v\n", err)
+	} else {
+		t.Errorf("DumpWallet filePath: %v\n", file)
+	}
+}
+
+func TestGOSH(t *testing.T) {
+	//text, err := sh.Command("go", "env").Output()
+	//text, err := sh.Command("wmd", "version").Output()
+	text, err := sh.Command("wmd", "config", "see", "-s", "btm").Output()
+	if err != nil {
+		t.Errorf("GOSH failed unexpected error: %v\n", err)
+	} else {
+		t.Errorf("GOSH output: %v\n", string(text))
 	}
 }

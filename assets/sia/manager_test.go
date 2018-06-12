@@ -19,7 +19,7 @@ import "testing"
 
 func init() {
 	//serverAPI = "http://192.168.2.224:10056"
-	serverAPI = "http://192.168.2.192:10051"
+	serverAPI = "http://192.168.2.193:10051"
 	client = &Client{
 		BaseURL: serverAPI,
 		Debug:   true,
@@ -59,7 +59,7 @@ func TestUnlockWallet(t *testing.T) {
 
 func TestCreateNewWallet(t *testing.T) {
 	password := "12345678"
-	seed, err := CreateNewWallet(password, true)
+	seed, err := CreateNewWallet(password, false)
 	if err != nil {
 		t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
 	} else {
