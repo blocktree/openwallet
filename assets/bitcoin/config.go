@@ -53,7 +53,11 @@ var (
 	//配置文件名
 	configFileName = Symbol + ".json"
 	//是否测试网络
-	isTestNet = false
+	isTestNet = true
+	// 核心钱包是否只做监听
+	CoreWalletWatchOnly = true
+	//本地数据库文件路径
+	dbPath = filepath.Join("data", strings.ToLower(Symbol), "wmd.db")
 )
 
 //isExistConfigFile 检查配置文件是否存在

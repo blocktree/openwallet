@@ -15,7 +15,7 @@ go get -u -v github.com/kardianos/govendor
 ```shell
 
 #进入到项目目录
-$ cd $GOPATH/OpenWallet
+$ cd $GOPATH/src/github.com/blocktree/OpenWallet
 
 #初始化vendor目录
 $ govendor init
@@ -81,7 +81,7 @@ wmd为了实现对多币种的钱包操作，规范了以下接口：
 ```shell
 
 # 进入目录
-$ $GOPATH/OpenWallet/cmd/wmd
+$ $GOPATH/src/github.com/blocktree/OpenWallet/cmd/wmd
 
 # 全部平台版本编译
 $ xgo .
