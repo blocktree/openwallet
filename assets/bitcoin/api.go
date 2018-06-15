@@ -24,13 +24,6 @@ import (
 	"log"
 )
 
-var (
-	client      *Client
-	url         = "http://192.168.2.192:10000"
-	rpcuser     = "wallet"
-	rpcpassword = "walletPassword2017"
-)
-
 // A Client is a Bitcoin RPC client. It performs RPCs over HTTP using JSON
 // request and responses. A Client must be configured with a secret token
 // to authenticate with other Cores on the network.
@@ -50,15 +43,6 @@ type Response struct {
 	Id      string      `json:"id,omitempty"`
 }
 
-func init() {
-
-	client = &Client{
-		BaseURL:     url,
-		AccessToken: "wallet:walletPassword2017",
-		Debug:       true,
-	}
-}
-
 // Call calls a remote procedure on another node, specified by the path.
 func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error) {
 
@@ -68,7 +52,7 @@ func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error)
 
 	authHeader := req.Header{
 		"Accept":        "application/json",
-		"Authorization": "Basic " + basicAuth(rpcuser, rpcpassword),
+		"Authorization": "Basic " + c.AccessToken,
 	}
 
 	//json-rpc

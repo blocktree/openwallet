@@ -104,7 +104,7 @@ type Unspent struct {
 	Confirmations uint64  `json:"confirmations"`
 	Spendable     bool    `json:"spendable"`
 	Solvable      bool    `json:"solvable"`
-	HDAddress     Address `storm:"inline"`
+	HDAddress     Address
 }
 
 func NewUnspent(json *gjson.Result) *Unspent {
@@ -117,7 +117,8 @@ func NewUnspent(json *gjson.Result) *Unspent {
 	obj.ScriptPubKey = gjson.Get(json.Raw, "scriptPubKey").String()
 	obj.Amount = gjson.Get(json.Raw, "amount").String()
 	obj.Confirmations = gjson.Get(json.Raw, "confirmations").Uint()
-	obj.Spendable = gjson.Get(json.Raw, "spendable").Bool()
+	//obj.Spendable = gjson.Get(json.Raw, "spendable").Bool()
+	obj.Spendable = true
 	obj.Solvable = gjson.Get(json.Raw, "solvable").Bool()
 
 	return obj

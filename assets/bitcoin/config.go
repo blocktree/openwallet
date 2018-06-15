@@ -44,6 +44,10 @@ const (
 )
 
 var (
+	//RPC认证账户名
+	rpcUser = ""
+	//RPC认证账户密码
+	rpcPassword = ""
 	//钥匙备份路径
 	keyDir = filepath.Join("data", strings.ToLower(Symbol), "key")
 	//地址导出路径
@@ -56,6 +60,8 @@ var (
 	isTestNet = true
 	// 核心钱包是否只做监听
 	CoreWalletWatchOnly = true
+	//最大的输入数量
+	maxTxInputs = 30
 	//本地数据库文件路径
 	dbPath = filepath.Join("data", strings.ToLower(Symbol), "wmd.db")
 )

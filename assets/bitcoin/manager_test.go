@@ -24,7 +24,21 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+	"math"
 )
+
+func init() {
+
+	serverAPI = "http://192.168.2.192:10000"
+	rpcUser = "wallet"
+	rpcPassword = "walletPassword2017"
+	token := basicAuth(rpcUser, rpcPassword)
+	client = &Client{
+		BaseURL:     serverAPI,
+		AccessToken: token,
+		Debug:       false,
+	}
+}
 
 func TestImportPrivKey(t *testing.T) {
 
@@ -417,15 +431,15 @@ func TestGetAddressesFromLocalDB(t *testing.T) {
 	}
 }
 
-func TestBatchInsertWalletUnspent(t *testing.T) {
+func TestRebuildWalletUnspent(t *testing.T) {
 
-	err := BatchInsertWalletUnspent()
+	err := RebuildWalletUnspent()
 	if err != nil {
-		t.Errorf("BatchInsertWalletUnspent failed unexpected error: %v\n", err)
+		t.Errorf("RebuildWalletUnspent failed unexpected error: %v\n", err)
 		return
 	}
 
-	t.Logf("BatchInsertWalletUnspent successfully.\n")
+	t.Logf("RebuildWalletUnspent successfully.\n")
 }
 
 func TestListUnspentFromLocalDB(t *testing.T) {
@@ -456,27 +470,69 @@ func TestBuildTransaction(t *testing.T) {
 
 	t.Logf("BuildTransaction txRaw = %s\n", txRaw)
 
-	hex, err := SignRawTransaction(txRaw, walletID, "1234qwer", utxos)
-	if err != nil {
-		t.Errorf("BuildTransaction failed unexpected error: %v\n", err)
-		return
-	}
-
-	t.Logf("BuildTransaction signHex = %s\n", hex)
+	//hex, err := SignRawTransaction(txRaw, walletID, "1234qwer", utxos)
+	//if err != nil {
+	//	t.Errorf("BuildTransaction failed unexpected error: %v\n", err)
+	//	return
+	//}
+	//
+	//t.Logf("BuildTransaction signHex = %s\n", hex)
 }
 
 func TestEstimateFee(t *testing.T) {
-	fees, _ := EstimateFee(10, 2)
+	feeRate, _ := EstimateFeeRate()
+	fees, _ := EstimateFee(10, 2, feeRate)
 	t.Logf("EstimateFee fees = %s\n", fees.StringFixed(8))
 }
 
 func TestSendTransaction(t *testing.T) {
-	txid, err := SendTransaction("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", "mrThNMQ6bMf1YNPjBj9jYXmYYzw1Rt8GFU", decimal.NewFromFloat(0.5), "1234qwer", true)
 
-	if err != nil {
-		t.Errorf("SendTransaction failed unexpected error: %v\n", err)
-		return
+	sends := []string{
+		"mzRMyCYNDTC91g7VTryFgabYBg2GDRTDfE",
+		"mwJ5Jrj8tPq9D2wE4h8mVkGgAMGbQ4GCo2",
+		"mmewNfURua2iCHCg87m6A1VP2awZ34GS9x",
+		"n4ExgJ9dHQ6bYjkh6KPChonX99L4KJqYUq",
+		"mj9nRF11ZCDN8wBAc6DtRxxBw9ehHWJJtG",
+		"n2GxGUsL78JgdYe4un8g2aH1PowkgfSLXB",
+		"mxL2SXgVPdyjVPkpG42Fo5Vph3UTQiH34o",
+		"mqD9ouMpTnjiWBD1vrNVasBwNfKoekfck5",
+		"n3nPyV6JrxXQrP6TYmxJCQzUzcyJAN3NL8",
+		"mzJeoPF1r8QozHJYc2JsohchpJWgUdUhmh",
+		"n4aU52rgZWEbYFekrUjJPg5oTfcXC4Ct69",
+		"mt3kHYS2piWaJhRKzA8jfTrymzw7eDkGys",
+		"n4GvMSbFLvPcuSSopRvgDY5ysr7Ui4XGfk",
+		"mkDW74UpsJxsJk6qPyV1avWCJTRPVYYBqT",
+		"mw1DWAVCyLN2FzbCTHZ679d6TuTRxBBd63",
+		"mqmZx9Apw81p7kvGHnemxesKJTTVez2VYT",
+		"mk42ZbczUTHBvm3RrzitZgnBXRYDMyX6JY",
+		"mysdRzsFyJGFSWJwFt8evcds2GN5CEv3Np",
+		"mrmVvPmVpmdvnyPpqgnWLsstV2PEmBZX94",
+		"mzBqw9Hph42kTTn9vPhSCNwUahfmqPMkAt",
+		"msZ5WN6FLsBAFDG1hTeRzNjZeMSgx15GdV",
+		"mvNqtLTSKkshqfaJPkoPVgZ6gvuuxgqTEr",
+		"mkPFETnfrEtTCyjjs5ZU5ZCo4VCJJK1Jqy",
 	}
 
-	t.Logf("SendTransaction txid = %s\n", txid)
+	for _, to := range sends {
+
+		RebuildWalletUnspent()
+
+		txIDs, err := SendTransaction("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", to, decimal.NewFromFloat(0.02), "1234qwer", false)
+
+		if err != nil {
+			t.Errorf("SendTransaction failed unexpected error: %v\n", err)
+			return
+		}
+
+		t.Logf("SendTransaction txid = %v\n", txIDs)
+
+	}
+
+
+}
+
+func TestMath(t *testing.T) {
+	piece := int64(math.Ceil(float64(67) / float64(30)))
+
+	t.Logf("ceil = %d", piece)
 }
