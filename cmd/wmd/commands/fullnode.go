@@ -122,7 +122,7 @@ func initNodeConfig(c *cli.Context) (error) {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-	m := assets.GetWMD(symbol)
+	m := assets.GetWMD(symbol).(assets.NodeManager)
 	if m == nil {
 		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
@@ -139,7 +139,7 @@ func buildImage(c *cli.Context) (error) {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-	m := assets.GetWMD(symbol)
+	m := assets.GetWMD(symbol).(assets.NodeManager)
 	if m == nil {
 		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
@@ -156,7 +156,7 @@ func runContainer(c *cli.Context) (error) {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-	m := assets.GetWMD(symbol)
+	m := assets.GetWMD(symbol).(assets.NodeManager)
 	if m == nil {
 		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
@@ -173,7 +173,7 @@ func runFullNode(c *cli.Context) (error) {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-	m := assets.GetWMD(symbol)
+	m := assets.GetWMD(symbol).(assets.NodeManager)
 	if m == nil {
 		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
@@ -182,6 +182,7 @@ func runFullNode(c *cli.Context) (error) {
 	if err != nil {
 		openwLogger.Log.Errorf("%v", err)
 	}
+
 	return err
 }
 
@@ -190,7 +191,7 @@ func loginContainer(c *cli.Context) (error) {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-	m := assets.GetWMD(symbol)
+	m := assets.GetWMD(symbol).(assets.NodeManager)
 	if m == nil {
 		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}

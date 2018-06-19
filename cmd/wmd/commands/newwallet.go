@@ -144,7 +144,7 @@ func createNewWallet(c *cli.Context) error {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-	m := assets.GetWMD(symbol)
+	m := assets.GetWMD(symbol).(assets.WalletManager)
 	if m == nil {
 		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
@@ -163,7 +163,7 @@ func batchAddress(c *cli.Context) error {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-	m := assets.GetWMD(symbol)
+	m := assets.GetWMD(symbol).(assets.WalletManager)
 	if m == nil {
 		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
@@ -182,7 +182,7 @@ func startSummary(c *cli.Context) error {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-	m := assets.GetWMD(symbol)
+	m := assets.GetWMD(symbol).(assets.WalletManager)
 	if m == nil {
 		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
@@ -200,7 +200,7 @@ func backupWalletKey(c *cli.Context) error  {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-	m := assets.GetWMD(symbol)
+	m := assets.GetWMD(symbol).(assets.WalletManager)
 	if m == nil {
 		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
@@ -217,7 +217,7 @@ func getWalletList(c *cli.Context) error  {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-	m := assets.GetWMD(symbol)
+	m := assets.GetWMD(symbol).(assets.WalletManager)
 	if m == nil {
 		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
@@ -234,7 +234,7 @@ func sendTransaction(c *cli.Context) error  {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-	m := assets.GetWMD(symbol)
+	m := assets.GetWMD(symbol).(assets.WalletManager)
 	if m == nil {
 		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
@@ -251,7 +251,7 @@ func restoreWallet(c *cli.Context) error  {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-	m := assets.GetWMD(symbol)
+	m := assets.GetWMD(symbol).(assets.WalletManager)
 	if m == nil {
 		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}

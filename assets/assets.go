@@ -19,6 +19,7 @@ import (
 	//"github.com/blocktree/OpenWallet/assets/cardano"
 	"strings"
 	"github.com/blocktree/OpenWallet/assets/bytom"
+	"github.com/blocktree/OpenWallet/assets/cardano"
 )
 
 //WalletManager 钱包管理器
@@ -42,6 +43,11 @@ type WalletManager interface {
 	//恢复钱包
 	RestoreWalletFlow() error
 
+
+}
+
+type NodeManager interface {
+
 	//初始化节点配置文件
 	InitNodeConfig() error
 	//创建镜像
@@ -52,15 +58,16 @@ type WalletManager interface {
 	RunFullNode() error
 	//登录容器
 	LoginContainer() error
+
 }
 
 //钱包管理器组
-var managers = make(map[string]WalletManager)
+var managers = make(map[string]interface{})
 
 // RegWMD makes a WalletManager available by the name.
 // If Register is called twice with the same name or if driver is nil,
 // it panics.
-func RegWMD(name string, manager WalletManager) {
+func RegWMD(name string, manager interface{}) {
 	if manager == nil {
 		panic("WalletManager: Register adapter is nil")
 	}
@@ -72,7 +79,7 @@ func RegWMD(name string, manager WalletManager) {
 
 
 // GetWMD 根据币种类型获取已注册的管理者
-func GetWMD(symbol string) WalletManager {
+func GetWMD(symbol string) interface{} {
 	manager, ok := managers[symbol]
 	if !ok {
 		return nil
@@ -83,6 +90,6 @@ func GetWMD(symbol string) WalletManager {
 //注册钱包管理工具
 func init() {
 	//注册钱包管理工具
-	//RegWMD(strings.ToLower(cardano.Symbol), &cardano.WalletManager{})
+	RegWMD(strings.ToLower(cardano.Symbol), &cardano.WalletManager{})
 	RegWMD(strings.ToLower(bytom.Symbol), &bytom.WalletManager{})
 }

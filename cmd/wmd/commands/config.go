@@ -77,7 +77,7 @@ func configWallet(c *cli.Context) error {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-	m := assets.GetWMD(symbol)
+	m := assets.GetWMD(symbol).(assets.WalletManager)
 	if m == nil {
 		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
@@ -95,7 +95,7 @@ func configSee(c *cli.Context) error {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-	m := assets.GetWMD(symbol)
+	m := assets.GetWMD(symbol).(assets.WalletManager)
 	if m == nil {
 		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
