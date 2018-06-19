@@ -16,9 +16,12 @@
 package bitcoin
 
 import (
+	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/openwallet/accounts/keystore"
 	"github.com/tidwall/gjson"
+	"path/filepath"
 	"time"
+	"github.com/blocktree/OpenWallet/common/file"
 )
 
 //Wallet 钱包模型
@@ -48,6 +51,19 @@ func (w *Wallet) HDKey(password string) (*keystore.HDKey, error) {
 		return nil, err
 	}
 	return key, err
+}
+
+//openDB 打开钱包数据库
+func (w *Wallet) OpenDB() (*storm.DB, error) {
+	file.MkdirAll(dbPath)
+	file := filepath.Join(dbPath, w.FileName()+".db")
+	return storm.Open(file)
+
+}
+
+//FileName 该钱包定义的文件名规则
+func (w *Wallet)FileName() string {
+	return w.Alias+"-"+w.WalletID
 }
 
 //BlockchainInfo 本地节点区块链信息
@@ -94,16 +110,16 @@ type Unspent struct {
 		        "solvable" : true
 		    }
 	*/
-	Key           string  `storm:"id"`
-	TxID          string  `json:"txid"`
-	Vout          uint64  `json:"vout"`
-	Address       string  `json:"address"`
-	Account       string  `json:"account" storm:"index"`
-	ScriptPubKey  string  `json:"scriptPubKey"`
-	Amount        string  `json:"amount"`
-	Confirmations uint64  `json:"confirmations"`
-	Spendable     bool    `json:"spendable"`
-	Solvable      bool    `json:"solvable"`
+	Key           string `storm:"id"`
+	TxID          string `json:"txid"`
+	Vout          uint64 `json:"vout"`
+	Address       string `json:"address"`
+	Account       string `json:"account" storm:"index"`
+	ScriptPubKey  string `json:"scriptPubKey"`
+	Amount        string `json:"amount"`
+	Confirmations uint64 `json:"confirmations"`
+	Spendable     bool   `json:"spendable"`
+	Solvable      bool   `json:"solvable"`
 	HDAddress     Address
 }
 

@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/shopspring/decimal"
 	"path/filepath"
 	"strings"
 )
@@ -61,9 +60,11 @@ var (
 	// 核心钱包是否只做监听
 	CoreWalletWatchOnly = true
 	//最大的输入数量
-	maxTxInputs = 30
+	maxTxInputs = 50
 	//本地数据库文件路径
-	dbPath = filepath.Join("data", strings.ToLower(Symbol), "wmd.db")
+	dbPath = filepath.Join("data", strings.ToLower(Symbol), "db")
+	//备份路径
+	backupDir = filepath.Join("data", strings.ToLower(Symbol), "backup")
 )
 
 //isExistConfigFile 检查配置文件是否存在
@@ -79,16 +80,14 @@ func isExistConfigFile() bool {
 //newConfigFile 创建配置文件
 func newConfigFile(
 	apiURL, walletPath, sumAddress string,
-	threshold, minSendAmount, minFees float64, isTestNet bool) (config.Configer, string, error) {
+	threshold string, isTestNet bool) (config.Configer, string, error) {
 
 	//	生成配置
 	configMap := map[string]interface{}{
 		"apiURL":        apiURL,
 		"walletPath":    walletPath,
 		"sumAddress":    sumAddress,
-		"threshold":     decimal.NewFromFloat(threshold).String(),
-		"minSendAmount": decimal.NewFromFloat(minSendAmount).String(),
-		"minFees":       decimal.NewFromFloat(minFees).StringFixed(6),
+		"threshold":     threshold,
 		"isTestNet":     isTestNet,
 	}
 

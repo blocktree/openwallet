@@ -128,3 +128,11 @@ func TestWriteFile(t *testing.T) {
 	WriteFile("testfile.txt", []byte(content), true)
 	WriteFile("testfile.txt", []byte(content), true)
 }
+
+func TestDelete(t *testing.T) {
+	file := "/myspace/workplace/go-workspace/projects/src/github.com/blocktree/OpenWallet/cmd/wmd/wmd-linux-amd64"
+	flag := Delete(file)
+	if !flag {
+		t.Log("DeleteFile failed!")
+	}
+}

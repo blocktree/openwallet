@@ -199,6 +199,16 @@ func WriteFile(name string, content []byte, append bool) bool {
 	return true
 }
 
+//Delete 删除文件
+func Delete(file string) bool {
+	err := os.Remove(file)
+	if err != nil {
+		return false
+	} else {
+		return true
+	}
+}
+
 // TODO: implement those functions
 func isReadable(mode os.FileMode) bool { return mode&0400 != 0 }
 

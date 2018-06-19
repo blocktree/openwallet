@@ -21,10 +21,11 @@ import (
 	"github.com/btcsuite/btcutil"
 	"github.com/codeskyblue/go-sh"
 	"github.com/shopspring/decimal"
+	"math"
 	"path/filepath"
 	"testing"
 	"time"
-	"math"
+	"fmt"
 )
 
 func init() {
@@ -159,7 +160,7 @@ func TestCreateReceiverAddress(t *testing.T) {
 }
 
 func TestGetAddressesByAccount(t *testing.T) {
-	addresses, err := GetAddressesByAccount("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ")
+	addresses, err := GetAddressesByAccount("W9JyC464XAZEJgdiAZxUXbPpsZZ2JeAujV")
 	if err != nil {
 		t.Errorf("GetAddressesByAccount failed unexpected error: %v\n", err)
 		return
@@ -171,7 +172,11 @@ func TestGetAddressesByAccount(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	CreateBatchAddress("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", "1234qwer", 100)
+	_, err := CreateBatchAddress("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", "1234qwer", 100)
+	if err != nil {
+		t.Errorf("CreateBatchAddress failed unexpected error: %v\n", err)
+		return
+	}
 }
 
 func TestEncryptWallet(t *testing.T) {
@@ -191,7 +196,7 @@ func TestUnlockWallet(t *testing.T) {
 }
 
 func TestCreateNewWallet(t *testing.T) {
-	err := CreateNewWallet("Rocky", "1234qwer")
+	_, err := CreateNewWallet("Rocky", "1234qwer")
 	if err != nil {
 		t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
 		return
@@ -235,18 +240,14 @@ func TestGetWalletBalance(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		balance, err := GetWalletBalance(test.name)
-		if err != nil {
-			t.Errorf("GetWalletBalance[%d] failed unexpected error: %v\n", i, err)
-		} else {
-			t.Logf("GetWalletBalance[%d] %s balance = %s \n", i, test.name, balance)
-		}
+		balance := GetWalletBalance(test.name)
+		t.Logf("GetWalletBalance[%d] %s balance = %s \n", i, test.name, balance)
 	}
 
 }
 
 func TestGetWalleList(t *testing.T) {
-	wallets, err := GetWalleList()
+	wallets, err := GetWalletList()
 	if err != nil {
 		t.Errorf("GetWalleList failed unexpected error: %v\n", err)
 		return
@@ -365,10 +366,11 @@ func TestCreateBatchPrivateKey(t *testing.T) {
 //}
 
 func TestBackupWallet(t *testing.T) {
-	UnlockWallet("1234qwer", 120)
-	//backupFile := "/home/chbtc/openwallet/backup.dat"
-	backupFile := filepath.Join(".", "backup.dat")
-	err := BackupWallet(backupFile)
+	//UnlockWallet("1234qwer", 120)
+	walletPath = "/home/www/btc"
+	tmpWalletDat := fmt.Sprintf("tmp-walllet-%d.dat", time.Now().Unix())
+	backupFile := filepath.Join(walletPath, tmpWalletDat)
+	err := BackupWalletData(backupFile)
 	if err != nil {
 		t.Errorf("BackupWallet failed unexpected error: %v\n", err)
 	} else {
@@ -408,7 +410,7 @@ func TestGetBlockChainInfo(t *testing.T) {
 }
 
 func TestListUnspent(t *testing.T) {
-	utxos, err := ListUnspent(1)
+	utxos, err := ListUnspent(0)
 	if err != nil {
 		t.Errorf("ListUnspent failed unexpected error: %v\n", err)
 		return
@@ -433,7 +435,7 @@ func TestGetAddressesFromLocalDB(t *testing.T) {
 
 func TestRebuildWalletUnspent(t *testing.T) {
 
-	err := RebuildWalletUnspent()
+	err := RebuildWalletUnspent("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ")
 	if err != nil {
 		t.Errorf("RebuildWalletUnspent failed unexpected error: %v\n", err)
 		return
@@ -448,10 +450,14 @@ func TestListUnspentFromLocalDB(t *testing.T) {
 		t.Errorf("ListUnspentFromLocalDB failed unexpected error: %v\n", err)
 		return
 	}
-
+	t.Logf("ListUnspentFromLocalDB totalCount = %d\n", len(utxos))
+	total := decimal.New(0, 0)
 	for _, u := range utxos {
+		amount, _ := decimal.NewFromString(u.Amount)
+		total = total.Add(amount)
 		t.Logf("ListUnspentFromLocalDB %v: %s = %s\n", u.HDAddress, u.Account, u.Amount)
 	}
+	t.Logf("ListUnspentFromLocalDB total = %s\n", total.StringFixed(8))
 }
 
 func TestBuildTransaction(t *testing.T) {
@@ -481,6 +487,7 @@ func TestBuildTransaction(t *testing.T) {
 
 func TestEstimateFee(t *testing.T) {
 	feeRate, _ := EstimateFeeRate()
+	t.Logf("EstimateFee feeRate = %s\n", feeRate.StringFixed(8))
 	fees, _ := EstimateFee(10, 2, feeRate)
 	t.Logf("EstimateFee fees = %s\n", fees.StringFixed(8))
 }
@@ -488,36 +495,14 @@ func TestEstimateFee(t *testing.T) {
 func TestSendTransaction(t *testing.T) {
 
 	sends := []string{
-		"mzRMyCYNDTC91g7VTryFgabYBg2GDRTDfE",
-		"mwJ5Jrj8tPq9D2wE4h8mVkGgAMGbQ4GCo2",
-		"mmewNfURua2iCHCg87m6A1VP2awZ34GS9x",
-		"n4ExgJ9dHQ6bYjkh6KPChonX99L4KJqYUq",
-		"mj9nRF11ZCDN8wBAc6DtRxxBw9ehHWJJtG",
-		"n2GxGUsL78JgdYe4un8g2aH1PowkgfSLXB",
-		"mxL2SXgVPdyjVPkpG42Fo5Vph3UTQiH34o",
-		"mqD9ouMpTnjiWBD1vrNVasBwNfKoekfck5",
-		"n3nPyV6JrxXQrP6TYmxJCQzUzcyJAN3NL8",
-		"mzJeoPF1r8QozHJYc2JsohchpJWgUdUhmh",
-		"n4aU52rgZWEbYFekrUjJPg5oTfcXC4Ct69",
-		"mt3kHYS2piWaJhRKzA8jfTrymzw7eDkGys",
-		"n4GvMSbFLvPcuSSopRvgDY5ysr7Ui4XGfk",
-		"mkDW74UpsJxsJk6qPyV1avWCJTRPVYYBqT",
-		"mw1DWAVCyLN2FzbCTHZ679d6TuTRxBBd63",
-		"mqmZx9Apw81p7kvGHnemxesKJTTVez2VYT",
-		"mk42ZbczUTHBvm3RrzitZgnBXRYDMyX6JY",
-		"mysdRzsFyJGFSWJwFt8evcds2GN5CEv3Np",
-		"mrmVvPmVpmdvnyPpqgnWLsstV2PEmBZX94",
-		"mzBqw9Hph42kTTn9vPhSCNwUahfmqPMkAt",
-		"msZ5WN6FLsBAFDG1hTeRzNjZeMSgx15GdV",
-		"mvNqtLTSKkshqfaJPkoPVgZ6gvuuxgqTEr",
-		"mkPFETnfrEtTCyjjs5ZU5ZCo4VCJJK1Jqy",
+		"mukWvd4QZQqCHkxtrAbaKMRCe2zvCo78kH",
 	}
+
+	RebuildWalletUnspent("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ")
 
 	for _, to := range sends {
 
-		RebuildWalletUnspent()
-
-		txIDs, err := SendTransaction("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", to, decimal.NewFromFloat(0.02), "1234qwer", false)
+		txIDs, err := SendTransaction("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", to, decimal.NewFromFloat(4), "1234qwer", false)
 
 		if err != nil {
 			t.Errorf("SendTransaction failed unexpected error: %v\n", err)
@@ -528,11 +513,14 @@ func TestSendTransaction(t *testing.T) {
 
 	}
 
-
 }
 
 func TestMath(t *testing.T) {
 	piece := int64(math.Ceil(float64(67) / float64(30)))
 
 	t.Logf("ceil = %d", piece)
+}
+
+func TestGetNetworkInfo(t *testing.T) {
+	GetNetworkInfo()
 }

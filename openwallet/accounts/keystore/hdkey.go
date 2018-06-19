@@ -585,7 +585,7 @@ func writeKeyFile(file string, content []byte) error {
 // wallet--<alias>-<rootId>
 func keyFileName(alias, rootId string) string {
 	//ts := time.Now().UTC()
-	return fmt.Sprintf("wallet-%s-%s.json", alias, rootId)
+	return fmt.Sprintf("%s-%s.key", alias, rootId)
 }
 
 func toISO8601(t time.Time) string {

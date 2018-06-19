@@ -19,10 +19,11 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/asdine/storm"
+	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/openwallet/accounts/keystore"
+	"github.com/bndr/gotabulate"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/hdkeychain"
@@ -38,11 +39,17 @@ import (
 	"time"
 )
 
+const (
+	maxAddresNum = 10000
+)
+
 var (
 	//秘钥存取
 	storage *keystore.HDKeystore
 	//钱包服务API
 	serverAPI = "http://127.0.0.1:10000"
+	//钱包安装的路径
+	walletPath = ""
 	//小数位长度
 	coinDecimal decimal.Decimal = decimal.NewFromFloat(100000000)
 	//参与汇总的钱包
@@ -94,7 +101,12 @@ func GetAddressesByAccount(walletID string) ([]string, error) {
 //GetAddressesFromLocalDB 从本地数据库
 func GetAddressesFromLocalDB(walletID string) ([]*Address, error) {
 
-	db, err := storm.Open(dbPath)
+	wallet, err := GetWalletInfo(walletID)
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := wallet.OpenDB()
 	if err != nil {
 		return nil, err
 	}
@@ -238,6 +250,17 @@ func LockWallet() error {
 	return err
 }
 
+//GetNetworkInfo 获取网络信息
+func GetNetworkInfo() error {
+
+	_, err := client.Call("getnetworkinfo", nil)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
 //KeyPoolRefill 重新填充私钥池
 func KeyPoolRefill(keyPoolSize uint64) error {
 
@@ -305,7 +328,7 @@ func CreateBatchAddress(name, password string, count uint64) (string, error) {
 	defer close(worker)
 
 	//保存地址过程
-	saveAddressWork := func(addresses chan []*Address, filename string) {
+	saveAddressWork := func(addresses chan []*Address, filename string, wallet *Wallet) {
 
 		var (
 			saveErr error
@@ -316,7 +339,7 @@ func CreateBatchAddress(name, password string, count uint64) (string, error) {
 			getAddrs := <-addresses
 
 			//批量写入数据库
-			saveErr = saveAddressToDB(getAddrs)
+			saveErr = saveAddressToDB(getAddrs, wallet)
 			//数据保存成功才导出文件
 			if saveErr == nil {
 				//导出一批地址
@@ -339,7 +362,7 @@ func CreateBatchAddress(name, password string, count uint64) (string, error) {
 
 	/*	开启导出的线程，监听新地址，批量导出	*/
 
-	go saveAddressWork(worker, filePath)
+	go saveAddressWork(worker, filePath, w)
 
 	/*	计算synCount个线程，内部运行的次数	*/
 
@@ -413,7 +436,7 @@ func CreateBatchAddress(name, password string, count uint64) (string, error) {
 }
 
 //CreateNewWallet 创建钱包
-func CreateNewWallet(name, password string) error {
+func CreateNewWallet(name, password string) (string, error) {
 
 	var (
 		err     error
@@ -424,7 +447,7 @@ func CreateNewWallet(name, password string) error {
 	wallets, err = GetWalletKeys(keyDir)
 	for _, w := range wallets {
 		if w.Alias == name {
-			return errors.New("The wallet's alias is duplicated!")
+			return "", errors.New("The wallet's alias is duplicated!")
 		}
 	}
 
@@ -435,7 +458,7 @@ func CreateNewWallet(name, password string) error {
 		//钱包已经加密，解锁钱包1秒，检查密码
 		err = UnlockWallet(password, 1)
 		if err != nil {
-			return errors.New("The wallet's password is not equal bitcoin-core wallet!\n")
+			return "", errors.New("The wallet's password is not equal bitcoin-core wallet!\n")
 		}
 	}
 
@@ -443,12 +466,10 @@ func CreateNewWallet(name, password string) error {
 
 	keyFile, err := keystore.StoreHDKey(keyDir, MasterKey, name, password, keystore.StandardScryptN, keystore.StandardScryptP)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	fmt.Printf("Wallet create successfully, key path: %s\n", keyFile)
-
-	return nil
+	return keyFile, nil
 }
 
 //EncryptWallet 通过密码加密钱包，只在第一次加密码时才有效
@@ -526,8 +547,8 @@ func GetWalletKeys(dir string) ([]*Wallet, error) {
 
 }
 
-//GetWalleList 获取钱包列表
-func GetWalleList() ([]*Wallet, error) {
+//GetWalletList 获取钱包列表
+func GetWalletList() ([]*Wallet, error) {
 
 	wallets, err := GetWalletKeys(keyDir)
 	if err != nil {
@@ -536,7 +557,7 @@ func GetWalleList() ([]*Wallet, error) {
 
 	//获取钱包余额
 	for _, w := range wallets {
-		balance, _ := GetWalletBalance(w.WalletID)
+		balance := GetWalletBalance(w.WalletID)
 		w.Balance = balance
 	}
 
@@ -554,7 +575,7 @@ func GetWalletInfo(walletID string) (*Wallet, error) {
 	//获取钱包余额
 	for _, w := range wallets {
 		if w.WalletID == walletID {
-			balance, _ := GetWalletBalance(w.WalletID)
+			balance := GetWalletBalance(w.WalletID)
 			w.Balance = balance
 
 			return w, nil
@@ -566,20 +587,40 @@ func GetWalletInfo(walletID string) (*Wallet, error) {
 }
 
 //GetWalletBalance 获取钱包余额
-func GetWalletBalance(name string) (string, error) {
+func GetWalletBalance(name string) string {
 
-	request := []interface{}{
-		name,
-		1,
-		true,
-	}
+	//request := []interface{}{
+	//	name,
+	//	1,
+	//	true,
+	//}
 
-	balance, err := client.Call("getbalance", request)
+	utxos, err := ListUnspent(1)
 	if err != nil {
-		return "", err
+		return "0"
+	}
+	balance := decimal.New(0, 0)
+
+	//批量插入到本地数据库
+	//设置utxo的钱包账户
+	for _, utxo := range utxos {
+		if name == utxo.Account {
+			amount, _ := decimal.NewFromString(utxo.Amount)
+			balance = balance.Add(amount)
+		}
 	}
 
-	return balance.String(), nil
+	//for _, u := range utxos {
+	//	amount, _ := decimal.NewFromString(u.Amount)
+	//	balance = balance.Add(amount)
+	//}
+
+	//balance, err := client.Call("getbalance", request)
+	//if err != nil {
+	//	return "", err
+	//}
+
+	return balance.StringFixed(8)
 }
 
 //CreateNewPrivateKey 创建私钥，返回私钥wif格式字符串
@@ -639,8 +680,8 @@ func CreateBatchPrivateKey(key *keystore.HDKey, count uint64) ([]string, error) 
 
 }
 
-//BackupWallet 备份钱包
-func BackupWallet(dest string) error {
+//BackupWalletData 备份钱包
+func BackupWalletData(dest string) error {
 
 	request := []interface{}{
 		dest,
@@ -653,6 +694,42 @@ func BackupWallet(dest string) error {
 
 	return nil
 
+}
+
+//BackupWallet 备份数据
+func BackupWallet(walletID string) (string, error) {
+	w, err := GetWalletInfo(walletID)
+	if err != nil {
+		return "", err
+	}
+
+	//创建备份文件夹
+	newBackupDir := filepath.Join(backupDir, w.FileName()+"-"+common.TimeFormat("20060102150405"))
+	file.MkdirAll(newBackupDir)
+
+	//创建临时备份文件wallet.dat
+	tmpWalletDat := fmt.Sprintf("tmp-walllet-%d.dat", time.Now().Unix())
+	tmpWalletDat = filepath.Join(walletPath, tmpWalletDat)
+
+	//1. 备份核心钱包的wallet.dat
+	err = BackupWalletData(tmpWalletDat)
+	if err != nil {
+		return "", err
+	}
+
+	//复制临时文件到备份文件夹
+	file.Copy(tmpWalletDat, filepath.Join(newBackupDir, "wallet.dat"))
+
+	//删除临时文件
+	file.Delete(tmpWalletDat)
+
+	//2. 备份种子文件
+	file.Copy(filepath.Join(keyDir, w.FileName()+".key"), newBackupDir)
+
+	//3. 备份地址数据库
+	file.Copy(filepath.Join(dbPath, w.FileName()+".db"), newBackupDir)
+
+	return newBackupDir, nil
 }
 
 //DumpWallet 导出钱包所有私钥文件
@@ -727,7 +804,12 @@ func ListUnspent(min uint64) ([]*Unspent, error) {
 }
 
 //RebuildWalletUnspent 批量插入未花记录到本地
-func RebuildWalletUnspent() error {
+func RebuildWalletUnspent(walletID string) error {
+
+	wallet, err := GetWalletInfo(walletID)
+	if err != nil {
+		return err
+	}
 
 	//查找核心钱包确认数大于1的
 	utxos, err := ListUnspent(1)
@@ -735,7 +817,7 @@ func RebuildWalletUnspent() error {
 		return err
 	}
 
-	db, err := storm.Open(dbPath)
+	db, err := wallet.OpenDB()
 	if err != nil {
 		return err
 	}
@@ -773,7 +855,28 @@ func RebuildWalletUnspent() error {
 //ListUnspentFromLocalDB 查询本地数据库的未花记录
 func ListUnspentFromLocalDB(walletID string) ([]*Unspent, error) {
 
-	db, err := storm.Open(dbPath)
+	var (
+		wallet *Wallet
+	)
+
+	wallets, err := GetWalletKeys(keyDir)
+	if err != nil {
+		return nil, err
+	}
+
+	//获取钱包余额
+	for _, w := range wallets {
+		if w.WalletID == walletID {
+			wallet = w
+			break
+		}
+	}
+
+	if wallet == nil {
+		return nil, errors.New("The wallet that your given name is not exist!")
+	}
+
+	db, err := wallet.OpenDB()
 	if err != nil {
 		return nil, err
 	}
@@ -820,7 +923,7 @@ func BuildTransaction(utxos []*Unspent, to, change string, amount, fees decimal.
 		//ca, _ := changeAmount.Float64()
 		outputs[change] = changeAmount.StringFixed(8)
 
-		fmt.Printf("Create change address for receiving %s coin.", outputs[change])
+		fmt.Printf("Create change address for receiving %s coin.\n", outputs[change])
 	}
 
 	//ta, _ := amount.Float64()
@@ -998,6 +1101,11 @@ func SendTransaction(walletID, to string, amount decimal.Decimal, password strin
 			}
 			totalSend = amount
 		} else {
+
+			if fees.GreaterThanOrEqual(amount) {
+				return nil, errors.New("The sent amount is not enough for fees!")
+			}
+
 			totalSend = amount.Sub(fees)
 		}
 
@@ -1047,6 +1155,9 @@ func SendTransaction(walletID, to string, amount decimal.Decimal, password strin
 
 		//计算手续费，找零地址有2个，一个是发送，一个是新创建的
 		piecefees, err := EstimateFee(int64(len(sendUxto)), 2, feesRate)
+		if piecefees.LessThan(decimal.NewFromFloat(0.00001)) {
+			piecefees = decimal.NewFromFloat(0.00001)
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -1056,6 +1167,10 @@ func SendTransaction(walletID, to string, amount decimal.Decimal, password strin
 		if err != nil {
 			return nil, err
 		}
+
+		//log.Printf("pieceOfSend = %s \n", pieceOfSend.StringFixed(8))
+		//log.Printf("piecefees = %s \n", piecefees.StringFixed(8))
+		//log.Printf("feesRate = %s \n", feesRate.StringFixed(8))
 
 		//创建交易
 		txRaw, _, err := BuildTransaction(sendUxto, to, changeAddr.Address, pieceOfSend, piecefees)
@@ -1081,14 +1196,17 @@ func SendTransaction(walletID, to string, amount decimal.Decimal, password strin
 		fmt.Printf("Submit Transaction Successfully\n")
 
 		txIDs = append(txIDs, txid)
+		//txIDs = append(txIDs, signedHex)
 
 		//减去已发送的
 		totalSend = totalSend.Sub(pieceOfSend)
 
-		//发送成功后，删除已使用的UTXO
-		clearUnspends(sendUxto)
+
 
 	}
+
+	//发送成功后，删除已使用的UTXO
+	clearUnspends(usedUTXO, w)
 
 	LockWallet()
 
@@ -1112,7 +1230,7 @@ func CreateChangeAddress(walletID string, key *keystore.HDKey) (*Address, error)
 	}
 
 	//批量写入数据库
-	err := saveAddressToDB(getAddrs)
+	err := saveAddressToDB(getAddrs, &Wallet{Alias: key.Alias, WalletID: key.RootId})
 	if err != nil {
 		return nil, err
 	}
@@ -1165,12 +1283,11 @@ func SummaryWallets() {
 	//读取参与汇总的钱包
 	for wid, wallet := range walletsInSum {
 
+		//重新加载utxo
+		RebuildWalletUnspent(wid)
+
 		//统计钱包最新余额
-		wb, err := GetWalletBalance(wid)
-		if err != nil {
-			log.Printf("Can not find Account Balance：%v\n", err)
-			continue
-		}
+		wb := GetWalletBalance(wid)
 
 		balance, _ := decimal.NewFromString(wb)
 		//如果余额大于阀值，汇总的地址
@@ -1200,8 +1317,8 @@ func AddWalletInSummary(wid string, wallet *Wallet) {
 }
 
 //clearUnspends 清楚已使用的UTXO
-func clearUnspends(utxos []*Unspent) {
-	db, err := storm.Open(dbPath)
+func clearUnspends(utxos []*Unspent, wallet *Wallet) {
+	db, err := wallet.OpenDB()
 	if err != nil {
 		return
 	}
@@ -1281,7 +1398,7 @@ func exportAddressToFile(addrs []*Address, filePath string) {
 
 	for _, a := range addrs {
 
-		log.Printf("Export: %s \n", a)
+		log.Printf("Export: %s \n", a.Address)
 
 		content = content + a.Address + "\n"
 	}
@@ -1291,8 +1408,8 @@ func exportAddressToFile(addrs []*Address, filePath string) {
 }
 
 //saveAddressToDB 保存地址到数据库
-func saveAddressToDB(addrs []*Address) error {
-	db, err := storm.Open(dbPath)
+func saveAddressToDB(addrs []*Address, wallet *Wallet) error {
+	db, err := wallet.OpenDB()
 	if err != nil {
 		return err
 	}
@@ -1326,4 +1443,59 @@ func skipKeyFile(fi os.FileInfo) bool {
 		return true
 	}
 	return false
+}
+
+//loadConfig 读取配置
+func loadConfig() error {
+
+	var (
+		c   config.Configer
+		err error
+	)
+
+	//读取配置
+	absFile := filepath.Join(configFilePath, configFileName)
+	c, err = config.NewConfig("json", absFile)
+	if err != nil {
+		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
+	}
+
+	serverAPI = c.String("apiURL")
+	threshold, _ = decimal.NewFromString(c.String("threshold"))
+	sumAddress = c.String("sumAddress")
+	isTestNet, _ = c.Bool("isTestNet")
+	walletPath = c.String("walletPath")
+
+	rpcUser = "wallet"
+	rpcPassword = "walletPassword2017"
+	token := basicAuth(rpcUser, rpcPassword)
+
+	client = &Client{
+		BaseURL:     serverAPI,
+		Debug:       false,
+		AccessToken: token,
+	}
+
+	return nil
+}
+
+//打印钱包列表
+func printWalletList(list []*Wallet) {
+
+	tableInfo := make([][]interface{}, 0)
+
+	for i, w := range list {
+
+		tableInfo = append(tableInfo, []interface{}{
+			i, w.WalletID, w.Alias, w.Balance,
+		})
+	}
+
+	t := gotabulate.Create(tableInfo)
+	// Set Headers
+	t.SetHeaders([]string{"No.", "ID", "Name", "Balance"})
+
+	//打印信息
+	fmt.Println(t.Render("simple"))
+
 }
