@@ -225,6 +225,11 @@ func (k *HDKey) Mnemonic() string {
 	return mnemonic
 }
 
+//FileName 文件名
+func (k *HDKey)FileName() string {
+	return keyFileName(k.Alias, k.RootId)
+}
+
 // getRootKeyWithHDPath 通过HDPath获取账户管理的根私钥
 func getRootKeyWithHDPath(key *hdkeychain.ExtendedKey, hdPath []byte) *hdkeychain.ExtendedKey {
 
@@ -581,11 +586,13 @@ func writeKeyFile(file string, content []byte) error {
 	return os.Rename(f.Name(), file)
 }
 
+
+
 // keyFileName implements the naming convention for keyfiles:
 // wallet--<alias>-<rootId>
 func keyFileName(alias, rootId string) string {
 	//ts := time.Now().UTC()
-	return fmt.Sprintf("%s-%s.key", alias, rootId)
+	return fmt.Sprintf("%s-%s", alias, rootId)
 }
 
 func toISO8601(t time.Time) string {
