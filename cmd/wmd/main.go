@@ -52,6 +52,7 @@ func init() {
 	app.Commands = []cli.Command{
 		commands.CmdWallet,
 		commands.CmdConfig,
+		commands.CmdNode,
 	}
 
 
