@@ -732,6 +732,75 @@ func BackupWallet(walletID string) (string, error) {
 	return newBackupDir, nil
 }
 
+func RestoreWallet(keyFile, dbFile, walletDataFile, password string) error {
+
+	//根据流程，提供种子文件路径，wallet.dat文件的路径，钱包数据库文件的路径。
+	//输入钱包密码。
+	//先备份核心钱包原来的wallet.dat到临时文件夹。
+	//关闭钱包节点，复制wallet.dat到钱包的data目录下。
+	//启动钱包，通过GetCoreWalletinfo检查钱包是否启动了。
+	//检查密码是否可以解析种子文件，是否可以解锁钱包。
+	//如果密码错误，关闭钱包节点，恢复原钱包的wallet.dat。
+	//重新启动钱包。
+	//复制种子文件到data/btc/key/。
+	//复制钱包数据库文件到data/btc/db/。
+
+	var (
+		restoreSuccess = false
+		err error
+		key *keystore.HDKey
+	)
+
+	//检查密码是否可以解析种子文件，是否可以解锁钱包。
+	key, err = storage.GetKey("", keyFile, password)
+	if err != nil {
+		return errors.New("Passowrd is incorrect!")
+	}
+
+	//创建临时备份文件wallet.dat，备份
+	tmpWalletDat := fmt.Sprintf("restore-walllet-%d.dat", time.Now().Unix())
+	tmpWalletDat = filepath.Join(walletPath, tmpWalletDat)
+
+	curretWDFile := filepath.Join(walletPath, "testdata", "testnet3", "wallet.dat")
+
+	//关闭钱包节点
+
+	//复制wallet.data到钱包
+	file.Delete(curretWDFile)
+	file.Copy(walletDataFile, curretWDFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//重新启动钱包
+
+	//检查wallet.dat是否可以解锁钱包
+	err = UnlockWallet(password, 1)
+	if err != nil {
+		restoreSuccess = false
+		err = errors.New("Passowrd is incorrect!")
+	}
+
+	if restoreSuccess {
+		//恢复成功
+
+		//复制种子文件到data/btc/key/
+		file.Copy(keyFile, filepath.Join(keyDir, key.FileName()+".key"))
+
+		//复制钱包数据库文件到data/btc/db/
+		file.Copy(dbFile, filepath.Join(dbPath, key.FileName()+".db"))
+
+	} else {
+		//恢复失败还远原来的文件
+
+	}
+
+
+
+
+	return nil
+}
+
 //DumpWallet 导出钱包所有私钥文件
 func DumpWallet(filename string) error {
 
@@ -1200,8 +1269,6 @@ func SendTransaction(walletID, to string, amount decimal.Decimal, password strin
 
 		//减去已发送的
 		totalSend = totalSend.Sub(pieceOfSend)
-
-
 
 	}
 

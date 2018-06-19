@@ -16,14 +16,14 @@
 package keystore
 
 import (
-	"path/filepath"
+	"crypto/hmac"
+	"crypto/sha256"
 	"errors"
-	"io/ioutil"
 	"fmt"
 	"github.com/blocktree/OpenWallet/openwallet/accounts"
 	"github.com/btcsuite/btcutil/hdkeychain"
-	"crypto/hmac"
-	"crypto/sha256"
+	"io/ioutil"
+	"path/filepath"
 )
 
 const (
@@ -52,7 +52,6 @@ const (
 	SeedLen = 32
 )
 
-
 var (
 	//ErrLocked  = accounts.NewAuthNeededError("password or unlock")
 	ErrNoMatch = errors.New("no key for given address or file")
@@ -63,7 +62,7 @@ var (
 //HDKeystore HDKey的存粗工具类
 type HDKeystore struct {
 	keysDirPath string
-	MasterKey string
+	MasterKey   string
 	scryptN     int
 	scryptP     int
 }
@@ -98,11 +97,10 @@ func storeNewKey(ks *HDKeystore, alias, auth string) (*HDKey, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-	filePath := ks.JoinPath(keyFileName(key.Alias, key.RootId))
+	filePath := ks.JoinPath(keyFileName(key.Alias, key.RootId) + ".key")
 	ks.StoreKey(filePath, key, auth)
 	return key, filePath, err
 }
-
 
 //GetKey 通过accountId读取钥匙
 func (ks HDKeystore) GetKey(rootId, filename, auth string) (*HDKey, error) {
@@ -116,10 +114,14 @@ func (ks HDKeystore) GetKey(rootId, filename, auth string) (*HDKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Make sure we're really operating on the requested key (no swap attacks)
-	if key.RootId != rootId {
-		return nil, fmt.Errorf("key content mismatch: have account %s, want %s", key.RootId, rootId)
+
+	if len(rootId) > 0 {
+		// Make sure we're really operating on the requested key (no swap attacks)
+		if key.RootId != rootId {
+			return nil, fmt.Errorf("key content mismatch: have account %s, want %s", key.RootId, rootId)
+		}
 	}
+
 	return key, nil
 }
 
@@ -143,7 +145,7 @@ func (ks *HDKeystore) JoinPath(filename string) string {
 
 //getDecryptedKey 获取解密后的钥匙
 func (ks *HDKeystore) getDecryptedKey(alias, rootId, auth string) (*accounts.UserAccount, *HDKey, error) {
-	path := ks.JoinPath(keyFileName(alias, rootId))
+	path := ks.JoinPath(keyFileName(alias, rootId) + ".key")
 	key, err := ks.GetKey(rootId, path, auth)
 	return nil, key, err
 }
