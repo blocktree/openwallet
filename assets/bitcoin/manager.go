@@ -443,6 +443,11 @@ func CreateNewWallet(name, password string) (string, error) {
 		if err != nil {
 			return "", errors.New("The wallet's password is not equal bitcoin-core wallet!\n")
 		}
+	} else {
+		//加密钱包后，需要10秒后重启bitcoin core
+		fmt.Printf("Start node server... \n")
+		time.Sleep(10 * time.Second)
+		startNode()
 	}
 
 	fmt.Printf("Create new wallet keystore...\n")
@@ -1636,7 +1641,7 @@ func startNode() error {
 	}
 
 	startNodeCMD := c.String("startNodeCMD")
-	return cmdCall(startNodeCMD)
+	return cmdCall(startNodeCMD, false)
 }
 
 //stopNode 关闭节点
@@ -1649,11 +1654,11 @@ func stopNode() error {
 	}
 
 	stopNodeCMD := c.String("stopNodeCMD")
-	return cmdCall(stopNodeCMD)
+	return cmdCall(stopNodeCMD, true)
 }
 
 //cmdCall 执行命令
-func cmdCall(cmd string) error {
+func cmdCall(cmd string, wait bool) error {
 
 	var (
 		cmdName string
@@ -1668,6 +1673,9 @@ func cmdCall(cmd string) error {
 		return errors.New("command not found ")
 	}
 	session := sh.Command(cmdName, args)
-
-	return session.Start()
+	if wait {
+		return session.Run()
+	} else {
+		return session.Start()
+	}
 }
