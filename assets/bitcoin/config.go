@@ -17,12 +17,13 @@ package bitcoin
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common/file"
 	"path/filepath"
 	"strings"
+	"github.com/shopspring/decimal"
+	"time"
 )
 
 /*
@@ -54,7 +55,7 @@ var (
 	//配置文件路径
 	configFilePath = filepath.Join("conf")
 	//配置文件名
-	configFileName = Symbol + ".json"
+	configFileName = Symbol + ".ini"
 	//是否测试网络
 	isTestNet = true
 	// 核心钱包是否只做监听
@@ -65,16 +66,51 @@ var (
 	dbPath = filepath.Join("data", strings.ToLower(Symbol), "db")
 	//备份路径
 	backupDir = filepath.Join("data", strings.ToLower(Symbol), "backup")
+	//钱包服务API
+	serverAPI = "http://127.0.0.1:10000"
+	//钱包安装的路径
+	nodeInstallPath = ""
+	//钱包数据文件目录
+	walletDataPath = ""
+	//小数位长度
+	coinDecimal decimal.Decimal = decimal.NewFromFloat(100000000)
+	//参与汇总的钱包
+	walletsInSum = make(map[string]*Wallet)
+	//汇总阀值
+	threshold decimal.Decimal = decimal.NewFromFloat(5)
+	//汇总地址
+	sumAddress = ""
+	//汇总执行间隔时间
+	cycleSeconds = time.Second * 10
+	//默认配置内容
+	defaultConfig = `
+# start node command
+startNodeCMD = ""
+# stop node command
+stopNodeCMD = ""
+# node install path
+nodeInstallPath = ""
+# mainnet data path
+mainNetDataPath = ""
+# testnet data path
+testNetDataPath = ""
+# node api url
+apiURL = ""
+# RPC Authentication Username
+rpcUser = ""
+# RPC Authentication Password
+rpcPassword = ""
+# Is network test?
+isTestNet = false
+# the safe address that wallet send money to.
+sumAddress = ""
+# when wallet's balance is over this value, the wallet willl send money to [sumAddress]
+threshold = ""
+`
 )
 
-//isExistConfigFile 检查配置文件是否存在
-func isExistConfigFile() bool {
-	_, err := config.NewConfig("json",
-		filepath.Join(configFilePath, configFileName))
-	if err != nil {
-		return false
-	}
-	return true
+func setWalletConfig(sumAddress string, threshold string) {
+
 }
 
 //newConfigFile 创建配置文件
@@ -118,35 +154,44 @@ func newConfigFile(
 //printConfig Print config information
 func printConfig() error {
 
+	initConfig()
 	//读取配置
 	absFile := filepath.Join(configFilePath, configFileName)
-	c, err := config.NewConfig("json", absFile)
-	if err != nil {
-		return errors.New("config file not create，please run: wmd config -s <symbol> ")
-	}
-
-	apiURL := c.String("apiURL")
-	walletPath := c.String("walletPath")
-	threshold := c.String("threshold")
-	minSendAmount := c.String("minSendAmount")
-	minFees := c.String("minFees")
-	sumAddress := c.String("sumAddress")
-	isTestNet, _ := c.Bool("isTestNet")
+	//apiURL := c.String("apiURL")
+	//walletPath := c.String("walletPath")
+	//threshold := c.String("threshold")
+	//minSendAmount := c.String("minSendAmount")
+	//minFees := c.String("minFees")
+	//sumAddress := c.String("sumAddress")
+	//isTestNet, _ := c.Bool("isTestNet")
 
 	fmt.Printf("-----------------------------------------------------------\n")
-	fmt.Printf("Wallet API URL: %s\n", apiURL)
-	fmt.Printf("Wallet Data FilePath: %s\n", walletPath)
-	fmt.Printf("Summary Address: %s\n", sumAddress)
-	fmt.Printf("Summary Threshold: %s\n", threshold)
-	fmt.Printf("Min Send Amount: %s\n", minSendAmount)
-	fmt.Printf("Transfer Fees: %s\n", minFees)
-	if isTestNet {
-		fmt.Printf("Network: TestNet\n")
-	} else {
-		fmt.Printf("Network: MainNet\n")
-	}
+	//fmt.Printf("Wallet API URL: %s\n", apiURL)
+	//fmt.Printf("Wallet Data FilePath: %s\n", walletPath)
+	//fmt.Printf("Summary Address: %s\n", sumAddress)
+	//fmt.Printf("Summary Threshold: %s\n", threshold)
+	//fmt.Printf("Min Send Amount: %s\n", minSendAmount)
+	//fmt.Printf("Transfer Fees: %s\n", minFees)
+	//if isTestNet {
+	//	fmt.Printf("Network: TestNet\n")
+	//} else {
+	//	fmt.Printf("Network: MainNet\n")
+	//}
+	file.PrintFile(absFile)
 	fmt.Printf("-----------------------------------------------------------\n")
 
 	return nil
+
+}
+
+//initConfig 初始化配置文件
+func initConfig() {
+
+	//读取配置
+	absFile := filepath.Join(configFilePath, configFileName)
+	if !file.Exists(absFile) {
+		file.MkdirAll(configFilePath)
+		file.WriteFile(absFile, []byte(defaultConfig), false)
+	}
 
 }

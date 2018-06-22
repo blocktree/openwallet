@@ -16,10 +16,10 @@
 package commands
 
 import (
+	"github.com/blocktree/OpenWallet/assets"
 	"github.com/blocktree/OpenWallet/cmd/utils"
 	"github.com/blocktree/OpenWallet/logger"
 	"gopkg.in/urfave/cli.v1"
-	"github.com/blocktree/OpenWallet/assets"
 )
 
 var (
@@ -27,59 +27,86 @@ var (
 	CmdConfig = cli.Command{
 		Name:      "config",
 		Usage:     "Manage wallet config",
+		Action:    configWMD,
 		ArgsUsage: "",
 		Category:  "Application COMMANDS",
+		Flags: []cli.Flag{
+			utils.SymbolFlag,
+			utils.InitFlag,
+		},
 		Description: `
 Manage wallet config
 
 `,
-		Subcommands: []cli.Command{
-			{
-				//查看配置文件信息
-				Name:     "init",
-				Usage:    "Init config flow",
-				Action:   configWallet,
-				Category: "CONFIG COMMANDS",
-				Flags: []cli.Flag{
-					utils.SymbolFlag,
-				},
-				Description: `
-	wmd config init -s ada
-
-Init config flow.
-
-	`,
-			},
-			{
-				//查看配置文件信息
-				Name:     "see",
-				Usage:    "See Wallet config info",
-				Action:   configSee,
-				Category: "CONFIG COMMANDS",
-				Flags: []cli.Flag{
-					utils.SymbolFlag,
-				},
-				Description: `
-	wmd config see -s ada
-
-See Wallet config info.
-
-	`,
-			},
-		},
+//		Subcommands: []cli.Command{
+//			{
+//				//查看配置文件信息
+//				Name:     "init",
+//				Usage:    "Init config flow",
+//				Action:   configWallet,
+//				Category: "CONFIG COMMANDS",
+//				Flags: []cli.Flag{
+//					utils.SymbolFlag,
+//				},
+//				Description: `
+//	wmd config init -s ada
+//
+//Init config flow.
+//
+//	`,
+//			},
+//			{
+//				//查看配置文件信息
+//				Name:     "see",
+//				Usage:    "See Wallet config info",
+//				Action:   configSee,
+//				Category: "CONFIG COMMANDS",
+//				Flags: []cli.Flag{
+//					utils.SymbolFlag,
+//				},
+//				Description: `
+//	wmd config see -s ada
+//
+//See Wallet config info.
+//
+//	`,
+//			},
+//		},
 	}
 )
 
+func configWMD(c *cli.Context) error {
+	symbol := c.String("symbol")
+	if len(symbol) == 0 {
+		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+		return nil
+	}
+	m, ok := assets.GetWMD(symbol).(assets.ConfigManager)
+	if !ok {
+		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
+		return nil
+	}
+	isInit := c.Bool("init")
+	subModule := c.Args().Get(0)
+
+	if isInit {
+		return m.SetConfigFlow(subModule)
+	} else {
+		return m.ShowConfigInfo(subModule)
+	}
+}
 
 //configWallet 配置钱包流程
 func configWallet(c *cli.Context) error {
 	symbol := c.String("symbol")
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+		return nil
 	}
-	m := assets.GetWMD(symbol).(assets.WalletManager)
-	if m == nil {
+	m, ok := assets.GetWMD(symbol).(assets.WalletManager)
+	if !ok {
 		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
+		return nil
 	}
 	//配置钱包
 	err := m.InitConfigFlow()
@@ -94,10 +121,12 @@ func configSee(c *cli.Context) error {
 	symbol := c.String("symbol")
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+		return nil
 	}
-	m := assets.GetWMD(symbol).(assets.WalletManager)
-	if m == nil {
+	m, ok := assets.GetWMD(symbol).(assets.WalletManager)
+	if !ok {
 		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
+		return nil
 	}
 	err := m.ShowConfig()
 	if err != nil {

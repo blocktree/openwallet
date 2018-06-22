@@ -16,15 +16,15 @@
 package bitcoin
 
 import (
-	"github.com/blocktree/OpenWallet/console"
+	"errors"
 	"fmt"
-	"strings"
-	"log"
 	"github.com/blocktree/OpenWallet/common"
+	"github.com/blocktree/OpenWallet/console"
 	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/timer"
 	"github.com/shopspring/decimal"
-	"errors"
+	"log"
+	"strings"
 )
 
 type WalletManager struct{}
@@ -45,7 +45,7 @@ func (w *WalletManager) InitConfigFlow() error {
 		//汇总地址
 		sumAddress string
 		filePath   string
-		isTestNet bool
+		isTestNet  bool
 	)
 
 	for {
@@ -138,7 +138,7 @@ func (w *WalletManager) CreateWalletFlow() error {
 		password string
 		name     string
 		err      error
-		keyFile string
+		keyFile  string
 	)
 
 	//先加载是否有配置文件
@@ -257,7 +257,7 @@ func (w *WalletManager) SummaryFollow() error {
 	//判断汇总地址是否存在
 	if len(sumAddress) == 0 {
 
-		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.json' \n", Symbol))
+		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
 	}
 
 	//查询所有钱包信息
@@ -298,6 +298,7 @@ func (w *WalletManager) SummaryFollow() error {
 				//解锁钱包验证密码
 				_, err = w.HDKey(password)
 				if err != nil {
+					openwLogger.Log.Errorf("The password to unlock wallet is incorrect! ")
 					continue
 				}
 
@@ -473,11 +474,95 @@ func (w *WalletManager) GetWalletList() error {
 //RestoreWalletFlow 恢复钱包流程
 func (w *WalletManager) RestoreWalletFlow() error {
 
+	var (
+		err      error
+		keyFile  string
+		dbFile   string
+		datFile  string
+		password string
+	)
 
+	//先加载是否有配置文件
+	err = loadConfig()
+	if err != nil {
+		return err
+	}
+
+	//输入恢复文件路径
+	keyFile, err = console.InputText("Enter backup key file path: ", true)
+	if err != nil {
+		return err
+	}
+
+	dbFile, err = console.InputText("Enter backup db file path: ", true)
+	if err != nil {
+		return err
+	}
+
+	datFile, err = console.InputText("Enter backup wallet.dat file path: ", true)
+	if err != nil {
+		return err
+	}
+
+	password, err = console.InputPassword(false)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Wallet restoring, please wait a moment...\n")
+	err = RestoreWallet(keyFile, dbFile, datFile, password)
+	if err != nil {
+		return err
+	}
 
 	//输出备份导出目录
 	fmt.Printf("Restore wallet successfully.\n")
 
 	return nil
 
+}
+
+//InstallNode 安装节点
+func (w *WalletManager) InstallNodeFlow() error {
+	return errors.New("Install node is unsupport now. ")
+}
+
+//InitNodeConfig 初始化节点配置文件
+func (w *WalletManager) InitNodeConfigFlow() error {
+	return errors.New("Install node is unsupport now. ")
+}
+
+//StartNodeFlow 开启节点
+func (w *WalletManager) StartNodeFlow() error {
+
+	return startNode()
+}
+
+//StopNodeFlow 关闭节点
+func (w *WalletManager) StopNodeFlow() error {
+
+	return stopNode()
+}
+
+//RestartNodeFlow 重启节点
+func (w *WalletManager) RestartNodeFlow() error {
+	return errors.New("Install node is unsupport now. ")
+}
+
+//ShowNodeInfo 显示节点信息
+func (w *WalletManager) ShowNodeInfo() error {
+	return errors.New("Install node is unsupport now. ")
+}
+
+//SetConfigFlow 初始化配置流程
+func (w *WalletManager) SetConfigFlow(subCmd string) error {
+	file := configFilePath + configFileName
+	fmt.Printf("You can run 'vim %s' to edit %s config.\n", file, subCmd)
+	return nil
+}
+
+//ShowConfigInfo 查看配置信息
+func (w *WalletManager) ShowConfigInfo(subCmd string) error {
+	printConfig()
+	return nil
 }

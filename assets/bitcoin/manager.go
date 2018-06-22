@@ -27,6 +27,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/codeskyblue/go-sh"
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 	"io/ioutil"
@@ -46,24 +47,6 @@ const (
 var (
 	//秘钥存取
 	storage *keystore.HDKeystore
-	//钱包服务API
-	serverAPI = "http://127.0.0.1:10000"
-	//钱包安装的路径
-	walletPath = ""
-	//小数位长度
-	coinDecimal decimal.Decimal = decimal.NewFromFloat(100000000)
-	//参与汇总的钱包
-	walletsInSum = make(map[string]*Wallet)
-	//汇总阀值
-	threshold decimal.Decimal = decimal.NewFromFloat(5)
-	//最小转账额度
-	minSendAmount decimal.Decimal = decimal.NewFromFloat(1)
-	//最小矿工费
-	minFees decimal.Decimal = decimal.NewFromFloat(0.0001)
-	//汇总地址
-	sumAddress = ""
-	//汇总执行间隔时间
-	cycleSeconds = time.Second * 10
 	// 节点客户端
 	client *Client
 )
@@ -709,7 +692,7 @@ func BackupWallet(walletID string) (string, error) {
 
 	//创建临时备份文件wallet.dat
 	tmpWalletDat := fmt.Sprintf("tmp-walllet-%d.dat", time.Now().Unix())
-	tmpWalletDat = filepath.Join(walletPath, tmpWalletDat)
+	tmpWalletDat = filepath.Join(walletDataPath, tmpWalletDat)
 
 	//1. 备份核心钱包的wallet.dat
 	err = BackupWalletData(tmpWalletDat)
@@ -732,7 +715,8 @@ func BackupWallet(walletID string) (string, error) {
 	return newBackupDir, nil
 }
 
-func RestoreWallet(keyFile, dbFile, walletDataFile, password string) error {
+//RestoreWallet 恢复钱包
+func RestoreWallet(keyFile, dbFile, datFile, password string) error {
 
 	//根据流程，提供种子文件路径，wallet.dat文件的路径，钱包数据库文件的路径。
 	//输入钱包密码。
@@ -747,9 +731,12 @@ func RestoreWallet(keyFile, dbFile, walletDataFile, password string) error {
 
 	var (
 		restoreSuccess = false
-		err error
-		key *keystore.HDKey
+		err            error
+		key            *keystore.HDKey
+		sleepTime = 30 * time.Second
 	)
+
+	fmt.Printf("Validating key file... \n")
 
 	//检查密码是否可以解析种子文件，是否可以解锁钱包。
 	key, err = storage.GetKey("", keyFile, password)
@@ -757,48 +744,106 @@ func RestoreWallet(keyFile, dbFile, walletDataFile, password string) error {
 		return errors.New("Passowrd is incorrect!")
 	}
 
+	//钱包当前的dat文件
+	curretWDFile := filepath.Join(walletDataPath, "wallet.dat")
+
 	//创建临时备份文件wallet.dat，备份
 	tmpWalletDat := fmt.Sprintf("restore-walllet-%d.dat", time.Now().Unix())
-	tmpWalletDat = filepath.Join(walletPath, tmpWalletDat)
+	tmpWalletDat = filepath.Join(walletDataPath, tmpWalletDat)
 
-	curretWDFile := filepath.Join(walletPath, "testdata", "testnet3", "wallet.dat")
 
-	//关闭钱包节点
+	fmt.Printf("Backup current wallet.dat file... \n")
 
-	//复制wallet.data到钱包
-	file.Delete(curretWDFile)
-	file.Copy(walletDataFile, curretWDFile)
+	err = BackupWalletData(tmpWalletDat)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
+	//调试使用
+	//file.Copy(curretWDFile, tmpWalletDat)
+
+	fmt.Printf("Stop node server... \n")
+
+	//关闭钱包节点
+	stopNode()
+	time.Sleep(sleepTime)
+
+	fmt.Printf("Restore wallet.dat file... \n")
+
+	//删除当前钱包文件
+	file.Delete(curretWDFile)
+
+	//恢复备份dat到钱包数据目录
+	err = file.Copy(datFile, walletDataPath)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Start node server... \n")
+
 	//重新启动钱包
+	startNode()
+	time.Sleep(sleepTime)
+
+	fmt.Printf("Validating wallet password... \n")
 
 	//检查wallet.dat是否可以解锁钱包
 	err = UnlockWallet(password, 1)
 	if err != nil {
 		restoreSuccess = false
-		err = errors.New("Passowrd is incorrect!")
+		err = errors.New("Password is incorrect!")
+	} else {
+		restoreSuccess = true
 	}
 
 	if restoreSuccess {
-		//恢复成功
+		/* 恢复成功 */
+
+		fmt.Printf("Restore wallet key and datebase file... \n")
 
 		//复制种子文件到data/btc/key/
+		file.MkdirAll(keyDir)
 		file.Copy(keyFile, filepath.Join(keyDir, key.FileName()+".key"))
 
 		//复制钱包数据库文件到data/btc/db/
+		file.MkdirAll(dbPath)
 		file.Copy(dbFile, filepath.Join(dbPath, key.FileName()+".db"))
 
+		fmt.Printf("Backup wallet has been restored. \n")
+
+		err = nil
 	} else {
-		//恢复失败还远原来的文件
+		/* 恢复失败还远原来的文件 */
+
+		fmt.Printf("Wallet unlock password is incorrect. \n")
+
+		fmt.Printf("Stop node server... \n")
+
+		//关闭钱包节点
+		stopNode()
+		time.Sleep(sleepTime)
+
+		fmt.Printf("Restore original wallet.data... \n")
+
+		//删除当前钱包文件
+		file.Delete(curretWDFile)
+
+		file.Copy(tmpWalletDat, curretWDFile)
+
+		fmt.Printf("Start node server... \n")
+
+		//重新启动钱包
+		startNode()
+		time.Sleep(sleepTime)
+
+		fmt.Printf("Original wallet has been restored. \n")
 
 	}
 
+	//删除临时备份的dat文件
+	file.Delete(tmpWalletDat)
 
-
-
-	return nil
+	return err
 }
 
 //DumpWallet 导出钱包所有私钥文件
@@ -1107,7 +1152,9 @@ func SendTransaction(walletID, to string, amount decimal.Decimal, password strin
 	}
 
 	totalBalance, _ := decimal.NewFromString(w.Balance)
-	if totalBalance.LessThanOrEqual(amount) {
+	if totalBalance.LessThanOrEqual(amount) && feesInSender {
+		return nil, errors.New("The wallet's balance is not enough!")
+	} else if totalBalance.LessThan(amount) && !feesInSender {
 		return nil, errors.New("The wallet's balance is not enough!")
 	}
 
@@ -1325,7 +1372,7 @@ func EstimateFee(inputs, outputs int64, feeRate decimal.Decimal) (decimal.Decima
 //EstimateFeeRate 预估的没KB手续费率
 func EstimateFeeRate() (decimal.Decimal, error) {
 
-	feeRate, _ := decimal.NewFromString("0.0001")
+	defaultRate, _ := decimal.NewFromString("0.0001")
 
 	//估算交易大小 手续费
 	request := []interface{}{
@@ -1337,7 +1384,12 @@ func EstimateFeeRate() (decimal.Decimal, error) {
 		return decimal.New(0, 0), err
 	}
 
-	feeRate, _ = decimal.NewFromString(result.String())
+	feeRate, _ := decimal.NewFromString(result.String())
+
+	if feeRate.LessThan(defaultRate) {
+		feeRate = defaultRate
+	}
+
 
 	return feeRate, nil
 }
@@ -1522,7 +1574,7 @@ func loadConfig() error {
 
 	//读取配置
 	absFile := filepath.Join(configFilePath, configFileName)
-	c, err = config.NewConfig("json", absFile)
+	c, err = config.NewConfig("ini", absFile)
 	if err != nil {
 		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
 	}
@@ -1530,11 +1582,17 @@ func loadConfig() error {
 	serverAPI = c.String("apiURL")
 	threshold, _ = decimal.NewFromString(c.String("threshold"))
 	sumAddress = c.String("sumAddress")
+	rpcUser = c.String("rpcUser")
+	rpcPassword = c.String("rpcPassword")
+	nodeInstallPath = c.String("nodeInstallPath")
 	isTestNet, _ = c.Bool("isTestNet")
-	walletPath = c.String("walletPath")
+	if isTestNet {
+		walletDataPath = c.String("testNetDataPath")
+	} else {
+		walletDataPath = c.String("mainNetDataPath")
+	}
 
-	rpcUser = "wallet"
-	rpcPassword = "walletPassword2017"
+
 	token := basicAuth(rpcUser, rpcPassword)
 
 	client = &Client{
@@ -1565,4 +1623,51 @@ func printWalletList(list []*Wallet) {
 	//打印信息
 	fmt.Println(t.Render("simple"))
 
+}
+
+//startNode 开启节点
+func startNode() error {
+
+	//读取配置
+	absFile := filepath.Join(configFilePath, configFileName)
+	c, err := config.NewConfig("ini", absFile)
+	if err != nil {
+		return errors.New("Config is not setup! ")
+	}
+
+	startNodeCMD := c.String("startNodeCMD")
+	return cmdCall(startNodeCMD)
+}
+
+//stopNode 关闭节点
+func stopNode() error {
+	//读取配置
+	absFile := filepath.Join(configFilePath, configFileName)
+	c, err := config.NewConfig("ini", absFile)
+	if err != nil {
+		return errors.New("Config is not setup! ")
+	}
+
+	stopNodeCMD := c.String("stopNodeCMD")
+	return cmdCall(stopNodeCMD)
+}
+
+//cmdCall 执行命令
+func cmdCall(cmd string) error {
+
+	var (
+		cmdName string
+		args    []string
+	)
+
+	cmds := strings.Split(cmd, " ")
+	if len(cmds) > 0 {
+		cmdName = cmds[0]
+		args = cmds[1:]
+	} else {
+		return errors.New("command not found ")
+	}
+	session := sh.Command(cmdName, args)
+
+	return session.Start()
 }

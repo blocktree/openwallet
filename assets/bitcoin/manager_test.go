@@ -160,7 +160,7 @@ func TestCreateReceiverAddress(t *testing.T) {
 }
 
 func TestGetAddressesByAccount(t *testing.T) {
-	addresses, err := GetAddressesByAccount("W9JyC464XAZEJgdiAZxUXbPpsZZ2JeAujV")
+	addresses, err := GetAddressesByAccount("WKboeMWpu9cRFp3smkciS6qVY8TECRTxzJ")
 	if err != nil {
 		t.Errorf("GetAddressesByAccount failed unexpected error: %v\n", err)
 		return
@@ -366,10 +366,19 @@ func TestCreateBatchPrivateKey(t *testing.T) {
 //}
 
 func TestBackupWallet(t *testing.T) {
-	//UnlockWallet("1234qwer", 120)
-	walletPath = "/home/www/btc"
+
+	backupFile, err := BackupWallet("W9JyC464XAZEJgdiAZxUXbPpsZZ2JeAujV")
+	if err != nil {
+		t.Errorf("BackupWallet failed unexpected error: %v\n", err)
+	} else {
+		t.Errorf("BackupWallet filePath: %v\n", backupFile)
+	}
+}
+
+func TestBackupWalletData(t *testing.T) {
+	walletDataPath = "/home/www/btc/testdata/testnet3/"
 	tmpWalletDat := fmt.Sprintf("tmp-walllet-%d.dat", time.Now().Unix())
-	backupFile := filepath.Join(walletPath, tmpWalletDat)
+	backupFile := filepath.Join(walletDataPath, tmpWalletDat)
 	err := BackupWalletData(backupFile)
 	if err != nil {
 		t.Errorf("BackupWallet failed unexpected error: %v\n", err)
@@ -495,14 +504,14 @@ func TestEstimateFee(t *testing.T) {
 func TestSendTransaction(t *testing.T) {
 
 	sends := []string{
-		"mukWvd4QZQqCHkxtrAbaKMRCe2zvCo78kH",
+		"mr4zfwC8XBoxUKuGuPdnWhLH5YzhJTTyhY",
 	}
 
 	RebuildWalletUnspent("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ")
 
 	for _, to := range sends {
 
-		txIDs, err := SendTransaction("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", to, decimal.NewFromFloat(4), "1234qwer", false)
+		txIDs, err := SendTransaction("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", to, decimal.NewFromFloat(1), "1234qwer", false)
 
 		if err != nil {
 			t.Errorf("SendTransaction failed unexpected error: %v\n", err)
@@ -523,4 +532,20 @@ func TestMath(t *testing.T) {
 
 func TestGetNetworkInfo(t *testing.T) {
 	GetNetworkInfo()
+}
+
+func TestPrintConfig(t *testing.T) {
+	printConfig()
+}
+
+func TestRestoreWallet(t *testing.T) {
+	keyFile := "/myspace/workplace/go-workspace/projects/bin/data/btc/key/MacOS-W9JyC464XAZEJgdiAZxUXbPpsZZ2JeAujV.key"
+	dbFile := "/myspace/workplace/go-workspace/projects/bin/data/btc/db/MacOS-W9JyC464XAZEJgdiAZxUXbPpsZZ2JeAujV.db"
+	datFile := "/myspace/workplace/go-workspace/projects/bin/testdatfile/wallet.dat"
+	loadConfig()
+	err := RestoreWallet(keyFile, dbFile, datFile, "1234qwer")
+	if err != nil {
+		t.Errorf("RestoreWallet failed unexpected error: %v\n", err)
+	}
+
 }
