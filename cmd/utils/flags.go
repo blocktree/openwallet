@@ -99,9 +99,11 @@ var (
 
 	BatchFlag = cli.BoolFlag{
 		Name: "batch",
-		Usage: " Create address with batch",
+		Usage: "Create address with batch",
 	}
 
-
-
+	InitFlag = cli.BoolFlag{
+		Name: "i, init",
+		Usage: "Init operate",
+	}
 )

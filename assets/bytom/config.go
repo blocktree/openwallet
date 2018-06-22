@@ -52,6 +52,9 @@ var (
 	configFilePath = filepath.Join("conf")
 	//配置文件名
 	configFileName = Symbol + ".json"
+
+	//node config file
+	nodeConfigFile = Symbol + "Node.json"
 )
 
 //isExistConfigFile 检查配置文件是否存在
@@ -101,6 +104,44 @@ func newConfigFile(
 	return c, absFile, nil
 }
 
+func newNodeConfigFile(
+	hostPort, hostDatadir, dockerDatadir, containerName,
+	imageName, dockerfilePathstring string) (config.Configer, string, error) {
+
+	//	生成配置
+	configMap := map[string]interface{}{
+		"hostPort":        hostPort,
+		"hostDatadir":     hostDatadir,
+		"dockerDatadir":   dockerDatadir,
+		"containerName":   containerName,
+		"imageName":       imageName,
+		"dockerfilePath":  dockerfilePath,
+	}
+
+	filepath.Join()
+
+	bytes, err := json.Marshal(configMap)
+	if err != nil {
+		return nil, "", err
+	}
+
+	//实例化配置
+	c, err := config.NewConfigData("json", bytes)
+	if err != nil {
+		return nil, "", err
+	}
+
+	//写入配置到文件
+	file.MkdirAll(configFilePath)
+	absFile := filepath.Join(configFilePath, nodeConfigFile)
+	err = c.SaveConfigFile(absFile)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return c, absFile, nil
+}
+
 //printConfig Print config information
 func printConfig() error {
 
@@ -125,6 +166,36 @@ func printConfig() error {
 	fmt.Printf("Summary Threshold: %s\n", threshold)
 	//fmt.Printf("Min Send Amount: %s\n", minSendAmount)
 	//fmt.Printf("Transfer Fees: %s\n", minFees)
+	fmt.Printf("-----------------------------------------------------------\n")
+
+	return nil
+
+}
+
+func printNodeConfig() error {
+
+	//读取配置
+	absFile := filepath.Join(configFilePath, nodeConfigFile)
+	c, err := config.NewConfig("json", absFile)
+	if err != nil {
+		return errors.New("config file not create，please run: wmd config -s <symbol> ")
+	}
+
+
+	hostPort       := c.String("hostPort")
+	hostDatadir    := c.String("hostDatadir")
+	dockerDatadir  := c.String("dockerDatadir")
+	containerName  := c.String("containerName")
+	imageName      := c.String("imageName")
+	dockerfilePath := c.String("dockerfilePath")
+
+	fmt.Printf("-----------------------------------------------------------\n")
+	fmt.Printf("host listen port : %s\n", hostPort)
+	fmt.Printf("host workspace datadir: %s\n", hostDatadir)
+	fmt.Printf("docker datadir: %s\n", dockerDatadir)
+	fmt.Printf("container name: %s\n", containerName)
+	fmt.Printf("image name: %s\n", imageName)
+	fmt.Printf("docker file  path: %s\n", dockerfilePath)
 	fmt.Printf("-----------------------------------------------------------\n")
 
 	return nil

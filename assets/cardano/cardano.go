@@ -537,3 +537,17 @@ func (w *WalletManager) RestoreWalletFlow() error {
 
 	return nil
 }
+
+
+//SetConfigFlow 初始化配置流程
+func (w *WalletManager) SetConfigFlow(subCmd string) error {
+	file := configFilePath + configFileName
+	fmt.Printf("You can run 'vim %s' to edit %s config.\n", file, subCmd)
+	return nil
+}
+
+//ShowConfigInfo 查看配置信息
+func (w *WalletManager) ShowConfigInfo(subCmd string) error {
+	printConfig()
+	return nil
+}

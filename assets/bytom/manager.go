@@ -58,6 +58,15 @@ var (
 	client *Client
 )
 
+var (
+	hostPort       = "10088"
+	hostDatadir    = "/data/btm"
+	dockerDatadir  = "/data"
+	containerName  = "btm"
+	imageName      = "bytom"
+	dockerfilePath = "./Dockerfile"
+)
+
 //CreateNewWallet 创建钱包
 func CreateNewWallet(alias, password string) (*Wallet, error) {
 
@@ -856,6 +865,31 @@ func loadConfig() error {
 
 	return nil
 }
+
+func loadNodeConfig() error {
+
+	var (
+		c   config.Configer
+		err error
+	)
+
+	//读取配置
+	absFile := filepath.Join(configFilePath, configFileName)
+	c, err = config.NewConfig("json", absFile)
+	if err != nil {
+		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
+	}
+
+	hostPort         = c.String("hostPort")
+	hostDatadir      = c.String("hostDatadir")
+	dockerDatadir    = c.String("dockerDatadir")
+	containerName    = c.String("containerName")
+	imageName        = c.String("imageName")
+	dockerfilePath   = c.String("dockerfilePath")
+
+	return nil
+}
+
 
 //打印钱包列表
 func printWalletList(list []*AccountBalance) {

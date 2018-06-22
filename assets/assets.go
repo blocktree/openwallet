@@ -16,9 +16,10 @@
 package assets
 
 import (
-	"github.com/blocktree/OpenWallet/assets/cardano"
+	//"github.com/blocktree/OpenWallet/assets/cardano"
 	"strings"
 	"github.com/blocktree/OpenWallet/assets/bytom"
+	"github.com/blocktree/OpenWallet/assets/cardano"
 	"github.com/blocktree/OpenWallet/assets/bitcoin"
 )
 
@@ -42,15 +43,41 @@ type WalletManager interface {
 	TransferFlow() error
 	//恢复钱包
 	RestoreWalletFlow() error
+
+
+}
+
+// 节点管理接口
+type NodeManager interface {
+
+	//InstallNode 安装节点
+	InstallNodeFlow() error
+	//StartNodeFlow 开启节点
+	StartNodeFlow() error
+	//StopNodeFlow 关闭节点
+	StopNodeFlow() error
+	//RestartNodeFlow 重启节点
+	RestartNodeFlow() error
+	//ShowNodeInfo 显示节点信息
+	ShowNodeInfo() error
+}
+
+// 配置管理接口
+type ConfigManager interface {
+	//SetConfigFlow 初始化配置流程
+	SetConfigFlow(subCmd string) error
+	//ShowConfigInfo 查看配置信息
+	ShowConfigInfo(subCmd string) error
+
 }
 
 //钱包管理器组
-var managers = make(map[string]WalletManager)
+var managers = make(map[string]interface{})
 
 // RegWMD makes a WalletManager available by the name.
 // If Register is called twice with the same name or if driver is nil,
 // it panics.
-func RegWMD(name string, manager WalletManager) {
+func RegWMD(name string, manager interface{}) {
 	if manager == nil {
 		panic("WalletManager: Register adapter is nil")
 	}
@@ -62,7 +89,7 @@ func RegWMD(name string, manager WalletManager) {
 
 
 // GetWMD 根据币种类型获取已注册的管理者
-func GetWMD(symbol string) WalletManager {
+func GetWMD(symbol string) interface{} {
 	manager, ok := managers[symbol]
 	if !ok {
 		return nil

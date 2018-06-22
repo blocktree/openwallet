@@ -26,6 +26,7 @@ import (
 	"strings"
 	"github.com/blocktree/OpenWallet/logger"
 	"io/ioutil"
+    "os/exec"
 )
 
 const (
@@ -489,4 +490,200 @@ func (w *WalletManager) RestoreWalletFlow() error {
 
 	return nil
 
+}
+
+
+func (w *WalletManager) InitNodeConfig() error {
+
+	var (
+		err            error
+		hostPort       string 
+		hostDatadir    string
+		dockerDatadir  string
+		containerName  string
+		imageName      string
+		dockerfilePath string
+		filePath       string
+	)
+
+	for {
+
+		fmt.Printf("[Start setup node config]\n")
+
+		hostPort, err = console.InputText("Set host port: ", true)
+		if err != nil {
+			return err
+		}
+
+
+		hostDatadir, err = console.InputText("Set host workspace datadir: ", false)
+		if err != nil {
+			return err
+		}
+
+	
+		dockerDatadir, err = console.InputText("Set dcoker datadir: ", true)
+		if err != nil {
+			return err
+		}
+
+
+		containerName, err = console.InputText("Set container name: ", true)
+		if err != nil {
+			return err
+		}
+
+		imageName, err = console.InputText("Set image which the container will use: ", true)
+		if err != nil {
+			return err
+		}
+
+		dockerfilePath, err = console.InputText("Set the dockerfile's absolute path: ", true)
+		if err != nil {
+			return err
+		}
+
+		//换两行
+		fmt.Println()
+		fmt.Println()
+
+		//打印输入内容
+		fmt.Printf("Please check the following setups is correct?\n")
+		fmt.Printf("-----------------------------------------------------------\n")
+		fmt.Printf("host listen port : %s\n", hostPort)
+		fmt.Printf("host workspace datadir: %s\n", hostDatadir)
+		fmt.Printf("docker datadir: %s\n", dockerDatadir)
+		fmt.Printf("container name: %s\n", containerName)
+		fmt.Printf("image name: %s\n", imageName)
+		fmt.Printf("docker file  path: %s\n", dockerfilePath)
+		fmt.Printf("-----------------------------------------------------------\n")
+		flag, err := console.Stdin.PromptConfirm("Confirm to save the setups?")
+		if err != nil {
+			return err
+		}
+
+		if !flag {
+			continue
+		} else {
+			break
+		}
+
+	}
+
+	//换两行
+	fmt.Println()
+	fmt.Println()
+
+	_, filePath, err = newNodeConfigFile(hostPort, hostDatadir, dockerDatadir, containerName, imageName, dockerfilePath)
+
+	fmt.Printf("Config file create, file path: %s\n", filePath)
+
+	return nil
+
+}
+
+func (w *WalletManager) BuildImage() error {
+
+	var (
+		err      error
+		cmd      *exec.Cmd
+		result   []byte
+	)
+
+	bulil_image := "docker build -t " + imageName + " -f " + dockerfilePath
+	cmd = exec.Command(bulil_image)
+    if result, err = cmd.Output(); err != nil {
+        fmt.Println(err)
+        return err
+    }
+    // 默认输出有一个换行
+    fmt.Println(string(result))
+
+    return nil
+}
+
+
+//创建容器
+func (w *WalletManager)RunContainer() error {
+	var (
+		err      error
+		cmd      *exec.Cmd
+		result   []byte
+	)
+
+	create_container := "docker run --privileged=true -d -it -p " + hostPort + ":9888" + " -v " + hostDatadir + ":" + dockerDatadir + " --name " + containerName + " " + imageName
+	cmd = exec.Command(create_container)
+    if result, err = cmd.Output(); err != nil {
+        fmt.Println(err)
+        return err
+    }
+    // 默认输出有一个换行
+    fmt.Println(string(result))
+
+    return nil
+}
+	
+
+//运行节点
+func (w *WalletManager)RunFullNode() error {
+	var (
+		err      error
+		cmd      *exec.Cmd
+		result   []byte
+	)
+
+	init_node := "docker exec -it " + containerName + " /bin/sh" + " bytomd init --chain_id mainnet"
+	run_node := "docker exec -it " + containerName + " /bin/sh" + " bytomd node --home " + dockerDatadir + " --auth.disable"
+
+	cmd = exec.Command(init_node)
+    if result, err = cmd.Output(); err != nil {
+        fmt.Println(err)
+        return err
+    }
+    // 默认输出有一个换行
+    fmt.Println(string(result))
+
+    cmd = exec.Command(run_node)
+    if result, err = cmd.Output(); err != nil {
+        fmt.Println(err)
+        return err
+    }
+    // 默认输出有一个换行
+    fmt.Println(string(result))
+
+    return nil
+}	
+
+//登录容器
+func (w *WalletManager)LoginContainer() error {
+	var (
+		err      error
+		cmd      *exec.Cmd
+		result   []byte
+	)
+
+	login := "docker exec -it " + containerName + " /bin/sh"
+
+	cmd = exec.Command(login)
+    if result, err = cmd.Output(); err != nil {
+        fmt.Println(err)
+        return err
+    }
+    // 默认输出有一个换行
+    fmt.Println(string(result))
+
+    return nil
+}
+
+//SetConfigFlow 初始化配置流程
+func (w *WalletManager) SetConfigFlow(subCmd string) error {
+	file := configFilePath + configFileName
+	fmt.Printf("You can run 'vim %s' to edit %s config.\n", file, subCmd)
+	return nil
+}
+
+//ShowConfigInfo 查看配置信息
+func (w *WalletManager) ShowConfigInfo(subCmd string) error {
+	printConfig()
+	return nil
 }

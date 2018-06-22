@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"log"
+	"io/ioutil"
+	"fmt"
 )
 
 // FileInfo describes a file. It's a wrapper around os.FileInfo.
@@ -197,6 +199,16 @@ func WriteFile(name string, content []byte, append bool) bool {
 		return false
 	}
 	return true
+}
+
+//打印文件里的文本内容
+func PrintFile(name string) {
+	content, err := ioutil.ReadFile(name)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(string(content))
+	}
 }
 
 //Delete 删除文件
