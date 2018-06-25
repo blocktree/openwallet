@@ -13,6 +13,7 @@
  * GNU Lesser General Public License for more details.
  */
 
+// owtp全称OpenWallet Transfer Protocol，OpenWallet的一种点对点的分布式私有通信协议。
 package owtp
 
 import (
@@ -30,7 +31,6 @@ const (
 	//重放攻击
 	errReplayAttack uint64 = 102
 )
-
 
 //OWTPNode 实现OWTP协议的节点
 type OWTPNode struct {
@@ -50,11 +50,11 @@ type OWTPNode struct {
 }
 
 //NewOWTPNode 创建OWTP协议节点
-func NewOWTPNode(url string, cacheFile string) *OWTPNode {
+func NewOWTPNode(nodeID int64, url, cacheFile string) *OWTPNode {
 	node := &OWTPNode{}
 	node.url = url
 	node.cacheFile = cacheFile
-	node.nonceGen, _ = snowflake.NewNode(int64(generateRangeNum(0, 1023)))
+	node.nonceGen, _ = snowflake.NewNode(nodeID)
 	node.serveMux = &ServeMux{}
 	return node
 }
@@ -100,7 +100,7 @@ func (node *OWTPNode) Call(
 	sync bool) error {
 
 	var (
-		err  error
+		err      error
 		respChan = make(chan Response, 0)
 	)
 
@@ -146,8 +146,8 @@ func (node *OWTPNode) HandleFunc(method string, handler HandlerFunc) {
 	node.serveMux.HandleFunc(method, handler)
 }
 
-//generateRangeNum 生成范围内的随机整数
-func generateRangeNum(min, max int) int {
+//GenerateRangeNum 生成范围内的随机整数
+func GenerateRangeNum(min, max int) int {
 	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
 	randNum := rand.Intn(max-min) + min
 	return randNum

@@ -13,7 +13,7 @@
  * GNU Lesser General Public License for more details.
  */
 
-// owtp全称OpenWallet Transfer Protocol，OpenWallet的一种私有通信协议。
+// owtp全称OpenWallet Transfer Protocol，OpenWallet的一种点对点的分布式私有通信协议。
 package owtp
 
 import (

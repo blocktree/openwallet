@@ -19,7 +19,7 @@ import "testing"
 
 func TestGenerateRangeNum(t *testing.T) {
 	for i := 0;i<1000 ;i++  {
-		num := generateRangeNum(0, 1023)
+		num := GenerateRangeNum(0, 1023)
 		t.Logf("num [%d]= %d", i, num)
 	}
 }
@@ -31,7 +31,7 @@ func TestConnectNode(t *testing.T) {
 	)
 
 	testUrl := "ws://192.168.30.4:8083/websocket?a=dajosidjaiosjdioajsdioajsdiowhefi&t=1529669837&n=4&s=adisjdiasjdioajsdiojasidjioasjdojasd"
-	node := NewOWTPNode(testUrl, "")
+	node := NewOWTPNode(1, testUrl, "")
 	err := node.Connect()
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
