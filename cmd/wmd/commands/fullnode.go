@@ -37,148 +37,103 @@ Manage full node
 		Subcommands: []cli.Command{
 			{
 				//创建镜像
-				Name:     "initNodeConfig",
-				Usage:    "init node configuration",
-				Action:   initNodeConfig,
+				Name:     "install",
+				Usage:    "install full node",
+				Action:   installFullNode,
 				Category: "FULLNODE COMMANDS",
 				Flags: []cli.Flag{
+					utils.DatadirFlag,
 					utils.SymbolFlag,
 				},
 				Description: `
-	wmd node initNodeConfig 
-init node configuration
+	wmd node install -s <symbol> -p <datadir>
+install full node 
 
 	`,
 			},
 			{
 				//创建镜像
-				Name:     "buildImage",
-				Usage:    "build docker image",
-				Action:   buildImage,
+				Name:     "start",
+				Usage:    "start full node",
+				Action:   startFullNode,
 				Category: "FULLNODE COMMANDS",
 				Flags: []cli.Flag{
+					utils.DatadirFlag,
 					utils.SymbolFlag,
 				},
 				Description: `
-	wmd node buildImage 
-Build docker image
+	wmd node start
+start full node
 
 	`,
 			},
 			{
 				//创建容器
-				Name:     "runContainer",
-				Usage:    "run container",
-				Action:   runContainer,
+				Name:     "stop",
+				Usage:    "stop full node",
+				Action:   stopFullNode,
 				Category: "FULLNODE COMMANDS",
 				Flags: []cli.Flag{
+					utils.DatadirFlag,
 					utils.SymbolFlag,
 				},
 				Description: `
-	wmd node runContainer 
+	wmd node stop
 
-Run a container  
+stop full node
 
 	`,
 			},
 			{
 				//运行节点
-				Name:     "runFullNode",
-				Usage:    "run a full node in container",
-				Action:   runFullNode,
+				Name:     "restart",
+				Usage:    "restart a full node",
+				Action:   restartFullNode,
 				Category: "FULLNODE COMMANDS",
 				Flags: []cli.Flag{
+					utils.DatadirFlag,
 					utils.SymbolFlag,
 				},
 				Description: `
-	wmd node runFullNode 
+	wmd node restart 
 
-Run a full node process in docker container
-
+restart full node
 	`,
 			},
 			{
 				//登录容器
-				Name:     "loginContainer",
-				Usage:    "login a container",
-				Action:   loginContainer,
+				Name:     "info",
+				Usage:    "full node infomations",
+				Action:   fullNodeInfo,
 				Category: "FULLNODE COMMANDS",
 				Flags: []cli.Flag{
+					utils.DatadirFlag,
 					utils.SymbolFlag,
 				},
 				Description: `
-	wmd node loginContainer
+	wmd node info
 
-Login a created container by name
-
+get full node infomation
 	`,
 			},
 		},
 	}
 )
 
-func initNodeConfig(c *cli.Context) (error) {
+func installFullNode(c *cli.Context) (error) {
 	symbol := c.String("symbol")
-	if len(symbol) == 0 {
-		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
-	}
-	m := assets.GetWMD(symbol).(assets.NodeManager)
-	if m == nil {
-		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
-	}
-	//配置钱包
-	err := m.InitNodeConfig()
-	if err != nil {
-		openwLogger.Log.Errorf("%v", err)
-	}
-	return err
-}
+	datadir := c.String("datadir")
 
-func buildImage(c *cli.Context) (error) {
-	symbol := c.String("symbol")
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-	m := assets.GetWMD(symbol).(assets.NodeManager)
-	if m == nil {
-		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
-	}
-	//配置钱包
-	err := m.BuildImage()
-	if err != nil {
-		openwLogger.Log.Errorf("%v", err)
-	}
-	return err
-}
 
-func runContainer(c *cli.Context) (error) {
-	symbol := c.String("symbol")
-	if len(symbol) == 0 {
-		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
-	}
 	m := assets.GetWMD(symbol).(assets.NodeManager)
 	if m == nil {
 		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
-	//配置钱包
-	err := m.RunContainer()
-	if err != nil {
-		openwLogger.Log.Errorf("%v", err)
-	}
-	return err
-}
-
-func runFullNode(c *cli.Context) (error) {
-	symbol := c.String("symbol")
-	if len(symbol) == 0 {
-		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
-	}
-	m := assets.GetWMD(symbol).(assets.NodeManager)
-	if m == nil {
-		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
-	}
-	//配置钱包
-	err := m.RunFullNode()
+	//安装全节点
+	err := m.InstallFullNode(datadir)
 	if err != nil {
 		openwLogger.Log.Errorf("%v", err)
 	}
@@ -186,19 +141,78 @@ func runFullNode(c *cli.Context) (error) {
 	return err
 }
 
-func loginContainer(c *cli.Context) (error) {
+func startFullNode(c *cli.Context) (error) {
 	symbol := c.String("symbol")
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
+
+	m := assets.GetWMD(symbol).(assets.NodeManager)
+	if m == nil {
+		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
+	}
+	//运行全节点
+	err := m.StartFullNode()
+	if err != nil {
+		openwLogger.Log.Errorf("%v", err)
+	}
+
+	return err
+}
+
+func stopFullNode(c *cli.Context) (error) {
+	symbol := c.String("symbol")
+	if len(symbol) == 0 {
+		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+	}
+
+	m := assets.GetWMD(symbol).(assets.NodeManager)
+	if m == nil {
+		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
+	}
+	//停止全节点
+	err := m.StopFullNode()
+	if err != nil {
+		openwLogger.Log.Errorf("%v", err)
+	}
+
+	return err
+}
+
+func restartFullNode(c *cli.Context) (error) {
+	symbol := c.String("symbol")
+	if len(symbol) == 0 {
+		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+	}
+
+	m := assets.GetWMD(symbol).(assets.NodeManager)
+	if m == nil {
+		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
+	}
+	//重启全节点
+	err := m.RestartFullNode()
+	if err != nil {
+		openwLogger.Log.Errorf("%v", err)
+	}
+
+	return err
+}
+
+func fullNodeInfo(c *cli.Context) (error) {
+	symbol := c.String("symbol")
+	if len(symbol) == 0 {
+		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+	}
+
 	m := assets.GetWMD(symbol).(assets.NodeManager)
 	if m == nil {
 		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
 	//配置钱包
-	err := m.LoginContainer()
+	err := m.FullNodeInfo()
 	if err != nil {
 		openwLogger.Log.Errorf("%v", err)
 	}
+
 	return err
 }
