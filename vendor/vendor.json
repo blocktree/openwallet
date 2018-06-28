@@ -59,6 +59,12 @@
 			"revisionTime": "2018-05-08T23:20:20Z"
 		},
 		{
+			"checksumSHA1": "9D7/RhxyPegMVxngNgi1DgIVTp4=",
+			"path": "github.com/Workiva/go-datastructures/queue",
+			"revision": "f338bf48899950e415caffa02222a7273fbdeaf6",
+			"revisionTime": "2018-06-12T15:49:46Z"
+		},
+		{
 			"checksumSHA1": "USkefO0g1U9mr+8hagv3fpSkrxg=",
 			"origin": "github.com/ethereum/go-ethereum/vendor/github.com/aristanetworks/goarista/monotime",
 			"path": "github.com/aristanetworks/goarista/monotime",
@@ -264,6 +270,12 @@
 			"revisionTime": "2017-07-02T00:39:31Z"
 		},
 		{
+			"checksumSHA1": "yiPmpn3VrMIidVhbSSiKP3KLdak=",
+			"path": "github.com/bwmarrin/snowflake",
+			"revision": "1c0147d077f16f1abd13b630743b41484616ab9a",
+			"revisionTime": "2017-06-30T03:27:14Z"
+		},
+		{
 			"checksumSHA1": "fcfxNsCuheCrubAAl6zWgimCnLY=",
 			"path": "github.com/codegangsta/inject",
 			"revision": "33e0aa1cb7c019ccc3fbe049a8262a6403d30504",
@@ -327,6 +339,42 @@
 			"path": "github.com/elastic/gosigar/sys/windows",
 			"revision": "c60f6f62147048f80a0e092b483318af88b5d78b",
 			"revisionTime": "2018-05-08T23:20:20Z"
+		},
+		{
+			"checksumSHA1": "IlDHv+GrkfH+xp1pdKzOqws1sLY=",
+			"path": "github.com/emirpasic/gods/containers",
+			"revision": "bba54c718c4e39e4db35f73e0c660df44a4de4cd",
+			"revisionTime": "2018-06-18T11:24:50Z"
+		},
+		{
+			"checksumSHA1": "ZPTDtUhR0dyogtlRYPsLcRRojEo=",
+			"path": "github.com/emirpasic/gods/lists",
+			"revision": "bba54c718c4e39e4db35f73e0c660df44a4de4cd",
+			"revisionTime": "2018-06-18T11:24:50Z"
+		},
+		{
+			"checksumSHA1": "BeRBsa5sNQF987d/b7Um+1D1Mck=",
+			"path": "github.com/emirpasic/gods/lists/singlylinkedlist",
+			"revision": "bba54c718c4e39e4db35f73e0c660df44a4de4cd",
+			"revisionTime": "2018-06-18T11:24:50Z"
+		},
+		{
+			"checksumSHA1": "f2NQZ/zL+Ty7ybmRcG64E1LQEic=",
+			"path": "github.com/emirpasic/gods/stacks",
+			"revision": "bba54c718c4e39e4db35f73e0c660df44a4de4cd",
+			"revisionTime": "2018-06-18T11:24:50Z"
+		},
+		{
+			"checksumSHA1": "lYlzqFRoUi5UEpEpIIweCbNVEgI=",
+			"path": "github.com/emirpasic/gods/stacks/linkedliststack",
+			"revision": "bba54c718c4e39e4db35f73e0c660df44a4de4cd",
+			"revisionTime": "2018-06-18T11:24:50Z"
+		},
+		{
+			"checksumSHA1": "6KV7DzMiMWnJbp5qhycmPIQ4t70=",
+			"path": "github.com/emirpasic/gods/utils",
+			"revision": "bba54c718c4e39e4db35f73e0c660df44a4de4cd",
+			"revisionTime": "2018-06-18T11:24:50Z"
 		},
 		{
 			"checksumSHA1": "GCGRyn8Jx3Fbroo3XtClEUfPbec=",
@@ -970,10 +1018,28 @@
 			"revisionTime": "2017-11-12T03:14:02Z"
 		},
 		{
+			"checksumSHA1": "ehhDW5xOMs7vp2dxSoKBG8tJSB4=",
+			"path": "github.com/gogo/protobuf/gogoproto",
+			"revision": "30cf7ac33676b5786e78c746683f0d4cd64fa75b",
+			"revisionTime": "2018-05-09T16:24:41Z"
+		},
+		{
 			"checksumSHA1": "nTHr8B2CPLP8kcJRtBEXluFvzUY=",
 			"path": "github.com/gogo/protobuf/proto",
 			"revision": "1ef32a8b9fc3f8ec940126907cedb5998f6318e4",
 			"revisionTime": "2018-03-30T17:46:43Z"
+		},
+		{
+			"checksumSHA1": "Vym+ueo+9xbr7CjKbXjxIkUw5cI=",
+			"path": "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
+			"revision": "30cf7ac33676b5786e78c746683f0d4cd64fa75b",
+			"revisionTime": "2018-05-09T16:24:41Z"
+		},
+		{
+			"checksumSHA1": "HmbftipkadrLlCfzzVQ+iFHbl6g=",
+			"path": "github.com/golang/glog",
+			"revision": "23def4e6c14b4da8ac2ed8007337bc5eb5007998",
+			"revisionTime": "2016-01-25T20:49:56Z"
 		},
 		{
 			"checksumSHA1": "WX1+2gktHcBmE9MGwFSGs7oqexU=",
@@ -992,6 +1058,36 @@
 			"path": "github.com/golang/snappy",
 			"revision": "553a641470496b2327abcac10b36396bd98e45c9",
 			"revisionTime": "2017-02-15T23:32:05Z"
+		},
+		{
+			"checksumSHA1": "iDxMup03z0C3pe91birArMiVdmo=",
+			"path": "github.com/google/keytransparency/core/crypto/vrf",
+			"revision": "aa51994add545ab13558c17f9361fcf51e90e327",
+			"revisionTime": "2018-06-27T19:07:07Z"
+		},
+		{
+			"checksumSHA1": "Bq13jgSpqW8HAsugNody7Au1M2s=",
+			"path": "github.com/google/keytransparency/core/crypto/vrf/p256",
+			"revision": "aa51994add545ab13558c17f9361fcf51e90e327",
+			"revisionTime": "2018-06-27T19:07:07Z"
+		},
+		{
+			"checksumSHA1": "u2q5qSyGNKqIwOUK/E8hzinAtuk=",
+			"path": "github.com/google/trillian/crypto/keys",
+			"revision": "0de4decc26e4c6efbf4ab9657409d6fe8569f8ea",
+			"revisionTime": "2018-06-25T14:08:23Z"
+		},
+		{
+			"checksumSHA1": "qLX8t6xSbaFITR1W6NgDcKPWk+Q=",
+			"path": "github.com/google/trillian/crypto/keyspb",
+			"revision": "0de4decc26e4c6efbf4ab9657409d6fe8569f8ea",
+			"revisionTime": "2018-06-25T14:08:23Z"
+		},
+		{
+			"checksumSHA1": "QdSIO+gp41BqNti0ZDVdXvfDvDo=",
+			"path": "github.com/gorilla/websocket",
+			"revision": "5ed622c449da6d44c3c8329331ff47a9e5844f71",
+			"revisionTime": "2018-06-05T20:25:52Z"
 		},
 		{
 			"checksumSHA1": "d9PxF1XQGLMJZRct2R8qVM/eYlE=",
@@ -1084,6 +1180,12 @@
 			"revisionTime": "2018-05-08T23:20:20Z"
 		},
 		{
+			"checksumSHA1": "ebj314bR1d6Nqr/ge+JLq6+O5FE=",
+			"path": "github.com/itchyny/base58-go",
+			"revision": "4b24a7dfa1bfba3724ffb3598b1c6ded1cff087f",
+			"revisionTime": "2017-04-01T02:59:45Z"
+		},
+		{
 			"checksumSHA1": "vTGKMIfiMwz43y5bsgx9PrL+AVw=",
 			"origin": "github.com/ethereum/go-ethereum/vendor/github.com/jackpal/go-nat-pmp",
 			"path": "github.com/jackpal/go-nat-pmp",
@@ -1123,6 +1225,481 @@
 			"path": "github.com/mattn/go-runewidth",
 			"revision": "ce7b0b5c7b45a81508558cd1dba6bb1e4ddb51bb",
 			"revisionTime": "2018-04-08T05:53:51Z"
+		},
+		{
+			"checksumSHA1": "Yk1x0hNZCbTpN+kQxHt+BOR6p6A=",
+			"path": "github.com/ontio/ontology-crypto/ec",
+			"revision": "a421fcc85da6c079fc5abd28b04d3067e35e911a",
+			"revisionTime": "2018-06-22T06:58:58Z"
+		},
+		{
+			"checksumSHA1": "8NROSNz+NbowV+epIVY655TsfII=",
+			"path": "github.com/ontio/ontology-crypto/keypair",
+			"revision": "a421fcc85da6c079fc5abd28b04d3067e35e911a",
+			"revisionTime": "2018-06-22T06:58:58Z"
+		},
+		{
+			"checksumSHA1": "rSFU0DoB2GT89COot/s2yh9NoeM=",
+			"path": "github.com/ontio/ontology-crypto/signature",
+			"revision": "a421fcc85da6c079fc5abd28b04d3067e35e911a",
+			"revisionTime": "2018-06-22T06:58:58Z"
+		},
+		{
+			"checksumSHA1": "7k5QveaGkNgSBM7Vo797Ecl++NI=",
+			"path": "github.com/ontio/ontology-crypto/sm2",
+			"revision": "a421fcc85da6c079fc5abd28b04d3067e35e911a",
+			"revisionTime": "2018-06-22T06:58:58Z"
+		},
+		{
+			"checksumSHA1": "xtC68xV8TKjByO7RjGQvrtSqQS0=",
+			"path": "github.com/ontio/ontology-crypto/sm3",
+			"revision": "a421fcc85da6c079fc5abd28b04d3067e35e911a",
+			"revisionTime": "2018-06-22T06:58:58Z"
+		},
+		{
+			"checksumSHA1": "OKOkYM2Cn0DGo1nAS70ygNjTViw=",
+			"origin": "github.com/ontio/ontology/vendor/github.com/ontio/ontology-crypto/vrf",
+			"path": "github.com/ontio/ontology-crypto/vrf",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "lyZfM4ImET0KvyicXf2FW7OxgoU=",
+			"path": "github.com/ontio/ontology-eventbus/actor",
+			"revision": "e0541083fef8f5377eb9ad3141da762d529ce37a",
+			"revisionTime": "2018-06-21T09:55:09Z"
+		},
+		{
+			"checksumSHA1": "5HtQ6K1VH3Uw0h0pkp8qcbLSljY=",
+			"path": "github.com/ontio/ontology-eventbus/eventhub",
+			"revision": "e0541083fef8f5377eb9ad3141da762d529ce37a",
+			"revisionTime": "2018-06-21T09:55:09Z"
+		},
+		{
+			"checksumSHA1": "T6Hke2ryi67pZGRz3EcSaxRyiFg=",
+			"path": "github.com/ontio/ontology-eventbus/eventstream",
+			"revision": "e0541083fef8f5377eb9ad3141da762d529ce37a",
+			"revisionTime": "2018-06-21T09:55:09Z"
+		},
+		{
+			"checksumSHA1": "TMTSlkEZNQN6OZUhBosQtrNL3TE=",
+			"path": "github.com/ontio/ontology-eventbus/internal/queue/goring",
+			"revision": "e0541083fef8f5377eb9ad3141da762d529ce37a",
+			"revisionTime": "2018-06-21T09:55:09Z"
+		},
+		{
+			"checksumSHA1": "y0aHsjWXwQduJgrhjh0jG3tnBoY=",
+			"path": "github.com/ontio/ontology-eventbus/internal/queue/mpsc",
+			"revision": "e0541083fef8f5377eb9ad3141da762d529ce37a",
+			"revisionTime": "2018-06-21T09:55:09Z"
+		},
+		{
+			"checksumSHA1": "kXA8BarxA67mlyjMv2TiER4ARms=",
+			"path": "github.com/ontio/ontology-eventbus/log",
+			"revision": "e0541083fef8f5377eb9ad3141da762d529ce37a",
+			"revisionTime": "2018-06-21T09:55:09Z"
+		},
+		{
+			"checksumSHA1": "FWYeDxh9jy7IvI/KLWr0pBvoTpc=",
+			"path": "github.com/ontio/ontology-eventbus/mailbox",
+			"revision": "e0541083fef8f5377eb9ad3141da762d529ce37a",
+			"revisionTime": "2018-06-21T09:55:09Z"
+		},
+		{
+			"checksumSHA1": "ntA11MSwzSxFpSPhn7IXUzwedIQ=",
+			"path": "github.com/ontio/ontology-go-sdk",
+			"revision": "4ea65e51bac329f1adcdfab95f2322ebec1feed7",
+			"revisionTime": "2018-06-28T02:54:55Z"
+		},
+		{
+			"checksumSHA1": "/+kNlaxDP8gkDki4f6/XGV6BY2o=",
+			"path": "github.com/ontio/ontology-go-sdk/common",
+			"revision": "4ea65e51bac329f1adcdfab95f2322ebec1feed7",
+			"revisionTime": "2018-06-28T02:54:55Z"
+		},
+		{
+			"checksumSHA1": "sGMJLQkUNd2tMQwZUT0W+LLSslQ=",
+			"path": "github.com/ontio/ontology-go-sdk/rest",
+			"revision": "4ea65e51bac329f1adcdfab95f2322ebec1feed7",
+			"revisionTime": "2018-06-28T02:54:55Z"
+		},
+		{
+			"checksumSHA1": "qFe32mfUQ2hx+4YP083sbTn9LC0=",
+			"path": "github.com/ontio/ontology-go-sdk/rpc",
+			"revision": "4ea65e51bac329f1adcdfab95f2322ebec1feed7",
+			"revisionTime": "2018-06-28T02:54:55Z"
+		},
+		{
+			"checksumSHA1": "7koO/s4MrACic+JAVShvJpDDhcU=",
+			"path": "github.com/ontio/ontology-go-sdk/utils",
+			"revision": "4ea65e51bac329f1adcdfab95f2322ebec1feed7",
+			"revisionTime": "2018-06-28T02:54:55Z"
+		},
+		{
+			"checksumSHA1": "0zL9B3ZImjXvc9VZ1BU46TeH4XQ=",
+			"path": "github.com/ontio/ontology/account",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "/ntYAqgNk83QlyGMUhTiIv78QRA=",
+			"path": "github.com/ontio/ontology/common",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "IsLljH8lx7A/PM5IWbRdfppRjgA=",
+			"path": "github.com/ontio/ontology/common/config",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "3gdj3ZNdJXBT5IlQ3Sgg8xcKhSA=",
+			"path": "github.com/ontio/ontology/common/constants",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "vC61w3+boKz3/zb4EeWVO+3UM3g=",
+			"path": "github.com/ontio/ontology/common/log",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "G4SxHCeyXblrtKyIji29gE3oq9A=",
+			"path": "github.com/ontio/ontology/common/serialization",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "3Z9LMCRYx8kTDKzEmD1CXGqLe/8=",
+			"path": "github.com/ontio/ontology/consensus/actor",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "PXmyhtV9P8kwD4UJlTdBc4yhERk=",
+			"path": "github.com/ontio/ontology/consensus/vbft/config",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "LygBmqAKyYRmoG+xIvYKKtJqUR0=",
+			"path": "github.com/ontio/ontology/core/ledger",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "rChK+s8mbnOnBjp6/i6R/Th1I60=",
+			"path": "github.com/ontio/ontology/core/payload",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "9ZReI0ubwi/Yr+wVAC1BkYMZink=",
+			"path": "github.com/ontio/ontology/core/program",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "MBeg82RX4to6MBuvVoaUWBUCc7E=",
+			"path": "github.com/ontio/ontology/core/signature",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "f/1+u5BqqtOXPMh6gIfwfKEokb4=",
+			"path": "github.com/ontio/ontology/core/states",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "evs0M/FOy30KzUqRe+d6D6G9er8=",
+			"path": "github.com/ontio/ontology/core/store",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "huhDgIhKKxh0eQS3juwT0ne7XX0=",
+			"path": "github.com/ontio/ontology/core/store/common",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "46fr7WJl8ye7XiowQoMKW0s4Cq8=",
+			"path": "github.com/ontio/ontology/core/store/ledgerstore",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "lzXyQ7uBwJd7F/qHESxWCPGstzs=",
+			"path": "github.com/ontio/ontology/core/store/leveldbstore",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "Z3nTiFAQQlOfUP2IxD2vqa4f5uw=",
+			"path": "github.com/ontio/ontology/core/store/statestore",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "cRZAocTzuX5PIWVm+IPc+d557lk=",
+			"path": "github.com/ontio/ontology/core/types",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "Z0WvKMnpCuoHJ3LVQZK66Wd3m/I=",
+			"path": "github.com/ontio/ontology/core/utils",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "HKwlnTD8tG0q4imIdmCB+73Rkg4=",
+			"path": "github.com/ontio/ontology/errors",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "LBqvfBlIvKrcKdboOyB+5UcHIFU=",
+			"path": "github.com/ontio/ontology/events",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "NUlHq+kIAaCyh72NM5Y2wgwPWpQ=",
+			"path": "github.com/ontio/ontology/events/message",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "nYBN/mvK3zRSHDznit+9kdxcQvA=",
+			"path": "github.com/ontio/ontology/http/base/actor",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "igpkCV8AnlaF1yO0IRN3P2tfTe8=",
+			"path": "github.com/ontio/ontology/http/base/common",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "xPKO5bm9OuOSrRMB6wGhXcmXGVo=",
+			"path": "github.com/ontio/ontology/merkle",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "Hyo/MSU5/Su9AH9sCDgXndlJQZc=",
+			"path": "github.com/ontio/ontology/p2pserver",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "P9ZiQ9W7PA4W0vx+nu0Bsa1iDk8=",
+			"path": "github.com/ontio/ontology/p2pserver/actor/req",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "2HQpWmqR18gbifv0nMf7OYo0JC4=",
+			"path": "github.com/ontio/ontology/p2pserver/actor/server",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "L6TI+xwfVt/4JfpMNJC1fgIj2OE=",
+			"path": "github.com/ontio/ontology/p2pserver/common",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "dBwxP9sESedjkUgRBS4my7hGd5s=",
+			"path": "github.com/ontio/ontology/p2pserver/link",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "ARLDpu0gF+T88m6FcjiuSG417+8=",
+			"path": "github.com/ontio/ontology/p2pserver/message/msg_pack",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "SUEldZhohVMcSg/4Jejk9hNJVOg=",
+			"path": "github.com/ontio/ontology/p2pserver/message/types",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "XcSr424DeRCjQ8l073FIhrqzdus=",
+			"path": "github.com/ontio/ontology/p2pserver/message/utils",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "JOfSrce77W5AgFIcptg6D5rK5sE=",
+			"path": "github.com/ontio/ontology/p2pserver/net/netserver",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "AAPp5Xr2Cm0cGD6jFj7JKmFmw9o=",
+			"path": "github.com/ontio/ontology/p2pserver/net/protocol",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "TopKCVC3WfZkDsa5n8+dbg0z5TM=",
+			"path": "github.com/ontio/ontology/p2pserver/peer",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "iQhIjlbyW4nTEcKxBxQjXVBtbCQ=",
+			"path": "github.com/ontio/ontology/smartcontract",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "FK0DiPCYnoK6nApBFtDdlmtHWEc=",
+			"path": "github.com/ontio/ontology/smartcontract/common",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "v+9IOGFfHJ8OGLsmlirUdIMI2yY=",
+			"path": "github.com/ontio/ontology/smartcontract/context",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "C5SEgMSYZLuwuksg4f1QC4ZxnaA=",
+			"path": "github.com/ontio/ontology/smartcontract/event",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "m8g3dRXIyNYelwAYWqmquoon4+o=",
+			"path": "github.com/ontio/ontology/smartcontract/service/native",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "jX89yXrQmLze/GsHD5eyxR/uO/8=",
+			"path": "github.com/ontio/ontology/smartcontract/service/native/auth",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "1rWwHYwOFJCugXMSLXgHfTgPkto=",
+			"path": "github.com/ontio/ontology/smartcontract/service/native/global_params",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "SZbPico2tXn232EHeAMjEUk3AkA=",
+			"path": "github.com/ontio/ontology/smartcontract/service/native/governance",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "WKwAiJ/rgSMSTNI2NfFyE3aKEes=",
+			"path": "github.com/ontio/ontology/smartcontract/service/native/init",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "tY/1xmohO6BzsbGFUzBdXDyUomU=",
+			"path": "github.com/ontio/ontology/smartcontract/service/native/ong",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "o2LqKUuWlMhvF/3KFamK3wjqT9Q=",
+			"path": "github.com/ontio/ontology/smartcontract/service/native/ont",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "Ox8FZWhWPfZ2vU4mBqz4/4kTe/w=",
+			"path": "github.com/ontio/ontology/smartcontract/service/native/ontid",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "6UQ4thh5b1gPLInQNdirzSZ4aGw=",
+			"path": "github.com/ontio/ontology/smartcontract/service/native/utils",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "kgne8rLK6aYtBH/OrECY6LyoWhc=",
+			"path": "github.com/ontio/ontology/smartcontract/service/neovm",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "mPxipcJ6LD7P32ChJ20o5/5XhX8=",
+			"path": "github.com/ontio/ontology/smartcontract/states",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "dxfbf7OY3PMiw30Rt09GLc6LyOk=",
+			"path": "github.com/ontio/ontology/smartcontract/storage",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "hEwu6968ZyRF5fKni8Mxak19U4I=",
+			"path": "github.com/ontio/ontology/txnpool/common",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "3iu0M+5Qrsih3sblMbyled5YMc8=",
+			"path": "github.com/ontio/ontology/validator/types",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "fr9YC5p8Nz4mzjTBSP+DE1FYtE0=",
+			"path": "github.com/ontio/ontology/vm/neovm",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "jzGLUXoAlWz6W7oDFBeNpXKVaIY=",
+			"path": "github.com/ontio/ontology/vm/neovm/errors",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "/RPfCcyWZTzs1zFcUB/+PgVr5O0=",
+			"path": "github.com/ontio/ontology/vm/neovm/interfaces",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "6aN8uYa9bMUJsLMG929LIuq/ZlI=",
+			"path": "github.com/ontio/ontology/vm/neovm/types",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "+bYn92thCqBsUp4MLB2d6fRDOdc=",
+			"path": "github.com/ontio/ontology/vm/neovm/utils",
+			"revision": "1996fa2cfbe751176c4155c849b87c08117cbcff",
+			"revisionTime": "2018-06-28T11:31:30Z"
+		},
+		{
+			"checksumSHA1": "K8QsnZLV9n7jHaNr9jySy1P96LY=",
+			"path": "github.com/orcaman/concurrent-map",
+			"revision": "a05df785d2dcc16310fb997ee1702100d047cfe1",
+			"revisionTime": "2018-03-19T14:43:42Z"
 		},
 		{
 			"checksumSHA1": "Se195FlZ160eaEk/uVx4KdTPSxU=",
@@ -1426,6 +2003,12 @@
 			"path": "golang.org/x/crypto/scrypt",
 			"revision": "e73bf333ef8920dbb52ad18d4bd38ad9d9bc76d7",
 			"revisionTime": "2018-04-20T16:33:09Z"
+		},
+		{
+			"checksumSHA1": "LN1V2pZQwKnoDwcsgXpzG4+Vges=",
+			"path": "golang.org/x/crypto/sha3",
+			"revision": "a49355c7e3f8fe157a85be2f77e6e269a0f89602",
+			"revisionTime": "2018-06-20T09:14:27Z"
 		},
 		{
 			"checksumSHA1": "P23qZ/7bvTeahYJCUbcIDtqCzus=",

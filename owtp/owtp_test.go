@@ -30,8 +30,10 @@ func TestConnectNode(t *testing.T) {
 		endRunning = make(chan bool, 1)
 	)
 
+	auth, _ := NewOWTPAuth("", "", "", true)
+
 	testUrl := "ws://192.168.30.4:8083/websocket?a=dajosidjaiosjdioajsdioajsdiowhefi&t=1529669837&n=4&s=adisjdiasjdioajsdiojasidjioasjdojasd"
-	node := NewOWTPNode(1, testUrl, "")
+	node := NewOWTPNode(1, testUrl, auth)
 	err := node.Connect()
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)

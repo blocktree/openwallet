@@ -17,42 +17,46 @@ package owtp
 
 import (
 	"encoding/json"
-	"github.com/asdine/storm"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
 	"log"
-	"path/filepath"
 	"time"
 )
 
 //局部常量
 const (
 	WriteWait      = 120 * time.Second //超时为6秒
-	PongWait       = 60 * time.Second
+	PongWait       = 30 * time.Second
 	PingPeriod     = (PongWait * 9) / 10
 	MaxMessageSize = 8 * 1024 // 最大消息缓存KB
 	WSRequest      = 1        //wesocket请求标识
 	WSResponse     = 2        //wesocket响应标识
 )
 
-var (
-	//默认的缓存文件路径
-	defaultCacheFile = filepath.Join(".", "cahce", "openw.db")
-	//重放限制时长，数据包的时间戳超过后，这个间隔，可以重复nonce
-	replayLimit = 7 * 24 * time.Hour
-)
-
 type Handler interface {
 	ServeOWTP(client *Client, ctx *Context)
 }
 
+//Authorization 授权
+type Authorization interface {
+	//ConnectAuth 连接授权，处理连接授权参数，返回完整的授权连接
+	ConnectAuth(url string) string
+	//GenerateSignature 生成签名，并把签名加入到DataPacket中
+	AddAuth(data *DataPacket) bool
+	//VerifySignature 校验签名，若验证错误，可更新错误信息到DataPacket中
+	VerifyAuth(data *DataPacket) bool
+	//EnableAuth 开启授权
+	EnableAuth() bool
+}
+
 //Client 基于websocket的通信客户端
 type Client struct {
-	ws        *websocket.Conn
-	handler   Handler
-	send      chan []byte
-	cacheFile string
+	auth    Authorization
+	ws      *websocket.Conn
+	handler Handler
+	send    chan []byte
+	close   chan struct{}
 }
 
 //DataPacket 数据包
@@ -89,7 +93,7 @@ type Response struct {
 
 type Context struct {
 	//传输类型，1：请求，2：响应
-	Req int
+	Req uint64
 	//请求序号
 	nonce uint64
 	//传入参数
@@ -113,27 +117,30 @@ func NewDataPacket(json gjson.Result) *DataPacket {
 }
 
 // Dial connects a client to the given URL.
-func Dial(url string, router Handler, cacheFile string) (*Client, error) {
+func Dial(url string, router Handler, auth Authorization) (*Client, error) {
 
 	if router == nil {
 		return nil, errors.New("router should not be nil!")
 	}
 
-	log.Printf("connecting to %s\n", url)
-	c, _, err := websocket.DefaultDialer.Dial(url, nil)
+	//处理连接授权
+	authURL := url
+	if auth != nil && auth.EnableAuth() {
+		authURL = auth.ConnectAuth(url)
+	}
+
+	log.Printf("connecting to %s\n", authURL)
+	c, _, err := websocket.DefaultDialer.Dial(authURL, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(cacheFile) > 0 {
-		cacheFile = defaultCacheFile
-	}
-
 	client := &Client{
-		ws:        c,
-		handler:   router,
-		cacheFile: cacheFile,
-		send:      make(chan []byte, MaxMessageSize),
+		ws:      c,
+		handler: router,
+		send:    make(chan []byte, MaxMessageSize),
+		auth:    auth,
+		close:   make(chan struct{}),
 	}
 
 	//发送通道
@@ -145,12 +152,26 @@ func Dial(url string, router Handler, cacheFile string) (*Client, error) {
 	return client, nil
 }
 
+//SetCloseHandler 设置关闭连接时的回调
+func (c *Client) SetCloseHandler(h func(code int, text string) error) {
+	c.ws.SetCloseHandler(h)
+}
+
 //Send 发送消息
 func (c *Client) Send(data DataPacket) error {
+
+	//添加授权
+	if c.auth != nil && c.auth.EnableAuth() {
+		if !c.auth.AddAuth(&data) {
+			return errors.New("OWTP: authorization failed")
+		}
+	}
+	//log.Printf("Send: %v\n", data)
 	respBytes, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
+	//log.Printf("Send: %s\n", string(respBytes))
 	c.send <- respBytes
 	return nil
 }
@@ -185,6 +206,8 @@ func (c *Client) writePump() {
 
 		}
 	}
+
+	log.Printf("writePump end \n")
 }
 
 // write 输出数据
@@ -213,61 +236,41 @@ func (c *Client) readPump() {
 		//开一个goroutine处理消息
 		go func(p DataPacket, client *Client) {
 
-			errRun := client.checkNonceReplay(p)
-			if errRun != nil {
-				client.Send(responsErrorPacket(errRun.Error(), p.Method, errReplayAttack, p.Nonce))
-				return
+			//验证授权
+			if client.auth != nil && client.auth.EnableAuth() {
+				if !c.auth.VerifyAuth(&p) {
+					log.Printf("auth failed: %v\n", p)
+					client.Send(p) //发送验证失败结果
+					return
+				}
 			}
 
-			//TODO:验证签名
-
 			//创建上下面指针，处理请求参数，及响应
-			ctx := &Context{Params: p.Data, Method: p.Method}
-			client.handler.ServeOWTP(c, ctx)
+			ctx := Context{Req: p.Req, Params: p.Data, Method: p.Method}
 
-			//处理完后，推送响应结果给服务端
-			p.Req = WSResponse
+			//log.Printf("ctx: %v\n", ctx)
 
-			client.Send(p)
+			client.handler.ServeOWTP(client, &ctx)
 
+			if p.Req == WSRequest {
+				//log.Printf("response: %v\n", ctx.Resp)
+
+				//处理完请求，推送响应结果给服务端
+				p.Req = WSResponse
+				p.Data = ctx.Resp
+				client.Send(p)
+			}
 		}(*packet, c)
 
 	}
-}
 
-//verifySignature 钱包签名
-func (c *Client) verifySignature(packet DataPacket) error {
-	//TODO:
-	return nil
-}
-
-//checkNonceReplay 检查nonce是否重放
-func (c *Client) checkNonceReplay(packet DataPacket) error {
-
-	if packet.Nonce == 0 || packet.Timestamp == 0 {
-		//没有nonce直接跳过
-		return errors.New("no nonce")
-	}
-
-	//检查是否重放
-	db, err := storm.Open(c.cacheFile)
-	if err != nil {
-		return errors.New("client system cache error")
-	}
-	defer db.Close()
-
-	var existPacket DataPacket
-	db.One("Nonce", packet.Nonce, &existPacket)
-	if &existPacket != nil {
-		return errors.New("this is a replay attack")
-	}
-
-	return nil
-
+	log.Printf("readPump end \n")
 }
 
 //Close 关闭连接
 func (c *Client) Close() {
 	c.ws.Close()
 	close(c.send)
+	close(c.close)
+	log.Printf("client close\n")
 }

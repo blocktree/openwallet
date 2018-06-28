@@ -1,0 +1,22 @@
+package: github.com/ontio/ontology-go-sdk
+import:
+- package: github.com/gorilla/websocket
+  version: ^1.2.0
+- package: github.com/ontio/ontology-crypto
+  version: ^0.9.0
+  subpackages:
+  - keypair
+  - signature
+- package: github.com/ontio/ontology
+  version: ^0.9.1
+  subpackages:
+  - account
+  - common
+  - common/constants
+  - core/payload
+  - core/signature
+  - core/types
+  - http/base/common
+  - smartcontract/service/native/ont
+  - smartcontract/service/native/utils
+  - smartcontract/states

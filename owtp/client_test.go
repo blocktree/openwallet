@@ -31,7 +31,7 @@ func init() {
 
 func TestDial(t *testing.T) {
 
-	client, err := Dial(testUrl, nil, "")
+	client, err := Dial(testUrl, nil, nil)
 	if err != nil {
 		t.Errorf("Dial failed unexpected error: %v", err)
 		return
