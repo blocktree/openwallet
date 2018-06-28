@@ -53,6 +53,7 @@ func init() {
 		commands.CmdWallet,
 		commands.CmdConfig,
 		commands.CmdNode,
+		commands.CmdMerchant,
 	}
 
 

@@ -20,7 +20,6 @@ import (
 	"github.com/blocktree/OpenWallet/logger"
 	"github.com/pkg/errors"
 	"sync"
-	"time"
 )
 
 // 路由处理方法
@@ -110,7 +109,7 @@ func (mux *ServeMux) ServeOWTP(client *Client, ctx *Context) {
 			f.h(ctx)
 		} else {
 			//找不到方法的处理
-			client.Send(responsErrorPacket("can not find method", ctx.Method, errNotFoundMethod, ctx.nonce))
+			ctx.Resp = responsError("can not find method", ErrNotFoundMethod)
 		}
 	case WSResponse: //我方请求后，对方响应返回
 		f := mux.requestQueue[ctx.nonce]
@@ -124,7 +123,7 @@ func (mux *ServeMux) ServeOWTP(client *Client, ctx *Context) {
 
 		} else {
 			//响应与请求的方法不一致
-			client.Send(responsErrorPacket("reponse method is not equal request", ctx.Method, errResponseMethodDiffer, ctx.nonce))
+			ctx.Resp = responsError("reponse method is not equal request", ErrResponseMethodDiffer)
 		}
 
 	default:
@@ -133,8 +132,8 @@ func (mux *ServeMux) ServeOWTP(client *Client, ctx *Context) {
 	}
 }
 
-//responsErrorPacket 返回一个错误数据包
-func responsErrorPacket(err, method string, status, nonce uint64) DataPacket {
+//responsError 返回一个错误数据包
+func responsError(err string, status uint64) Response {
 
 	resp := Response{
 		Status: status,
@@ -142,14 +141,5 @@ func responsErrorPacket(err, method string, status, nonce uint64) DataPacket {
 		Result: nil,
 	}
 
-	//封装数据包
-	packet := DataPacket{
-		Method:    method,
-		Req:       WSResponse,
-		Nonce:     nonce,
-		Timestamp: time.Now().Unix(),
-		Data:      resp,
-	}
-
-	return packet
+	return resp
 }

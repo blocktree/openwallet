@@ -25,11 +25,13 @@ import (
 
 const (
 	//找不到方法
-	errNotFoundMethod uint64 = 100
+	ErrNotFoundMethod uint64 = 100
 	//请求与响应的方法不一致
-	errResponseMethodDiffer uint64 = 101
+	ErrResponseMethodDiffer uint64 = 101
 	//重放攻击
-	errReplayAttack uint64 = 102
+	ErrReplayAttack uint64 = 102
+	//成功标识
+	StatusSuccess uint64 = 0
 )
 
 //OWTPNode 实现OWTP协议的节点
@@ -45,17 +47,20 @@ type OWTPNode struct {
 	isConnected bool
 	//读写锁
 	mu sync.RWMutex
-	//使用boltDB引擎的Cache文件
-	cacheFile string
+	//关闭连接时的回调
+	disconnectHandler func(n *OWTPNode)
+	//授权
+	Auth Authorization
 }
 
 //NewOWTPNode 创建OWTP协议节点
-func NewOWTPNode(nodeID int64, url, cacheFile string) *OWTPNode {
+func NewOWTPNode(nodeID int64, url string, auth Authorization) *OWTPNode {
+
 	node := &OWTPNode{}
 	node.url = url
-	node.cacheFile = cacheFile
 	node.nonceGen, _ = snowflake.NewNode(nodeID)
 	node.serveMux = &ServeMux{}
+	node.Auth = auth
 	return node
 }
 
@@ -68,19 +73,47 @@ func (node *OWTPNode) Connect() error {
 	}
 
 	//建立链接，记录默认的客户端
-	client, err := Dial(node.url, node.serveMux, node.cacheFile)
+	client, err := Dial(node.url, node.serveMux, node.Auth)
 	if err != nil {
 		return err
 	}
 
+	node.mu.Lock()
 	//设置一个全局的webscoket
 	node.client = client
-
-	node.mu.Lock()
+	//node.client.SetCloseHandler(node.disconnect)
 	node.isConnected = true
 	node.serveMux.ResetQueue()
 	node.mu.Unlock()
 
+	go node.run()
+
+	return nil
+}
+
+//SetCloseHandler 设置关闭连接时的回调
+func (node *OWTPNode) SetCloseHandler(h func(n *OWTPNode)) {
+	node.disconnectHandler = h
+}
+
+//run 运行监听连接关闭
+func (node *OWTPNode) run() {
+	for  {
+		select {
+		case <- node.client.close:
+			node.isConnected = false
+			node.serveMux.ResetQueue()
+			node.disconnectHandler(node)
+			return
+		}
+	}
+}
+
+//disconnect 断开连接实现回调
+func (node *OWTPNode) disconnect(code int, text string) error {
+	node.isConnected = false
+	node.serveMux.ResetQueue()
+	node.disconnectHandler(node)
 	return nil
 }
 
@@ -144,6 +177,11 @@ func (node *OWTPNode) Call(
 //HandleFunc 绑定路由器方法
 func (node *OWTPNode) HandleFunc(method string, handler HandlerFunc) {
 	node.serveMux.HandleFunc(method, handler)
+}
+
+//Disconnect 断开连接后回调
+func (node *OWTPNode) Disconnect(handler func()) {
+
 }
 
 //GenerateRangeNum 生成范围内的随机整数
