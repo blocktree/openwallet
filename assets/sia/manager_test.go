@@ -41,6 +41,7 @@ func TestGetWalletInfo(t *testing.T) {
 
 func TestBackupWallet(t *testing.T) {
 	_, err := BackupWallet("/home/chbtc/openwallet/data/sc/backup/")
+
 	if err != nil {
 		t.Errorf("BackupWallet failed unexpected error: %v\n", err)
 	} else {
@@ -49,7 +50,7 @@ func TestBackupWallet(t *testing.T) {
 }
 
 func TestUnlockWallet(t *testing.T) {
-	err := UnlockWallet("12345678")
+	err := UnlockWallet("1234567890")
 	if err != nil {
 		t.Errorf("UnlockWallet failed unexpected error: %v\n", err)
 	} else {
@@ -58,8 +59,8 @@ func TestUnlockWallet(t *testing.T) {
 }
 
 func TestCreateNewWallet(t *testing.T) {
-	password := "12345678"
-	seed, err := CreateNewWallet(password, false)
+	password := "1234567890"
+	seed, err := CreateNewWallet(password, true)
 	if err != nil {
 		t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
 	} else {
@@ -79,16 +80,10 @@ func TestGetAddressInfo(t *testing.T) {
 	}
 }
 
-func TestCreateAddress(t *testing.T) {
-	address, err := CreateAddress()
-	if err != nil {
-		t.Errorf("CreateAddress failed unexpected error: %v\n", err)
-	} else {
-		t.Logf("CreateAddress address = %s\n", address)
-	}
-
-}
-
 func TestGetConsensus(t *testing.T) {
 	GetConsensus()
+}
+
+func TestCreateBatchAddress(t *testing.T) {
+	CreateBatchAddress(1000)
 }

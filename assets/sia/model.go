@@ -53,3 +53,25 @@ func NewWallet(json gjson.Result) *Wallet {
 
 	return w
 }
+
+type Account struct {
+	Alias    string   `json:"alias"`
+	ID       string   `json:"id"`
+	KeyIndex int64    `json:"key_index"`
+	Quorum   int64    `json:"quorum"`
+	XPubs    []string `json:"xpubs"`
+}
+
+type Address struct {
+	Alias     string
+	AccountId string
+	Address   string
+}
+
+func NewAddress(json gjson.Result) *Address {
+
+	a := &Address{}
+	//解析json
+	a.Address = gjson.Get(json.Raw, "address").String()
+	return a
+}
