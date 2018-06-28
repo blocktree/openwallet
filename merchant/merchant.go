@@ -25,7 +25,9 @@ import (
 
 func GetMerchantKeychain() error {
 	sdk := ontology_go_sdk.NewOntologySdk()
+	//account, _ := sdk.CreateWallet("")
 	sdk.Rpc.SetAddress("http://localhost:20336")
+
 	sdk.Rpc.GetVersion()
 	return nil
 }
