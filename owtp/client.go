@@ -183,6 +183,7 @@ func (c *Client) writePump() {
 	defer func() {
 		ticker.Stop()
 		c.Close()
+		log.Printf("writePump end \n")
 	}()
 	for {
 		select {
@@ -206,8 +207,6 @@ func (c *Client) writePump() {
 
 		}
 	}
-
-	log.Printf("writePump end \n")
 }
 
 // write 输出数据
