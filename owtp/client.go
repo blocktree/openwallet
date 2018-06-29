@@ -17,8 +17,8 @@ package owtp
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/gorilla/websocket"
-	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
 	"log"
 	"time"
@@ -27,7 +27,7 @@ import (
 //局部常量
 const (
 	WriteWait      = 120 * time.Second //超时为6秒
-	PongWait       = 30 * time.Second
+	PongWait       = 60 * time.Second
 	PingPeriod     = (PongWait * 9) / 10
 	MaxMessageSize = 8 * 1024 // 最大消息缓存KB
 	WSRequest      = 1        //wesocket请求标识
@@ -91,18 +91,121 @@ type Response struct {
 	Result interface{} `json:"result"`
 }
 
+type Param struct {
+	rawValue interface{}
+}
+
 type Context struct {
 	//传输类型，1：请求，2：响应
 	Req uint64
 	//请求序号
 	nonce uint64
-	//传入参数
-	Params interface{}
+	//参数内部
+	params gjson.Result
 	//方法
 	Method string
 	//响应
 	Resp Response
+	//传入参数，map的结构
+	inputs interface{}
 }
+
+//NewContext
+func NewContext(req, nonce uint64, method string, inputs interface{}) *Context {
+	ctx := Context{
+		Req: req,
+		nonce: nonce,
+		Method: method,
+		inputs: inputs,
+	}
+
+	return &ctx
+}
+
+//Params 获取参数
+func (ctx *Context) Params() gjson.Result {
+	//如果param没有值，使用inputs初始化
+	if !ctx.params.Exists() {
+		inbs, err := json.Marshal(ctx.inputs)
+		if err == nil {
+			ctx.params = gjson.ParseBytes(inbs)
+		}
+	}
+	return ctx.params
+}
+
+func (ctx *Context) Response(result interface{}, status uint64, msg string) {
+
+	resp := Response{
+		Status: status,
+		Msg:    msg,
+		Result: result,
+	}
+
+	ctx.Resp = resp
+}
+
+/*
+func (ctx *Context) Get(key string) Param {
+	result := Param{}
+	maps, ok := ctx.Params.(map[string]interface{})
+	if ok {
+		result.rawValue = maps[key]
+	}
+	return result
+}
+
+func (p Param) String() string {
+	value := common.NewString(p.rawValue)
+	return value.String()
+}
+
+func (p Param) UInt() uint64 {
+	value := common.NewString(p.rawValue)
+	return value.UInt64()
+}
+
+func (p Param) Int() int64 {
+	value := common.NewString(p.rawValue)
+	return value.Int64()
+}
+
+func (p Param) Bool() bool {
+	value := common.NewString(p.rawValue)
+	return value.Bool()
+}
+
+func (p Param) Float() float64 {
+	value := common.NewString(p.rawValue)
+	return value.Float64()
+}
+
+func (p Param) Array() []Param {
+
+	var (
+		newParams = make([]Param, 0)
+	)
+
+	array, ok := p.rawValue.([]interface{})
+	if ok {
+		for a := range array {
+			nA := Param{a}
+			newParams = append(newParams, nA)
+		}
+
+	}
+	return newParams
+}
+
+func (p Param) Get(key string) Param {
+	result := Param{}
+	maps, ok := p.rawValue.(map[string]interface{})
+	if ok {
+		result.rawValue = maps[key]
+	}
+	return result
+}
+*/
 
 //NewDataPacket 通过 gjson转为DataPacket
 func NewDataPacket(json gjson.Result) *DataPacket {
@@ -129,7 +232,6 @@ func Dial(url string, router Handler, auth Authorization) (*Client, error) {
 		authURL = auth.ConnectAuth(url)
 	}
 
-	log.Printf("connecting to %s\n", authURL)
 	c, _, err := websocket.DefaultDialer.Dial(authURL, nil)
 	if err != nil {
 		return nil, err
@@ -245,7 +347,7 @@ func (c *Client) readPump() {
 			}
 
 			//创建上下面指针，处理请求参数，及响应
-			ctx := Context{Req: p.Req, Params: p.Data, Method: p.Method}
+			ctx := Context{Req: p.Req, inputs: p.Data, Method: p.Method}
 
 			//log.Printf("ctx: %v\n", ctx)
 

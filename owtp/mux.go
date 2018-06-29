@@ -109,7 +109,7 @@ func (mux *ServeMux) ServeOWTP(client *Client, ctx *Context) {
 			f.h(ctx)
 		} else {
 			//找不到方法的处理
-			ctx.Resp = responsError("can not find method", ErrNotFoundMethod)
+			ctx.Resp = responseError("can not find method", ErrNotFoundMethod)
 		}
 	case WSResponse: //我方请求后，对方响应返回
 		f := mux.requestQueue[ctx.nonce]
@@ -123,7 +123,7 @@ func (mux *ServeMux) ServeOWTP(client *Client, ctx *Context) {
 
 		} else {
 			//响应与请求的方法不一致
-			ctx.Resp = responsError("reponse method is not equal request", ErrResponseMethodDiffer)
+			ctx.Resp = responseError("reponse method is not equal request", ErrResponseMethodDiffer)
 		}
 
 	default:
@@ -132,14 +132,4 @@ func (mux *ServeMux) ServeOWTP(client *Client, ctx *Context) {
 	}
 }
 
-//responsError 返回一个错误数据包
-func responsError(err string, status uint64) Response {
 
-	resp := Response{
-		Status: status,
-		Msg:    err,
-		Result: nil,
-	}
-
-	return resp
-}

@@ -98,9 +98,9 @@ func (node *OWTPNode) SetCloseHandler(h func(n *OWTPNode)) {
 
 //run 运行监听连接关闭
 func (node *OWTPNode) run() {
-	for  {
+	for {
 		select {
-		case <- node.client.close:
+		case <-node.client.close:
 			node.isConnected = false
 			node.serveMux.ResetQueue()
 			node.disconnectHandler(node)
@@ -129,8 +129,8 @@ func (node *OWTPNode) Close() {
 func (node *OWTPNode) Call(
 	method string,
 	params interface{},
-	reqFunc RequestFunc,
-	sync bool) error {
+	sync bool,
+	reqFunc RequestFunc) error {
 
 	var (
 		err      error
@@ -179,14 +179,21 @@ func (node *OWTPNode) HandleFunc(method string, handler HandlerFunc) {
 	node.serveMux.HandleFunc(method, handler)
 }
 
-//Disconnect 断开连接后回调
-func (node *OWTPNode) Disconnect(handler func()) {
-
-}
-
 //GenerateRangeNum 生成范围内的随机整数
 func GenerateRangeNum(min, max int) int {
 	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
 	randNum := rand.Intn(max-min) + min
 	return randNum
+}
+
+//responseError 返回一个错误数据包
+func responseError(err string, status uint64) Response {
+
+	resp := Response{
+		Status: status,
+		Msg:    err,
+		Result: nil,
+	}
+
+	return resp
 }

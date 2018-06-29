@@ -1,5 +1,15 @@
 #OpenWallet
 
+## Build development environment
+
+The requirements to build OpenWallet are:
+
+- Golang version 1.10 or later
+- govendor (a third party package management tool)
+- xgo (Go CGO cross compiler)
+- Properly configured Go language environment
+- Golang supported operating system
+
 ## 依赖库管理工具govendor
 
 ### 安装govendor

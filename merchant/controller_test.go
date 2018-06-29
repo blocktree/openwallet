@@ -16,14 +16,28 @@
 package merchant
 
 import (
-	"github.com/ontio/ontology-go-sdk"
+	"github.com/blocktree/OpenWallet/owtp"
 	"testing"
+	"time"
 )
 
-func TestONT(t *testing.T) {
-	sdk := ontology_go_sdk.NewOntologySdk()
-	//account, _ := sdk.CreateWallet("")
-	sdk.Rpc.SetAddress("http://localhost:20336")
+func generateCTX(method string, inputs interface{}) *owtp.Context {
+	nonce := uint64(time.Now().Unix())
+	ctx := owtp.NewContext(owtp.WSRequest, nonce, method, inputs)
+	return ctx
+}
 
-	sdk.Rpc.GetVersion()
+func TestSubscribe(t *testing.T) {
+
+	inputs := []Subscription {
+		Subscription{Type: 1, Coin:"btc",WalletID:"21212",Version:222},
+		Subscription{Type: 1, Coin:"btm",WalletID:"21212",Version:222},
+		Subscription{Type: 1, Coin:"ltc",WalletID:"21212",Version:222},
+	}
+
+	ctx := generateCTX("subscribe", inputs)
+
+	subscribe(ctx)
+
+	t.Logf("reponse: %v\n",ctx.Resp)
 }

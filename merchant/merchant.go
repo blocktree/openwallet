@@ -20,15 +20,11 @@ import (
 	"github.com/pkg/errors"
 	"log"
 	"path/filepath"
-	"github.com/ontio/ontology-go-sdk"
 )
 
-func GetMerchantKeychain() error {
-	sdk := ontology_go_sdk.NewOntologySdk()
-	//account, _ := sdk.CreateWallet("")
-	sdk.Rpc.SetAddress("http://localhost:20336")
 
-	sdk.Rpc.GetVersion()
+func GetMerchantKeychain() error {
+
 	return nil
 }
 
@@ -41,7 +37,6 @@ func JoinMerchantNodeFlow() error {
 
 	var (
 		err        error
-		endRunning = make(chan bool, 1)
 		auth       *owtp.OWTPAuth
 	)
 
@@ -59,7 +54,13 @@ func JoinMerchantNodeFlow() error {
 	}
 
 	//授权配置
-	auth, err = owtp.NewOWTPAuth(nodeKey, publicKey, privateKey, true, filepath.Join(merchantDir, cacheFile))
+	auth, err = owtp.NewOWTPAuth(
+		nodeKey,
+		publicKey,
+		privateKey,
+		true,
+		filepath.Join(merchantDir, cacheFile))
+
 	if err != nil {
 		return err
 	}
@@ -69,22 +70,14 @@ func JoinMerchantNodeFlow() error {
 	//设置路由
 	setupRouter(merchantNode)
 
-	//连接服务
-	err = merchantNode.Connect()
-	if err != nil {
-		return err
-	}
-
 	//断开连接后，重新连接
 	merchantNode.SetCloseHandler(func(n *owtp.OWTPNode) {
 		log.Printf("merchantNode disconnect. \n")
-		n.Connect()
+		disconnected <- struct{}{}
 	})
 
-	log.Printf("Connect merchant node successfully. \n")
-	log.Printf("Merchant node: %s \n", merchantNodeURL)
-
-	<-endRunning
+	//商户连接运行
+	run()
 
 	return nil
 }
@@ -98,3 +91,4 @@ func ShowMechantConfig() error {
 	printConfig()
 	return nil
 }
+

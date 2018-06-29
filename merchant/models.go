@@ -15,6 +15,11 @@
 
 package merchant
 
+import (
+	"github.com/tidwall/gjson"
+	"encoding/json"
+)
+
 type Subscription struct {
 
 	/*
@@ -30,10 +35,22 @@ type Subscription struct {
 		| version  | int    | 否       | 地址版本号，订阅类型为2时，需要钱包管理工具主动下载订阅的地址列表        |
 
 	*/
-
+	ID       int    // primary key
 	Type     int64  `json:"type"`
 	Coin     string `json:"coin"`
 	WalletID string `json:"walletID"`
 	Version  int64  `json:"version"`
+}
+
+func NewSubscription(res gjson.Result) *Subscription {
+	var s Subscription
+	err := json.Unmarshal([]byte(res.Raw), &s)
+	if err != nil {
+		return nil
+	}
+	return &s
+}
+
+type Address struct {
 
 }

@@ -56,9 +56,9 @@ func TestConnectNode(t *testing.T) {
 
 	node.HandleFunc("getWalletInfo", getWalletInfo)
 
-	err = node.Call("subscribe", nil, func(resp Response) {
+	err = node.Call("subscribe", nil, false, func(resp Response) {
 
-	}, false)
+	})
 
 	if err != nil {
 		t.Errorf("Call failed unexpected error: %v", err)
