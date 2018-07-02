@@ -22,6 +22,7 @@ import (
 	"github.com/tidwall/gjson"
 	"log"
 	"time"
+	"github.com/mitchellh/mapstructure"
 )
 
 //局部常量
@@ -113,8 +114,8 @@ type Context struct {
 //NewContext
 func NewContext(req, nonce uint64, method string, inputs interface{}) *Context {
 	ctx := Context{
-		Req: req,
-		nonce: nonce,
+		Req:    req,
+		nonce:  nonce,
 		Method: method,
 		inputs: inputs,
 	}
@@ -145,67 +146,16 @@ func (ctx *Context) Response(result interface{}, status uint64, msg string) {
 	ctx.Resp = resp
 }
 
-/*
-func (ctx *Context) Get(key string) Param {
-	result := Param{}
-	maps, ok := ctx.Params.(map[string]interface{})
-	if ok {
-		result.rawValue = maps[key]
+//JsonData the result of Response encode gjson
+func (resp *Response) JsonData() gjson.Result {
+	var jsondata gjson.Result
+	inbs, err := json.Marshal(resp.Result)
+	if err == nil {
+		jsondata = gjson.ParseBytes(inbs)
 	}
-	return result
+
+	return jsondata
 }
-
-func (p Param) String() string {
-	value := common.NewString(p.rawValue)
-	return value.String()
-}
-
-func (p Param) UInt() uint64 {
-	value := common.NewString(p.rawValue)
-	return value.UInt64()
-}
-
-func (p Param) Int() int64 {
-	value := common.NewString(p.rawValue)
-	return value.Int64()
-}
-
-func (p Param) Bool() bool {
-	value := common.NewString(p.rawValue)
-	return value.Bool()
-}
-
-func (p Param) Float() float64 {
-	value := common.NewString(p.rawValue)
-	return value.Float64()
-}
-
-func (p Param) Array() []Param {
-
-	var (
-		newParams = make([]Param, 0)
-	)
-
-	array, ok := p.rawValue.([]interface{})
-	if ok {
-		for a := range array {
-			nA := Param{a}
-			newParams = append(newParams, nA)
-		}
-
-	}
-	return newParams
-}
-
-func (p Param) Get(key string) Param {
-	result := Param{}
-	maps, ok := p.rawValue.(map[string]interface{})
-	if ok {
-		result.rawValue = maps[key]
-	}
-	return result
-}
-*/
 
 //NewDataPacket 通过 gjson转为DataPacket
 func NewDataPacket(json gjson.Result) *DataPacket {
@@ -346,20 +296,35 @@ func (c *Client) readPump() {
 				}
 			}
 
-			//创建上下面指针，处理请求参数，及响应
-			ctx := Context{Req: p.Req, inputs: p.Data, Method: p.Method}
-
-			//log.Printf("ctx: %v\n", ctx)
-
-			client.handler.ServeOWTP(client, &ctx)
-
 			if p.Req == WSRequest {
-				//log.Printf("response: %v\n", ctx.Resp)
+
+				//创建上下面指针，处理请求参数
+				ctx := Context{Req: p.Req, nonce: p.Nonce, inputs: p.Data, Method: p.Method}
+
+				//log.Printf("ctx: %v\n", ctx)
+
+				client.handler.ServeOWTP(client, &ctx)
 
 				//处理完请求，推送响应结果给服务端
 				p.Req = WSResponse
 				p.Data = ctx.Resp
 				client.Send(p)
+			} else if p.Req == WSResponse {
+
+				//创建上下面指针，处理响应
+				var resp Response
+				runErr := mapstructure.Decode(p.Data, &resp)
+				if runErr != nil {
+					log.Printf("Response decode error: %v", runErr)
+					return
+				}
+
+				ctx := Context{Req: p.Req,  nonce: p.Nonce, inputs: nil, Method: p.Method, Resp: resp}
+
+				//log.Printf("ctx: %v\n", ctx)
+
+				client.handler.ServeOWTP(client, &ctx)
+
 			}
 		}(*packet, c)
 

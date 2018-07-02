@@ -16,9 +16,20 @@
 package merchant
 
 import (
-	"github.com/tidwall/gjson"
 	"encoding/json"
+	"fmt"
+	"github.com/tidwall/gjson"
 )
+
+//NodeConfig 节点配置
+type NodeConfig struct {
+	NodeKey         string
+	PublicKey       string
+	PrivateKey      string
+	MerchantNodeURL string
+	NodeID          int64
+	CacheFile       string
+}
 
 type Subscription struct {
 
@@ -51,6 +62,51 @@ func NewSubscription(res gjson.Result) *Subscription {
 	return &s
 }
 
+type AddressVersion struct {
+	Key      string `storm:"id"`
+	Coin     string `json:"coin"`
+	WalletID string `json:"walletID"`
+	Version  uint64 `json:"version"`
+	Total    uint64 `json:"total"`
+}
+
+func NewAddressVersion(json gjson.Result) *AddressVersion {
+	obj := &AddressVersion{}
+	//解析json
+	obj.Coin = gjson.Get(json.Raw, "coin").String()
+	obj.WalletID = gjson.Get(json.Raw, "walletID").String()
+	obj.Version = gjson.Get(json.Raw, "version").Uint()
+	obj.Total = gjson.Get(json.Raw, "total").Uint()
+
+	key := fmt.Sprintf("%s_%s", obj.Coin, obj.WalletID)
+	obj.Key = key
+
+	return obj
+}
+
 type Address struct {
 
+	//| 参数名称 | 类型   | 是否可空 | 描述     |
+	//|----------|--------|----------|----------|
+	//| address  | string | 是       | 地址参数 |
+	//| isMemo   | bool   | 是       | 是否memo |
+	//| memo     | string | 否       | 备注     |
+
+	Key     string `storm:"id"`
+	Address string `json:"address"`
+	IsMemo  bool   `json:"isMemo"`
+	Memo    string `json:"memo"`
+}
+
+func NewAddress(json gjson.Result) *Address {
+	obj := &Address{}
+	//解析json
+	obj.Address = gjson.Get(json.Raw, "address").String()
+	obj.IsMemo = gjson.Get(json.Raw, "isMemo").Bool()
+	obj.Memo = gjson.Get(json.Raw, "memo").String()
+
+	key := fmt.Sprintf("%s_%s", obj.Address, obj.Memo)
+	obj.Key = key
+
+	return obj
 }

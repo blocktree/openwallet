@@ -17,9 +17,9 @@
 package owtp
 
 import (
-	"github.com/blocktree/OpenWallet/logger"
 	"github.com/pkg/errors"
 	"sync"
+	"log"
 )
 
 // 路由处理方法
@@ -114,7 +114,7 @@ func (mux *ServeMux) ServeOWTP(client *Client, ctx *Context) {
 	case WSResponse: //我方请求后，对方响应返回
 		f := mux.requestQueue[ctx.nonce]
 		if f.method == ctx.Method {
-
+			//log.Printf("f: %v", f)
 			if f.sync {
 				f.respChan <- ctx.Resp
 			} else {
@@ -128,7 +128,7 @@ func (mux *ServeMux) ServeOWTP(client *Client, ctx *Context) {
 
 	default:
 		//未知类型的日志记录
-		openwLogger.Log.Info("Unknown messages.")
+		log.Printf("Unknown messages.\n")
 	}
 }
 

@@ -36,7 +36,7 @@ const (
 
 //OWTPNode 实现OWTP协议的节点
 type OWTPNode struct {
-	url string
+	URL string
 	//客户端
 	client *Client
 	//nonce生成器
@@ -57,11 +57,16 @@ type OWTPNode struct {
 func NewOWTPNode(nodeID int64, url string, auth Authorization) *OWTPNode {
 
 	node := &OWTPNode{}
-	node.url = url
+	node.URL = url
 	node.nonceGen, _ = snowflake.NewNode(nodeID)
 	node.serveMux = &ServeMux{}
 	node.Auth = auth
 	return node
+}
+
+//IsConnected 是否已连接
+func (node *OWTPNode) IsConnected() bool {
+	return node.isConnected
 }
 
 //Connect 建立长连接
@@ -73,7 +78,7 @@ func (node *OWTPNode) Connect() error {
 	}
 
 	//建立链接，记录默认的客户端
-	client, err := Dial(node.url, node.serveMux, node.Auth)
+	client, err := Dial(node.URL, node.serveMux, node.Auth)
 	if err != nil {
 		return err
 	}
@@ -134,7 +139,7 @@ func (node *OWTPNode) Call(
 
 	var (
 		err      error
-		respChan = make(chan Response, 0)
+		respChan = make(chan Response)
 	)
 
 	//检查是否已经连接服务

@@ -32,16 +32,6 @@ var (
 	cacheFile = "merchant.db"
 	//配置文件名
 	configFileName =  "merchant.ini"
-	//商户节点链接
-	merchantNodeURL = ""
-	//本地节点的ID
-	nodeID int64 = 1
-	//商户公钥
-	nodeKey = ""
-	//本地公钥
-	publicKey = ""
-	//本地私钥
-	privateKey = ""
 	//默认配置内容
 	defaultConfig = `
 # merchant node publicKey
@@ -56,7 +46,6 @@ merchantNodeURL = ""
 nodeID = 1
 `
 )
-
 
 //newConfigFile 创建配置文件
 func newConfigFile(
@@ -124,25 +113,27 @@ func initConfig() {
 
 
 //loadConfig 读取配置
-func loadConfig() error {
+func loadConfig() (NodeConfig, error) {
 
 	var (
 		c   config.Configer
 		err error
+		configs = NodeConfig{}
 	)
 
 	//读取配置
+	file.MkdirAll(merchantDir)
 	absFile := filepath.Join(merchantDir, configFileName)
 	c, err = config.NewConfig("ini", absFile)
 	if err != nil {
-		return errors.New("Config is not setup. Please run 'wmd merchant config -i ' ")
+		return configs, errors.New("Config is not setup. Please run 'wmd merchant config -i ' ")
 	}
 
-	merchantNodeURL = c.String("merchantNodeURL")
-	publicKey = c.String("publicKey")
-	nodeKey = c.String("nodeKey")
-	privateKey = c.String("privateKey")
-	nodeID, _ = c.Int64("nodeID")
+	configs.MerchantNodeURL = c.String("merchantNodeURL")
+	configs.PublicKey = c.String("publicKey")
+	configs.NodeKey = c.String("nodeKey")
+	configs.PrivateKey = c.String("privateKey")
+	configs.NodeID, _ = c.Int64("nodeID")
 
-	return nil
+	return configs, nil
 }

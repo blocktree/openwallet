@@ -16,129 +16,42 @@
 package merchant
 
 import (
-	"github.com/asdine/storm"
-	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/owtp"
+	"github.com/pkg/errors"
 	"log"
-	"path/filepath"
-	"time"
+)
+
+const (
+
+	//订阅类型，1：钱包余额，2：充值记录，3：汇总日志
+	SubscribeTypeBalance    = 1
+	SubscribeTypeCharge     = 2
+	SubscribeTypeSummaryLog = 3
 )
 
 var (
 	//商户节点
-	merchantNode *owtp.OWTPNode
-	//连接状态通道
-	reconnect chan bool
-	//断开状态通道
-	disconnected chan struct{}
-	//是否重连
-	isReconnect bool
-	//重连时的等待时间
-	reconnectWait time.Duration = 10
+	merchantNode *MerchantNode
+
+	/* 异常错误 */
+
+	//节点断开
+	ErrMerchantNodeDisconnected = errors.New("Merchant node is not connected!")
 )
-
-func init() {
-	isReconnect = true
-}
-
-//访问数据库
-func openDB() (*storm.DB, error) {
-	file.MkdirAll(merchantDir)
-	return storm.Open(filepath.Join(merchantDir, cacheFile))
-}
-
-//run 运行商户节点管理
-func run() error {
-
-	var (
-		err error
-	)
-
-	defer func() {
-		close(reconnect)
-		close(disconnected)
-	}()
-
-	reconnect = make(chan bool, 1)
-	disconnected = make(chan struct{}, 1)
-
-	//启动连接
-	reconnect <- true
-
-	log.Printf("Merchant node running now... \n")
-
-	//节点运行时
-	for {
-		select {
-		case <-reconnect:
-			//重新连接
-			log.Printf("Connecting to %s\n", merchantNodeURL)
-			err = merchantNode.Connect()
-			if err != nil {
-				log.Printf("Connect merchant node faild unexpected error: %v. \n", err)
-				disconnected <- struct{}{}
-			} else {
-				log.Printf("Connect merchant node successfully. \n")
-			}
-		case <-disconnected:
-			if isReconnect {
-				//重新连接，前等待
-				log.Printf("Reconnect after %d seconds... \n", reconnectWait)
-				time.Sleep(reconnectWait * time.Second)
-				reconnect <- true
-			} else {
-				//退出
-				break
-			}
-		}
-	}
-
-	return nil
-}
-
-/********** 商户服务相关方法【主动】 **********/
-
-func GetChargeAddress() {
-
-	var (
-		completed bool
-	)
-
-	if merchantNode == nil {
-		return
-	}
-
-	for {
-		//获取地址
-		merchantNode.Call(
-			"getChargeAddress",
-			nil,
-			true,
-			func(resp owtp.Response) {
-				if resp.Status == 0 {
-					completed = true
-				}
-			})
-
-		if completed == true {
-			break
-		}
-	}
-}
 
 /********** 钱包管理相关方法【被动】 **********/
 
 //setupRouter 配置路由
-func setupRouter(node *owtp.OWTPNode) {
+func (m *MerchantNode) setupRouter() {
 
-	node.HandleFunc("subscribe", subscribe)
-	node.HandleFunc("configWallet", configWallet)
-	node.HandleFunc("getWalletInfo", getWalletInfo)
-	node.HandleFunc("submitTrasaction", submitTrasaction)
+	m.Node.HandleFunc("subscribe", m.subscribe)
+	m.Node.HandleFunc("configWallet", m.configWallet)
+	m.Node.HandleFunc("getWalletInfo", m.getWalletInfo)
+	m.Node.HandleFunc("submitTrasaction", m.submitTrasaction)
 }
 
 //subscribe 订阅方法
-func subscribe(ctx *owtp.Context) {
+func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 
 	log.Printf("Merchat Call: subscribe \n")
 	log.Printf("params: %v\n", ctx.Params())
@@ -147,7 +60,7 @@ func subscribe(ctx *owtp.Context) {
 		subscriptions []*Subscription
 	)
 
-	db, err := openDB()
+	db, err := m.OpenDB()
 	if err != nil {
 		responseError(ctx, err)
 		return
@@ -165,22 +78,23 @@ func subscribe(ctx *owtp.Context) {
 	}
 
 	//2. 向商户获取订阅的地址列表
+
 	//3. 启动定时器，检查订阅地址的最新状态（交易记录，余额）
 
 	responseSuccess(ctx, nil)
 }
 
-func configWallet(ctx *owtp.Context) {
+func (m *MerchantNode) configWallet(ctx *owtp.Context) {
 
 	responseSuccess(ctx, nil)
 }
 
-func getWalletInfo(ctx *owtp.Context) {
+func (m *MerchantNode) getWalletInfo(ctx *owtp.Context) {
 
 	responseSuccess(ctx, nil)
 }
 
-func submitTrasaction(ctx *owtp.Context) {
+func (m *MerchantNode) submitTrasaction(ctx *owtp.Context) {
 
 	responseSuccess(ctx, nil)
 }

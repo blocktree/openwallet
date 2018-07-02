@@ -441,6 +441,7 @@ func CreateNewWallet(name, password string) (string, error) {
 		//钱包已经加密，解锁钱包1秒，检查密码
 		err = UnlockWallet(password, 1)
 		if err != nil {
+			fmt.Printf("%v\n", err)
 			return "", errors.New("The wallet's password is not equal bitcoin-core wallet!\n")
 		}
 	} else {

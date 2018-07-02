@@ -37,7 +37,7 @@ func TestSubscribe(t *testing.T) {
 
 	ctx := generateCTX("subscribe", inputs)
 
-	subscribe(ctx)
+	//m.subscribe(ctx)
 
 	t.Logf("reponse: %v\n",ctx.Resp)
 }
