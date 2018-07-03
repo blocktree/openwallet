@@ -56,3 +56,23 @@ func TestGetChargeAddressVersion(t *testing.T) {
 
 		})
 }
+
+func TestGetChargeAddress(t *testing.T) {
+	m, err := NewMerchantNode(nodeConfig)
+	if err != nil {
+		t.Errorf("GetChargeAddressVersion failed unexpected error: %v", err)
+	}
+
+	params := struct {
+		Coin     string `json:"coin"`
+		WalletID string `json:"walletID"`
+		Offset   uint64 `json:"offset"`
+		Limit    uint64 `json:"limit"`
+	}{"BTM", "0F8AV1FP00A02", 0, 20}
+
+	GetChargeAddress(m.Node, params,
+		true,
+		func(addrs []*Address) {
+			t.Logf("addrs.count = %v", len(addrs))
+		})
+}
