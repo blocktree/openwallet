@@ -36,7 +36,7 @@ var (
 	//钱包主链私钥文件路径
 	walletPath = ""
 	//小数位长度
-	coinDecimal decimal.Decimal = decimal.NewFromFloat(100000000)
+	coinDecimal decimal.Decimal = decimal.NewFromFloat(1000000000000000000000000)
 	//参与汇总的钱包
 	//walletsInSum = make(map[string]*AccountBalance)
 	//汇总阀值
@@ -44,7 +44,7 @@ var (
 	//最小转账额度
 	minSendAmount decimal.Decimal = decimal.NewFromFloat(10).Mul(coinDecimal)
 	//最小矿工费
-	minFees decimal.Decimal = decimal.NewFromFloat(0.005).Mul(coinDecimal)
+	minFees decimal.Decimal = decimal.NewFromFloat(22600000000000000000000)
 	//汇总地址
 	sumAddress = ""
 	//汇总执行间隔时间
@@ -162,7 +162,7 @@ func CreateNewWallet(password string, force bool) (string, error) {
 
 }
 
-//CreateAddress 创建钱包地址
+//CreateAddress 创建钱包地址(慎用)
 func CreateAddress() (string, error) {
 
 	result, err := client.Call("wallet/address", "GET", nil)
@@ -409,61 +409,70 @@ func genMnemonic() string {
 	return mnemonic
 }
 
-/*
-
 //SendTransaction 发送交易
-func SendTransaction(accountID, to, assetsID string, amount uint64, password string, feesInSender bool) (string, error) {
+func SendTransaction(amount string,destination string) (string, error) {
 
-	//建立交易单
-	tx, err := BuildTransaction(accountID, to, assetsID, amount, 0)
+	request := req.Param{
+		"amount": amount,
+		"destination": destination,
+	}
+
+	_, err := client.Call("wallet/siacoins", "POST", request)
 	if err != nil {
 		return "", err
 	}
 
-	totalFees, err := EstimateTransactionGas(tx)
+	fmt.Printf("Send Transaction Successfully\n")
 
-	if !feesInSender {
-		amount = amount - totalFees
-	}
-
-	//添加手续重新建立交易单
-	txAddFees, err := BuildTransaction(accountID, to, assetsID, amount, totalFees)
-	if err != nil {
-		return "", err
-	}
-
-	if err != nil {
-		return "", err
-	}
-
-	fmt.Printf("Build Transaction Successfully\n")
-
-	fmt.Printf("-----------------------------------------------\n")
-	fmt.Printf("From AccountID: %s\n", accountID)
-	fmt.Printf("To Address: %s\n", to)
-	fmt.Printf("Send: %v\n", decimal.New(int64(amount+totalFees), 0).Div(coinDecimal))
-	fmt.Printf("Fees: %v\n", decimal.New(int64(totalFees), 0).Div(coinDecimal))
-	fmt.Printf("Receive: %v\n", decimal.New(int64(amount), 0).Div(coinDecimal))
-	fmt.Printf("-----------------------------------------------\n")
-
-	//签名交易单
-	signTx, err := SignTransaction(txAddFees, password)
-	if err != nil {
-		return "", err
-	}
-
-	fmt.Printf("Sign Transaction Successfully\n")
-
-	//广播交易单
-	txRaw := gjson.Get(signTx, "transaction.raw_transaction").String()
-	txID, err := SubmitTransaction(txRaw)
-	if err != nil {
-		return "", err
-	}
-
-	fmt.Printf("Submit Transaction Successfully\n")
-
-	return txID, nil
+	return "", nil
 }
 
- */
+//SummaryWallets 执行汇总流程
+func SummaryWallets() error{
+
+	log.Printf("[Summary Wallet Start]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+
+		//统计钱包最新余额
+		ws, err := client.Call("wallet", "GET", nil)
+		if err != nil {
+			log.Printf("Can not find Account Balance：%v\n", err)
+			return err
+		}
+		var (
+			wallets = make([]*Wallet, 0)
+		)
+		a := gjson.ParseBytes(ws)
+		wallets = append(wallets, NewWallet(a))
+
+		if len(wallets) > 0 {
+			//balance, _ := decimal.NewFromString(common.NewString(wallets[0].ConfirmBalance).String())
+			balance, _ := decimal.NewFromString(common.NewString(wallets[0].ConfirmBalance).String())
+
+			//如果余额大于阀值，汇总的地址
+			if balance.GreaterThan(threshold) {
+
+				log.Printf("Summary balance = %v \n", balance.Div(coinDecimal))
+				log.Printf("Summary Start Send Transaction\n")
+
+				//避免临界值的错误，减去1个
+
+				//balance = balance.Sub(coinDecimal)
+
+				//txID, err := SendTransaction(w.AccountID, sumAddress, assetsID_btm, uint64(balance.IntPart()), wallet.Password, false)
+				_, err = SendTransaction(balance.Sub(minFees).String(),sumAddress)
+				if err != nil {
+					log.Printf("Summary unexpected error: %v\n", err)
+					return err
+				} else {
+					log.Printf("Summary successfully，Received Address[%s]",  sumAddress)
+				}
+			} else {
+				log.Printf("Wallet  Balance: %v，below threshold: %v\n",  balance.Div(coinDecimal), threshold.Div(coinDecimal))
+			}
+		} else {
+			log.Printf("Wallet Current Balance: %v，below threshold: %v\n",  0, threshold.Div(coinDecimal))
+	}
+
+	log.Printf("[Summary Wallet end]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+	return nil
+}

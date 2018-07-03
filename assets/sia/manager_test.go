@@ -15,7 +15,9 @@
 
 package sia
 
-import "testing"
+import (
+	"testing"
+)
 
 func init() {
 	//serverAPI = "http://192.168.2.224:10056"
@@ -50,7 +52,7 @@ func TestBackupWallet(t *testing.T) {
 }
 
 func TestUnlockWallet(t *testing.T) {
-	err := UnlockWallet("1234567890")
+	err := UnlockWallet("1234567890abc")
 	if err != nil {
 		t.Errorf("UnlockWallet failed unexpected error: %v\n", err)
 	} else {
@@ -58,8 +60,9 @@ func TestUnlockWallet(t *testing.T) {
 	}
 }
 
+//慎用新建钱包，会烧毁旧的钱包（余额全部清零）
 func TestCreateNewWallet(t *testing.T) {
-	password := "1234567890"
+	password := "1234567890abc"
 	seed, err := CreateNewWallet(password, true)
 	if err != nil {
 		t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
@@ -84,6 +87,40 @@ func TestGetConsensus(t *testing.T) {
 	GetConsensus()
 }
 
+//先生成一个地址测试一下钱包有没有问题，实际开发是应该减去一个数量
 func TestCreateBatchAddress(t *testing.T) {
-	CreateBatchAddress(1000)
+	_, err := CreateAddress()
+	if err != nil {
+		t.Errorf("CreateBatchAddress failed unexpected error: %v", err)
+		return
+	}
+	CreateBatchAddress(100)
+}
+
+func TestCreateAddress(t *testing.T) {
+
+	address, err := CreateAddress()
+	if err != nil {
+		t.Errorf("CreateAddress failed unexpected error: %v", err)
+		return
+	}
+		t.Logf("CreateAddress address:[%s]",address)
+}
+
+func TestSendTransaction(t *testing.T) {
+	_, err :=SendTransaction("9000000000000000000000000","")
+	if err != nil {
+		t.Errorf("SendTransaction failed unexpected error: %v", err)
+		return
+	}
+	t.Logf("SendTransaction success.\n")
+}
+
+func TestSummaryWallets(t *testing.T) {
+	err := SummaryWallets()
+	if err != nil {
+		t.Errorf("SummaryWallets failed unexpected error: %v", err)
+		return
+	}
+	t.Logf("SummaryWallets success.\n")
 }
