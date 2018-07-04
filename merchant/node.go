@@ -39,6 +39,8 @@ type MerchantNode struct {
 	isReconnect bool
 	//重连时的等待时间
 	ReconnectWait time.Duration
+	//获取地址通道
+	getAddressesCh chan AddressVersion
 }
 
 func NewMerchantNode(config NodeConfig) (*MerchantNode, error) {
@@ -76,6 +78,7 @@ func NewMerchantNode(config NodeConfig) (*MerchantNode, error) {
 
 	m.isReconnect = true
 	m.ReconnectWait = 10
+	m.getAddressesCh = make(chan AddressVersion, 5)
 
 	//设置路由
 	m.setupRouter()
@@ -174,13 +177,14 @@ func (m *MerchantNode) GetChargeAddressVersion() error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
 	var subs []Subscription
 	err = db.Find("type", SubscribeTypeCharge, &subs)
 	if err != nil {
 		return err
 	}
+
+	db.Close()
 
 	for _, sub := range subs {
 
@@ -200,7 +204,27 @@ func (m *MerchantNode) GetChargeAddressVersion() error {
 			func(addressVer *AddressVersion) {
 
 				if addressVer != nil {
-					db.Save(addressVer)
+
+					innerdb, err := m.OpenDB()
+					if err != nil {
+						return
+					}
+					defer innerdb.Close()
+					var oldVersion AddressVersion
+					err = innerdb.One("Key", addressVer.Key, &oldVersion)
+					if err != nil {
+						return
+					}
+
+					if addressVer.Version > oldVersion.Version {
+
+						//TODO:加入到订阅地址通道
+						m.getAddressesCh <- *addressVer
+
+						//更新记录
+						innerdb.Save(addressVer)
+					}
+
 				}
 
 			})
@@ -217,30 +241,65 @@ func (m *MerchantNode) GetChargeAddressVersion() error {
 	return nil
 }
 
-func (m *MerchantNode) GetChargeAddress() {
+func (m *MerchantNode) GetChargeAddress() error {
 
-	//var (
-	//	completed bool
-	//)
-	//
-	//if merchantNode == nil {
-	//	return
-	//}
-	//
-	//for {
-	//	//获取地址
-	//	merchantNode.Call(
-	//		"getChargeAddress",
-	//		nil,
-	//		true,
-	//		func(resp owtp.Response) {
-	//			if resp.Status == 0 {
-	//				completed = true
-	//			}
-	//		})
-	//
-	//	if completed == true {
-	//		break
-	//	}
-	//}
+	var (
+		err   error
+		limit = uint64(20)
+	)
+
+	//检查是否连接
+	err = m.IsConnected()
+	if err != nil {
+		return err
+	}
+
+	for {
+
+		select {
+			//接收通道发送的地址版本
+			case v := <- m.getAddressesCh:
+
+				for i := uint64(0); i < v.Total; i = i + 20 {
+
+					params := struct {
+						Coin     string `json:"coin"`
+						WalletID string `json:"walletID"`
+						Offset   uint64 `json:"offset"`
+						Limit    uint64 `json:"limit"`
+					}{v.Coin, v.WalletID, i, limit}
+
+					err = GetChargeAddress(m.Node, params,
+						false,
+						func(addrs []*Address) {
+
+							innerdb, err := m.OpenDB()
+							if err != nil {
+								return
+							}
+							defer innerdb.Close()
+
+							tx, err := innerdb.Begin(true)
+							if err != nil {
+								return
+							}
+							defer tx.Rollback()
+
+							for _, a := range addrs {
+								tx.Save(a)
+							}
+
+							tx.Commit()
+						})
+					if err != nil {
+						log.Printf("GetChargeAddress unexpected error: %v", err)
+						continue
+					}
+
+				}
+
+		}
+	}
+
+	return nil
 }

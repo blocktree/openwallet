@@ -48,13 +48,16 @@ func TestGetChargeAddressVersion(t *testing.T) {
 	}{"BTM", "123456"}
 
 	//获取订阅的地址版本
-	GetChargeAddressVersion(m.Node, params,
+	err = GetChargeAddressVersion(m.Node, params,
 		true,
 		func(addressVer *AddressVersion) {
 
 			t.Logf("AddressVersion = %v", addressVer)
 
 		})
+	if err != nil {
+		t.Errorf("GetChargeAddressVersion failed unexpected error: %v", err)
+	}
 }
 
 func TestGetChargeAddress(t *testing.T) {

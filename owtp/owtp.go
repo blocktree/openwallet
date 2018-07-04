@@ -25,13 +25,15 @@ import (
 
 const (
 	//找不到方法
-	ErrNotFoundMethod uint64 = 100
+	ErrNotFoundMethod uint64 = 501
 	//请求与响应的方法不一致
-	ErrResponseMethodDiffer uint64 = 101
+	ErrResponseMethodDiffer uint64 = 502
 	//重放攻击
-	ErrReplayAttack uint64 = 102
+	ErrReplayAttack uint64 = 503
+	//重放攻击
+	ErrRequestTimeout uint64 = 504
 	//成功标识
-	StatusSuccess uint64 = 0
+	StatusSuccess uint64 = 200
 )
 
 //OWTPNode 实现OWTP协议的节点
@@ -59,7 +61,7 @@ func NewOWTPNode(nodeID int64, url string, auth Authorization) *OWTPNode {
 	node := &OWTPNode{}
 	node.URL = url
 	node.nonceGen, _ = snowflake.NewNode(nodeID)
-	node.serveMux = &ServeMux{}
+	node.serveMux = &ServeMux{timeout: 120}
 	node.Auth = auth
 	return node
 }
@@ -152,13 +154,13 @@ func (node *OWTPNode) Call(
 
 	//添加请求队列到Map，处理完成回调方法
 	nonce := uint64(node.nonceGen.Generate().Int64())
-
+	time := time.Now().Unix()
 	//封装数据包
 	packet := DataPacket{
 		Method:    method,
 		Req:       WSRequest,
 		Nonce:     nonce,
-		Timestamp: time.Now().Unix(),
+		Timestamp: time,
 		Data:      params,
 	}
 
@@ -169,7 +171,7 @@ func (node *OWTPNode) Call(
 	}
 
 	//添加请求到队列，异步或同步等待结果
-	node.serveMux.AddRequest(nonce, method, reqFunc, respChan, sync)
+	node.serveMux.AddRequest(nonce, time, method, reqFunc, respChan, sync)
 	if sync {
 		//等待返回
 		result := <-respChan

@@ -181,7 +181,7 @@ func Dial(url string, router Handler, auth Authorization) (*Client, error) {
 	if auth != nil && auth.EnableAuth() {
 		authURL = auth.ConnectAuth(url)
 	}
-
+	log.Printf("Connecting URL: %s", authURL)
 	c, _, err := websocket.DefaultDialer.Dial(authURL, nil)
 	if err != nil {
 		return nil, err
