@@ -1,6 +1,8 @@
 package timer
 
-import "time"
+import (
+	"time"
+)
 
 type TaskTimer struct {
 	f func() //传入方法
@@ -24,21 +26,21 @@ func NewTask(duration time.Duration,function func()) *TaskTimer{
 func(t *TaskTimer) Start(){
 	t.stop = false
 	t.pause = false
-	go func() {
-		defer t.timer.Stop()
+	go func(innerT *TaskTimer) {
+		defer innerT.timer.Stop()
 		for {
 			select {
-			case <-t.timer.C:
-				if t.stop{
+			case <-innerT.timer.C:
+				if innerT.stop{
 					return
 				}
-				if t.pause{
+				if innerT.pause{
 					continue
 				}
-				t.f() //执行我们想要的操作
+				innerT.f() //执行我们想要的操作
 			}
 		}
-	}()
+	}(t)
 }
 
 //停止定时器
@@ -54,4 +56,12 @@ func (t *TaskTimer) Pause()  {
 //继续定时器
 func (t *TaskTimer) Restart()  {
 	t.pause = false
+}
+
+func (t *TaskTimer) Running() bool {
+	if t.stop || t.pause {
+		return false
+	} else {
+		return  true
+	}
 }

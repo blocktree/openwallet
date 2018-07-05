@@ -134,6 +134,7 @@ func loadConfig() (NodeConfig, error) {
 	configs.NodeKey = c.String("nodeKey")
 	configs.PrivateKey = c.String("privateKey")
 	configs.NodeID, _ = c.Int64("nodeID")
+	configs.CacheFile = filepath.Join(merchantDir, cacheFile)
 
 	return configs, nil
 }

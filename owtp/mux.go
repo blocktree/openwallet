@@ -106,7 +106,24 @@ func (mux *ServeMux) AddRequest(nonce uint64, time int64, method string, reqFunc
 
 //ResetQueue 重置请求队列
 func (mux *ServeMux) ResetQueue() {
-	mux.requestQueue = make(map[uint64]requestEntry)
+	mux.mu.Lock()
+	defer mux.mu.Unlock()
+
+	if mux.requestQueue == nil {
+		mux.requestQueue = make(map[uint64]requestEntry)
+	}
+
+	//处理所有未完成的请求，返回连接断开的异常
+	for n, r := range mux.requestQueue {
+		resp := responseError("network disconnected", ErrNetworkDisconnected)
+		if r.sync {
+			r.respChan <- resp
+		} else {
+			r.h(resp)
+		}
+		delete(mux.requestQueue, n)
+	}
+
 }
 
 //ServeOWTP OWTP协议消息监听方法
@@ -162,6 +179,7 @@ func (mux *ServeMux) timeoutRequestHandle() {
 	for {
 		select {
 		case <-ticker.C:
+			//log.Printf("check request timeout \n")
 			mux.mu.Lock()
 			//定时器的回调，处理超时请求
 			for n, r := range mux.requestQueue {
@@ -170,14 +188,19 @@ func (mux *ServeMux) timeoutRequestHandle() {
 
 				//计算客户端过期时间
 				requestTimestamp := time.Unix(r.time, 0)
-				expiredTime := requestTimestamp.Add(mux.timeout * time.Second)
+				expiredTime := requestTimestamp.Add(mux.timeout)
+
+				//log.Printf("requestTimestamp = %s \n", requestTimestamp.String())
+				//log.Printf("currentServerTime = %s \n", currentServerTime.String())
+				//log.Printf("expiredTime = %s \n", expiredTime.String())
 
 				if currentServerTime.Unix() > expiredTime.Unix() {
-					log.Printf("request expired time")
+					//log.Printf("request expired time")
 					//返回超时响应
-					errInfo := fmt.Sprintf("request timeout over %s seconds", mux.timeout)
+					errInfo := fmt.Sprintf("request timeout over %s", mux.timeout.String())
 					resp := responseError(errInfo, ErrRequestTimeout)
 					if r.sync {
+						log.Printf("resp = %v \n", resp)
 						r.respChan <- resp
 					} else {
 						r.h(resp)

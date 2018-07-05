@@ -27,12 +27,16 @@ import (
 
 //局部常量
 const (
-	WriteWait      = 120 * time.Second //超时为6秒
-	PongWait       = 60 * time.Second
+	WriteWait      = 60 * time.Second //超时为6秒
+	PongWait       = 30 * time.Second
 	PingPeriod     = (PongWait * 9) / 10
 	MaxMessageSize = 8 * 1024 // 最大消息缓存KB
 	WSRequest      = 1        //wesocket请求标识
 	WSResponse     = 2        //wesocket响应标识
+)
+
+var (
+	debug = false
 )
 
 type Handler interface {
@@ -245,7 +249,7 @@ func (c *Client) writePump() {
 				c.write(websocket.CloseMessage, []byte{})
 				return
 			}
-			log.Printf("write: %s\n", string(message))
+			if debug {log.Printf("Send: %s\n", string(message))}
 			if err := c.write(websocket.TextMessage, message); err != nil {
 				return
 			}
@@ -275,12 +279,19 @@ func (c *Client) readPump() {
 		c.ws.SetReadDeadline(time.Now().Add(PongWait)) //设置下一次心跳响应的最后限期
 		return nil
 	})
+	defer func() {
+		//c.Close()
+		log.Printf("readPump end \n")
+	}()
+
 	for {
 		_, message, err := c.ws.ReadMessage()
 		if err != nil {
+			log.Printf("Read unexpected error: %v \n", err)
+			close(c.send)		//读取通道异常，关闭读通道
 			break
 		}
-		log.Printf("read: %s\n", string(message))
+		if debug {log.Printf("Read: %s\n", string(message))}
 
 		packet := NewDataPacket(gjson.ParseBytes(message))
 
@@ -329,14 +340,12 @@ func (c *Client) readPump() {
 		}(*packet, c)
 
 	}
-
-	log.Printf("readPump end \n")
 }
 
 //Close 关闭连接
 func (c *Client) Close() {
-	c.ws.Close()
-	close(c.send)
-	close(c.close)
 	log.Printf("client close\n")
+	c.ws.Close()
+	//close(c.send)
+	c.close <- struct {}{}
 }

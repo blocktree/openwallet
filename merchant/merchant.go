@@ -15,10 +15,6 @@
 
 package merchant
 
-import (
-	"github.com/pkg/errors"
-)
-
 func GetMerchantKeychain() error {
 
 	return nil
@@ -43,7 +39,7 @@ func JoinMerchantNodeFlow() error {
 
 	merchantNode, err = NewMerchantNode(c)
 	if err != nil {
-		return errors.New("merchant node url is not configed!")
+		return err
 	}
 
 	merchantNode.Run()

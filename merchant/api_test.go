@@ -50,7 +50,7 @@ func TestGetChargeAddressVersion(t *testing.T) {
 	//获取订阅的地址版本
 	err = GetChargeAddressVersion(m.Node, params,
 		true,
-		func(addressVer *AddressVersion) {
+		func(addressVer *AddressVersion, status uint64, msg string) {
 
 			t.Logf("AddressVersion = %v", addressVer)
 
@@ -75,7 +75,7 @@ func TestGetChargeAddress(t *testing.T) {
 
 	GetChargeAddress(m.Node, params,
 		true,
-		func(addrs []*Address) {
+		func(addrs []*Address, status uint64, msg string) {
 			t.Logf("addrs.count = %v", len(addrs))
 		})
 }

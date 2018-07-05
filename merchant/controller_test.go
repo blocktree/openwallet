@@ -19,7 +19,20 @@ import (
 	"github.com/blocktree/OpenWallet/owtp"
 	"testing"
 	"time"
+	"path/filepath"
 )
+
+func init() {
+	nodeConfig = NodeConfig{
+		NodeKey:         "",
+		PublicKey:       "dajosidjaiosjdioajsdioajsdiowhefi",
+		PrivateKey:      "",
+		MerchantNodeURL: "ws://192.168.30.4:8084/websocket",
+		NodeID:          1,
+		CacheFile:       filepath.Join(merchantDir, cacheFile),
+	}
+
+}
 
 func generateCTX(method string, inputs interface{}) *owtp.Context {
 	nonce := uint64(time.Now().Unix())
@@ -29,15 +42,26 @@ func generateCTX(method string, inputs interface{}) *owtp.Context {
 
 func TestSubscribe(t *testing.T) {
 
+	var (
+		endRunning = make(chan bool, 1)
+	)
+
+	m, err := NewMerchantNode(nodeConfig)
+	if err != nil {
+		t.Errorf("GetChargeAddressVersion failed unexpected error: %v", err)
+	}
+
 	inputs := []Subscription {
-		Subscription{Type: 1, Coin:"btc",WalletID:"21212",Version:222},
-		Subscription{Type: 1, Coin:"btm",WalletID:"21212",Version:222},
-		Subscription{Type: 1, Coin:"ltc",WalletID:"21212",Version:222},
+		Subscription{Type: 2, Coin:"btc",WalletID:"21212",Version:222},
+		Subscription{Type: 2, Coin:"btm",WalletID:"21212",Version:222},
+		Subscription{Type: 2, Coin:"ltc",WalletID:"21212",Version:222},
 	}
 
 	ctx := generateCTX("subscribe", inputs)
 
-	//m.subscribe(ctx)
+	m.subscribe(ctx)
 
 	t.Logf("reponse: %v\n",ctx.Resp)
+
+	<- endRunning
 }
