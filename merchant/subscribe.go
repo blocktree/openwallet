@@ -17,8 +17,8 @@ package merchant
 
 import (
 	"github.com/blocktree/OpenWallet/owtp"
-	"log"
 	"github.com/blocktree/OpenWallet/timer"
+	"log"
 )
 
 //subscribe 订阅方法
@@ -55,13 +55,12 @@ func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 	responseSuccess(ctx, nil)
 }
 
-
 //GetChargeAddressVersion 获取要订阅的地址版本信息
 func (m *MerchantNode) GetChargeAddressVersion() error {
 
 	var (
-		err error
-		subs  = make([]*Subscription, 0)
+		err  error
+		subs = make([]*Subscription, 0)
 	)
 
 	//检查是否连接
@@ -82,7 +81,6 @@ func (m *MerchantNode) GetChargeAddressVersion() error {
 		}
 	}
 	m.mu.RUnlock()
-
 
 	//err = db.Find("type", SubscribeTypeCharge, &subs)
 	//if err != nil {
@@ -159,7 +157,7 @@ func (m *MerchantNode) getChargeAddress() error {
 
 		select {
 		//接收通道发送的地址版本
-		case v := <- m.getAddressesCh:
+		case v := <-m.getAddressesCh:
 
 			getCount := uint64(0)
 
@@ -178,6 +176,8 @@ func (m *MerchantNode) getChargeAddress() error {
 					func(addrs []*Address, status uint64, msg string) {
 
 						if status == owtp.StatusSuccess {
+
+							//导入到每个币种的数据库
 
 							innerdb, err := m.OpenDB()
 							if err != nil {
