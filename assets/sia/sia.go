@@ -21,6 +21,7 @@ import (
 	"strings"
 	"log"
 	"errors"
+	"github.com/blocktree/OpenWallet/timer"
 )
 
 const (
@@ -129,11 +130,11 @@ func (w *WalletManager) ShowConfig() error {
 func (w *WalletManager) CreateWalletFlow() error {
 
 	var (
-		password    string
-		name     	string
-		err      	error
-		publicKey   string
-		filePath 	string
+		password  string
+		name      string
+		err       error
+		publicKey string
+		filePath  string
 		//testA    	*Account
 		destination string
 	)
@@ -186,7 +187,7 @@ func (w *WalletManager) CreateWalletFlow() error {
 		// 等待用户输入钱包备份路径
 		destination, err = console.InputText("Enter wallet's backup path: ", true)
 
-		filePath, err = BackupWallet(destination)
+		err = BackupWallet(destination)
 		if err != nil {
 			return err
 		}
@@ -195,9 +196,8 @@ func (w *WalletManager) CreateWalletFlow() error {
 		fmt.Printf("Wallet create successfully, first account: %s\n", name)
 		fmt.Printf("Keystore backup successfully, file path: %s\n", filePath)
 	}
-		return nil
+	return nil
 }
-
 
 //创建地址流程
 func (w *WalletManager) CreateAddressFlow() error {
@@ -255,5 +255,146 @@ func (w *WalletManager) CreateAddressFlow() error {
 
 // SummaryFollow 汇总流程
 func (w *WalletManager) SummaryFollow() error {
+
+	var (
+		endRunning = make(chan bool, 1)
+	)
+
+	//先加载是否有配置文件
+	err := loadConfig()
+	if err != nil {
+		return err
+	}
+
+	//判断汇总地址是否存在
+	if len(sumAddress) == 0 {
+
+		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.json' \n", Symbol))
+	}
+
+	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", cycleSeconds.Seconds())
+
+	//启动钱包汇总程序
+	sumTimer := timer.NewTask(cycleSeconds, SummaryWallets)
+	sumTimer.Start()
+
+	<-endRunning
+
+	return nil
+}
+
+//备份钱包流程
+func (w *WalletManager) BackupWalletFlow() error {
+
+	var (
+		err        error
+		backupPath string
+	)
+
+	//先加载是否有配置文件
+	err = loadConfig()
+	if err != nil {
+		return err
+	}
+
+	// 等待用户输入备份地址
+	backupPath, err = console.InputText("Enter backup path: ", true)
+	if err != nil {
+		return err
+	}
+
+	err = BackupWallet(backupPath)
+	if err != nil {
+		return err
+	}
+
+	//输出备份导出目录
+	fmt.Printf("Wallet backup file path: %s", backupPath)
+
+	return nil
+
+}
+
+//GetWalletList 获取钱包列表
+func (w *WalletManager) GetWalletList() error {
+	return nil
+}
+
+//SendTXFlow 发送交易
+func (w *WalletManager) TransferFlow() error {
+
+	//先加载是否有配置文件
+	err := loadConfig()
+	if err != nil {
+		return err
+	}
+
+	// 等待用户输入发送数量
+	amount, err := console.InputRealNumber("Enter amount to send: ", true)
+	if err != nil {
+		return err
+	}
+
+	// 等待用户输入发送地址
+	receiver, err := console.InputText("Enter receiver address: ", true)
+	if err != nil {
+		return err
+	}
+
+	//建立交易单
+	_, err = SendTransaction(amount, receiver)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Send transaction successfully.\n")
+
+	return nil
+}
+
+//RestoreWalletFlow 恢复钱包流程
+func (w *WalletManager) RestoreWalletFlow() error {
+
+	//var (
+	//	err        error
+	//	filename string
+	//)
+	//
+	////先加载是否有配置文件
+	//err = loadConfig()
+	//if err != nil {
+	//	return err
+	//}
+	//
+	////输入恢复文件路径
+	//filename, err = console.InputText("Enter backup file path: ", true)
+	//keyjson, err := ioutil.ReadFile(filename)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//fmt.Printf("Wallet restoring, please wait a moment...\n")
+	//err = RestoreWallet(keyjson)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	////输出备份导出目录
+	//fmt.Printf("Restore wallet successfully.\n")
+
+	return nil
+
+}
+
+//SetConfigFlow 初始化配置流程
+func (w *WalletManager) SetConfigFlow(subCmd string) error {
+	file := configFilePath + configFileName
+	fmt.Printf("You can run 'vim %s' to edit %s config.\n", file, subCmd)
+	return nil
+}
+
+//ShowConfigInfo 查看配置信息
+func (w *WalletManager) ShowConfigInfo(subCmd string) error {
+	printConfig()
 	return nil
 }

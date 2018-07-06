@@ -21,11 +21,10 @@ import (
 
 //Wallet 钱包模型
 type Wallet struct {
-
 	ConfirmBalance string `json:"confirmedsiacoinbalance"`
 
-	OutgoingSC     string `json:"unconfirmedoutgoingsiacoins"`
-	IncomingSC     string `json:"unconfirmedincomingsiacoins"`
+	OutgoingSC string `json:"unconfirmedoutgoingsiacoins"`
+	IncomingSC string `json:"unconfirmedincomingsiacoins"`
 
 	SiaFundBalance      string `json:"siafundbalance"`
 	SiaCoinClaimBalance string `json:"siacoinclaimbalance"`

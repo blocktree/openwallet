@@ -52,6 +52,12 @@ var (
 	configFileName = Symbol + ".json"
 	//接口授权密码
 	apiAuth = "123"
+	//备份路径
+	backupDir = filepath.Join("data", strings.ToLower(Symbol), "backup")
+	//钱包数据文件目录
+	walletDataPath = "/home/data/sc/wallet/"
+	//本地数据库文件路径
+	dbPath = filepath.Join("data", strings.ToLower(Symbol), "db")
 )
 
 //isExistConfigFile 检查配置文件是否存在
@@ -71,10 +77,10 @@ func newConfigFile(
 
 	//	生成配置
 	configMap := map[string]interface{}{
-		"apiURL":        apiURL,
+		"apiURL": apiURL,
 		//"walletPath":    walletPath,
-		"sumAddress":    sumAddress,
-		"threshold":     threshold,
+		"sumAddress": sumAddress,
+		"threshold":  threshold,
 	}
 
 	filepath.Join()

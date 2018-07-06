@@ -46,7 +46,7 @@ var (
 	//最小矿工费
 	minFees decimal.Decimal = decimal.NewFromFloat(22600000000000000000000)
 	//汇总地址
-	sumAddress = ""
+	sumAddress = "7955ae75cecfa84826b449d568984a84662bef54e36acb2c8bb0c290b423d075282dab76afde"
 	//汇总执行间隔时间
 	cycleSeconds = time.Second * 10
 	// 节点客户端
@@ -105,26 +105,72 @@ func loadConfig() error {
 	return nil
 }
 
+////BackupWalletData 备份钱包
+//func BackupWalletData(dest string) error {
+//
+//	request := []interface{}{
+//		dest,
+//	}
+//
+//	_, err := client.Call("backupwallet", request)
+//	if err != nil {
+//		return err
+//	}
+//
+//	return nil
+//
+//}
 
 //BackupWallet 备份钱包私钥数据
-func BackupWallet(destination string) (string, error) {
+func BackupWallet() (string, error) {
 
-	request := req.Param{
-		"destination": destination,
-	}
+	//w, err := GetWalletInfo(walletID)
+	//if err != nil {
+	//	return "", err
+	//}
 
-	_, err := client.Call("wallet/backup", "GET", request)
-	if err != nil {
-		return "", err
-	}
+	//创建备份文件夹
+	newBackupDir := filepath.Join(backupDir, "wallet-backup"+"-"+common.TimeFormat("20060102150405"))
+	file.MkdirAll(newBackupDir)
 
-	return destination, nil
+	//创建临时备份文件wallet.db
+	tmpWalletDat := fmt.Sprintf("tmp-walllet-%d.db", time.Now().Unix())
+	tmpWalletDat = filepath.Join(walletDataPath, tmpWalletDat)
+
+	////1. 备份核心钱包的wallet.db
+	//err := BackupWalletData(tmpWalletDat)
+	//if err != nil {
+	//	return "", err
+	//}
+
+	//复制临时文件到备份文件夹
+	file.Copy(tmpWalletDat, filepath.Join(newBackupDir, "wallet.db"))
+
+	//删除临时文件
+	file.Delete(tmpWalletDat)
+
+	////2. 备份种子文件
+	//file.Copy(filepath.Join(keyDir, "wallet-backup"+".key"), newBackupDir)
+	//
+	////3. 备份地址数据库
+	//file.Copy(filepath.Join(dbPath, "wallet-backup"+".db"), newBackupDir)
+
+	return newBackupDir, nil
 }
 
 //RestoreWallet 通过keystore恢复钱包
-func RestoreWallet(keystore []byte) error {
+func RestoreWallet(encryptionpassword string, seed string, force bool) error {
 
+	request := req.Param{
+		"encryptionpassword": encryptionpassword,
+		"seed":               seed,
+		"force":              force,
+	}
 
+	_, err := client.Call("wallet/init/seed", "POST", request)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -148,7 +194,7 @@ func CreateNewWallet(password string, force bool) (string, error) {
 
 	request := req.Param{
 		"encryptionpassword": password,
-		"force": force,
+		"force":              force,
 	}
 
 	result, err := client.Call("wallet/init", "POST", request)
@@ -175,6 +221,7 @@ func CreateAddress() (string, error) {
 	return address, err
 
 }
+
 //CreateBatchAddress 批量创建钱包地址
 //func CreateBatchAddress(alias, accountID string, count uint64) (string, error) {
 func CreateBatchAddress(count uint64) (string, error) {
@@ -359,7 +406,6 @@ func exportAddressToFile(addrs []*Address, filePath string) {
 	file.WriteFile(filePath, []byte(content), true)
 }
 
-
 //CreateBatchAddress 批量创建钱包地址
 //func CreateBatchAddress(count uint64) ([]byte, error) {
 //
@@ -410,10 +456,10 @@ func genMnemonic() string {
 }
 
 //SendTransaction 发送交易
-func SendTransaction(amount string,destination string) (string, error) {
+func SendTransaction(amount string, destination string) (string, error) {
 
 	request := req.Param{
-		"amount": amount,
+		"amount":      amount,
 		"destination": destination,
 	}
 
@@ -428,51 +474,64 @@ func SendTransaction(amount string,destination string) (string, error) {
 }
 
 //SummaryWallets 执行汇总流程
-func SummaryWallets() error{
+func SummaryWallets() {
 
 	log.Printf("[Summary Wallet Start]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
 
-		//统计钱包最新余额
-		ws, err := client.Call("wallet", "GET", nil)
-		if err != nil {
-			log.Printf("Can not find Account Balance：%v\n", err)
-			return err
-		}
-		var (
-			wallets = make([]*Wallet, 0)
-		)
-		a := gjson.ParseBytes(ws)
-		wallets = append(wallets, NewWallet(a))
+	//统计钱包最新余额
+	ws, err := client.Call("wallet", "GET", nil)
+	if err != nil {
+		log.Printf("Can not find Account Balance：%v\n", err)
+	}
+	var (
+		wallets = make([]*Wallet, 0)
+	)
+	a := gjson.ParseBytes(ws)
+	wallets = append(wallets, NewWallet(a))
 
-		if len(wallets) > 0 {
-			//balance, _ := decimal.NewFromString(common.NewString(wallets[0].ConfirmBalance).String())
-			balance, _ := decimal.NewFromString(common.NewString(wallets[0].ConfirmBalance).String())
+	if len(wallets) > 0 {
+		//balance, _ := decimal.NewFromString(common.NewString(wallets[0].ConfirmBalance).String())
+		balance, _ := decimal.NewFromString(common.NewString(wallets[0].ConfirmBalance).String())
 
-			//如果余额大于阀值，汇总的地址
-			if balance.GreaterThan(threshold) {
+		//如果余额大于阀值，汇总的地址
+		if balance.GreaterThan(threshold) {
 
-				log.Printf("Summary balance = %v \n", balance.Div(coinDecimal))
-				log.Printf("Summary Start Send Transaction\n")
+			log.Printf("Summary balance = %v \n", balance.Div(coinDecimal))
+			log.Printf("Summary Start Send Transaction\n")
 
-				//避免临界值的错误，减去1个
+			//避免临界值的错误，减去1个
 
-				//balance = balance.Sub(coinDecimal)
+			//balance = balance.Sub(coinDecimal)
 
-				//txID, err := SendTransaction(w.AccountID, sumAddress, assetsID_btm, uint64(balance.IntPart()), wallet.Password, false)
-				_, err = SendTransaction(balance.Sub(minFees).String(),sumAddress)
-				if err != nil {
-					log.Printf("Summary unexpected error: %v\n", err)
-					return err
-				} else {
-					log.Printf("Summary successfully，Received Address[%s]",  sumAddress)
-				}
+			//txID, err := SendTransaction(w.AccountID, sumAddress, assetsID_btm, uint64(balance.IntPart()), wallet.Password, false)
+			_, err = SendTransaction(balance.Sub(minFees).String(), sumAddress)
+			if err != nil {
+				log.Printf("Summary unexpected error: %v\n", err)
 			} else {
-				log.Printf("Wallet  Balance: %v，below threshold: %v\n",  balance.Div(coinDecimal), threshold.Div(coinDecimal))
+				log.Printf("Summary successfully，Received Address[%s]", sumAddress)
 			}
 		} else {
-			log.Printf("Wallet Current Balance: %v，below threshold: %v\n",  0, threshold.Div(coinDecimal))
+			log.Printf("Wallet  Balance: %v，below threshold: %v\n", balance.Div(coinDecimal), threshold.Div(coinDecimal))
+		}
+	} else {
+		log.Printf("Wallet Current Balance: %v，below threshold: %v\n", 0, threshold.Div(coinDecimal))
 	}
 
 	log.Printf("[Summary Wallet end]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+}
+
+//exportWalletToFile 导出钱包到文件
+func exportKeystoreToFile(content []byte) error {
+
+	filename := fmt.Sprintf("wallet-%s.json", common.TimeFormat("20060102150405"))
+
+	file.MkdirAll(keyDir)
+	filePath := filepath.Join(keyDir, filename)
+
+	//把钱包写入到文件进行备份
+	if !file.WriteFile(filePath, content, true) {
+		return errors.New("Keystore write to file failed! ")
+	}
+
 	return nil
 }

@@ -42,12 +42,12 @@ func TestGetWalletInfo(t *testing.T) {
 }
 
 func TestBackupWallet(t *testing.T) {
-	_, err := BackupWallet("/home/chbtc/openwallet/data/sc/backup/")
 
+	backupFile, err := BackupWallet()
 	if err != nil {
 		t.Errorf("BackupWallet failed unexpected error: %v\n", err)
 	} else {
-		t.Logf("BackupWallet successfully\n")
+		t.Errorf("BackupWallet filePath: %v\n", backupFile)
 	}
 }
 
@@ -60,10 +60,10 @@ func TestUnlockWallet(t *testing.T) {
 	}
 }
 
-//慎用新建钱包，会烧毁旧的钱包（余额全部清零）
+//慎用新建钱包，会销毁旧的钱包（要先备份旧钱包）
 func TestCreateNewWallet(t *testing.T) {
 	password := "1234567890abc"
-	seed, err := CreateNewWallet(password, true)
+	seed, err := CreateNewWallet(password, false)
 	if err != nil {
 		t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
 	} else {
@@ -94,7 +94,7 @@ func TestCreateBatchAddress(t *testing.T) {
 		t.Errorf("CreateBatchAddress failed unexpected error: %v", err)
 		return
 	}
-	CreateBatchAddress(100)
+	CreateBatchAddress(10)
 }
 
 func TestCreateAddress(t *testing.T) {
@@ -104,11 +104,11 @@ func TestCreateAddress(t *testing.T) {
 		t.Errorf("CreateAddress failed unexpected error: %v", err)
 		return
 	}
-		t.Logf("CreateAddress address:[%s]",address)
+	t.Logf("CreateAddress address:[%s]", address)
 }
 
 func TestSendTransaction(t *testing.T) {
-	_, err :=SendTransaction("9000000000000000000000000","")
+	_, err := SendTransaction("2000000000000000000000000", "70e848d92b8d729052d2d614446df07fed787d022a989d6106a5549816680f6d85aee6044f86")
 	if err != nil {
 		t.Errorf("SendTransaction failed unexpected error: %v", err)
 		return
@@ -117,10 +117,15 @@ func TestSendTransaction(t *testing.T) {
 }
 
 func TestSummaryWallets(t *testing.T) {
-	err := SummaryWallets()
+	SummaryWallets()
+}
+
+func TestRestoreWallet(t *testing.T) {
+
+	err := RestoreWallet("1234567890abc", "", true)
 	if err != nil {
-		t.Errorf("SummaryWallets failed unexpected error: %v", err)
+		t.Errorf("RestoreWallet failed unexpected error: %v", err)
 		return
 	}
-	t.Logf("SummaryWallets success.\n")
+	t.Logf("RestoreWallet address.", )
 }
