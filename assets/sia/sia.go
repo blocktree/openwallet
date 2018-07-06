@@ -136,7 +136,6 @@ func (w *WalletManager) CreateWalletFlow() error {
 		publicKey string
 		filePath  string
 		//testA    	*Account
-		destination string
 	)
 
 	flag, err := console.Stdin.PromptConfirm("Create a new wallet will destroy the existing wallet and reinitialize a new one, continue?")
@@ -185,9 +184,9 @@ func (w *WalletManager) CreateWalletFlow() error {
 		//每创建一次钱包，备份一次
 
 		// 等待用户输入钱包备份路径
-		destination, err = console.InputText("Enter wallet's backup path: ", true)
+		//destination, err = console.InputText("Enter wallet's backup path: ", true)
 
-		err = BackupWallet(destination)
+		filePath,err = BackupWallet()
 		if err != nil {
 			return err
 		}
@@ -303,7 +302,7 @@ func (w *WalletManager) BackupWalletFlow() error {
 		return err
 	}
 
-	err = BackupWallet(backupPath)
+	backupPath,err = BackupWallet()
 	if err != nil {
 		return err
 	}

@@ -60,7 +60,7 @@ func TestUnlockWallet(t *testing.T) {
 	}
 }
 
-//慎用新建钱包，会销毁旧的钱包（要先备份旧钱包）
+//慎用新建钱包，会替换旧的钱包（要先备份旧钱包）
 func TestCreateNewWallet(t *testing.T) {
 	password := "1234567890abc"
 	seed, err := CreateNewWallet(password, false)
