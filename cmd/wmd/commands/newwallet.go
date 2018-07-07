@@ -39,10 +39,11 @@ You create, import, restore wallet
 				Name:      "config",
 				Usage:     "config a currency account",
 				ArgsUsage: "<symbol>",
-				Action:    initAccount,
+				Action:    walletConfig,
 				Category:  "WALLET COMMANDS",
 				Flags: []cli.Flag{
 					utils.SymbolFlag,
+					utils.InitFlag,
 				},
 				Description: `
 	wmd wallet config -s <symbol>
@@ -155,8 +156,8 @@ This command will Backup wallet key in filePath: ./data/<symbol>/key/.
 	}
 )
 
-//init 初始化
-func initAccount(c *cli.Context) {
+//walletConfig 钱包配置
+func walletConfig(c *cli.Context) error {
 	symbol := c.String("symbol")
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
@@ -166,11 +167,13 @@ func initAccount(c *cli.Context) {
 		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
 	}
 
-	err := m.InitConfigFlow()
-	if err != nil {
-		openwLogger.Log.Errorf("%v", err)
+	isInit := c.Bool("init")
+
+	if isInit {
+		return m.InitConfigFlow()
+	} else {
+		return m.ShowConfig()
 	}
-	return
 }
 
 //createNewWallet 创建新钱包

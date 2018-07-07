@@ -18,10 +18,10 @@ package sia
 import (
 	"fmt"
 	"github.com/blocktree/OpenWallet/console"
-	"strings"
 	"log"
 	"errors"
 	"github.com/blocktree/OpenWallet/timer"
+	"path/filepath"
 )
 
 const (
@@ -34,88 +34,91 @@ type WalletManager struct{}
 //初始化配置流程
 func (w *WalletManager) InitConfigFlow() error {
 
-	var (
-		err        error
-		apiURL     string
-		walletPath string
-		//汇总阀值
-		threshold string
-		//最小转账额度
-		//minSendAmount float64
-		//最小矿工费
-		//minFees float64
-		//汇总地址
-		sumAddress string
-		filePath   string
-	)
+	file := filepath.Join(configFilePath, configFileName)
+	fmt.Printf("You can run 'vim %s' to edit wallet's config.\n", file)
 
-	for {
-
-		fmt.Printf("[Start setup wallet config]\n")
-
-		apiURL, err = console.InputText("Set node API url: ", true)
-		if err != nil {
-			return err
-		}
-
-		//删除末尾的/
-		apiURL = strings.TrimSuffix(apiURL, "/")
-
-		//walletPath, err = console.InputText("Set wallet main net filePath: ", false)
-		//if err != nil {
-		//	return err
-		//}
-
-		sumAddress, err = console.InputText("Set summary address: ", false)
-		if err != nil {
-			return err
-		}
-
-		fmt.Printf("[Please enter the amount of %s and must be numbers]\n", Symbol)
-
-		//threshold, err = console.InputNumber("设置汇总阀值: ")
-		//if err != nil {
-		//	return err
-		//}
-
-		threshold, err = console.InputRealNumber("Set summary threshold: ", true)
-		if err != nil {
-			return err
-		}
-
-		//换两行
-		fmt.Println()
-		fmt.Println()
-
-		//打印输入内容
-		fmt.Printf("Please check the following setups is correct?\n")
-		fmt.Printf("-----------------------------------------------------------\n")
-		fmt.Printf("Node API url: %s\n", apiURL)
-		//fmt.Printf("Wallet main net filePath: %s\n", walletPath)
-		fmt.Printf("Summary address: %s\n", sumAddress)
-		fmt.Printf("Summary threshold: %s\n", threshold)
-		fmt.Printf("-----------------------------------------------------------\n")
-
-		flag, err := console.Stdin.PromptConfirm("Confirm to save the setups?")
-		if err != nil {
-			return err
-		}
-
-		if !flag {
-			continue
-		} else {
-			break
-		}
-
-	}
-
-	//换两行
-	fmt.Println()
-	fmt.Println()
-
-	_, filePath, err = newConfigFile(apiURL, walletPath, sumAddress, threshold)
-
-	fmt.Printf("Config file create, file path: %s\n", filePath)
+	//var (
+	//	err        error
+	//	apiURL     string
+	//	walletPath string
+	//	//汇总阀值
+	//	threshold string
+	//	//最小转账额度
+	//	//minSendAmount float64
+	//	//最小矿工费
+	//	//minFees float64
+	//	//汇总地址
+	//	sumAddress string
+	//	filePath   string
+	//)
+	//
+	//for {
+	//
+	//	fmt.Printf("[Start setup wallet config]\n")
+	//
+	//	apiURL, err = console.InputText("Set node API url: ", true)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	//删除末尾的/
+	//	apiURL = strings.TrimSuffix(apiURL, "/")
+	//
+	//	//walletPath, err = console.InputText("Set wallet main net filePath: ", false)
+	//	//if err != nil {
+	//	//	return err
+	//	//}
+	//
+	//	sumAddress, err = console.InputText("Set summary address: ", false)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	fmt.Printf("[Please enter the amount of %s and must be numbers]\n", Symbol)
+	//
+	//	//threshold, err = console.InputNumber("设置汇总阀值: ")
+	//	//if err != nil {
+	//	//	return err
+	//	//}
+	//
+	//	threshold, err = console.InputRealNumber("Set summary threshold: ", true)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	//换两行
+	//	fmt.Println()
+	//	fmt.Println()
+	//
+	//	//打印输入内容
+	//	fmt.Printf("Please check the following setups is correct?\n")
+	//	fmt.Printf("-----------------------------------------------------------\n")
+	//	fmt.Printf("Node API url: %s\n", apiURL)
+	//	//fmt.Printf("Wallet main net filePath: %s\n", walletPath)
+	//	fmt.Printf("Summary address: %s\n", sumAddress)
+	//	fmt.Printf("Summary threshold: %s\n", threshold)
+	//	fmt.Printf("-----------------------------------------------------------\n")
+	//
+	//	flag, err := console.Stdin.PromptConfirm("Confirm to save the setups?")
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	if !flag {
+	//		continue
+	//	} else {
+	//		break
+	//	}
+	//
+	//}
+	//
+	////换两行
+	//fmt.Println()
+	//fmt.Println()
+	//
+	//_, filePath, err = newConfigFile(apiURL, walletPath, sumAddress, threshold)
+	//
+	//fmt.Printf("Config file create, file path: %s\n", filePath)
 
 	return nil
 
@@ -385,15 +388,15 @@ func (w *WalletManager) RestoreWalletFlow() error {
 
 }
 
-//SetConfigFlow 初始化配置流程
-func (w *WalletManager) SetConfigFlow(subCmd string) error {
-	file := configFilePath + configFileName
-	fmt.Printf("You can run 'vim %s' to edit %s config.\n", file, subCmd)
-	return nil
-}
-
-//ShowConfigInfo 查看配置信息
-func (w *WalletManager) ShowConfigInfo(subCmd string) error {
-	printConfig()
-	return nil
-}
+////SetConfigFlow 初始化配置流程
+//func (w *WalletManager) SetConfigFlow(subCmd string) error {
+//	file := configFilePath + configFileName
+//	fmt.Printf("You can run 'vim %s' to edit %s config.\n", file, subCmd)
+//	return nil
+//}
+//
+////ShowConfigInfo 查看配置信息
+//func (w *WalletManager) ShowConfigInfo(subCmd string) error {
+//	printConfig()
+//	return nil
+//}

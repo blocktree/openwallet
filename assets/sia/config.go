@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"github.com/blocktree/OpenWallet/common/file"
 	"fmt"
-	"errors"
 )
 
 /*
@@ -50,7 +49,7 @@ var (
 	//配置文件路径
 	configFilePath = filepath.Join("conf")
 	//配置文件名
-	configFileName = Symbol + ".json"
+	configFileName = Symbol + ".ini"
 	//接口授权密码
 	apiAuth = "123"
 	//备份路径
@@ -92,7 +91,7 @@ threshold = ""
 
 //isExistConfigFile 检查配置文件是否存在
 func isExistConfigFile() bool {
-	_, err := config.NewConfig("json",
+	_, err := config.NewConfig("ini",
 		filepath.Join(configFilePath, configFileName))
 	if err != nil {
 		return false
@@ -121,7 +120,7 @@ func newConfigFile(
 	}
 
 	//实例化配置
-	c, err := config.NewConfigData("json", bytes)
+	c, err := config.NewConfigData("ini", bytes)
 	if err != nil {
 		return nil, "", err
 	}
@@ -140,29 +139,45 @@ func newConfigFile(
 //printConfig Print config information
 func printConfig() error {
 
+	initConfig()
 	//读取配置
 	absFile := filepath.Join(configFilePath, configFileName)
-	c, err := config.NewConfig("json", absFile)
-	if err != nil {
-		return errors.New("config file not create，please run: wmd config -s <symbol> ")
-	}
-
-	apiURL := c.String("apiURL")
-	walletPath := c.String("walletPath")
-	threshold := c.String("threshold")
+	//apiURL := c.String("apiURL")
+	//walletPath := c.String("walletPath")
+	//threshold := c.String("threshold")
 	//minSendAmount := c.String("minSendAmount")
 	//minFees := c.String("minFees")
-	sumAddress := c.String("sumAddress")
+	//sumAddress := c.String("sumAddress")
+	//isTestNet, _ := c.Bool("isTestNet")
 
 	fmt.Printf("-----------------------------------------------------------\n")
-	fmt.Printf("Wallet API URL: %s\n", apiURL)
-	fmt.Printf("Wallet Data FilePath: %s\n", walletPath)
-	fmt.Printf("Summary Address: %s\n", sumAddress)
-	fmt.Printf("Summary Threshold: %s\n", threshold)
+	//fmt.Printf("Wallet API URL: %s\n", apiURL)
+	//fmt.Printf("Wallet Data FilePath: %s\n", walletPath)
+	//fmt.Printf("Summary Address: %s\n", sumAddress)
+	//fmt.Printf("Summary Threshold: %s\n", threshold)
 	//fmt.Printf("Min Send Amount: %s\n", minSendAmount)
 	//fmt.Printf("Transfer Fees: %s\n", minFees)
+	//if isTestNet {
+	//	fmt.Printf("Network: TestNet\n")
+	//} else {
+	//	fmt.Printf("Network: MainNet\n")
+	//}
+	file.PrintFile(absFile)
 	fmt.Printf("-----------------------------------------------------------\n")
 
 	return nil
+
+}
+
+
+//initConfig 初始化配置文件
+func initConfig() {
+
+	//读取配置
+	absFile := filepath.Join(configFilePath, configFileName)
+	if !file.Exists(absFile) {
+		file.MkdirAll(configFilePath)
+		file.WriteFile(absFile, []byte(defaultConfig), false)
+	}
 
 }

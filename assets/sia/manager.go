@@ -93,7 +93,7 @@ func loadConfig() error {
 
 	//读取配置
 	absFile := filepath.Join(configFilePath, configFileName)
-	c, err = config.NewConfig("json", absFile)
+	c, err = config.NewConfig("ini", absFile)
 	if err != nil {
 		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
 	}
