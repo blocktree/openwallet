@@ -17,10 +17,11 @@ package assets
 
 import (
 	//"github.com/blocktree/OpenWallet/assets/cardano"
-	"strings"
+	"github.com/blocktree/OpenWallet/assets/bitcoin"
+	"github.com/blocktree/OpenWallet/assets/bitcoincash"
 	"github.com/blocktree/OpenWallet/assets/bytom"
 	"github.com/blocktree/OpenWallet/assets/cardano"
-	"github.com/blocktree/OpenWallet/assets/bitcoin"
+	"strings"
 )
 
 //WalletManager 钱包管理器
@@ -43,8 +44,6 @@ type WalletManager interface {
 	TransferFlow() error
 	//恢复钱包
 	RestoreWalletFlow() error
-
-
 }
 
 // 节点管理接口
@@ -68,7 +67,6 @@ type ConfigManager interface {
 	SetConfigFlow(subCmd string) error
 	//ShowConfigInfo 查看配置信息
 	ShowConfigInfo(subCmd string) error
-
 }
 
 //钱包管理器组
@@ -87,7 +85,6 @@ func RegWMD(name string, manager interface{}) {
 	managers[name] = manager
 }
 
-
 // GetWMD 根据币种类型获取已注册的管理者
 func GetWMD(symbol string) interface{} {
 	manager, ok := managers[symbol]
@@ -103,4 +100,5 @@ func init() {
 	RegWMD(strings.ToLower(cardano.Symbol), &cardano.WalletManager{})
 	RegWMD(strings.ToLower(bytom.Symbol), &bytom.WalletManager{})
 	RegWMD(strings.ToLower(bitcoin.Symbol), &bitcoin.WalletManager{})
+	RegWMD(strings.ToLower(bitcoincash.Symbol), &bitcoincash.WalletManager{})
 }
