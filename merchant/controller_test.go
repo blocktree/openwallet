@@ -20,6 +20,8 @@ import (
 	"testing"
 	"time"
 	"path/filepath"
+	"github.com/imroc/req"
+	"log"
 )
 
 func init() {
@@ -64,4 +66,13 @@ func TestSubscribe(t *testing.T) {
 	t.Logf("reponse: %v\n",ctx.Resp)
 
 	<- endRunning
+}
+
+func TestHTTP(t *testing.T) {
+	r, err := req.Get("http://192.168.2.193:10050/chains/main/blocks/")
+	if err != nil {
+		log.Printf("unexpected error: %v", err)
+		return
+	}
+	log.Printf("%+v\n", r)
 }

@@ -56,3 +56,4 @@ func ShowMechantConfig() error {
 	printConfig()
 	return nil
 }
+

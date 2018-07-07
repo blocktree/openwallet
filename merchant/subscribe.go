@@ -19,6 +19,7 @@ import (
 	"github.com/blocktree/OpenWallet/owtp"
 	"github.com/blocktree/OpenWallet/timer"
 	"log"
+	"github.com/blocktree/OpenWallet/assets"
 )
 
 //subscribe 订阅方法
@@ -178,6 +179,9 @@ func (m *MerchantNode) getChargeAddress() error {
 						if status == owtp.StatusSuccess {
 
 							//导入到每个币种的数据库
+							mer := assets.GetMerchantAssets(v.Coin)
+							mer.ImportMerchantAddress(nil)
+
 
 							innerdb, err := m.OpenDB()
 							if err != nil {
