@@ -28,6 +28,9 @@ import (
 	"log"
 	"fmt"
 	"github.com/blocktree/OpenWallet/common/file"
+	"strings"
+	"github.com/codeskyblue/go-sh"
+	"github.com/blocktree/OpenWallet/openwallet/accounts/keystore"
 )
 
 var (
@@ -51,7 +54,15 @@ var (
 	cycleSeconds = time.Second * 10
 	// 节点客户端
 	client *Client
+	//秘钥存取
+	storage *keystore.HDKeystore
 )
+
+func initAccount() {
+
+	storage = keystore.NewHDKeystore(keyDir, MasterKey, keystore.StandardScryptN, keystore.StandardScryptP)
+
+}
 
 //GetWalletInfo 获取钱包信息
 func GetWalletInfo() ([]*Wallet, error) {
@@ -133,9 +144,9 @@ func BackupWallet() (string, error) {
 	newBackupDir := filepath.Join(backupDir, "wallet-backup"+"-"+common.TimeFormat("20060102150405"))
 	file.MkdirAll(newBackupDir)
 
-	//创建临时备份文件wallet.db
-	tmpWalletDat := fmt.Sprintf("tmp-walllet-%d.db", time.Now().Unix())
-	tmpWalletDat = filepath.Join(walletDataPath, tmpWalletDat)
+	////创建临时备份文件wallet.db
+	//tmpWalletDat := fmt.Sprintf("tmp-walllet-%d.db", time.Now().Unix())
+	//tmpWalletDat = filepath.Join(walletDataPath, tmpWalletDat)
 
 	////1. 备份核心钱包的wallet.db
 	//err := BackupWalletData(tmpWalletDat)
@@ -144,10 +155,10 @@ func BackupWallet() (string, error) {
 	//}
 
 	//复制临时文件到备份文件夹
-	file.Copy(tmpWalletDat, filepath.Join(newBackupDir, "wallet.db"))
+	file.Copy(filepath.Join(walletDataPath, "wallet.db"),newBackupDir)
 
-	//删除临时文件
-	file.Delete(tmpWalletDat)
+	////删除临时文件
+	//file.Delete(tmpWalletDat)
 
 	////2. 备份种子文件
 	//file.Copy(filepath.Join(keyDir, "wallet-backup"+".key"), newBackupDir)
@@ -159,20 +170,186 @@ func BackupWallet() (string, error) {
 }
 
 //RestoreWallet 通过keystore恢复钱包
-func RestoreWallet(encryptionpassword string, seed string, force bool) error {
+func RestoreWallet(dbFile string) error{
 
-	request := req.Param{
-		"encryptionpassword": encryptionpassword,
-		"seed":               seed,
-		"force":              force,
-	}
+	var (
+		restoreSuccess = false
+		//err            error
+		sleepTime = 30 * time.Second
+	)
 
-	_, err := client.Call("wallet/init/seed", "POST", request)
+	//fmt.Printf("Validating key file... \n")
+
+	////检查密码是否可以解析种子文件，是否可以解锁钱包。
+	//key, err = storage.GetKey("", keyFile, password)
+	//if err != nil {
+	//	return errors.New("Passowrd is incorrect!")
+	//}
+
+	//钱包当前的db文件
+	currentWDFile := filepath.Join(walletDataPath, "wallet.db")
+
+	//创建临时备份文件夹
+	tmpWalletDat := filepath.Join(backupDir, "restore-wallet-backup"+"-"+common.TimeFormat("20060102150405"))
+	file.MkdirAll(tmpWalletDat)
+
+
+	fmt.Printf("Backup current wallet.dat file... \n")
+
+	//err = BackupWalletData(tmpWalletDat)
+	//if err != nil {
+	//	return err
+	//}
+
+	//备份
+	file.Copy(currentWDFile, tmpWalletDat)
+
+	fmt.Printf("Stop node server... \n")
+
+	//关闭钱包节点
+	stopNode()
+	time.Sleep(sleepTime)
+
+	fmt.Printf("Restore wallet.db file... \n")
+
+	//删除当前钱包文件
+	file.Delete(currentWDFile)
+
+	//恢复备份dat到钱包数据目录
+	err := file.Copy(dbFile, walletDataPath)
 	if err != nil {
-		return err
+		restoreSuccess = false
+	}else {
+		restoreSuccess = true
 	}
-	return nil
+
+	fmt.Printf("Start node server... \n")
+
+
+
+	//fmt.Printf("Validating wallet password... \n")
+
+	////检查wallet.dat是否可以解锁钱包
+	//err = UnlockWallet(password, 1)
+	//if err != nil {
+	//	restoreSuccess = false
+	//	err = errors.New("Password is incorrect!")
+	//} else {
+	//	restoreSuccess = true
+	//}
+
+	//_, err = GetWalletInfo()
+	//if err != nil {
+	//	restoreSuccess = false
+	//	err = errors.New("Password is incorrect!")
+	//} else {
+	//	restoreSuccess = true
+	//	}
+
+	if restoreSuccess {
+		/* 恢复成功 */
+		//
+		//fmt.Printf("Restore wallet key and datebase file... \n")
+		//
+		////复制种子文件到data/btc/key/
+		//file.MkdirAll(keyDir)
+		//file.Copy(keyFile, filepath.Join(keyDir, key.FileName()+".key"))
+		//
+		////复制钱包数据库文件到data/btc/db/
+		//file.MkdirAll(dbPath)
+		//file.Copy(dbFile, filepath.Join(dbPath, key.FileName()+".db"))
+
+		fmt.Printf("Backup wallet has been restored. \n")
+
+		//err = nil
+	} else {
+		/* 恢复失败还远原来的文件 */
+
+		fmt.Printf("Wallet restore unsuccessfully. \n")
+		//
+		fmt.Printf("Stop node server... \n")
+
+		////关闭钱包节点
+		//stopNode()
+		//time.Sleep(sleepTime)
+
+		fmt.Printf("Restore original wallet.data... \n")
+
+		//删除当前钱包文件
+		file.Delete(currentWDFile)
+
+		file.Copy(tmpWalletDat, currentWDFile)
+
+		fmt.Printf("Start node server... \n")
+
+		////重新启动钱包
+		//startNode()
+		//time.Sleep(sleepTime)
+
+		fmt.Printf("Original wallet has been restored. \n")
+
+	}
+
+	//重新启动钱包
+	startNode()
+	time.Sleep(sleepTime)
+
+	//删除临时备份的dat文件
+	file.Delete(tmpWalletDat)
+
+	return err
 }
+
+//startNode 开启节点
+func startNode() error {
+
+	//读取配置
+	absFile := filepath.Join(configFilePath, configFileName)
+	c, err := config.NewConfig("ini", absFile)
+	if err != nil {
+		return errors.New("Config is not setup! ")
+	}
+
+	startNodeCMD := c.String("startNodeCMD")
+	return cmdCall(startNodeCMD, false)
+}
+
+//stopNode 关闭节点
+func stopNode() error {
+	//读取配置
+	absFile := filepath.Join(configFilePath, configFileName)
+	c, err := config.NewConfig("ini", absFile)
+	if err != nil {
+		return errors.New("Config is not setup! ")
+	}
+
+	stopNodeCMD := c.String("stopNodeCMD")
+	return cmdCall(stopNodeCMD, true)
+}
+
+//cmdCall 执行命令
+func cmdCall(cmd string, wait bool) error {
+
+	var (
+		cmdName string
+		args    []string
+	)
+
+	cmds := strings.Split(cmd, " ")
+	if len(cmds) > 0 {
+		cmdName = cmds[0]
+		args = cmds[1:]
+	} else {
+		return errors.New("command not found ")
+	}
+	session := sh.Command(cmdName, args)
+	if wait {
+		return session.Run()
+	} else {
+		return session.Start()
+	}
+}
+
 
 //UnlockWallet 解锁钱包
 func UnlockWallet(password string) error {

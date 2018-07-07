@@ -47,7 +47,7 @@ func TestBackupWallet(t *testing.T) {
 	if err != nil {
 		t.Errorf("BackupWallet failed unexpected error: %v\n", err)
 	} else {
-		t.Errorf("BackupWallet filePath: %v\n", backupFile)
+		t.Logf("BackupWallet filePath: %v\n", backupFile)
 	}
 }
 
@@ -122,10 +122,10 @@ func TestSummaryWallets(t *testing.T) {
 
 func TestRestoreWallet(t *testing.T) {
 
-	err := RestoreWallet("1234567890abc", "", true)
+	dbFile := "D:/Go_WorkSpace/src/github.com/blocktree/OpenWallet/assets/sia/data/sc/backup/wallet-backup-20180706143027/wallet.db"
+	loadConfig()
+	err := RestoreWallet(dbFile)
 	if err != nil {
-		t.Errorf("RestoreWallet failed unexpected error: %v", err)
-		return
+		t.Errorf("RestoreWallet failed unexpected error: %v\n", err)
 	}
-	t.Logf("RestoreWallet address.", )
 }

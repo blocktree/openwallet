@@ -296,11 +296,11 @@ func (w *WalletManager) BackupWalletFlow() error {
 		return err
 	}
 
-	// 等待用户输入备份地址
-	backupPath, err = console.InputText("Enter backup path: ", true)
-	if err != nil {
-		return err
-	}
+	//// 等待用户输入备份地址
+	//backupPath, err = console.InputText("Enter backup path: ", true)
+	//if err != nil {
+	//	return err
+	//}
 
 	backupPath,err = BackupWallet()
 	if err != nil {
