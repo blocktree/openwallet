@@ -63,7 +63,7 @@ func TestUnlockWallet(t *testing.T) {
 //慎用新建钱包，会替换旧的钱包（要先备份旧钱包）
 func TestCreateNewWallet(t *testing.T) {
 	password := "1234567890abc"
-	seed, err := CreateNewWallet(password, false)
+	seed, err := CreateNewWallet(password, true)
 	if err != nil {
 		t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
 	} else {
@@ -122,7 +122,7 @@ func TestSummaryWallets(t *testing.T) {
 
 func TestRestoreWallet(t *testing.T) {
 
-	dbFile := "D:/Go_WorkSpace/src/github.com/blocktree/OpenWallet/assets/sia/data/sc/backup/wallet-backup-20180706143027/wallet.db"
+	dbFile := "C:/Users/Administrator/AppData/Roaming/Sia-UI/wallet_公司/wallet.db"
 	loadConfig()
 	err := RestoreWallet(dbFile)
 	if err != nil {

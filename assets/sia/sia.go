@@ -154,8 +154,8 @@ func (w *WalletManager) CreateWalletFlow() error {
 			return err
 		}
 
-		// 等待用户输入钱包名字
-		name, err = console.InputText("Enter wallet's name: ", true)
+		//// 等待用户输入钱包名字
+		//name, err = console.InputText("Enter wallet's name: ", true)
 
 		// 等待用户输入密码
 		password, err = console.InputPassword(true)
@@ -357,32 +357,32 @@ func (w *WalletManager) TransferFlow() error {
 //RestoreWalletFlow 恢复钱包流程
 func (w *WalletManager) RestoreWalletFlow() error {
 
-	//var (
-	//	err        error
-	//	filename string
-	//)
-	//
-	////先加载是否有配置文件
-	//err = loadConfig()
-	//if err != nil {
-	//	return err
-	//}
-	//
-	////输入恢复文件路径
-	//filename, err = console.InputText("Enter backup file path: ", true)
+	var (
+		err        error
+		filename string
+	)
+
+	//先加载是否有配置文件
+	err = loadConfig()
+	if err != nil {
+		return err
+	}
+
+	//输入恢复文件路径
+	filename, err = console.InputText("Enter backup file path: ", true)
 	//keyjson, err := ioutil.ReadFile(filename)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//fmt.Printf("Wallet restoring, please wait a moment...\n")
-	//err = RestoreWallet(keyjson)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	////输出备份导出目录
-	//fmt.Printf("Restore wallet successfully.\n")
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Wallet restoring, please wait a moment...\n")
+	err = RestoreWallet(filename)
+	if err != nil {
+		return err
+	}
+
+	//输出备份导出目录
+	fmt.Printf("Restore wallet successfully.\n")
 
 	return nil
 

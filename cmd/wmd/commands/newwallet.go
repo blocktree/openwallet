@@ -80,7 +80,7 @@ This command will start the wallet node, and create new wallet.
 					utils.BatchFlag,
 				},
 				Description: `
-	wmd wallet newaddr -batch
+	wmd wallet batchaddr -s <symbol>
 
 This command will create batch address for your given wallet id.
 
@@ -141,6 +141,12 @@ This command will Backup wallet key in filePath: ./data/<symbol>/key/.
 				Flags: []cli.Flag{
 					utils.SymbolFlag,
 				},
+				Description: `
+	wmd wallet transfer -s <symbol>
+
+This command will transfer the coin.
+
+	`,
 			},
 			{
 				//恢复钱包

@@ -36,6 +36,10 @@ import (
 var (
 	//钱包服务API
 	serverAPI = "http://127.0.0.1:10031"
+	//授权密码
+	Auth = ""
+	////备份文件地址
+	//restorePath =""
 	//钱包主链私钥文件路径
 	walletPath = ""
 	//小数位长度
@@ -49,7 +53,7 @@ var (
 	//最小矿工费
 	minFees decimal.Decimal = decimal.NewFromFloat(22600000000000000000000)
 	//汇总地址
-	sumAddress = "7955ae75cecfa84826b449d568984a84662bef54e36acb2c8bb0c290b423d075282dab76afde"
+	sumAddress = "c42cb45155b0dbb572b385d113eb9f030953fe346f972ceaf494f8c1bd195164b11ec574b96c"
 	//汇总执行间隔时间
 	cycleSeconds = time.Second * 10
 	// 节点客户端
@@ -99,6 +103,9 @@ func loadConfig() error {
 	}
 
 	serverAPI = c.String("apiURL")
+	//restorePath = c.String("restorePath")
+	Auth = c.String("Auth")
+	walletDataPath = c.String("walletDataPath")
 	walletPath = c.String("walletPath")
 	threshold, _ = decimal.NewFromString(c.String("threshold"))
 	threshold = threshold.Mul(coinDecimal)
@@ -111,6 +118,7 @@ func loadConfig() error {
 	client = &Client{
 		BaseURL: serverAPI,
 		Debug:   false,
+		Auth:    Auth,
 	}
 
 	return nil
@@ -170,12 +178,12 @@ func BackupWallet() (string, error) {
 }
 
 //RestoreWallet 通过keystore恢复钱包
-func RestoreWallet(dbFile string) error{
+func RestoreWallet(restorePath string) error{
 
 	var (
 		restoreSuccess = false
 		//err            error
-		sleepTime = 30 * time.Second
+		//sleepTime = 30 * time.Second
 	)
 
 	//fmt.Printf("Validating key file... \n")
@@ -194,7 +202,7 @@ func RestoreWallet(dbFile string) error{
 	file.MkdirAll(tmpWalletDat)
 
 
-	fmt.Printf("Backup current wallet.dat file... \n")
+	//fmt.Printf("Backup current wallet.dat file... \n")
 
 	//err = BackupWalletData(tmpWalletDat)
 	//if err != nil {
@@ -204,11 +212,11 @@ func RestoreWallet(dbFile string) error{
 	//备份
 	file.Copy(currentWDFile, tmpWalletDat)
 
-	fmt.Printf("Stop node server... \n")
+	//fmt.Printf("Stop node server... \n")
 
-	//关闭钱包节点
-	stopNode()
-	time.Sleep(sleepTime)
+	////关闭钱包节点
+	//stopNode()
+	//time.Sleep(sleepTime)
 
 	fmt.Printf("Restore wallet.db file... \n")
 
@@ -216,14 +224,14 @@ func RestoreWallet(dbFile string) error{
 	file.Delete(currentWDFile)
 
 	//恢复备份dat到钱包数据目录
-	err := file.Copy(dbFile, walletDataPath)
+	err := file.Copy(restorePath, walletDataPath)
 	if err != nil {
 		restoreSuccess = false
 	}else {
 		restoreSuccess = true
 	}
 
-	fmt.Printf("Start node server... \n")
+	//fmt.Printf("Start node server... \n")
 
 
 
@@ -265,7 +273,7 @@ func RestoreWallet(dbFile string) error{
 	} else {
 		/* 恢复失败还远原来的文件 */
 
-		fmt.Printf("Wallet restore unsuccessfully. \n")
+		//fmt.Printf("Wallet restore unsuccessfully. \n")
 		//
 		fmt.Printf("Stop node server... \n")
 
@@ -280,19 +288,19 @@ func RestoreWallet(dbFile string) error{
 
 		file.Copy(tmpWalletDat, currentWDFile)
 
-		fmt.Printf("Start node server... \n")
+		//fmt.Printf("Start node server... \n")
 
 		////重新启动钱包
 		//startNode()
 		//time.Sleep(sleepTime)
 
-		fmt.Printf("Original wallet has been restored. \n")
+		//fmt.Printf("Original wallet has been restored. \n")
 
 	}
 
-	//重新启动钱包
-	startNode()
-	time.Sleep(sleepTime)
+	////重新启动钱包
+	//startNode()
+	//time.Sleep(sleepTime)
 
 	//删除临时备份的dat文件
 	file.Delete(tmpWalletDat)
