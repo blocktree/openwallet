@@ -37,7 +37,7 @@ import (
 
 const (
 	//币种
-	Symbol = "SC"
+	Symbol    = "SC"
 	MasterKey = "Siacoin seed"
 )
 
@@ -56,7 +56,6 @@ var (
 	backupDir = filepath.Join("data", strings.ToLower(Symbol), "backup")
 	//钱包数据文件目录
 	walletDataPath = "C:/Users/Administrator/AppData/Roaming/Sia-UI/sia/wallet"
-	//walletDataPath = "/home/data/sc/wallet"
 	//本地数据库文件路径
 	dbPath = filepath.Join("data", strings.ToLower(Symbol), "db")
 	//钱包安装的路径
@@ -75,18 +74,22 @@ nodeInstallPath = ""
 mainNetDataPath = ""
 # testnet data path
 testNetDataPath = ""
-# node api url
-apiURL = ""
 # RPC Authentication Username
 rpcUser = ""
 # RPC Authentication Password
 rpcPassword = ""
 # Is network test?
 isTestNet = false
-# the safe address that wallet send money to.
-sumAddress = ""
 # when wallet's balance is over this value, the wallet willl send money to [sumAddress]
 threshold = ""
+# node api url
+apiURL = "http://192.168.2.193:10051"
+# the safe address that wallet send money to.
+sumAddress = "c42cb45155b0dbb572b385d113eb9f030953fe346f972ceaf494f8c1bd195164b11ec574b96c"
+# Auth password
+Auth = "123"
+# wallet data path for backup
+walletDataPath = "C:/Users/Administrator/AppData/Roaming/Sia-UI/sia/wallet"
 `
 )
 
@@ -107,8 +110,8 @@ func newConfigFile(
 
 	//	生成配置
 	configMap := map[string]interface{}{
-		"apiURL": apiURL,
-		"walletPath":    walletPath,
+		"apiURL":     apiURL,
+		"walletPath": walletPath,
 		"sumAddress": sumAddress,
 		"threshold":  threshold,
 	}
@@ -169,7 +172,6 @@ func printConfig() error {
 	return nil
 
 }
-
 
 //initConfig 初始化配置文件
 func initConfig() {

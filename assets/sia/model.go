@@ -17,6 +17,9 @@ package sia
 
 import (
 	"github.com/tidwall/gjson"
+	"github.com/asdine/storm"
+	"github.com/blocktree/OpenWallet/common/file"
+	"path/filepath"
 )
 
 //Wallet 钱包模型
@@ -62,9 +65,9 @@ type Account struct {
 }
 
 type Address struct {
-	Alias     string
-	AccountId string
-	Address   string
+	//Alias     string
+	//AccountId string
+	Address string
 }
 
 func NewAddress(json gjson.Result) *Address {
@@ -73,4 +76,12 @@ func NewAddress(json gjson.Result) *Address {
 	//解析json
 	a.Address = gjson.Get(json.Raw, "address").String()
 	return a
+}
+
+//openDB 打开钱包数据库
+func (w *Wallet) OpenDB() (*storm.DB, error) {
+	file.MkdirAll(dbPath)
+	file := filepath.Join(dbPath, "wallet_data.db")
+	return storm.Open(file)
+
 }

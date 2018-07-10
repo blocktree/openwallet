@@ -31,6 +31,7 @@ import (
 	"strings"
 	"github.com/codeskyblue/go-sh"
 	"github.com/blocktree/OpenWallet/openwallet/accounts/keystore"
+	"github.com/blocktree/OpenWallet/logger"
 )
 
 var (
@@ -61,12 +62,6 @@ var (
 	//秘钥存取
 	storage *keystore.HDKeystore
 )
-
-func initAccount() {
-
-	storage = keystore.NewHDKeystore(keyDir, MasterKey, keystore.StandardScryptN, keystore.StandardScryptP)
-
-}
 
 //GetWalletInfo 获取钱包信息
 func GetWalletInfo() ([]*Wallet, error) {
@@ -124,75 +119,21 @@ func loadConfig() error {
 	return nil
 }
 
-////BackupWalletData 备份钱包
-//func BackupWalletData(dest string) error {
-//
-//	request := []interface{}{
-//		dest,
-//	}
-//
-//	_, err := client.Call("backupwallet", request)
-//	if err != nil {
-//		return err
-//	}
-//
-//	return nil
-//
-//}
-
 //BackupWallet 备份钱包私钥数据
 func BackupWallet() (string, error) {
-
-	//w, err := GetWalletInfo(walletID)
-	//if err != nil {
-	//	return "", err
-	//}
 
 	//创建备份文件夹
 	newBackupDir := filepath.Join(backupDir, "wallet-backup"+"-"+common.TimeFormat("20060102150405"))
 	file.MkdirAll(newBackupDir)
 
-	////创建临时备份文件wallet.db
-	//tmpWalletDat := fmt.Sprintf("tmp-walllet-%d.db", time.Now().Unix())
-	//tmpWalletDat = filepath.Join(walletDataPath, tmpWalletDat)
-
-	////1. 备份核心钱包的wallet.db
-	//err := BackupWalletData(tmpWalletDat)
-	//if err != nil {
-	//	return "", err
-	//}
-
 	//复制临时文件到备份文件夹
-	file.Copy(filepath.Join(walletDataPath, "wallet.db"),newBackupDir)
-
-	////删除临时文件
-	//file.Delete(tmpWalletDat)
-
-	////2. 备份种子文件
-	//file.Copy(filepath.Join(keyDir, "wallet-backup"+".key"), newBackupDir)
-	//
-	////3. 备份地址数据库
-	//file.Copy(filepath.Join(dbPath, "wallet-backup"+".db"), newBackupDir)
+	file.Copy(filepath.Join(walletDataPath, "wallet.db"), newBackupDir)
 
 	return newBackupDir, nil
 }
 
 //RestoreWallet 通过keystore恢复钱包
-func RestoreWallet(restorePath string) error{
-
-	var (
-		restoreSuccess = false
-		//err            error
-		//sleepTime = 30 * time.Second
-	)
-
-	//fmt.Printf("Validating key file... \n")
-
-	////检查密码是否可以解析种子文件，是否可以解锁钱包。
-	//key, err = storage.GetKey("", keyFile, password)
-	//if err != nil {
-	//	return errors.New("Passowrd is incorrect!")
-	//}
+func RestoreWallet(restorePath string) error {
 
 	//钱包当前的db文件
 	currentWDFile := filepath.Join(walletDataPath, "wallet.db")
@@ -201,111 +142,38 @@ func RestoreWallet(restorePath string) error{
 	tmpWalletDat := filepath.Join(backupDir, "restore-wallet-backup"+"-"+common.TimeFormat("20060102150405"))
 	file.MkdirAll(tmpWalletDat)
 
-
-	//fmt.Printf("Backup current wallet.dat file... \n")
-
-	//err = BackupWalletData(tmpWalletDat)
-	//if err != nil {
-	//	return err
-	//}
-
 	//备份
 	file.Copy(currentWDFile, tmpWalletDat)
-
-	//fmt.Printf("Stop node server... \n")
-
-	////关闭钱包节点
-	//stopNode()
-	//time.Sleep(sleepTime)
 
 	fmt.Printf("Restore wallet.db file... \n")
 
 	//删除当前钱包文件
-	file.Delete(currentWDFile)
-
-	//恢复备份dat到钱包数据目录
-	err := file.Copy(restorePath, walletDataPath)
-	if err != nil {
-		restoreSuccess = false
-	}else {
-		restoreSuccess = true
-	}
-
-	//fmt.Printf("Start node server... \n")
-
-
-
-	//fmt.Printf("Validating wallet password... \n")
-
-	////检查wallet.dat是否可以解锁钱包
-	//err = UnlockWallet(password, 1)
-	//if err != nil {
-	//	restoreSuccess = false
-	//	err = errors.New("Password is incorrect!")
-	//} else {
-	//	restoreSuccess = true
-	//}
-
-	//_, err = GetWalletInfo()
-	//if err != nil {
-	//	restoreSuccess = false
-	//	err = errors.New("Password is incorrect!")
-	//} else {
-	//	restoreSuccess = true
-	//	}
-
-	if restoreSuccess {
-		/* 恢复成功 */
-		//
-		//fmt.Printf("Restore wallet key and datebase file... \n")
-		//
-		////复制种子文件到data/btc/key/
-		//file.MkdirAll(keyDir)
-		//file.Copy(keyFile, filepath.Join(keyDir, key.FileName()+".key"))
-		//
-		////复制钱包数据库文件到data/btc/db/
-		//file.MkdirAll(dbPath)
-		//file.Copy(dbFile, filepath.Join(dbPath, key.FileName()+".db"))
-
-		fmt.Printf("Backup wallet has been restored. \n")
-
-		//err = nil
+	err2 := file.Delete(currentWDFile)
+	if !err2 {
+		openwLogger.Log.Fatal("Restore wallet unsuccessfully...please copy the backup file to wallet data path manually. \n")
 	} else {
-		/* 恢复失败还远原来的文件 */
 
-		//fmt.Printf("Wallet restore unsuccessfully. \n")
-		//
-		fmt.Printf("Stop node server... \n")
+		//恢复备份dat到钱包数据目录
+		err := file.Copy(restorePath, walletDataPath)
+		if err != nil {
+			fmt.Printf("Restore wallet unsuccessfully...please copy the backup file to wallet data path manually.  \n")
+			return err
+		} else {
+			fmt.Printf("Restore original wallet.data... \n")
 
-		////关闭钱包节点
-		//stopNode()
-		//time.Sleep(sleepTime)
+			//删除当前钱包文件
+			file.Delete(currentWDFile)
 
-		fmt.Printf("Restore original wallet.data... \n")
+			file.Copy(tmpWalletDat, currentWDFile)
+		}
 
-		//删除当前钱包文件
-		file.Delete(currentWDFile)
+		//删除临时备份的dat文件
+		file.Delete(tmpWalletDat)
 
-		file.Copy(tmpWalletDat, currentWDFile)
-
-		//fmt.Printf("Start node server... \n")
-
-		////重新启动钱包
-		//startNode()
-		//time.Sleep(sleepTime)
-
-		//fmt.Printf("Original wallet has been restored. \n")
-
+		return err
 	}
 
-	////重新启动钱包
-	//startNode()
-	//time.Sleep(sleepTime)
-
-	//删除临时备份的dat文件
-	file.Delete(tmpWalletDat)
-
-	return err
+	return nil
 }
 
 //startNode 开启节点
@@ -357,7 +225,6 @@ func cmdCall(cmd string, wait bool) error {
 		return session.Start()
 	}
 }
-
 
 //UnlockWallet 解锁钱包
 func UnlockWallet(password string) error {
@@ -419,21 +286,21 @@ func CreateBatchAddress(count uint64) (string, error) {
 	)
 
 	//建立文件名，时间格式2006-01-02 15:04:05
-	filename := "address-" + common.TimeFormat("20060102150405") + ".txt"
+	filename := "addresses-" + common.TimeFormat("20060102150405") + ".txt"
 	filePath := filepath.Join(addressDir, filename)
 
 	//生产通道
-	producer := make(chan []*Address)
+	producer := make(chan []string)
 	defer close(producer)
 
 	//消费通道
-	worker := make(chan []*Address)
+	worker := make(chan []string)
 	defer close(worker)
 
 	//创建地址过程
-	createAddressWork := func(runCount uint64) {
+	createAddressWork := func(runCount uint64, prod chan []string) {
 
-		runAddress := make([]*Address, 0)
+		runAddress := make([]string, 0)
 
 		for i := uint64(0); i < runCount; i++ {
 			// 请求地址
@@ -441,22 +308,22 @@ func CreateBatchAddress(count uint64) (string, error) {
 			if errRun != nil {
 				continue
 			}
-			runAddress = append(runAddress, address)
+			runAddress = append(runAddress, string(address))
 
 		}
 		//生成完成
-		producer <- runAddress
+		prod <- runAddress
 	}
 
 	//保存地址过程
-	saveAddressWork := func(addresses chan []*Address, filename string) {
-
+	saveAddressWork := func(addresses chan []string, filename string) {
+		//fmt.Println(addresses)
 		for {
 			//回收创建的地址
 			getAddrs := <-addresses
 			//log.Printf("Export %d", len(getAddrs))
 			//导出一批地址
-			exportAddressToFile(getAddrs, filename)
+			exportAddressToFile(getAddrs, filePath)
 
 			//累计完成的线程数
 			done++
@@ -483,7 +350,7 @@ func CreateBatchAddress(count uint64) (string, error) {
 			//开始创建地址
 			log.Printf("Start create address thread[%d]\n", i)
 
-			go createAddressWork(runCount)
+			go createAddressWork(runCount, producer)
 
 			shouldDone++
 		}
@@ -493,19 +360,19 @@ func CreateBatchAddress(count uint64) (string, error) {
 
 		//开始创建地址
 		log.Printf("Start create address thread[REST]\n")
-		go createAddressWork(otherCount)
+		go createAddressWork(otherCount, producer)
 
 		shouldDone++
 	}
 
-	values := make([][]*Address, 0)
+	values := make([][]string, 0)
 
 	//以下使用生产消费模式
 
 	for {
 
-		var activeWorker chan<- []*Address
-		var activeValue []*Address
+		var activeWorker chan<- []string
+		var activeValue []string
 
 		//当数据队列有数据时，释放顶部，激活消费
 		if len(values) > 0 {
@@ -536,45 +403,16 @@ func CreateBatchAddress(count uint64) (string, error) {
 }
 
 //CreateReceiverAddress 给指定账户创建地址
-func CreateReceiverAddress() (*Address, error) {
+func CreateReceiverAddress() ([]byte, error) {
 
-	result, err := client.CallBatchAddress("wallet/address", "GET", nil)
-	if err != nil {
-		return nil, err
-	}
+	result, err := client.Call("wallet/address", "GET", nil)
 
-	err = isError(result)
-	if err != nil {
-		return nil, err
-	}
+	return result, err
 
-	a := NewAddress(gjson.GetBytes(result, "data"))
-
-	return a, err
-
-}
-
-//isError 是否报错
-func isError(result []byte) error {
-
-	var (
-		err error
-	)
-
-	if gjson.GetBytes(result, "status").String() == "success" {
-		return nil
-	}
-
-	errInfo := fmt.Sprintf("[%s]%s",
-		gjson.GetBytes(result, "status").String(),
-		gjson.GetBytes(result, "msg").String())
-	err = errors.New(errInfo)
-
-	return err
 }
 
 //exportAddressToFile 导出地址到文件中
-func exportAddressToFile(addrs []*Address, filePath string) {
+func exportAddressToFile(addrs []string, filePath string) {
 
 	var (
 		content string
@@ -582,27 +420,14 @@ func exportAddressToFile(addrs []*Address, filePath string) {
 
 	for _, a := range addrs {
 
-		log.Printf("Export: %s \n", a.Address)
+		log.Printf("Export: %s \n", a)
 
-		content = content + a.Address + "\n"
+		content = content + a + "\n"
 	}
 
 	file.MkdirAll(addressDir)
 	file.WriteFile(filePath, []byte(content), true)
 }
-
-//CreateBatchAddress 批量创建钱包地址
-//func CreateBatchAddress(count uint64) ([]byte, error) {
-//
-//	l := list.New()
-//	var i uint64
-//	for i=0;i < count ;i++  {
-//		filePath, _ := client.Call("wallet/address", "GET", nil)
-//		l.PushBack(filePath)
-//	}
-//	addresses, err := json.Marshal(l)
-//	return addresses, err
-//}
 
 //GetAddressInfo 获取地址列表
 func GetAddressInfo() ([]string, error) {

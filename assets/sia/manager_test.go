@@ -122,7 +122,7 @@ func TestSummaryWallets(t *testing.T) {
 
 func TestRestoreWallet(t *testing.T) {
 
-	dbFile := "C:/Users/Administrator/AppData/Roaming/Sia-UI/wallet_公司/wallet.db"
+	dbFile := "C:/Users/Administrator/AppData/Roaming/Sia-UI/wallet_company/wallet.db"
 	loadConfig()
 	err := RestoreWallet(dbFile)
 	if err != nil {
