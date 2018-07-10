@@ -15,7 +15,7 @@
 
 package bytom
 
-import "github.com/blocktree/OpenWallet/assets"
+/*
 
 //CreateMerchantWallet 创建钱包
 func (w *WalletManager) CreateMerchantWallet(alias string, password string) (*assets.MerchantWallet, error) {
@@ -52,3 +52,5 @@ func (w *WalletManager) CreateMerchantAddress(walletID string, count int) ([]*as
 func (w *WalletManager) GetMerchantAddressList(walletID string, offset uint64, limit uint64) ([]*assets.MerchantAddress, error) {
 	return nil, nil
 }
+
+*/
