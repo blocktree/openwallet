@@ -7,7 +7,7 @@ import (
 
 func main() {
 
-	//添加eth进行资产路由中
+	//添加eth进入资产路由中
 	eth := &assets.EthereumAssets{}
 	openwallet.Router(eth.Name(), eth)
 

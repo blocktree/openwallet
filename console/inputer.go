@@ -16,9 +16,9 @@
 package console
 
 import (
-	"github.com/blocktree/OpenWallet/logger"
-	"github.com/blocktree/OpenWallet/common"
 	"fmt"
+	"github.com/blocktree/OpenWallet/common"
+	"github.com/blocktree/OpenWallet/logger"
 )
 
 //PasswordPrompt 提示输入密码
@@ -40,7 +40,7 @@ func InputPassword(isConfirm bool) (string, error) {
 			return "", err
 		}
 
-		if len(password) < 8 {
+		if len(password) < 6 {
 			fmt.Printf("The length of the password is less than 8 chars. Please re-enter it.\n")
 			continue
 		}
@@ -67,8 +67,8 @@ func InputPassword(isConfirm bool) (string, error) {
 func InputText(prompt string, required bool) (string, error) {
 
 	var (
-		text  string
-		err      error
+		text string
+		err  error
 	)
 
 	for {
@@ -91,12 +91,11 @@ func InputText(prompt string, required bool) (string, error) {
 	return text, nil
 }
 
-
 //InputNumber 输入数值
 func InputNumber(prompt string, zero bool) (uint64, error) {
 
 	var (
-		num  uint64
+		num uint64
 	)
 
 	for {
@@ -119,13 +118,12 @@ func InputNumber(prompt string, zero bool) (uint64, error) {
 	return num, nil
 }
 
-
 //InputRealNumber 输入实数值
 //@param p 是否正数
 func InputRealNumber(prompt string, p bool) (string, error) {
 
 	var (
-		num  float64
+		num     float64
 		realNum string
 	)
 
