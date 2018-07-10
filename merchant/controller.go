@@ -18,7 +18,6 @@ package merchant
 import (
 	"github.com/blocktree/OpenWallet/owtp"
 	"github.com/pkg/errors"
-	"log"
 )
 
 const (
@@ -48,40 +47,6 @@ func (m *MerchantNode) setupRouter() {
 	m.Node.HandleFunc("configWallet", m.configWallet)
 	m.Node.HandleFunc("getWalletInfo", m.getWalletInfo)
 	m.Node.HandleFunc("submitTrasaction", m.submitTrasaction)
-}
-
-//subscribe 订阅方法
-func (m *MerchantNode) subscribe(ctx *owtp.Context) {
-
-	log.Printf("Merchat Call: subscribe \n")
-	log.Printf("params: %v\n", ctx.Params())
-
-	var (
-		subscriptions []*Subscription
-	)
-
-	db, err := m.OpenDB()
-	if err != nil {
-		responseError(ctx, err)
-		return
-	}
-	defer db.Close()
-
-	//每次订阅都先清除旧订阅
-	db.Drop("subscribe")
-
-	//1. 把订阅记录写入到数据库
-	for _, p := range ctx.Params().Get("subscriptions").Array() {
-		s := NewSubscription(p)
-		subscriptions = append(subscriptions, s)
-		db.Save(s)
-	}
-
-	//2. 向商户获取订阅的地址列表
-
-	//3. 启动定时器，检查订阅地址的最新状态（交易记录，余额）
-
-	responseSuccess(ctx, nil)
 }
 
 func (m *MerchantNode) configWallet(ctx *owtp.Context) {

@@ -24,14 +24,23 @@ import (
 )
 
 const (
-	//找不到方法
-	ErrNotFoundMethod uint64 = 100
-	//请求与响应的方法不一致
-	ErrResponseMethodDiffer uint64 = 101
-	//重放攻击
-	ErrReplayAttack uint64 = 102
+
 	//成功标识
-	StatusSuccess uint64 = 0
+	StatusSuccess uint64 = 200
+
+	//客户端请求错误
+	ErrBadRequest uint64 = 400
+	//网络断开
+	ErrNetworkDisconnected uint64 = 401
+	//找不到方法
+	ErrNotFoundMethod uint64 = 404
+	//重放攻击
+	ErrReplayAttack uint64 = 409
+	//重放攻击
+	ErrRequestTimeout uint64 = 408
+
+	//请求与响应的方法不一致
+	ErrResponseMethodDiffer uint64 = 501
 )
 
 //OWTPNode 实现OWTP协议的节点
@@ -51,6 +60,8 @@ type OWTPNode struct {
 	disconnectHandler func(n *OWTPNode)
 	//授权
 	Auth Authorization
+	//是否调试
+	Dedug bool
 }
 
 //NewOWTPNode 创建OWTP协议节点
@@ -59,7 +70,7 @@ func NewOWTPNode(nodeID int64, url string, auth Authorization) *OWTPNode {
 	node := &OWTPNode{}
 	node.URL = url
 	node.nonceGen, _ = snowflake.NewNode(nodeID)
-	node.serveMux = &ServeMux{}
+	node.serveMux = &ServeMux{timeout: 120 * time.Second}
 	node.Auth = auth
 	return node
 }
@@ -115,19 +126,26 @@ func (node *OWTPNode) run() {
 }
 
 //disconnect 断开连接实现回调
-func (node *OWTPNode) disconnect(code int, text string) error {
-	node.isConnected = false
-	node.serveMux.ResetQueue()
-	node.disconnectHandler(node)
-	return nil
-}
+//func (node *OWTPNode) disconnect(code int, text string) error {
+//	node.isConnected = false
+//	node.serveMux.ResetQueue()
+//	node.disconnectHandler(node)
+//	return nil
+//}
 
 //Close 关闭节点
 func (node *OWTPNode) Close() {
+
+	if !node.isConnected {
+		return
+	}
+
 	//中断客户端连接
 	node.client.Close()
-	node.isConnected = false
 	node.serveMux.ResetQueue()
+	node.mu.Lock()
+	node.isConnected = false
+	node.mu.Unlock()
 }
 
 //Call 向对方节点进行调用
@@ -152,13 +170,13 @@ func (node *OWTPNode) Call(
 
 	//添加请求队列到Map，处理完成回调方法
 	nonce := uint64(node.nonceGen.Generate().Int64())
-
+	time := time.Now().Unix()
 	//封装数据包
 	packet := DataPacket{
 		Method:    method,
 		Req:       WSRequest,
 		Nonce:     nonce,
-		Timestamp: time.Now().Unix(),
+		Timestamp: time,
 		Data:      params,
 	}
 
@@ -169,7 +187,7 @@ func (node *OWTPNode) Call(
 	}
 
 	//添加请求到队列，异步或同步等待结果
-	node.serveMux.AddRequest(nonce, method, reqFunc, respChan, sync)
+	node.serveMux.AddRequest(nonce, time, method, reqFunc, respChan, sync)
 	if sync {
 		//等待返回
 		result := <-respChan

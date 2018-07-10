@@ -20,6 +20,8 @@ import (
 	"github.com/pkg/errors"
 	"sync"
 	"log"
+	"time"
+	"fmt"
 )
 
 // 路由处理方法
@@ -36,6 +38,10 @@ type ServeMux struct {
 	m map[string]muxEntry
 	//请求队列
 	requestQueue map[uint64]requestEntry
+	//超时时间
+	timeout time.Duration
+	//是否启动了请求超时检查
+	startRequestTimeoutCheck bool
 }
 
 type muxEntry struct {
@@ -48,6 +54,7 @@ type requestEntry struct {
 	method   string
 	h        RequestFunc
 	respChan chan Response
+	time int64
 }
 
 //HandleFunc 路由处理器绑定
@@ -80,22 +87,43 @@ func (mux *ServeMux) HandleFunc(method string, handler HandlerFunc) {
 //@param reqFunc 异步请求的回调函数
 //@param respChan 同步请求的响应通道
 //@param sync 是否同步
-func (mux *ServeMux) AddRequest(nonce uint64, method string, reqFunc RequestFunc, respChan chan Response, sync bool) error {
+func (mux *ServeMux) AddRequest(nonce uint64, time int64, method string, reqFunc RequestFunc, respChan chan Response, sync bool) error {
 
 	mux.mu.Lock()
 	defer mux.mu.Unlock()
+
+	if !mux.startRequestTimeoutCheck {
+		go mux.timeoutRequestHandle()
+	}
 
 	if _, exist := mux.requestQueue[nonce]; exist {
 		return errors.New("OWTP: nonce exist. ")
 	}
 
-	mux.requestQueue[nonce] = requestEntry{sync, method, reqFunc, respChan}
+	mux.requestQueue[nonce] = requestEntry{sync, method, reqFunc, respChan, time}
 	return nil
 }
 
 //ResetQueue 重置请求队列
 func (mux *ServeMux) ResetQueue() {
-	mux.requestQueue = make(map[uint64]requestEntry)
+	mux.mu.Lock()
+	defer mux.mu.Unlock()
+
+	if mux.requestQueue == nil {
+		mux.requestQueue = make(map[uint64]requestEntry)
+	}
+
+	//处理所有未完成的请求，返回连接断开的异常
+	for n, r := range mux.requestQueue {
+		resp := responseError("network disconnected", ErrNetworkDisconnected)
+		if r.sync {
+			r.respChan <- resp
+		} else {
+			r.h(resp)
+		}
+		delete(mux.requestQueue, n)
+	}
+
 }
 
 //ServeOWTP OWTP协议消息监听方法
@@ -112,6 +140,9 @@ func (mux *ServeMux) ServeOWTP(client *Client, ctx *Context) {
 			ctx.Resp = responseError("can not find method", ErrNotFoundMethod)
 		}
 	case WSResponse: //我方请求后，对方响应返回
+		mux.mu.Lock()
+		defer mux.mu.Unlock()
+
 		f := mux.requestQueue[ctx.nonce]
 		if f.method == ctx.Method {
 			//log.Printf("f: %v", f)
@@ -120,10 +151,11 @@ func (mux *ServeMux) ServeOWTP(client *Client, ctx *Context) {
 			} else {
 				f.h(ctx.Resp)
 			}
-
+			delete(mux.requestQueue, ctx.nonce)
 		} else {
 			//响应与请求的方法不一致
-			ctx.Resp = responseError("reponse method is not equal request", ErrResponseMethodDiffer)
+			//ctx.Resp = responseError("reponse method is not equal request", ErrResponseMethodDiffer)
+			log.Printf("reponse method is not equal request\n")
 		}
 
 	default:
@@ -132,8 +164,52 @@ func (mux *ServeMux) ServeOWTP(client *Client, ctx *Context) {
 	}
 }
 
-/*
+// timeoutRequestHandle 超时请求检查
+func (mux *ServeMux) timeoutRequestHandle() {
+	if mux.timeout == 0 {
+		mux.timeout = 120
+	}
+	ticker := time.NewTicker(10 * time.Second) //发送心跳间隔事件要<等待时间
+	defer func() {
+		ticker.Stop()
+	}()
 
-	TODO:超时请求检查还没实现
+	mux.startRequestTimeoutCheck = true
 
- */
+	for {
+		select {
+		case <-ticker.C:
+			//log.Printf("check request timeout \n")
+			mux.mu.Lock()
+			//定时器的回调，处理超时请求
+			for n, r := range mux.requestQueue {
+
+				currentServerTime := time.Now()
+
+				//计算客户端过期时间
+				requestTimestamp := time.Unix(r.time, 0)
+				expiredTime := requestTimestamp.Add(mux.timeout)
+
+				//log.Printf("requestTimestamp = %s \n", requestTimestamp.String())
+				//log.Printf("currentServerTime = %s \n", currentServerTime.String())
+				//log.Printf("expiredTime = %s \n", expiredTime.String())
+
+				if currentServerTime.Unix() > expiredTime.Unix() {
+					//log.Printf("request expired time")
+					//返回超时响应
+					errInfo := fmt.Sprintf("request timeout over %s", mux.timeout.String())
+					resp := responseError(errInfo, ErrRequestTimeout)
+					if r.sync {
+						log.Printf("resp = %v \n", resp)
+						r.respChan <- resp
+					} else {
+						r.h(resp)
+					}
+					delete(mux.requestQueue, n)
+				}
+
+			}
+			mux.mu.Unlock()
+		}
+	}
+}

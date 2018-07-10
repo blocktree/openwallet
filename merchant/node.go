@@ -17,16 +17,23 @@ package merchant
 
 import (
 	"errors"
-	"fmt"
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/owtp"
+	"github.com/blocktree/OpenWallet/timer"
 	"log"
+	"sync"
 	"time"
+)
+
+var (
+	PeriodOfTask = 5 * time.Second
 )
 
 //商户节点
 type MerchantNode struct {
 
+	//读写锁，用于处理订阅更新和根据订阅获取数据的同步控制
+	mu sync.RWMutex
 	//节点配置
 	Config NodeConfig
 	//商户节点
@@ -39,14 +46,19 @@ type MerchantNode struct {
 	isReconnect bool
 	//重连时的等待时间
 	ReconnectWait time.Duration
+	//获取地址通道
+	getAddressesCh chan AddressVersion
+	//订阅列表
+	subscriptions []*Subscription
+	//订阅地址任务
+	subscribeAddressTask *timer.TaskTimer
 }
 
 func NewMerchantNode(config NodeConfig) (*MerchantNode, error) {
 
 	m := MerchantNode{}
-
 	if len(config.MerchantNodeURL) == 0 {
-		return nil, errors.New("merchant node url is not configed!")
+		return nil, errors.New("merchant node url is not configed! ")
 	}
 
 	//授权配置
@@ -76,11 +88,20 @@ func NewMerchantNode(config NodeConfig) (*MerchantNode, error) {
 
 	m.isReconnect = true
 	m.ReconnectWait = 10
+	m.getAddressesCh = make(chan AddressVersion, 5)
 
 	//设置路由
 	m.setupRouter()
 
 	return &m, nil
+}
+
+//resetSubscriptions 重置订阅表
+func (m *MerchantNode) resetSubscriptions(news []*Subscription) {
+	m.mu.Lock()
+	m.subscriptions = nil
+	m.subscriptions = news
+	m.mu.Unlock()
 }
 
 //OpenDB 访问数据库
@@ -121,7 +142,15 @@ func (m *MerchantNode) Run() error {
 			} else {
 				log.Printf("Connect merchant node successfully. \n")
 			}
+
+			//启动定时任务
+			m.StartTimerTask()
+
 		case <-m.disconnected:
+
+			//停止定时任务
+			m.StopTimerTask()
+
 			if m.isReconnect {
 				//重新连接，前等待
 				log.Printf("Reconnect after %d seconds... \n", m.ReconnectWait)
@@ -155,92 +184,38 @@ func (m *MerchantNode) Stop() {
 	close(m.disconnected)
 }
 
-/********** 商户服务相关方法【主动】 **********/
 
-//GetChargeAddressVersion 获取要订阅的地址版本信息
-func (m *MerchantNode) GetChargeAddressVersion() error {
+//StartTimerTask 启动定时任务
+func (m *MerchantNode) StartTimerTask() {
 
-	var (
-		err error
-	)
+	log.Printf("Merchant timer task start...\n")
 
-	//检查是否连接
-	err = m.IsConnected()
-	if err != nil {
-		return err
-	}
+	//启动订阅地址任务
+	m.runSubscribeAddressTask()
+}
+
+//StopTimerTask 停止定时任务
+func (m *MerchantNode) StopTimerTask() {
+
+	log.Printf("Merchant timer task stop...\n")
+
+	//停止地址订阅任务
+	m.subscribeAddressTask.Pause()
+	//停止交易记录订阅任务
+}
+
+//DeleteAddressVersion 删除地址版本
+func (m *MerchantNode) DeleteAddressVersion(a *AddressVersion) error {
 
 	db, err := m.OpenDB()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	var subs []Subscription
-	err = db.Find("type", SubscribeTypeCharge, &subs)
-	if err != nil {
-		return err
-	}
-
-	for _, sub := range subs {
-
-		//| 参数名称 | 类型   | 是否可空 | 描述     |
-		//|----------|--------|----------|----------|
-		//| coin     | string | 是       | 币名     |
-		//| walletID | string | 是       | 钱包ID   |
-
-		params := struct {
-			Coin     string `json:"coin"`
-			WalletID string `json:"walletID"`
-		}{sub.Coin, sub.WalletID}
-
-		//获取订阅的地址版本
-		GetChargeAddressVersion(m.Node, params,
-			true,
-			func(addressVer *AddressVersion) {
-
-				if addressVer != nil {
-					db.Save(addressVer)
-				}
-
-			})
-	}
-
-	var avs []AddressVersion
-	err = db.All(&avs)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("%v\n", avs)
+	db.DeleteStruct(a)
+	db.Close()
 
 	return nil
 }
 
-func (m *MerchantNode) GetChargeAddress() {
-
-	//var (
-	//	completed bool
-	//)
-	//
-	//if merchantNode == nil {
-	//	return
-	//}
-	//
-	//for {
-	//	//获取地址
-	//	merchantNode.Call(
-	//		"getChargeAddress",
-	//		nil,
-	//		true,
-	//		func(resp owtp.Response) {
-	//			if resp.Status == 0 {
-	//				completed = true
-	//			}
-	//		})
-	//
-	//	if completed == true {
-	//		break
-	//	}
-	//}
-}
+/********** 商户服务相关方法【主动】 **********/

@@ -1227,6 +1227,12 @@
 			"revisionTime": "2018-04-08T05:53:51Z"
 		},
 		{
+			"checksumSHA1": "Yvzge1YQcD/wSDXLD5qNHqmI/0s=",
+			"path": "github.com/mitchellh/mapstructure",
+			"revision": "00c29f56e2386353d58c599509e8dc3801b0d716",
+			"revisionTime": "2018-02-20T23:01:11Z"
+		},
+		{
 			"checksumSHA1": "Yk1x0hNZCbTpN+kQxHt+BOR6p6A=",
 			"path": "github.com/ontio/ontology-crypto/ec",
 			"revision": "a421fcc85da6c079fc5abd28b04d3067e35e911a",
