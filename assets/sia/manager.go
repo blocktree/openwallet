@@ -44,7 +44,7 @@ var (
 	//钱包主链私钥文件路径
 	walletPath = ""
 	//小数位长度
-	coinDecimal decimal.Decimal = decimal.NewFromFloat(1000000000000000000000000)
+	coinDecimal decimal.Decimal = decimal.New(1, 24)
 	//参与汇总的钱包
 	//walletsInSum = make(map[string]*AccountBalance)
 	//汇总阀值
@@ -250,13 +250,13 @@ func CreateNewWallet(password string, force bool) (string, error) {
 	}
 
 	result, err := client.Call("wallet/init", "POST", request)
-	if err != nil {
-		return "", err
-	}
+	//if err != nil {
+	//	return "", err
+	//}
 
-	primaryseed := gjson.GetBytes(result, "seed").String()
+	//primaryseed := gjson.GetBytes(result, "seed").String()
 
-	return primaryseed, err
+	return string(result), err
 
 }
 

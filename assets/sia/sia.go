@@ -22,6 +22,7 @@ import (
 	"errors"
 	"github.com/blocktree/OpenWallet/timer"
 	"path/filepath"
+	"github.com/shopspring/decimal"
 )
 
 const (
@@ -50,8 +51,8 @@ func (w *WalletManager) ShowConfig() error {
 func (w *WalletManager) CreateWalletFlow() error {
 
 	var (
-		password  string
-		name      string
+		password string
+		//name      string
 		err       error
 		publicKey string
 		filePath  string
@@ -79,15 +80,15 @@ func (w *WalletManager) CreateWalletFlow() error {
 			return err
 		}
 
-		fmt.Printf("Please keep your public key in a safe place: %s\n", publicKey)
+		fmt.Printf("Please keep your primary seed in a safe place: %s\n", publicKey)
 
 		filePath, err = BackupWallet()
 		if err != nil {
 			return err
 		}
 
-		fmt.Printf("\n")
-		fmt.Printf("Wallet create successfully, first account: %s\n", name)
+		//fmt.Printf("\n")
+		//fmt.Printf("Wallet create successfully, first account: %s\n", name)
 		fmt.Printf("Keystore backup successfully, file path: %s\n", filePath)
 	}
 	return nil
@@ -206,8 +207,10 @@ func (w *WalletManager) TransferFlow() error {
 	}
 
 	//建立交易单
-	realAmount := amount + "000000000000000000000000"
-	_, err = SendTransaction(realAmount, receiver)
+	atculAmount, _ := decimal.NewFromString(amount)
+	realAmount := atculAmount.Mul(coinDecimal)
+
+	_, err = SendTransaction(realAmount.String(), receiver)
 	if err != nil {
 		return err
 	}
