@@ -58,10 +58,11 @@ func init() {
 }
 
 func GetAddressesByAccount(walletID string) ([]string, error) {
-
 	var (
 		addresses = make([]string, 0)
 	)
+
+	// loadConfig()		// 500?
 
 	request := []interface{}{
 		walletID,
@@ -272,7 +273,6 @@ func CreateReceiverAddress(account string) (string, error) {
 	}
 
 	return result.String(), err
-
 }
 
 //CreateBatchAddress 批量创建地址
@@ -433,14 +433,14 @@ func CreateNewWallet(name, password string) (string, error) {
 		}
 	}
 
-	fmt.Printf("Verify password in bitcoin-core wallet...\n")
+	fmt.Printf("Verify password in bitcoin-abc wallet...\n")
 
 	err = EncryptWallet(password)
 	if err != nil {
 		//钱包已经加密，解锁钱包1秒，检查密码
-		err = UnlockWallet(password, 1)
+		err = UnlockWallet(password, 3)
 		if err != nil {
-			return "", errors.New("The wallet's password is not equal bitcoin-core wallet!\n")
+			return "", errors.New("The wallet's password is not equal bitcoin-abc wallet!\n")
 		}
 	} else {
 		//加密钱包后，需要10秒后重启bitcoin core
@@ -509,9 +509,7 @@ func GetWalletKeys(dir string) ([]*Wallet, error) {
 
 	//扫描key目录的所有钱包
 	files, err := ioutil.ReadDir(dir)
-	// fmt.Println("EEEEEEEEE ")
 	if err != nil {
-		// fmt.Println("EEEEEEEEE 222222 ", files, dir, err)
 		return wallets, err
 	}
 
@@ -541,7 +539,6 @@ func GetWalletList() ([]*Wallet, error) {
 
 	wallets, err := GetWalletKeys(keyDir)
 	if err != nil {
-		fmt.Println("ABCD")
 		return nil, err
 	}
 
@@ -974,7 +971,6 @@ func RebuildWalletUnspent(walletID string) error {
 
 //ListUnspentFromLocalDB 查询本地数据库的未花记录
 func ListUnspentFromLocalDB(walletID string) ([]*Unspent, error) {
-
 	var (
 		wallet *Wallet
 	)

@@ -65,6 +65,8 @@ func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error)
 	}
 
 	r, err := req.Post(c.BaseURL, req.BodyJSON(&body), authHeader)
+	// TEST: fmt.Println("api.go 1 = ", c)
+	// TEST: fmt.Println("api.go 2 = ", c.BaseURL)
 
 	if c.Debug {
 		log.Println("Request API Completed")

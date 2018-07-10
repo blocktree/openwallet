@@ -156,7 +156,6 @@ func (w *WalletManager) CreateWalletFlow() error {
 
 	keyFile, err = CreateNewWallet(name, password)
 	if err != nil {
-		fmt.Println("AAAAAAA")
 		return err
 	}
 
@@ -191,7 +190,7 @@ func (w *WalletManager) CreateAddressFlow() error {
 	fmt.Printf("[Please select a wallet account to create address] \n")
 
 	//选择钱包
-	num, err := console.InputNumber("Enter wallet number: ", true)
+	num, err := console.InputNumber("Enter wallet No. : ", true)
 	if err != nil {
 		return err
 	}
