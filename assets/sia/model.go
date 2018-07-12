@@ -17,15 +17,17 @@ package sia
 
 import (
 	"github.com/tidwall/gjson"
+	"github.com/asdine/storm"
+	"github.com/blocktree/OpenWallet/common/file"
+	"path/filepath"
 )
 
 //Wallet 钱包模型
 type Wallet struct {
-
 	ConfirmBalance string `json:"confirmedsiacoinbalance"`
 
-	OutgoingSC     string `json:"unconfirmedoutgoingsiacoins"`
-	IncomingSC     string `json:"unconfirmedincomingsiacoins"`
+	OutgoingSC string `json:"unconfirmedoutgoingsiacoins"`
+	IncomingSC string `json:"unconfirmedincomingsiacoins"`
 
 	SiaFundBalance      string `json:"siafundbalance"`
 	SiaCoinClaimBalance string `json:"siacoinclaimbalance"`
@@ -52,4 +54,34 @@ func NewWallet(json gjson.Result) *Wallet {
 	w.Encrypted = gjson.Get(json.Raw, "encrypted").Bool()
 
 	return w
+}
+
+type Account struct {
+	Alias    string   `json:"alias"`
+	ID       string   `json:"id"`
+	KeyIndex int64    `json:"key_index"`
+	Quorum   int64    `json:"quorum"`
+	XPubs    []string `json:"xpubs"`
+}
+
+type Address struct {
+	//Alias     string
+	//AccountId string
+	Address string
+}
+
+func NewAddress(json gjson.Result) *Address {
+
+	a := &Address{}
+	//解析json
+	a.Address = gjson.Get(json.Raw, "address").String()
+	return a
+}
+
+//openDB 打开钱包数据库
+func (w *Wallet) OpenDB() (*storm.DB, error) {
+	file.MkdirAll(dbPath)
+	file := filepath.Join(dbPath, "wallet_data.db")
+	return storm.Open(file)
+
 }

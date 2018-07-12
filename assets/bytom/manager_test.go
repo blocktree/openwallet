@@ -175,7 +175,7 @@ func TestCreateReceiverAddress(t *testing.T) {
 }
 
 func TestGetAddressInfo(t *testing.T) {
-	addresses, err := GetAddressInfo("john", "")
+	addresses, err := GetAddressInfo("simon", "0FAQHOIFG0A06")
 	if err != nil {
 		t.Errorf("GetAddressInfo failed unexpected error: %v", err)
 	} else {
@@ -187,7 +187,7 @@ func TestGetAddressInfo(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	CreateBatchAddress("john", "0E6MHCTMG0A04", 100000)
+	CreateBatchAddress("simon", "0FAQHOIFG0A06", 10000)
 }
 
 func TestGetAccountBalance(t *testing.T) {

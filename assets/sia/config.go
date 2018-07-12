@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"github.com/blocktree/OpenWallet/common/file"
 	"fmt"
-	"errors"
 )
 
 /*
@@ -38,7 +37,8 @@ import (
 
 const (
 	//币种
-	Symbol = "SC"
+	Symbol    = "SC"
+	MasterKey = "Siacoin seed"
 )
 
 var (
@@ -49,14 +49,53 @@ var (
 	//配置文件路径
 	configFilePath = filepath.Join("conf")
 	//配置文件名
-	configFileName = Symbol + ".json"
+	configFileName = Symbol + ".ini"
 	//接口授权密码
 	apiAuth = "123"
+	//备份路径
+	backupDir = filepath.Join("data", strings.ToLower(Symbol), "backup")
+	//钱包数据文件目录
+	walletDataPath = "C:/Users/Administrator/AppData/Roaming/Sia-UI/sia/wallet"
+	//本地数据库文件路径
+	dbPath = filepath.Join("data", strings.ToLower(Symbol), "db")
+	//钱包安装的路径
+	nodeInstallPath = ""
+	//参与汇总的钱包
+	walletsInSum = make(map[string]*Wallet)
+	//默认配置内容
+	defaultConfig = `
+# start node command
+startNodeCMD = ""
+# stop node command
+stopNodeCMD = ""
+# node install path
+nodeInstallPath = ""
+# mainnet data path
+mainNetDataPath = ""
+# testnet data path
+testNetDataPath = ""
+# RPC Authentication Username
+rpcUser = ""
+# RPC Authentication Password
+rpcPassword = ""
+# Is network test?
+isTestNet = false
+# when wallet's balance is over this value, the wallet willl send money to [sumAddress]
+threshold = ""
+# node api url
+apiURL = "http://192.168.2.193:10051"
+# the safe address that wallet send money to.
+sumAddress = "c42cb45155b0dbb572b385d113eb9f030953fe346f972ceaf494f8c1bd195164b11ec574b96c"
+# Auth password
+Auth = "123"
+# wallet data path for backup
+walletDataPath = "C:/Users/Administrator/AppData/Roaming/Sia-UI/sia/wallet"
+`
 )
 
 //isExistConfigFile 检查配置文件是否存在
 func isExistConfigFile() bool {
-	_, err := config.NewConfig("json",
+	_, err := config.NewConfig("ini",
 		filepath.Join(configFilePath, configFileName))
 	if err != nil {
 		return false
@@ -71,10 +110,10 @@ func newConfigFile(
 
 	//	生成配置
 	configMap := map[string]interface{}{
-		"apiURL":        apiURL,
-		//"walletPath":    walletPath,
-		"sumAddress":    sumAddress,
-		"threshold":     threshold,
+		"apiURL":     apiURL,
+		"walletPath": walletPath,
+		"sumAddress": sumAddress,
+		"threshold":  threshold,
 	}
 
 	filepath.Join()
@@ -85,7 +124,7 @@ func newConfigFile(
 	}
 
 	//实例化配置
-	c, err := config.NewConfigData("json", bytes)
+	c, err := config.NewConfigData("ini", bytes)
 	if err != nil {
 		return nil, "", err
 	}
@@ -104,29 +143,44 @@ func newConfigFile(
 //printConfig Print config information
 func printConfig() error {
 
+	initConfig()
 	//读取配置
 	absFile := filepath.Join(configFilePath, configFileName)
-	c, err := config.NewConfig("json", absFile)
-	if err != nil {
-		return errors.New("config file not create，please run: wmd config -s <symbol> ")
-	}
-
-	apiURL := c.String("apiURL")
-	walletPath := c.String("walletPath")
-	threshold := c.String("threshold")
+	//apiURL := c.String("apiURL")
+	//walletPath := c.String("walletPath")
+	//threshold := c.String("threshold")
 	//minSendAmount := c.String("minSendAmount")
 	//minFees := c.String("minFees")
-	sumAddress := c.String("sumAddress")
+	//sumAddress := c.String("sumAddress")
+	//isTestNet, _ := c.Bool("isTestNet")
 
 	fmt.Printf("-----------------------------------------------------------\n")
-	fmt.Printf("Wallet API URL: %s\n", apiURL)
-	fmt.Printf("Wallet Data FilePath: %s\n", walletPath)
-	fmt.Printf("Summary Address: %s\n", sumAddress)
-	fmt.Printf("Summary Threshold: %s\n", threshold)
+	//fmt.Printf("Wallet API URL: %s\n", apiURL)
+	//fmt.Printf("Wallet Data FilePath: %s\n", walletPath)
+	//fmt.Printf("Summary Address: %s\n", sumAddress)
+	//fmt.Printf("Summary Threshold: %s\n", threshold)
 	//fmt.Printf("Min Send Amount: %s\n", minSendAmount)
 	//fmt.Printf("Transfer Fees: %s\n", minFees)
+	//if isTestNet {
+	//	fmt.Printf("Network: TestNet\n")
+	//} else {
+	//	fmt.Printf("Network: MainNet\n")
+	//}
+	file.PrintFile(absFile)
 	fmt.Printf("-----------------------------------------------------------\n")
 
 	return nil
+
+}
+
+//initConfig 初始化配置文件
+func initConfig() {
+
+	//读取配置
+	absFile := filepath.Join(configFilePath, configFileName)
+	if !file.Exists(absFile) {
+		file.MkdirAll(configFilePath)
+		file.WriteFile(absFile, []byte(defaultConfig), false)
+	}
 
 }

@@ -44,7 +44,30 @@ type Response struct {
 	Id      string      `json:"id,omitempty"`
 }
 
-// Call calls a remote procedure on another node, specified by the path.
+// Call calls for batch address
+func (c *Client) CallBatchAddress(path, method string, request interface{}) ([]byte, error) {
+
+	url := c.BaseURL + "/" + path
+
+	authHeader := req.Header{
+		"Accept":        "application/json",
+		"User-Agent":    "Sia-Agent",
+		"Authorization": "Basic " + basicAuth("", c.Auth),
+	}
+
+	r, err := req.Do(
+		method,
+		url,
+		request,
+		authHeader)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return r.Bytes(), nil
+}
+
 func (c *Client) Call(path, method string, request interface{}) ([]byte, error) {
 
 	url := c.BaseURL + "/" + path

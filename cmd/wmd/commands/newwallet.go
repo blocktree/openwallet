@@ -35,6 +35,24 @@ You create, import, restore wallet
 `,
 		Subcommands: []cli.Command{
 			{
+				//初始化钱包
+				Name:      "config",
+				Usage:     "config a currency account",
+				ArgsUsage: "<symbol>",
+				Action:    walletConfig,
+				Category:  "WALLET COMMANDS",
+				Flags: []cli.Flag{
+					utils.SymbolFlag,
+					utils.InitFlag,
+				},
+				Description: `
+	wmd wallet config -s <symbol>
+
+This command will init the wallet node.
+
+	`,
+			},
+			{
 				//创建钱包
 				Name:      "new",
 				Usage:     "new a currency wallet",
@@ -62,7 +80,7 @@ This command will start the wallet node, and create new wallet.
 					utils.BatchFlag,
 				},
 				Description: `
-	wmd wallet newaddr -batch
+	wmd wallet batchaddr -s <symbol>
 
 This command will create batch address for your given wallet id.
 
@@ -123,6 +141,12 @@ This command will Backup wallet key in filePath: ./data/<symbol>/key/.
 				Flags: []cli.Flag{
 					utils.SymbolFlag,
 				},
+				Description: `
+	wmd wallet transfer -s <symbol>
+
+This command will transfer the coin.
+
+	`,
 			},
 			{
 				//恢复钱包
@@ -137,6 +161,26 @@ This command will Backup wallet key in filePath: ./data/<symbol>/key/.
 		},
 	}
 )
+
+//walletConfig 钱包配置
+func walletConfig(c *cli.Context) error {
+	symbol := c.String("symbol")
+	if len(symbol) == 0 {
+		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+	}
+	m := assets.GetWMD(symbol).(assets.WalletManager)
+	if m == nil {
+		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
+	}
+
+	isInit := c.Bool("init")
+
+	if isInit {
+		return m.InitConfigFlow()
+	} else {
+		return m.ShowConfig()
+	}
+}
 
 //createNewWallet 创建新钱包
 func createNewWallet(c *cli.Context) error {

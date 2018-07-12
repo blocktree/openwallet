@@ -16,12 +16,12 @@
 package assets
 
 import (
-	//"github.com/blocktree/OpenWallet/assets/cardano"
+	"strings"
+	"github.com/blocktree/OpenWallet/assets/cardano"
+	"github.com/blocktree/OpenWallet/assets/bytom"
 	"github.com/blocktree/OpenWallet/assets/bitcoin"
 	"github.com/blocktree/OpenWallet/assets/bitcoincash"
-	"github.com/blocktree/OpenWallet/assets/bytom"
-	"github.com/blocktree/OpenWallet/assets/cardano"
-	"strings"
+	"github.com/blocktree/OpenWallet/assets/sia"
 )
 
 //WalletManager 钱包管理器
@@ -101,4 +101,5 @@ func init() {
 	RegWMD(strings.ToLower(bytom.Symbol), &bytom.WalletManager{})
 	RegWMD(strings.ToLower(bitcoin.Symbol), &bitcoin.WalletManager{})
 	RegWMD(strings.ToLower(bitcoincash.Symbol), &bitcoincash.WalletManager{})
+	RegWMD(strings.ToLower(sia.Symbol), &sia.WalletManager{})
 }

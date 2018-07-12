@@ -15,7 +15,9 @@
 
 package sia
 
-import "testing"
+import (
+	"testing"
+)
 
 func init() {
 	//serverAPI = "http://192.168.2.224:10056"
@@ -40,16 +42,17 @@ func TestGetWalletInfo(t *testing.T) {
 }
 
 func TestBackupWallet(t *testing.T) {
-	_, err := BackupWallet("/home/chbtc/openwallet/data/sc/backup/")
+
+	backupFile, err := BackupWallet()
 	if err != nil {
 		t.Errorf("BackupWallet failed unexpected error: %v\n", err)
 	} else {
-		t.Logf("BackupWallet successfully\n")
+		t.Logf("BackupWallet filePath: %v\n", backupFile)
 	}
 }
 
 func TestUnlockWallet(t *testing.T) {
-	err := UnlockWallet("12345678")
+	err := UnlockWallet("1234567890abc")
 	if err != nil {
 		t.Errorf("UnlockWallet failed unexpected error: %v\n", err)
 	} else {
@@ -57,9 +60,10 @@ func TestUnlockWallet(t *testing.T) {
 	}
 }
 
+//慎用新建钱包，会替换旧的钱包（要先备份旧钱包）
 func TestCreateNewWallet(t *testing.T) {
-	password := "12345678"
-	seed, err := CreateNewWallet(password, false)
+	password := "1234567890abc"
+	seed, err := CreateNewWallet(password, true)
 	if err != nil {
 		t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
 	} else {
@@ -79,16 +83,49 @@ func TestGetAddressInfo(t *testing.T) {
 	}
 }
 
-func TestCreateAddress(t *testing.T) {
-	address, err := CreateAddress()
-	if err != nil {
-		t.Errorf("CreateAddress failed unexpected error: %v\n", err)
-	} else {
-		t.Logf("CreateAddress address = %s\n", address)
-	}
-
-}
-
 func TestGetConsensus(t *testing.T) {
 	GetConsensus()
+}
+
+//先生成一个地址测试一下钱包有没有问题，实际开发是应该减去一个数量
+func TestCreateBatchAddress(t *testing.T) {
+	_, err := CreateAddress()
+	if err != nil {
+		t.Errorf("CreateBatchAddress failed unexpected error: %v", err)
+		return
+	}
+	CreateBatchAddress(10)
+}
+
+func TestCreateAddress(t *testing.T) {
+
+	address, err := CreateAddress()
+	if err != nil {
+		t.Errorf("CreateAddress failed unexpected error: %v", err)
+		return
+	}
+	t.Logf("CreateAddress address:[%s]", address)
+}
+
+func TestSendTransaction(t *testing.T) {
+	_, err := SendTransaction("2000000000000000000000000", "70e848d92b8d729052d2d614446df07fed787d022a989d6106a5549816680f6d85aee6044f86")
+	if err != nil {
+		t.Errorf("SendTransaction failed unexpected error: %v", err)
+		return
+	}
+	t.Logf("SendTransaction success.\n")
+}
+
+func TestSummaryWallets(t *testing.T) {
+	SummaryWallets()
+}
+
+func TestRestoreWallet(t *testing.T) {
+
+	dbFile := "C:/Users/Administrator/AppData/Roaming/Sia-UI/wallet_company/wallet.db"
+	loadConfig()
+	err := RestoreWallet(dbFile)
+	if err != nil {
+		t.Errorf("RestoreWallet failed unexpected error: %v\n", err)
+	}
 }
