@@ -53,7 +53,7 @@ var (
 
 func init() {
 
-	storage = keystore.NewHDKeystore(keyDir, MasterKey, keystore.StandardScryptN, keystore.StandardScryptP)
+	storage = keystore.NewHDKeystore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 
 }
 
@@ -453,7 +453,17 @@ func CreateNewWallet(name, password string) (string, error) {
 
 	fmt.Printf("Create new wallet keystore...\n")
 
-	keyFile, err := keystore.StoreHDKey(keyDir, MasterKey, name, password, keystore.StandardScryptN, keystore.StandardScryptP)
+	seed, err := hdkeychain.GenerateSeed(32)
+	if err != nil {
+		return "", err
+	}
+
+	extSeed, err := keystore.GetExtendSeed(seed, MasterKey)
+	if err != nil {
+		return "", err
+	}
+
+	keyFile, err := keystore.StoreHDKeyWithSeed(keyDir, name, password, extSeed, keystore.StandardScryptN, keystore.StandardScryptP)
 	if err != nil {
 		return "", err
 	}

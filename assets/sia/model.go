@@ -17,6 +17,7 @@ package sia
 
 import (
 	"github.com/tidwall/gjson"
+	"github.com/blocktree/OpenWallet/openwallet/accounts/keystore"
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/common/file"
 	"path/filepath"
@@ -24,6 +25,14 @@ import (
 
 //Wallet 钱包模型
 type Wallet struct {
+
+	WalletID string `json:"rootid"`
+	Alias    string `json:"alias"`
+	Balance  string `json:"balance"`
+	Password string `json:"password"`
+	RootPub  string `json:"rootpub"`
+	KeyFile  string
+
 	ConfirmBalance string `json:"confirmedsiacoinbalance"`
 
 	OutgoingSC string `json:"unconfirmedoutgoingsiacoins"`
@@ -56,6 +65,28 @@ func NewWallet(json gjson.Result) *Wallet {
 	return w
 }
 
+//HDKey 获取钱包密钥，需要密码
+func (w *Wallet) HDKey(password string) (*keystore.HDKey, error) {
+	key, err := storage.GetKey(w.WalletID, w.KeyFile, password)
+	if err != nil {
+		return nil, err
+	}
+	return key, err
+}
+
+//openDB 打开钱包数据库
+func (w *Wallet) OpenDB() (*storm.DB, error) {
+	file.MkdirAll(dbPath)
+	file := filepath.Join(dbPath, w.FileName()+".db")
+	return storm.Open(file)
+
+}
+
+//FileName 该钱包定义的文件名规则
+func (w *Wallet)FileName() string {
+	return w.Alias+"-"+w.WalletID
+}
+
 type Account struct {
 	Alias    string   `json:"alias"`
 	ID       string   `json:"id"`
@@ -78,10 +109,3 @@ func NewAddress(json gjson.Result) *Address {
 	return a
 }
 
-//openDB 打开钱包数据库
-func (w *Wallet) OpenDB() (*storm.DB, error) {
-	file.MkdirAll(dbPath)
-	file := filepath.Join(dbPath, "wallet_data.db")
-	return storm.Open(file)
-
-}

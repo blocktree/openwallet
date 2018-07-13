@@ -151,7 +151,7 @@ func (w *WalletManager) CreateWalletFlow() error {
 	name, err = console.InputText("Enter wallet's name: ", true)
 
 	// 等待用户输入密码
-	password, err = console.InputPassword(true)
+	password, err = console.InputPassword(true, 8)
 
 	keyFile, err = CreateNewWallet(name, password)
 	if err != nil {
@@ -211,7 +211,7 @@ func (w *WalletManager) CreateAddressFlow() error {
 	}
 
 	//输入密码
-	password, err := console.InputPassword(false)
+	password, err := console.InputPassword(false, 8)
 
 	log.Printf("Start batch creation\n")
 	log.Printf("-------------------------------------------------\n")
@@ -290,7 +290,7 @@ func (w *WalletManager) SummaryFollow() error {
 
 				fmt.Printf("Register summary wallet [%s]-[%s]\n", w.Alias, w.WalletID)
 				//输入钱包密码完成登记
-				password, err := console.InputPassword(false)
+				password, err := console.InputPassword(false, 8)
 				if err != nil {
 					return err
 				}
@@ -434,7 +434,7 @@ func (w *WalletManager) TransferFlow() error {
 	}
 
 	//输入密码解锁钱包
-	password, err := console.InputPassword(false)
+	password, err := console.InputPassword(false, 8)
 	if err != nil {
 		return err
 	}
@@ -504,7 +504,7 @@ func (w *WalletManager) RestoreWalletFlow() error {
 		return err
 	}
 
-	password, err = console.InputPassword(false)
+	password, err = console.InputPassword(false, 8)
 	if err != nil {
 		return err
 	}

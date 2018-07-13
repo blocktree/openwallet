@@ -16,33 +16,38 @@
 package sia
 
 import (
+	"bufio"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/NebulousLabs/entropy-mnemonics"
+	"github.com/astaxie/beego/config"
+	"github.com/blocktree/OpenWallet/common"
+	"github.com/blocktree/OpenWallet/common/file"
+	"github.com/blocktree/OpenWallet/logger"
+	"github.com/blocktree/OpenWallet/openwallet/accounts/keystore"
+	"github.com/codeskyblue/go-sh"
+	"github.com/imroc/req"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
-	"time"
-	"github.com/imroc/req"
-	"github.com/tyler-smith/go-bip39"
-	"github.com/astaxie/beego/config"
-	"path/filepath"
-	"errors"
-	"github.com/blocktree/OpenWallet/common"
+	"io/ioutil"
 	"log"
-	"fmt"
-	"github.com/blocktree/OpenWallet/common/file"
+	"os"
+	"path/filepath"
 	"strings"
-	"github.com/codeskyblue/go-sh"
-	"github.com/blocktree/OpenWallet/openwallet/accounts/keystore"
-	"github.com/blocktree/OpenWallet/logger"
+	"time"
+	"github.com/bndr/gotabulate"
 )
 
 var (
 	//钱包服务API
 	serverAPI = "http://127.0.0.1:10031"
 	//授权密码
-	Auth = ""
+	//Auth = ""
 	////备份文件地址
 	//restorePath =""
 	//钱包主链私钥文件路径
-	walletPath = ""
+	//walletPath = ""
 	//小数位长度
 	coinDecimal decimal.Decimal = decimal.New(1, 24)
 	//参与汇总的钱包
@@ -62,6 +67,10 @@ var (
 	//秘钥存取
 	storage *keystore.HDKeystore
 )
+
+func init() {
+	storage = keystore.NewHDKeystore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+}
 
 //GetWalletInfo 获取钱包信息
 func GetWalletInfo() ([]*Wallet, error) {
@@ -99,9 +108,9 @@ func loadConfig() error {
 
 	serverAPI = c.String("apiURL")
 	//restorePath = c.String("restorePath")
-	Auth = c.String("Auth")
+	rpcPassword = c.String("rpcPassword")
 	walletDataPath = c.String("walletDataPath")
-	walletPath = c.String("walletPath")
+	//walletPath = c.String("walletPath")
 	threshold, _ = decimal.NewFromString(c.String("threshold"))
 	threshold = threshold.Mul(coinDecimal)
 	//minSendAmount, _ = decimal.NewFromString(c.String("minSendAmount"))
@@ -113,7 +122,7 @@ func loadConfig() error {
 	client = &Client{
 		BaseURL: serverAPI,
 		Debug:   false,
-		Auth:    Auth,
+		Auth:    rpcPassword,
 	}
 
 	return nil
@@ -242,7 +251,15 @@ func UnlockWallet(password string) error {
 }
 
 //CreateNewWallet 创建钱包
-func CreateNewWallet(password string, force bool) (string, error) {
+func CreateNewWallet(name, password string, force bool) (string, error) {
+
+	//检查钱包名是否存在
+	//wallets, err := GetWalletKeys(keyDir)
+	//for _, w := range wallets {
+	//	if w.Alias == name {
+	//		return "", errors.New("The wallet's alias is duplicated! ")
+	//	}
+	//}
 
 	request := req.Param{
 		"encryptionpassword": password,
@@ -254,9 +271,32 @@ func CreateNewWallet(password string, force bool) (string, error) {
 	//	return "", err
 	//}
 
-	//primaryseed := gjson.GetBytes(result, "seed").String()
+	//primaryseed := gjson.GetBytes(result, "primaryseed").String()
+	//
+	//storeNewKey(name, primaryseed, password)
 
 	return string(result), err
+
+}
+
+func CreateNewWalletKey(alias, password string) (string, error) {
+
+	//检查钱包名是否存在
+	wallets, err := GetWalletKeys(keyDir)
+	for _, w := range wallets {
+		if w.Alias == alias {
+			return "", errors.New("The wallet's alias is duplicated! ")
+		}
+	}
+
+	fmt.Printf("Create new wallet keystore...\n")
+
+	keyFile, err := keystore.StoreHDKey(keyDir, alias, password, keystore.StandardScryptN, keystore.StandardScryptP)
+	if err != nil {
+		return "", err
+	}
+
+	return keyFile, nil
 
 }
 
@@ -458,11 +498,65 @@ func GetConsensus() error {
 	return nil
 }
 
-//genMnemonic 随机创建密钥
-func genMnemonic() string {
-	entropy, _ := bip39.NewEntropy(128)
-	mnemonic, _ := bip39.NewMnemonic(entropy)
-	return mnemonic
+//GetWalletKeys 通过给定的文件路径加载keystore文件得到钱包列表
+func GetWalletKeys(dir string) ([]*Wallet, error) {
+
+	var (
+		buf = new(bufio.Reader)
+		key struct {
+			Alias  string `json:"alias"`
+			RootId string `json:"rootid"`
+		}
+
+		wallets = make([]*Wallet, 0)
+	)
+
+	//加载文件，实例化钱包
+	readWallet := func(path string) *Wallet {
+
+		fd, err := os.Open(path)
+		defer fd.Close()
+		if err != nil {
+			return nil
+		}
+
+		buf.Reset(fd)
+		// Parse the address.
+		key.Alias = ""
+		key.RootId = ""
+		err = json.NewDecoder(buf).Decode(&key)
+		if err != nil {
+			return nil
+		}
+
+		return &Wallet{WalletID: key.RootId, Alias: key.Alias}
+	}
+
+	//扫描key目录的所有钱包
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return wallets, err
+	}
+
+	for _, fi := range files {
+		// Skip any non-key files from the folder
+		if skipKeyFile(fi) {
+			continue
+		}
+		if fi.IsDir() {
+			continue
+		}
+
+		path := filepath.Join(keyDir, fi.Name())
+
+		w := readWallet(path)
+		w.KeyFile = fi.Name()
+		wallets = append(wallets, w)
+
+	}
+
+	return wallets, nil
+
 }
 
 //SendTransaction 发送交易
@@ -544,4 +638,60 @@ func exportKeystoreToFile(content []byte) error {
 	}
 
 	return nil
+}
+
+// skipKeyFile ignores editor backups, hidden files and folders/symlinks.
+func skipKeyFile(fi os.FileInfo) bool {
+	// Skip editor backups and UNIX-style hidden files.
+	if strings.HasSuffix(fi.Name(), "~") || strings.HasPrefix(fi.Name(), ".") {
+		return true
+	}
+	// Skip misc special files, directories (yes, symlinks too).
+	if fi.IsDir() || fi.Mode()&os.ModeType != 0 {
+		return true
+	}
+	return false
+}
+
+//storeNewKey 把钱包的助记词以hdkeystore形式保存
+func storeNewKey(wallet *Wallet, words, auth string) (*keystore.HDKey, string, error) {
+
+	seed, err := mnemonics.FromString(words, mnemonics.English)
+	if err != nil {
+		return nil, "", err
+	}
+
+	key, err := keystore.NewHDKey(seed, wallet.Alias, "")
+	if err != nil {
+		return nil, "", err
+	}
+	wallet.WalletID = key.RootId
+	filePath := storage.JoinPath(wallet.FileName() + ".key")
+	storage.StoreKey(filePath, key, auth)
+
+	wallet.KeyFile = filePath
+
+	return key, filePath, err
+}
+
+//打印钱包列表
+func printWalletList(list []*Wallet) {
+
+	tableInfo := make([][]interface{}, 0)
+
+	for i, w := range list {
+		balance, _ := decimal.NewFromString(w.ConfirmBalance)
+		balance = balance.Div(coinDecimal)
+		tableInfo = append(tableInfo, []interface{}{
+			i, w.Rescanning, w.Unlocked, balance,
+		})
+	}
+
+	t := gotabulate.Create(tableInfo)
+	// Set Headers
+	t.SetHeaders([]string{"No.", "Rescanning", "Unlocked", "Balance"})
+
+	//打印信息
+	fmt.Println(t.Render("simple"))
+
 }

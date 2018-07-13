@@ -165,7 +165,7 @@ func (w *WalletManager) CreateWalletFlow() error {
 	name, err = console.InputText("Enter wallet's name: ", true)
 
 	// 等待用户输入密码
-	password, err = console.InputPassword(true)
+	password, err = console.InputPassword(true, 8)
 
 	// 随机生成密钥
 	words := genMnemonic()
@@ -216,7 +216,7 @@ func (w *WalletManager) CreateAddressFlow() error {
 	}
 
 	//输入密码
-	password, err := console.InputPassword(false)
+	password, err := console.InputPassword(false, 8)
 	h := common.NewString(password).SHA256()
 
 	//没有可选账户，需要创建新的
@@ -310,7 +310,7 @@ func (w *WalletManager) SummaryFollow() error {
 
 				fmt.Printf("Register summary wallet [%s]-[%s]\n", w.Name, w.WalletID)
 				//输入钱包密码完成登记
-				password, err := console.InputPassword(false)
+				password, err := console.InputPassword(false, 8)
 				if err != nil {
 					//openwLogger.Log.Errorf("unexpect error: %v", err)
 					return err
@@ -482,7 +482,7 @@ func (w *WalletManager) TransferFlow() error {
 			fmt.Printf("[Please unlock wallet to send transaction]\n")
 
 			//输入密码解锁钱包
-			password, err := console.InputPassword(false)
+			password, err := console.InputPassword(false, 8)
 			if err != nil {
 				return err
 			}

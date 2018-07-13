@@ -17,6 +17,10 @@ package sia
 
 import (
 	"testing"
+	"log"
+	"github.com/bytom/common"
+	"github.com/NebulousLabs/entropy-mnemonics"
+	"strings"
 )
 
 func init() {
@@ -63,7 +67,7 @@ func TestUnlockWallet(t *testing.T) {
 //慎用新建钱包，会替换旧的钱包（要先备份旧钱包）
 func TestCreateNewWallet(t *testing.T) {
 	password := "1234567890abc"
-	seed, err := CreateNewWallet(password, true)
+	seed, err := CreateNewWallet("", password, true)
 	if err != nil {
 		t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
 	} else {
@@ -128,4 +132,23 @@ func TestRestoreWallet(t *testing.T) {
 	if err != nil {
 		t.Errorf("RestoreWallet failed unexpected error: %v\n", err)
 	}
+}
+
+func TestMnemonicToSeed(t *testing.T) {
+	m := "cajun rarest unusual swept dummy stellar sneeze onward kiosk racetrack ostrich nostril gutter recipe sickness emotion palace pests speedy axes cycling waffle bicycle western yearbook lexicon odds onslaught after"
+	log.Printf("Original = %s", m)
+	seed, err := mnemonics.FromString(m, mnemonics.English)
+	if err != nil {
+		t.Errorf("MnemonicToSeed failed unexpected error: %v\n", err)
+		return
+	}
+	log.Printf("seed = %s", common.Bytes2Hex(seed))
+	new, err := mnemonics.ToPhrase(seed, mnemonics.English)
+	if err != nil {
+		t.Errorf("MnemonicToSeed failed unexpected error: %v\n", err)
+		return
+	}
+	log.Printf("new = %s", new.String())
+	isEqualed := strings.EqualFold(new.String(), m)
+	log.Printf("equal: %v", isEqualed)
 }

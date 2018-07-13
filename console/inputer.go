@@ -23,7 +23,7 @@ import (
 
 //PasswordPrompt 提示输入密码
 //@param 是否二次确认
-func InputPassword(isConfirm bool) (string, error) {
+func InputPassword(isConfirm bool, minLen int) (string, error) {
 
 	var (
 		confirm  string
@@ -40,8 +40,8 @@ func InputPassword(isConfirm bool) (string, error) {
 			return "", err
 		}
 
-		if len(password) < 6 {
-			fmt.Printf("The length of the password is less than 8 chars. Please re-enter it.\n")
+		if len(password) < minLen {
+			fmt.Printf("The length of the password is less than %d chars. Please re-enter it.\n", minLen)
 			continue
 		}
 

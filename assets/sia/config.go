@@ -42,22 +42,23 @@ const (
 )
 
 var (
+	dataDir = filepath.Join("data", strings.ToLower(Symbol))
 	//钥匙备份路径
-	keyDir = filepath.Join("data", strings.ToLower(Symbol), "key")
+	keyDir = filepath.Join(dataDir, "key")
 	//地址导出路径
-	addressDir = filepath.Join("data", strings.ToLower(Symbol), "address")
+	addressDir = filepath.Join(dataDir, "address")
 	//配置文件路径
 	configFilePath = filepath.Join("conf")
 	//配置文件名
 	configFileName = Symbol + ".ini"
 	//接口授权密码
-	apiAuth = "123"
+	rpcPassword = "123"
 	//备份路径
-	backupDir = filepath.Join("data", strings.ToLower(Symbol), "backup")
+	backupDir = filepath.Join(dataDir, "backup")
 	//钱包数据文件目录
 	walletDataPath = "C:/Users/Administrator/AppData/Roaming/Sia-UI/sia/wallet"
 	//本地数据库文件路径
-	dbPath = filepath.Join("data", strings.ToLower(Symbol), "db")
+	dbPath = filepath.Join(dataDir, "db")
 	//钱包安装的路径
 	nodeInstallPath = ""
 	//参与汇总的钱包
@@ -70,26 +71,16 @@ startNodeCMD = ""
 stopNodeCMD = ""
 # node install path
 nodeInstallPath = ""
-# mainnet data path
-mainNetDataPath = ""
-# testnet data path
-testNetDataPath = ""
-# RPC Authentication Username
-rpcUser = ""
-# RPC Authentication Password
-rpcPassword = ""
-# Is network test?
-isTestNet = false
-# when wallet's balance is over this value, the wallet willl send money to [sumAddress]
+# when wallet's balance is over this value, the wallet will send money to [sumAddress]
 threshold = ""
 # node api url
-apiURL = "http://192.168.2.193:10051"
+apiURL = ""
 # the safe address that wallet send money to.
-sumAddress = "c42cb45155b0dbb572b385d113eb9f030953fe346f972ceaf494f8c1bd195164b11ec574b96c"
+sumAddress = ""
 # Auth password
-Auth = "123"
+rpcPassword = ""
 # wallet data path for backup
-walletDataPath = "C:/Users/Administrator/AppData/Roaming/Sia-UI/sia/wallet"
+walletDataPath = ""
 `
 )
 

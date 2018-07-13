@@ -62,38 +62,45 @@ var (
 //HDKeystore HDKey的存粗工具类
 type HDKeystore struct {
 	keysDirPath string
-	MasterKey   string
+	//MasterKey   string
 	scryptN     int
 	scryptP     int
 }
 
 // NewHDKeystore 实例化HDKeystore
-func NewHDKeystore(keydir, masterKey string, scryptN, scryptP int) *HDKeystore {
+func NewHDKeystore(keydir string, scryptN, scryptP int) *HDKeystore {
 	keydir, _ = filepath.Abs(keydir)
-	ks := &HDKeystore{keydir, masterKey, scryptN, scryptP}
+	ks := &HDKeystore{keydir, scryptN, scryptP}
 	return ks
 }
 
 // StoreHDKey 创建HDKey
-func StoreHDKey(dir, masterKey, alias, auth string, scryptN, scryptP int) (string, error) {
-	_, filePath, err := storeNewKey(&HDKeystore{dir, masterKey, scryptN, scryptP}, alias, auth)
+func StoreHDKey(dir, alias, auth string, scryptN, scryptP int) (string, error) {
+
+	seed, err := hdkeychain.GenerateSeed(SeedLen)
+	if err != nil {
+		return "", err
+	}
+
+	//extSeed, err := GetExtendSeed(seed, masterKey)
+	//if err != nil {
+	//	return "", err
+	//}
+
+	return StoreHDKeyWithSeed(dir, alias, auth, seed, scryptN, scryptP)
+}
+
+
+// StoreHDKey 创建HDKey
+func StoreHDKeyWithSeed(dir, alias, auth string, seed []byte, scryptN, scryptP int) (string, error) {
+	_, filePath, err := storeNewKey(&HDKeystore{dir, scryptN, scryptP}, alias, auth, seed)
 	return filePath, err
 }
 
 //storeNewKey 用随机种子生成HDKey
-func storeNewKey(ks *HDKeystore, alias, auth string) (*HDKey, string, error) {
+func storeNewKey(ks *HDKeystore, alias, auth string, seed []byte) (*HDKey, string, error) {
 
-	seed, err := hdkeychain.GenerateSeed(SeedLen)
-	if err != nil {
-		return nil, "", err
-	}
-
-	extSeed, err := GetExtendSeed(seed, ks.MasterKey)
-	if err != nil {
-		return nil, "", err
-	}
-
-	key, err := NewHDKey(extSeed, alias, openwCoinTypePath)
+	key, err := NewHDKey(seed, alias, OpenwCoinTypePath)
 	if err != nil {
 		return nil, "", err
 	}

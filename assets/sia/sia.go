@@ -52,7 +52,7 @@ func (w *WalletManager) CreateWalletFlow() error {
 
 	var (
 		password string
-		//name      string
+		name      string
 		err       error
 		publicKey string
 		filePath  string
@@ -72,10 +72,13 @@ func (w *WalletManager) CreateWalletFlow() error {
 			return err
 		}
 
-		// 等待用户输入密码
-		password, err = console.InputPassword(true)
+		// 等待用户输入钱包名字
+		//name, err = console.InputText("Enter wallet's name: ", true)
 
-		publicKey, err = CreateNewWallet(password, true)
+		// 等待用户输入密码
+		password, err = console.InputPassword(true, 8)
+
+		publicKey, err = CreateNewWallet(name, password, true)
 		if err != nil {
 			return err
 		}
@@ -182,6 +185,21 @@ func (w *WalletManager) BackupWalletFlow() error {
 
 //GetWalletList 获取钱包列表
 func (w *WalletManager) GetWalletList() error {
+
+	//先加载是否有配置文件
+	err := loadConfig()
+	if err != nil {
+		return err
+	}
+
+	wallet, err := GetWalletInfo()
+	if err != nil {
+		return err
+	}
+
+	//打印钱包列表
+	printWalletList(wallet)
+
 	return nil
 }
 

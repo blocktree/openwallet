@@ -63,7 +63,7 @@ const (
 	//  m/44'/<coin type>'/<account>'
 	// BIP0044，m/44'/
 	//openwallet coin type is 88': m/44'/88'
-	openwCoinTypePath = "m/44'/88'"
+	OpenwCoinTypePath = "m/44'/88'"
 )
 
 var (
@@ -153,9 +153,9 @@ func getDerivedKeyWithPath(key *hdkeychain.ExtendedKey, path string) (*hdkeychai
 		err error
 	)
 
-	if len(path) == 0 {
-		return nil, ErrInvalidDerivedPath
-	}
+	//if len(path) == 0 {
+	//	return nil, ErrInvalidDerivedPath
+	//}
 
 	if path == "m" || path == "/" || path == "" {
 		// 直接返回当前根
@@ -220,8 +220,7 @@ func (k *HDKey) RootKey() *hdkeychain.ExtendedKey {
 
 //Mnemonic 密钥助记词
 func (k *HDKey) Mnemonic() string {
-	entropy, _ := bip39.NewEntropy(256)
-	mnemonic, _ := bip39.NewMnemonic(entropy)
+	mnemonic, _ := bip39.NewMnemonic(k.seed)
 	return mnemonic
 }
 

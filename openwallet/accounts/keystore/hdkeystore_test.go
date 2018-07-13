@@ -18,12 +18,11 @@ package keystore
 import (
 	"testing"
 	"path/filepath"
-	"github.com/blocktree/OpenWallet/assets/bitcoin"
 )
 
 func TestStoreHDKey(t *testing.T) {
 	path := filepath.Join(".", "keys")
-	rootId, err := StoreHDKey(path, bitcoin.MasterKey, "hello", "12345678", StandardScryptN, StandardScryptP)
+	rootId, err := StoreHDKey(path, "Bitcoin seed", "hello", "12345678", StandardScryptN, StandardScryptP)
 	if err != nil {
 		t.Errorf("StoreHDKey failed unexpected error: %v", err)
 	} else {
@@ -33,7 +32,7 @@ func TestStoreHDKey(t *testing.T) {
 
 func TestGetKey(t *testing.T) {
 	path := filepath.Join(".", "keys")
-	ks := &HDKeystore{path, bitcoin.MasterKey, StandardScryptN, StandardScryptP}
+	ks := &HDKeystore{path, "Bitcoin seed", StandardScryptN, StandardScryptP}
 
 	key, err := ks.GetKey("W8LoZwG22AobHZgSAyTBDRbCKHtJh9bXEL",
 		"wallet-hello-W8LoZwG22AobHZgSAyTBDRbCKHtJh9bXEL.json",
