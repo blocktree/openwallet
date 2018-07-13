@@ -16,20 +16,18 @@
 package main
 
 import (
-	"os"
 	"fmt"
-	"gopkg.in/urfave/cli.v1"
-	"sort"
 	"github.com/blocktree/OpenWallet/cmd/utils"
 	"github.com/blocktree/OpenWallet/cmd/wmd/commands"
+	"gopkg.in/urfave/cli.v1"
+	"os"
+	"sort"
 )
-
 
 const (
 	clientIdentifier = "wmd" // Client identifier to advertise over the network
-	version = "0.1.1"
+	version          = "0.1.1"
 )
-
 
 var (
 	// Git SHA1 commit hash of the release (set via linker flags)
@@ -40,7 +38,6 @@ var (
 	nodeFlags = []cli.Flag{
 		utils.AppNameFlag,
 	}
-
 )
 
 func init() {
@@ -55,7 +52,6 @@ func init() {
 		commands.CmdNode,
 		commands.CmdMerchant,
 	}
-
 
 	sort.Sort(cli.CommandsByName(app.Commands))
 }
