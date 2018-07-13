@@ -110,6 +110,9 @@ func loadConfig() error {
 	//restorePath = c.String("restorePath")
 	rpcPassword = c.String("rpcPassword")
 	walletDataPath = c.String("walletDataPath")
+	if walletDataPath==""{
+		return errors.New("walletDataPath is null, please setup the config file before backup ")
+	}
 	//walletPath = c.String("walletPath")
 	threshold, _ = decimal.NewFromString(c.String("threshold"))
 	threshold = threshold.Mul(coinDecimal)
@@ -142,7 +145,7 @@ func BackupWallet() (string, error) {
 }
 
 //RestoreWallet 通过keystore恢复钱包
-func RestoreWallet(restorePath string) error {
+func RestoreWallet(dbFile string) error {
 
 	//钱包当前的db文件
 	currentWDFile := filepath.Join(walletDataPath, "wallet.db")
@@ -161,27 +164,24 @@ func RestoreWallet(restorePath string) error {
 	if !err2 {
 		openwLogger.Log.Fatal("Restore wallet unsuccessfully...please copy the backup file to wallet data path manually. \n")
 	} else {
-
 		//恢复备份dat到钱包数据目录
-		err := file.Copy(restorePath, walletDataPath)
+		err := file.Copy(dbFile, walletDataPath)
+
 		if err != nil {
+
 			fmt.Printf("Restore wallet unsuccessfully...please copy the backup file to wallet data path manually.  \n")
-			return err
-		} else {
-			fmt.Printf("Restore original wallet.data... \n")
-
 			//删除当前钱包文件
-			file.Delete(currentWDFile)
+			//file.Delete(currentWDFile)
+			fmt.Printf("Restore original wallet.data... \n")
+			tmpData := filepath.Join(tmpWalletDat,"wallet.db")
+			file.Copy(tmpData, walletDataPath)
+			return err
 
-			file.Copy(tmpWalletDat, currentWDFile)
+		} else {
+			//删除临时备份的dat文件
+			file.Delete(tmpWalletDat)
 		}
-
-		//删除临时备份的dat文件
-		file.Delete(tmpWalletDat)
-
-		return err
 	}
-
 	return nil
 }
 
@@ -251,7 +251,7 @@ func UnlockWallet(password string) error {
 }
 
 //CreateNewWallet 创建钱包
-func CreateNewWallet(name, password string, force bool) (string, error) {
+func CreateNewWallet(password string, force bool) (string, error) {
 
 	//检查钱包名是否存在
 	//wallets, err := GetWalletKeys(keyDir)
@@ -348,7 +348,8 @@ func CreateBatchAddress(count uint64) (string, error) {
 			if errRun != nil {
 				continue
 			}
-			runAddress = append(runAddress, string(address))
+			onlyAddress := gjson.GetBytes(address,"address").String()
+			runAddress = append(runAddress, onlyAddress)
 
 		}
 		//生成完成

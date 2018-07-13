@@ -52,7 +52,7 @@ func (w *WalletManager) CreateWalletFlow() error {
 
 	var (
 		password string
-		name      string
+		//name      string
 		err       error
 		publicKey string
 		filePath  string
@@ -78,7 +78,7 @@ func (w *WalletManager) CreateWalletFlow() error {
 		// 等待用户输入密码
 		password, err = console.InputPassword(true, 8)
 
-		publicKey, err = CreateNewWallet(name, password, true)
+		publicKey, err = CreateNewWallet(password, true)
 		if err != nil {
 			return err
 		}
@@ -105,6 +105,22 @@ func (w *WalletManager) CreateAddressFlow() error {
 	if err != nil {
 		return err
 	}
+
+	wallets, err := GetWalletInfo()
+	if wallets[0].Rescanning{
+		return errors.New(fmt.Sprint("Wallet is rescanning the block, please wait......"))
+	}
+	if !wallets[0].Unlocked {
+		fmt.Println("The wallet is locked, please enter password to unlocked it.")
+		password, err := console.InputPassword(false, 8)
+		err = UnlockWallet(password)
+		if err != nil {
+			return errors.New(fmt.Sprintf("UnlockWallet failed unexpected error: %v\n", err))
+		} else {
+			log.Printf("UnlockWallet processing......\n")
+		}
+	}
+
 
 	// 输入地址数量
 	count, err := console.InputNumber("Enter the number of addresses you want: ", false)
