@@ -52,6 +52,12 @@
 			"revisionTime": "2018-05-08T23:20:20Z"
 		},
 		{
+			"checksumSHA1": "H8Hq367L0F+0UKZJTXt8bI0zex8=",
+			"path": "github.com/NebulousLabs/entropy-mnemonics",
+			"revision": "7b01a644a63680b90de22bacfb11d832e944eaab",
+			"revisionTime": "2017-03-16T01:29:07Z"
+		},
+		{
 			"checksumSHA1": "QC55lHNOv1+UAL2xtIHw17MJ8J8=",
 			"origin": "github.com/ethereum/go-ethereum/vendor/github.com/StackExchange/wmi",
 			"path": "github.com/StackExchange/wmi",
@@ -274,6 +280,54 @@
 			"path": "github.com/bwmarrin/snowflake",
 			"revision": "1c0147d077f16f1abd13b630743b41484616ab9a",
 			"revisionTime": "2017-06-30T03:27:14Z"
+		},
+		{
+			"checksumSHA1": "xdBb79W5bhBAd1wqaTu+Pcgtmes=",
+			"path": "github.com/bytom/common",
+			"revision": "30897289f6a95f0a13c3fcdad9c4b60417522027",
+			"revisionTime": "2018-05-14T06:33:20Z"
+		},
+		{
+			"checksumSHA1": "WYGgw4QS9zvZ0U2rS2A+uxvePU0=",
+			"path": "github.com/bytom/common/bech32",
+			"revision": "30897289f6a95f0a13c3fcdad9c4b60417522027",
+			"revisionTime": "2018-05-14T06:33:20Z"
+		},
+		{
+			"checksumSHA1": "gIyJYviv2vL5xpF/4ItwP06Hqgk=",
+			"path": "github.com/bytom/consensus",
+			"revision": "30897289f6a95f0a13c3fcdad9c4b60417522027",
+			"revisionTime": "2018-05-14T06:33:20Z"
+		},
+		{
+			"checksumSHA1": "zCPk/p/m3cr8kP4jroSzUJkUxTI=",
+			"path": "github.com/bytom/crypto/sha3pool",
+			"revision": "30897289f6a95f0a13c3fcdad9c4b60417522027",
+			"revisionTime": "2018-05-14T06:33:20Z"
+		},
+		{
+			"checksumSHA1": "ezJVegoWEhLw4YFnfxcoPzWPBX4=",
+			"path": "github.com/bytom/encoding/blockchain",
+			"revision": "30897289f6a95f0a13c3fcdad9c4b60417522027",
+			"revisionTime": "2018-05-14T06:33:20Z"
+		},
+		{
+			"checksumSHA1": "ZCB3oBCjd3PHxkVm47ivzg82VSk=",
+			"path": "github.com/bytom/encoding/bufpool",
+			"revision": "30897289f6a95f0a13c3fcdad9c4b60417522027",
+			"revisionTime": "2018-05-14T06:33:20Z"
+		},
+		{
+			"checksumSHA1": "X5ejq6VTqr7hazTB6RcSqE/5MJg=",
+			"path": "github.com/bytom/errors",
+			"revision": "30897289f6a95f0a13c3fcdad9c4b60417522027",
+			"revisionTime": "2018-05-14T06:33:20Z"
+		},
+		{
+			"checksumSHA1": "uZLUceeI2Gv6oHcyBgfToxM3WnI=",
+			"path": "github.com/bytom/protocol/bc",
+			"revision": "30897289f6a95f0a13c3fcdad9c4b60417522027",
+			"revisionTime": "2018-05-14T06:33:20Z"
 		},
 		{
 			"checksumSHA1": "fcfxNsCuheCrubAAl6zWgimCnLY=",
@@ -1819,6 +1873,13 @@
 			"revisionTime": "2018-03-19T17:08:23Z"
 		},
 		{
+			"checksumSHA1": "BYvROBsiyAXK4sq6yhDe8RgT4LM=",
+			"origin": "github.com/bytom/vendor/github.com/sirupsen/logrus",
+			"path": "github.com/sirupsen/logrus",
+			"revision": "30897289f6a95f0a13c3fcdad9c4b60417522027",
+			"revisionTime": "2018-05-14T06:33:20Z"
+		},
+		{
 			"checksumSHA1": "mGbTYZ8dHVTiPTTJu3ktp+84pPI=",
 			"path": "github.com/stretchr/testify/assert",
 			"revision": "890a5c3458b43e6104ff5da8dfa139d013d77544",
@@ -2184,6 +2245,12 @@
 			"path": "golang.org/x/text/transform",
 			"revision": "c60f6f62147048f80a0e092b483318af88b5d78b",
 			"revisionTime": "2018-05-08T23:20:20Z"
+		},
+		{
+			"checksumSHA1": "lN2xlA6Utu7tXy2iUoMF2+y9EUE=",
+			"path": "golang.org/x/text/unicode/norm",
+			"revision": "5cec4b58c438bd98288aeb248bab2c1840713d21",
+			"revisionTime": "2018-05-20T16:02:21Z"
 		},
 		{
 			"checksumSHA1": "AsL/fTkY1p1HNVSikhVZJd++Nrk=",

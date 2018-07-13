@@ -25,6 +25,7 @@ import (
 	"github.com/shopspring/decimal"
 	"log"
 	"strings"
+	"path/filepath"
 )
 
 type WalletManager struct{}
@@ -32,6 +33,11 @@ type WalletManager struct{}
 //初始化配置流程
 func (w *WalletManager) InitConfigFlow() error {
 
+	file := filepath.Join(configFilePath, configFileName)
+	fmt.Printf("You can run 'vim %s' to edit wallet's config.\n", file)
+	return nil
+
+	/*
 	var (
 		err        error
 		apiURL     string
@@ -123,7 +129,7 @@ func (w *WalletManager) InitConfigFlow() error {
 	fmt.Printf("Config file create, file path: %s\n", filePath)
 
 	return nil
-
+	*/
 }
 
 //查看配置信息
