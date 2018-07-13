@@ -57,6 +57,7 @@ var (
 	backupDir = filepath.Join(dataDir, "backup")
 	//钱包数据文件目录
 	walletDataPath = "C:/Users/Administrator/AppData/Roaming/Sia-UI/sia/wallet"
+	//walletDataPath = ""
 	//本地数据库文件路径
 	dbPath = filepath.Join(dataDir, "db")
 	//钱包安装的路径

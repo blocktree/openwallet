@@ -67,11 +67,21 @@ func TestUnlockWallet(t *testing.T) {
 //慎用新建钱包，会替换旧的钱包（要先备份旧钱包）
 func TestCreateNewWallet(t *testing.T) {
 	password := "1234567890abc"
-	seed, err := CreateNewWallet("", password, true)
-	if err != nil {
-		t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
-	} else {
-		t.Logf("CreateNewWallet seed = %s\n", seed)
+	wallets, err := GetWalletInfo()
+	if !wallets[0].Encrypted || err != nil {
+		seed, err := CreateNewWallet(password,false)
+		if err != nil {
+			t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
+		} else {
+			t.Logf("CreateNewWallet seed = %s\n", seed)
+		}
+	}else{
+		seed, err := CreateNewWallet(password,true)
+		if err != nil {
+			t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
+		} else {
+			t.Logf("CreateNewWallet seed = %s\n", seed)
+		}
 	}
 }
 
