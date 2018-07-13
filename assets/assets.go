@@ -48,17 +48,23 @@ type WalletManager interface {
 
 // 节点管理接口
 type NodeManager interface {
+	// GetNodeStatus 节点状态
+	GetNodeStatus(string) error
+	// StartNodeFlow 创建节点
+	CreateNodeFlow(string) error
+	// StartNodeFlow 开启节点
+	StartNodeFlow(string) error
+	// StopNodeFlow 关闭节点
+	StopNodeFlow(string) error
+	// RestartNodeFlow 重启节点
+	RestartNodeFlow(string) error
+	// RemoveNodeFlow 移除节点
+	RemoveNodeFlow(string) error
 
-	//InstallNode 安装节点
-	InstallNodeFlow() error
-	//StartNodeFlow 开启节点
-	StartNodeFlow() error
-	//StopNodeFlow 关闭节点
-	StopNodeFlow() error
-	//RestartNodeFlow 重启节点
-	RestartNodeFlow() error
-	//ShowNodeInfo 显示节点信息
-	ShowNodeInfo() error
+	// //InstallNode 安装节点
+	// InstallNodeFlow() error
+	// //ShowNodeInfo 显示节点信息
+	// ShowNodeInfo() error
 }
 
 // 配置管理接口
