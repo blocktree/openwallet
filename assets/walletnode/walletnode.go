@@ -18,11 +18,14 @@ package walletnode
 import (
 	"context"
 	"docker.io/go-docker"
+	"errors"
 	// "docker.io/go-docker/api"
 	"docker.io/go-docker/api/types"
 	"docker.io/go-docker/api/types/container"
 	"docker.io/go-docker/api/types/network"
 	"fmt"
+	"github.com/blocktree/OpenWallet/console"
+	"path/filepath"
 	s "strings"
 	"time"
 )
@@ -30,7 +33,7 @@ import (
 type NodeManagerStruct struct{}
 
 // Private function, generate container name by <Symbol> and <isTestNet>
-func _getCName(symbol string) (string, error) {
+func _GetCName(symbol string) (string, error) {
 	// Load global config
 	err := loadConfig(symbol)
 	if err != nil {
@@ -43,6 +46,88 @@ func _getCName(symbol string) (string, error) {
 	} else {
 		return s.ToLower(symbol), nil
 	}
+}
+
+// Check <Symbol>.ini file, create new if not
+// Workflow:
+//		3. 当前目录没有 ini，是否创建？
+//		1. 是否设置为测试链？
+//		2. 服务器IP地址和端口
+//		4
+func _CheckAndInitConfig(symbol string) error {
+	var isNew bool
+
+	// Check <Symbol>.ini
+	if err := loadConfig(symbol); err == nil {
+		// <Symbol>.ini exist, return and go next
+		return nil
+	}
+
+	// Ask about whether create new
+	dirname, _ := filepath.Abs("./")
+	if isnew, err := console.InputText(fmt.Sprintf("Init new %s wallet fullnode in '%s/' (1: Yes, 0: No)? ", s.ToUpper(symbol), dirname), true); err != nil {
+		return err
+	} else {
+		switch isnew {
+		case "1":
+			isNew = true
+		case "0":
+			return nil
+		default:
+			return errors.New("Only accept '0'|'1' to setup!")
+
+		}
+	}
+
+	// Ask about whether sync by testnet
+	if istestnet, err := console.InputText("Within testnet (1: Yes, 0: No)? ", true); err != nil {
+		return err
+	} else {
+		switch istestnet {
+		case "1":
+			isTestNet = true
+		case "0":
+			isTestNet = false
+		default:
+			return errors.New("Only accept '0'|'1' to setup!")
+
+		}
+	}
+
+	// Ask about Docker master Address and Port
+	if addr, err := console.InputText("Docker master server address (default: 127.0.0.1): ", false); err != nil {
+		return err
+	} else {
+		if addr == "" {
+			dockerAddr = "127.0.0.1"
+		} else {
+			// Check addr
+			dockerAddr = addr
+		}
+	}
+	if port, err := console.InputText("Docker master server port (default: 2735): ", false); err != nil {
+		return err
+	} else {
+		if port == "" {
+			dockerPort = "2735"
+		} else {
+			dockerPort = port
+		}
+	}
+
+	// Creat config
+	if isNew == true {
+		if err := initConfig(symbol); err != nil {
+			return err
+		}
+	}
+
+	// Update config
+	if err := updateConfig(symbol); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (w *NodeManagerStruct) GetNodeStatus(symbol string) error {
@@ -59,7 +144,7 @@ func (w *NodeManagerStruct) GetNodeStatus(symbol string) error {
 		return err
 	}
 	// Instantize parameters
-	cName, err := _getCName(symbol) // container name
+	cName, err := _GetCName(symbol) // container name
 	if err != nil {
 		return err
 	}
@@ -85,11 +170,18 @@ func (w *NodeManagerStruct) CreateNodeFlow(symbol string) error {
 	if err != nil {
 		return (err)
 	}
+
+	// Check <Symbol>.ini config, create new if not
+	if err := _CheckAndInitConfig(symbol); err != nil {
+		return err
+	}
+
 	// Instantize parameters
-	cName, err := _getCName(symbol) // container name
+	cName, err := _GetCName(symbol) // container name
 	if err != nil {
 		return err
 	}
+
 	ctx := context.Background() // nil
 	// Check if exist
 	if res, err := c.ContainerInspect(ctx, cName); err == nil {
@@ -121,7 +213,7 @@ func (w *NodeManagerStruct) StartNodeFlow(symbol string) error {
 		return (err)
 	}
 	// Action within client
-	cName, err := _getCName(symbol) // container name
+	cName, err := _GetCName(symbol) // container name
 	if err != nil {
 		return err
 	}
@@ -141,7 +233,7 @@ func (w *NodeManagerStruct) StopNodeFlow(symbol string) error {
 		return (err)
 	}
 	// Action within client
-	cName, err := _getCName(symbol) // container name
+	cName, err := _GetCName(symbol) // container name
 	if err != nil {
 		return err
 	}
@@ -161,7 +253,7 @@ func (w *NodeManagerStruct) RestartNodeFlow(symbol string) error {
 		return (err)
 	}
 	// Action within client
-	cName, err := _getCName(symbol) // container name
+	cName, err := _GetCName(symbol) // container name
 	if err != nil {
 		return err
 	}
@@ -180,7 +272,7 @@ func (w *NodeManagerStruct) RemoveNodeFlow(symbol string) error {
 		return (err)
 	}
 	// Action within client
-	cName, err := _getCName(symbol) // container name
+	cName, err := _GetCName(symbol) // container name
 	if err != nil {
 		return err
 	}
