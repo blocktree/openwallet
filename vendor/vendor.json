@@ -154,6 +154,12 @@
 			"revisionTime": "2018-05-08T23:20:20Z"
 		},
 		{
+			"checksumSHA1": "tedpGUYUzWTxnH6hteiS8tuWRAs=",
+			"path": "github.com/Microsoft/go-winio",
+			"revision": "67921128fb397dd80339870d2193d6b1e6856fd4",
+			"revisionTime": "2018-06-25T20:58:01Z"
+		},
+		{
 			"checksumSHA1": "H8Hq367L0F+0UKZJTXt8bI0zex8=",
 			"path": "github.com/NebulousLabs/entropy-mnemonics",
 			"revision": "7b01a644a63680b90de22bacfb11d832e944eaab",
