@@ -24,7 +24,6 @@ import (
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/openwallet/accounts/keystore"
 	"github.com/codeskyblue/go-sh"
 	"github.com/imroc/req"
@@ -151,18 +150,18 @@ func RestoreWallet(dbFile string) error {
 	currentWDFile := filepath.Join(walletDataPath, "wallet.db")
 
 	//创建临时备份文件夹
-	tmpWalletDat := filepath.Join(backupDir, "restore-wallet-backup"+"-"+common.TimeFormat("20060102150405"))
-	file.MkdirAll(tmpWalletDat)
+	tmpWalletData := filepath.Join(backupDir, "restore-wallet-backup"+"-"+common.TimeFormat("20060102150405"))
+	file.MkdirAll(tmpWalletData)
 
 	//备份
-	file.Copy(currentWDFile, tmpWalletDat)
+	file.Copy(currentWDFile, tmpWalletData)
 
 	fmt.Printf("Restore wallet.db file... \n")
 
 	//删除当前钱包文件
 	err2 := file.Delete(currentWDFile)
 	if !err2 {
-		openwLogger.Log.Fatal("Restore wallet unsuccessfully...please copy the backup file to wallet data path manually. \n")
+		log.Printf("Restore wallet unsuccessfully...please copy the backup file to wallet data path manually. \n")
 	} else {
 		//恢复备份dat到钱包数据目录
 		err := file.Copy(dbFile, walletDataPath)
@@ -173,13 +172,13 @@ func RestoreWallet(dbFile string) error {
 			//删除当前钱包文件
 			//file.Delete(currentWDFile)
 			fmt.Printf("Restore original wallet.data... \n")
-			tmpData := filepath.Join(tmpWalletDat,"wallet.db")
+			tmpData := filepath.Join(tmpWalletData,"wallet.db")
 			file.Copy(tmpData, walletDataPath)
 			return err
 
 		} else {
 			//删除临时备份的dat文件
-			file.Delete(tmpWalletDat)
+			file.Delete(tmpWalletData)
 		}
 	}
 	return nil
