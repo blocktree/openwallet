@@ -1572,10 +1572,11 @@ func skipKeyFile(fi os.FileInfo) bool {
 	if fi.IsDir() || fi.Mode()&os.ModeType != 0 {
 		return true
 	}
+
 	return false
 }
 
-//loadConfig 读取配置
+// loadConfig 读取配置
 func loadConfig() error {
 
 	var (
@@ -1610,7 +1611,6 @@ func loadConfig() error {
 		Debug:       false,
 		AccessToken: token,
 	}
-
 	return nil
 }
 
