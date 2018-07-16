@@ -22,7 +22,7 @@ import (
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/blocktree/OpenWallet/openwallet/accounts/keystore"
+	"github.com/blocktree/OpenWallet/keystore"
 	"github.com/bndr/gotabulate"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"

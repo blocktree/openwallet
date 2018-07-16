@@ -16,7 +16,7 @@
 package bitcoin
 
 import (
-	"github.com/blocktree/OpenWallet/openwallet/accounts/keystore"
+	"github.com/blocktree/OpenWallet/keystore"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 	"github.com/codeskyblue/go-sh"

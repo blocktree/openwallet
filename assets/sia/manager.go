@@ -25,7 +25,7 @@ import (
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/logger"
-	"github.com/blocktree/OpenWallet/openwallet/accounts/keystore"
+	"github.com/blocktree/OpenWallet/keystore"
 	"github.com/codeskyblue/go-sh"
 	"github.com/imroc/req"
 	"github.com/shopspring/decimal"

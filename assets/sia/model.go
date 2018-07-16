@@ -17,7 +17,7 @@ package sia
 
 import (
 	"github.com/tidwall/gjson"
-	"github.com/blocktree/OpenWallet/openwallet/accounts/keystore"
+	"github.com/blocktree/OpenWallet/keystore"
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/common/file"
 	"path/filepath"

@@ -13,11 +13,10 @@
  * GNU Lesser General Public License for more details.
  */
 
-package accounts
+package openwallet
 
 import (
 	"github.com/btcsuite/btcutil/hdkeychain"
-	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 //解锁的密钥
@@ -29,18 +28,18 @@ type unlocked struct {
 //UserAccount 用户的钱包账户组
 type UserAccount struct {
 	//用户
-	*openwallet.User
+	*User
 	//账户ID，相当与用于账户的扩展密钥的根地址
 	AccountId string
 	//钱包数组
-	Wallets []*openwallet.Wallet
+	Wallets []*Wallet
 	// 已解锁的钱包，集合（钱包地址, 钱包私钥）
 	unlocked map[string]unlocked
 }
 
 
 //NewUserAccount 创建账户
-func NewUserAccount(user openwallet.User) *UserAccount {
+func NewUserAccount(user User) *UserAccount {
 	//TODO:实现从节点配置文件中读取私钥的存粗文件夹
 	//cfg := gethConfig{Node: defaultNodeConfig()}
 	//// Load config file.

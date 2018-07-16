@@ -20,10 +20,10 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"github.com/blocktree/OpenWallet/openwallet/accounts"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"io/ioutil"
 	"path/filepath"
+	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 const (
@@ -151,7 +151,7 @@ func (ks *HDKeystore) JoinPath(filename string) string {
 }
 
 //getDecryptedKey 获取解密后的钥匙
-func (ks *HDKeystore) getDecryptedKey(alias, rootId, auth string) (*accounts.UserAccount, *HDKey, error) {
+func (ks *HDKeystore) getDecryptedKey(alias, rootId, auth string) (*openwallet.UserAccount, *HDKey, error) {
 	path := ks.JoinPath(keyFileName(alias, rootId) + ".key")
 	key, err := ks.GetKey(rootId, path, auth)
 	return nil, key, err

@@ -107,6 +107,10 @@ func (w *WalletManager) CreateAddressFlow() error {
 	}
 
 	wallets, err := GetWalletInfo()
+	if err != nil {
+		return err
+	}
+
 	if wallets[0].Rescanning{
 		return errors.New(fmt.Sprint("Wallet is rescanning the block, please wait......"))
 	}

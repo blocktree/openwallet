@@ -13,7 +13,7 @@
  * GNU Lesser General Public License for more details.
  */
 
-package accounts
+package openwallet
 
 import (
 	"reflect"

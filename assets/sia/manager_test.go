@@ -136,8 +136,10 @@ func TestSummaryWallets(t *testing.T) {
 
 func TestRestoreWallet(t *testing.T) {
 
-	dbFile := "C:/Users/Administrator/AppData/Roaming/Sia-UI/wallet_company/wallet.db"
-	loadConfig()
+	dbFile := "/myspace/workplace/go-workspace/projects/bin/data/sc/backup/wallet-backup-20180713122219/wallet.db"
+	//dbFile := "C:/Users/Administrator/AppData/Roaming/Sia-UI/wallet_company/wallet.db"
+	//loadConfig()
+	walletDataPath = "/Users/maizhiquan/Library/Application Support/Sia-UI/sia/wallet"
 	err := RestoreWallet(dbFile)
 	if err != nil {
 		t.Errorf("RestoreWallet failed unexpected error: %v\n", err)

@@ -18,7 +18,7 @@ package bitcoincash
 import (
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/blocktree/OpenWallet/openwallet/accounts/keystore"
+	"github.com/blocktree/OpenWallet/keystore"
 	"github.com/tidwall/gjson"
 	"path/filepath"
 	"time"
