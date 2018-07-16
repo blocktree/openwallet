@@ -160,6 +160,24 @@ func (w *WalletManager) SummaryFollow() error {
 		return err
 	}
 
+	wallets, err := GetWalletInfo()
+	if err != nil {
+		return err
+	}
+	if wallets[0].Rescanning{
+		return errors.New(fmt.Sprint("Wallet is rescanning the block, please wait......"))
+	}
+	if !wallets[0].Unlocked {
+		fmt.Println("The wallet is locked, please enter password to unlocked it.")
+		password, err := console.InputPassword(false, 8)
+		err = UnlockWallet(password)
+		if err != nil {
+			return errors.New(fmt.Sprintf("UnlockWallet failed unexpected error: %v\n", err))
+		} else {
+			log.Printf("UnlockWallet processing......\n")
+		}
+	}
+
 	//判断汇总地址是否存在
 	if len(sumAddress) == 0 {
 
@@ -230,6 +248,24 @@ func (w *WalletManager) TransferFlow() error {
 	err := loadConfig()
 	if err != nil {
 		return err
+	}
+
+	wallets, err := GetWalletInfo()
+	if err != nil {
+		return err
+	}
+	if wallets[0].Rescanning{
+		return errors.New(fmt.Sprint("Wallet is rescanning the block, please wait......"))
+	}
+	if !wallets[0].Unlocked {
+		fmt.Println("The wallet is locked, please enter password to unlocked it.")
+		password, err := console.InputPassword(false, 8)
+		err = UnlockWallet(password)
+		if err != nil {
+			return errors.New(fmt.Sprintf("UnlockWallet failed unexpected error: %v\n", err))
+		} else {
+			log.Printf("UnlockWallet processing......\n")
+		}
 	}
 
 	// 等待用户输入发送数量
