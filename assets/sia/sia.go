@@ -20,7 +20,7 @@ import (
 	"github.com/blocktree/OpenWallet/console"
 	"log"
 	"errors"
-	"github.com/blocktree/OpenWallet/timer"
+	//"github.com/blocktree/OpenWallet/timer"
 	"path/filepath"
 	"github.com/shopspring/decimal"
 )
@@ -85,14 +85,15 @@ func (w *WalletManager) CreateWalletFlow() error {
 
 		fmt.Printf("Please keep your primary seed in a safe place: %s\n", publicKey)
 
-		filePath, err = BackupWallet()
-		if err != nil {
-			return err
+		if walletDataPath==""{
+			log.Printf("walletDataPath is null, please setup the config file and backup the wallet. ")
+		}else{
+			filePath, err = BackupWallet()
+			if err != nil {
+				return err
+			}
+			fmt.Printf("Keystore backup successfully, file path: %s\n", filePath)
 		}
-
-		//fmt.Printf("\n")
-		//fmt.Printf("Wallet create successfully, first account: %s\n", name)
-		fmt.Printf("Keystore backup successfully, file path: %s\n", filePath)
 	}
 	return nil
 }
@@ -151,7 +152,7 @@ func (w *WalletManager) CreateAddressFlow() error {
 func (w *WalletManager) SummaryFollow() error {
 
 	var (
-		endRunning = make(chan bool, 1)
+		//endRunning = make(chan bool, 1)
 	)
 
 	//先加载是否有配置文件
@@ -181,16 +182,17 @@ func (w *WalletManager) SummaryFollow() error {
 	//判断汇总地址是否存在
 	if len(sumAddress) == 0 {
 
-		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.json' \n", Symbol))
+		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
 	}
 
-	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", cycleSeconds.Seconds())
+	//fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", cycleSeconds.Seconds())
 
 	//启动钱包汇总程序
-	sumTimer := timer.NewTask(cycleSeconds, SummaryWallets)
-	sumTimer.Start()
-
-	<-endRunning
+	//sumTimer := timer.NewTask(cycleSeconds, SummaryWallets)
+	//sumTimer.Start()
+	//
+	//<-endRunning
+	SummaryWallets()
 
 	return nil
 }
@@ -207,6 +209,10 @@ func (w *WalletManager) BackupWalletFlow() error {
 	err = loadConfig()
 	if err != nil {
 		return err
+	}
+
+	if walletDataPath==""{
+		return errors.New("walletDataPath is null, please setup the config file before backup ")
 	}
 
 	backupPath, err = BackupWallet()
@@ -284,10 +290,11 @@ func (w *WalletManager) TransferFlow() error {
 	atculAmount, _ := decimal.NewFromString(amount)
 	realAmount := atculAmount.Mul(coinDecimal)
 
-	_, err = SendTransaction(realAmount.String(), receiver)
+	txID, err := SendTransaction(realAmount.String(), receiver)
 	if err != nil {
 		return err
 	}
+	log.Printf("Transaction ID:[%s]\n",txID)
 
 	return nil
 }

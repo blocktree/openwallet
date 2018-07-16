@@ -122,12 +122,12 @@ func TestCreateAddress(t *testing.T) {
 }
 
 func TestSendTransaction(t *testing.T) {
-	_, err := SendTransaction("2000000000000000000000000", "70e848d92b8d729052d2d614446df07fed787d022a989d6106a5549816680f6d85aee6044f86")
+	txID, err := SendTransaction("1000000000000000000000000", "70e848d92b8d729052d2d614446df07fed787d022a989d6106a5549816680f6d85aee6044f86")
 	if err != nil {
 		t.Errorf("SendTransaction failed unexpected error: %v", err)
 		return
 	}
-	t.Logf("SendTransaction success.\n")
+	t.Logf("SendTransaction success, Transaction ID:[%s]\n",txID)
 }
 
 func TestSummaryWallets(t *testing.T) {
