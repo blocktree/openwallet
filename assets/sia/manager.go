@@ -611,7 +611,7 @@ func SummaryWallets() {
 			if err != nil {
 				log.Printf("Summary unexpected error: %v\n", err)
 			} else {
-				log.Printf("Summary successfully，Received Address[%s], Transaction ID:[%s]", sumAddress,txID)
+				log.Printf("Summary successfully，Received Address[%s], Transaction ID:%s", sumAddress,txID)
 			}
 		} else {
 			log.Printf("Wallet  Balance: %v，below threshold: %v\n", balance.Div(coinDecimal), threshold.Div(coinDecimal))

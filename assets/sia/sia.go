@@ -23,6 +23,7 @@ import (
 	//"github.com/blocktree/OpenWallet/timer"
 	"path/filepath"
 	"github.com/shopspring/decimal"
+	"time"
 )
 
 const (
@@ -77,6 +78,9 @@ func (w *WalletManager) CreateWalletFlow() error {
 
 		// 等待用户输入密码
 		password, err = console.InputPassword(true, 8)
+		if err != nil {
+			return err
+		}
 
 		publicKey, err = CreateNewWallet(password, true)
 		if err != nil {
@@ -118,9 +122,14 @@ func (w *WalletManager) CreateAddressFlow() error {
 	if !wallets[0].Unlocked {
 		fmt.Println("The wallet is locked, please enter password to unlocked it.")
 		password, err := console.InputPassword(false, 8)
+		if err != nil {
+			return err
+		}
 		err = UnlockWallet(password)
 		if err != nil {
-			return errors.New(fmt.Sprintf("UnlockWallet failed unexpected error: %v\n", err))
+			log.Printf("UnlockWallet information:%v\n",err)
+			log.Printf("NOTE: information 2XX means unlock wallet successfully, 4XX or 5XX means unsuccessfully.")
+			return nil
 		} else {
 			log.Printf("UnlockWallet processing......\n")
 		}
@@ -171,9 +180,14 @@ func (w *WalletManager) SummaryFollow() error {
 	if !wallets[0].Unlocked {
 		fmt.Println("The wallet is locked, please enter password to unlocked it.")
 		password, err := console.InputPassword(false, 8)
+		if err != nil {
+			return err
+		}
 		err = UnlockWallet(password)
 		if err != nil {
-			return errors.New(fmt.Sprintf("UnlockWallet failed unexpected error: %v\n", err))
+			log.Printf("UnlockWallet information:%v\n",err)
+			log.Printf("NOTE: information 2XX means unlock wallet successfully, 4XX or 5XX means unsuccessfully.")
+			return nil
 		} else {
 			log.Printf("UnlockWallet processing......\n")
 		}
@@ -192,7 +206,19 @@ func (w *WalletManager) SummaryFollow() error {
 	//sumTimer.Start()
 	//
 	//<-endRunning
-	SummaryWallets()
+	for  {
+		wallets, err := GetWalletInfo()
+		if err != nil {
+			return err
+		}
+		if wallets[0].OutgoingSC == "0" {
+			SummaryWallets()
+		}else {
+			log.Printf("wallet has coins spent in incomplete transaction, summaryWallets will begin after it finish...")
+		}
+		time.Sleep(10*time.Second)
+	}
+
 
 	return nil
 }
@@ -266,9 +292,14 @@ func (w *WalletManager) TransferFlow() error {
 	if !wallets[0].Unlocked {
 		fmt.Println("The wallet is locked, please enter password to unlocked it.")
 		password, err := console.InputPassword(false, 8)
+		if err != nil {
+			return err
+		}
 		err = UnlockWallet(password)
 		if err != nil {
-			return errors.New(fmt.Sprintf("UnlockWallet failed unexpected error: %v\n", err))
+			log.Printf("UnlockWallet information:%v\n",err)
+			log.Printf("NOTE: information 2XX means unlock wallet successfully, 4XX or 5XX means unsuccessfully.")
+			return nil
 		} else {
 			log.Printf("UnlockWallet processing......\n")
 		}
@@ -290,11 +321,12 @@ func (w *WalletManager) TransferFlow() error {
 	atculAmount, _ := decimal.NewFromString(amount)
 	realAmount := atculAmount.Mul(coinDecimal)
 
+
 	txID, err := SendTransaction(realAmount.String(), receiver)
 	if err != nil {
 		return err
 	}
-	log.Printf("Transaction ID:[%s]\n",txID)
+	log.Printf("Transaction ID:%s\n",txID)
 
 	return nil
 }
