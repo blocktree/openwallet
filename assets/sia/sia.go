@@ -23,7 +23,7 @@ import (
 	//"github.com/blocktree/OpenWallet/timer"
 	"path/filepath"
 	"github.com/shopspring/decimal"
-	"time"
+	"github.com/blocktree/OpenWallet/timer"
 )
 
 const (
@@ -161,7 +161,7 @@ func (w *WalletManager) CreateAddressFlow() error {
 func (w *WalletManager) SummaryFollow() error {
 
 	var (
-		//endRunning = make(chan bool, 1)
+		endRunning = make(chan bool, 1)
 	)
 
 	//先加载是否有配置文件
@@ -199,25 +199,25 @@ func (w *WalletManager) SummaryFollow() error {
 		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
 	}
 
-	//fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", cycleSeconds.Seconds())
+	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", cycleSeconds.Seconds())
 
 	//启动钱包汇总程序
-	//sumTimer := timer.NewTask(cycleSeconds, SummaryWallets)
-	//sumTimer.Start()
-	//
-	//<-endRunning
-	for  {
-		wallets, err := GetWalletInfo()
-		if err != nil {
-			return err
-		}
-		if wallets[0].OutgoingSC == "0" {
-			SummaryWallets()
-		}else {
-			log.Printf("wallet has coins spent in incomplete transaction, summaryWallets will begin after it finish...")
-		}
-		time.Sleep(10*time.Second)
-	}
+	sumTimer := timer.NewTask(cycleSeconds, SummaryWallets)
+	sumTimer.Start()
+
+	<-endRunning
+	//for  {
+	//	wallets, err := GetWalletInfo()
+	//	if err != nil {
+	//		return err
+	//	}
+	//	if wallets[0].OutgoingSC == "0" {
+	//		SummaryWallets()
+	//	}else {
+	//		log.Printf("wallet has coins spent in incomplete transaction, summaryWallets will begin after it finish...")
+	//	}
+	//	time.Sleep(10*time.Second)
+	//}
 
 
 	return nil
