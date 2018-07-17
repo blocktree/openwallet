@@ -18,6 +18,9 @@ package bytom
 import (
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/tidwall/gjson"
+	"github.com/asdine/storm"
+	"github.com/blocktree/OpenWallet/common/file"
+	"path/filepath"
 )
 
 //Wallet 钱包模型
@@ -76,6 +79,20 @@ func NewAccount(json gjson.Result) *Account {
 
 	return a
 }
+
+//openDB 打开钱包数据库
+func (a *Account) OpenDB() (*storm.DB, error) {
+	file.MkdirAll(dbPath)
+	file := filepath.Join(dbPath, a.FileName()+".db")
+	return storm.Open(file)
+
+}
+
+//FileName 该钱包定义的文件名规则
+func (w *Account)FileName() string {
+	return w.Alias+"-"+w.ID
+}
+
 
 // AccountBalance account balance
 type AccountBalance struct {

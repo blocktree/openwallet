@@ -25,21 +25,51 @@ type unlocked struct {
 	abort chan struct{}
 }
 
-//UserAccount 用户的钱包账户组
-type UserAccount struct {
-	//用户
-	*User
-	//账户ID，相当与用于账户的扩展密钥的根地址
+//AccountOwner 账户拥有者接口
+type AccountOwner interface {
+
+}
+
+//AssetsAccount 千张包资产账户
+type AssetsAccount struct {
+	//钱包
+	Wallet *Wallet
+	//别名
+	Alias string
+	//账户ID
 	AccountId string
-	//钱包数组
-	Wallets []*Wallet
-	// 已解锁的钱包，集合（钱包地址, 钱包私钥）
-	unlocked map[string]unlocked
+	//账户ID，索引位
+	Index uint
+	//账户公钥根路径
+	RootPath string
+	//类型类型： 单签，多签
+	Type WalletType
+	//公钥数组
+	PublicKeys []Bytes
+	//拥有者列表, 钱包账户ID: 拥有者
+	Owners map[string]AccountOwner
+	//创建者的账户ID
+	Creator string
+	//多签合约地址
+	ContractAddress string
+	//必要签名数
+	Required uint
+	//资产币种类别
+	Assets *Assets
+
+	//核心账户指针
+	core interface{}
 }
 
 
+
+func NewMultiSigAccount(wallets []*Wallet, required uint, creator *Wallet) (*AssetsAccount, error) {
+
+	return nil, nil
+}
+
 //NewUserAccount 创建账户
-func NewUserAccount(user User) *UserAccount {
+func NewUserAccount(user User) *AssetsAccount {
 	//TODO:实现从节点配置文件中读取私钥的存粗文件夹
 	//cfg := gethConfig{Node: defaultNodeConfig()}
 	//// Load config file.
@@ -59,19 +89,19 @@ func NewUserAccount(user User) *UserAccount {
 	//
 
 	//keystore.GenerateHDKey()
-	account := &UserAccount{}
+	account := &AssetsAccount{}
 	return account
 }
 
 // init 初始化用户账户
-func (u *UserAccount)init() {
+func (u *AssetsAccount)init() {
 	//1.加载用户所有钱包
 
 
 
 }
 
-func (u *UserAccount)loadKeystore() {
+func (u *AssetsAccount)loadKeystore() {
 
 
 

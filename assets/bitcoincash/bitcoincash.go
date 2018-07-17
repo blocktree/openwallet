@@ -160,7 +160,7 @@ func (w *WalletManager) CreateWalletFlow() error {
 	// 等待用户输入密码
 	password, err = console.InputPassword(true, 8)
 
-	keyFile, err = CreateNewWallet(name, password)
+	_, keyFile, err = CreateNewWallet(name, password)
 	if err != nil {
 		return err
 	}

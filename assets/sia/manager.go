@@ -288,7 +288,7 @@ func CreateNewWalletKey(alias, password string) (string, error) {
 
 	fmt.Printf("Create new wallet keystore...\n")
 
-	keyFile, err := keystore.StoreHDKey(keyDir, alias, password, keystore.StandardScryptN, keystore.StandardScryptP)
+	_, keyFile, err := keystore.StoreHDKey(keyDir, alias, password, keystore.StandardScryptN, keystore.StandardScryptP)
 	if err != nil {
 		return "", err
 	}

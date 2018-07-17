@@ -56,9 +56,15 @@ func (w *Wallet) HDKey(password string) (*keystore.HDKey, error) {
 //openDB 打开钱包数据库
 func (w *Wallet) OpenDB() (*storm.DB, error) {
 	file.MkdirAll(dbPath)
-	file := filepath.Join(dbPath, w.FileName()+".db")
+	file := filepath.Join(dbPath, w.DBFile())
 	return storm.Open(file)
 
+}
+
+
+//DBFile 数据库文件
+func (w *Wallet)DBFile() string {
+	return filepath.Join(dbPath, w.FileName()+".db")
 }
 
 //FileName 该钱包定义的文件名规则

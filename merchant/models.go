@@ -46,11 +46,11 @@ type Subscription struct {
 		| version  | int    | 否       | 地址版本号，订阅类型为2时，需要钱包管理工具主动下载订阅的地址列表        |
 
 	*/
-	ID       int    // primary key
-	Type     int64  `json:"type"`
-	Coin     string `json:"coin"`
-	WalletID string `json:"walletID"`
-	Version  int64  `json:"version"`
+	ID          int    // primary key
+	Type        int64  `json:"type"`
+	Coin        string `json:"coin"`
+	WalletID    string `json:"walletID"`
+	Version     int64  `json:"version"`
 }
 
 func NewSubscription(res gjson.Result) *Subscription {
@@ -79,33 +79,6 @@ func NewAddressVersion(json gjson.Result) *AddressVersion {
 	obj.Total = gjson.Get(json.Raw, "total").Uint()
 
 	key := fmt.Sprintf("%s_%s", obj.Coin, obj.WalletID)
-	obj.Key = key
-
-	return obj
-}
-
-type Address struct {
-
-	//| 参数名称 | 类型   | 是否可空 | 描述     |
-	//|----------|--------|----------|----------|
-	//| address  | string | 是       | 地址参数 |
-	//| isMemo   | bool   | 是       | 是否memo |
-	//| memo     | string | 否       | 备注     |
-
-	Key     string `storm:"id"`
-	Address string `json:"address"`
-	IsMemo  bool   `json:"isMemo"`
-	Memo    string `json:"memo"`
-}
-
-func NewAddress(json gjson.Result) *Address {
-	obj := &Address{}
-	//解析json
-	obj.Address = gjson.Get(json.Raw, "address").String()
-	obj.IsMemo = gjson.Get(json.Raw, "isMemo").Bool()
-	obj.Memo = gjson.Get(json.Raw, "memo").String()
-
-	key := fmt.Sprintf("%s_%s", obj.Address, obj.Memo)
 	obj.Key = key
 
 	return obj

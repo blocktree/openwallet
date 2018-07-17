@@ -13,7 +13,7 @@
  * GNU Lesser General Public License for more details.
  */
 
-package bytom
+package bitcoin
 
 import (
 	"github.com/blocktree/OpenWallet/common/file"
@@ -24,25 +24,20 @@ import (
 //CreateMerchantWallet 创建钱包
 func (w *WalletManager) CreateMerchantWallet(alias string, password string) (*openwallet.Wallet, error) {
 
-	wallet, err := CreateNewWallet(alias, password)
-	if err != nil {
-		return nil, err
-	}
-
-	//创建钱包第一个账户
-	account, err := CreateNormalAccount(wallet.PublicKey, alias)
+	wallet, keyFile, err := CreateNewWallet(alias, password)
 	if err != nil {
 		return nil, err
 	}
 
 	//创建钱包资源文件夹
-	walletDataFolder := filepath.Join(dbPath, account.FileName() + ".db")
+	walletDataFolder := filepath.Join(dbPath, wallet.DBFile())
 	file.MkdirAll(walletDataFolder)
 
 	owWallet := openwallet.Wallet{
-		Alias:    account.Alias,
-		RootPub:  wallet.PublicKey,
-		DBFile:   walletDataFolder,
+		Alias:   alias,
+		RootPub: wallet.RootPub,
+		DBFile:  walletDataFolder,
+		KeyFile: keyFile,
 	}
 	return &owWallet, nil
 }

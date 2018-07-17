@@ -20,9 +20,10 @@ import (
 	"path/filepath"
 )
 
+
 func TestStoreHDKey(t *testing.T) {
 	path := filepath.Join(".", "keys")
-	rootId, err := StoreHDKey(path, "Bitcoin seed", "hello", "12345678", StandardScryptN, StandardScryptP)
+	_, rootId, err := StoreHDKey(path, "hello", "12345678", StandardScryptN, StandardScryptP)
 	if err != nil {
 		t.Errorf("StoreHDKey failed unexpected error: %v", err)
 	} else {
@@ -32,7 +33,7 @@ func TestStoreHDKey(t *testing.T) {
 
 func TestGetKey(t *testing.T) {
 	path := filepath.Join(".", "keys")
-	ks := &HDKeystore{path, "Bitcoin seed", StandardScryptN, StandardScryptP}
+	ks := &HDKeystore{path, StandardScryptN, StandardScryptP}
 
 	key, err := ks.GetKey("W8LoZwG22AobHZgSAyTBDRbCKHtJh9bXEL",
 		"wallet-hello-W8LoZwG22AobHZgSAyTBDRbCKHtJh9bXEL.json",

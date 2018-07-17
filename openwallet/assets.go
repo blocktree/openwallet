@@ -15,6 +15,13 @@
 
 package openwallet
 
+//资产类型
+type Assets struct {
+	Symbol string
+	//代币
+	Tokens []*Assets
+}
+
 //AssetsInferface 是一个给钱包调用资产的抽象接口
 type AssetsInferface interface {
 	//Deposit 返回钱包对该资产的充值地址
