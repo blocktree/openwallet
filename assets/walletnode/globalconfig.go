@@ -16,85 +16,92 @@
 package walletnode
 
 import (
-	"encoding/json"
-	"fmt"
-	bconfig "github.com/astaxie/beego/config"
-	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/pkg/errors"
-	"path/filepath"
-	s "strings"
+	"github.com/shopspring/decimal"
+	// "path/filepath"
+	// s "strings"
+	"time"
 )
 
-// Load settings for global from local conf/<Symbol>.ini
-func loadConfig(symbol string) error {
-	var (
-		c   bconfig.Configer
-		err error
-	)
-	configFilePath, _ := filepath.Abs("conf")
-	configFileName := s.ToUpper(symbol) + ".ini"
+const (
+	DATAPATH = "/storage/openwallet/"
+)
 
-	absFile := filepath.Join(configFilePath, configFileName)
-	c, err = bconfig.NewConfig("ini", absFile)
-	if err != nil {
-		return errors.New(fmt.Sprintf("Load Config Failed: %s", err))
-	}
+var (
+	Symbol string
+)
 
-	if v, err := c.Bool("isTestNet"); err != nil {
-		return errors.New(fmt.Sprintf("Load Config Failed: %s", err))
-	} else {
-		isTestNet = v
-	}
+// Node setup 节点配置
+var (
+	//钱包服务服务地址和端口
+	serverAddr = "localhost"
+	serverPort = ""
+	//是否测试网络
+	isTestNet = "true" // default in TestNet
+	//RPC认证账户名
+	rpcUser = ""
+	//RPC认证账户密码
+	rpcPassword = ""
+	//钥匙备份路径
+	// keyDir = filepath.Join("data", strings.ToLower(Symbol), "key")
+	//汇总地址
+	sumAddress = ""
+	keyDir     = ""
+	//地址导出路径
+	// addressDir = filepath.Join("data", strings.ToLower(Symbol), "address")
+	addressDir = ""
+	//配置文件路径
+	// configFilePath = filepath.Join("conf")
+	configFilePath = ""
+	//配置文件名
+	configFileName = Symbol + ".ini"
+	// 核心钱包是否只做监听
+	CoreWalletWatchOnly = true
+	//最大的输入数量
+	maxTxInputs = 50
+	//本地数据库文件路径
+	//dbPath = filepath.Join("data", strings.ToLower(Symbol), "db")
+	dbPath = ""
+	//备份路径
+	// backupDir = filepath.Join("data", strings.ToLower(Symbol), "backup")
+	backupDir = ""
+	//钱包数据文件目录
+	walletDataPath = ""
+	//小数位长度
+	coinDecimal decimal.Decimal = decimal.NewFromFloat(100000000)
+	//参与汇总的钱包
+	// walletsInSum = make(map[string]*Wallet)	// ? 500
+	//汇总阀值
+	threshold decimal.Decimal = decimal.NewFromFloat(5)
+	//汇总执行间隔时间
+	cycleSeconds = time.Second * 10
+	//默认配置内容
+	defaultConfig = `
+# start node command
+startNodeCMD = ""
+# stop node command
+stopNodeCMD = ""
+# node install path
+nodeInstallPath = ""
+# node api url
+apiURL = ""
+# Is network test?
+isTestNet = false
+# RPC Authentication Username
+rpcUser = ""
+# RPC Authentication Password
+rpcPassword = ""
+# mainnet data path
+mainNetDataPath = ""
+# testnet data path
+testNetDataPath = ""
+# the safe address that wallet send money to.
+sumAddress = ""
+# when wallet's balance is over this value, the wallet willl send money to [sumAddress]
+threshold = ""
 
-	return nil
-}
-
-// Init <Symbol>.ini file automatically
-func initConfig(symbol string) error {
-	configFilePath, _ := filepath.Abs("conf")
-	configFileName := s.ToUpper(symbol) + ".ini"
-
-	absFile := filepath.Join(configFilePath, configFileName)
-	if !file.Exists(absFile) {
-		file.MkdirAll(configFilePath)
-		file.WriteFile(absFile, []byte(defaultConfig), false)
-	}
-	return nil
-}
-
-// Update <Symbol>.ini file
-func updateConfig(symbol string) error {
-	if err := loadConfig(symbol); err != nil {
-		return err
-	}
-	configFilePath, _ := filepath.Abs("conf")
-	configFileName := s.ToUpper(symbol) + ".ini"
-	absFile := filepath.Join(configFilePath, configFileName)
-	fmt.Println(absFile)
-
-	configMap := map[string]interface{}{
-		"dockerAddr": dockerAddr,
-		"dockerPort": dockerPort,
-		"isTestNet":  isTestNet,
-	}
-
-	if bytes, err := json.Marshal(configMap); err != nil {
-		return err
-	} else {
-		//实例化配置
-		if c, err := bconfig.NewConfigData("json", bytes); err != nil {
-			return err
-		} else {
-			//写入配置到文件
-			fmt.Println(c)
-			//   file.MkdirAll(configFilePath)
-			//   absFile := filepath.Join(configFilePath, configFileName)
-			//   err = c.SaveConfigFile(absFile)
-			//   if err != nil {
-			//   	return err
-			//   }
-		}
-	}
-
-	return nil
-}
+# docker master server addr
+serverAddr = "localhost"
+# docker master server port
+serverPort = ""
+`
+)
