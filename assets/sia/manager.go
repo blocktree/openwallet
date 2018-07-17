@@ -58,7 +58,7 @@ var (
 	//最小矿工费
 	minFees decimal.Decimal = decimal.NewFromFloat(22600000000000000000000)
 	//汇总地址
-	sumAddress = "c42cb45155b0dbb572b385d113eb9f030953fe346f972ceaf494f8c1bd195164b11ec574b96c"
+	sumAddress = ""
 	//汇总执行间隔时间
 	cycleSeconds = time.Second * 10
 	// 节点客户端
@@ -109,9 +109,7 @@ func loadConfig() error {
 	//restorePath = c.String("restorePath")
 	rpcPassword = c.String("rpcPassword")
 	walletDataPath = c.String("walletDataPath")
-	if walletDataPath==""{
-		return errors.New("walletDataPath is null, please setup the config file before backup ")
-	}
+
 	//walletPath = c.String("walletPath")
 	threshold, _ = decimal.NewFromString(c.String("threshold"))
 	threshold = threshold.Mul(coinDecimal)
@@ -567,14 +565,15 @@ func SendTransaction(amount string, destination string) (string, error) {
 		"destination": destination,
 	}
 
-	_, err := client.Call("wallet/siacoins", "POST", request)
+	txIDs, err := client.Call("wallet/siacoins", "POST", request)
 	if err != nil {
 		return "", err
 	}
 
 	fmt.Printf("Send Transaction Successfully\n")
 
-	return "", nil
+	txID := gjson.GetBytes(txIDs,"transactionids").String()
+	return txID, nil
 }
 
 //SummaryWallets 执行汇总流程
@@ -608,11 +607,11 @@ func SummaryWallets() {
 			//balance = balance.Sub(coinDecimal)
 
 			//txID, err := SendTransaction(w.AccountID, sumAddress, assetsID_btm, uint64(balance.IntPart()), wallet.Password, false)
-			_, err = SendTransaction(balance.Sub(minFees).String(), sumAddress)
+			txID, err := SendTransaction(balance.Sub(minFees).String(), sumAddress)
 			if err != nil {
 				log.Printf("Summary unexpected error: %v\n", err)
 			} else {
-				log.Printf("Summary successfully，Received Address[%s]", sumAddress)
+				log.Printf("Summary successfully，Received Address[%s], Transaction ID:[%s]", sumAddress,txID)
 			}
 		} else {
 			log.Printf("Wallet  Balance: %v，below threshold: %v\n", balance.Div(coinDecimal), threshold.Div(coinDecimal))
