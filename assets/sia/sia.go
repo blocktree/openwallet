@@ -199,7 +199,7 @@ func (w *WalletManager) SummaryFollow() error {
 		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
 	}
 
-	//fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", cycleSeconds.Seconds())
+	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", cycleSeconds.Seconds())
 
 	//启动钱包汇总程序
 	sumTimer := timer.NewTask(cycleSeconds, SummaryWallets)

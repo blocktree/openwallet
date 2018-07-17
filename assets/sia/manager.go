@@ -594,7 +594,7 @@ func SummaryWallets() {
 
 	if len(wallets) > 0 {
 		//balance, _ := decimal.NewFromString(common.NewString(wallets[0].ConfirmBalance).String())
-		balance, _ := decimal.NewFromString(common.NewString(wallets[0].ConfirmBalance).String())
+		balance, _ := decimal.NewFromString(wallets[0].ConfirmBalance)
 
 		//如果余额大于阀值，汇总的地址
 		if balance.GreaterThan(threshold) {
