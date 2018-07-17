@@ -57,11 +57,7 @@ func TestBackupWallet(t *testing.T) {
 
 func TestUnlockWallet(t *testing.T) {
 	err := UnlockWallet("1234567890abc")
-	if err != nil {
-		t.Errorf("UnlockWallet failed unexpected error: %v\n", err)
-	} else {
-		t.Logf("UnlockWallet successfully\n")
-	}
+	t.Logf("Unlock information: %v\n", err)
 }
 
 //慎用新建钱包，会替换旧的钱包（要先备份旧钱包）
@@ -127,7 +123,7 @@ func TestSendTransaction(t *testing.T) {
 		t.Errorf("SendTransaction failed unexpected error: %v", err)
 		return
 	}
-	t.Logf("SendTransaction success, Transaction ID:[%s]\n",txID)
+	t.Logf("SendTransaction success, Transaction ID:%s\n",txID)
 }
 
 func TestSummaryWallets(t *testing.T) {
