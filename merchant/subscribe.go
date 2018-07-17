@@ -145,28 +145,15 @@ func (m *MerchantNode) getChargeAddress() error {
 
 						if status == owtp.StatusSuccess {
 
+							wallet, err := m.GetMerchantWalletByID(v.WalletID)
+							if err != nil {
+								return
+							}
+
 							//导入到每个币种的数据库
 							mer := assets.GetMerchantAssets(v.Coin)
-							mer.ImportMerchantAddress(addrs)
+							mer.ImportMerchantAddress(wallet, addrs)
 
-
-							innerdb, err := m.OpenDB()
-							if err != nil {
-								return
-							}
-							defer innerdb.Close()
-
-							tx, err := innerdb.Begin(true)
-							if err != nil {
-								return
-							}
-							defer tx.Rollback()
-
-							for _, a := range addrs {
-								tx.Save(a)
-							}
-
-							tx.Commit()
 							getCount = getCount + limit
 						}
 					})

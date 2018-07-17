@@ -21,7 +21,7 @@ import "github.com/blocktree/OpenWallet/openwallet"
 type MerchantAssets interface {
 
 	//CreateMerchantWallet 创建钱包
-	CreateMerchantWallet(alias string, password string) (*openwallet.Wallet, error)
+	CreateMerchantWallet(wallet *openwallet.Wallet) (error)
 
 	//GetMerchantWalletList 获取钱包列表
 	GetMerchantWalletList() ([]*openwallet.Wallet, error)
@@ -30,13 +30,13 @@ type MerchantAssets interface {
 	ConfigMerchantWallet(wallet *openwallet.Wallet) error
 
 	//ImportMerchantAddress 导入地址
-	ImportMerchantAddress(addresses []*openwallet.Address) error
+	ImportMerchantAddress(wallet *openwallet.Wallet, addresses []*openwallet.Address) error
 
 	//CreateMerchantAddress 创建钱包地址
-	CreateMerchantAddress(walletID string, count int) ([]*openwallet.Address, error)
+	CreateMerchantAddress(wallet *openwallet.Wallet, count int) ([]*openwallet.Address, error)
 
 	//GetMerchantAddressList 获取钱包地址
-	GetMerchantAddressList(walletID string, offset uint64, limit uint64) ([]*openwallet.Address, error)
+	GetMerchantAddressList(wallet *openwallet.Wallet, offset uint64, limit uint64) ([]*openwallet.Address, error)
 
 }
 

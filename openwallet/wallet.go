@@ -16,9 +16,14 @@
 package openwallet
 
 import (
+	"github.com/asdine/storm"
+	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/keystore"
 	"github.com/pborman/uuid"
+	"io/ioutil"
+	"path/filepath"
 	"reflect"
+	"github.com/pkg/errors"
 )
 
 type Wallet struct {
@@ -50,13 +55,44 @@ func NewWalletID() uuid.UUID {
 }
 
 //NewWatchOnlyWallet 只读钱包，用于观察冷钱包
-func NewWatchOnlyWallet(walletID string) *Wallet {
+func NewWatchOnlyWallet(walletID string, symbol string) *Wallet {
+
+	dbDir := GetDBDir(symbol)
+	file.MkdirAll(dbDir)
+
+	dbFile := filepath.Join(dbDir, walletID+".db")
+
 	w := Wallet{
 		WalletID:  walletID,
-		Alias:     walletID,		//自定义ID也作为别名
+		Alias:     walletID, //自定义ID也作为别名
 		WatchOnly: true,
+		DBFile:    dbFile,
 	}
+
 	return &w
+}
+
+//HDKey 获取钱包密钥，需要密码
+func (w *Wallet) HDKey(password string) (*keystore.HDKey, error) {
+
+	if len(w.KeyFile) == 0 {
+		return nil, errors.New("Wallet key is not exist!")
+	}
+
+	keyjson, err := ioutil.ReadFile(w.KeyFile)
+	if err != nil {
+		return nil, err
+	}
+	key, err := keystore.DecryptHDKey(keyjson, password)
+	if err != nil {
+		return nil, err
+	}
+	return key, err
+}
+
+//openDB 打开钱包数据库
+func (w *Wallet) OpenDB() (*storm.DB, error) {
+	return storm.Open(w.DBFile)
 }
 
 /*

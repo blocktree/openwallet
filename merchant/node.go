@@ -23,6 +23,7 @@ import (
 	"log"
 	"sync"
 	"time"
+	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 var (
@@ -107,6 +108,24 @@ func (m *MerchantNode) resetSubscriptions(news []*Subscription) {
 //OpenDB 访问数据库
 func (m *MerchantNode) OpenDB() (*storm.DB, error) {
 	return storm.Open(m.Config.CacheFile)
+}
+
+//GetMerchantWalletByID 获取商户钱包
+func (m *MerchantNode) GetMerchantWalletByID(walletID string) (*openwallet.Wallet, error) {
+
+	db, err := m.OpenDB()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	var wallet openwallet.Wallet
+	err = db.One("walletID", walletID, &wallet)
+	if err != nil {
+		return nil, err
+	}
+
+	return &wallet, nil
 }
 
 //Run 运行商户节点管理

@@ -47,7 +47,7 @@ var (
 func (m *MerchantNode) setupRouter() {
 
 	m.Node.HandleFunc("subscribe", m.subscribe)
-	m.Node.HandleFunc("subscribe", m.createWallet)
+	m.Node.HandleFunc("createWallet", m.createWallet)
 	m.Node.HandleFunc("configWallet", m.configWallet)
 	m.Node.HandleFunc("getWalletInfo", m.getWalletInfo)
 	m.Node.HandleFunc("submitTrasaction", m.submitTrasaction)
@@ -78,15 +78,13 @@ func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 		s := NewSubscription(p)
 		subscriptions = append(subscriptions, s)
 
-		//检查订阅的钱包是否存在，不存在随机创建
-		wallet := openwallet.NewWatchOnlyWallet(s.WalletID)
+		//添加订阅钱包
+		wallet := openwallet.NewWatchOnlyWallet(s.WalletID, s.Coin)
 		db.Save(wallet)
 	}
 
 	//重置订阅内容
 	m.resetSubscriptions(subscriptions)
-
-
 
 	//启动订阅交易记录任务
 
@@ -119,14 +117,18 @@ func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 		responseError(ctx, errors.New("Assets manager no find!"))
 		return
 	}
-	wallet, err := am.CreateMerchantWallet(alias, password)
+
+	wallet := openwallet.Wallet{
+		WalletID: openwallet.NewWalletID().String(),
+		Alias: alias,
+		Password: password,
+	}
+
+	err := am.CreateMerchantWallet(&wallet)
 	if err != nil {
 		responseError(ctx, err)
 		return
 	}
-
-	//生成随机的钱包ID
-	wallet.WalletID = openwallet.NewWalletID().String()
 
 	db, err := m.OpenDB()
 	if err != nil {

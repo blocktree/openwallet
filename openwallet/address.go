@@ -19,7 +19,6 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-
 //Address OpenWallet地址
 type Address struct {
 	WalletID  string `json:"walletID"`           //钱包ID
@@ -28,7 +27,7 @@ type Address struct {
 	Tag       string `json:"tag"`                //标签
 	Index     uint64 `json:"index"`              //账户ID，索引位
 	RootPath  string `json:"rootPath"`           //地址公钥根路径
-	WatchOnly bool   `json:"memo"`               //是否观察地址，true的时候，Index，RootPath，Alias都没有。
+	WatchOnly bool   `json:"watchOnly"`          //是否观察地址，true的时候，Index，RootPath，Alias都没有。
 	Symbol    string `json:"coin"`               //币种类别
 	Balance   string `json:"balance"`            //余额
 	IsMemo    bool   `json:"isMemo"`             //是否备注
