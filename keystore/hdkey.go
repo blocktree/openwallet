@@ -27,7 +27,7 @@ import (
 	"errors"
 	"fmt"
 	t "github.com/blocktree/OpenWallet/common"
-	"github.com/blocktree/OpenWallet/openwallet"
+	//"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -41,6 +41,9 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/btcutil/base58"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -355,7 +358,7 @@ func DecryptHDKey(keyjson []byte, auth string) (*HDKey, error) {
 
 	return &HDKey{
 		Alias:     k.Alias,
-		RootId:    openwallet.ExtendedKeyToAddress(rootkey, true).String(),
+		RootId:    ExtendedKeyToOWAddress(rootkey, true).String(),
 		RootPub:   rootPub.String(),
 		RootPath:  k.RootPath,
 		MasterKey: master,
@@ -507,7 +510,7 @@ func NewHDKey(seed []byte, alias, rootPath string) (*HDKey, error) {
 	hdkey := &HDKey{
 		Alias:      alias,
 		RootPub:    rootPub.String(),
-		RootId:     openwallet.ExtendedKeyToAddress(key, true).String(), //存储账户扩展密钥的地址作为accountId
+		RootId:     ExtendedKeyToOWAddress(key, true).String(), //存储账户扩展密钥的地址作为accountId
 		RootPath:   rootPath,
 		AccountNum: 0,
 		MasterKey:  master,
@@ -651,4 +654,51 @@ func pkcs7Unpad(in []byte) []byte {
 		}
 	}
 	return in[:len(in)-int(padding)]
+}
+
+
+const (
+	//地址首字节的标识
+	AddressVersion = 0x48
+	//地址协议头
+	AddressProtocol = "openw:"
+)
+
+type OWAddress common.Address
+
+// String 把地址使用base58编码成字符串格式
+func (a OWAddress) String(addProtocol ...bool) string {
+	s := base58.CheckEncode(a[:common.AddressLength], AddressVersion)
+	if len(addProtocol) > 0 && addProtocol[0] {
+		s = AddressProtocol + s
+	}
+	return s
+}
+
+//PubkeyToOpenwAddress 公钥转为openw统一地址
+func PubkeyToOWAddress(p btcec.PublicKey, compressed bool) OWAddress {
+
+	var (
+		pubBytes []byte
+	)
+
+	if compressed {
+		pubBytes = btcutil.Hash160(p.SerializeCompressed())
+	} else {
+		pubBytes = btcutil.Hash160(p.SerializeUncompressed())
+	}
+	pkHash := btcutil.Hash160(pubBytes)
+	var a common.Address
+	a.SetBytes(pkHash)
+	return OWAddress(a)
+}
+
+//ExtendedKeyToOWAddress 扩展密钥转地址
+func ExtendedKeyToOWAddress(k *hdkeychain.ExtendedKey, compressed bool) OWAddress {
+	var a OWAddress
+	pubkey, err := k.ECPubKey()
+	if err != nil {
+		return a
+	}
+	return PubkeyToOWAddress(*pubkey, compressed)
 }

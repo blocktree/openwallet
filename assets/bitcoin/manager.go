@@ -419,7 +419,7 @@ func CreateBatchAddress(name, password string, count uint64) (string, error) {
 }
 
 //CreateNewWallet 创建钱包
-func CreateNewWallet(name, password string) (string, error) {
+func CreateNewWallet(name, password string) (*Wallet, string, error) {
 
 	var (
 		err     error
@@ -430,7 +430,7 @@ func CreateNewWallet(name, password string) (string, error) {
 	wallets, err = GetWalletKeys(keyDir)
 	for _, w := range wallets {
 		if w.Alias == name {
-			return "", errors.New("The wallet's alias is duplicated!")
+			return nil, "", errors.New("The wallet's alias is duplicated!")
 		}
 	}
 
@@ -442,7 +442,7 @@ func CreateNewWallet(name, password string) (string, error) {
 		err = UnlockWallet(password, 1)
 		if err != nil {
 			fmt.Printf("%v\n", err)
-			return "", errors.New("The wallet's password is not equal bitcoin-core wallet!\n")
+			return nil, "", errors.New("The wallet's password is not equal bitcoin-core wallet!\n")
 		}
 	} else {
 		//加密钱包后，需要10秒后重启bitcoin core
@@ -455,20 +455,22 @@ func CreateNewWallet(name, password string) (string, error) {
 
 	seed, err := hdkeychain.GenerateSeed(32)
 	if err != nil {
-		return "", err
+		return nil, "", err
 	}
 
 	extSeed, err := keystore.GetExtendSeed(seed, MasterKey)
 	if err != nil {
-		return "", err
+		return nil, "", err
 	}
 
-	keyFile, err := keystore.StoreHDKeyWithSeed(keyDir, name, password, extSeed, keystore.StandardScryptN, keystore.StandardScryptP)
+	key, keyFile, err := keystore.StoreHDKeyWithSeed(keyDir, name, password, extSeed, keystore.StandardScryptN, keystore.StandardScryptP)
 	if err != nil {
-		return "", err
+		return nil, "", err
 	}
 
-	return keyFile, nil
+	w := Wallet{WalletID: key.RootId, Alias: key.Alias}
+
+	return &w, keyFile, nil
 }
 
 //EncryptWallet 通过密码加密钱包，只在第一次加密码时才有效

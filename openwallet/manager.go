@@ -27,7 +27,7 @@ type Manager struct {
 	backends map[reflect.Type][]accounts.Backend // Index of backends currently registered
 	updaters []event.Subscription       // Wallet update subscriptions for all backends
 	//updates  chan WalletEvent           // Subscription sink for backend wallet changes
-	accounts  []*UserAccount                   // Cache of all wallets from all registered backends
+	accounts  []*AssetsAccount                   // Cache of all wallets from all registered backends
 
 	feed event.Feed // Wallet feed notifying of arrivals/departures
 

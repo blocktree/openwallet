@@ -81,7 +81,7 @@ func TestUnlockWallet(t *testing.T) {
 }
 
 func TestCreateNewWallet(t *testing.T) {
-	res, err := CreateNewWallet(testUser, testPass)
+	_, res, err := CreateNewWallet(testUser, testPass)
 	if err != nil {
 		t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
 		return

@@ -18,6 +18,7 @@ package merchant
 import (
 	"github.com/blocktree/OpenWallet/owtp"
 	"log"
+	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 //CallGetChargeAddressVersion 获取要订阅的地址版本信息
@@ -58,7 +59,7 @@ func GetChargeAddress(
 	node *owtp.OWTPNode,
 	params interface{},
 	sync bool,
-	callback func(addrs []*Address, status uint64, msg string)) error {
+	callback func(addrs []*openwallet.Address, status uint64, msg string)) error {
 
 	//| 参数名称 | 类型   | 是否可空 | 描述     |
 	//|----------|--------|----------|----------|
@@ -73,12 +74,12 @@ func GetChargeAddress(
 		params,
 		sync,
 		func(resp owtp.Response) {
-			addrs := make([]*Address, 0)
+			addrs := make([]*openwallet.Address, 0)
 			result := resp.JsonData()
 			if result.Exists() {
 				arrs := result.Get("addresses").Array()
 				for _, ad := range arrs {
-					a := NewAddress(ad)
+					a := openwallet.NewAddress(ad)
 					addrs = append(addrs, a)
 				}
 			}

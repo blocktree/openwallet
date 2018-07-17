@@ -23,7 +23,6 @@ import (
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"io/ioutil"
 	"path/filepath"
-	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 const (
@@ -75,11 +74,11 @@ func NewHDKeystore(keydir string, scryptN, scryptP int) *HDKeystore {
 }
 
 // StoreHDKey 创建HDKey
-func StoreHDKey(dir, alias, auth string, scryptN, scryptP int) (string, error) {
+func StoreHDKey(dir, alias, auth string, scryptN, scryptP int) (*HDKey, string, error) {
 
 	seed, err := hdkeychain.GenerateSeed(SeedLen)
 	if err != nil {
-		return "", err
+		return nil, "", err
 	}
 
 	//extSeed, err := GetExtendSeed(seed, masterKey)
@@ -92,9 +91,9 @@ func StoreHDKey(dir, alias, auth string, scryptN, scryptP int) (string, error) {
 
 
 // StoreHDKey 创建HDKey
-func StoreHDKeyWithSeed(dir, alias, auth string, seed []byte, scryptN, scryptP int) (string, error) {
-	_, filePath, err := storeNewKey(&HDKeystore{dir, scryptN, scryptP}, alias, auth, seed)
-	return filePath, err
+func StoreHDKeyWithSeed(dir, alias, auth string, seed []byte, scryptN, scryptP int) (*HDKey, string, error) {
+	key, filePath, err := storeNewKey(&HDKeystore{dir, scryptN, scryptP}, alias, auth, seed)
+	return key, filePath, err
 }
 
 //storeNewKey 用随机种子生成HDKey
@@ -151,10 +150,10 @@ func (ks *HDKeystore) JoinPath(filename string) string {
 }
 
 //getDecryptedKey 获取解密后的钥匙
-func (ks *HDKeystore) getDecryptedKey(alias, rootId, auth string) (*openwallet.UserAccount, *HDKey, error) {
+func (ks *HDKeystore) getDecryptedKey(alias, rootId, auth string) (*HDKey, error) {
 	path := ks.JoinPath(keyFileName(alias, rootId) + ".key")
 	key, err := ks.GetKey(rootId, path, auth)
-	return nil, key, err
+	return key, err
 }
 
 //GetExtendSeed 获得某个币种的扩展种子

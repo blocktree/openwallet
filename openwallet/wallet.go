@@ -16,31 +16,50 @@
 package openwallet
 
 import (
-	"errors"
+	"github.com/blocktree/OpenWallet/keystore"
+	"github.com/pborman/uuid"
 	"reflect"
-
-	"github.com/ethereum/go-ethereum/common"
 )
 
 type Wallet struct {
-	//资产地址表
-	AssetsAddress map[string]string
-	//类型类型： 单签，多签
-	Type WalletType
-	//公钥
-	PublicKeys []Bytes
-	//拥有者列表, 公钥hex与用户key映射
-	Owners map[string]string
-	//创建者
-	Creator *User
-	//私链合约地址
-	ContractAddress string
-	//必要签名数
-	Required uint
-	//OpenWallet的统一地址
-	OpenwAddress string
+	WalletID  string `json:"walletID"  storm:"id"`
+	Alias     string `json:"alias"`
+	Balance   string `json:"balance"`
+	Password  string `json:"password"`
+	RootPub   string `json:"rootpub"`
+	KeyFile   string `json:"keyFile"`   //钱包的密钥文件
+	DBFile    string `json:"dbFile"`    //钱包的数据库文件
+	WatchOnly bool   `json:"watchOnly"` //创建watchonly的钱包，没有私钥文件，只有db文件
+	key       *keystore.HDKey
+
+	//核心钱包指针
+	core interface{}
+
+	// 已解锁的钱包，集合（钱包地址, 钱包私钥）
+	unlocked map[string]unlocked
 }
 
+func NewHDWallet(key *keystore.HDKey) (*Wallet, error) {
+
+	return nil, nil
+}
+
+func NewWalletID() uuid.UUID {
+	id := uuid.NewRandom()
+	return id
+}
+
+//NewWatchOnlyWallet 只读钱包，用于观察冷钱包
+func NewWatchOnlyWallet(walletID string) *Wallet {
+	w := Wallet{
+		WalletID:  walletID,
+		Alias:     walletID,		//自定义ID也作为别名
+		WatchOnly: true,
+	}
+	return &w
+}
+
+/*
 //NewWallet 创建钱包
 func NewWallet(publickeys []Bytes, users []*User, required uint, creator *User) (*Wallet, error) {
 
@@ -84,30 +103,19 @@ func NewWallet(publickeys []Bytes, users []*User, required uint, creator *User) 
 
 	return w, nil
 }
+*/
 
-//NewHDWallet 创建HD钱包
-func NewHDWallet(users []*User, derivedPath string, required uint, creator *User) (*Wallet, error) {
-
-	var (
-		publicKeys []Bytes = make([]Bytes, 0)
-	)
-
-	//通过用户根公钥和衍生路径，生成确定的子公钥
-
-	return NewWallet(publicKeys, users, required, creator)
-}
-
-//GetUserByPublicKey 通过公钥获取用户
-func (w *Wallet) GetUserByPublicKey(publickey PublicKey) *User {
-
-	pkHex := common.Bytes2Hex(publickey)
-
-	user := &User{
-		UserKey: w.Owners[pkHex],
-	}
-
-	return user
-}
+////GetUserByPublicKey 通过公钥获取用户
+//func (w *Wallet) GetUserByPublicKey(publickey PublicKey) *User {
+//
+//	pkHex := common.Bytes2Hex(publickey)
+//
+//	user := &User{
+//		UserKey: w.Owners[pkHex],
+//	}
+//
+//	return user
+//}
 
 // Deposit 充值
 func (w *Wallet) Deposit(assets string) []byte {
