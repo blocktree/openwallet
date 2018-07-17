@@ -598,20 +598,24 @@ func SummaryWallets() {
 
 		//如果余额大于阀值，汇总的地址
 		if balance.GreaterThan(threshold) {
+			//如果钱包正在执行转账，需要等待转账完毕才能继续进行汇总
+			if wallets[0].OutgoingSC == "0"{
+				log.Printf("Summary balance = %v \n", balance.Div(coinDecimal))
+				log.Printf("Summary Start Send Transaction\n")
 
-			log.Printf("Summary balance = %v \n", balance.Div(coinDecimal))
-			log.Printf("Summary Start Send Transaction\n")
+				//避免临界值的错误，减去1个
 
-			//避免临界值的错误，减去1个
+				//balance = balance.Sub(coinDecimal)
 
-			//balance = balance.Sub(coinDecimal)
-
-			//txID, err := SendTransaction(w.AccountID, sumAddress, assetsID_btm, uint64(balance.IntPart()), wallet.Password, false)
-			txID, err := SendTransaction(balance.Sub(minFees).String(), sumAddress)
-			if err != nil {
-				log.Printf("Summary unexpected error: %v\n", err)
-			} else {
-				log.Printf("Summary successfully，Received Address[%s], Transaction ID:%s", sumAddress,txID)
+				//txID, err := SendTransaction(w.AccountID, sumAddress, assetsID_btm, uint64(balance.IntPart()), wallet.Password, false)
+				txID, err := SendTransaction(balance.Sub(minFees).String(), sumAddress)
+				if err != nil {
+					log.Printf("Summary unexpected error: %v\n", err)
+				} else {
+					log.Printf("Summary successfully，Received Address[%s], Transaction ID:%s", sumAddress,txID)
+				}
+			}else {
+				log.Printf("wallet has coins spent in incomplete transaction, summaryWallets will begin after it finish...")
 			}
 		} else {
 			log.Printf("Wallet  Balance: %v，below threshold: %v\n", balance.Div(coinDecimal), threshold.Div(coinDecimal))
