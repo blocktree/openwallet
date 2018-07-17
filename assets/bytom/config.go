@@ -44,14 +44,23 @@ const (
 )
 
 var (
+	dataDir = filepath.Join("data", strings.ToLower(Symbol))
 	//钥匙备份路径
-	keyDir = filepath.Join("data", strings.ToLower(Symbol), "key")
+	keyDir = filepath.Join(dataDir, "key")
+	//钱包数据库目录
+	dbPath = filepath.Join(dataDir, "db")
 	//地址导出路径
-	addressDir = filepath.Join("data", strings.ToLower(Symbol), "address")
+	addressDir = filepath.Join(dataDir, "address")
+	//配置文件名
+	configFileName = Symbol + ".ini"
+	//接口授权密码
+	rpcPassword = "123"
+	//备份路径
+	backupDir = filepath.Join(dataDir, "backup")
 	//配置文件路径
 	configFilePath = filepath.Join("conf")
 	//配置文件名
-	configFileName = Symbol + ".json"
+	//configFileName = Symbol + ".json"
 
 	//node config file
 	nodeConfigFile = Symbol + "Node.json"

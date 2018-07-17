@@ -20,41 +20,8 @@ import (
 	"github.com/blocktree/OpenWallet/timer"
 	"log"
 	"github.com/blocktree/OpenWallet/assets"
+	"github.com/blocktree/OpenWallet/openwallet"
 )
-
-//subscribe 订阅方法
-func (m *MerchantNode) subscribe(ctx *owtp.Context) {
-
-	log.Printf("Merchat Call: subscribe \n")
-	log.Printf("params: %v\n", ctx.Params())
-
-	var (
-		subscriptions []*Subscription
-	)
-
-	//db, err := m.OpenDB()
-	//if err != nil {
-	//	responseError(ctx, err)
-	//	return
-	//}
-	//defer db.Close()
-	//
-	////每次订阅都先清除旧订阅
-	//db.Drop("subscribe")
-
-	for _, p := range ctx.Params().Get("subscriptions").Array() {
-		s := NewSubscription(p)
-		subscriptions = append(subscriptions, s)
-		//db.Save(s)
-	}
-
-	//充值订阅内容
-	m.resetSubscriptions(subscriptions)
-
-	//启动订阅交易记录任务
-
-	responseSuccess(ctx, nil)
-}
 
 //GetChargeAddressVersion 获取要订阅的地址版本信息
 func (m *MerchantNode) GetChargeAddressVersion() error {
@@ -174,32 +141,19 @@ func (m *MerchantNode) getChargeAddress() error {
 
 				err = GetChargeAddress(m.Node, params,
 					true,
-					func(addrs []*Address, status uint64, msg string) {
+					func(addrs []*openwallet.Address, status uint64, msg string) {
 
 						if status == owtp.StatusSuccess {
 
+							wallet, err := m.GetMerchantWalletByID(v.WalletID)
+							if err != nil {
+								return
+							}
+
 							//导入到每个币种的数据库
 							mer := assets.GetMerchantAssets(v.Coin)
-							mer.ImportMerchantAddress(nil)
+							mer.ImportMerchantAddress(wallet, addrs)
 
-
-							innerdb, err := m.OpenDB()
-							if err != nil {
-								return
-							}
-							defer innerdb.Close()
-
-							tx, err := innerdb.Begin(true)
-							if err != nil {
-								return
-							}
-							defer tx.Rollback()
-
-							for _, a := range addrs {
-								tx.Save(a)
-							}
-
-							tx.Commit()
 							getCount = getCount + limit
 						}
 					})

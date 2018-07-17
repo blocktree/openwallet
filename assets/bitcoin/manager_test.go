@@ -196,7 +196,7 @@ func TestUnlockWallet(t *testing.T) {
 }
 
 func TestCreateNewWallet(t *testing.T) {
-	_, err := CreateNewWallet("Rocky", "1234qwer")
+	_, _, err := CreateNewWallet("Rocky", "1234qwer")
 	if err != nil {
 		t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
 		return

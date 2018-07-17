@@ -13,7 +13,7 @@
  * GNU Lesser General Public License for more details.
  */
 
-package bytom
+package bitcoin
 
 import (
 	"github.com/blocktree/OpenWallet/common/file"
@@ -22,29 +22,21 @@ import (
 )
 
 //CreateMerchantWallet 创建钱包
-func (w *WalletManager) CreateMerchantWallet(alias string, password string) (*openwallet.Wallet, error) {
+func (w *WalletManager) CreateMerchantWallet(wallet *openwallet.Wallet) (error) {
 
-	wallet, err := CreateNewWallet(alias, password)
+	coreWallet, keyFile, err := CreateNewWallet(wallet.Alias, wallet.Password)
 	if err != nil {
-		return nil, err
-	}
-
-	//创建钱包第一个账户
-	account, err := CreateNormalAccount(wallet.PublicKey, alias)
-	if err != nil {
-		return nil, err
+		return err
 	}
 
 	//创建钱包资源文件夹
-	walletDataFolder := filepath.Join(dbPath, account.FileName() + ".db")
+	walletDataFolder := filepath.Join(dbPath, coreWallet.DBFile())
 	file.MkdirAll(walletDataFolder)
 
-	owWallet := openwallet.Wallet{
-		Alias:    account.Alias,
-		RootPub:  wallet.PublicKey,
-		DBFile:   walletDataFolder,
-	}
-	return &owWallet, nil
+	wallet.DBFile = walletDataFolder
+	wallet.KeyFile = keyFile
+
+	return nil
 }
 
 //GetMerchantWalletList 获取钱包列表
@@ -60,19 +52,37 @@ func (w *WalletManager) ConfigMerchantWallet(wallet *openwallet.Wallet) error {
 }
 
 //ImportMerchantAddress 导入地址
-func (w *WalletManager) ImportMerchantAddress(addresses []*openwallet.Address) error {
+func (w *WalletManager) ImportMerchantAddress(wallet *openwallet.Wallet, addresses []*openwallet.Address) error {
 
 	//写入到数据库中
+	db, err := wallet.OpenDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	tx, err := db.Begin(true)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	for _, a := range addresses {
+		a.WatchOnly = true		//观察地址
+		tx.Save(a)
+	}
+
+	tx.Commit()
 
 	return nil
 }
 
 //CreateMerchantAddress 创建钱包地址
-func (w *WalletManager) CreateMerchantAddress(walletID string, count int) ([]*openwallet.Address, error) {
+func (w *WalletManager) CreateMerchantAddress(wallet *openwallet.Wallet, count int) ([]*openwallet.Address, error) {
 	return nil, nil
 }
 
 //GetMerchantAddressList 获取钱包地址
-func (w *WalletManager) GetMerchantAddressList(walletID string, offset uint64, limit uint64) ([]*openwallet.Address, error) {
+func (w *WalletManager) GetMerchantAddressList(wallet *openwallet.Wallet, offset uint64, limit uint64) ([]*openwallet.Address, error) {
 	return nil, nil
 }

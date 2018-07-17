@@ -15,71 +15,28 @@
 
 package assets
 
+import "github.com/blocktree/OpenWallet/openwallet"
+
 //MerchantAssets 钱包与商户交互的资产接口
 type MerchantAssets interface {
 
 	//CreateMerchantWallet 创建钱包
-	CreateMerchantWallet(alias string, password string) (*MerchantWallet, error)
+	CreateMerchantWallet(wallet *openwallet.Wallet) (error)
 
 	//GetMerchantWalletList 获取钱包列表
-	GetMerchantWalletList() ([]*MerchantWallet, error)
+	GetMerchantWalletList() ([]*openwallet.Wallet, error)
 
 	//ConfigMerchantWallet 钱包工具配置接口
-	ConfigMerchantWallet(wallet *MerchantWallet) error
+	ConfigMerchantWallet(wallet *openwallet.Wallet) error
 
 	//ImportMerchantAddress 导入地址
-	ImportMerchantAddress(addresses []*MerchantAddress) error
+	ImportMerchantAddress(wallet *openwallet.Wallet, addresses []*openwallet.Address) error
 
 	//CreateMerchantAddress 创建钱包地址
-	CreateMerchantAddress(walletID string, count int) ([]*MerchantAddress, error)
+	CreateMerchantAddress(wallet *openwallet.Wallet, count int) ([]*openwallet.Address, error)
 
 	//GetMerchantAddressList 获取钱包地址
-	GetMerchantAddressList(walletID string, offset uint64, limit uint64) ([]*MerchantAddress, error)
-
-}
-
-//MerchantWallet 标准商户钱包模型
-type MerchantWallet struct {
-
-	/*
-		| 参数名称  | 类型   | 是否可空 | 描述     |
-		|-----------|--------|----------|----------|
-		| coin      | string | 否       | 币种     |
-		| alias     | string | 否       | 钱包别名 |
-		| walletID  | string | 否       | 钱包ID   |
-		| publicKey | string | 是       | 钱包公钥 |
-		| balance   | string | 否       | 余额     |
-	*/
-
-	Coin      string
-	Alias     string
-	WalletID  string
-	PublicKey string
-	balance   string
-
-	//核心钱包，具体的区块链包的钱包模型
-	Core interface{}
-}
-
-type MerchantAddress struct {
-
-	/*
-		| 参数名称 | 类型   | 是否可空 | 描述   |
-		|----------|--------|----------|--------|
-		| address  | string | 否       | 币种   |
-		| walletID | string | 否       | 钱包ID |
-		| balance  | string | 否       | 余额   |
-		| isMemo   | bool   | 是       | 是否memo |
-		| memo     | string | 否       | 备注     |
-	*/
-
-	Address  string
-	WalletID string
-	Balance  string
-	IsMemo   bool
-	Memo     string
-
-	Core interface{}
+	GetMerchantAddressList(wallet *openwallet.Wallet, offset uint64, limit uint64) ([]*openwallet.Address, error)
 
 }
 

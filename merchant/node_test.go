@@ -16,14 +16,12 @@
 package merchant
 
 import (
-	"path/filepath"
 	"testing"
+	"path/filepath"
+	"log"
 	"github.com/blocktree/OpenWallet/openwallet"
 )
 
-var (
-	nodeConfig NodeConfig
-)
 
 func init() {
 	nodeConfig = NodeConfig{
@@ -37,46 +35,36 @@ func init() {
 
 }
 
-func TestGetChargeAddressVersion(t *testing.T) {
+func TestGetImportAddress(t *testing.T) {
+
 	m, err := NewMerchantNode(nodeConfig)
 	if err != nil {
 		t.Errorf("GetChargeAddressVersion failed unexpected error: %v", err)
 	}
 
-	params := struct {
-		Coin     string `json:"coin"`
-		WalletID string `json:"walletID"`
-	}{"BTM", "123456"}
-
-	//获取订阅的地址版本
-	err = GetChargeAddressVersion(m.Node, params,
-		true,
-		func(addressVer *AddressVersion, status uint64, msg string) {
-
-			t.Logf("AddressVersion = %v", addressVer)
-
-		})
+	walletID := "sss"
+	wallet, err := m.GetMerchantWalletByID(walletID)
 	if err != nil {
-		t.Errorf("GetChargeAddressVersion failed unexpected error: %v", err)
-	}
-}
-
-func TestGetChargeAddress(t *testing.T) {
-	m, err := NewMerchantNode(nodeConfig)
-	if err != nil {
-		t.Errorf("GetChargeAddressVersion failed unexpected error: %v", err)
+		log.Printf("unexpected error: %v", err)
+		return
 	}
 
-	params := struct {
-		Coin     string `json:"coin"`
-		WalletID string `json:"walletID"`
-		Offset   uint64 `json:"offset"`
-		Limit    uint64 `json:"limit"`
-	}{"BTM", "0F8AV1FP00A02", 0, 20}
+	db, err := wallet.OpenDB()
+	if err != nil {
+		log.Printf("unexpected error: %v", err)
+		return
+	}
+	defer db.Close()
 
-	GetChargeAddress(m.Node, params,
-		true,
-		func(addrs []*openwallet.Address, status uint64, msg string) {
-			t.Logf("addrs.count = %v", len(addrs))
-		})
+	var addresses []*openwallet.Address
+	err = db.All(&addresses)
+	if err != nil {
+		log.Printf("unexpected error: %v", err)
+		return
+	}
+
+	for _, a := range addresses {
+		log.Printf("address = %s\n", a.Address)
+	}
+
 }
