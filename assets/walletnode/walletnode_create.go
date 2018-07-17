@@ -13,22 +13,21 @@
  * GNU Lesser General Public License for more details.
  */
 
- package walletnode
+package walletnode
 
- import (
-	 "context"
-	 "docker.io/go-docker"
-	 // "errors"
-	 // "docker.io/go-docker/api"
-	 // "docker.io/go-docker/api/types"
-	 "docker.io/go-docker/api/types/container"
-	 "docker.io/go-docker/api/types/network"
-	 "fmt"
-	 "github.com/blocktree/OpenWallet/console"
-	 "path/filepath"
-	 s "strings"
- )
- 
+import (
+	"context"
+	"docker.io/go-docker"
+	// "errors"
+	// "docker.io/go-docker/api"
+	// "docker.io/go-docker/api/types"
+	"docker.io/go-docker/api/types/container"
+	"docker.io/go-docker/api/types/network"
+	"fmt"
+	"github.com/blocktree/OpenWallet/console"
+	"path/filepath"
+	s "strings"
+)
 
 // Check <Symbol>.ini file, create new if not
 //
@@ -36,7 +35,7 @@
 //		1> 当前目录没有 ini，是否创建？
 //		2> 是否设置为测试链？
 //		3> 服务器IP地址和端口
-func _CheckAndInitConfig(symbol string) error {
+func _CheckAndCreateConfig(symbol string) error {
 	var isNew bool
 
 	// Check <Symbol>.ini
@@ -181,22 +180,27 @@ func _CheckAdnCreateContainer(symbol string) error {
 		EndpointsConfig: map[string]*network.EndpointSettings{"endporint": &endpointSetting},
 	}
 	_, err = c.ContainerCreate(ctx, &containerConfig, &hostConfig, &networkingConfig, cName)
-	if err == nil {
+	if err != nil {
+		return err
+	} else {
 		fmt.Printf("%s walletnode created in success!\n", symbol)
 	}
-
 	return nil
-
 }
 
-func _UpdateConfigFile(symbol string) error {
+func _InitConfigFile(symbol string) error {
+	mainNetDataPath = filepath.Join(DATAPATH, s.ToLower(Symbol)+"/data")
+	testNetDataPath = filepath.Join(DATAPATH, s.ToLower(symbol)+"/testdata")
+	apiURL = fmt.Sprintf("http://%s:%s", FullnodeAddr, FullnodePort)
+	rpcUser = "wallet"
+	rpcPassword = "walletPassword2017"
+
 	// Update config
 	if err := updateConfig(symbol); err != nil {
 		return err
 	}
 	return nil
 }
-
 
 // Create a new container for wallet fullnode
 //
@@ -222,7 +226,7 @@ func _UpdateConfigFile(symbol string) error {
 func (w *NodeManagerStruct) CreateNodeFlow(symbol string) error {
 
 	// 一: Check <Symbol>.ini config, create new if not
-	if err := _CheckAndInitConfig(symbol); err != nil {
+	if err := _CheckAndCreateConfig(symbol); err != nil {
 		return err
 	}
 
@@ -232,7 +236,7 @@ func (w *NodeManagerStruct) CreateNodeFlow(symbol string) error {
 	}
 
 	// 三:
-	if err := _UpdateConfigFile(symbol); err != nil {
+	if err := _InitConfigFile(symbol); err != nil {
 		return err
 	}
 

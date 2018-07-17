@@ -16,8 +16,6 @@
 package walletnode
 
 import (
-	// "encoding/json"
-	// bconfig "github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common/file"
 	// "github.com/pkg/errors"
 	"path/filepath"

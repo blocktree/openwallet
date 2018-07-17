@@ -27,14 +27,16 @@ const (
 )
 
 var (
-	Symbol string
+	Symbol       string
+	FullnodeAddr string
+	FullnodePort string
 )
 
 // Node setup 节点配置
 var (
 	//钱包服务服务地址和端口
 	serverAddr = "localhost"
-	serverPort = ""
+	serverPort = "2375"
 	//是否测试网络
 	isTestNet = "true" // default in TestNet
 	//RPC认证账户名
@@ -52,6 +54,14 @@ var (
 	//配置文件路径
 	// configFilePath = filepath.Join("conf")
 	configFilePath = ""
+
+	// data path
+	mainNetDataPath = ""
+	testNetDataPath = ""
+
+	// Fullnode API URL
+	apiURL = ""
+
 	//配置文件名
 	configFileName = Symbol + ".ini"
 	// 核心钱包是否只做监听

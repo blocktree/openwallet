@@ -24,8 +24,8 @@ func loadConfig(symbol string) error {
 		return errors.New(fmt.Sprintf("Load Config Failed-> %s", err))
 	}
 
-	mainNetDataPath := filepath.Join(DATAPATH, s.ToLower(Symbol)+"/data")
-	testNetDataPath := filepath.Join(DATAPATH, s.ToLower(symbol)+"/testdata")
+	mainNetDataPath = c.String("mainNetDataPath")
+	testNetDataPath = c.String("testNetDataPath")
 	rpcUser = c.String("rpcUser")
 	rpcPassword = c.String("rpcPassword")
 	isTestNet = c.String("isTestNet")

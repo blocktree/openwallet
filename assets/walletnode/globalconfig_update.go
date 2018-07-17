@@ -41,27 +41,17 @@ func updateConfig(symbol string) error {
 
 	err = c.Set("serverAddr", serverAddr)
 	err = c.Set("serverPort", serverPort)
-	err = c.Set("isTestNet", "true")
+	err = c.Set("isTestNet", isTestNet)
+	err = c.Set("rpcuser", rpcUser)
+	err = c.Set("rpcpassword", rpcPassword)
+	err = c.Set("apiurl", apiURL)
+	err = c.Set("mainnetdatapath", mainNetDataPath)
+	err = c.Set("testnetdatapath", testNetDataPath)
+	err = c.Set("threshold", isTestNet)
 
-	// configMap := map[string]interface{}{
-	// 	"serverAddr": serverAddr,
-	// 	"serverPort": serverPort,
-	// 	"isTestNet":  isTestNet,
-	// }
-	err = c.SaveConfigFile(absFile)
-	fmt.Println("EEEE = ", err)
+	if err := c.SaveConfigFile(absFile); err != nil {
+		return err
+	}
 
-	// if bytes, err := json.Marshal(configMap); err != nil {
-	// 	return err
-	// } else {
-	// 	//实例化配置
-	// 	if c, err := bconfig.NewConfigData("json", bytes); err != nil {
-	// 		return err
-	// 	} else {
-	// 		//写入配置到文件
-	// 		fmt.Println("EEEE = ", c.SaveConfigFile(absFile))
-	// 	}
-	// }
-
-	return err
+	return nil
 }
