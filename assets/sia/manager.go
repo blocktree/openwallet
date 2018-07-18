@@ -686,13 +686,13 @@ func printWalletList(list []*Wallet) {
 		balance, _ := decimal.NewFromString(w.ConfirmBalance)
 		balance = balance.Div(coinDecimal)
 		tableInfo = append(tableInfo, []interface{}{
-			i, w.Rescanning, w.Unlocked, balance,
+			i,  w.Encrypted, w.Rescanning, w.Unlocked, balance,
 		})
 	}
 
 	t := gotabulate.Create(tableInfo)
 	// Set Headers
-	t.SetHeaders([]string{"No.", "Rescanning", "Unlocked", "Balance"})
+	t.SetHeaders([]string{"No.", "Encrypted", "Rescanning", "Unlocked", "Balance"})
 
 	//打印信息
 	fmt.Println(t.Render("simple"))
