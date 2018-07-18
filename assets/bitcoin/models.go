@@ -20,8 +20,8 @@ import (
 	"github.com/blocktree/OpenWallet/keystore"
 	"github.com/tidwall/gjson"
 	"path/filepath"
-	"time"
 	"github.com/blocktree/OpenWallet/common/file"
+	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 //Wallet 钱包模型
@@ -119,13 +119,13 @@ type Unspent struct {
 	TxID          string `json:"txid"`
 	Vout          uint64 `json:"vout"`
 	Address       string `json:"address"`
-	Account       string `json:"account" storm:"index"`
+	WalletID       string `json:"account" storm:"index"`
 	ScriptPubKey  string `json:"scriptPubKey"`
 	Amount        string `json:"amount"`
 	Confirmations uint64 `json:"confirmations"`
 	Spendable     bool   `json:"spendable"`
 	Solvable      bool   `json:"solvable"`
-	HDAddress     Address
+	HDAddress     openwallet.Address
 }
 
 func NewUnspent(json *gjson.Result) *Unspent {
@@ -134,7 +134,7 @@ func NewUnspent(json *gjson.Result) *Unspent {
 	obj.TxID = gjson.Get(json.Raw, "txid").String()
 	obj.Vout = gjson.Get(json.Raw, "vout").Uint()
 	obj.Address = gjson.Get(json.Raw, "address").String()
-	obj.Account = gjson.Get(json.Raw, "account").String()
+	obj.WalletID = gjson.Get(json.Raw, "account").String()
 	obj.ScriptPubKey = gjson.Get(json.Raw, "scriptPubKey").String()
 	obj.Amount = gjson.Get(json.Raw, "amount").String()
 	obj.Confirmations = gjson.Get(json.Raw, "confirmations").Uint()
@@ -160,12 +160,12 @@ func (s UnspentSort) Less(i, j int) bool {
 	return s.comparator(s.values[i], s.values[j]) < 0
 }
 
-type Address struct {
-	Address   string `json:"address" storm:"id"`
-	Account   string `json:"account" storm:"index"`
-	HDPath    string `json:"hdpath"`
-	CreatedAt time.Time
-}
+//type Address struct {
+//	Address   string `json:"address" storm:"id"`
+//	Account   string `json:"account" storm:"index"`
+//	HDPath    string `json:"hdpath"`
+//	CreatedAt time.Time
+//}
 
 type User struct {
 	UserKey string `storm:"id"`     // primary key

@@ -172,7 +172,7 @@ func TestGetAddressesByAccount(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	_, err := CreateBatchAddress("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", "1234qwer", 100)
+	_, _, err := CreateBatchAddress("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", "1234qwer", 100)
 	if err != nil {
 		t.Errorf("CreateBatchAddress failed unexpected error: %v\n", err)
 		return
@@ -426,12 +426,12 @@ func TestListUnspent(t *testing.T) {
 	}
 
 	for _, u := range utxos {
-		t.Logf("ListUnspent %s: %s = %s\n", u.Address, u.Account, u.Amount)
+		t.Logf("ListUnspent %s: %s = %s\n", u.Address, u.WalletID, u.Amount)
 	}
 }
 
 func TestGetAddressesFromLocalDB(t *testing.T) {
-	addresses, err := GetAddressesFromLocalDB("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ")
+	addresses, err := GetAddressesFromLocalDB("W3GkEdvfCPsUkbyUQxRF3idnW662oxdFEF")
 	if err != nil {
 		t.Errorf("GetAddressesFromLocalDB failed unexpected error: %v\n", err)
 		return
@@ -464,7 +464,7 @@ func TestListUnspentFromLocalDB(t *testing.T) {
 	for _, u := range utxos {
 		amount, _ := decimal.NewFromString(u.Amount)
 		total = total.Add(amount)
-		t.Logf("ListUnspentFromLocalDB %v: %s = %s\n", u.HDAddress, u.Account, u.Amount)
+		t.Logf("ListUnspentFromLocalDB %v: %s = %s\n", u.HDAddress, u.WalletID, u.Amount)
 	}
 	t.Logf("ListUnspentFromLocalDB total = %s\n", total.StringFixed(8))
 }

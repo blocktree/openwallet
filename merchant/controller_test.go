@@ -82,7 +82,7 @@ func TestCreateWallet(t *testing.T) {
 
 	inputs := map[string] interface{} {
 		"coin": "btc",
-		"alias": "Test2 Bitcoin",
+		"alias": "YOU",
 		"passwordType": 0,
 		"password": "1234qwer",
 	}
@@ -90,6 +90,66 @@ func TestCreateWallet(t *testing.T) {
 	ctx := generateCTX("createWallet", inputs)
 
 	m.createWallet(ctx)
+
+	t.Logf("reponse: %v\n",ctx.Resp)
+
+	//<- endRunning
+
+}
+
+
+func TestCreateAddress(t *testing.T) {
+
+	var (
+	//endRunning = make(chan bool, 1)
+	)
+
+	m, err := NewMerchantNode(nodeConfig)
+	if err != nil {
+		t.Errorf("CreateWallet failed unexpected error: %v", err)
+		return
+	}
+
+	inputs := map[string] interface{} {
+		"coin": "btc",
+		"walletID": "W3GkEdvfCPsUkbyUQxRF3idnW662oxdFEF",
+		"count": 100,
+		"password": "1234qwer",
+	}
+
+	ctx := generateCTX("createAddress", inputs)
+
+	m.createAddress(ctx)
+
+	t.Logf("reponse: %v\n",ctx.Resp)
+
+	//<- endRunning
+
+}
+
+
+func TestGetAddressList(t *testing.T) {
+
+	var (
+	//endRunning = make(chan bool, 1)
+	)
+
+	m, err := NewMerchantNode(nodeConfig)
+	if err != nil {
+		t.Errorf("CreateWallet failed unexpected error: %v", err)
+		return
+	}
+
+	inputs := map[string] interface{} {
+		"coin": "btc",
+		"walletID": "W3GkEdvfCPsUkbyUQxRF3idnW662oxdFEF",
+		"offset": 0,
+		"limit": 1000,
+	}
+
+	ctx := generateCTX("createAddress", inputs)
+
+	m.getAddressList(ctx)
 
 	t.Logf("reponse: %v\n",ctx.Resp)
 

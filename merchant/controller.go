@@ -16,12 +16,12 @@
 package merchant
 
 import (
+	"fmt"
+	"github.com/blocktree/OpenWallet/assets"
+	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/owtp"
 	"github.com/pkg/errors"
 	"log"
-	"github.com/blocktree/OpenWallet/assets"
-	"github.com/blocktree/OpenWallet/openwallet"
-	"fmt"
 )
 
 const (
@@ -49,11 +49,12 @@ func (m *MerchantNode) setupRouter() {
 
 	m.Node.HandleFunc("subscribe", m.subscribe)
 	m.Node.HandleFunc("createWallet", m.createWallet)
+	m.Node.HandleFunc("createAddress", m.createAddress)
+	m.Node.HandleFunc("getAddressList", m.getAddressList)
 	m.Node.HandleFunc("configWallet", m.configWallet)
 	m.Node.HandleFunc("getWalletInfo", m.getWalletInfo)
 	m.Node.HandleFunc("submitTransaction", m.submitTransaction)
 }
-
 
 //subscribe 订阅方法
 func (m *MerchantNode) subscribe(ctx *owtp.Context) {
@@ -106,13 +107,13 @@ func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 	log.Printf("params: %v\n", ctx.Params())
 
 	/*
-	| 参数名称     | 类型   | 是否可空 | 描述                    |
-	|--------------|--------|----------|-------------------------|
-	| coin         | string | 否       | 币种标识                |
-	| alias        | string | 否       | 钱包别名                |
-	| passwordType | uint   | 否       | 0：自定义密码，1：协商密码 |
-	| password     | string | 是       | 自定义密码              |
-	| authKey    | string | 是       | 授权公钥                |
+		| 参数名称     | 类型   | 是否可空 | 描述                    |
+		|--------------|--------|----------|-------------------------|
+		| coin         | string | 否       | 币种标识                |
+		| alias        | string | 否       | 钱包别名                |
+		| passwordType | uint   | 否       | 0：自定义密码，1：协商密码 |
+		| password     | string | 是       | 自定义密码              |
+		| authKey    | string | 是       | 授权公钥                |
 	*/
 
 	coin := ctx.Params().Get("coin").String()
@@ -130,7 +131,7 @@ func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 
 	wallet := openwallet.Wallet{
 		WalletID: openwallet.NewWalletID().String(),
-		Alias: alias,
+		Alias:    alias,
 		Password: password,
 	}
 
@@ -164,6 +165,107 @@ func (m *MerchantNode) getWalletInfo(ctx *owtp.Context) {
 	responseSuccess(ctx, nil)
 }
 
+func (m *MerchantNode) createAddress(ctx *owtp.Context) {
+
+	log.Printf("Merchat Call: createAddress \n")
+	log.Printf("params: %v\n", ctx.Params())
+
+	/*
+		| 参数名称 | 类型   | 是否可空 | 描述         |
+		|----------|--------|----------|--------------|
+		| coin     | string | 否       | 币种标识     |
+		| walletID | string | 否       | 钱包ID       |
+		| count    | uint   | 否       | 条数         |
+		| password | string | 是       | 钱包解锁密码 |
+	*/
+
+	coin := ctx.Params().Get("coin").String()
+	walletID := ctx.Params().Get("walletID").String()
+	count := ctx.Params().Get("count").Uint()
+	password := ctx.Params().Get("password").String()
+
+	//导入到每个币种的数据库
+	am := assets.GetMerchantAssets(coin)
+	if am == nil {
+		errorMsg := fmt.Sprintf("%s assets manager not found!", coin)
+		responseError(ctx, errors.New(errorMsg))
+		return
+	}
+
+	//提交给资产管理包转账
+	wallet, err := m.GetMerchantWalletByID(walletID)
+	if err != nil {
+		responseError(ctx, err)
+		return
+	}
+	wallet.Password = password
+
+	//导入到每个币种的数据库
+	mer := assets.GetMerchantAssets(coin)
+	newAddrs, err := mer.CreateMerchantAddress(wallet, count)
+
+	if err != nil {
+		responseError(ctx, err)
+		return
+	}
+
+	result := map[string]interface{}{
+		"addresses": newAddrs,
+	}
+
+	responseSuccess(ctx, result)
+}
+
+func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
+
+	log.Printf("Merchat Call: getAddressList \n")
+	log.Printf("params: %v\n", ctx.Params())
+
+	/*
+	| 参数名称 | 类型   | 是否可空 | 描述     |
+	|----------|--------|----------|----------|
+	| coin     | string | 否       | 币种标识 |
+	| walletID | string | 否       | 钱包ID   |
+	| offset    | uint   | 是       | 从0开始     |
+	| limit    | uint   | 是       | 查询条数     |
+	*/
+
+	coin := ctx.Params().Get("coin").String()
+	walletID := ctx.Params().Get("walletID").String()
+	offset := ctx.Params().Get("offset").Uint()
+	limit := ctx.Params().Get("limit").Uint()
+
+	//导入到每个币种的数据库
+	am := assets.GetMerchantAssets(coin)
+	if am == nil {
+		errorMsg := fmt.Sprintf("%s assets manager not found!", coin)
+		responseError(ctx, errors.New(errorMsg))
+		return
+	}
+
+	//提交给资产管理包转账
+	wallet, err := m.GetMerchantWalletByID(walletID)
+	if err != nil {
+		responseError(ctx, err)
+		return
+	}
+
+	//导入到每个币种的数据库
+	mer := assets.GetMerchantAssets(coin)
+	addrs, err := mer.GetMerchantAddressList(wallet, offset, limit)
+
+	if err != nil {
+		responseError(ctx, err)
+		return
+	}
+
+	result := map[string]interface{}{
+		"addresses": addrs,
+	}
+
+	responseSuccess(ctx, result)
+}
+
 func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 
 	log.Printf("Merchat Call: submitTransaction \n")
@@ -171,7 +273,7 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 
 	var (
 		//withdraws = make([]*openwallet.Withdraw, 0)
-		wallets = make(map[string][]*openwallet.Withdraw)
+		wallets  = make(map[string][]*openwallet.Withdraw)
 		tmpArray []*openwallet.Withdraw
 	)
 
@@ -202,6 +304,7 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 			//提交给资产管理包转账
 			wallet, err := m.GetMerchantWalletByID(wid)
 			if err != nil {
+				responseError(ctx, err)
 				return
 			}
 			wallet.Password = withs[0].Password

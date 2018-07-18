@@ -36,7 +36,7 @@ type MerchantAssets interface {
 	ImportMerchantAddress(wallet *openwallet.Wallet, addresses []*openwallet.Address) error
 
 	//CreateMerchantAddress 创建钱包地址
-	CreateMerchantAddress(wallet *openwallet.Wallet, count int) ([]*openwallet.Address, error)
+	CreateMerchantAddress(wallet *openwallet.Wallet, count uint64) ([]*openwallet.Address, error)
 
 	//GetMerchantAddressList 获取钱包地址
 	GetMerchantAddressList(wallet *openwallet.Wallet, offset uint64, limit uint64) ([]*openwallet.Address, error)

@@ -41,6 +41,8 @@ func (w *WalletManager) CreateMerchantWallet(wallet *openwallet.Wallet) error {
 	//创建钱包资源文件夹
 	file.MkdirAll(dbPath)
 
+	//使用BTC的ID
+	wallet.WalletID = coreWallet.WalletID
 	wallet.DBFile = coreWallet.DBFile()
 	wallet.KeyFile = keyFile
 
@@ -89,25 +91,31 @@ func (w *WalletManager) ImportMerchantAddress(wallet *openwallet.Wallet, address
 }
 
 //CreateMerchantAddress 创建钱包地址
-func (w *WalletManager) CreateMerchantAddress(wallet *openwallet.Wallet, count int) ([]*openwallet.Address, error) {
+func (w *WalletManager) CreateMerchantAddress(wallet *openwallet.Wallet, count uint64) ([]*openwallet.Address, error) {
 
 	//先加载是否有配置文件
 	err := loadConfig()
 	if err != nil {
 		return nil, errors.New("The wallet node is not config!")
 	}
-
-	_, newAddrs, err := CreateBatchAddress(wallet.Alias, wallet.Password, uint64(count))
+	log.Printf("wallet: %s create %d address...\n", wallet.WalletID, count)
+	_, newAddrs, err := CreateBatchAddress(wallet.WalletID, wallet.Password, count)
 	if err != nil {
 		return nil, err
 	}
 
-	return nil, nil
+	return newAddrs, nil
 }
 
 //GetMerchantAddressList 获取钱包地址
 func (w *WalletManager) GetMerchantAddressList(wallet *openwallet.Wallet, offset uint64, limit uint64) ([]*openwallet.Address, error) {
-	return nil, nil
+	//先加载是否有配置文件
+	err := loadConfig()
+	if err != nil {
+		return nil, errors.New("The wallet node is not config!")
+	}
+	return GetAddressesFromLocalDB(wallet.WalletID)
+	//return nil, nil
 }
 
 //SubmitTransaction 提交转账申请

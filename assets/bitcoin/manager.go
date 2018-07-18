@@ -38,6 +38,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 const (
@@ -82,7 +83,7 @@ func GetAddressesByAccount(walletID string) ([]string, error) {
 }
 
 //GetAddressesFromLocalDB 从本地数据库
-func GetAddressesFromLocalDB(walletID string) ([]*Address, error) {
+func GetAddressesFromLocalDB(walletID string) ([]*openwallet.Address, error) {
 
 	wallet, err := GetWalletInfo(walletID)
 	if err != nil {
@@ -95,8 +96,8 @@ func GetAddressesFromLocalDB(walletID string) ([]*Address, error) {
 	}
 	defer db.Close()
 
-	var addresses []*Address
-	err = db.Find("Account", walletID, &addresses)
+	var addresses []*openwallet.Address
+	err = db.Find("WalletID", walletID, &addresses)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +126,7 @@ func ImportPrivKey(wif, walletID string) error {
 }
 
 //ImportMulti 批量导入地址和私钥
-func ImportMulti(addresses []*Address, keys []string, walletID string, watchOnly bool) ([]int, error) {
+func ImportMulti(addresses []*openwallet.Address, keys []string, walletID string, watchOnly bool) ([]int, error) {
 
 	/*
 		[
@@ -276,7 +277,7 @@ func CreateReceiverAddress(account string) (string, error) {
 }
 
 //CreateBatchAddress 批量创建地址
-func CreateBatchAddress(name, password string, count uint64) (string, []*Address, error) {
+func CreateBatchAddress(name, password string, count uint64) (string, []*openwallet.Address, error) {
 
 	var (
 		synCount   uint64 = 20
@@ -303,15 +304,15 @@ func CreateBatchAddress(name, password string, count uint64) (string, []*Address
 	filePath := filepath.Join(addressDir, filename)
 
 	//生产通道
-	producer := make(chan []*Address)
+	producer := make(chan []*openwallet.Address)
 	defer close(producer)
 
 	//消费通道
-	worker := make(chan []*Address)
+	worker := make(chan []*openwallet.Address)
 	defer close(worker)
 
 	//保存地址过程
-	saveAddressWork := func(addresses chan []*Address, filename string, wallet *Wallet) {
+	saveAddressWork := func(addresses chan []*openwallet.Address, filename string, wallet *Wallet) {
 
 		var (
 			saveErr error
@@ -378,15 +379,15 @@ func CreateBatchAddress(name, password string, count uint64) (string, []*Address
 		shouldDone++
 	}
 
-	values := make([][]*Address, 0)
-	outputAddress := make([]*Address, 0)
+	values := make([][]*openwallet.Address, 0)
+	outputAddress := make([]*openwallet.Address, 0)
 
 	//以下使用生产消费模式
 
 	for {
 
-		var activeWorker chan<- []*Address
-		var activeValue []*Address
+		var activeWorker chan<- []*openwallet.Address
+		var activeValue []*openwallet.Address
 
 		//当数据队列有数据时，释放顶部，激活消费
 		if len(values) > 0 {
@@ -580,7 +581,7 @@ func GetWalletBalance(name string) string {
 	//批量插入到本地数据库
 	//设置utxo的钱包账户
 	for _, utxo := range utxos {
-		if name == utxo.Account {
+		if name == utxo.WalletID {
 			amount, _ := decimal.NewFromString(utxo.Amount)
 			balance = balance.Add(amount)
 		}
@@ -600,7 +601,7 @@ func GetWalletBalance(name string) string {
 }
 
 //CreateNewPrivateKey 创建私钥，返回私钥wif格式字符串
-func CreateNewPrivateKey(key *keystore.HDKey, start, index uint64) (string, *Address, error) {
+func CreateNewPrivateKey(key *keystore.HDKey, start, index uint64) (string, *openwallet.Address, error) {
 
 	derivedPath := fmt.Sprintf("%s/%d/%d", key.RootPath, start, index)
 	//fmt.Printf("derivedPath = %s\n", derivedPath)
@@ -626,12 +627,21 @@ func CreateNewPrivateKey(key *keystore.HDKey, start, index uint64) (string, *Add
 		return "", nil, err
 	}
 
-	addr := Address{
+	addr := openwallet.Address{
 		Address:   address.String(),
-		Account:   key.RootId,
+		WalletID:   key.RootId,
 		HDPath:    derivedPath,
 		CreatedAt: time.Now(),
+		Symbol: Symbol,
+		Index: index,
 	}
+
+	//addr := Address{
+	//	Address:   address.String(),
+	//	Account:   key.RootId,
+	//	HDPath:    derivedPath,
+	//	CreatedAt: time.Now(),
+	//}
 
 	return wif.String(), &addr, err
 }
@@ -943,9 +953,9 @@ func RebuildWalletUnspent(walletID string) error {
 	//批量插入到本地数据库
 	//设置utxo的钱包账户
 	for _, utxo := range utxos {
-		var addr Address
+		var addr openwallet.Address
 		err = db.One("Address", utxo.Address, &addr)
-		utxo.Account = addr.Account
+		utxo.WalletID = addr.WalletID
 		utxo.HDAddress = addr
 		key := common.NewString(fmt.Sprintf("%s_%d_%s", utxo.TxID, utxo.Vout, utxo.Address)).SHA256()
 		utxo.Key = key
@@ -990,7 +1000,7 @@ func ListUnspentFromLocalDB(walletID string) ([]*Unspent, error) {
 	defer db.Close()
 
 	var utxos []*Unspent
-	err = db.Find("Account", walletID, &utxos)
+	err = db.Find("WalletID", walletID, &utxos)
 	if err != nil {
 		return nil, err
 	}
@@ -1510,10 +1520,10 @@ func SendBatchTransaction(walletID string, to []string, amounts []decimal.Decima
 
 
 //CreateChangeAddress 创建找零地址
-func CreateChangeAddress(walletID string, key *keystore.HDKey) (*Address, error) {
+func CreateChangeAddress(walletID string, key *keystore.HDKey) (*openwallet.Address, error) {
 
 	//生产通道
-	producer := make(chan []*Address)
+	producer := make(chan []*openwallet.Address)
 	defer close(producer)
 
 	go createAddressWork(key, producer, walletID, uint64(time.Now().Unix()), 0, 1)
@@ -1640,9 +1650,9 @@ func clearUnspends(utxos []*Unspent, wallet *Wallet) {
 }
 
 //createAddressWork 创建地址过程
-func createAddressWork(k *keystore.HDKey, producer chan<- []*Address, walletID string, index, start, end uint64) {
+func createAddressWork(k *keystore.HDKey, producer chan<- []*openwallet.Address, walletID string, index, start, end uint64) {
 
-	runAddress := make([]*Address, 0)
+	runAddress := make([]*openwallet.Address, 0)
 	runWIFs := make([]string, 0)
 
 	for i := start; i < end; i++ {
@@ -1667,7 +1677,7 @@ func createAddressWork(k *keystore.HDKey, producer chan<- []*Address, walletID s
 	//批量导入私钥
 	failed, errRun := ImportMulti(runAddress, runWIFs, walletID, CoreWalletWatchOnly)
 	if errRun != nil {
-		producer <- make([]*Address, 0)
+		producer <- make([]*openwallet.Address, 0)
 		return
 	}
 
@@ -1691,7 +1701,7 @@ func generateSeed() []byte {
 }
 
 //exportAddressToFile 导出地址到文件中
-func exportAddressToFile(addrs []*Address, filePath string) {
+func exportAddressToFile(addrs []*openwallet.Address, filePath string) {
 
 	var (
 		content string
@@ -1709,7 +1719,7 @@ func exportAddressToFile(addrs []*Address, filePath string) {
 }
 
 //saveAddressToDB 保存地址到数据库
-func saveAddressToDB(addrs []*Address, wallet *Wallet) error {
+func saveAddressToDB(addrs []*openwallet.Address, wallet *Wallet) error {
 	db, err := wallet.OpenDB()
 	if err != nil {
 		return err
