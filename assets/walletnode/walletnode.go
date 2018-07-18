@@ -16,14 +16,10 @@
 package walletnode
 
 import (
+	"fmt"
 	"context"
 	"docker.io/go-docker"
-	// "errors"
-	// "docker.io/go-docker/api"
-	"docker.io/go-docker/api/types"
-	"fmt"
 	s "strings"
-	"time"
 )
 
 type NodeManagerStruct struct{}
@@ -72,82 +68,4 @@ func (w *NodeManagerStruct) GetNodeStatus(symbol string) error {
 	status := res.State.Status
 	fmt.Printf("%s walletnode status: %s\n", s.ToUpper(symbol), status)
 	return nil
-}
-
-func (w *NodeManagerStruct) StartNodeFlow(symbol string) error {
-	// Init docker client
-	c, err := docker.NewEnvClient()
-	if err != nil {
-		return (err)
-	}
-	// Action within client
-	cName, err := _GetCName(symbol) // container name
-	if err != nil {
-		return err
-	}
-	ctx := context.Background() // nil
-	err = c.ContainerStart(ctx, cName, types.ContainerStartOptions{})
-	if err == nil {
-		fmt.Printf("%s walletnode start in success!\n", symbol)
-	}
-
-	return err
-}
-
-func (w *NodeManagerStruct) StopNodeFlow(symbol string) error {
-	// Init docker client
-	c, err := docker.NewEnvClient()
-	if err != nil {
-		return (err)
-	}
-	// Action within client
-	cName, err := _GetCName(symbol) // container name
-	if err != nil {
-		return err
-	}
-	ctx := context.Background() // nil
-	d := time.Duration(3000)
-	err = c.ContainerStop(ctx, cName, &d)
-	if err == nil {
-		fmt.Printf("%s walletnode stop in success!\n", symbol)
-	}
-	return err
-}
-
-func (w *NodeManagerStruct) RestartNodeFlow(symbol string) error {
-	// Init docker client
-	c, err := docker.NewEnvClient()
-	if err != nil {
-		return (err)
-	}
-	// Action within client
-	cName, err := _GetCName(symbol) // container name
-	if err != nil {
-		return err
-	}
-	ctx := context.Background() // nil
-	err = c.ContainerRestart(ctx, cName, nil)
-	if err == nil {
-		fmt.Printf("%s walletnode stop in success!\n", symbol)
-	}
-	return err
-}
-
-func (w *NodeManagerStruct) RemoveNodeFlow(symbol string) error {
-	// Init docker client
-	c, err := docker.NewEnvClient()
-	if err != nil {
-		return (err)
-	}
-	// Action within client
-	cName, err := _GetCName(symbol) // container name
-	if err != nil {
-		return err
-	}
-	ctx := context.Background() // nil
-	err = c.ContainerRemove(ctx, cName, types.ContainerRemoveOptions{})
-	if err == nil {
-		fmt.Printf("%s walletnode remove in success!\n", symbol)
-	}
-	return err
 }

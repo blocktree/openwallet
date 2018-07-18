@@ -28,12 +28,32 @@ var ( // Usecase Data
 )
 
 func init() {
+	// Clear env
+
+	// Init data to Usecase
+	testIniData := `
+	`
 }
 
-func TestGetNodeStatus(t *testing.T) {
+func TestCreate(t *testing.T) {
 	if err := nil; err != nil {
 		t.Errorf("GetBlockChainInfo failed unexpected error: %v\n", err)
 	} else {
 		t.Logf("GetBlockChainInfo info: %v\n", b)
 	}
+}
+
+func TestGet(t *testing.T) {
+}
+
+func TestStart(t *testing.T) {
+}
+
+func TestStop(t *testing.T) {
+}
+
+func TestRestart(t *testing.T) {
+}
+
+func TestRemove(t *testing.T) {
 }

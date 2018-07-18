@@ -14,3 +14,31 @@
  */
 
  package walletnode
+
+ import (
+	"context"
+	"docker.io/go-docker"
+	// "errors"
+	// "docker.io/go-docker/api"
+	"docker.io/go-docker/api/types"
+	"fmt"
+)
+
+func (w *NodeManagerStruct) RemoveNodeFlow(symbol string) error {
+	// Init docker client
+	c, err := docker.NewEnvClient()
+	if err != nil {
+		return (err)
+	}
+	// Action within client
+	cName, err := _GetCName(symbol) // container name
+	if err != nil {
+		return err
+	}
+	ctx := context.Background() // nil
+	err = c.ContainerRemove(ctx, cName, types.ContainerRemoveOptions{})
+	if err == nil {
+		fmt.Printf("%s walletnode remove in success!\n", symbol)
+	}
+	return err
+}

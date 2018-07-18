@@ -22,6 +22,7 @@ import (
 	// "docker.io/go-docker/api"
 	// "docker.io/go-docker/api/types"
 	"docker.io/go-docker/api/types/container"
+	"docker.io/go-docker/api/types/mount"
 	"docker.io/go-docker/api/types/network"
 	"fmt"
 	"github.com/blocktree/OpenWallet/console"
@@ -125,7 +126,9 @@ func _CheckAdnCreateContainer(symbol string) error {
 		return nil
 	}
 	// Action within client
-	// dataDir := fmt.Sprintf("/storage/openwallet/%s", s.ToLower(symbol))
+	dataDir := fmt.Sprintf("/storage/openwallet/%s", s.ToLower(symbol))
+	fmt.Println(dataDir)
+	fmt.Println(mount.Mount{})
 	containerConfig := container.Config{
 		// string,
 		Hostname: cName,
@@ -137,13 +140,18 @@ func _CheckAdnCreateContainer(symbol string) error {
 		Image: "ubuntu:latest",
 		// map[string]struct{}, List of volumes (mounts) used for the container
 		Volumes: map[string]struct{}{
-			// Volumes: struct{}{
-			// "type": "volume",
-			// "src":           dataDir,
-			// "dst":           dataDir,
-			// "volume-driver": "local",
-			// "vers":          "4,soft,timeo=180,bg,tcp,rw",
-			// }
+			dataDir: struct{}{
+				// "type":        "volume",
+				//"Name":        "OpenWallet Fullnode Data",
+				// dataDir,
+				// "Source": dataDir,
+				// "Destination": dataDir,
+				// "Driver":      "local",
+				// "Mode":        "ro,Z",
+				// "RW":          true,
+				// "Propagation": "",
+				// "vers":        "4,soft,timeo=180,bg,tcp,rw",
+			},
 		},
 		// string, Current directory (PWD) in the command will be launched
 		WorkingDir: "",
@@ -153,31 +161,47 @@ func _CheckAdnCreateContainer(symbol string) error {
 		Labels: map[string]string{},
 	}
 	hostConfig := container.HostConfig{
-		// // NetworkMode   // Network mode to use for the container
-		// NetworkMode,
+		// NetworkMode   // Network mode to use for the container
+		// NetworkMode: "bridge",
 		// // nat.PortMap   // Port mapping between the exposed port (container) and the host
 		// PortBindings,
+		Mounts: []mount.Mount{
+			{
+				Type: mount.TypeVolume,
+				//"Name":        "OpenWallet Fullnode Data",
+				Source:   "opt",
+				Target:   "/tmp",
+				ReadOnly: false,
+				// BindOptions: &mount.BindOptions{Propagation: "private"},
+				// Destination: dataDir,
+				// "Driver":      "local",
+				// "Mode":        "ro,Z",
+				// "RW":          true,
+				// "Propagation": "",
+				// "vers":        "4,soft,timeo=180,bg,tcp,rw",
+			},
+		},
 	}
-	endpointSetting := network.EndpointSettings{
-		// // Configurations
-		// IPAMConfig, // *EndpointIPAMConfig
-		// Links,      // []string
-		// Aliases,    // []string
-		// // Operational data
-		// NetworkID,           // string
-		// EndpointID,          // string
-		// Gateway,             // string
-		// IPAddress,           // string
-		// IPPrefixLen,         // int
-		// IPv6Gateway,         // string
-		// GlobalIPv6Address,   // string
-		// GlobalIPv6PrefixLen, // int
-		// MacAddress,          // string
-		// DriverOpts,          // map[string]string
-	}
+	// endpointSetting := network.EndpointSettings{
+	// 	// // Configurations
+	// 	// IPAMConfig, // *EndpointIPAMConfig
+	// 	// Links,      // []string
+	// 	// Aliases,    // []string
+	// 	// // Operational data
+	// 	// NetworkID,           // string
+	// 	// EndpointID,          // string
+	// 	// Gateway,             // string
+	// 	// IPAddress,           // string
+	// 	// IPPrefixLen,         // int
+	// 	// IPv6Gateway,         // string
+	// 	// GlobalIPv6Address,   // string
+	// 	// GlobalIPv6PrefixLen, // int
+	// 	// MacAddress,          // string
+	// 	// DriverOpts,          // map[string]string
+	// }
 	networkingConfig := network.NetworkingConfig{
 		// map[string]*EndpointSettings // Endpoint configs for each connecting network
-		EndpointsConfig: map[string]*network.EndpointSettings{"endporint": &endpointSetting},
+		// EndpointsConfig: map[string]*network.EndpointSettings{"endporint": &endpointSetting},
 	}
 	_, err = c.ContainerCreate(ctx, &containerConfig, &hostConfig, &networkingConfig, cName)
 	if err != nil {

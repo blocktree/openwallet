@@ -14,3 +14,30 @@
  */
 
  package walletnode
+
+ import (
+	"context"
+	"docker.io/go-docker"
+	"docker.io/go-docker/api/types"
+	"fmt"
+)
+
+func (w *NodeManagerStruct) StartNodeFlow(symbol string) error {
+	// Init docker client
+	c, err := docker.NewEnvClient()
+	if err != nil {
+		return (err)
+	}
+	// Action within client
+	cName, err := _GetCName(symbol) // container name
+	if err != nil {
+		return err
+	}
+	ctx := context.Background() // nil
+	err = c.ContainerStart(ctx, cName, types.ContainerStartOptions{})
+	if err == nil {
+		fmt.Printf("%s walletnode start in success!\n", symbol)
+	}
+
+	return err
+}

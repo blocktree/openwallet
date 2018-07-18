@@ -17,8 +17,6 @@ package walletnode
 
 import (
 	"github.com/shopspring/decimal"
-	// "path/filepath"
-	// s "strings"
 	"time"
 )
 
