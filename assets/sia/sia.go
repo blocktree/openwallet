@@ -82,9 +82,21 @@ func (w *WalletManager) CreateWalletFlow() error {
 			return err
 		}
 
-		publicKey, err = CreateNewWallet(password, true)
-		if err != nil {
-			return err
+		wallets, err := GetWalletInfo()
+		if !wallets[0].Encrypted || err != nil {
+			publicKey, err = CreateNewWallet(password,false)
+			if err != nil {
+				return err
+			} else {
+				log.Printf("Create New Wallet Successfully.\n")
+			}
+		}else{
+			publicKey, err = CreateNewWallet(password,true)
+			if err != nil {
+				return err
+			} else {
+				log.Printf("Create New Wallet Successfully.\n")
+			}
 		}
 
 		fmt.Printf("Please keep your primary seed in a safe place: %s\n", publicKey)
