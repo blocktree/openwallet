@@ -18,11 +18,14 @@ package bitcoin
 import (
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/shopspring/decimal"
 	"path/filepath"
+	"strings"
+	"log"
 )
 
 //CreateMerchantWallet 创建钱包
-func (w *WalletManager) CreateMerchantWallet(wallet *openwallet.Wallet) (error) {
+func (w *WalletManager) CreateMerchantWallet(wallet *openwallet.Wallet) error {
 
 	coreWallet, keyFile, err := CreateNewWallet(wallet.Alias, wallet.Password)
 	if err != nil {
@@ -68,7 +71,10 @@ func (w *WalletManager) ImportMerchantAddress(wallet *openwallet.Wallet, address
 	defer tx.Rollback()
 
 	for _, a := range addresses {
-		a.WatchOnly = true		//观察地址
+		a.WatchOnly = true //观察地址
+		a.Symbol = strings.ToLower(Symbol)
+		a.WalletID = wallet.WalletID
+		log.Printf("import %s address: %s", a.Symbol, a.Address)
 		tx.Save(a)
 	}
 
@@ -85,4 +91,25 @@ func (w *WalletManager) CreateMerchantAddress(wallet *openwallet.Wallet, count i
 //GetMerchantAddressList 获取钱包地址
 func (w *WalletManager) GetMerchantAddressList(wallet *openwallet.Wallet, offset uint64, limit uint64) ([]*openwallet.Address, error) {
 	return nil, nil
+}
+
+//SubmitTransaction 提交转账申请
+func (w *WalletManager) SubmitTransactions(wallet *openwallet.Wallet, withdraws []*openwallet.Withdraw) (*openwallet.Transaction, error) {
+	coreWallet := readWallet(wallet.KeyFile)
+	addrs := make([]string, 0)
+	amounts := make([]decimal.Decimal, 0)
+	for _, with := range withdraws {
+		amount, _ := decimal.NewFromString(with.Amount)
+		addrs = append(addrs, with.Address)
+		amounts = append(amounts, amount)
+
+	}
+
+	txID, err := SendBatchTransaction(coreWallet.WalletID, addrs, amounts, wallet.Password)
+	if err != nil {
+		return nil, err
+	}
+	t := openwallet.Transaction{TxID: txID}
+
+	return &t, nil
 }

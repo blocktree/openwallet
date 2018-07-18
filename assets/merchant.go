@@ -15,7 +15,10 @@
 
 package assets
 
-import "github.com/blocktree/OpenWallet/openwallet"
+import (
+	"github.com/blocktree/OpenWallet/openwallet"
+	"strings"
+)
 
 //MerchantAssets 钱包与商户交互的资产接口
 type MerchantAssets interface {
@@ -38,11 +41,14 @@ type MerchantAssets interface {
 	//GetMerchantAddressList 获取钱包地址
 	GetMerchantAddressList(wallet *openwallet.Wallet, offset uint64, limit uint64) ([]*openwallet.Address, error)
 
+	//SubmitTransaction 提交转账申请
+	SubmitTransactions(wallet *openwallet.Wallet, withdraws []*openwallet.Withdraw) (*openwallet.Transaction, error)
+
 }
 
 // GetMerchantAssets 根据币种类型获取已注册的管理者
 func GetMerchantAssets(symbol string) MerchantAssets {
-	manager, ok := managers[symbol].(MerchantAssets)
+	manager, ok := managers[strings.ToLower(symbol)].(MerchantAssets)
 	if !ok {
 		return nil
 	}

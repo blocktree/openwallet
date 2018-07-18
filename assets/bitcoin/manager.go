@@ -491,35 +491,8 @@ func EncryptWallet(password string) error {
 func GetWalletKeys(dir string) ([]*Wallet, error) {
 
 	var (
-		buf = new(bufio.Reader)
-		key struct {
-			Alias  string `json:"alias"`
-			RootId string `json:"rootid"`
-		}
-
 		wallets = make([]*Wallet, 0)
 	)
-
-	//加载文件，实例化钱包
-	readWallet := func(path string) *Wallet {
-
-		fd, err := os.Open(path)
-		defer fd.Close()
-		if err != nil {
-			return nil
-		}
-
-		buf.Reset(fd)
-		// Parse the address.
-		key.Alias = ""
-		key.RootId = ""
-		err = json.NewDecoder(buf).Decode(&key)
-		if err != nil {
-			return nil
-		}
-
-		return &Wallet{WalletID: key.RootId, Alias: key.Alias}
-	}
 
 	//扫描key目录的所有钱包
 	files, err := ioutil.ReadDir(dir)
@@ -1024,12 +997,13 @@ func ListUnspentFromLocalDB(walletID string) ([]*Unspent, error) {
 }
 
 //BuildTransaction 构建交易单
-func BuildTransaction(utxos []*Unspent, to, change string, amount, fees decimal.Decimal) (string, decimal.Decimal, error) {
+func BuildTransaction(utxos []*Unspent, to []string, change string, amount []decimal.Decimal, fees decimal.Decimal) (string, decimal.Decimal, error) {
 
 	var (
 		inputs      = make([]interface{}, 0)
 		outputs     = make(map[string]interface{})
 		totalAmount = decimal.New(0, 0)
+		totalSend  = decimal.New(0, 0)
 	)
 
 	for _, u := range utxos {
@@ -1046,11 +1020,16 @@ func BuildTransaction(utxos []*Unspent, to, change string, amount, fees decimal.
 
 	}
 
-	if totalAmount.LessThan(amount) {
+	//计算总发送金额
+	for _, amount := range amount {
+		totalSend = totalSend.Add(amount)
+	}
+
+	if totalAmount.LessThan(totalSend) {
 		return "", decimal.New(0, 0), errors.New("The balance is not enough!")
 	}
 
-	changeAmount := totalAmount.Sub(amount).Sub(fees)
+	changeAmount := totalAmount.Sub(totalSend).Sub(fees)
 	if changeAmount.GreaterThan(decimal.New(0, 0)) {
 		//ca, _ := changeAmount.Float64()
 		outputs[change] = changeAmount.StringFixed(8)
@@ -1058,8 +1037,12 @@ func BuildTransaction(utxos []*Unspent, to, change string, amount, fees decimal.
 		fmt.Printf("Create change address for receiving %s coin.\n", outputs[change])
 	}
 
+	for i, r := range to {
+		outputs[r] = amount[i].StringFixed(8)
+	}
+
 	//ta, _ := amount.Float64()
-	outputs[to] = amount.StringFixed(8)
+	//outputs[to] = amount.StringFixed(8)
 
 	request := []interface{}{
 		inputs,
@@ -1288,7 +1271,7 @@ func SendTransaction(walletID, to string, amount decimal.Decimal, password strin
 		}
 
 		//计算手续费，找零地址有2个，一个是发送，一个是新创建的
-		piecefees, err := EstimateFee(int64(len(sendUxto)), 2, feesRate)
+		piecefees, err := EstimateFee(int64(len(sendUxto)), int64(len(to) + 1), feesRate)
 		if piecefees.LessThan(decimal.NewFromFloat(0.00001)) {
 			piecefees = decimal.NewFromFloat(0.00001)
 		}
@@ -1307,7 +1290,7 @@ func SendTransaction(walletID, to string, amount decimal.Decimal, password strin
 		//log.Printf("feesRate = %s \n", feesRate.StringFixed(8))
 
 		//创建交易
-		txRaw, _, err := BuildTransaction(sendUxto, to, changeAddr.Address, pieceOfSend, piecefees)
+		txRaw, _, err := BuildTransaction(sendUxto, []string{to}, changeAddr.Address, []decimal.Decimal{pieceOfSend}, piecefees)
 		if err != nil {
 			return nil, err
 		}
@@ -1344,6 +1327,185 @@ func SendTransaction(walletID, to string, amount decimal.Decimal, password strin
 
 	return txIDs, nil
 }
+
+
+
+
+//SendBatchTransaction 发送批量交易
+func SendBatchTransaction(walletID string, to []string, amounts []decimal.Decimal, password string) (string, error) {
+
+	var (
+		usedUTXO   []*Unspent
+		balance    = decimal.New(0, 0)
+		//totalSend  = amounts
+		totalSend    = decimal.New(0, 0)
+		actualFees = decimal.New(0, 0)
+		//sendTime   = 1
+		//txIDs      = make([]string, 0)
+	)
+
+	if len(to) == 0 {
+		return "", errors.New("Receiver addresses is empty!")
+	}
+
+	if len(to) != len(amounts) {
+		return "", errors.New("Receiver addresses count is not equal amount count!")
+	}
+
+	//计算总发送金额
+	for _, amount := range amounts {
+		totalSend = totalSend.Add(amount)
+	}
+
+	utxos, err := ListUnspentFromLocalDB(walletID)
+	if err != nil {
+		return "", err
+	}
+
+	//获取utxo，按小到大排序
+	sort.Sort(UnspentSort{utxos, func(a, b *Unspent) int {
+
+		if a.Amount > b.Amount {
+			return 1
+		} else {
+			return -1
+		}
+	}})
+
+	//读取钱包
+	w, err := GetWalletInfo(walletID)
+	if err != nil {
+		return "", err
+	}
+
+	totalBalance, _ := decimal.NewFromString(w.Balance)
+	if totalBalance.LessThanOrEqual(totalSend) {
+		return "", errors.New("The wallet's balance is not enough!")
+	}
+
+	//加载钱包
+	key, err := w.HDKey(password)
+	if err != nil {
+		return "", err
+	}
+
+	//解锁钱包
+	err = UnlockWallet(password, 120)
+	if err != nil {
+		return "", err
+	}
+
+	//创建找零地址
+	changeAddr, err := CreateChangeAddress(walletID, key)
+	if err != nil {
+		return "", err
+	}
+
+	feesRate, err := EstimateFeeRate()
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Printf("Calculating wallet unspent record to build transaction...\n")
+	computeTotalSend := totalSend
+	//循环的计算余额是否足够支付发送数额+手续费
+	for {
+
+		usedUTXO = make([]*Unspent, 0)
+		balance = decimal.New(0, 0)
+
+		//计算一个可用于支付的余额
+		for _, u := range utxos {
+
+			if u.Spendable {
+				ua, _ := decimal.NewFromString(u.Amount)
+				balance = balance.Add(ua)
+				usedUTXO = append(usedUTXO, u)
+				if balance.GreaterThanOrEqual(computeTotalSend) {
+					break
+				}
+			}
+		}
+
+		//计算手续费，找零地址有2个，一个是发送，一个是新创建的
+		fees, err := EstimateFee(int64(len(usedUTXO)), int64(len(to) + 1), feesRate)
+		if err != nil {
+			return "", err
+		}
+
+		//如果要手续费有发送支付，得计算加入手续费后，计算余额是否足够
+		//总共要发送的
+		computeTotalSend = totalSend.Add(fees)
+		if computeTotalSend.GreaterThan(balance) {
+			continue
+		}
+		computeTotalSend = totalSend
+
+		actualFees = fees
+
+		break
+
+	}
+
+	//UTXO如果大于设定限制，则分拆成多笔交易单发送
+	if len(usedUTXO) > maxTxInputs {
+		errStr := fmt.Sprintf("The transaction is use max inputs over: %d", maxTxInputs)
+		return "", errors.New(errStr)
+	}
+
+	changeAmount := balance.Sub(computeTotalSend).Sub(actualFees)
+
+	fmt.Printf("-----------------------------------------------\n")
+	fmt.Printf("From WalletID: %s\n", walletID)
+	fmt.Printf("To Address: %s\n", strings.Join(to, ", "))
+	fmt.Printf("Use: %v\n", balance.StringFixed(8))
+	fmt.Printf("Fees: %v\n", actualFees.StringFixed(8))
+	fmt.Printf("Receive: %v\n", computeTotalSend.StringFixed(8))
+	fmt.Printf("Change: %v\n", changeAmount.StringFixed(8))
+	fmt.Printf("-----------------------------------------------\n")
+
+
+	//解锁钱包
+	err = UnlockWallet(password, 120)
+	if err != nil {
+		return "", err
+	}
+
+	//log.Printf("pieceOfSend = %s \n", pieceOfSend.StringFixed(8))
+	//log.Printf("piecefees = %s \n", piecefees.StringFixed(8))
+	//log.Printf("feesRate = %s \n", feesRate.StringFixed(8))
+
+	//创建交易
+	txRaw, _, err := BuildTransaction(usedUTXO, to, changeAddr.Address, amounts, actualFees)
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Printf("Build Transaction Successfully\n")
+
+	//签名交易
+	signedHex, err := SignRawTransaction(txRaw, walletID, key, usedUTXO)
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Printf("Sign Transaction Successfully\n")
+
+	txid, err := SendRawTransaction(signedHex)
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Printf("Submit Transaction Successfully\n")
+
+	//发送成功后，删除已使用的UTXO
+	clearUnspends(usedUTXO, w)
+
+	LockWallet()
+
+	return txid, nil
+}
+
 
 //CreateChangeAddress 创建找零地址
 func CreateChangeAddress(walletID string, key *keystore.HDKey) (*Address, error) {
@@ -1620,6 +1782,35 @@ func loadConfig() error {
 	}
 
 	return nil
+}
+
+//readWallet 加载文件，实例化钱包
+func readWallet(keyPath string) *Wallet {
+
+	var (
+		buf = new(bufio.Reader)
+		key struct {
+			   Alias  string `json:"alias"`
+			   RootId string `json:"rootid"`
+		   }
+	)
+
+	fd, err := os.Open(keyPath)
+	defer fd.Close()
+	if err != nil {
+		return nil
+	}
+
+	buf.Reset(fd)
+	// Parse the address.
+	key.Alias = ""
+	key.RootId = ""
+	err = json.NewDecoder(buf).Decode(&key)
+	if err != nil {
+		return nil
+	}
+
+	return &Wallet{WalletID: key.RootId, Alias: key.Alias}
 }
 
 //打印钱包列表

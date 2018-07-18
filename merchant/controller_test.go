@@ -68,6 +68,34 @@ func TestSubscribe(t *testing.T) {
 	<- endRunning
 }
 
+func TestCreateWallet(t *testing.T) {
+
+	var (
+		//endRunning = make(chan bool, 1)
+	)
+
+	m, err := NewMerchantNode(nodeConfig)
+	if err != nil {
+		t.Errorf("CreateWallet failed unexpected error: %v", err)
+	}
+
+	inputs := map[string] interface{} {
+		"coin": "btc",
+		"alias": "Test Bitcoin",
+		"passwordType": 0,
+		"password": "1234qwer",
+	}
+
+	ctx := generateCTX("createWallet", inputs)
+
+	m.createWallet(ctx)
+
+	t.Logf("reponse: %v\n",ctx.Resp)
+
+	//<- endRunning
+
+}
+
 func TestHTTP(t *testing.T) {
 	r, err := req.Get("http://192.168.2.193:10050/chains/main/blocks/")
 	if err != nil {

@@ -60,8 +60,6 @@ type OWTPNode struct {
 	disconnectHandler func(n *OWTPNode)
 	//授权
 	Auth Authorization
-	//是否调试
-	Dedug bool
 }
 
 //NewOWTPNode 创建OWTP协议节点

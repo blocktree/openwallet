@@ -15,6 +15,12 @@
 
 package merchant
 
+import "github.com/blocktree/OpenWallet/owtp"
+
+func init() {
+	owtp.Debug = false
+}
+
 func GetMerchantKeychain() error {
 
 	return nil

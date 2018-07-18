@@ -36,7 +36,7 @@ const (
 )
 
 var (
-	debug = false
+	Debug = false
 )
 
 type Handler interface {
@@ -249,7 +249,7 @@ func (c *Client) writePump() {
 				c.write(websocket.CloseMessage, []byte{})
 				return
 			}
-			if debug {log.Printf("Send: %s\n", string(message))}
+			if Debug {log.Printf("Send: %s\n", string(message))}
 			if err := c.write(websocket.TextMessage, message); err != nil {
 				return
 			}
@@ -291,7 +291,7 @@ func (c *Client) readPump() {
 			close(c.send)		//读取通道异常，关闭读通道
 			break
 		}
-		if debug {log.Printf("Read: %s\n", string(message))}
+		if Debug {log.Printf("Read: %s\n", string(message))}
 
 		packet := NewDataPacket(gjson.ParseBytes(message))
 

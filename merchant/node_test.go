@@ -42,7 +42,7 @@ func TestGetImportAddress(t *testing.T) {
 		t.Errorf("GetChargeAddressVersion failed unexpected error: %v", err)
 	}
 
-	walletID := "sss"
+	walletID := "adsdsd1231"
 	wallet, err := m.GetMerchantWalletByID(walletID)
 	if err != nil {
 		log.Printf("unexpected error: %v", err)
@@ -67,4 +67,32 @@ func TestGetImportAddress(t *testing.T) {
 		log.Printf("address = %s\n", a.Address)
 	}
 
+}
+
+func TestGetAllMerchantWallet(t *testing.T) {
+
+	m, err := NewMerchantNode(nodeConfig)
+	if err != nil {
+		t.Errorf("GetChargeAddressVersion failed unexpected error: %v", err)
+	}
+
+	db, err := m.OpenDB()
+	if err != nil {
+		log.Printf("unexpected error: %v", err)
+		return
+	}
+	defer db.Close()
+
+	var wallets []*openwallet.Wallet
+	db.All(&wallets)
+	for _, w := range wallets {
+		log.Printf("wallet = %v\n", *w)
+	}
+
+	var wallet openwallet.Wallet
+	err = db.One("WalletID", "adsdsd1231", &wallet)
+	if err != nil {
+		log.Printf("unexpected error: %v", err)
+		return
+	}
 }

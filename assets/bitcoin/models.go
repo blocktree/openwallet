@@ -56,8 +56,7 @@ func (w *Wallet) HDKey(password string) (*keystore.HDKey, error) {
 //openDB 打开钱包数据库
 func (w *Wallet) OpenDB() (*storm.DB, error) {
 	file.MkdirAll(dbPath)
-	file := filepath.Join(dbPath, w.DBFile())
-	return storm.Open(file)
+	return storm.Open( w.DBFile())
 
 }
 

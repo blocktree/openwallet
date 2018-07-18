@@ -77,7 +77,6 @@ func NewMerchantNode(config NodeConfig) (*MerchantNode, error) {
 
 	//创建节点，连接商户
 	node := owtp.NewOWTPNode(config.NodeID, config.MerchantNodeURL, auth)
-
 	m.Node = node
 	m.Config = config
 
@@ -120,7 +119,7 @@ func (m *MerchantNode) GetMerchantWalletByID(walletID string) (*openwallet.Walle
 	defer db.Close()
 
 	var wallet openwallet.Wallet
-	err = db.One("walletID", walletID, &wallet)
+	err = db.One("WalletID", walletID, &wallet)
 	if err != nil {
 		return nil, err
 	}

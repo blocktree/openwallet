@@ -477,7 +477,7 @@ func TestBuildTransaction(t *testing.T) {
 		return
 	}
 
-	txRaw, _, err := BuildTransaction(utxos, "mrThNMQ6bMf1YNPjBj9jYXmYYzw1Rt8GFU", "n33cHpEc9qAvECM9pFgabZ6ktJimLSeWdy", decimal.NewFromFloat(0.2), decimal.NewFromFloat(0.00002))
+	txRaw, _, err := BuildTransaction(utxos, []string{"mrThNMQ6bMf1YNPjBj9jYXmYYzw1Rt8GFU"}, "n33cHpEc9qAvECM9pFgabZ6ktJimLSeWdy", []decimal.Decimal{decimal.NewFromFloat(0.2)}, decimal.NewFromFloat(0.00002))
 	if err != nil {
 		t.Errorf("BuildTransaction failed unexpected error: %v\n", err)
 		return
@@ -511,7 +511,7 @@ func TestSendTransaction(t *testing.T) {
 
 	for _, to := range sends {
 
-		txIDs, err := SendTransaction("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", to, decimal.NewFromFloat(1), "1234qwer", false)
+		txIDs, err := SendTransaction("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", to, decimal.NewFromFloat(0.6), "1234qwer", false)
 
 		if err != nil {
 			t.Errorf("SendTransaction failed unexpected error: %v\n", err)
@@ -521,6 +521,36 @@ func TestSendTransaction(t *testing.T) {
 		t.Logf("SendTransaction txid = %v\n", txIDs)
 
 	}
+
+}
+
+
+func TestSendBatchTransaction(t *testing.T) {
+
+	sends := []string {
+		"mr4zfwC8XBoxUKuGuPdnWhLH5YzhJTTyhY",
+		"mg7PvSimxBSsRcy4FCx7QKnzRN7fyeQuRe",
+		"miqpBeCQnYraAV73TeTrCtDsFK5ebKU7P9",
+		"n1t8xJxkHuXsnaCD4hxPZrJRGYi6yQ83uC",
+	}
+
+	amounts := []decimal.Decimal {
+		decimal.NewFromFloat(0.01),
+		decimal.NewFromFloat(0.02),
+		decimal.NewFromFloat(0.03),
+		decimal.NewFromFloat(0.04),
+	}
+
+	RebuildWalletUnspent("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ")
+
+	txID, err := SendBatchTransaction("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", sends, amounts, "1234qwer")
+
+	if err != nil {
+		t.Errorf("SendTransaction failed unexpected error: %v\n", err)
+		return
+	}
+
+	t.Logf("SendTransaction txid = %v\n", txID)
 
 }
 

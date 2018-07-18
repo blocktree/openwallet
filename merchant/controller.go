@@ -21,6 +21,7 @@ import (
 	"log"
 	"github.com/blocktree/OpenWallet/assets"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"fmt"
 )
 
 const (
@@ -50,7 +51,7 @@ func (m *MerchantNode) setupRouter() {
 	m.Node.HandleFunc("createWallet", m.createWallet)
 	m.Node.HandleFunc("configWallet", m.configWallet)
 	m.Node.HandleFunc("getWalletInfo", m.getWalletInfo)
-	m.Node.HandleFunc("submitTrasaction", m.submitTrasaction)
+	m.Node.HandleFunc("submitTransaction", m.submitTransaction)
 }
 
 
@@ -75,12 +76,20 @@ func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 	//db.Drop("subscribe")
 
 	for _, p := range ctx.Params().Get("subscriptions").Array() {
-		s := NewSubscription(p)
-		subscriptions = append(subscriptions, s)
 
+		s := NewSubscription(p)
+		if s.WalletID == "" {
+			continue
+		}
+		subscriptions = append(subscriptions, s)
+		//log.Printf("s = %v\n", s)
 		//添加订阅钱包
 		wallet := openwallet.NewWatchOnlyWallet(s.WalletID, s.Coin)
-		db.Save(wallet)
+		err = db.Save(wallet)
+		if err != nil {
+			responseError(ctx, err)
+			return
+		}
 	}
 
 	//重置订阅内容
@@ -114,7 +123,8 @@ func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 	//导入到每个币种的数据库
 	am := assets.GetMerchantAssets(coin)
 	if am == nil {
-		responseError(ctx, errors.New("Assets manager no find!"))
+		errorMsg := fmt.Sprintf("%s assets manager not found!", coin)
+		responseError(ctx, errors.New(errorMsg))
 		return
 	}
 
@@ -154,7 +164,52 @@ func (m *MerchantNode) getWalletInfo(ctx *owtp.Context) {
 	responseSuccess(ctx, nil)
 }
 
-func (m *MerchantNode) submitTrasaction(ctx *owtp.Context) {
+func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
+
+	log.Printf("Merchat Call: submitTransaction \n")
+	log.Printf("params: %v\n", ctx.Params())
+
+	var (
+		//withdraws = make([]*openwallet.Withdraw, 0)
+		wallets = make(map[string][]*openwallet.Withdraw)
+		tmpArray []*openwallet.Withdraw
+	)
+
+	db, err := m.OpenDB()
+	if err != nil {
+		responseError(ctx, err)
+		return
+	}
+	defer db.Close()
+
+	for _, p := range ctx.Params().Get("withdraws").Array() {
+		s := openwallet.NewWithdraw(p)
+		//withdraws = append(withdraws, s)
+		db.Save(s)
+
+		tmpArray = wallets[s.WalletID]
+		if tmpArray == nil {
+			tmpArray = make([]*openwallet.Withdraw, 0)
+		}
+
+		tmpArray = append(tmpArray, s)
+		wallets[s.WalletID] = tmpArray
+
+	}
+
+	for wid, withs := range wallets {
+		if len(withs) > 0 {
+			//提交给资产管理包转账
+			wallet, err := m.GetMerchantWalletByID(wid)
+			if err != nil {
+				return
+			}
+			wallet.Password = withs[0].Password
+			//导入到每个币种的数据库
+			mer := assets.GetMerchantAssets(withs[0].Symbol)
+			mer.SubmitTransactions(wallet, withs)
+		}
+	}
 
 	responseSuccess(ctx, nil)
 }
