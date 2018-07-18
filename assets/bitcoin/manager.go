@@ -276,7 +276,7 @@ func CreateReceiverAddress(account string) (string, error) {
 }
 
 //CreateBatchAddress 批量创建地址
-func CreateBatchAddress(name, password string, count uint64) (string, error) {
+func CreateBatchAddress(name, password string, count uint64) (string, []*Address, error) {
 
 	var (
 		synCount   uint64 = 20
@@ -288,13 +288,13 @@ func CreateBatchAddress(name, password string, count uint64) (string, error) {
 	//读取钱包
 	w, err := GetWalletInfo(name)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	//加载钱包
 	key, err := w.HDKey(password)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	timestamp := time.Now()
@@ -340,7 +340,7 @@ func CreateBatchAddress(name, password string, count uint64) (string, error) {
 	//解锁钱包
 	err = UnlockWallet(password, 3600)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	/*	开启导出的线程，监听新地址，批量导出	*/
@@ -379,6 +379,7 @@ func CreateBatchAddress(name, password string, count uint64) (string, error) {
 	}
 
 	values := make([][]*Address, 0)
+	outputAddress := make([]*Address, 0)
 
 	//以下使用生产消费模式
 
@@ -399,6 +400,7 @@ func CreateBatchAddress(name, password string, count uint64) (string, error) {
 		//生成者不断生成数据，插入到数据队列尾部
 		case pa := <-producer:
 			values = append(values, pa)
+			outputAddress = append(outputAddress, pa...)
 			//log.Printf("completed %d", len(pa))
 			//当激活消费者后，传输数据给消费者，并把顶部数据出队
 		case activeWorker <- activeValue:
@@ -409,13 +411,13 @@ func CreateBatchAddress(name, password string, count uint64) (string, error) {
 			//退出
 			LockWallet()
 			log.Printf("All addresses have been created!")
-			return filePath, nil
+			return filePath, outputAddress, nil
 		}
 	}
 
 	LockWallet()
 
-	return filePath, nil
+	return filePath, outputAddress, nil
 }
 
 //CreateNewWallet 创建钱包

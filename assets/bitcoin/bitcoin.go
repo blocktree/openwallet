@@ -222,7 +222,7 @@ func (w *WalletManager) CreateAddressFlow() error {
 	log.Printf("Start batch creation\n")
 	log.Printf("-------------------------------------------------\n")
 
-	filePath, err := CreateBatchAddress(account.WalletID, password, count)
+	filePath, _, err := CreateBatchAddress(account.WalletID, password, count)
 	if err != nil {
 		return err
 	}

@@ -38,9 +38,12 @@ const (
 	ErrReplayAttack uint64 = 409
 	//重放攻击
 	ErrRequestTimeout uint64 = 408
-
+	//服务器错误
+	ErrInternalServerError uint64 = 500
 	//请求与响应的方法不一致
 	ErrResponseMethodDiffer uint64 = 501
+	//60X: 自定义错误
+	ErrCustomError uint64 = 600
 )
 
 //OWTPNode 实现OWTP协议的节点

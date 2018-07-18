@@ -147,7 +147,7 @@ func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 	}
 	defer db.Close()
 
-	db.Save(wallet)
+	db.Save(&wallet)
 
 	log.Printf("walletID = %s \n", wallet.WalletID)
 
@@ -221,5 +221,5 @@ func responseSuccess(ctx *owtp.Context, result interface{}) {
 
 //responseError 失败结果响应
 func responseError(ctx *owtp.Context, err error) {
-	ctx.Response(nil, owtp.ErrBadRequest, err.Error())
+	ctx.Response(nil, owtp.ErrCustomError, err.Error())
 }

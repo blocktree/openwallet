@@ -19,13 +19,19 @@ import (
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/shopspring/decimal"
-	"path/filepath"
 	"strings"
 	"log"
+	"github.com/pkg/errors"
 )
 
 //CreateMerchantWallet 创建钱包
 func (w *WalletManager) CreateMerchantWallet(wallet *openwallet.Wallet) error {
+
+	//先加载是否有配置文件
+	err := loadConfig()
+	if err != nil {
+		return errors.New("The wallet node is not config!")
+	}
 
 	coreWallet, keyFile, err := CreateNewWallet(wallet.Alias, wallet.Password)
 	if err != nil {
@@ -33,10 +39,9 @@ func (w *WalletManager) CreateMerchantWallet(wallet *openwallet.Wallet) error {
 	}
 
 	//创建钱包资源文件夹
-	walletDataFolder := filepath.Join(dbPath, coreWallet.DBFile())
-	file.MkdirAll(walletDataFolder)
+	file.MkdirAll(dbPath)
 
-	wallet.DBFile = walletDataFolder
+	wallet.DBFile = coreWallet.DBFile()
 	wallet.KeyFile = keyFile
 
 	return nil
@@ -85,6 +90,18 @@ func (w *WalletManager) ImportMerchantAddress(wallet *openwallet.Wallet, address
 
 //CreateMerchantAddress 创建钱包地址
 func (w *WalletManager) CreateMerchantAddress(wallet *openwallet.Wallet, count int) ([]*openwallet.Address, error) {
+
+	//先加载是否有配置文件
+	err := loadConfig()
+	if err != nil {
+		return nil, errors.New("The wallet node is not config!")
+	}
+
+	_, newAddrs, err := CreateBatchAddress(wallet.Alias, wallet.Password, uint64(count))
+	if err != nil {
+		return nil, err
+	}
+
 	return nil, nil
 }
 

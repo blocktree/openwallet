@@ -77,11 +77,12 @@ func TestCreateWallet(t *testing.T) {
 	m, err := NewMerchantNode(nodeConfig)
 	if err != nil {
 		t.Errorf("CreateWallet failed unexpected error: %v", err)
+		return
 	}
 
 	inputs := map[string] interface{} {
 		"coin": "btc",
-		"alias": "Test Bitcoin",
+		"alias": "Test2 Bitcoin",
 		"passwordType": 0,
 		"password": "1234qwer",
 	}
