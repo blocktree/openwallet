@@ -17,7 +17,7 @@ package commands
 
 import (
 	"github.com/blocktree/OpenWallet/assets"
-	"github.com/blocktree/OpenWallet/assets/walletnode"
+	wf "github.com/blocktree/OpenWallet/assets/walletnode"
 	"github.com/blocktree/OpenWallet/cmd/utils"
 	"github.com/blocktree/OpenWallet/logger"
 	"gopkg.in/urfave/cli.v1"
@@ -191,7 +191,7 @@ func getNode(c *cli.Context) error {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-	m := assets.NodeManager(&walletnode.NodeManagerStruct{})
+	m := assets.NodeManager(&wf.NodeManagerStruct{})
 	if m == nil {
 		openwLogger.Log.Errorf("%s walletnode manager did not load\n", symbol)
 	}
@@ -207,7 +207,7 @@ func createNode(c *cli.Context) error {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-	m := assets.NodeManager(&walletnode.NodeManagerStruct{})
+	m := assets.NodeManager(&wf.NodeManagerStruct{})
 	if m == nil {
 		openwLogger.Log.Errorf("%s walletnode manager did not load\n", symbol)
 	}
@@ -223,7 +223,7 @@ func startNode(c *cli.Context) error {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-	m := assets.NodeManager(&walletnode.NodeManagerStruct{})
+	m := assets.NodeManager(&wf.NodeManagerStruct{})
 	if m == nil {
 		openwLogger.Log.Errorf("%s walletnode manager did not load\n", symbol)
 	}
@@ -239,7 +239,7 @@ func stopNode(c *cli.Context) error {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-	m := assets.NodeManager(&walletnode.NodeManagerStruct{})
+	m := assets.NodeManager(&wf.NodeManagerStruct{})
 	if m == nil {
 		openwLogger.Log.Errorf("%s walletnode manager did not load\n", symbol)
 	}
@@ -255,7 +255,7 @@ func restartNode(c *cli.Context) error {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-	m := assets.NodeManager(&walletnode.NodeManagerStruct{})
+	m := assets.NodeManager(&wf.NodeManagerStruct{})
 	if m == nil {
 		openwLogger.Log.Errorf("%s walletnode manager did not load\n", symbol)
 	}
@@ -271,7 +271,7 @@ func removeNode(c *cli.Context) error {
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
 	}
-	m := assets.NodeManager(&walletnode.NodeManagerStruct{})
+	m := assets.NodeManager(&wf.NodeManagerStruct{})
 	if m == nil {
 		openwLogger.Log.Errorf("%s walletnode manager did not load\n", symbol)
 	}
