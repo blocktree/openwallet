@@ -17,17 +17,14 @@ package walletnode
 
 import (
 	"github.com/shopspring/decimal"
+	s "strings"
 	"time"
 )
 
-const (
-	DATAPATH = "/storage/openwallet/"
-)
-
 var (
-	Symbol       string
-	FullnodeAddr string
-	FullnodePort string
+	Symbol                   string                              // Current fullnode wallet's symbol
+	FullnodeContainerConfigs map[string]*FullnodeContainerConfig // All configs of fullnode wallet for Docker
+	FullnodeContainerPath    *FullnodeContainerPathConfig        // All paths of fullnode wallet on Docker
 )
 
 // Node setup 节点配置
@@ -38,9 +35,9 @@ var (
 	//是否测试网络
 	isTestNet = "true" // default in TestNet
 	//RPC认证账户名
-	rpcUser = ""
+	rpcUser = "wallet"
 	//RPC认证账户密码
-	rpcPassword = ""
+	rpcPassword = "walletPassword2017"
 	//钥匙备份路径
 	// keyDir = filepath.Join("data", strings.ToLower(Symbol), "key")
 	//汇总地址
@@ -113,3 +110,73 @@ serverAddr = "localhost"
 serverPort = ""
 `
 )
+
+type FullnodeContainerPathConfig struct {
+	EXEC_PATH     string
+	DATA_PATH     string
+	TESTDATA_PATH string
+}
+
+type FullnodeContainerConfig struct {
+	CMD     []string    // Commands to run fullnode wallet ex: {"/bin/sh", "-c", "ls -l"}
+	PORT    [][2]string // Which ports need to be mapped, ex: {{hostport, innerport}, ...}
+	APIPORT string      // Port of default fullnode API(within container), from PORT
+	IMAGE   string      // Image that container run from
+}
+
+func (p *FullnodeContainerPathConfig) init(symbol string) error {
+	p.EXEC_PATH = s.Replace(p.EXEC_PATH, "<Symbol>", symbol, 1)
+	p.DATA_PATH = s.Replace(p.DATA_PATH, "<Symbol>", symbol, 1)
+	p.TESTDATA_PATH = s.Replace(p.TESTDATA_PATH, "<Symbol>", symbol, 1)
+	return nil
+}
+
+func init() {
+	FullnodeContainerConfigs = map[string]*FullnodeContainerConfig{
+		"btc": &FullnodeContainerConfig{
+			CMD:     []string{"/bin/sh", "-c", "while true; do ping 8.8.8.8; done"},
+			PORT:    [][2]string{{"22/tcp", "10122"}, {"80/tcp", "10180"}},
+			APIPORT: string("80/tcp"), // Same within PORT
+			IMAGE:   string("uu-nginx"),
+		},
+		"bch": &FullnodeContainerConfig{
+			CMD:     []string{"/bin/sh", "-c", "while true; do ping 8.8.8.8; done"},
+			PORT:    [][2]string{{"22/tcp", "10222"}, {"80/tcp", "10280"}},
+			APIPORT: string("80/tcp"),
+			IMAGE:   string("uu-nginx"),
+		},
+		"eth": &FullnodeContainerConfig{
+			CMD:     []string{"/bin/sh", "-c", "while true; do ping 8.8.8.8; done"},
+			PORT:    [][2]string{{"22/tcp", "10322"}, {"80/tcp", "10380"}},
+			APIPORT: string("80/tcp"),
+			IMAGE:   string("uu-nginx"),
+		},
+		"eos": &FullnodeContainerConfig{
+			CMD:     []string{"/bin/sh", "-c", "while true; do ping 8.8.8.8; done"},
+			PORT:    [][2]string{{"22/tcp", "10422"}, {"80/tcp", "10480"}},
+			APIPORT: string("80/tcp"),
+			IMAGE:   string("uu-nginx"),
+		},
+	}
+	FullnodeContainerPath = &FullnodeContainerPathConfig{
+		EXEC_PATH:     "/storage/openwallet/exec/<Symbol>/",
+		DATA_PATH:     "/storage/openwallet/data/<Symbol>/data/",
+		TESTDATA_PATH: "/storage/openwallet/data/<Symbol>/testdata/",
+	}
+}
+
+// Private function, generate container name by <Symbol> and <isTestNet>
+func _GetCName(symbol string) (string, error) {
+	// Load global config
+	err := loadConfig(symbol)
+	if err != nil {
+		return "", err
+	}
+
+	// Within testnet, use "<Symbol>_testnet" as container name
+	if isTestNet == "true" {
+		return "e" + s.ToLower(symbol) + "_testnet", nil
+	} else {
+		return "e" + s.ToLower(symbol), nil
+	}
+}
