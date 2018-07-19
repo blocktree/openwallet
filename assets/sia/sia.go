@@ -16,14 +16,14 @@
 package sia
 
 import (
+	"errors"
 	"fmt"
 	"github.com/blocktree/OpenWallet/console"
 	"log"
-	"errors"
 	//"github.com/blocktree/OpenWallet/timer"
-	"path/filepath"
-	"github.com/shopspring/decimal"
 	"github.com/blocktree/OpenWallet/timer"
+	"github.com/shopspring/decimal"
+	"path/filepath"
 )
 
 const (
@@ -60,21 +60,42 @@ func (w *WalletManager) CreateWalletFlow() error {
 		//testA    	*Account
 	)
 
-	flag, err := console.Stdin.PromptConfirm("Create a new wallet will cover the existing wallet data and reinitialize a new one, please backup the existing wallet first. Continue to create?")
+	//if flag {
+
+	//先加载是否有配置文件
+	err = loadConfig()
 	if err != nil {
 		return err
 	}
 
-	if flag {
+	// 等待用户输入钱包名字
+	//name, err = console.InputText("Enter wallet's name: ", true)
 
-		//先加载是否有配置文件
-		err = loadConfig()
+	wallets, err := GetWalletInfo()
+	if !wallets[0].Encrypted || err != nil {
+
+		// 等待用户输入密码
+		password, err = console.InputPassword(true, 8)
 		if err != nil {
 			return err
 		}
 
-		// 等待用户输入钱包名字
-		//name, err = console.InputText("Enter wallet's name: ", true)
+		publicKey, err = CreateNewWallet(password, false)
+		if err != nil {
+			return err
+		} else {
+			log.Printf("Create New Wallet Successfully.\n")
+		}
+	} else {
+
+		flag, err := console.Stdin.PromptConfirm("Create a new wallet will cover the existing wallet data and reinitialize a new one, please backup the existing wallet first. Continue to create?")
+		if err != nil {
+			return err
+		}
+
+		if !flag {
+			return nil
+		}
 
 		// 等待用户输入密码
 		password, err = console.InputPassword(true, 8)
@@ -85,20 +106,23 @@ func (w *WalletManager) CreateWalletFlow() error {
 		publicKey, err = CreateNewWallet(password, true)
 		if err != nil {
 			return err
-		}
-
-		fmt.Printf("Please keep your primary seed in a safe place: %s\n", publicKey)
-
-		if walletDataPath==""{
-			log.Printf("walletDataPath is null, please setup the config file and backup the wallet. ")
-		}else{
-			filePath, err = BackupWallet()
-			if err != nil {
-				return err
-			}
-			fmt.Printf("Keystore backup successfully, file path: %s\n", filePath)
+		} else {
+			log.Printf("Create New Wallet Successfully.\n")
 		}
 	}
+
+	fmt.Printf("Please keep your primary seed in a safe place: %s\n", publicKey)
+
+	if walletDataPath == "" {
+		log.Printf("walletDataPath is null, please setup the config file and backup the wallet. ")
+	} else {
+		filePath, err = BackupWallet()
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Keystore backup successfully, file path: %s\n", filePath)
+	}
+	//}
 	return nil
 }
 
@@ -116,7 +140,7 @@ func (w *WalletManager) CreateAddressFlow() error {
 		return err
 	}
 
-	if wallets[0].Rescanning{
+	if wallets[0].Rescanning {
 		return errors.New(fmt.Sprint("Wallet is rescanning the block, please wait......"))
 	}
 	if !wallets[0].Unlocked {
@@ -127,14 +151,13 @@ func (w *WalletManager) CreateAddressFlow() error {
 		}
 		err = UnlockWallet(password)
 		if err != nil {
-			log.Printf("UnlockWallet information:%v\n",err)
+			log.Printf("UnlockWallet information:%v\n", err)
 			log.Printf("NOTE: information 2XX means unlock wallet successfully, 4XX or 5XX means unsuccessfully.")
 			return nil
 		} else {
 			log.Printf("UnlockWallet processing......\n")
 		}
 	}
-
 
 	// 输入地址数量
 	count, err := console.InputNumber("Enter the number of addresses you want: ", false)
@@ -174,7 +197,7 @@ func (w *WalletManager) SummaryFollow() error {
 	if err != nil {
 		return err
 	}
-	if wallets[0].Rescanning{
+	if wallets[0].Rescanning {
 		return errors.New(fmt.Sprint("Wallet is rescanning the block, please wait......"))
 	}
 	if !wallets[0].Unlocked {
@@ -185,7 +208,7 @@ func (w *WalletManager) SummaryFollow() error {
 		}
 		err = UnlockWallet(password)
 		if err != nil {
-			log.Printf("UnlockWallet information:%v\n",err)
+			log.Printf("UnlockWallet information:%v\n", err)
 			log.Printf("NOTE: information 2XX means unlock wallet successfully, 4XX or 5XX means unsuccessfully.")
 			return nil
 		} else {
@@ -219,7 +242,6 @@ func (w *WalletManager) SummaryFollow() error {
 	//	time.Sleep(10*time.Second)
 	//}
 
-
 	return nil
 }
 
@@ -237,7 +259,7 @@ func (w *WalletManager) BackupWalletFlow() error {
 		return err
 	}
 
-	if walletDataPath==""{
+	if walletDataPath == "" {
 		return errors.New("walletDataPath is null, please setup the config file before backup ")
 	}
 
@@ -286,7 +308,7 @@ func (w *WalletManager) TransferFlow() error {
 	if err != nil {
 		return err
 	}
-	if wallets[0].Rescanning{
+	if wallets[0].Rescanning {
 		return errors.New(fmt.Sprint("Wallet is rescanning the block, please wait......"))
 	}
 	if !wallets[0].Unlocked {
@@ -297,7 +319,7 @@ func (w *WalletManager) TransferFlow() error {
 		}
 		err = UnlockWallet(password)
 		if err != nil {
-			log.Printf("UnlockWallet information:%v\n",err)
+			log.Printf("UnlockWallet information:%v\n", err)
 			log.Printf("NOTE: information 2XX means unlock wallet successfully, 4XX or 5XX means unsuccessfully.")
 			return nil
 		} else {
@@ -321,12 +343,11 @@ func (w *WalletManager) TransferFlow() error {
 	atculAmount, _ := decimal.NewFromString(amount)
 	realAmount := atculAmount.Mul(coinDecimal)
 
-
 	txID, err := SendTransaction(realAmount.String(), receiver)
 	if err != nil {
 		return err
 	}
-	log.Printf("Transaction ID:%s\n",txID)
+	log.Printf("Transaction ID:%s\n", txID)
 
 	return nil
 }

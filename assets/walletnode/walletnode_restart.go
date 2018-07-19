@@ -13,43 +13,29 @@
  * GNU Lesser General Public License for more details.
  */
 
-package walletnode
+ package walletnode
 
-import (
+ import (
 	"context"
 	"docker.io/go-docker"
 	"fmt"
-	s "strings"
 )
 
-type NodeManagerStruct struct{}
-
-func (w *NodeManagerStruct) GetNodeStatus(symbol string) error {
-	// func(vals ...interface{}) {}(
-	// 	context.Background, log.New, time.Saturday,
-	// 	docker.NewClient, types.ContainerListOptions{},
-	// 	container.Config{}, network.NetworkingConfig{},
-	// 	api.DefaultVersion, s.ToLower("jij"),
-	// ) // Delete before commit
-
+func (w *NodeManagerStruct) RestartNodeFlow(symbol string) error {
 	// Init docker client
 	c, err := docker.NewEnvClient()
 	if err != nil {
-		return err
+		return (err)
 	}
-	// Instantize parameters
+	// Action within client
 	cName, err := _GetCName(symbol) // container name
 	if err != nil {
 		return err
 	}
 	ctx := context.Background() // nil
-	// Action within client
-	res, err := c.ContainerInspect(ctx, cName)
-	if err != nil {
-		return err
+	err = c.ContainerRestart(ctx, cName, nil)
+	if err == nil {
+		fmt.Printf("%s walletnode stop in success!\n", symbol)
 	}
-	// Get results
-	status := res.State.Status
-	fmt.Printf("%s walletnode status: %s\n", s.ToUpper(symbol), status)
-	return nil
+	return err
 }

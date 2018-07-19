@@ -19,37 +19,25 @@ import (
 	"context"
 	"docker.io/go-docker"
 	"fmt"
-	s "strings"
+	"time"
 )
 
-type NodeManagerStruct struct{}
-
-func (w *NodeManagerStruct) GetNodeStatus(symbol string) error {
-	// func(vals ...interface{}) {}(
-	// 	context.Background, log.New, time.Saturday,
-	// 	docker.NewClient, types.ContainerListOptions{},
-	// 	container.Config{}, network.NetworkingConfig{},
-	// 	api.DefaultVersion, s.ToLower("jij"),
-	// ) // Delete before commit
-
+func (w *NodeManagerStruct) StopNodeFlow(symbol string) error {
 	// Init docker client
 	c, err := docker.NewEnvClient()
 	if err != nil {
-		return err
+		return (err)
 	}
-	// Instantize parameters
+	// Action within client
 	cName, err := _GetCName(symbol) // container name
 	if err != nil {
 		return err
 	}
 	ctx := context.Background() // nil
-	// Action within client
-	res, err := c.ContainerInspect(ctx, cName)
-	if err != nil {
-		return err
+	d := time.Duration(3000)
+	err = c.ContainerStop(ctx, cName, &d)
+	if err == nil {
+		fmt.Printf("%s walletnode stop in success!\n", symbol)
 	}
-	// Get results
-	status := res.State.Status
-	fmt.Printf("%s walletnode status: %s\n", s.ToUpper(symbol), status)
-	return nil
+	return err
 }
