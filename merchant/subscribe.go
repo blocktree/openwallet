@@ -75,7 +75,7 @@ func (m *MerchantNode) GetChargeAddressVersion() error {
 			func(addressVer *AddressVersion, status uint64, msg string) {
 
 				if addressVer != nil {
-
+					//log.Printf("new version = %v", *addressVer)
 					innerdb, err := m.OpenDB()
 					if err != nil {
 						return
@@ -84,18 +84,21 @@ func (m *MerchantNode) GetChargeAddressVersion() error {
 					var oldVersion AddressVersion
 					err = innerdb.One("Key", addressVer.Key, &oldVersion)
 					//if err != nil {
+					//	log.Printf("GetChargeAddressVersion unexpected error: %v", err)
 					//	return
 					//}
 					//log.Printf("old version = %d", oldVersion.Version)
-					//log.Printf("new version = %d", addressVer.Version)
-					//if addressVer.Version > oldVersion.Version || err != nil {
+
+					if addressVer.Version > oldVersion.Version || err != nil {
 
 						//TODO:加入到订阅地址通道
 						m.getAddressesCh <- *addressVer
 
+						//log.Printf("new version = %v", *addressVer)
+
 						//更新记录
 						innerdb.Save(addressVer)
-					//}
+					}
 
 				}
 
@@ -110,7 +113,7 @@ func (m *MerchantNode) getChargeAddress() error {
 
 	var (
 		err   error
-		limit = uint64(20)
+		limit = uint64(1000)
 	)
 
 	////检查是否连接
@@ -156,9 +159,9 @@ func (m *MerchantNode) getChargeAddress() error {
 							//log.Printf("mer = %v", mer)
 							if mer != nil {
 								//log.Printf("address count = %d", len(addrs))
-								mer.ImportMerchantAddress(wallet, addrs)
+								mer.ImportMerchantAddress(wallet, wallet.SingleAssetsAccount(v.Coin), addrs)
 							}
-							getCount = getCount + limit
+							getCount = getCount + uint64(len(addrs))
 						}
 					})
 				if err != nil {

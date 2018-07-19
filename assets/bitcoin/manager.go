@@ -39,6 +39,7 @@ import (
 	"strings"
 	"time"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/asdine/storm"
 )
 
 const (
@@ -83,7 +84,7 @@ func GetAddressesByAccount(walletID string) ([]string, error) {
 }
 
 //GetAddressesFromLocalDB 从本地数据库
-func GetAddressesFromLocalDB(walletID string) ([]*openwallet.Address, error) {
+func GetAddressesFromLocalDB(walletID string, offset, limit int) ([]*openwallet.Address, error) {
 
 	wallet, err := GetWalletInfo(walletID)
 	if err != nil {
@@ -97,7 +98,13 @@ func GetAddressesFromLocalDB(walletID string) ([]*openwallet.Address, error) {
 	defer db.Close()
 
 	var addresses []*openwallet.Address
-	err = db.Find("WalletID", walletID, &addresses)
+	//err = db.Find("WalletID", walletID, &addresses)
+	if limit > 0 {
+		err = db.Find("AccountID", walletID, &addresses, storm.Limit(limit), storm.Skip(offset))
+	} else {
+		err = db.Find("AccountID", walletID, &addresses, storm.Skip(offset))
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -581,7 +588,7 @@ func GetWalletBalance(name string) string {
 	//批量插入到本地数据库
 	//设置utxo的钱包账户
 	for _, utxo := range utxos {
-		if name == utxo.WalletID {
+		if name == utxo.AccountID {
 			amount, _ := decimal.NewFromString(utxo.Amount)
 			balance = balance.Add(amount)
 		}
@@ -629,7 +636,7 @@ func CreateNewPrivateKey(key *keystore.HDKey, start, index uint64) (string, *ope
 
 	addr := openwallet.Address{
 		Address:   address.String(),
-		WalletID:   key.RootId,
+		AccountID:   key.RootId,
 		HDPath:    derivedPath,
 		CreatedAt: time.Now(),
 		Symbol: Symbol,
@@ -955,7 +962,7 @@ func RebuildWalletUnspent(walletID string) error {
 	for _, utxo := range utxos {
 		var addr openwallet.Address
 		err = db.One("Address", utxo.Address, &addr)
-		utxo.WalletID = addr.WalletID
+		utxo.AccountID = addr.AccountID
 		utxo.HDAddress = addr
 		key := common.NewString(fmt.Sprintf("%s_%d_%s", utxo.TxID, utxo.Vout, utxo.Address)).SHA256()
 		utxo.Key = key
@@ -1000,7 +1007,7 @@ func ListUnspentFromLocalDB(walletID string) ([]*Unspent, error) {
 	defer db.Close()
 
 	var utxos []*Unspent
-	err = db.Find("WalletID", walletID, &utxos)
+	err = db.Find("AccountID", walletID, &utxos)
 	if err != nil {
 		return nil, err
 	}
@@ -1213,6 +1220,10 @@ func SendTransaction(walletID, to string, amount decimal.Decimal, password strin
 					break
 				}
 			}
+		}
+
+		if balance.LessThan(totalSend) {
+			return nil, errors.New("The balance is not enough!")
 		}
 
 		//计算手续费，找零地址有2个，一个是发送，一个是新创建的
@@ -1437,6 +1448,10 @@ func SendBatchTransaction(walletID string, to []string, amounts []decimal.Decima
 					break
 				}
 			}
+		}
+
+		if balance.LessThan(computeTotalSend) {
+			return "", errors.New("The balance is not enough!")
 		}
 
 		//计算手续费，找零地址有2个，一个是发送，一个是新创建的

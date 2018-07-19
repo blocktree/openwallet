@@ -82,7 +82,7 @@ func TestCreateWallet(t *testing.T) {
 
 	inputs := map[string] interface{} {
 		"coin": "btc",
-		"alias": "YOU",
+		"alias": "YOU Mac",
 		"passwordType": 0,
 		"password": "1234qwer",
 	}
@@ -112,7 +112,7 @@ func TestCreateAddress(t *testing.T) {
 
 	inputs := map[string] interface{} {
 		"coin": "btc",
-		"walletID": "W3GkEdvfCPsUkbyUQxRF3idnW662oxdFEF",
+		"walletID": "WAAVruvecxJTNxcuMBdZc6QRq5WQtMiXKe",
 		"count": 100,
 		"password": "1234qwer",
 	}
@@ -142,14 +142,78 @@ func TestGetAddressList(t *testing.T) {
 
 	inputs := map[string] interface{} {
 		"coin": "btc",
-		"walletID": "W3GkEdvfCPsUkbyUQxRF3idnW662oxdFEF",
+		"walletID": "WAAVruvecxJTNxcuMBdZc6QRq5WQtMiXKe",
 		"offset": 0,
 		"limit": 1000,
 	}
 
-	ctx := generateCTX("createAddress", inputs)
+	ctx := generateCTX("getAddressList", inputs)
 
 	m.getAddressList(ctx)
+
+	t.Logf("reponse: %v\n",ctx.Resp)
+
+	//<- endRunning
+
+}
+
+
+func TestGetWalletList(t *testing.T) {
+
+	var (
+	//endRunning = make(chan bool, 1)
+	)
+
+	m, err := NewMerchantNode(nodeConfig)
+	if err != nil {
+		t.Errorf("CreateWallet failed unexpected error: %v", err)
+		return
+	}
+
+	inputs := map[string] interface{} {
+		"coin": "btc",
+	}
+
+	ctx := generateCTX("getWalletList", inputs)
+
+	m.getWalletList(ctx)
+
+	t.Logf("reponse: %v\n",ctx.Resp)
+
+	//<- endRunning
+
+}
+
+
+func TestSubmitTransaction(t *testing.T) {
+
+	var (
+	//endRunning = make(chan bool, 1)
+	)
+
+	m, err := NewMerchantNode(nodeConfig)
+	if err != nil {
+		t.Errorf("CreateWallet failed unexpected error: %v", err)
+		return
+	}
+
+	inputs := map[string] interface{} {
+		"withdraws": []interface{} {
+			map[string]interface{} {
+				"address":"mffc7puT4ZrCQGuAZAUuzjRWPKZKKYT4qG",
+				"amount":"0.0001",
+				"coin":"BTC",
+				"isMemo":0,
+				"sid":"BTC@WFvvr5q83WxWp1neUMiTaNuH7ZbaxJFpWu@null",
+				"walletID":"WFvvr5q83WxWp1neUMiTaNuH7ZbaxJFpWu",
+				"password": "1234qwer",
+			},
+		},
+	}
+
+	ctx := generateCTX("submitTransaction", inputs)
+
+	m.submitTransaction(ctx)
 
 	t.Logf("reponse: %v\n",ctx.Resp)
 

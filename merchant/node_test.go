@@ -96,3 +96,33 @@ func TestGetAllMerchantWallet(t *testing.T) {
 		return
 	}
 }
+
+func TestGetAllAddressVersion(t *testing.T) {
+
+	m, err := NewMerchantNode(nodeConfig)
+	if err != nil {
+		t.Errorf("GetChargeAddressVersion failed unexpected error: %v", err)
+	}
+
+	db, err := m.OpenDB()
+	if err != nil {
+		log.Printf("unexpected error: %v", err)
+		return
+	}
+	defer db.Close()
+
+	db.Save(&AddressVersion{
+		Key:"BTC_123123",
+		Coin:"BTC",
+		WalletID:"123123",
+		Total:111,
+		Version:2,
+	})
+
+	var addressVers []*AddressVersion
+	db.All(&addressVers)
+	for _, v := range addressVers {
+		log.Printf("addressVersion = %v\n", *v)
+	}
+
+}

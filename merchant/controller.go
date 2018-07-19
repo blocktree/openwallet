@@ -18,6 +18,7 @@ package merchant
 import (
 	"fmt"
 	"github.com/blocktree/OpenWallet/assets"
+	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/owtp"
 	"github.com/pkg/errors"
@@ -52,7 +53,7 @@ func (m *MerchantNode) setupRouter() {
 	m.Node.HandleFunc("createAddress", m.createAddress)
 	m.Node.HandleFunc("getAddressList", m.getAddressList)
 	m.Node.HandleFunc("configWallet", m.configWallet)
-	m.Node.HandleFunc("getWalletInfo", m.getWalletInfo)
+	m.Node.HandleFunc("getWalletList", m.getWalletList)
 	m.Node.HandleFunc("submitTransaction", m.submitTransaction)
 }
 
@@ -87,6 +88,8 @@ func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 		//添加订阅钱包
 		wallet := openwallet.NewWatchOnlyWallet(s.WalletID, s.Coin)
 		err = db.Save(wallet)
+		account := wallet.SingleAssetsAccount(s.Coin)
+		err = db.Save(account)
 		if err != nil {
 			responseError(ctx, err)
 			return
@@ -121,6 +124,11 @@ func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 	//passwordType := ctx.Params().Get("passwordType").Uint()
 	password := ctx.Params().Get("password").String()
 
+	if len(alias) == 0 {
+		responseError(ctx, errors.New("wallet alias is empty"))
+		return
+	}
+
 	//导入到每个币种的数据库
 	am := assets.GetMerchantAssets(coin)
 	if am == nil {
@@ -141,6 +149,9 @@ func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 		return
 	}
 
+	//创建单资产账户
+	account := wallet.SingleAssetsAccount(coin)
+
 	db, err := m.OpenDB()
 	if err != nil {
 		responseError(ctx, err)
@@ -149,20 +160,116 @@ func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 	defer db.Close()
 
 	db.Save(&wallet)
+	db.Save(&account)
 
 	log.Printf("walletID = %s \n", wallet.WalletID)
 
-	responseSuccess(ctx, wallet)
+	result := map[string]interface{}{
+		"coin":       coin,
+		"walletID":   account.AccountID,
+		"balance":    account.Balance,
+		"alias":      account.Alias,
+		"publicKeys": account.PublicKeys,
+	}
+
+	responseSuccess(ctx, result)
 }
 
 func (m *MerchantNode) configWallet(ctx *owtp.Context) {
 
+	log.Printf("Merchat Call: createWallet \n")
+	log.Printf("params: %v\n", ctx.Params())
+
+	/*
+
+		| 参数名称 | 类型   | 是否可空 | 描述                                                           |
+		|----------|--------|----------|----------------------------------------------------------------|
+		| coin     | string | 否       | 币种                                                           |
+		| walletID | string | 否       | 钱包ID                                                         |
+		| surplus  | string | 否       | 剩余额，设置后，【余额—剩余额】低于第一笔提币金额则不提币(默认为0) |
+		| fee      | string | 否       | 提币矿工费                                                     |
+		| confirm  | int    | 否       | 确认次数(达到该确认次数后不再推送确认，默认30)                  |
+
+	*/
+
+	merchantWalletConfig := openwallet.NewWalletConfig(ctx.Params())
+
+	if len(merchantWalletConfig.WalletID) == 0 {
+		responseError(ctx, errors.New("walletID is empty"))
+		return
+	}
+
+	db, err := m.OpenDB()
+	if err != nil {
+		responseError(ctx, err)
+		return
+	}
+	defer db.Close()
+
+	db.Save(merchantWalletConfig)
+
 	responseSuccess(ctx, nil)
 }
 
-func (m *MerchantNode) getWalletInfo(ctx *owtp.Context) {
+func (m *MerchantNode) getWalletList(ctx *owtp.Context) {
 
-	responseSuccess(ctx, nil)
+	log.Printf("Merchat Call: getWalletList \n")
+	log.Printf("params: %v\n", ctx.Params())
+
+	coin := ctx.Params().Get("coin").String()
+
+	//导入到每个币种的数据库
+	am := assets.GetMerchantAssets(coin)
+	if am == nil {
+		errorMsg := fmt.Sprintf("%s assets manager not found!", coin)
+		responseError(ctx, errors.New(errorMsg))
+		return
+	}
+
+	//提交给资产管理包转账
+	wallets, err := m.GetMerchantWalletList()
+	if err != nil {
+		responseError(ctx, err)
+		return
+	}
+
+	walletsMaps := make([]map[string]interface{}, 0)
+
+	for _, w := range wallets {
+
+		accounts, err := am.GetMerchantAssetsAccountList(w)
+		if err != nil {
+			continue
+		}
+
+		for _, a := range accounts {
+
+			wmap := make(map[string]interface{})
+			wmap["alias"] = a.Alias
+			wmap["walletID"] = a.WalletID
+			wmap["publicKeys"] = a.PublicKeys
+			wmap["coin"] = a.Symbol
+			wmap["balance"] = a.Balance
+
+			//查询钱包配置
+			config, err := m.GetMerchantWalletConfig(coin, w.WalletID)
+			if err == nil {
+				wmap["coin"] = config.Coin
+				wmap["surplus"] = config.Surplus
+				wmap["fee"] = config.Fee
+				wmap["confirm"] = config.Confirm
+			}
+
+			walletsMaps = append(walletsMaps, wmap)
+
+		}
+	}
+
+	result := map[string]interface{}{
+		"wallets": walletsMaps,
+	}
+
+	responseSuccess(ctx, result)
 }
 
 func (m *MerchantNode) createAddress(ctx *owtp.Context) {
@@ -184,6 +291,11 @@ func (m *MerchantNode) createAddress(ctx *owtp.Context) {
 	count := ctx.Params().Get("count").Uint()
 	password := ctx.Params().Get("password").String()
 
+	if count == 0 {
+		responseError(ctx, errors.New("create address count must be greater than 0"))
+		return
+	}
+
 	//导入到每个币种的数据库
 	am := assets.GetMerchantAssets(coin)
 	if am == nil {
@@ -202,18 +314,31 @@ func (m *MerchantNode) createAddress(ctx *owtp.Context) {
 
 	//导入到每个币种的数据库
 	mer := assets.GetMerchantAssets(coin)
-	newAddrs, err := mer.CreateMerchantAddress(wallet, count)
+	_, err = mer.CreateMerchantAddress(wallet, wallet.SingleAssetsAccount(coin), count)
 
 	if err != nil {
 		responseError(ctx, err)
 		return
 	}
+	/*
+		addrsMaps := make([]map[string]interface{}, 0)
 
-	result := map[string]interface{}{
-		"addresses": newAddrs,
-	}
+		for _, a := range newAddrs {
+			addrsMaps = append(addrsMaps, map[string]interface{} {
+				"address": a.Address,
+				"walletID": a.AccountID,
+				"balance":a.Balance,
+				"isMemo": a.IsMemo,
+				"memo": a.Memo,
+				"alias": a.Alias,
+			})
+		}
 
-	responseSuccess(ctx, result)
+		result := map[string]interface{}{
+			"addresses": addrsMaps,
+		}
+	*/
+	responseSuccess(ctx, nil)
 }
 
 func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
@@ -222,12 +347,12 @@ func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
 	log.Printf("params: %v\n", ctx.Params())
 
 	/*
-	| 参数名称 | 类型   | 是否可空 | 描述     |
-	|----------|--------|----------|----------|
-	| coin     | string | 否       | 币种标识 |
-	| walletID | string | 否       | 钱包ID   |
-	| offset    | uint   | 是       | 从0开始     |
-	| limit    | uint   | 是       | 查询条数     |
+		| 参数名称 | 类型   | 是否可空 | 描述     |
+		|----------|--------|----------|----------|
+		| coin     | string | 否       | 币种标识 |
+		| walletID | string | 否       | 钱包ID   |
+		| offset    | uint   | 是       | 从0开始     |
+		| limit    | uint   | 是       | 查询条数     |
 	*/
 
 	coin := ctx.Params().Get("coin").String()
@@ -252,15 +377,28 @@ func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
 
 	//导入到每个币种的数据库
 	mer := assets.GetMerchantAssets(coin)
-	addrs, err := mer.GetMerchantAddressList(wallet, offset, limit)
+	addrs, err := mer.GetMerchantAddressList(wallet, wallet.SingleAssetsAccount(coin), offset, limit)
 
 	if err != nil {
 		responseError(ctx, err)
 		return
 	}
 
+	addrsMaps := make([]map[string]interface{}, 0)
+
+	for _, a := range addrs {
+		addrsMaps = append(addrsMaps, map[string]interface{}{
+			"address":  a.Address,
+			"walletID": a.AccountID,
+			"balance":  a.Balance,
+			"isMemo":   common.BoolToUInt(a.IsMemo),
+			"memo":     a.Memo,
+			"alias":    a.Alias,
+		})
+	}
+
 	result := map[string]interface{}{
-		"addresses": addrs,
+		"addresses": addrsMaps,
 	}
 
 	responseSuccess(ctx, result)
@@ -282,10 +420,14 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 		responseError(ctx, err)
 		return
 	}
-	defer db.Close()
 
 	for _, p := range ctx.Params().Get("withdraws").Array() {
 		s := openwallet.NewWithdraw(p)
+
+		if len(s.WalletID) == 0 {
+			continue
+		}
+
 		//withdraws = append(withdraws, s)
 		db.Save(s)
 
@@ -299,6 +441,10 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 
 	}
 
+	db.Close()
+
+	txIDMaps := make([]map[string]interface{}, 0)
+
 	for wid, withs := range wallets {
 		if len(withs) > 0 {
 			//提交给资产管理包转账
@@ -310,11 +456,30 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 			wallet.Password = withs[0].Password
 			//导入到每个币种的数据库
 			mer := assets.GetMerchantAssets(withs[0].Symbol)
-			mer.SubmitTransactions(wallet, withs)
+			if mer == nil {
+				continue
+			}
+			txID, err := mer.SubmitTransactions(wallet, wallet.SingleAssetsAccount(withs[0].Symbol), withs)
+			if err != nil {
+				log.Printf("SubmitTransactions unexpected error: %v", err)
+				continue
+			}
+
+			for _, with := range withs {
+				txIDMaps = append(txIDMaps, map[string]interface{}{
+					"sid":  with.Sid,
+					"txid": txID,
+				})
+			}
+
 		}
 	}
 
-	responseSuccess(ctx, nil)
+	result := map[string]interface{}{
+		"withdraws": txIDMaps,
+	}
+
+	responseSuccess(ctx, result)
 }
 
 //responseSuccess 成功结果响应

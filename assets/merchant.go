@@ -32,17 +32,20 @@ type MerchantAssets interface {
 	//ConfigMerchantWallet 钱包工具配置接口
 	ConfigMerchantWallet(wallet *openwallet.Wallet) error
 
+	//GetMerchantAssetsAccountList获取资产账户列表
+	GetMerchantAssetsAccountList(wallet *openwallet.Wallet) ([]*openwallet.AssetsAccount, error)
+
 	//ImportMerchantAddress 导入地址
-	ImportMerchantAddress(wallet *openwallet.Wallet, addresses []*openwallet.Address) error
+	ImportMerchantAddress(wallet *openwallet.Wallet, account *openwallet.AssetsAccount,  addresses []*openwallet.Address) error
 
 	//CreateMerchantAddress 创建钱包地址
-	CreateMerchantAddress(wallet *openwallet.Wallet, count uint64) ([]*openwallet.Address, error)
+	CreateMerchantAddress(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, count uint64) ([]*openwallet.Address, error)
 
 	//GetMerchantAddressList 获取钱包地址
-	GetMerchantAddressList(wallet *openwallet.Wallet, offset uint64, limit uint64) ([]*openwallet.Address, error)
+	GetMerchantAddressList(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, offset uint64, limit uint64) ([]*openwallet.Address, error)
 
 	//SubmitTransaction 提交转账申请
-	SubmitTransactions(wallet *openwallet.Wallet, withdraws []*openwallet.Withdraw) (*openwallet.Transaction, error)
+	SubmitTransactions(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, withdraws []*openwallet.Withdraw) (*openwallet.Transaction, error)
 
 }
 

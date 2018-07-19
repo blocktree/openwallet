@@ -22,7 +22,7 @@ import (
 
 //Address OpenWallet地址
 type Address struct {
-	WalletID  string    `json:"walletID" storm:"index"` //钱包ID
+	AccountID  string    `json:"accountID" storm:"index"` //钱包ID
 	Address   string    `json:"address" storm:"id"`     //地址字符串
 	Alias     string    `json:"alias"`                  //地址别名，可绑定用户
 	Tag       string    `json:"tag"`                    //标签
@@ -42,7 +42,7 @@ type Address struct {
 func NewAddress(json gjson.Result) *Address {
 	obj := &Address{}
 	//解析json
-	obj.WalletID = gjson.Get(json.Raw, "walletID").String()
+	obj.AccountID = gjson.Get(json.Raw, "accountID").String()
 	obj.Address = gjson.Get(json.Raw, "address").String()
 	obj.Alias = gjson.Get(json.Raw, "alias").String()
 	obj.IsMemo = gjson.Get(json.Raw, "isMemo").Bool()

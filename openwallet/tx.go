@@ -68,6 +68,6 @@ func NewWithdraw(json gjson.Result) *Withdraw {
 	w.Address = gjson.Get(json.Raw, "address").String()
 	w.Amount = gjson.Get(json.Raw, "amount").String()
 	w.Memo = gjson.Get(json.Raw, "memo").String()
-
+	w.Password = gjson.Get(json.Raw, "password").String()
 	return w
 }

@@ -119,7 +119,7 @@ type Unspent struct {
 	TxID          string `json:"txid"`
 	Vout          uint64 `json:"vout"`
 	Address       string `json:"address"`
-	WalletID       string `json:"account" storm:"index"`
+	AccountID       string `json:"account" storm:"index"`
 	ScriptPubKey  string `json:"scriptPubKey"`
 	Amount        string `json:"amount"`
 	Confirmations uint64 `json:"confirmations"`
@@ -134,7 +134,7 @@ func NewUnspent(json *gjson.Result) *Unspent {
 	obj.TxID = gjson.Get(json.Raw, "txid").String()
 	obj.Vout = gjson.Get(json.Raw, "vout").Uint()
 	obj.Address = gjson.Get(json.Raw, "address").String()
-	obj.WalletID = gjson.Get(json.Raw, "account").String()
+	obj.AccountID = gjson.Get(json.Raw, "account").String()
 	obj.ScriptPubKey = gjson.Get(json.Raw, "scriptPubKey").String()
 	obj.Amount = gjson.Get(json.Raw, "amount").String()
 	obj.Confirmations = gjson.Get(json.Raw, "confirmations").Uint()

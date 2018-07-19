@@ -49,10 +49,29 @@ func (w *WalletManager) CreateMerchantWallet(wallet *openwallet.Wallet) error {
 	return nil
 }
 
+func (w *WalletManager) CreateMerchantAssetsAccount(wallet *openwallet.Wallet) (*openwallet.AssetsAccount, error) {
+
+	return nil, nil
+}
+
 //GetMerchantWalletList 获取钱包列表
 func (w *WalletManager) GetMerchantWalletList() ([]*openwallet.Wallet, error) {
 
 	return nil, nil
+}
+
+func (w *WalletManager) GetMerchantAssetsAccountList(wallet *openwallet.Wallet) ([]*openwallet.AssetsAccount, error) {
+
+	//先加载是否有配置文件
+	err := loadConfig()
+	if err != nil {
+		return nil, errors.New("The wallet node is not config!")
+	}
+
+	balance := GetWalletBalance(wallet.WalletID)
+	account := wallet.SingleAssetsAccount(Symbol)
+	account.Balance = balance
+	return []*openwallet.AssetsAccount{account}, nil
 }
 
 //ConfigMerchantWallet 钱包工具配置接口
@@ -62,7 +81,7 @@ func (w *WalletManager) ConfigMerchantWallet(wallet *openwallet.Wallet) error {
 }
 
 //ImportMerchantAddress 导入地址
-func (w *WalletManager) ImportMerchantAddress(wallet *openwallet.Wallet, addresses []*openwallet.Address) error {
+func (w *WalletManager) ImportMerchantAddress(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, addresses []*openwallet.Address) error {
 
 	//写入到数据库中
 	db, err := wallet.OpenDB()
@@ -80,7 +99,7 @@ func (w *WalletManager) ImportMerchantAddress(wallet *openwallet.Wallet, address
 	for _, a := range addresses {
 		a.WatchOnly = true //观察地址
 		a.Symbol = strings.ToLower(Symbol)
-		a.WalletID = wallet.WalletID
+		a.AccountID = account.AccountID
 		log.Printf("import %s address: %s", a.Symbol, a.Address)
 		tx.Save(a)
 	}
@@ -91,7 +110,7 @@ func (w *WalletManager) ImportMerchantAddress(wallet *openwallet.Wallet, address
 }
 
 //CreateMerchantAddress 创建钱包地址
-func (w *WalletManager) CreateMerchantAddress(wallet *openwallet.Wallet, count uint64) ([]*openwallet.Address, error) {
+func (w *WalletManager) CreateMerchantAddress(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, count uint64) ([]*openwallet.Address, error) {
 
 	//先加载是否有配置文件
 	err := loadConfig()
@@ -108,29 +127,44 @@ func (w *WalletManager) CreateMerchantAddress(wallet *openwallet.Wallet, count u
 }
 
 //GetMerchantAddressList 获取钱包地址
-func (w *WalletManager) GetMerchantAddressList(wallet *openwallet.Wallet, offset uint64, limit uint64) ([]*openwallet.Address, error) {
+func (w *WalletManager) GetMerchantAddressList(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, offset uint64, limit uint64) ([]*openwallet.Address, error) {
 	//先加载是否有配置文件
 	err := loadConfig()
 	if err != nil {
 		return nil, errors.New("The wallet node is not config!")
 	}
-	return GetAddressesFromLocalDB(wallet.WalletID)
+	return GetAddressesFromLocalDB(wallet.WalletID, int(offset), int(limit))
 	//return nil, nil
 }
 
 //SubmitTransaction 提交转账申请
-func (w *WalletManager) SubmitTransactions(wallet *openwallet.Wallet, withdraws []*openwallet.Withdraw) (*openwallet.Transaction, error) {
-	coreWallet := readWallet(wallet.KeyFile)
+func (w *WalletManager) SubmitTransactions(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, withdraws []*openwallet.Withdraw) (*openwallet.Transaction, error) {
+
+	//先加载是否有配置文件
+	err := loadConfig()
+	if err != nil {
+		return nil, errors.New("The wallet node is not config!")
+	}
+
+	//coreWallet := readWallet(wallet.KeyFile)
 	addrs := make([]string, 0)
 	amounts := make([]decimal.Decimal, 0)
 	for _, with := range withdraws {
+
+		if len(with.Address) == 0 {
+			continue
+		}
+
 		amount, _ := decimal.NewFromString(with.Amount)
 		addrs = append(addrs, with.Address)
 		amounts = append(amounts, amount)
 
 	}
 
-	txID, err := SendBatchTransaction(coreWallet.WalletID, addrs, amounts, wallet.Password)
+	//重新加载utxo
+	RebuildWalletUnspent(wallet.WalletID)
+
+	txID, err := SendBatchTransaction(wallet.WalletID, addrs, amounts, wallet.Password)
 	if err != nil {
 		return nil, err
 	}

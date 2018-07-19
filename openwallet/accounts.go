@@ -27,41 +27,24 @@ type unlocked struct {
 
 //AccountOwner 账户拥有者接口
 type AccountOwner interface {
-
 }
 
 //AssetsAccount 千张包资产账户
 type AssetsAccount struct {
-	//钱包
-	Wallet *Wallet
-	//别名
-	Alias string
-	//账户ID
-	AccountId string
-	//账户ID，索引位
-	Index uint
-	//账户公钥根路径
-	RootPath string
-	//类型类型： 单签，多签
-	Type WalletType
-	//公钥数组
-	PublicKeys []Bytes
-	//拥有者列表, 钱包账户ID: 拥有者
-	Owners map[string]AccountOwner
-	//创建者的账户ID
-	Creator string
-	//多签合约地址
-	ContractAddress string
-	//必要签名数
-	Required uint
-	//资产币种类别
-	Assets *Assets
-
-	//核心账户指针
-	core interface{}
+	WalletID   string   `json:"walletID"`              //钱包ID
+	Alias      string   `json:"alias"`                 //别名
+	AccountID  string   `json:"accountID"  storm:"id"` //账户ID，合成地址
+	Index      uint64   `json:"index"`                 //账户ID，索引位
+	HDPath     string   `json:"hdPath"`                //衍生路径
+	PublicKeys []string `json:"publicKeys"`            //公钥数组，大于1为多签
+	//Owners          map[string]AccountOwner //拥有者列表, 账户公钥: 拥有者
+	ContractAddress string      `json:"contractAddress"` //多签合约地址
+	Required        uint64      `json:"required"`        //必要签名数
+	Symbol          string      `json:"coin"`            //资产币种类别
+	AddressCount    uint64      `json:"addressCount"`
+	Balance         string      `json:"balance"`
+	core            interface{} //核心账户指针
 }
-
-
 
 func NewMultiSigAccount(wallets []*Wallet, required uint, creator *Wallet) (*AssetsAccount, error) {
 
@@ -94,16 +77,15 @@ func NewUserAccount(user User) *AssetsAccount {
 }
 
 // init 初始化用户账户
-func (u *AssetsAccount)init() {
+func (a *AssetsAccount) init() {
 	//1.加载用户所有钱包
-
-
 
 }
 
-func (u *AssetsAccount)loadKeystore() {
+func (a *AssetsAccount) loadKeystore() {
 
+}
 
-
-
+func (a *AssetsAccount) GetOwners() []AccountOwner {
+	return nil
 }

@@ -46,11 +46,11 @@ type Subscription struct {
 		| version  | int    | 否       | 地址版本号，订阅类型为2时，需要钱包管理工具主动下载订阅的地址列表        |
 
 	*/
-	ID          int    // primary key
-	Type        int64  `json:"type"`
-	Coin        string `json:"coin"`
-	WalletID    string `json:"walletID"`
-	Version     int64  `json:"version"`
+	ID       int    // primary key
+	Type     int64  `json:"type"`
+	Coin     string `json:"coin"`
+	WalletID string `json:"walletID"`
+	Version  int64  `json:"version"`
 }
 
 func NewSubscription(res gjson.Result) *Subscription {
@@ -82,4 +82,11 @@ func NewAddressVersion(json gjson.Result) *AddressVersion {
 	obj.Key = key
 
 	return obj
+}
+
+// MerchantDataStruct 商户数据结构协议
+type MerchantDataStruct interface {
+	// ToJSON 实现转为JSON
+	// extra 附加条件，默认不传入
+	EncodeMerchantJSON(extra ...map[string]interface{}) (json map[string]interface{})
 }

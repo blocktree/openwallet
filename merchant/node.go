@@ -127,6 +127,81 @@ func (m *MerchantNode) GetMerchantWalletByID(walletID string) (*openwallet.Walle
 	return &wallet, nil
 }
 
+
+//GetMerchantWalletList 获取商户钱包列表
+func (m *MerchantNode) GetMerchantWalletList() ([]*openwallet.Wallet, error) {
+
+	db, err := m.OpenDB()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	var wallets []*openwallet.Wallet
+	err = db.All(&wallets)
+	if err != nil {
+		return nil, err
+	}
+
+	return wallets, nil
+}
+
+
+//GetMerchantAccountByID 获取商户资产账户
+func (m *MerchantNode) GetMerchantAccountByID(accountID string) (*openwallet.AssetsAccount, error) {
+
+	db, err := m.OpenDB()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	var account openwallet.AssetsAccount
+	err = db.One("AccountID", accountID, &account)
+	if err != nil {
+		return nil, err
+	}
+
+	return &account, nil
+}
+
+
+//GetMerchantAccountList 获取商户资产账户列表
+func (m *MerchantNode) GetMerchantAccountList(coin string) ([]*openwallet.AssetsAccount, error) {
+
+	db, err := m.OpenDB()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	var acouunts []*openwallet.AssetsAccount
+	err = db.Find("Symbol", coin, &acouunts)
+	if err != nil {
+		return nil, err
+	}
+
+	return acouunts, nil
+}
+
+//GetMerchantWalletConfig 获取商户钱包配置信息
+func (m *MerchantNode) GetMerchantWalletConfig(coin string, walletID string) (*openwallet.WalletConfig, error) {
+
+	db, err := m.OpenDB()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	var wallet openwallet.WalletConfig
+	err = db.One("Key", coin + "_" + walletID, &wallet)
+	if err != nil {
+		return nil, err
+	}
+
+	return &wallet, nil
+}
+
 //Run 运行商户节点管理
 func (m *MerchantNode) Run() error {
 

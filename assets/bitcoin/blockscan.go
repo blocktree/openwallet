@@ -15,7 +15,10 @@
 
 package bitcoin
 
-import "github.com/blocktree/OpenWallet/openwallet"
+import (
+	"github.com/asdine/storm"
+	"path/filepath"
+)
 
 /*
 	步骤：
@@ -30,8 +33,53 @@ import "github.com/blocktree/OpenWallet/openwallet"
 	9.接口返回确认，标记充值记录已确认。
 */
 
-type blockScanner struct {
+type BTCBlockScanner struct {
+	addressInScanning  map[string]string //加入扫描的钱包资产账户
+	CurrentBlockHeight uint64            //当前区块高度
+	isScanning bool
+}
 
-	walletsInScanning map[string]*openwallet.Wallet	//加入扫描的钱包
-	CurrentBlockHeight uint64	//当前区块高度
+func NewBTCBlockScanner() *BTCBlockScanner {
+	bs := BTCBlockScanner{}
+	bs.addressInScanning = make(map[string]string)
+	return &bs
+}
+
+func (bs *BTCBlockScanner) addAddress(address string, accountID string) {
+	bs.addressInScanning[address] = accountID
+}
+
+func (bs *BTCBlockScanner) start() {
+
+}
+
+func (bs *BTCBlockScanner) scanning() {
+	//获取本地区块高度
+
+}
+
+func (bs *BTCBlockScanner) currentBlockHeight() uint64 {
+
+	var (
+		blockHeight uint64 = 0
+	)
+	//获取本地区块高度
+	db, err := storm.Open(filepath.Join(dbPath, blockchainFile))
+	if err != nil {
+		return 0
+	}
+	defer db.Close()
+
+	db.Get("blockchain","blockHeight", &blockHeight)
+
+	//如果本地没有记录，查询接口的高度
+	if blockHeight == 0 {
+
+	}
+
+	return blockHeight
+}
+
+func GetBlockHeight() {
+
 }
