@@ -19,24 +19,27 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/websocket"
+	"github.com/mitchellh/mapstructure"
 	"github.com/tidwall/gjson"
 	"log"
+	"net/http"
 	"time"
-	"github.com/mitchellh/mapstructure"
 )
 
 //局部常量
 const (
-	WriteWait      = 60 * time.Second //超时为6秒
-	PongWait       = 30 * time.Second
-	PingPeriod     = (PongWait * 9) / 10
-	MaxMessageSize = 8 * 1024 // 最大消息缓存KB
-	WSRequest      = 1        //wesocket请求标识
-	WSResponse     = 2        //wesocket响应标识
+	WriteWait       = 60 * time.Second //超时为6秒
+	PongWait        = 30 * time.Second
+	PingPeriod      = (PongWait * 9) / 10
+	MaxMessageSize  = 1 * 1024 // 最大消息通道数
+	ReadBufferSize  = 1024 * 1024
+	WriteBufferSize = 1024 * 1024
+	WSRequest       = 1 //wesocket请求标识
+	WSResponse      = 2 //wesocket响应标识
 )
 
 var (
-	debug = false
+	Debug = false
 )
 
 type Handler interface {
@@ -186,7 +189,15 @@ func Dial(url string, router Handler, auth Authorization) (*Client, error) {
 		authURL = auth.ConnectAuth(url)
 	}
 	log.Printf("Connecting URL: %s", authURL)
-	c, _, err := websocket.DefaultDialer.Dial(authURL, nil)
+
+	dialer := websocket.Dialer{
+		ReadBufferSize:   ReadBufferSize,
+		WriteBufferSize:  WriteBufferSize,
+		Proxy:            http.ProxyFromEnvironment,
+		HandshakeTimeout: 45 * time.Second,
+	}
+
+	c, _, err := dialer.Dial(authURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +260,9 @@ func (c *Client) writePump() {
 				c.write(websocket.CloseMessage, []byte{})
 				return
 			}
-			if debug {log.Printf("Send: %s\n", string(message))}
+			if Debug {
+				log.Printf("Send: %s\n", string(message))
+			}
 			if err := c.write(websocket.TextMessage, message); err != nil {
 				return
 			}
@@ -288,10 +301,12 @@ func (c *Client) readPump() {
 		_, message, err := c.ws.ReadMessage()
 		if err != nil {
 			log.Printf("Read unexpected error: %v \n", err)
-			close(c.send)		//读取通道异常，关闭读通道
+			close(c.send) //读取通道异常，关闭读通道
 			break
 		}
-		if debug {log.Printf("Read: %s\n", string(message))}
+		if Debug {
+			log.Printf("Read: %s\n", string(message))
+		}
 
 		packet := NewDataPacket(gjson.ParseBytes(message))
 
@@ -330,7 +345,7 @@ func (c *Client) readPump() {
 					return
 				}
 
-				ctx := Context{Req: p.Req,  nonce: p.Nonce, inputs: nil, Method: p.Method, Resp: resp}
+				ctx := Context{Req: p.Req, nonce: p.Nonce, inputs: nil, Method: p.Method, Resp: resp}
 
 				//log.Printf("ctx: %v\n", ctx)
 
@@ -347,5 +362,5 @@ func (c *Client) Close() {
 	log.Printf("client close\n")
 	c.ws.Close()
 	//close(c.send)
-	c.close <- struct {}{}
+	c.close <- struct{}{}
 }

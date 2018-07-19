@@ -61,9 +61,13 @@ func NewOWTPAuth(nodeKey, publickKey, authKey string, enable bool, cacheFile ...
 		cacheFilePath = cacheFile[0]
 	}
 
-	if !file.Exists(cacheFilePath) {
+	if len(cacheFilePath) == 0 {
 		return nil, errors.New("cache file is not exist.")
 	}
+
+	//if !file.Exists(cacheFilePath) {
+	//	return nil, errors.New("cache file is not exist.")
+	//}
 
 	auth := &OWTPAuth{
 		NodeKey:    nodeKey,

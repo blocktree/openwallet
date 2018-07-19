@@ -172,7 +172,7 @@ func TestGetAddressesByAccount(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	_, err := CreateBatchAddress("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", "1234qwer", 100)
+	_, _, err := CreateBatchAddress("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", "1234qwer", 100)
 	if err != nil {
 		t.Errorf("CreateBatchAddress failed unexpected error: %v\n", err)
 		return
@@ -426,19 +426,19 @@ func TestListUnspent(t *testing.T) {
 	}
 
 	for _, u := range utxos {
-		t.Logf("ListUnspent %s: %s = %s\n", u.Address, u.Account, u.Amount)
+		t.Logf("ListUnspent %s: %s = %s\n", u.Address, u.AccountID, u.Amount)
 	}
 }
 
 func TestGetAddressesFromLocalDB(t *testing.T) {
-	addresses, err := GetAddressesFromLocalDB("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ")
+	addresses, err := GetAddressesFromLocalDB("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", 0, -1)
 	if err != nil {
 		t.Errorf("GetAddressesFromLocalDB failed unexpected error: %v\n", err)
 		return
 	}
 
 	for i, a := range addresses {
-		t.Logf("GetAddressesFromLocalDB address[%d] = %s\n", i, a)
+		t.Logf("GetAddressesFromLocalDB address[%d] = %v\n", i, a)
 	}
 }
 
@@ -464,7 +464,7 @@ func TestListUnspentFromLocalDB(t *testing.T) {
 	for _, u := range utxos {
 		amount, _ := decimal.NewFromString(u.Amount)
 		total = total.Add(amount)
-		t.Logf("ListUnspentFromLocalDB %v: %s = %s\n", u.HDAddress, u.Account, u.Amount)
+		t.Logf("ListUnspentFromLocalDB %v: %s = %s\n", u.HDAddress, u.AccountID, u.Amount)
 	}
 	t.Logf("ListUnspentFromLocalDB total = %s\n", total.StringFixed(8))
 }
@@ -477,7 +477,7 @@ func TestBuildTransaction(t *testing.T) {
 		return
 	}
 
-	txRaw, _, err := BuildTransaction(utxos, "mrThNMQ6bMf1YNPjBj9jYXmYYzw1Rt8GFU", "n33cHpEc9qAvECM9pFgabZ6ktJimLSeWdy", decimal.NewFromFloat(0.2), decimal.NewFromFloat(0.00002))
+	txRaw, _, err := BuildTransaction(utxos, []string{"mrThNMQ6bMf1YNPjBj9jYXmYYzw1Rt8GFU"}, "n33cHpEc9qAvECM9pFgabZ6ktJimLSeWdy", []decimal.Decimal{decimal.NewFromFloat(0.2)}, decimal.NewFromFloat(0.00002))
 	if err != nil {
 		t.Errorf("BuildTransaction failed unexpected error: %v\n", err)
 		return
@@ -511,7 +511,7 @@ func TestSendTransaction(t *testing.T) {
 
 	for _, to := range sends {
 
-		txIDs, err := SendTransaction("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", to, decimal.NewFromFloat(1), "1234qwer", false)
+		txIDs, err := SendTransaction("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", to, decimal.NewFromFloat(0.6), "1234qwer", false)
 
 		if err != nil {
 			t.Errorf("SendTransaction failed unexpected error: %v\n", err)
@@ -521,6 +521,35 @@ func TestSendTransaction(t *testing.T) {
 		t.Logf("SendTransaction txid = %v\n", txIDs)
 
 	}
+
+}
+
+
+func TestSendBatchTransaction(t *testing.T) {
+
+	sends := []string {
+		"mfYksPvrRS9Xb28uVUiQPJTnc92TBEP1P6",
+		//"mfXVvSn76et4GcNsyphRKxbVwZ6BaexYLG",
+		//"miqpBeCQnYraAV73TeTrCtDsFK5ebKU7P9",
+		//"n1t8xJxkHuXsnaCD4hxPZrJRGYi6yQ83uC",
+	}
+
+	amounts := []decimal.Decimal {
+		decimal.NewFromFloat(0.3),
+		//decimal.NewFromFloat(0.03),
+		//decimal.NewFromFloat(0.04),
+	}
+
+	RebuildWalletUnspent("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ")
+
+	txID, err := SendBatchTransaction("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", sends, amounts, "1234qwer")
+
+	if err != nil {
+		t.Errorf("TestSendBatchTransaction failed unexpected error: %v\n", err)
+		return
+	}
+
+	t.Logf("SendTransaction txid = %v\n", txID)
 
 }
 

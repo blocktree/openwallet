@@ -17,38 +17,40 @@ package openwallet
 
 import (
 	"github.com/tidwall/gjson"
+	"time"
 )
 
 //Address OpenWallet地址
 type Address struct {
-	WalletID  string `json:"walletID"`           //钱包ID
-	Address   string `json:"address" storm:"id"` //地址字符串
-	Alias     string `json:"alias"`              //地址别名，可绑定用户
-	Tag       string `json:"tag"`                //标签
-	Index     uint64 `json:"index"`              //账户ID，索引位
-	RootPath  string `json:"rootPath"`           //地址公钥根路径
-	WatchOnly bool   `json:"watchOnly"`          //是否观察地址，true的时候，Index，RootPath，Alias都没有。
-	Symbol    string `json:"coin"`               //币种类别
-	Balance   string `json:"balance"`            //余额
-	IsMemo    bool   `json:"isMemo"`             //是否备注
-	Memo      string `json:"memo"`               //备注
+	AccountID  string    `json:"accountID" storm:"index"` //钱包ID
+	Address   string    `json:"address" storm:"id"`     //地址字符串
+	Alias     string    `json:"alias"`                  //地址别名，可绑定用户
+	Tag       string    `json:"tag"`                    //标签
+	Index     uint64    `json:"index"`                  //账户ID，索引位
+	HDPath    string    `json:"hdPath"`                 //地址公钥根路径
+	WatchOnly bool      `json:"watchOnly"`              //是否观察地址，true的时候，Index，RootPath，Alias都没有。
+	Symbol    string    `json:"coin"`                   //币种类别
+	Balance   string    `json:"balance"`                //余额
+	IsMemo    bool      `json:"isMemo"`                 //是否备注
+	Memo      string    `json:"memo"`                   //备注
+	CreatedAt time.Time `json:"createdAt"`
 
 	//核心地址指针
-	core interface{}
+	Core interface{}
 }
 
 func NewAddress(json gjson.Result) *Address {
 	obj := &Address{}
 	//解析json
-	obj.WalletID = gjson.Get(json.Raw, "walletID").String()
+	obj.AccountID = gjson.Get(json.Raw, "accountID").String()
 	obj.Address = gjson.Get(json.Raw, "address").String()
 	obj.Alias = gjson.Get(json.Raw, "alias").String()
 	obj.IsMemo = gjson.Get(json.Raw, "isMemo").Bool()
 	obj.Memo = gjson.Get(json.Raw, "memo").String()
 	obj.Tag = gjson.Get(json.Raw, "tag").String()
 	obj.Index = gjson.Get(json.Raw, "index").Uint()
-	obj.RootPath = gjson.Get(json.Raw, "rootPath").String()
-	obj.core = gjson.Get(json.Raw, "coin").String()
+	obj.HDPath = gjson.Get(json.Raw, "hdPath").String()
+	obj.Symbol = gjson.Get(json.Raw, "coin").String()
 	obj.Balance = gjson.Get(json.Raw, "balance").String()
 
 	return obj

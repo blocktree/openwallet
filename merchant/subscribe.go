@@ -75,7 +75,7 @@ func (m *MerchantNode) GetChargeAddressVersion() error {
 			func(addressVer *AddressVersion, status uint64, msg string) {
 
 				if addressVer != nil {
-
+					//log.Printf("new version = %v", *addressVer)
 					innerdb, err := m.OpenDB()
 					if err != nil {
 						return
@@ -84,14 +84,17 @@ func (m *MerchantNode) GetChargeAddressVersion() error {
 					var oldVersion AddressVersion
 					err = innerdb.One("Key", addressVer.Key, &oldVersion)
 					//if err != nil {
+					//	log.Printf("GetChargeAddressVersion unexpected error: %v", err)
 					//	return
 					//}
 					//log.Printf("old version = %d", oldVersion.Version)
-					//log.Printf("new version = %d", addressVer.Version)
+
 					if addressVer.Version > oldVersion.Version || err != nil {
 
 						//TODO:加入到订阅地址通道
 						m.getAddressesCh <- *addressVer
+
+						//log.Printf("new version = %v", *addressVer)
 
 						//更新记录
 						innerdb.Save(addressVer)
@@ -110,7 +113,7 @@ func (m *MerchantNode) getChargeAddress() error {
 
 	var (
 		err   error
-		limit = uint64(20)
+		limit = uint64(1000)
 	)
 
 	////检查是否连接
@@ -144,17 +147,21 @@ func (m *MerchantNode) getChargeAddress() error {
 					func(addrs []*openwallet.Address, status uint64, msg string) {
 
 						if status == owtp.StatusSuccess {
-
+							//log.Printf("GetMerchantWalletByID WalletID: %v\n", v.WalletID)
 							wallet, err := m.GetMerchantWalletByID(v.WalletID)
 							if err != nil {
+								log.Printf("GetMerchantWalletByID unexpected error: %v\n", err)
 								return
 							}
 
 							//导入到每个币种的数据库
 							mer := assets.GetMerchantAssets(v.Coin)
-							mer.ImportMerchantAddress(wallet, addrs)
-
-							getCount = getCount + limit
+							//log.Printf("mer = %v", mer)
+							if mer != nil {
+								//log.Printf("address count = %d", len(addrs))
+								mer.ImportMerchantAddress(wallet, wallet.SingleAssetsAccount(v.Coin), addrs)
+							}
+							getCount = getCount + uint64(len(addrs))
 						}
 					})
 				if err != nil {

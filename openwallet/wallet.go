@@ -20,16 +20,16 @@ import (
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/keystore"
 	"github.com/pborman/uuid"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"path/filepath"
 	"reflect"
-	"github.com/pkg/errors"
 )
 
 type Wallet struct {
+	//Coin      string `json:"coin"`
 	WalletID  string `json:"walletID"  storm:"id"`
 	Alias     string `json:"alias"`
-	Balance   string `json:"balance"`
 	Password  string `json:"password"`
 	RootPub   string `json:"rootpub"`
 	KeyFile   string `json:"keyFile"`   //钱包的密钥文件
@@ -93,6 +93,27 @@ func (w *Wallet) HDKey(password string) (*keystore.HDKey, error) {
 //openDB 打开钱包数据库
 func (w *Wallet) OpenDB() (*storm.DB, error) {
 	return storm.Open(w.DBFile)
+}
+
+//GetAssetsAccounts 获取某种区块链的全部资产账户
+func (w *Wallet) GetAssetsAccounts(symbol string) []*AssetsAccount {
+	return nil
+}
+
+//SingleAssetsAccount 把钱包作为一个单资产账户来使用
+func (w *Wallet) SingleAssetsAccount(symbol string) *AssetsAccount {
+	a := AssetsAccount{
+		WalletID: w.WalletID,
+		Alias:w.Alias,
+		AccountID:w.WalletID,
+		Index: 0,
+		HDPath: "",
+		Required:0,
+		PublicKeys:[]string{w.RootPub},
+		Symbol:symbol,
+	}
+
+	return &a
 }
 
 /*
