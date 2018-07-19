@@ -428,6 +428,14 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 			continue
 		}
 
+		//检查sid是否重放
+		err = db.One("Sid", s.Sid, &openwallet.Withdraw{})
+		if err == nil {
+			//存在相关的sid不加入提现表
+			log.Printf("withdraw sid: %s is duplicate\n", s.Sid)
+			continue
+		}
+
 		//withdraws = append(withdraws, s)
 		db.Save(s)
 
