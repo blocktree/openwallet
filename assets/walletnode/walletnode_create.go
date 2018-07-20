@@ -71,13 +71,13 @@ func _CheckAndCreateConfig(symbol string) error {
 	}
 
 	// Ask about whether sync by testnet
-	if istestnet, err := console.InputText("Within testnet('testnet','pub')[testnet]: ", false); err != nil {
+	if istestnet, err := console.InputText("Within testnet('testnet','main')[testnet]: ", false); err != nil {
 		return err
 	} else {
 		switch istestnet {
 		case "testnet":
 			isTestNet = "true"
-		case "pub":
+		case "main":
 			isTestNet = "false"
 		default:
 			isTestNet = "true"
@@ -147,33 +147,33 @@ func _CheckAdnCreateContainer(symbol string) error {
 		fmt.Println(time.Duration(10))
 		// return err
 	}
-	// if _, err = c.ContainerCreate( // 创建目录
-	// 	ctx,
-	// 	&container.Config{Image: "ubuntu:latest", Cmd: []string{"/bin/sh", "-c", fmt.Sprintf("mkdir -p %s %s %s", FullnodeContainerPath.EXEC_PATH, FullnodeContainerPath.DATA_PATH, FullnodeContainerPath.TESTDATA_PATH)}},
-	// 	&container.HostConfig{
-	// 		Mounts: []mount.Mount{
-	// 			{Type: mount.TypeBind, Source: "/storage/openwallet", Target: "/storage/openwallet", ReadOnly: false, BindOptions: &mount.BindOptions{Propagation: "private"}},
-	// 		}},
-	// 	&network.NetworkingConfig{},
-	// 	"temp"); err != nil {
-	// 	return err
-	// } else {
-	// 	// Start
-	// 	if err = c.ContainerStart(ctx, "temp", types.ContainerStartOptions{}); err != nil {
-	// 		//return err
-	// 	}
-	// 	// Stop
-	// 	d := time.Duration(3000)
-	// 	if err = c.ContainerStop(ctx, "temp", &d); err != nil {
-	// 	}
-	// 	// Remove
-	// 	if err = c.ContainerRemove(ctx, "temp", types.ContainerRemoveOptions{}); err == nil {
-	// 	}
-	// }
+	if _, err = c.ContainerCreate( // 创建目录
+		ctx,
+		&container.Config{Image: "ubuntu:latest", Cmd: []string{"/bin/sh", "-c", fmt.Sprintf("mkdir -p %s %s %s", FullnodeContainerPath.EXEC_PATH, FullnodeContainerPath.DATA_PATH, FullnodeContainerPath.TESTDATA_PATH)}},
+		&container.HostConfig{
+			Mounts: []mount.Mount{
+				{Type: mount.TypeBind, Source: "/storage/openwallet", Target: "/storage/openwallet", ReadOnly: false, BindOptions: &mount.BindOptions{Propagation: "private"}},
+			}},
+		&network.NetworkingConfig{},
+		"temp"); err != nil {
+		return err
+	} else {
+		// Start
+		if err = c.ContainerStart(ctx, "temp", types.ContainerStartOptions{}); err != nil {
+			//return err
+		}
+		// Stop
+		d := time.Duration(3000)
+		if err = c.ContainerStop(ctx, "temp", &d); err != nil {
+		}
+		// Remove
+		if err = c.ContainerRemove(ctx, "temp", types.ContainerRemoveOptions{}); err == nil {
+		}
+	}
 
 	ctn_config, ok := FullnodeContainerConfigs[s.ToLower(symbol)]
 	if !ok {
-		return err
+		return ctn_config
 	}
 
 	portBindings := map[nat.Port][]nat.PortBinding{}
