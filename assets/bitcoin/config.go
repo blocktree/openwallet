@@ -18,12 +18,13 @@ package bitcoin
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/astaxie/beego/config"
-	"github.com/blocktree/OpenWallet/common/file"
 	"path/filepath"
 	"strings"
-	"github.com/shopspring/decimal"
 	"time"
+
+	"github.com/astaxie/beego/config"
+	"github.com/blocktree/OpenWallet/common/file"
+	"github.com/shopspring/decimal"
 )
 
 /*
@@ -120,11 +121,11 @@ func newConfigFile(
 
 	//	生成配置
 	configMap := map[string]interface{}{
-		"apiURL":        apiURL,
-		"walletPath":    walletPath,
-		"sumAddress":    sumAddress,
-		"threshold":     threshold,
-		"isTestNet":     isTestNet,
+		"apiURL":     apiURL,
+		"walletPath": walletPath,
+		"sumAddress": sumAddress,
+		"threshold":  threshold,
+		"isTestNet":  isTestNet,
 	}
 
 	filepath.Join()

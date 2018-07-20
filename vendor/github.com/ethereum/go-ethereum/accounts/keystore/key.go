@@ -127,6 +127,10 @@ func (k *Key) UnmarshalJSON(j []byte) (err error) {
 	return nil
 }
 
+func NewKeyFromECDSA(privateKeyECDSA *ecdsa.PrivateKey) *Key {
+	return newKeyFromECDSA(privateKeyECDSA)
+}
+
 func newKeyFromECDSA(privateKeyECDSA *ecdsa.PrivateKey) *Key {
 	id := uuid.NewRandom()
 	key := &Key{
@@ -164,6 +168,17 @@ func newKey(rand io.Reader) (*Key, error) {
 		return nil, err
 	}
 	return newKeyFromECDSA(privateKeyECDSA), nil
+}
+
+//func StoreNewKeyForWalletBT(ks keyStore,auth string)
+
+func StoreNewKeyForWalletBT(ks *KeyStore, key *Key, auth string) (*Key, accounts.Account) {
+	a := accounts.Account{Address: key.Address, URL: accounts.URL{Scheme: KeyStoreScheme, Path: ks.storage.JoinPath(keyFileName(key.Address))}}
+	if err := ks.storage.StoreKey(a.URL.Path, key, auth); err != nil {
+		zeroKey(key.PrivateKey)
+		return nil, a
+	}
+	return key, a
 }
 
 func storeNewKey(ks keyStore, rand io.Reader, auth string) (*Key, accounts.Account, error) {
