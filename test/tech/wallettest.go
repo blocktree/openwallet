@@ -2,6 +2,7 @@ package tech
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/blocktree/OpenWallet/assets/ethereum"
 )
@@ -28,4 +29,14 @@ func TestBatchCreateAddr() {
 	}
 
 	//ethereum.GetWalletList()
+}
+
+func TestBitInt() {
+	i := new(big.Int)
+	_, success := i.SetString("ff", 16)
+	if success {
+		fmt.Println("i:", i.String())
+	}
+
+	//fmt.Println("false, i:", i.String())
 }

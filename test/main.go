@@ -37,6 +37,7 @@ func main() {
 	//fmt.Println("change dir err:",err)
 	//tech.TestNewWallet("peter2", "12345678")
 	tech.TestBatchCreateAddr()
+	//tech.TestBitInt()
 
 	fmt.Println("done ... ")
 }

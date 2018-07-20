@@ -16,6 +16,7 @@ import (
 
 	"github.com/tidwall/gjson"
 
+	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/keystore"
 	"github.com/btcsuite/btcutil/hdkeychain"
@@ -35,6 +36,7 @@ var (
 
 func init() {
 	storage = keystore.NewHDKeystore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	client = &Client{BaseURL: serverAPI, Debug: true}
 }
 
 //CreateNewWallet 创建钱包
@@ -303,7 +305,13 @@ func GetAddrBalance(address string) (*big.Int, error) {
 	}
 
 	balance := new(big.Int)
-	balance, success := balance.SetString(result.String(), 64)
+	resultStr := result.String()
+	if strings.Index(resultStr, "0x") != -1 {
+		fmt.Println("resultStr:", resultStr)
+		resultStr = common.Substr(resultStr, 2, len(resultStr))
+		fmt.Println("ater trim resultStr:", resultStr)
+	}
+	_, success := balance.SetString(resultStr, 16)
 	if !success {
 		log.Fatal(fmt.Sprintf("get addr[%v] balance format failed, response is %v\n", address, result.String()))
 		return big.NewInt(0), err

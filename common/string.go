@@ -16,13 +16,13 @@
 package common
 
 import (
-	"strconv"
 	"encoding/hex"
-	"reflect"
 	"encoding/json"
+	"reflect"
+	"strconv"
+
 	"github.com/blocktree/OpenWallet/common/crypto"
 )
-
 
 // String AT的字符串库
 type String string
@@ -328,4 +328,19 @@ func (s String) HmacMD5(secret string) string {
 	hash := crypto.HmacMD5(secret, []byte(s))
 	mdStr := hex.EncodeToString(hash)
 	return mdStr
+}
+
+func Substr(str string, start int, end int) string {
+	rs := []rune(str)
+	length := len(rs)
+
+	if start < 0 || start > length {
+		panic("start is wrong")
+	}
+
+	if end < 0 || end > length {
+		panic("end is wrong")
+	}
+
+	return string(rs[start:end])
 }
