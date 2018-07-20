@@ -54,6 +54,10 @@ type Authorization interface {
 	AddAuth(data *DataPacket) bool
 	//VerifySignature 校验签名，若验证错误，可更新错误信息到DataPacket中
 	VerifyAuth(data *DataPacket) bool
+	//EncryptData 加密数据
+	EncryptData(data []byte) ([]byte, error)
+	//DecryptData 解密数据
+	DecryptData(data []byte) ([]byte, error)
 	//EnableAuth 开启授权
 	EnableAuth() bool
 }

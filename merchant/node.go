@@ -109,6 +109,16 @@ func (m *MerchantNode) OpenDB() (*storm.DB, error) {
 	return storm.Open(m.Config.CacheFile)
 }
 
+//SaveToDB 保存到商户数据库
+func (m *MerchantNode) SaveToDB(data interface{})  error {
+	db, err := m.OpenDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	return db.Save(data)
+}
+
 //GetMerchantWalletByID 获取商户钱包
 func (m *MerchantNode) GetMerchantWalletByID(walletID string) (*openwallet.Wallet, error) {
 

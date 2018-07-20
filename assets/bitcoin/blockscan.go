@@ -18,6 +18,7 @@ package bitcoin
 import (
 	"github.com/asdine/storm"
 	"path/filepath"
+	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 /*
@@ -27,7 +28,7 @@ import (
 	3.获取高度+1的区块hash，通过区块链hash获取区块链数据，获取mempool数据。
 	4.判断区块链的父区块hash是否与本地上一区块hash一致。
 	5.解析新区块链的交易单数组。
-	6.遍历交易单结构，检查每个接收地址是否存在钱包的地址表中
+	6.遍历交易单结构，检查每个output地址是否存在钱包的地址表中
 	7.检查地址是否合法，存在地址表，生成充值记录。
 	8.定时程推送充值记录到钱包的充值通道。先检查交易hash是否存在区块中。
 	9.接口返回确认，标记充值记录已确认。
@@ -39,26 +40,31 @@ type BTCBlockScanner struct {
 	isScanning bool
 }
 
+//exportTRXS 导出交易单回调函数
+//@param  txs 每扫完区块链，与地址相关的交易到
+type exportTRXS func(txs []*openwallet.Transaction) []string
+
+//NewBTCBlockScanner 创建区块链扫描器
 func NewBTCBlockScanner() *BTCBlockScanner {
 	bs := BTCBlockScanner{}
 	bs.addressInScanning = make(map[string]string)
 	return &bs
 }
 
-func (bs *BTCBlockScanner) addAddress(address string, accountID string) {
+func (bs *BTCBlockScanner) AddAddress(address string, accountID string) {
 	bs.addressInScanning[address] = accountID
 }
 
-func (bs *BTCBlockScanner) start() {
+func (bs *BTCBlockScanner) Start() {
 
 }
 
-func (bs *BTCBlockScanner) scanning() {
+func (bs *BTCBlockScanner) Scanning() {
 	//获取本地区块高度
 
 }
 
-func (bs *BTCBlockScanner) currentBlockHeight() uint64 {
+func (bs *BTCBlockScanner) GetCurrentBlockHeight() uint64 {
 
 	var (
 		blockHeight uint64 = 0
@@ -80,6 +86,6 @@ func (bs *BTCBlockScanner) currentBlockHeight() uint64 {
 	return blockHeight
 }
 
-func GetBlockHeight() {
+func GetBTCBlockHeight() {
 
 }

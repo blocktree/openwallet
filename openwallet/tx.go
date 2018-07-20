@@ -43,7 +43,8 @@ type Transaction struct {
 
 	*/
 
-	TxID string `json:"txid"`
+	TxID    string `json:"txid"`
+	Confirm int64  `json:"confirm"`
 }
 
 type Withdraw struct {

@@ -413,6 +413,7 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 		//withdraws = make([]*openwallet.Withdraw, 0)
 		wallets  = make(map[string][]*openwallet.Withdraw)
 		tmpArray []*openwallet.Withdraw
+		txIDMaps = make([]map[string]interface{}, 0)
 	)
 
 	db, err := m.OpenDB()
@@ -432,12 +433,21 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 		err = db.One("Sid", s.Sid, &openwallet.Withdraw{})
 		if err == nil {
 			//存在相关的sid不加入提现表
-			log.Printf("withdraw sid: %s is duplicate\n", s.Sid)
+			errMsg := fmt.Sprintf("withdraw sid: %s is duplicate\n", s.Sid)
+			log.Printf(errMsg)
+
+			txIDMaps = append(txIDMaps, map[string]interface{}{
+				"sid":  s.Sid,
+				"txid": "",
+				"status": 2,
+				"reason": errMsg,
+			})
+
 			continue
 		}
 
 		//withdraws = append(withdraws, s)
-		db.Save(s)
+
 
 		tmpArray = wallets[s.WalletID]
 		if tmpArray == nil {
@@ -451,7 +461,6 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 
 	db.Close()
 
-	txIDMaps := make([]map[string]interface{}, 0)
 
 	for wid, withs := range wallets {
 		if len(withs) > 0 {
@@ -467,17 +476,28 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 			if mer == nil {
 				continue
 			}
+			status := 0
 			txID, err := mer.SubmitTransactions(wallet, wallet.SingleAssetsAccount(withs[0].Symbol), withs)
 			if err != nil {
 				log.Printf("SubmitTransactions unexpected error: %v", err)
-				continue
+				status = 3
+			} else {
+				status = 1
+
+				err = nil
 			}
 
 			for _, with := range withs {
 				txIDMaps = append(txIDMaps, map[string]interface{}{
 					"sid":  with.Sid,
 					"txid": txID,
+					"status": status,
+					"reason": err.Error(),
 				})
+
+				if status == 1 {
+					m.SaveToDB(with)
+				}
 			}
 
 		}
