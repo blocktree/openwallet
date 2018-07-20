@@ -13,53 +13,12 @@
  * GNU Lesser General Public License for more details.
  */
 
-package merchant
+package common
 
-import "github.com/blocktree/OpenWallet/owtp"
 
-func init() {
-	owtp.Debug = false
-}
-
-func GetMerchantKeychain() error {
-
-	return nil
-}
-
-func InitMerchantKeychainFlow() error {
-	return nil
-}
-
-//JoinMerchantNodeFlow 连接商户服务节点
-func JoinMerchantNodeFlow() error {
-
-	var (
-		err error
-		c   NodeConfig
-	)
-
-	c, err = loadConfig()
-	if err != nil {
-		return err
+func BoolToUInt(b bool) uint64 {
+	if b {
+		return 1
 	}
-
-	merchantNode, err = NewMerchantNode(c)
-	if err != nil {
-		return err
-	}
-
-	merchantNode.Run()
-
-	return nil
+	return 0
 }
-
-func ConfigMerchantFlow() error {
-	initConfig()
-	return nil
-}
-
-func ShowMechantConfig() error {
-	printConfig()
-	return nil
-}
-

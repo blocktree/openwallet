@@ -13,9 +13,9 @@
  * GNU Lesser General Public License for more details.
  */
 
- package walletnode
+package walletnode
 
- import (
+import (
 	"context"
 	"docker.io/go-docker"
 	"fmt"

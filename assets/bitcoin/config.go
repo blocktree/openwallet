@@ -53,10 +53,14 @@ var (
 	keyDir = filepath.Join("data", strings.ToLower(Symbol), "key")
 	//地址导出路径
 	addressDir = filepath.Join("data", strings.ToLower(Symbol), "address")
+	//区块链数据
+	//blockchainDir = filepath.Join("data", strings.ToLower(Symbol), "blockchain")
 	//配置文件路径
 	configFilePath = filepath.Join("conf")
 	//配置文件名
 	configFileName = Symbol + ".ini"
+	//区块链数据文件
+	blockchainFile = "blockchain.db"
 	//是否测试网络
 	isTestNet = true
 	// 核心钱包是否只做监听

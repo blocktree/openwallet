@@ -24,6 +24,7 @@ import (
 	"github.com/blocktree/OpenWallet/assets/cardano"
 	"github.com/blocktree/OpenWallet/assets/ethereum"
 	"github.com/blocktree/OpenWallet/assets/sia"
+	"log"
 )
 
 //WalletManager 钱包管理器
@@ -88,7 +89,8 @@ func RegWMD(name string, manager interface{}) {
 		panic("WalletManager: Register adapter is nil")
 	}
 	if _, ok := managers[name]; ok {
-		panic("WalletManager: Register called twice for adapter " + name)
+		log.Printf("WalletManager: Register called twice for adapter \n" + name)
+		return
 	}
 	managers[name] = manager
 }
@@ -105,6 +107,7 @@ func GetWMD(symbol string) interface{} {
 //注册钱包管理工具
 func init() {
 	//注册钱包管理工具
+	log.Printf("Register wallet manager successfully.")
 	RegWMD(strings.ToLower(cardano.Symbol), &cardano.WalletManager{})
 	RegWMD(strings.ToLower(bytom.Symbol), &bytom.WalletManager{})
 	RegWMD(strings.ToLower(bitcoin.Symbol), &bitcoin.WalletManager{})

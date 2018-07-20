@@ -16,29 +16,13 @@
 package walletnode
 
 import (
-	"fmt"
 	"context"
 	"docker.io/go-docker"
+	"fmt"
 	s "strings"
 )
 
 type NodeManagerStruct struct{}
-
-// Private function, generate container name by <Symbol> and <isTestNet>
-func _GetCName(symbol string) (string, error) {
-	// // Load global config
-	// err := loadConfig(symbol)
-	// if err != nil {
-	// 	return "", err
-	// }
-
-	// Within testnet, use "<Symbol>_testnet" as container name
-	if isTestNet == "true" {
-		return s.ToLower(symbol) + "_testnet", nil
-	} else {
-		return s.ToLower(symbol), nil
-	}
-}
 
 func (w *NodeManagerStruct) GetNodeStatus(symbol string) error {
 	// func(vals ...interface{}) {}(
