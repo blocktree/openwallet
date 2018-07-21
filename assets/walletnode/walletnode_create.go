@@ -173,7 +173,7 @@ func _CheckAdnCreateContainer(symbol string) error {
 
 	ctn_config, ok := FullnodeContainerConfigs[s.ToLower(symbol)]
 	if !ok {
-		return ctn_config
+		return nil
 	}
 
 	portBindings := map[nat.Port][]nat.PortBinding{}
