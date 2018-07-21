@@ -20,7 +20,7 @@ import (
 	"encoding/hex"
 	"reflect"
 	"encoding/json"
-	"github.com/blocktree/OpenWallet/common/crypto"
+	"github.com/blocktree/OpenWallet/crypto"
 )
 
 
