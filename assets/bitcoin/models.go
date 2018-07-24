@@ -70,14 +70,45 @@ func (w *Wallet) FileName() string {
 	return w.Alias + "-" + w.WalletID
 }
 
-//SaveTx 保存交易记录
-func (w *Wallet) SaveTx(tx *openwallet.Recharge) error {
+//SaveRecharge 保存交易记录
+func (w *Wallet) SaveRecharge(tx *openwallet.Recharge) error {
 	db, err := w.OpenDB()
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 	return db.Save(tx)
+}
+
+//DropRecharge 删除充值记录表
+func (w *Wallet) DropRecharge() error {
+	db, err := w.OpenDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	return db.Drop("Recharge")
+	//return db.Save(tx)
+}
+
+//GetRecharges 获取钱包相关的充值记录
+func (w *Wallet) GetRecharges() ([]*openwallet.Recharge, error) {
+
+	var (
+		list []*openwallet.Recharge
+	)
+
+	db, err := w.OpenDB()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+	err = db.All(&list)
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
 }
 
 //BlockchainInfo 本地节点区块链信息
@@ -217,6 +248,7 @@ type Block struct {
 	Height            uint64
 	Version           uint64
 	Time              uint64
+	Fork              bool
 }
 
 func NewBlock(json *gjson.Result) *Block {
@@ -242,6 +274,7 @@ func NewBlock(json *gjson.Result) *Block {
 
 //UnscanRecords 扫描失败的区块及交易
 type UnscanRecords struct {
+	ID          int // primary key
 	BlockHeight uint64
 	TxID        string
 	Reason      string

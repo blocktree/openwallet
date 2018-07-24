@@ -570,6 +570,25 @@ func GetWalletInfo(walletID string) (*Wallet, error) {
 	return nil, errors.New("The wallet that your given name is not exist!")
 }
 
+//GetWallet 获取钱包文件实体
+func GetWallet(walletID string) (*Wallet, error) {
+
+	wallets, err := GetWalletKeys(keyDir)
+	if err != nil {
+		return nil, err
+	}
+
+	//获取钱包余额
+	for _, w := range wallets {
+		if w.WalletID == walletID {
+			return w, nil
+		}
+
+	}
+
+	return nil, errors.New("The wallet that your given name is not exist!")
+}
+
 //GetWalletBalance 获取钱包余额
 func GetWalletBalance(name string) string {
 
@@ -579,7 +598,8 @@ func GetWalletBalance(name string) string {
 	//	true,
 	//}
 
-	utxos, err := ListUnspent(1)
+	RebuildWalletUnspent(name)
+	utxos, err := ListUnspentFromLocalDB(name)
 	if err != nil {
 		return "0"
 	}
@@ -930,9 +950,25 @@ func ListUnspent(min uint64) ([]*Unspent, error) {
 //RebuildWalletUnspent 批量插入未花记录到本地
 func RebuildWalletUnspent(walletID string) error {
 
-	wallet, err := GetWalletInfo(walletID)
+	var (
+		wallet *Wallet
+	)
+
+	wallets, err := GetWalletKeys(keyDir)
 	if err != nil {
 		return err
+	}
+
+	//获取钱包余额
+	for _, w := range wallets {
+		if w.WalletID == walletID {
+			wallet = w
+			break
+		}
+	}
+
+	if wallet == nil {
+		return errors.New("The wallet that your given name is not exist!")
 	}
 
 	//查找核心钱包确认数大于1的

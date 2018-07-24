@@ -63,7 +63,7 @@ type Recharge struct {
 	Amount      string `json:"amount"`
 	Confirm     int64  `json:"confirm"`
 	BlockHash   string `json:"blockHash"`
-	BlockHeight uint64 `json:"blockHeight"`
+	BlockHeight uint64 `json:"blockHeight" storm:"index"`
 	IsMemo      bool   `json:"isMemo"`
 	Memo        string `json:"memo"`
 	Index       uint64 `json:"index"`

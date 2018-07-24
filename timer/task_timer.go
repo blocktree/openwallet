@@ -5,36 +5,49 @@ import (
 )
 
 type TaskTimer struct {
-	f func() //传入方法
-	timer *time.Ticker //定时器
-	stop bool //停止标记
-	pause bool //暂停标记
+	f        func()       //传入方法
+	timer    *time.Ticker //定时器
+	stop     bool         //停止标记
+	pause    bool         //暂停标记
+	duration time.Duration
 }
 
 //新建定时器
-func NewTask(duration time.Duration,function func()) *TaskTimer{
+func NewTask(duration time.Duration, function func()) *TaskTimer {
 	t := &TaskTimer{
-		timer: time.NewTicker(duration),
-		f:function,
-		stop: false,
-		pause:false,
+		//timer:    time.NewTicker(duration),
+		f:        function,
+		stop:     false,
+		pause:    false,
+		duration: duration,
 	}
 	return t
 }
 
 //启动定时器
-func(t *TaskTimer) Start(){
+func (t *TaskTimer) Start() {
 	t.stop = false
 	t.pause = false
+
+	if t.timer != nil {
+		t.timer.Stop()
+		t.timer = nil
+	}
+
+	t.timer = time.NewTicker(t.duration)
+
 	go func(innerT *TaskTimer) {
-		defer innerT.timer.Stop()
+		defer func() {
+			innerT.timer.Stop()
+			innerT.timer = nil
+		}()
 		for {
 			select {
 			case <-innerT.timer.C:
-				if innerT.stop{
+				if innerT.stop {
 					return
 				}
-				if innerT.pause{
+				if innerT.pause {
 					continue
 				}
 				innerT.f() //执行我们想要的操作
@@ -44,17 +57,17 @@ func(t *TaskTimer) Start(){
 }
 
 //停止定时器
-func (t *TaskTimer) Stop()  {
+func (t *TaskTimer) Stop() {
 	t.stop = true
 }
 
 //暂停定时器
-func (t *TaskTimer) Pause()  {
+func (t *TaskTimer) Pause() {
 	t.pause = true
 }
 
 //继续定时器
-func (t *TaskTimer) Restart()  {
+func (t *TaskTimer) Restart() {
 	t.pause = false
 }
 
@@ -62,6 +75,6 @@ func (t *TaskTimer) Running() bool {
 	if t.stop || t.pause {
 		return false
 	} else {
-		return  true
+		return true
 	}
 }
