@@ -102,6 +102,8 @@ func (w *WalletManager) ImportMerchantAddress(wallet *openwallet.Wallet, account
 		a.AccountID = account.AccountID
 		log.Printf("import %s address: %s", a.Symbol, a.Address)
 		tx.Save(a)
+
+		w.blockscanner.AddAddress(a.Address, a.AccountID)
 	}
 
 	tx.Commit()
@@ -171,4 +173,19 @@ func (w *WalletManager) SubmitTransactions(wallet *openwallet.Wallet, account *o
 	t := openwallet.Transaction{TxID: txID}
 
 	return &t, nil
+}
+
+//AddMerchantObserverForBlockScan 添加区块链观察者，当扫描出新区块时进行通知
+func (w *WalletManager) AddMerchantObserverForBlockScan(obj interface{}, f openwallet.BlockScanNotify) error {
+	w.blockscanner.AddObserver(obj, f)
+	w.blockscanner.Run()
+	return nil
+}
+
+//RemoveMerchantObserverForBlockScan 移除区块链扫描的观测者
+func (w *WalletManager) RemoveMerchantObserverForBlockScan(obj interface{}) {
+	w.blockscanner.RemoveObserver(obj)
+	if len(w.blockscanner.observers) == 0 {
+		w.blockscanner.Stop()
+	}
 }

@@ -94,6 +94,7 @@ func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 			responseError(ctx, err)
 			return
 		}
+
 	}
 
 	//重置订阅内容

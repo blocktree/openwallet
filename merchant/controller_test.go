@@ -45,7 +45,7 @@ func generateCTX(method string, inputs interface{}) *owtp.Context {
 func TestSubscribe(t *testing.T) {
 
 	var (
-		endRunning = make(chan bool, 1)
+		//endRunning = make(chan bool, 1)
 	)
 
 	m, err := NewMerchantNode(nodeConfig)
@@ -54,9 +54,9 @@ func TestSubscribe(t *testing.T) {
 	}
 
 	inputs := []Subscription {
-		Subscription{Type: 2, Coin:"btc",WalletID:"21212",Version:222},
-		Subscription{Type: 2, Coin:"btm",WalletID:"21212",Version:222},
-		Subscription{Type: 2, Coin:"ltc",WalletID:"21212",Version:222},
+		Subscription{Type: 1, Coin:"BTC",WalletID:"WFvvr5q83WxWp1neUMiTaNuH7ZbaxJFpWu",Version:1},
+		Subscription{Type: 2, Coin:"btm",WalletID:"AD044IDNF42",Version:1},
+		Subscription{Type: 2, Coin:"BTC",WalletID:"WFvvr5q83WxWp1neUMiTaNuH7ZbaxJFpWu",Version:1},
 	}
 
 	ctx := generateCTX("subscribe", inputs)
@@ -65,7 +65,7 @@ func TestSubscribe(t *testing.T) {
 
 	t.Logf("reponse: %v\n",ctx.Resp)
 
-	<- endRunning
+	//<- endRunning
 }
 
 func TestCreateWallet(t *testing.T) {

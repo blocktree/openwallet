@@ -116,6 +116,33 @@ func (w *Wallet) SingleAssetsAccount(symbol string) *AssetsAccount {
 	return &a
 }
 
+
+//GetRecharges 获取钱包相关的充值记录
+func (w *Wallet) GetRecharges(height ...uint64) ([]*Recharge, error) {
+
+	var (
+		list []*Recharge
+	)
+
+	db, err := w.OpenDB()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	if len(height) > 0 {
+		err = db.Find("BlockHeight", height[0], &list)
+	} else {
+		err = db.All(&list)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
 /*
 //NewWallet 创建钱包
 func NewWallet(publickeys []Bytes, users []*User, required uint, creator *User) (*Wallet, error) {

@@ -108,7 +108,7 @@ func init() {
 	log.Printf("Register wallet manager successfully.")
 	RegWMD(strings.ToLower(cardano.Symbol), &cardano.WalletManager{})
 	RegWMD(strings.ToLower(bytom.Symbol), &bytom.WalletManager{})
-	RegWMD(strings.ToLower(bitcoin.Symbol), &bitcoin.WalletManager{})
+	RegWMD(strings.ToLower(bitcoin.Symbol), bitcoin.NewWalletManager())
 	RegWMD(strings.ToLower(bitcoincash.Symbol), &bitcoincash.WalletManager{})
 	RegWMD(strings.ToLower(sia.Symbol), &sia.WalletManager{})
 }

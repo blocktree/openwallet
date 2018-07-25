@@ -17,7 +17,6 @@ package bitcoin
 
 import (
 	"testing"
-	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 func TestGetBTCBlockHeight(t *testing.T) {
@@ -93,41 +92,6 @@ func TestGetTxIDsInMemPool(t *testing.T) {
 	t.Logf("GetTxIDsInMemPool = %v \n", txids)
 }
 
-func TestBTCBlockScanner_ExtractRechargeRecords(t *testing.T) {
-
-	accountID := "W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ"
-	address := "mpkUFiXonEZriywHUhig6PTDQXKzT6S5in"
-
-	height := uint64(0)
-	txid := "6209d3f5e6344b1ed808e2083324a84f36dbb32fb9a1db6f3f5ebe4e3cbef342"
-
-	bs := NewBTCBlockScanner()
-	bs.AddAddress(address, accountID)
-
-	//extracting := make(chan bool, 1)
-	//extracting <- true
-	err := bs.ExtractRechargeRecords(height, txid)
-	if err != nil {
-		t.Errorf("ExtractRechargeRecords failed unexpected error: %v\n", err)
-		return
-	}
-
-	wallet, err := GetWalletInfo(accountID)
-	if err != nil {
-		t.Errorf("ExtractRechargeRecords failed unexpected error: %v\n", err)
-		return
-	}
-
-	db, _ := wallet.OpenDB()
-	defer db.Close()
-	var recharges []*openwallet.Recharge
-	db.All(&recharges)
-	for _, r := range recharges {
-		t.Logf("rechanges = %v", r)
-	}
-
-}
-
 func TestBTCBlockScanner_scanning(t *testing.T) {
 
 	accountID := "W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ"
@@ -141,7 +105,7 @@ func TestBTCBlockScanner_scanning(t *testing.T) {
 
 	bs.AddAddress(address, accountID)
 
-	bs.scanning()
+	bs.scanBlock()
 }
 
 func TestBTCBlockScanner_Run(t *testing.T) {
@@ -157,7 +121,7 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 
 	bs.DropRechargeRecords(accountID)
 
-	SaveLocalNewBlock(1355030, "00000000000000125b86abb80b1f94af13a5d9b07340076092eda92dade27686")
+	SaveLocalNewBlock(1355359, "00000000000000125b86abb80b1f94af13a5d9b07340076092eda92dade27686")
 
 	bs.AddAddress(address, accountID)
 
@@ -191,4 +155,21 @@ func TestBTCBlockScanner_DropRechargeRecords(t *testing.T) {
 	accountID := "W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ"
 	bs := NewBTCBlockScanner()
 	bs.DropRechargeRecords(accountID)
+}
+
+func TestGetUnscanRecords(t *testing.T) {
+	list, err := GetUnscanRecords()
+	if err != nil {
+		t.Errorf("GetUnscanRecords failed unexpected error: %v\n", err)
+		return
+	}
+
+	for _, r := range list {
+		t.Logf("GetUnscanRecords unscan: %v", r)
+	}
+}
+
+func TestBTCBlockScanner_RescanFailedRecord(t *testing.T) {
+	bs := NewBTCBlockScanner()
+	bs.RescanFailedRecord()
 }

@@ -48,16 +48,19 @@ const (
 	blockchainBucket = "blockchain"
 	//定时任务执行隔间
 	periodOfTask      = 5 * time.Second
-	maxExtractingSize = 1
+	maxExtractingSize = 20
 )
 
 type BTCBlockScanner struct {
-	addressInScanning  map[string]string //加入扫描的钱包资产账户
-	CurrentBlockHeight uint64            //当前区块高度
+	addressInScanning  map[string]string      //加入扫描的钱包资产账户
+	accountInScanning  map[string]interface{} //加入扫描的钱包资产账户
+	CurrentBlockHeight uint64                 //当前区块高度
 	isScanning         bool
 	scanTask           *timer.TaskTimer
 	extractingCH       chan struct{}
 	mu                 sync.RWMutex
+	observers          map[interface{}]openwallet.BlockScanNotify
+	scanning           bool
 }
 
 type ExtractResult struct {
@@ -67,14 +70,18 @@ type ExtractResult struct {
 	Success     bool
 }
 
-//exportTRXS 导出交易单回调函数
-//@param  txs 每扫完区块链，与地址相关的交易到
-type exportTRXS func(txs []*openwallet.Transaction) []string
+type SaveResult struct {
+	TxID        string
+	BlockHeight uint64
+	Success     bool
+}
 
 //NewBTCBlockScanner 创建区块链扫描器
 func NewBTCBlockScanner() *BTCBlockScanner {
 	bs := BTCBlockScanner{}
 	bs.addressInScanning = make(map[string]string)
+	bs.accountInScanning = make(map[string]interface{})
+	bs.observers = make(map[interface{}]openwallet.BlockScanNotify)
 	bs.extractingCH = make(chan struct{}, maxExtractingSize)
 	return &bs
 }
@@ -83,24 +90,74 @@ func NewBTCBlockScanner() *BTCBlockScanner {
 func (bs *BTCBlockScanner) AddAddress(address string, accountID string) {
 	bs.mu.Lock()
 	bs.addressInScanning[address] = accountID
+	bs.accountInScanning[accountID] = true
 	bs.mu.Unlock()
+}
+
+//AddObserver 添加观测者
+func (bs *BTCBlockScanner) AddObserver(obj interface{}, handler openwallet.BlockScanNotify) {
+	bs.mu.Lock()
+
+	defer bs.mu.Unlock()
+
+	if obj == nil {
+		return
+	}
+	if handler == nil {
+		return
+	}
+	if _, exist := bs.observers[obj]; exist {
+		return
+	}
+
+	bs.observers[obj] = handler
+}
+
+//RemoveObserver 移除观测者
+func (bs *BTCBlockScanner) RemoveObserver(obj interface{}) {
+	bs.mu.Lock()
+	defer bs.mu.Unlock()
+
+	delete(bs.observers, obj)
+}
+
+//SetRescanBlockHeight 重置区块链扫描高度
+func (bs *BTCBlockScanner) SetRescanBlockHeight(height uint64) error {
+	height = height - 1
+	if height < 0 {
+		return errors.New("block height to rescan must greater than 0.")
+	}
+
+	hash, err := GetBlockHash(height)
+	if err != nil {
+		return err
+	}
+
+	SaveLocalNewBlock(height, hash)
+
+	return nil
 }
 
 //Run 运行
 func (bs *BTCBlockScanner) Run() {
 
-	if bs.scanTask == nil {
-		//创建定时器
-		task := timer.NewTask(periodOfTask, bs.scanning)
-		bs.scanTask = task
+	if bs.scanning {
+		return
 	}
 
+	if bs.scanTask == nil {
+		//创建定时器
+		task := timer.NewTask(periodOfTask, bs.scanBlock)
+		bs.scanTask = task
+	}
+	bs.scanning = true
 	bs.scanTask.Start()
 }
 
 //Stop 停止扫描
 func (bs *BTCBlockScanner) Stop() {
 	bs.scanTask.Stop()
+	bs.scanning = false
 }
 
 //Pause 暂停扫描
@@ -114,7 +171,7 @@ func (bs *BTCBlockScanner) Restart() {
 }
 
 //scanning 扫描
-func (bs *BTCBlockScanner) scanning() {
+func (bs *BTCBlockScanner) scanBlock() {
 
 	//获取本地区块高度
 	currentHeight, currentHash, err := bs.GetCurrentBlockHeight()
@@ -124,9 +181,18 @@ func (bs *BTCBlockScanner) scanning() {
 
 	for {
 
-		//if currentHeight > 1355044 {
-		//	return
-		//}
+		//获取最大高度
+		maxHeight, err := GetBlockHeight()
+		if err != nil {
+			//下一个高度找不到会报异常
+			log.Printf("block scanner can not get rpc-server block height; unexpected error: %v\n", err)
+			break
+		}
+
+		if currentHeight == maxHeight {
+			log.Printf("block scanner has scanned full chain data. Current height: %d\n", maxHeight)
+			break
+		}
 
 		//继续扫描下一个区块
 		currentHeight = currentHeight + 1
@@ -137,7 +203,7 @@ func (bs *BTCBlockScanner) scanning() {
 		if err != nil {
 			//下一个高度找不到会报异常
 			log.Printf("block scanner can not get new block hash; unexpected error: %v\n", err)
-			return
+			break
 		}
 
 		block, err := GetBlock(hash)
@@ -145,42 +211,72 @@ func (bs *BTCBlockScanner) scanning() {
 			log.Printf("block scanner can not get new block data; unexpected error: %v\n", err)
 
 			//记录未扫区块
-			unscanRecord := UnscanRecords{
-				BlockHeight: currentHeight,
-				TxID:        "",
-				Reason:      err.Error(),
-			}
-			bs.SaveUnscanRecord(&unscanRecord)
-
+			unscanRecord := NewUnscanRecord(currentHeight, "", err.Error())
+			bs.SaveUnscanRecord(unscanRecord)
+			log.Printf("block height: %d extract failed.\n", currentHeight)
 			continue
 		}
 
 		//判断hash是否上一区块的hash
 		if currentHash != block.Previousblockhash {
-			//TODO:回滚之前的区块，直到分叉起始处，并删除分叉区块链的相关充值记录
+
+			log.Printf("block has been fork on height: %d.\n", currentHeight)
+			log.Printf("block height: %d local hash = %s \n", currentHeight-1, currentHash)
+			log.Printf("block height: %d mainnet hash = %s \n", currentHeight-1, block.Previousblockhash)
+
+			log.Printf("delete recharge records on block height: %d.\n", currentHeight-1)
+
 			//删除上一区块链的所有充值记录
+			bs.DeleteRechargesByHeight(currentHeight - 1)
+			currentHeight = currentHeight - 2 //倒退2个区块重新扫描
+			if currentHeight <= 0 {
+				currentHeight = 1
+			}
+
+			localBlock, err := GetLocalBlock(currentHeight)
+			if err != nil {
+				log.Printf("block scanner can not get local block; unexpected error: %v\n", err)
+				break
+			}
+
+			//重置当前区块的hash
+			currentHash = localBlock.Hash
+
+			log.Printf("rescan block on height: %d, hash: %s .\n", currentHeight, currentHash)
+
+			//重新记录一个新扫描起点
+			SaveLocalNewBlock(localBlock.Height, localBlock.Hash)
+		} else {
+
+			err = bs.BatchExtractTransaction(block.Height, block.tx)
+			if err != nil {
+				log.Printf("block scanner can not extractRechargeRecords; unexpected error: %v\n", err)
+			}
+
+			//重置当前区块的hash
+			currentHash = hash
+
+			//保存本地新高度
+			SaveLocalNewBlock(currentHeight, currentHash)
+			SaveLocalBlock(block)
+
+			//通知新区块给观测者
+			bs.newBlockNotify(block)
 		}
-
-		err = bs.BatchExtractTransaction(block.Height, block.Tx)
-		if err != nil {
-			log.Printf("block scanner can not extractRechargeRecords; unexpected error: %v\n", err)
-		}
-		//for _, txid := range block.Tx {
-		//	//bs.extractingCH <- true
-		//	bs.ExtractRechargeRecords(currentHeight, txid)
-		//	//err = bs.ExtractRechargeRecords(currentHeight, txid)
-		//	//if err != nil {
-		//	//	log.Printf("block scanner can not extractRechargeRecords; unexpected error: %v\n", err)
-		//	//}
-		//
-		//}
-
-		//保存本地新高度
-		SaveLocalNewBlock(currentHeight, hash)
-		SaveLocalBlock(block)
-
 	}
 
+	//扫描交易内存池
+	bs.ScanTxMemPool()
+
+	//重扫失败区块
+	bs.RescanFailedRecord()
+
+}
+
+//ScanTxMemPool 扫描交易内存池
+func (bs *BTCBlockScanner) ScanTxMemPool() {
+
+	//提取未确认的交易单
 	txIDsInMemPool, err := GetTxIDsInMemPool()
 	if err != nil {
 		log.Printf("block scanner can not get mempool data; unexpected error: %v\n", err)
@@ -193,13 +289,80 @@ func (bs *BTCBlockScanner) scanning() {
 
 }
 
+//rescanFailedRecord 重扫失败记录
+func (bs *BTCBlockScanner) RescanFailedRecord() {
+
+	var (
+		blockMap = make(map[uint64][]string)
+	)
+
+	list, err := GetUnscanRecords()
+	if err != nil {
+		log.Printf("block scanner can not get mempool data; unexpected error: %v\n", err)
+	}
+
+	//组合成批处理
+	for _, r := range list {
+
+		if _, exist := blockMap[r.BlockHeight]; !exist {
+			blockMap[r.BlockHeight] = make([]string, 0)
+		}
+
+		if len(r.TxID) > 0 {
+			arr := blockMap[r.BlockHeight]
+			arr = append(arr, r.TxID)
+
+			blockMap[r.BlockHeight] = arr
+		}
+	}
+
+	for height, txs := range blockMap {
+
+		log.Printf("block scanner rescanning height: %d ...\n", height)
+
+		if len(txs) == 0 {
+
+			hash, err := GetBlockHash(height)
+			if err != nil {
+				//下一个高度找不到会报异常
+				log.Printf("block scanner can not get new block hash; unexpected error: %v\n", err)
+				continue
+			}
+
+			block, err := GetBlock(hash)
+			if err != nil {
+				log.Printf("block scanner can not get new block data; unexpected error: %v\n", err)
+				continue
+			}
+
+			txs = block.tx
+		}
+
+		err = bs.BatchExtractTransaction(height, txs)
+		if err != nil {
+			log.Printf("block scanner can not extractRechargeRecords; unexpected error: %v\n", err)
+			continue
+		}
+
+		//删除未扫记录
+		DeleteUnscanRecord(height)
+	}
+}
+
+//newBlockNotify 获得新区块后，通知给观测者
+func (bs *BTCBlockScanner) newBlockNotify(block *Block) {
+	for _, f := range bs.observers {
+		f(block.BlockHeader())
+	}
+}
+
 //BatchExtractTransaction 批量提取交易单
 //bitcoin 1M的区块链可以容纳3000笔交易，批量多线程处理，速度更快
 func (bs *BTCBlockScanner) BatchExtractTransaction(blockHeight uint64, txs []string) error {
 
 	var (
 		quit       = make(chan struct{})
-		done       = 0 //完成标记
+		done       = 0        //完成标记
 		shouldDone = len(txs) //需要完成的总数
 	)
 
@@ -227,12 +390,9 @@ func (bs *BTCBlockScanner) BatchExtractTransaction(blockHeight uint64, txs []str
 				}
 			} else {
 				//记录未扫区块
-				unscanRecord := UnscanRecords{
-					BlockHeight: height,
-					TxID:        "",
-					Reason:      "",
-				}
-				bs.SaveUnscanRecord(&unscanRecord)
+				unscanRecord := NewUnscanRecord(height, "", "")
+				bs.SaveUnscanRecord(unscanRecord)
+				log.Printf("block height: %d extract failed.\n", height)
 			}
 			//累计完成的线程数
 			done++
@@ -244,64 +404,64 @@ func (bs *BTCBlockScanner) BatchExtractTransaction(blockHeight uint64, txs []str
 	}
 
 	//提取工作
-	extractWork := func(mbs *BTCBlockScanner, eblockHeight uint64, mTxs []string, eProducer chan ExtractResult) {
+	extractWork := func(eblockHeight uint64, mTxs []string, eProducer chan ExtractResult) {
 		for _, txid := range mTxs {
-			mbs.extractingCH <- struct{}{}
+			bs.extractingCH <- struct{}{}
 			//shouldDone++
 			go func(mBlockHeight uint64, mTxid string, end chan struct{}, mProducer chan<- ExtractResult) {
 
 				//导出提出的交易
-				mProducer <- mbs.ExtractTransaction(mBlockHeight, mTxid)
+				mProducer <- bs.ExtractTransaction(mBlockHeight, mTxid)
 				//释放
 				<-end
 
-			}(eblockHeight, txid, mbs.extractingCH, eProducer)
+			}(eblockHeight, txid, bs.extractingCH, eProducer)
 		}
 	}
 
 	/*	开启导出的线程	*/
 
-	//独立线程运行
+	//独立线程运行消费
 	go saveWork(blockHeight, worker)
 
-	//独立线程运行
-	go extractWork(bs, blockHeight, txs, producer)
-
-	values := make([]ExtractResult, 0)
+	//独立线程运行生产
+	go extractWork(blockHeight, txs, producer)
 
 	//以下使用生产消费模式
+	bs.extractRuntime(producer, worker, quit)
+
+	return nil
+}
+
+//extractRuntime 提取运行时
+func (bs *BTCBlockScanner) extractRuntime(producer chan ExtractResult, worker chan ExtractResult, quit chan struct{}) {
+
+	var (
+		values = make([]ExtractResult, 0)
+	)
 
 	for {
-
-		var activeWorker chan<- ExtractResult
-		var activeValue ExtractResult
-
-		//当数据队列有数据时，释放顶部，激活消费
-		if len(values) > 0 {
-			activeWorker = worker
-			activeValue = values[0]
-
-		}
-
 		select {
 
 		//生成者不断生成数据，插入到数据队列尾部
 		case pa := <-producer:
 			values = append(values, pa)
-			//log.Printf("completed %d", len(pa))
-			//当激活消费者后，传输数据给消费者，并把顶部数据出队
-		case activeWorker <- activeValue:
-			//log.Printf("Get %d", len(activeValue))
-			values = values[1:]
-
 		case <-quit:
 			//退出
-			log.Printf("block have been scanned!")
-			return nil
+			//log.Printf("block scanner have been scanned!")
+			return
+		default:
+
+			//当数据队列有数据时，释放顶部，传输给消费者
+			if len(values) > 0 {
+				worker <- values[0]
+				values = values[1:]
+			}
 		}
 	}
 
-	return nil
+	return
+
 }
 
 //ExtractTransaction 提取交易单
@@ -369,6 +529,7 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, txid string) E
 
 }
 
+//SaveRechargeToWalletDB 保存交易单内的充值记录到钱包数据库
 func (bs *BTCBlockScanner) SaveRechargeToWalletDB(height uint64, list []*openwallet.Recharge) error {
 
 	for _, r := range list {
@@ -381,13 +542,9 @@ func (bs *BTCBlockScanner) SaveRechargeToWalletDB(height uint64, list []*openwal
 			if err != nil {
 
 				//记录未扫区块
-				unscanRecord := UnscanRecords{
-					BlockHeight: height,
-					TxID:        "",
-					Reason:      err.Error(),
-				}
-				bs.SaveUnscanRecord(&unscanRecord)
-
+				unscanRecord := NewUnscanRecord(height, "", err.Error())
+				bs.SaveUnscanRecord(unscanRecord)
+				log.Printf("block height: %d extract failed.\n", height)
 				return err
 			}
 
@@ -396,12 +553,9 @@ func (bs *BTCBlockScanner) SaveRechargeToWalletDB(height uint64, list []*openwal
 				//保存为未扫记录
 
 				//记录未扫区块
-				unscanRecord := UnscanRecords{
-					BlockHeight: height,
-					TxID:        r.TxID,
-					Reason:      err.Error(),
-				}
-				bs.SaveUnscanRecord(&unscanRecord)
+				unscanRecord := NewUnscanRecord(height, r.TxID, err.Error())
+				bs.SaveUnscanRecord(unscanRecord)
+				log.Printf("block height: %d, txID: %s extract failed.\n", height, r.TxID)
 			}
 
 		} else {
@@ -443,107 +597,9 @@ func (bs *BTCBlockScanner) GetCurrentBlockHeight() (uint64, string, error) {
 	return blockHeight, hash, nil
 }
 
-//extractRechargeRecords 从交易单中提取充值记录
-func (bs *BTCBlockScanner) ExtractRechargeRecords(blockHeight uint64, txid string) error {
-
-	var (
-		transaction openwallet.Recharge
-		saved       bool = true
-		err         error
-		trx         *gjson.Result
-	)
-
-	trx, err = GetTransaction(txid)
-	if err != nil {
-		log.Printf("block scanner can not extract transaction data; unexpected error: %v\n", err)
-		//记录哪个区块哪个交易单没有完成扫描
-		saved = false
-	} else {
-
-		blockhash := trx.Get("blockhash").String()
-		confirmations := trx.Get("confirmations").Int()
-		vout := trx.Get("vout")
-
-		for _, output := range vout.Array() {
-
-			amount := output.Get("value").String()
-			n := output.Get("n").Uint()
-			addresses := output.Get("scriptPubKey.addresses").Array()
-			if len(addresses) > 0 {
-				addr := addresses[0].String()
-				//_, ok := bs.addressInScanning[addr]
-				//
-				//if ok {
-
-				transaction = openwallet.Recharge{}
-				transaction.TxID = txid
-				transaction.Address = addr
-				transaction.Confirm = confirmations
-				transaction.BlockHash = blockhash
-				transaction.Amount = amount
-				transaction.BlockHeight = blockHeight
-				transaction.Symbol = Symbol
-				transaction.Index = n
-				transaction.Sid = common.Bytes2Hex(crypto.SHA256([]byte(fmt.Sprintf("%s_%d_%s", txid, n, addr))))
-				//写入数据库地址相关的钱包数据库
-				err = bs.SaveTxToWalletDB(&transaction)
-				if err != nil {
-					log.Printf("SaveTxToWalletDB unexpected error: %v", err)
-					saved = false
-				} else {
-					saved = true
-				}
-
-				//}
-			}
-
-		}
-
-	}
-
-	//保存不成功加入到重扫表中
-	if !saved {
-		unscanRecord := UnscanRecords{
-			BlockHeight: blockHeight,
-			TxID:        txid,
-			Reason:      err.Error(),
-		}
-		bs.SaveUnscanRecord(&unscanRecord)
-	} else {
-		err = nil
-	}
-
-	//<-ch
-	//log.Printf("txid: %s extract finished\n", txid)
-
-	return err
-}
-
-//SaveTxToWalletDB 保存交易记录到钱包数据库
-func (bs *BTCBlockScanner) SaveTxToWalletDB(tx *openwallet.Recharge) error {
-
-	if tx == nil {
-		return errors.New("the transaction to save is nil")
-	}
-	accountID := "W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ"
-	//accountID, ok := bs.addressInScanning[tx.Address]
-	//if ok {
-	tx.AccountID = accountID
-	wallet, err := GetWallet(accountID)
-	if err != nil {
-		return err
-	}
-
-	return wallet.SaveRecharge(tx)
-	//} else {
-	//	return errors.New("address in wallet is not found")
-	//}
-
-}
-
 //DropRechargeRecords 清楚钱包的全部充值记录
 func (bs *BTCBlockScanner) DropRechargeRecords(accountID string) error {
-	wallet, err := GetWalletInfo(accountID)
+	wallet, err := GetWallet(accountID)
 	if err != nil {
 		return err
 	}
@@ -551,8 +607,48 @@ func (bs *BTCBlockScanner) DropRechargeRecords(accountID string) error {
 	return wallet.DropRecharge()
 }
 
+//DeleteRechargesByHeight 删除某区块高度的充值记录
+func (bs *BTCBlockScanner) DeleteRechargesByHeight(height uint64) error {
+
+	for a, _ := range bs.accountInScanning {
+
+		wallet, err := GetWallet(a)
+		if err != nil {
+			return err
+		}
+
+		list, err := wallet.GetRecharges(height)
+		if err != nil {
+			return err
+		}
+
+		db, err := wallet.OpenDB()
+		if err != nil {
+			return err
+		}
+		defer db.Close()
+
+		tx, err := db.Begin(true)
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
+
+		for _, r := range list {
+			err = db.DeleteStruct(&r)
+			if err != nil {
+				return err
+			}
+		}
+
+		tx.Commit()
+	}
+
+	return nil
+}
+
 //SaveTxToWalletDB 保存交易记录到钱包数据库
-func (bs *BTCBlockScanner) SaveUnscanRecord(record *UnscanRecords) error {
+func (bs *BTCBlockScanner) SaveUnscanRecord(record *UnscanRecord) error {
 
 	if record == nil {
 		return errors.New("the unscan record to save is nil")
@@ -655,10 +751,10 @@ func GetBlockHash(height uint64) (string, error) {
 }
 
 //GetLocalBlock 获取本地区块数据
-func GetLocalBlock(hash string) (*Block, error) {
+func GetLocalBlock(height uint64) (*Block, error) {
 
 	var (
-		block *Block
+		block Block
 	)
 
 	db, err := storm.Open(filepath.Join(dbPath, blockchainFile))
@@ -667,12 +763,12 @@ func GetLocalBlock(hash string) (*Block, error) {
 	}
 	defer db.Close()
 
-	err = db.Find("Hash", hash, &block)
+	err = db.One("Height", height, &block)
 	if err != nil {
 		return nil, err
 	}
 
-	return block, nil
+	return &block, nil
 }
 
 //GetBlock 获取区块数据
@@ -724,4 +820,43 @@ func GetTransaction(txid string) (*gjson.Result, error) {
 
 	return result, nil
 
+}
+
+//获取未扫记录
+func GetUnscanRecords() ([]*UnscanRecord, error) {
+	//获取本地区块高度
+	db, err := storm.Open(filepath.Join(dbPath, blockchainFile))
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	var list []*UnscanRecord
+	err = db.All(&list)
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+//DeleteUnscanRecord 删除指定高度的未扫记录
+func DeleteUnscanRecord(height uint64) error {
+	//获取本地区块高度
+	db, err := storm.Open(filepath.Join(dbPath, blockchainFile))
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	var list []*UnscanRecord
+	err = db.Find("BlockHeight", height, &list)
+	if err != nil {
+		return err
+	}
+
+	for _, r := range list {
+		db.DeleteStruct(r)
+	}
+
+	return nil
 }

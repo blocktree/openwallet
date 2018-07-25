@@ -22,6 +22,9 @@ import (
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/tidwall/gjson"
 	"path/filepath"
+	"fmt"
+	"github.com/blocktree/OpenWallet/crypto"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 //Wallet 钱包模型
@@ -92,7 +95,7 @@ func (w *Wallet) DropRecharge() error {
 }
 
 //GetRecharges 获取钱包相关的充值记录
-func (w *Wallet) GetRecharges() ([]*openwallet.Recharge, error) {
+func (w *Wallet) GetRecharges(height ...uint64) ([]*openwallet.Recharge, error) {
 
 	var (
 		list []*openwallet.Recharge
@@ -103,7 +106,13 @@ func (w *Wallet) GetRecharges() ([]*openwallet.Recharge, error) {
 		return nil, err
 	}
 	defer db.Close()
-	err = db.All(&list)
+
+	if len(height) > 0 {
+		err = db.Find("BlockHeight", height[0], &list)
+	} else {
+		err = db.All(&list)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -240,12 +249,12 @@ type Block struct {
 
 	*/
 
-	Hash              string `storm:"id"`
+	Hash              string
 	Confirmations     uint64
 	Merkleroot        string
-	Tx                []string
+	tx                []string
 	Previousblockhash string
-	Height            uint64
+	Height            uint64 `storm:"id"`
 	Version           uint64
 	Time              uint64
 	Fork              bool
@@ -263,7 +272,7 @@ func NewBlock(json *gjson.Result) *Block {
 		txs = append(txs, tx.String())
 	}
 
-	obj.Tx = txs
+	obj.tx = txs
 	obj.Previousblockhash = gjson.Get(json.Raw, "previousblockhash").String()
 	obj.Height = gjson.Get(json.Raw, "height").Uint()
 	obj.Version = gjson.Get(json.Raw, "version").Uint()
@@ -272,12 +281,38 @@ func NewBlock(json *gjson.Result) *Block {
 	return obj
 }
 
+//BlockHeader 区块链头
+func (b *Block) BlockHeader() *openwallet.BlockHeader {
+
+	obj := openwallet.BlockHeader{}
+	//解析json
+	obj.Hash = b.Hash
+	obj.Confirmations = b.Confirmations
+	obj.Merkleroot = b.Merkleroot
+	obj.Previousblockhash = b.Previousblockhash
+	obj.Height = b.Height
+	obj.Version = b.Version
+	obj.Time = b.Time
+	obj.Symbol = Symbol
+
+	return &obj
+}
+
 //UnscanRecords 扫描失败的区块及交易
-type UnscanRecords struct {
-	ID          int // primary key
+type UnscanRecord struct {
+	ID          string `storm:"id"` // primary key
 	BlockHeight uint64
 	TxID        string
 	Reason      string
+}
+
+func NewUnscanRecord(height uint64, txID, reason string) *UnscanRecord {
+	obj := UnscanRecord{}
+	obj.BlockHeight = height
+	obj.TxID = txID
+	obj.Reason = reason
+	obj.ID = common.Bytes2Hex(crypto.SHA256([]byte(fmt.Sprintf("%s_%d", height, txID))))
+	return &obj
 }
 
 //type Transaction struct {
