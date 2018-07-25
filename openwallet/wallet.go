@@ -100,22 +100,55 @@ func (w *Wallet) GetAssetsAccounts(symbol string) []*AssetsAccount {
 	return nil
 }
 
+//GetAddress 通过地址字符串获取地址对象
+func (w *Wallet) GetAddress(address string) *Address {
+	db, err := w.OpenDB()
+	if err != nil {
+		return nil
+	}
+	defer db.Close()
+
+	var obj Address
+	db.One("Address", address, &obj)
+	return &obj
+}
+
 //SingleAssetsAccount 把钱包作为一个单资产账户来使用
 func (w *Wallet) SingleAssetsAccount(symbol string) *AssetsAccount {
 	a := AssetsAccount{
-		WalletID: w.WalletID,
-		Alias:w.Alias,
-		AccountID:w.WalletID,
-		Index: 0,
-		HDPath: "",
-		Required:0,
-		PublicKeys:[]string{w.RootPub},
-		Symbol:symbol,
+		WalletID:   w.WalletID,
+		Alias:      w.Alias,
+		AccountID:  w.WalletID,
+		Index:      0,
+		HDPath:     "",
+		Required:   0,
+		PublicKeys: []string{w.RootPub},
+		Symbol:     symbol,
 	}
 
 	return &a
 }
 
+//SaveRecharge 保存交易记录
+func (w *Wallet) SaveRecharge(tx *Recharge) error {
+	db, err := w.OpenDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	return db.Save(tx)
+}
+
+//DropRecharge 删除充值记录表
+func (w *Wallet) DropRecharge() error {
+	db, err := w.OpenDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	return db.Drop("Recharge")
+	//return db.Save(tx)
+}
 
 //GetRecharges 获取钱包相关的充值记录
 func (w *Wallet) GetRecharges(height ...uint64) ([]*Recharge, error) {

@@ -16,15 +16,15 @@
 package bitcoin
 
 import (
+	"fmt"
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/common/file"
+	"github.com/blocktree/OpenWallet/crypto"
 	"github.com/blocktree/OpenWallet/keystore"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/tidwall/gjson"
 	"path/filepath"
-	"fmt"
-	"github.com/blocktree/OpenWallet/crypto"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 //Wallet 钱包模型
@@ -73,52 +73,65 @@ func (w *Wallet) FileName() string {
 	return w.Alias + "-" + w.WalletID
 }
 
-//SaveRecharge 保存交易记录
-func (w *Wallet) SaveRecharge(tx *openwallet.Recharge) error {
-	db, err := w.OpenDB()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	return db.Save(tx)
+//ToOpenWallet 转为openwallet.Wallet
+func (w *Wallet) ToOpenWallet() *openwallet.Wallet {
+
+	wallet := openwallet.Wallet{}
+	wallet.WalletID = w.WalletID
+	wallet.Alias = w.Alias
+	wallet.DBFile = w.DBFile()
+	wallet.KeyFile = w.KeyFile
+
+	return &wallet
 }
 
-//DropRecharge 删除充值记录表
-func (w *Wallet) DropRecharge() error {
-	db, err := w.OpenDB()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	return db.Drop("Recharge")
-	//return db.Save(tx)
-}
-
-//GetRecharges 获取钱包相关的充值记录
-func (w *Wallet) GetRecharges(height ...uint64) ([]*openwallet.Recharge, error) {
-
-	var (
-		list []*openwallet.Recharge
-	)
-
-	db, err := w.OpenDB()
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
-	if len(height) > 0 {
-		err = db.Find("BlockHeight", height[0], &list)
-	} else {
-		err = db.All(&list)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return list, nil
-}
+//
+////SaveRecharge 保存交易记录
+//func (w *Wallet) SaveRecharge(tx *openwallet.Recharge) error {
+//	db, err := w.OpenDB()
+//	if err != nil {
+//		return err
+//	}
+//	defer db.Close()
+//	return db.Save(tx)
+//}
+//
+////DropRecharge 删除充值记录表
+//func (w *Wallet) DropRecharge() error {
+//	db, err := w.OpenDB()
+//	if err != nil {
+//		return err
+//	}
+//	defer db.Close()
+//	return db.Drop("Recharge")
+//	//return db.Save(tx)
+//}
+//
+////GetRecharges 获取钱包相关的充值记录
+//func (w *Wallet) GetRecharges(height ...uint64) ([]*openwallet.Recharge, error) {
+//
+//	var (
+//		list []*openwallet.Recharge
+//	)
+//
+//	db, err := w.OpenDB()
+//	if err != nil {
+//		return nil, err
+//	}
+//	defer db.Close()
+//
+//	if len(height) > 0 {
+//		err = db.Find("BlockHeight", height[0], &list)
+//	} else {
+//		err = db.All(&list)
+//	}
+//
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	return list, nil
+//}
 
 //BlockchainInfo 本地节点区块链信息
 type BlockchainInfo struct {

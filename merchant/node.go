@@ -102,6 +102,7 @@ func NewMerchantNode(config NodeConfig) (*MerchantNode, error) {
 //resetSubscriptions 重置订阅表
 func (m *MerchantNode) resetSubscriptions(news []*Subscription) {
 
+	//清除旧订阅
 	for _, s := range m.subscriptions {
 
 		am := assets.GetMerchantAssets(s.Coin)
@@ -112,8 +113,7 @@ func (m *MerchantNode) resetSubscriptions(news []*Subscription) {
 		//移除旧的订阅观察者
 		am.RemoveMerchantObserverForBlockScan(m)
 
-		//加入到区块链观测者表单
-		am.AddMerchantObserverForBlockScan(m, m.blockScanNotify)
+		//TODO: 重新订阅扫描地址
 	}
 
 	m.mu.Lock()
@@ -121,6 +121,7 @@ func (m *MerchantNode) resetSubscriptions(news []*Subscription) {
 	m.subscriptions = news
 	m.mu.Unlock()
 
+	//加载新订阅
 	for _, s := range m.subscriptions {
 
 		am := assets.GetMerchantAssets(s.Coin)

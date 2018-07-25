@@ -52,9 +52,9 @@ const (
 )
 
 type BTCBlockScanner struct {
-	addressInScanning  map[string]string      //加入扫描的钱包资产账户
-	accountInScanning  map[string]interface{} //加入扫描的钱包资产账户
-	CurrentBlockHeight uint64                 //当前区块高度
+	addressInScanning map[string]*openwallet.Wallet //加入扫描的地址
+	walletInScanning   map[string]*openwallet.Wallet //加入扫描的钱包
+	CurrentBlockHeight uint64                        //当前区块高度
 	isScanning         bool
 	scanTask           *timer.TaskTimer
 	extractingCH       chan struct{}
@@ -79,18 +79,18 @@ type SaveResult struct {
 //NewBTCBlockScanner 创建区块链扫描器
 func NewBTCBlockScanner() *BTCBlockScanner {
 	bs := BTCBlockScanner{}
-	bs.addressInScanning = make(map[string]string)
-	bs.accountInScanning = make(map[string]interface{})
+	bs.addressInScanning = make(map[string]*openwallet.Wallet)
+	bs.walletInScanning = make(map[string]*openwallet.Wallet)
 	bs.observers = make(map[interface{}]openwallet.BlockScanNotify)
 	bs.extractingCH = make(chan struct{}, maxExtractingSize)
 	return &bs
 }
 
 //AddAddress 添加订阅地址
-func (bs *BTCBlockScanner) AddAddress(address string, accountID string) {
+func (bs *BTCBlockScanner) AddAddress(address string, wallet *openwallet.Wallet) {
 	bs.mu.Lock()
-	bs.addressInScanning[address] = accountID
-	bs.accountInScanning[accountID] = true
+	bs.addressInScanning[address] = wallet
+	bs.walletInScanning[wallet.WalletID] = wallet
 	bs.mu.Unlock()
 }
 
@@ -491,14 +491,18 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, txid string) E
 			addresses := output.Get("scriptPubKey.addresses").Array()
 			if len(addresses) > 0 {
 				addr := addresses[0].String()
-				accountID, ok := bs.addressInScanning[addr]
-
+				wallet, ok := bs.addressInScanning[addr]
 				if ok {
+
+					a := wallet.GetAddress(addr)
+					if a == nil {
+						continue
+					}
 
 					transaction := openwallet.Recharge{}
 					transaction.TxID = txid
 					transaction.Address = addr
-					transaction.AccountID = accountID
+					transaction.AccountID = a.AccountID
 					transaction.Confirm = confirmations
 					transaction.BlockHash = blockhash
 					transaction.Amount = amount
@@ -535,20 +539,26 @@ func (bs *BTCBlockScanner) SaveRechargeToWalletDB(height uint64, list []*openwal
 	for _, r := range list {
 
 		//accountID := "W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ"
-		accountID, ok := bs.addressInScanning[r.Address]
+		wallet, ok := bs.addressInScanning[r.Address]
 		if ok {
-			r.AccountID = accountID
-			wallet, err := GetWallet(accountID)
-			if err != nil {
 
-				//记录未扫区块
-				unscanRecord := NewUnscanRecord(height, "", err.Error())
-				bs.SaveUnscanRecord(unscanRecord)
-				log.Printf("block height: %d extract failed.\n", height)
-				return err
+			a := wallet.GetAddress(r.Address)
+			if a == nil {
+				continue
 			}
 
-			err = wallet.SaveRecharge(r)
+			r.AccountID = a.AccountID
+			//wallet, err := GetWallet(accountID)
+			//if err != nil {
+			//
+			//	//记录未扫区块
+			//	unscanRecord := NewUnscanRecord(height, "", err.Error())
+			//	bs.SaveUnscanRecord(unscanRecord)
+			//	log.Printf("block height: %d extract failed.\n", height)
+			//	return err
+			//}
+
+			err := wallet.SaveRecharge(r)
 			if err != nil {
 				//保存为未扫记录
 
@@ -599,9 +609,10 @@ func (bs *BTCBlockScanner) GetCurrentBlockHeight() (uint64, string, error) {
 
 //DropRechargeRecords 清楚钱包的全部充值记录
 func (bs *BTCBlockScanner) DropRechargeRecords(accountID string) error {
-	wallet, err := GetWallet(accountID)
-	if err != nil {
-		return err
+	wallet, ok := bs.walletInScanning[accountID]
+	if !ok {
+		errMsg := fmt.Sprintf("accountID: %s wallet is not found", accountID)
+		return errors.New(errMsg)
 	}
 
 	return wallet.DropRecharge()
@@ -610,12 +621,7 @@ func (bs *BTCBlockScanner) DropRechargeRecords(accountID string) error {
 //DeleteRechargesByHeight 删除某区块高度的充值记录
 func (bs *BTCBlockScanner) DeleteRechargesByHeight(height uint64) error {
 
-	for a, _ := range bs.accountInScanning {
-
-		wallet, err := GetWallet(a)
-		if err != nil {
-			return err
-		}
+	for _, wallet := range bs.walletInScanning {
 
 		list, err := wallet.GetRecharges(height)
 		if err != nil {
@@ -626,13 +632,11 @@ func (bs *BTCBlockScanner) DeleteRechargesByHeight(height uint64) error {
 		if err != nil {
 			return err
 		}
-		defer db.Close()
 
 		tx, err := db.Begin(true)
 		if err != nil {
 			return err
 		}
-		defer tx.Rollback()
 
 		for _, r := range list {
 			err = db.DeleteStruct(&r)
@@ -642,6 +646,8 @@ func (bs *BTCBlockScanner) DeleteRechargesByHeight(height uint64) error {
 		}
 
 		tx.Commit()
+
+		db.Close()
 	}
 
 	return nil

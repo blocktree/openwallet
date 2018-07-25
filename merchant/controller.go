@@ -65,6 +65,7 @@ func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 
 	var (
 		subscriptions []*Subscription
+		wallet *openwallet.Wallet
 	)
 
 	db, err := m.OpenDB()
@@ -85,9 +86,15 @@ func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 		}
 		subscriptions = append(subscriptions, s)
 		//log.Printf("s = %v\n", s)
-		//添加订阅钱包
-		wallet := openwallet.NewWatchOnlyWallet(s.WalletID, s.Coin)
-		err = db.Save(wallet)
+
+		//检查是否已有钱包
+		wallet, err = m.GetMerchantWalletByID(s.WalletID)
+		if err != nil {
+			//添加订阅钱包
+			wallet = openwallet.NewWatchOnlyWallet(s.WalletID, s.Coin)
+			err = db.Save(wallet)
+		}
+
 		account := wallet.SingleAssetsAccount(s.Coin)
 		err = db.Save(account)
 		if err != nil {

@@ -103,7 +103,7 @@ func (w *WalletManager) ImportMerchantAddress(wallet *openwallet.Wallet, account
 		log.Printf("import %s address: %s", a.Symbol, a.Address)
 		tx.Save(a)
 
-		w.blockscanner.AddAddress(a.Address, a.AccountID)
+		w.blockscanner.AddAddress(a.Address, wallet)
 	}
 
 	tx.Commit()
@@ -177,6 +177,16 @@ func (w *WalletManager) SubmitTransactions(wallet *openwallet.Wallet, account *o
 
 //AddMerchantObserverForBlockScan 添加区块链观察者，当扫描出新区块时进行通知
 func (w *WalletManager) AddMerchantObserverForBlockScan(obj interface{}, f openwallet.BlockScanNotify) error {
+
+	//先加载是否有配置文件
+	err := loadConfig()
+	if err != nil {
+		return errors.New("The wallet node is not config!")
+	}
+
+	//调试重置区块高度
+	w.blockscanner.SetRescanBlockHeight(1355300)
+
 	w.blockscanner.AddObserver(obj, f)
 	w.blockscanner.Run()
 	return nil

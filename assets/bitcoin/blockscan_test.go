@@ -17,6 +17,7 @@ package bitcoin
 
 import (
 	"testing"
+	"github.com/pborman/uuid"
 )
 
 func TestGetBTCBlockHeight(t *testing.T) {
@@ -97,13 +98,19 @@ func TestBTCBlockScanner_scanning(t *testing.T) {
 	accountID := "W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ"
 	address := "mpkUFiXonEZriywHUhig6PTDQXKzT6S5in"
 
+	wallet, err := GetWallet(accountID)
+	if err != nil {
+		t.Errorf("BTCBlockScanner_scanning failed unexpected error: %v\n", err)
+		return
+	}
+
 	bs := NewBTCBlockScanner()
 
 	bs.DropRechargeRecords(accountID)
 
 	SaveLocalNewBlock(1355030, "00000000000000125b86abb80b1f94af13a5d9b07340076092eda92dade27686")
 
-	bs.AddAddress(address, accountID)
+	bs.AddAddress(address, wallet.ToOpenWallet())
 
 	bs.scanBlock()
 }
@@ -117,13 +124,19 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 	accountID := "W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ"
 	address := "mpkUFiXonEZriywHUhig6PTDQXKzT6S5in"
 
+	wallet, err := GetWallet(accountID)
+	if err != nil {
+		t.Errorf("BTCBlockScanner_Run failed unexpected error: %v\n", err)
+		return
+	}
+
 	bs := NewBTCBlockScanner()
 
 	bs.DropRechargeRecords(accountID)
 
 	SaveLocalNewBlock(1355359, "00000000000000125b86abb80b1f94af13a5d9b07340076092eda92dade27686")
 
-	bs.AddAddress(address, accountID)
+	bs.AddAddress(address, wallet.ToOpenWallet())
 
 	bs.Run()
 
@@ -132,14 +145,14 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 }
 
 func TestWallet_GetRecharges(t *testing.T) {
-	accountID := "W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ"
-	wallet, err := GetWalletInfo(accountID)
+	accountID := "WFvvr5q83WxWp1neUMiTaNuH7ZbaxJFpWu"
+	wallet, err := GetWallet(accountID)
 	if err != nil {
 		t.Errorf("GetRecharges failed unexpected error: %v\n", err)
 		return
 	}
 
-	recharges, err := wallet.GetRecharges()
+	recharges, err := wallet.ToOpenWallet().GetRecharges()
 	if err != nil {
 		t.Errorf("GetRecharges failed unexpected error: %v\n", err)
 		return
@@ -172,4 +185,12 @@ func TestGetUnscanRecords(t *testing.T) {
 func TestBTCBlockScanner_RescanFailedRecord(t *testing.T) {
 	bs := NewBTCBlockScanner()
 	bs.RescanFailedRecord()
+}
+
+func TestFullAddress (t *testing.T) {
+
+	dic := make(map[string]string)
+	for i := 0;i<20000000;i++ {
+		dic[uuid.NewUUID().String()] = uuid.NewUUID().String()
+	}
 }
