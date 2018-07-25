@@ -13,30 +13,32 @@
  * GNU Lesser General Public License for more details.
  */
 
- package walletnode
+package walletnode
 
- import (
+import (
 	"context"
-	"docker.io/go-docker"
-	// "errors"
 	// "docker.io/go-docker/api"
 	"docker.io/go-docker/api/types"
 	"fmt"
 )
 
 func (w *NodeManagerStruct) RemoveNodeFlow(symbol string) error {
+
+	if err := loadConfig(symbol); err != nil {
+		return err
+	}
+
 	// Init docker client
-	c, err := docker.NewEnvClient()
+	c, err := _GetClient()
 	if err != nil {
-		return (err)
+		return err
 	}
 	// Action within client
 	cName, err := _GetCName(symbol) // container name
 	if err != nil {
 		return err
 	}
-	ctx := context.Background() // nil
-	err = c.ContainerRemove(ctx, cName, types.ContainerRemoveOptions{})
+	err = c.ContainerRemove(context.Background(), cName, types.ContainerRemoveOptions{})
 	if err == nil {
 		fmt.Printf("%s walletnode remove in success!\n", symbol)
 	}
