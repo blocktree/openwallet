@@ -137,29 +137,29 @@ func init() {
 		"btc": &FullnodeContainerConfig{
 			CMD: [2][]string{{"/exec/bitcoin/bin/bitcoind", "-datadir=/data/", "-conf=/exec/bitcoin.conf"},
 				{"/exec/bitcoin/bin/bitcoind", "-datadir=/data/testdata/", "-conf=/exec/bitcoin-test.conf"}},
-			PORT:    [][2]string{{"18332/tcp", "28332"}},
+			PORT:    [][2]string{{"18332/tcp", "10001"}},
 			APIPORT: string("18332/tcp"), // Same within PORT
 			IMAGE:   string("openwallet/btc:0.15.1"),
 		},
 		"bch": &FullnodeContainerConfig{
 			CMD: [2][]string{{"/exec/bitcoin/bin/bitcoind", "-datadir=/data/", "-conf=/data/bitcoin.conf"},
 				{}},
-			PORT:    [][2]string{{"22/tcp", "10222"}, {"80/tcp", "10280"}},
-			APIPORT: string("80/tcp"),
+			PORT:    [][2]string{{"18332/tcp", "10011"}},
+			APIPORT: string("18332/tcp"),
 			IMAGE:   string("openwallet/bch:latest"),
 		},
 		"eth": &FullnodeContainerConfig{
 			CMD: [2][]string{{"/exec/bitcoin/bin/bitcoind", "-datadir=/data/", "-conf=/data/bitcoin.conf"},
 				{}},
-			PORT:    [][2]string{{"22/tcp", "10322"}, {"80/tcp", "10380"}},
-			APIPORT: string("80/tcp"),
+			PORT:    [][2]string{{"18332/tcp", "10021"}},
+			APIPORT: string("18332/tcp"),
 			IMAGE:   string("openwallet/eth:latest"),
 		},
 		"eos": &FullnodeContainerConfig{
 			CMD: [2][]string{{"/exec/bitcoin/bin/bitcoind", "-datadir=/data/", "-conf=/data/bitcoin.conf"},
 				{}},
-			PORT:    [][2]string{{"22/tcp", "10422"}, {"80/tcp", "10480"}},
-			APIPORT: string("80/tcp"),
+			PORT:    [][2]string{{"3000/tcp", "10400"}, {"8888/tcp", "10480"}},
+			APIPORT: string("3000/tcp"),
 			IMAGE:   string("openwallet/eos:latest"),
 		},
 	}
@@ -179,8 +179,8 @@ func _GetCName(symbol string) (string, error) {
 
 	// Within testnet, use "<Symbol>_testnet" as container name
 	if isTestNet == "true" {
-		return "e" + s.ToLower(symbol) + "_testnet", nil
+		return s.ToLower(symbol) + "_testnet", nil
 	} else {
-		return "e" + s.ToLower(symbol), nil
+		return s.ToLower(symbol), nil
 	}
 }

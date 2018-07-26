@@ -177,13 +177,7 @@ func _CheckAdnCreateContainer(symbol string) error {
 		if err = c.ContainerStart(context.Background(), "temp", types.ContainerStartOptions{}); err != nil {
 			log.Println(err)
 		}
-		// Stop
-		d := time.Duration(3000)
-		if err = c.ContainerStop(context.Background(), "temp", &d); err != nil {
-			log.Println(err)
-		}
-		// Remove
-		if err = c.ContainerRemove(context.Background(), "temp", types.ContainerRemoveOptions{}); err != nil {
+		if err = c.ContainerRemove(context.Background(), "temp", types.ContainerRemoveOptions{Force: true}); err != nil {
 			log.Println(err)
 		}
 	}
@@ -197,16 +191,16 @@ func _CheckAdnCreateContainer(symbol string) error {
 	portBindings := map[nat.Port][]nat.PortBinding{}
 	// var exposedPorts map[nat.Port]struct{}
 	exposedPorts := map[nat.Port]struct{}{}
-	apiPort := string("")
+	apiPort := ""
 	for _, v := range ctn_config.PORT {
-		// portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{HostPort: v[1]}}
-		portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{}}
+		portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{HostPort: v[1]}}
 		exposedPorts[nat.Port(v[0])] = struct{}{}
 		if v[0] == ctn_config.APIPORT {
 			apiPort = v[1]
 		}
 	}
-	var Cmd []string
+
+	Cmd := []string{}
 	if isTestNet == "true" {
 		Cmd = ctn_config.CMD[1]
 	} else {
@@ -295,6 +289,23 @@ func _CheckAdnCreateContainer(symbol string) error {
 		fmt.Println(ctn)
 		fmt.Printf("%s walletnode created in success!\n", symbol)
 	}
+
+	// // Get exposed port
+	// apiPort := string("")
+	// if res, err := c.ContainerInspect(context.Background(), cName); err != nil {
+	// 	log.Println(err)
+	// 	return err
+	// } else {
+	// 	fmt.Println(res.NetworkSettings)
+	// 	fmt.Println(res.NetworkSettings.Ports)
+	// 	if v, ok := res.NetworkSettings.Ports["18332/tcp"]; ok {
+	// 		apiPort = v[0].HostPort
+	// 		fmt.Println("apiPort = ", apiPort)
+	// 	} else {
+	// 		log.Println("No apiPort loaded!")
+	// 		return errors.New("No apiPort loaded!")
+	// 	}
+	// }
 
 	// Get info from docker inspect for fullnode API
 	apiURL = fmt.Sprintf("http://%s:%s", serverAddr, apiPort)
