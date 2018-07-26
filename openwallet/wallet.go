@@ -100,20 +100,94 @@ func (w *Wallet) GetAssetsAccounts(symbol string) []*AssetsAccount {
 	return nil
 }
 
+//GetAddress 通过地址字符串获取地址对象
+func (w *Wallet) GetAddress(address string) *Address {
+	db, err := w.OpenDB()
+	if err != nil {
+		return nil
+	}
+	defer db.Close()
+
+	var obj Address
+	db.One("Address", address, &obj)
+	return &obj
+}
+
+
+//GetAddressesByAccountID 通过账户ID获取地址列表
+func (w *Wallet) GetAddressesByAccount(accountID string) []*Address {
+	db, err := w.OpenDB()
+	if err != nil {
+		return nil
+	}
+	defer db.Close()
+
+	var obj []*Address
+	db.Find("AccountID", accountID, &obj)
+	return obj
+}
+
 //SingleAssetsAccount 把钱包作为一个单资产账户来使用
 func (w *Wallet) SingleAssetsAccount(symbol string) *AssetsAccount {
 	a := AssetsAccount{
-		WalletID: w.WalletID,
-		Alias:w.Alias,
-		AccountID:w.WalletID,
-		Index: 0,
-		HDPath: "",
-		Required:0,
-		PublicKeys:[]string{w.RootPub},
-		Symbol:symbol,
+		WalletID:   w.WalletID,
+		Alias:      w.Alias,
+		AccountID:  w.WalletID,
+		Index:      0,
+		HDPath:     "",
+		Required:   0,
+		PublicKeys: []string{w.RootPub},
+		Symbol:     symbol,
 	}
 
 	return &a
+}
+
+//SaveRecharge 保存交易记录
+func (w *Wallet) SaveRecharge(tx *Recharge) error {
+	db, err := w.OpenDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	return db.Save(tx)
+}
+
+//DropRecharge 删除充值记录表
+func (w *Wallet) DropRecharge() error {
+	db, err := w.OpenDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	return db.Drop("Recharge")
+	//return db.Save(tx)
+}
+
+//GetRecharges 获取钱包相关的充值记录
+func (w *Wallet) GetRecharges(height ...uint64) ([]*Recharge, error) {
+
+	var (
+		list []*Recharge
+	)
+
+	db, err := w.OpenDB()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	if len(height) > 0 {
+		err = db.Find("BlockHeight", height[0], &list)
+	} else {
+		err = db.All(&list)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
 }
 
 /*

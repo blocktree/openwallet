@@ -43,7 +43,30 @@ type Transaction struct {
 
 	*/
 
-	TxID string `json:"txid"`
+	TxID        string `json:"txid"`
+	From        string `json:"from"`
+	To          string `json:"to"`
+	Amount      string `json:"amount"`
+	Confirm     int64  `json:"confirm"`
+	BlockHash   string `json:"blockHash"`
+	BlockHeight uint64 `json:"blockHeight"`
+	IsMemo      bool   `json:"isMemo"`
+	Memo        string `json:"memo"`
+}
+
+type Recharge struct {
+	Sid         string `json:"sid"  storm:"id"`
+	TxID        string `json:"txid"`
+	AccountID   string `json:"accountID"`
+	Address     string `json:"address"`
+	Symbol      string `json:"symbol"`
+	Amount      string `json:"amount"`
+	Confirm     int64  `json:"confirm"`
+	BlockHash   string `json:"blockHash"`
+	BlockHeight uint64 `json:"blockHeight" storm:"index"`
+	IsMemo      bool   `json:"isMemo"`
+	Memo        string `json:"memo"`
+	Index       uint64 `json:"index"`
 }
 
 type Withdraw struct {

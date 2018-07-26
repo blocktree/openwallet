@@ -16,12 +16,15 @@
 package bitcoin
 
 import (
+	"fmt"
 	"github.com/asdine/storm"
+	"github.com/blocktree/OpenWallet/common/file"
+	"github.com/blocktree/OpenWallet/crypto"
 	"github.com/blocktree/OpenWallet/keystore"
+	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/tidwall/gjson"
 	"path/filepath"
-	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 //Wallet 钱包模型
@@ -56,20 +59,79 @@ func (w *Wallet) HDKey(password string) (*keystore.HDKey, error) {
 //openDB 打开钱包数据库
 func (w *Wallet) OpenDB() (*storm.DB, error) {
 	file.MkdirAll(dbPath)
-	return storm.Open( w.DBFile())
+	return storm.Open(w.DBFile())
 
 }
 
-
 //DBFile 数据库文件
-func (w *Wallet)DBFile() string {
+func (w *Wallet) DBFile() string {
 	return filepath.Join(dbPath, w.FileName()+".db")
 }
 
 //FileName 该钱包定义的文件名规则
-func (w *Wallet)FileName() string {
-	return w.Alias+"-"+w.WalletID
+func (w *Wallet) FileName() string {
+	return w.Alias + "-" + w.WalletID
 }
+
+//ToOpenWallet 转为openwallet.Wallet
+func (w *Wallet) ToOpenWallet() *openwallet.Wallet {
+
+	wallet := openwallet.Wallet{}
+	wallet.WalletID = w.WalletID
+	wallet.Alias = w.Alias
+	wallet.DBFile = w.DBFile()
+	wallet.KeyFile = w.KeyFile
+
+	return &wallet
+}
+
+//
+////SaveRecharge 保存交易记录
+//func (w *Wallet) SaveRecharge(tx *openwallet.Recharge) error {
+//	db, err := w.OpenDB()
+//	if err != nil {
+//		return err
+//	}
+//	defer db.Close()
+//	return db.Save(tx)
+//}
+//
+////DropRecharge 删除充值记录表
+//func (w *Wallet) DropRecharge() error {
+//	db, err := w.OpenDB()
+//	if err != nil {
+//		return err
+//	}
+//	defer db.Close()
+//	return db.Drop("Recharge")
+//	//return db.Save(tx)
+//}
+//
+////GetRecharges 获取钱包相关的充值记录
+//func (w *Wallet) GetRecharges(height ...uint64) ([]*openwallet.Recharge, error) {
+//
+//	var (
+//		list []*openwallet.Recharge
+//	)
+//
+//	db, err := w.OpenDB()
+//	if err != nil {
+//		return nil, err
+//	}
+//	defer db.Close()
+//
+//	if len(height) > 0 {
+//		err = db.Find("BlockHeight", height[0], &list)
+//	} else {
+//		err = db.All(&list)
+//	}
+//
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	return list, nil
+//}
 
 //BlockchainInfo 本地节点区块链信息
 type BlockchainInfo struct {
@@ -119,7 +181,7 @@ type Unspent struct {
 	TxID          string `json:"txid"`
 	Vout          uint64 `json:"vout"`
 	Address       string `json:"address"`
-	AccountID       string `json:"account" storm:"index"`
+	AccountID     string `json:"account" storm:"index"`
 	ScriptPubKey  string `json:"scriptPubKey"`
 	Amount        string `json:"amount"`
 	Confirmations uint64 `json:"confirmations"`
@@ -174,3 +236,138 @@ type User struct {
 	Name    string // this field will not be indexed
 	Age     int    `storm:"index"`
 }
+
+type Block struct {
+
+	/*
+
+		"hash": "000000000000000127454a8c91e74cf93ad76752cceb7eb3bcff0c398ba84b1f",
+		"confirmations": 2,
+		"strippedsize": 191875,
+		"size": 199561,
+		"weight": 775186,
+		"height": 1354760,
+		"version": 536870912,
+		"versionHex": "20000000",
+		"merkleroot": "48239e76f8b37d9c8824fef93d42ac3d7c433029c1e9fa23b6416dd0356f3e57",
+		"tx": ["c1e12febeb58aefb0b01c04360262138f4ee0faeb207276e79ea3866608ed84f"]
+		"time": 1532143012,
+		"mediantime": 1532140298,
+		"nonce": 3410287696,
+		"bits": "19499855",
+		"difficulty": 58358570.79038175,
+		"chainwork": "00000000000000000000000000000000000000000000006f68c43926cd6c2d1f",
+		"previousblockhash": "00000000000000292d142fcc1ddbd9dafd4518310009f152bdca2a66cc589f97",
+		"nextblockhash": "0000000000004a50ef5733ab333f718e6ef5c1995e2cfd5a7caa0875f118cd30"
+
+	*/
+
+	Hash              string
+	Confirmations     uint64
+	Merkleroot        string
+	tx                []string
+	Previousblockhash string
+	Height            uint64 `storm:"id"`
+	Version           uint64
+	Time              uint64
+	Fork              bool
+}
+
+func NewBlock(json *gjson.Result) *Block {
+	obj := &Block{}
+	//解析json
+	obj.Hash = gjson.Get(json.Raw, "hash").String()
+	obj.Confirmations = gjson.Get(json.Raw, "confirmations").Uint()
+	obj.Merkleroot = gjson.Get(json.Raw, "merkleroot").String()
+
+	txs := make([]string, 0)
+	for _, tx := range gjson.Get(json.Raw, "tx").Array() {
+		txs = append(txs, tx.String())
+	}
+
+	obj.tx = txs
+	obj.Previousblockhash = gjson.Get(json.Raw, "previousblockhash").String()
+	obj.Height = gjson.Get(json.Raw, "height").Uint()
+	obj.Version = gjson.Get(json.Raw, "version").Uint()
+	obj.Time = gjson.Get(json.Raw, "time").Uint()
+
+	return obj
+}
+
+//BlockHeader 区块链头
+func (b *Block) BlockHeader() *openwallet.BlockHeader {
+
+	obj := openwallet.BlockHeader{}
+	//解析json
+	obj.Hash = b.Hash
+	obj.Confirmations = b.Confirmations
+	obj.Merkleroot = b.Merkleroot
+	obj.Previousblockhash = b.Previousblockhash
+	obj.Height = b.Height
+	obj.Version = b.Version
+	obj.Time = b.Time
+	obj.Symbol = Symbol
+
+	return &obj
+}
+
+//UnscanRecords 扫描失败的区块及交易
+type UnscanRecord struct {
+	ID          string `storm:"id"` // primary key
+	BlockHeight uint64
+	TxID        string
+	Reason      string
+}
+
+func NewUnscanRecord(height uint64, txID, reason string) *UnscanRecord {
+	obj := UnscanRecord{}
+	obj.BlockHeight = height
+	obj.TxID = txID
+	obj.Reason = reason
+	obj.ID = common.Bytes2Hex(crypto.SHA256([]byte(fmt.Sprintf("%s_%d", height, txID))))
+	return &obj
+}
+
+//type Transaction struct {
+
+/*
+
+	{
+		"txid": "c1e12febeb58aefb0b01c04360262138f4ee0faeb207276e79ea3866608ed84f",
+		"hash": "c0bfbc4db1c6ed4356555c6f520df99640a42e39efa8939f4787d4c3d7aa2585",
+		"version": 1,
+		"size": 204,
+		"vsize": 177,
+		"locktime": 0,
+		"vin": [{
+			"coinbase": "0308ac1404a4a5525b081ffffe24dcd602000d2ff09fa498f09f988e204d722e204d6f2f",
+			"sequence": 0
+		}],
+		"vout": [{
+			"value": 0.00000000,
+			"n": 0,
+			"scriptPubKey": {
+				"asm": "OP_RETURN aa21a9edf9be7d36da3e5fea8130b031d254b9a6ff2dd471fbceb0f460d8fcca101d27ad",
+				"hex": "6a24aa21a9edf9be7d36da3e5fea8130b031d254b9a6ff2dd471fbceb0f460d8fcca101d27ad",
+				"type": "nulldata"
+			}
+		}, {
+			"value": 1.40257806,
+			"n": 1,
+			"scriptPubKey": {
+				"asm": "OP_DUP OP_HASH160 48b5c6986b7bc6390bd1cc416154d1874fe116fd OP_EQUALVERIFY OP_CHECKSIG",
+				"hex": "76a91448b5c6986b7bc6390bd1cc416154d1874fe116fd88ac",
+				"reqSigs": 1,
+				"type": "pubkeyhash",
+				"addresses": ["mn9QhsFiX2eEXtF6zrGn5N49iS8BHXFjBt"]
+			}
+		}],
+		"hex": "010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff240308ac1404a4a5525b081ffffe24dcd602000d2ff09fa498f09f988e204d722e204d6f2f00000000020000000000000000266a24aa21a9edf9be7d36da3e5fea8130b031d254b9a6ff2dd471fbceb0f460d8fcca101d27ad0e2a5c08000000001976a91448b5c6986b7bc6390bd1cc416154d1874fe116fd88ac0120000000000000000000000000000000000000000000000000000000000000000000000000",
+		"blockhash": "000000000000000127454a8c91e74cf93ad76752cceb7eb3bcff0c398ba84b1f",
+		"confirmations": 25,
+		"time": 1532143012,
+		"blocktime": 1532143012
+	}
+
+*/
+//}
