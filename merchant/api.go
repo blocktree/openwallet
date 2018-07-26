@@ -17,7 +17,6 @@ package merchant
 
 import (
 	"github.com/blocktree/OpenWallet/owtp"
-	"log"
 	"github.com/blocktree/OpenWallet/openwallet"
 )
 
@@ -39,7 +38,7 @@ func GetChargeAddressVersion(
 		params,
 		sync,
 		func(resp owtp.Response) {
-			log.Printf(" getChargeAddressVersion Response: %v", resp)
+			//log.Printf(" getChargeAddressVersion Response: %v", resp)
 			result := resp.JsonData()
 			if result.Exists() {
 				addressVersion := NewAddressVersion(result)

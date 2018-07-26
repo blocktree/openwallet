@@ -73,7 +73,6 @@ func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 		responseError(ctx, err)
 		return
 	}
-	defer db.Close()
 	//
 	////每次订阅都先清除旧订阅
 	//db.Drop("subscribe")
@@ -88,7 +87,8 @@ func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 		//log.Printf("s = %v\n", s)
 
 		//检查是否已有钱包
-		wallet, err = m.GetMerchantWalletByID(s.WalletID)
+		err = db.One("WalletID", s.WalletID, wallet)
+
 		if err != nil {
 			//添加订阅钱包
 			wallet = openwallet.NewWatchOnlyWallet(s.WalletID, s.Coin)
@@ -99,10 +99,13 @@ func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 		err = db.Save(account)
 		if err != nil {
 			responseError(ctx, err)
+			db.Close()
 			return
 		}
 
 	}
+
+	db.Close()
 
 	//重置订阅内容
 	m.resetSubscriptions(subscriptions)

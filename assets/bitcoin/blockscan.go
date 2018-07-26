@@ -30,39 +30,25 @@ import (
 	"time"
 )
 
-/*
-	步骤：
-	1.添加需要扫块的钱包，及传入初始高度，-1为本地高度。
-	2.获取已扫描的本地高度。
-	3.获取高度+1的区块hash，通过区块链hash获取区块链数据，获取mempool数据。
-	4.判断区块链的父区块hash是否与本地上一区块hash一致。
-	5.解析新区块链的交易单数组。
-	6.遍历交易单结构，检查每个output地址是否存在钱包的地址表中
-	7.检查地址是否合法，存在地址表，生成充值记录。
-	8.定时程推送充值记录到钱包的充值通道。先检查交易hash是否存在区块中。
-	9.接口返回确认，标记充值记录已确认。
-*/
-
 const (
-	//区块链数据集合
-	blockchainBucket = "blockchain"
-	//定时任务执行隔间
-	periodOfTask      = 5 * time.Second
-	maxExtractingSize = 20
+	blockchainBucket  = "blockchain"    //区块链数据集合
+	periodOfTask      = 5 * time.Second //定时任务执行隔间
+	maxExtractingSize = 20              //并发的扫描线程数
 )
 
+//BTCBlockScanner bitcoin的区块链扫描器
 type BTCBlockScanner struct {
-	addressInScanning map[string]*openwallet.Wallet //加入扫描的地址
-	walletInScanning   map[string]*openwallet.Wallet //加入扫描的钱包
-	CurrentBlockHeight uint64                        //当前区块高度
-	isScanning         bool
-	scanTask           *timer.TaskTimer
-	extractingCH       chan struct{}
-	mu                 sync.RWMutex
-	observers          map[interface{}]openwallet.BlockScanNotify
-	scanning           bool
+	addressInScanning  map[string]string                          //加入扫描的地址
+	walletInScanning   map[string]*openwallet.Wallet              //加入扫描的钱包
+	CurrentBlockHeight uint64                                     //当前区块高度
+	scanTask           *timer.TaskTimer                           //扫描定时器
+	extractingCH       chan struct{}                              //扫描工作令牌
+	mu                 sync.RWMutex                               //读写锁
+	observers          map[interface{}]openwallet.BlockScanNotify //观察者
+	scanning           bool                                       //是否扫描中
 }
 
+//ExtractResult 扫描完成的提取结果
 type ExtractResult struct {
 	Recharges   []*openwallet.Recharge
 	TxID        string
@@ -70,6 +56,7 @@ type ExtractResult struct {
 	Success     bool
 }
 
+//SaveResult 保存结果
 type SaveResult struct {
 	TxID        string
 	BlockHeight uint64
@@ -79,7 +66,7 @@ type SaveResult struct {
 //NewBTCBlockScanner 创建区块链扫描器
 func NewBTCBlockScanner() *BTCBlockScanner {
 	bs := BTCBlockScanner{}
-	bs.addressInScanning = make(map[string]*openwallet.Wallet)
+	bs.addressInScanning = make(map[string]string)
 	bs.walletInScanning = make(map[string]*openwallet.Wallet)
 	bs.observers = make(map[interface{}]openwallet.BlockScanNotify)
 	bs.extractingCH = make(chan struct{}, maxExtractingSize)
@@ -87,11 +74,41 @@ func NewBTCBlockScanner() *BTCBlockScanner {
 }
 
 //AddAddress 添加订阅地址
-func (bs *BTCBlockScanner) AddAddress(address string, wallet *openwallet.Wallet) {
+func (bs *BTCBlockScanner) AddAddress(address, accountID string, wallet *openwallet.Wallet) {
 	bs.mu.Lock()
-	bs.addressInScanning[address] = wallet
-	bs.walletInScanning[wallet.WalletID] = wallet
-	bs.mu.Unlock()
+	defer bs.mu.Unlock()
+	bs.addressInScanning[address] = accountID
+
+	if _, exist := bs.walletInScanning[accountID]; exist {
+		return
+	}
+	bs.walletInScanning[accountID] = wallet
+}
+
+//AddWallet 添加扫描钱包
+func (bs *BTCBlockScanner) AddWallet(accountID string, wallet *openwallet.Wallet) {
+	bs.mu.Lock()
+	defer bs.mu.Unlock()
+
+	if _, exist := bs.walletInScanning[accountID]; exist {
+		//已存在，不重复订阅
+		return
+	}
+
+	bs.walletInScanning[accountID] = wallet
+
+	//导入钱包该账户的所有地址
+	addrs := wallet.GetAddressesByAccount(accountID)
+	if addrs == nil {
+		return
+	}
+
+	log.Printf("block scanner load wallet [%s] existing addresses: %d \n", accountID, len(addrs))
+
+	for _, address := range addrs {
+		bs.addressInScanning[address.Address] = accountID
+	}
+
 }
 
 //AddObserver 添加观测者
@@ -107,6 +124,7 @@ func (bs *BTCBlockScanner) AddObserver(obj interface{}, handler openwallet.Block
 		return
 	}
 	if _, exist := bs.observers[obj]; exist {
+		//已存在，不重复订阅
 		return
 	}
 
@@ -119,6 +137,16 @@ func (bs *BTCBlockScanner) RemoveObserver(obj interface{}) {
 	defer bs.mu.Unlock()
 
 	delete(bs.observers, obj)
+}
+
+//Clear 清理订阅扫描的内容
+func (bs *BTCBlockScanner) Clear() {
+	bs.mu.Lock()
+	defer bs.mu.Unlock()
+	bs.walletInScanning = nil
+	bs.addressInScanning = nil
+	bs.addressInScanning = make(map[string]string)
+	bs.walletInScanning = make(map[string]*openwallet.Wallet)
 }
 
 //SetRescanBlockHeight 重置区块链扫描高度
@@ -189,6 +217,7 @@ func (bs *BTCBlockScanner) scanBlock() {
 			break
 		}
 
+		//是否已到最新高度
 		if currentHeight == maxHeight {
 			log.Printf("block scanner has scanned full chain data. Current height: %d\n", maxHeight)
 			break
@@ -260,8 +289,8 @@ func (bs *BTCBlockScanner) scanBlock() {
 			SaveLocalNewBlock(currentHeight, currentHash)
 			SaveLocalBlock(block)
 
-			//通知新区块给观测者
-			bs.newBlockNotify(block)
+			//通知新区块给观测者，异步处理
+			go bs.newBlockNotify(block)
 		}
 	}
 
@@ -491,7 +520,7 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, txid string) E
 			addresses := output.Get("scriptPubKey.addresses").Array()
 			if len(addresses) > 0 {
 				addr := addresses[0].String()
-				wallet, ok := bs.addressInScanning[addr]
+				wallet, ok := bs.GetWalletByAddress(addr)
 				if ok {
 
 					a := wallet.GetAddress(addr)
@@ -539,7 +568,7 @@ func (bs *BTCBlockScanner) SaveRechargeToWalletDB(height uint64, list []*openwal
 	for _, r := range list {
 
 		//accountID := "W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ"
-		wallet, ok := bs.addressInScanning[r.Address]
+		wallet, ok := bs.GetWalletByAddress(r.Address)
 		if ok {
 
 			a := wallet.GetAddress(r.Address)
@@ -548,15 +577,6 @@ func (bs *BTCBlockScanner) SaveRechargeToWalletDB(height uint64, list []*openwal
 			}
 
 			r.AccountID = a.AccountID
-			//wallet, err := GetWallet(accountID)
-			//if err != nil {
-			//
-			//	//记录未扫区块
-			//	unscanRecord := NewUnscanRecord(height, "", err.Error())
-			//	bs.SaveUnscanRecord(unscanRecord)
-			//	log.Printf("block height: %d extract failed.\n", height)
-			//	return err
-			//}
 
 			err := wallet.SaveRecharge(r)
 			if err != nil {
@@ -660,6 +680,10 @@ func (bs *BTCBlockScanner) SaveUnscanRecord(record *UnscanRecord) error {
 		return errors.New("the unscan record to save is nil")
 	}
 
+	if record.BlockHeight == 0 {
+		return errors.New("unconfirmed transaction do not rescan")
+	}
+
 	//获取本地区块高度
 	db, err := storm.Open(filepath.Join(dbPath, blockchainFile))
 	if err != nil {
@@ -668,6 +692,18 @@ func (bs *BTCBlockScanner) SaveUnscanRecord(record *UnscanRecord) error {
 	defer db.Close()
 
 	return db.Save(record)
+}
+
+//GetWalletByAddress 获取地址对应的钱包
+func (bs *BTCBlockScanner) GetWalletByAddress(address string) (*openwallet.Wallet, bool) {
+	account, ok := bs.addressInScanning[address]
+	if ok {
+		wallet, ok := bs.walletInScanning[account]
+		return wallet, ok
+
+	} else {
+		return nil, false
+	}
 }
 
 //GetBlockHeight 获取区块链高度

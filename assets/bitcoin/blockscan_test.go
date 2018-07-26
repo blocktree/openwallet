@@ -110,7 +110,7 @@ func TestBTCBlockScanner_scanning(t *testing.T) {
 
 	SaveLocalNewBlock(1355030, "00000000000000125b86abb80b1f94af13a5d9b07340076092eda92dade27686")
 
-	bs.AddAddress(address, wallet.ToOpenWallet())
+	bs.AddAddress(address, accountID, wallet.ToOpenWallet())
 
 	bs.scanBlock()
 }
@@ -136,7 +136,7 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 
 	SaveLocalNewBlock(1355359, "00000000000000125b86abb80b1f94af13a5d9b07340076092eda92dade27686")
 
-	bs.AddAddress(address, wallet.ToOpenWallet())
+	bs.AddAddress(address, accountID, wallet.ToOpenWallet())
 
 	bs.Run()
 

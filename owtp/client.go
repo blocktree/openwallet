@@ -331,7 +331,9 @@ func (c *Client) readPump() {
 				//创建上下面指针，处理请求参数
 				ctx := Context{Req: p.Req, nonce: p.Nonce, inputs: p.Data, Method: p.Method}
 
-				//log.Printf("ctx: %v\n", ctx)
+				if Debug {
+					log.Printf("ctx: %v\n", ctx)
+				}
 
 				client.handler.ServeOWTP(client, &ctx)
 
@@ -351,7 +353,9 @@ func (c *Client) readPump() {
 
 				ctx := Context{Req: p.Req, nonce: p.Nonce, inputs: nil, Method: p.Method, Resp: resp}
 
-				//log.Printf("ctx: %v\n", ctx)
+				if Debug {
+					log.Printf("ctx: %v\n", ctx)
+				}
 
 				client.handler.ServeOWTP(client, &ctx)
 

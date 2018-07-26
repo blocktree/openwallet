@@ -45,7 +45,7 @@ type MerchantAssets interface {
 	GetMerchantAddressList(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, offset uint64, limit uint64) ([]*openwallet.Address, error)
 
 	//AddMerchantObserverForBlockScan 添加区块链观察者，当扫描出新区块时进行通知
-	AddMerchantObserverForBlockScan(obj interface{}, f openwallet.BlockScanNotify) error
+	AddMerchantObserverForBlockScan(obj interface{}, wallets *openwallet.Wallet, f openwallet.BlockScanNotify) error
 
 	//RemoveMerchantObserverForBlockScan 移除区块链扫描的观测者
 	RemoveMerchantObserverForBlockScan(obj interface{})

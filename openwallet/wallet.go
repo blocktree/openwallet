@@ -113,6 +113,20 @@ func (w *Wallet) GetAddress(address string) *Address {
 	return &obj
 }
 
+
+//GetAddressesByAccountID 通过账户ID获取地址列表
+func (w *Wallet) GetAddressesByAccount(accountID string) []*Address {
+	db, err := w.OpenDB()
+	if err != nil {
+		return nil
+	}
+	defer db.Close()
+
+	var obj []*Address
+	db.Find("AccountID", accountID, &obj)
+	return obj
+}
+
 //SingleAssetsAccount 把钱包作为一个单资产账户来使用
 func (w *Wallet) SingleAssetsAccount(symbol string) *AssetsAccount {
 	a := AssetsAccount{

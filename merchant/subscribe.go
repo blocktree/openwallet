@@ -84,15 +84,8 @@ func (m *MerchantNode) GetChargeAddressVersion() error {
 					defer innerdb.Close()
 					var oldVersion AddressVersion
 					err = innerdb.One("Key", addressVer.Key, &oldVersion)
-					//if err != nil {
-					//	log.Printf("GetChargeAddressVersion unexpected error: %v", err)
-					//	return
-					//}
-					//log.Printf("old version = %d", oldVersion.Version)
 
 					if addressVer.Version > oldVersion.Version || err != nil {
-
-						//TODO:加入到订阅地址通道
 						m.getAddressesCh <- *addressVer
 
 						//log.Printf("new version = %v", *addressVer)
@@ -204,7 +197,7 @@ func (m *MerchantNode) HandleTimerTask(name string, handler func(), period time.
 		return
 	}
 
-	if  m.TaskTimers == nil {
+	if m.TaskTimers == nil {
 		m.TaskTimers = make(map[string]*timer.TaskTimer)
 	}
 
@@ -244,16 +237,16 @@ func (m *MerchantNode) updateSubscribeAddress() {
 		return
 	}
 
-	log.Printf("Update Subscribe Address...\n")
+	//log.Printf("Update Subscribe Address...\n")
 	//获取订阅地址的最新版本
 	err = m.GetChargeAddressVersion()
 	if err != nil {
-		log.Printf("GetChargeAddressVersion unexpected error: %v", err)
+		//log.Printf("GetChargeAddressVersion unexpected error: %v", err)
 	}
 }
 
 //SubmitNewRecharges 提交新的充值单
-func (m *MerchantNode) SubmitNewRecharges() error {
+func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 
 	var (
 		err error
@@ -282,14 +275,16 @@ func (m *MerchantNode) SubmitNewRecharges() error {
 
 			if len(recharges) > 0 {
 
-				params := map[string]interface{} {
-					"coin": s.Coin,
-					"walletID": s.WalletID,
+				params := map[string]interface{}{
+					"coin":      s.Coin,
+					"walletID":  s.WalletID,
 					"recharges": recharges,
 				}
 
+				//更新确认数
 				for _, r := range recharges {
 					log.Printf("Submit Recharges: %v", *r)
+					r.Confirm = int64(blockHeight - r.BlockHeight)
 				}
 
 				//提交充值记录
@@ -340,9 +335,9 @@ func (m *MerchantNode) SubmitNewRecharges() error {
 
 //blockScanNotify 区块扫描结果通知
 func (m *MerchantNode) blockScanNotify(header *openwallet.BlockHeader) {
-	log.Printf("new block: %v", *header)
+	//log.Printf("new block: %v", *header)
 	//推送新的充值记录
-	err := m.SubmitNewRecharges()
+	err := m.SubmitNewRecharges(header.Height)
 	if err != nil {
 		log.Printf("SubmitNewRecharges unexpected error: %v", err)
 	}
