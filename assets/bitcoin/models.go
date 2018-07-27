@@ -324,7 +324,7 @@ func NewUnscanRecord(height uint64, txID, reason string) *UnscanRecord {
 	obj.BlockHeight = height
 	obj.TxID = txID
 	obj.Reason = reason
-	obj.ID = common.Bytes2Hex(crypto.SHA256([]byte(fmt.Sprintf("%s_%d", height, txID))))
+	obj.ID = common.Bytes2Hex(crypto.SHA256([]byte(fmt.Sprintf("%d_%s", height, txID))))
 	return &obj
 }
 
