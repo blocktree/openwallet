@@ -32,9 +32,9 @@ func TestGetBTCBlockHeight(t *testing.T) {
 
 func TestBTCBlockScanner_GetCurrentBlockHeight(t *testing.T) {
 	bs := NewBTCBlockScanner()
-	height, hash, _ := bs.GetCurrentBlockHeight()
-	t.Logf("GetCurrentBlockHeight height = %d \n", height)
-	t.Logf("GetCurrentBlockHeight hash = %v \n", hash)
+	header, _ := bs.GetCurrentBlockHeader()
+	t.Logf("GetCurrentBlockHeight height = %d \n", header.Height)
+	t.Logf("GetCurrentBlockHeight hash = %v \n", header.Hash)
 }
 
 func TestGetBlockHeight(t *testing.T) {
@@ -50,10 +50,10 @@ func TestGetLocalNewBlock(t *testing.T) {
 
 func TestSaveLocalBlockHeight(t *testing.T) {
 	bs := NewBTCBlockScanner()
-	height, hash, _ := bs.GetCurrentBlockHeight()
-	t.Logf("SaveLocalBlockHeight height = %d \n", height)
-	t.Logf("GetLocalBlockHeight hash = %v \n", hash)
-	SaveLocalNewBlock(height, hash)
+	header, _ := bs.GetCurrentBlockHeader()
+	t.Logf("SaveLocalBlockHeight height = %d \n", header.Height)
+	t.Logf("GetLocalBlockHeight hash = %v \n", header.Hash)
+	SaveLocalNewBlock(header.Height, header.Hash)
 }
 
 func TestGetBlockHash(t *testing.T) {

@@ -30,14 +30,14 @@ import (
 
 func init() {
 
-	serverAPI = "http://192.168.2.192:10000"
+	serverAPI = "http://192.168.2.194:10001"
 	rpcUser = "wallet"
 	rpcPassword = "walletPassword2017"
 	token := basicAuth(rpcUser, rpcPassword)
 	client = &Client{
 		BaseURL:     serverAPI,
 		AccessToken: token,
-		Debug:       false,
+		Debug:       true,
 	}
 }
 
@@ -196,7 +196,7 @@ func TestUnlockWallet(t *testing.T) {
 }
 
 func TestCreateNewWallet(t *testing.T) {
-	_, _, err := CreateNewWallet("Rocky", "1234qwer")
+	_, _, err := CreateNewWallet("ZBG", "1234qwer")
 	if err != nil {
 		t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
 		return
