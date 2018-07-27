@@ -135,7 +135,7 @@ func (m *MerchantNode) resetSubscriptions(news []*Subscription) {
 		}
 
 		//加入到区块链观测者表单
-		am.AddMerchantObserverForBlockScan(m, wallet, m.blockScanNotify)
+		am.AddMerchantObserverForBlockScan(m, wallet)
 	}
 }
 

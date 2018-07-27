@@ -334,7 +334,7 @@ func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 }
 
 //blockScanNotify 区块扫描结果通知
-func (m *MerchantNode) blockScanNotify(header *openwallet.BlockHeader) {
+func (m *MerchantNode) BlockScanNotify(header *openwallet.BlockHeader) {
 	//log.Printf("new block: %v", *header)
 	//推送新的充值记录
 	err := m.SubmitNewRecharges(header.Height)

@@ -38,14 +38,14 @@ const (
 
 //BTCBlockScanner bitcoin的区块链扫描器
 type BTCBlockScanner struct {
-	addressInScanning  map[string]string                          //加入扫描的地址
-	walletInScanning   map[string]*openwallet.Wallet              //加入扫描的钱包
-	CurrentBlockHeight uint64                                     //当前区块高度
-	scanTask           *timer.TaskTimer                           //扫描定时器
-	extractingCH       chan struct{}                              //扫描工作令牌
-	mu                 sync.RWMutex                               //读写锁
-	observers          map[interface{}]openwallet.BlockScanNotify //观察者
-	scanning           bool                                       //是否扫描中
+	addressInScanning  map[string]string                               //加入扫描的地址
+	walletInScanning   map[string]*openwallet.Wallet                   //加入扫描的钱包
+	CurrentBlockHeight uint64                                          //当前区块高度
+	scanTask           *timer.TaskTimer                                //扫描定时器
+	extractingCH       chan struct{}                                   //扫描工作令牌
+	mu                 sync.RWMutex                                    //读写锁
+	observers          map[openwallet.BlockScanNotificationObject]bool //观察者
+	scanning           bool                                            //是否扫描中
 }
 
 //ExtractResult 扫描完成的提取结果
@@ -68,7 +68,7 @@ func NewBTCBlockScanner() *BTCBlockScanner {
 	bs := BTCBlockScanner{}
 	bs.addressInScanning = make(map[string]string)
 	bs.walletInScanning = make(map[string]*openwallet.Wallet)
-	bs.observers = make(map[interface{}]openwallet.BlockScanNotify)
+	bs.observers = make(map[openwallet.BlockScanNotificationObject]bool)
 	bs.extractingCH = make(chan struct{}, maxExtractingSize)
 	return &bs
 }
@@ -111,8 +111,21 @@ func (bs *BTCBlockScanner) AddWallet(accountID string, wallet *openwallet.Wallet
 
 }
 
+//IsExistAddress 指定地址是否已登记扫描
+func (bs *BTCBlockScanner) IsExistAddress(address string) bool {
+	_, exist := bs.addressInScanning[address]
+	return exist
+}
+
+//IsExistWallet 指定账户的钱包是否已登记扫描
+func (bs *BTCBlockScanner) IsExistWallet(accountID string) bool {
+
+	_, exist := bs.walletInScanning[accountID]
+	return exist
+}
+
 //AddObserver 添加观测者
-func (bs *BTCBlockScanner) AddObserver(obj interface{}, handler openwallet.BlockScanNotify) {
+func (bs *BTCBlockScanner) AddObserver(obj openwallet.BlockScanNotificationObject) {
 	bs.mu.Lock()
 
 	defer bs.mu.Unlock()
@@ -120,19 +133,16 @@ func (bs *BTCBlockScanner) AddObserver(obj interface{}, handler openwallet.Block
 	if obj == nil {
 		return
 	}
-	if handler == nil {
-		return
-	}
 	if _, exist := bs.observers[obj]; exist {
 		//已存在，不重复订阅
 		return
 	}
 
-	bs.observers[obj] = handler
+	bs.observers[obj] = true
 }
 
 //RemoveObserver 移除观测者
-func (bs *BTCBlockScanner) RemoveObserver(obj interface{}) {
+func (bs *BTCBlockScanner) RemoveObserver(obj openwallet.BlockScanNotificationObject) {
 	bs.mu.Lock()
 	defer bs.mu.Unlock()
 
@@ -202,10 +212,13 @@ func (bs *BTCBlockScanner) Restart() {
 func (bs *BTCBlockScanner) scanBlock() {
 
 	//获取本地区块高度
-	currentHeight, currentHash, err := bs.GetCurrentBlockHeight()
+	blockHeader, err := bs.GetCurrentBlockHeader()
 	if err != nil {
 		log.Printf("block scanner can not get new block height; unexpected error: %v\n", err)
 	}
+
+	currentHeight := blockHeader.Height
+	currentHash := blockHeader.Hash
 
 	for {
 
@@ -302,6 +315,43 @@ func (bs *BTCBlockScanner) scanBlock() {
 
 }
 
+//ScanBlock 扫描指定高度区块
+func (bs *BTCBlockScanner) ScanBlock(height uint64) error {
+
+	log.Printf("block scanner scanning height: %d ...\n", height)
+
+	hash, err := GetBlockHash(height)
+	if err != nil {
+		//下一个高度找不到会报异常
+		log.Printf("block scanner can not get new block hash; unexpected error: %v\n", err)
+		return err
+	}
+
+	block, err := GetBlock(hash)
+	if err != nil {
+		log.Printf("block scanner can not get new block data; unexpected error: %v\n", err)
+
+		//记录未扫区块
+		unscanRecord := NewUnscanRecord(height, "", err.Error())
+		bs.SaveUnscanRecord(unscanRecord)
+		log.Printf("block height: %d extract failed.\n", height)
+		return err
+	}
+
+	err = bs.BatchExtractTransaction(block.Height, block.tx)
+	if err != nil {
+		log.Printf("block scanner can not extractRechargeRecords; unexpected error: %v\n", err)
+	}
+
+	//保存区块
+	SaveLocalBlock(block)
+
+	//通知新区块给观测者，异步处理
+	go bs.newBlockNotify(block)
+
+	return nil
+}
+
 //ScanTxMemPool 扫描交易内存池
 func (bs *BTCBlockScanner) ScanTxMemPool() {
 
@@ -380,8 +430,8 @@ func (bs *BTCBlockScanner) RescanFailedRecord() {
 
 //newBlockNotify 获得新区块后，通知给观测者
 func (bs *BTCBlockScanner) newBlockNotify(block *Block) {
-	for _, f := range bs.observers {
-		f(block.BlockHeader())
+	for o, _ := range bs.observers {
+		o.BlockScanNotify(block.BlockHeader())
 	}
 }
 
@@ -597,8 +647,8 @@ func (bs *BTCBlockScanner) SaveRechargeToWalletDB(height uint64, list []*openwal
 	return nil
 }
 
-//GetCurrentBlockHeight 获取当前区块高度
-func (bs *BTCBlockScanner) GetCurrentBlockHeight() (uint64, string, error) {
+//GetCurrentBlockHeader 获取当前区块高度
+func (bs *BTCBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, error) {
 
 	var (
 		blockHeight uint64 = 0
@@ -612,7 +662,8 @@ func (bs *BTCBlockScanner) GetCurrentBlockHeight() (uint64, string, error) {
 	if blockHeight == 0 {
 		blockHeight, err = GetBlockHeight()
 		if err != nil {
-			return 0, "", err
+
+			return nil, err
 		}
 
 		//就上一个区块链为当前区块
@@ -620,11 +671,11 @@ func (bs *BTCBlockScanner) GetCurrentBlockHeight() (uint64, string, error) {
 
 		hash, err = GetBlockHash(blockHeight)
 		if err != nil {
-			return 0, "", err
+			return nil, err
 		}
 	}
 
-	return blockHeight, hash, nil
+	return &openwallet.BlockHeader{Height: blockHeight, Hash: hash}, nil
 }
 
 //DropRechargeRecords 清楚钱包的全部充值记录
