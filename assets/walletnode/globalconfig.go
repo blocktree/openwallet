@@ -118,8 +118,8 @@ type FullnodeContainerPathConfig struct {
 }
 
 type FullnodeContainerConfig struct {
-	CMD     [2][]string // Commands to run fullnode wallet ex: {{"/bin/sh", "-c", "main"}, {"/bin/sh", "-c", "testnet"}}
-	PORT    [][2]string // Which ports need to be mapped, ex: {{hostport, innerport}, ...}
+	CMD     [2][]string // Commands to run fullnode wallet ex: {{"/bin/sh", "mainnet"}, {"/bin/sh", "testnet"}}
+	PORT    [][3]string // Which ports need to be mapped, ex: {{innerPort, mainNetPort, testNetPort}, ...}
 	APIPORT string      // Port of default fullnode API(within container), from PORT
 	IMAGE   string      // Image that container run from
 }
@@ -135,33 +135,44 @@ func init() {
 
 	FullnodeContainerConfigs = map[string]*FullnodeContainerConfig{
 		"btc": &FullnodeContainerConfig{
-			CMD: [2][]string{{"/exec/bitcoin/bin/bitcoind", "-datadir=/data/", "-conf=/exec/bitcoin.conf"},
-				{"/exec/bitcoin/bin/bitcoind", "-datadir=/data/testdata/", "-conf=/exec/bitcoin-test.conf"}},
-			PORT:    [][2]string{{"18332/tcp", "10001"}},
+			CMD: [2][]string{{"/usr/bin/bitcoind", "-datadir=/openwallet/data", "-conf=/etc/bitcoin.conf"},
+				{"/usr/bin/bitcoind", "-datadir=/openwallet/testdata", "-conf=/etc/bitcoin-test.conf"}},
+			PORT:    [][3]string{{"18332/tcp", "10001", "20001"}},
 			APIPORT: string("18332/tcp"), // Same within PORT
 			IMAGE:   string("openwallet/btc:0.15.1"),
 		},
 		"bch": &FullnodeContainerConfig{
-			CMD: [2][]string{{"/exec/bitcoin/bin/bitcoind", "-datadir=/data/", "-conf=/data/bitcoin.conf"},
-				{}},
-			PORT:    [][2]string{{"18332/tcp", "10011"}},
-			APIPORT: string("18332/tcp"),
-			IMAGE:   string("openwallet/bch:latest"),
+			CMD: [2][]string{{"/usr/bin/bitcoind", "-datadir=/openwallet/data", "-conf=/etc/bitcoin.conf"},
+				{"/usr/bin/bitcoind", "-datadir=/openwallet/testdata", "-conf=/etc/bitcoin-test.conf"}},
+			PORT:    [][3]string{{"18335/tcp", "10011", "20011"}},
+			APIPORT: string("18335/tcp"),
+			IMAGE:   string("openwallet/bch:0.17.1"),
 		},
 		"eth": &FullnodeContainerConfig{
-			// CMD: [2][]string{{"/bin/bash", "-c", "while sleep 1; do date; done"}, {}},
 			CMD: [2][]string{{"/usr/bin/parity", "--port=30307", "--datadir=/data", "--cache-size=4096", "--min-peers=25", "--max-peers=50", "--jsonrpc-interface=0.0.0.0", "--jsonrpc-port=18332"},
 				{"/usr/bin/parity", "--port=30307", "--datadir=/data", "--cache-size=4096", "--min-peers=25", "--max-peers=50", "--jsonrpc-interface=0.0.0.0", "--jsonrpc-port=18332"}},
-			PORT:    [][2]string{{"30307/tcp", "10021"}},
+			PORT:    [][3]string{{"30307/tcp", "10021", "20021"}},
 			APIPORT: string("30307/tcp"),
 			IMAGE:   string("openwallet/eth:1.10.3"),
 		},
 		"eos": &FullnodeContainerConfig{
-			CMD: [2][]string{{"/exec/bitcoin/bin/bitcoind", "-datadir=/data/", "-conf=/data/bitcoin.conf"},
-				{}},
-			PORT:    [][2]string{{"3000/tcp", "10031"}, {"8888/tcp", "10032"}},
+			CMD:     [2][]string{{"/bin/bash", "-c", "while sleep 1; do date; done"}, {}},
+			PORT:    [][3]string{{"3000/tcp", "10031", "20031"}, {"8888/tcp", "10032", "20032"}},
 			APIPORT: string("3000/tcp"),
 			IMAGE:   string("openwallet/eos:latest"),
+		},
+		"sc": &FullnodeContainerConfig{
+			CMD: [2][]string{{"/usr/bin/siad", "-M gctwrh", "--api-addr=0.0.0.0:9980", "--authenticate-api", "--disable-api-security"},
+				{"/usr/bin/siad", "-M gctwrh", "--api-addr=0.0.0.0:9980", "--authenticate-api", "--disable-api-security"}},
+			PORT:    [][3]string{{"9980/tcp", "10041", "20041"}, {"9981/tcp", "10042", "20042"}},
+			APIPORT: string("9980/tcp"),
+			IMAGE:   string("openwallet/sc:1.3.3"),
+		},
+		"iota": &FullnodeContainerConfig{
+			CMD:     [2][]string{{"/bin/bash", "-c", "while sleep 1; do date; done"}, {}},
+			PORT:    [][3]string{{"18265/tcp", "10051", "20051"}},
+			APIPORT: string("18265/tcp"),
+			IMAGE:   string("openwallet/iota:latest"),
 		},
 	}
 	// FullnodeContainerPath = &FullnodeContainerPathConfig{

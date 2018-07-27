@@ -163,7 +163,7 @@ func _CheckAdnCreateContainer(symbol string) error {
 		context.Background(),
 		&container.Config{
 			Image: "ubuntu:latest",
-			Cmd:   []string{"/bin/sh", "-c", fmt.Sprintf("mkdir -p /openwallet/data/%s", symbol)}},
+			Cmd:   []string{"/bin/sh", "-c", fmt.Sprintf("mkdir -p /openwallet/data/%s/data /openwallet/data/%s/testdata", symbol, symbol)}},
 		&container.HostConfig{
 			Mounts: []mount.Mount{
 				{Type: mount.TypeBind, Source: "/openwallet", Target: "/openwallet", ReadOnly: false, BindOptions: &mount.BindOptions{Propagation: "private"}},
@@ -193,10 +193,18 @@ func _CheckAdnCreateContainer(symbol string) error {
 	exposedPorts := map[nat.Port]struct{}{}
 	apiPort := ""
 	for _, v := range ctn_config.PORT {
-		portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{HostPort: v[1]}}
-		exposedPorts[nat.Port(v[0])] = struct{}{}
-		if v[0] == ctn_config.APIPORT {
-			apiPort = v[1]
+		if isTestNet == "true" {
+			portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{HostPort: v[2]}}
+			exposedPorts[nat.Port(v[0])] = struct{}{}
+			if v[0] == ctn_config.APIPORT {
+				apiPort = v[2]
+			}
+		} else {
+			portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{HostPort: v[1]}}
+			exposedPorts[nat.Port(v[0])] = struct{}{}
+			if v[0] == ctn_config.APIPORT {
+				apiPort = v[1]
+			}
 		}
 	}
 
@@ -255,8 +263,8 @@ func _CheckAdnCreateContainer(symbol string) error {
 			// 	BindOptions: &mount.BindOptions{Propagation: "private"}},
 			{
 				Type:        mount.TypeBind,
-				Source:      "/openwallet/data/" + s.ToLower(symbol),
-				Target:      "/data",
+				Source:      fmt.Sprintf("/openwallet/data/%s", s.ToLower(symbol)),
+				Target:      "/openwallet",
 				ReadOnly:    false,
 				BindOptions: &mount.BindOptions{Propagation: "private"}},
 		},
