@@ -15,6 +15,7 @@ import (
 	"github.com/blocktree/OpenWallet/console"
 	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/common"
+	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 const (
@@ -179,9 +180,21 @@ func transfer(keys map[string]string, dst string, fee, gas_limit, storage_limit,
 	return string(inj), string(pre)
 }
 
+//CreateNewWallet 创建钱包
 func CreateNewWallet(name, pw string) error {
 
-	return nil
+	walletID := openwallet.NewWalletID()
+
+	wallet := openwallet.NewWatchOnlyWallet(walletID.String(), Symbol)
+	wallet.Alias = name
+	//wallet.Password = pw		//为了安全密码最后不记录数据库好点。
+
+	db, err := wallet.OpenDB()
+	if err != nil {
+		return err
+	}
+	db.Close()
+	return db.Save(wallet)
 }
 
 //inputNumber 输入地址数量
