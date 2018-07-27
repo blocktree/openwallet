@@ -6,6 +6,7 @@ import (
 	bconfig "github.com/astaxie/beego/config"
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
+	"log"
 	"path/filepath"
 	s "strings"
 )
@@ -21,6 +22,7 @@ func loadConfig(symbol string) error {
 
 	c, err := bconfig.NewConfig("ini", absFile)
 	if err != nil {
+		log.Println(err)
 		return errors.New(fmt.Sprintf("Load Config Failed-> %s", err))
 	}
 
@@ -39,6 +41,5 @@ func loadConfig(symbol string) error {
 	} else {
 		walletDataPath = mainNetDataPath
 	}
-
 	return nil
 }
