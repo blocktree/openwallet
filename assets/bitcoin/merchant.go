@@ -176,7 +176,7 @@ func (w *WalletManager) SubmitTransactions(wallet *openwallet.Wallet, account *o
 }
 
 //AddMerchantObserverForBlockScan 添加区块链观察者，当扫描出新区块时进行通知
-func (w *WalletManager) AddMerchantObserverForBlockScan(obj interface{}, wallet *openwallet.Wallet, f openwallet.BlockScanNotify) error {
+func (w *WalletManager) AddMerchantObserverForBlockScan(obj openwallet.BlockScanNotificationObject, wallet *openwallet.Wallet) error {
 
 	//先加载是否有配置文件
 	err := loadConfig()
@@ -184,7 +184,7 @@ func (w *WalletManager) AddMerchantObserverForBlockScan(obj interface{}, wallet 
 		return errors.New("The wallet node is not config!")
 	}
 
-	w.blockscanner.AddObserver(obj, f)
+	w.blockscanner.AddObserver(obj)
 	w.blockscanner.AddWallet(wallet.WalletID, wallet)
 
 	w.blockscanner.Run()
@@ -192,7 +192,7 @@ func (w *WalletManager) AddMerchantObserverForBlockScan(obj interface{}, wallet 
 }
 
 //RemoveMerchantObserverForBlockScan 移除区块链扫描的观测者
-func (w *WalletManager) RemoveMerchantObserverForBlockScan(obj interface{}) {
+func (w *WalletManager) RemoveMerchantObserverForBlockScan(obj openwallet.BlockScanNotificationObject) {
 	w.blockscanner.RemoveObserver(obj)
 	if len(w.blockscanner.observers) == 0 {
 		w.blockscanner.Stop()
