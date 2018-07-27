@@ -22,6 +22,7 @@ import (
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common/file"
 	"path/filepath"
+	"strings"
 )
 
 /*
@@ -37,15 +38,31 @@ import (
 
 const (
 	//钥匙备份路径
-	keyDir = "./data/tezos/key/"
-	//地址导出路径
-	addressDir = "./data/tezos/address/"
-	//配置文件路径
-	configFilePath = "./conf/"
+	////keyDir = "./data/tezos/key/"
+	//////地址导出路径
+	////addressDir = "./data/tezos/address/"
+	////配置文件路径
+	//configFilePath = "./conf/"
 	//配置文件名
-	configFileName = "XTZ.conf"
+	//configFileName = "XTZ.conf"
 	//币种
 	Symbol = "XTZ"
+)
+
+var (
+	dataDir = filepath.Join("data", strings.ToLower(Symbol))
+	//钥匙备份路径
+	keyDir = filepath.Join(dataDir, "key")
+	//地址导出路径
+	addressDir = filepath.Join(dataDir, "address")
+	//配置文件路径
+	configFilePath = filepath.Join("conf")
+	//配置文件名
+	configFileName = Symbol + ".json"
+	//备份路径
+	backupDir = filepath.Join(dataDir, "backup")
+	//本地数据库文件路径
+	dbPath = filepath.Join(dataDir, "db")
 )
 
 //isExistConfigFile 检查配置文件是否存在
