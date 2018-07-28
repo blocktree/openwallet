@@ -149,8 +149,8 @@ func init() {
 			IMAGE:   string("openwallet/bch:0.17.1"),
 		},
 		"eth": &FullnodeContainerConfig{
-			CMD: [2][]string{{"/usr/bin/parity", "--port=30307", "--datadir=/data", "--cache-size=4096", "--min-peers=25", "--max-peers=50", "--jsonrpc-interface=0.0.0.0", "--jsonrpc-port=18332"},
-				{"/usr/bin/parity", "--port=30307", "--datadir=/data", "--cache-size=4096", "--min-peers=25", "--max-peers=50", "--jsonrpc-interface=0.0.0.0", "--jsonrpc-port=18332"}},
+			CMD: [2][]string{{"/usr/bin/parity", "--port=30307", "--datadir=/openwallet/data", "--cache-size=4096", "--min-peers=25", "--max-peers=50", "--jsonrpc-interface=0.0.0.0", "--jsonrpc-port=18332"},
+				{"/usr/bin/parity", "--port=30307", "--datadir=/openwallet/testdata", "--cache-size=4096", "--min-peers=25", "--max-peers=50", "--jsonrpc-interface=0.0.0.0", "--jsonrpc-port=18332"}},
 			PORT:    [][3]string{{"30307/tcp", "10021", "20021"}},
 			APIPORT: string("30307/tcp"),
 			IMAGE:   string("openwallet/eth:1.10.3"),

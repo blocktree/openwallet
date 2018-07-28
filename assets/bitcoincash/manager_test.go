@@ -30,15 +30,15 @@ import (
 
 var (
 	testUser    = "SimonLuo"
-	testPass    = "123123"
-	testDataDir = "/Users/simonluo/Library/Application Support/Bitcoin/testnet3/"
+	testPass    = "1234qwer"
+	testDataDir = "/openwallet/data/bch/testnet3/"
 	testKey     = "" // Generating within testing CreateNewWallet
 )
 
 func init() {
-	serverAPI = "http://127.0.0.1:18335"
-	rpcUser = "bitcoinrpc"
-	rpcPassword = "fea09cb0675c1007733e7c2805b6d7ff"
+	serverAPI = "http://192.168.2.194:20011"
+	rpcUser = "wallet"
+	rpcPassword = "walletPassword2017"
 	token := basicAuth(rpcUser, rpcPassword)
 	client = &Client{
 		BaseURL:     serverAPI,
