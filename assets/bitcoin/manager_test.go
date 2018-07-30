@@ -16,6 +16,7 @@
 package bitcoin
 
 import (
+	"fmt"
 	"github.com/blocktree/OpenWallet/keystore"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
@@ -25,12 +26,11 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-	"fmt"
 )
 
 func init() {
 
-	serverAPI = "http://192.168.2.194:10001"
+	serverAPI = "http://192.168.2.194:20001"
 	rpcUser = "wallet"
 	rpcPassword = "walletPassword2017"
 	token := basicAuth(rpcUser, rpcPassword)
@@ -524,17 +524,16 @@ func TestSendTransaction(t *testing.T) {
 
 }
 
-
 func TestSendBatchTransaction(t *testing.T) {
 
-	sends := []string {
+	sends := []string{
 		"mfYksPvrRS9Xb28uVUiQPJTnc92TBEP1P6",
 		//"mfXVvSn76et4GcNsyphRKxbVwZ6BaexYLG",
 		//"miqpBeCQnYraAV73TeTrCtDsFK5ebKU7P9",
 		//"n1t8xJxkHuXsnaCD4hxPZrJRGYi6yQ83uC",
 	}
 
-	amounts := []decimal.Decimal {
+	amounts := []decimal.Decimal{
 		decimal.NewFromFloat(0.3),
 		//decimal.NewFromFloat(0.03),
 		//decimal.NewFromFloat(0.04),
