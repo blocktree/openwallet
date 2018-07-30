@@ -27,6 +27,7 @@ import (
 	"path/filepath"
 	"strings"
 	"errors"
+	"github.com/ontio/ontology/account"
 )
 
 
@@ -161,9 +162,7 @@ func (w *WalletManager) ShowConfig() error {
 
 //创建钱包流程
 func (w *WalletManager) CreateWalletFlow() error {
-
 	var (
-		password string
 		name     string
 		err      error
 	)
@@ -177,12 +176,8 @@ func (w *WalletManager) CreateWalletFlow() error {
 	// 等待用户输入钱包名字
 	name, err = console.InputText("Enter wallet's name: ", true)
 
-	// 等待用户输入密码
-	password, err = console.InputPassword(true, 8)
-
 	// 随机生成密钥
-	return CreateNewWallet(name,  password)
-
+	return CreateNewWallet(name)
 }
 
 //创建地址流程
@@ -193,26 +188,55 @@ func (w *WalletManager) CreateAddressFlow() error {
 		return err
 	}
 
-	count := inputNumber()
+	//查询所有钱包信息
+	wallets, err := GetWallets()
+	if err != nil {
+		fmt.Printf("The node did not create any wallet!\n")
+		return err
+	}
+
+	//打印钱包
+	printWalletList(wallets)
+
+	fmt.Printf("[Please select a wallet account to create address] \n")
+
+	//选择钱包
+	num, err := console.InputNumber("Enter wallet number: ", true)
+	if err != nil {
+		return err
+	}
+
+	if int(num) >= len(wallets) {
+		return errors.New("Input number is out of index! ")
+	}
+
+	wallet := wallets[num]
+
+	// 输入地址数量
+	count, err := console.InputNumber("Enter the number of addresses you want: ", false)
+	if err != nil {
+		return err
+	}
+
 	if count > maxAddresNum {
 		return errors.New(fmt.Sprintf("The number of addresses can not exceed %d\n", maxAddresNum))
 	}
 
-
 	//输入密码
 	password, err := console.InputPassword(false, 8)
-	h := common.NewString(password).SHA256()
-
 
 	log.Printf("Start batch creation\n")
-	log.Printf("================================================\n")
+	log.Printf("-------------------------------------------------\n")
 
-	_, filePath, err := CreateBatchAddress(selectAccount.AcountID, h, uint(count))
+	filePath, _, err := CreateBatchAddress(wallet.WalletID, password, count)
+	if err != nil {
+		return err
+	}
 
-	log.Printf("================================================\n")
+	log.Printf("-------------------------------------------------\n")
 	log.Printf("All addresses have created, file path:%s\n", filePath)
 
-	return err
+	return nil
 }
 
 //汇总钱包流程
@@ -244,11 +268,12 @@ func (w *WalletManager) SummaryFollow() error {
 
 	//判断汇总地址是否存在
 	if len(sumAddress) == 0 {
-		return errors.New("Summary address is not set. Please set it in './conf/ADA.json' ")
+
+		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
 	}
 
 	//查询所有钱包信息
-	wallets, err := GetWalletInfo()
+	wallets, err := GetWallets()
 	if err != nil {
 		fmt.Printf("The node did not create any wallet!\n")
 		return err
@@ -261,45 +286,28 @@ func (w *WalletManager) SummaryFollow() error {
 		" For example: 0,1,2,3] \n")
 
 	// 等待用户输入钱包名字
-	nums, err := console.Stdin.PromptInput("Enter the No. group: ")
+	nums, err := console.InputText("Enter the No. group: ", true)
 	if err != nil {
-		//openwLogger.Log.Errorf("unexpect error: %v", err)
 		return err
 	}
 
-	if len(nums) == 0 {
-		return errors.New("Input can not be empty! ")
-	}
-
 	//分隔数组
-	array := strings.Split(nums, ",")
+	wallet_array := strings.Split(nums, ",")
 
-	for _, numIput := range array {
+	for _, numIput := range wallet_array {
 		if common.IsNumberString(numIput) {
 			numInt := common.NewString(numIput).Int()
 			if numInt < len(wallets) {
 				w := wallets[numInt]
 
-				fmt.Printf("Register summary wallet [%s]-[%s]\n", w.Name, w.WalletID)
+				fmt.Printf("Register summary wallet [%s]-[%s]\n", w.Alias, w.WalletID)
 				//输入钱包密码完成登记
 				password, err := console.InputPassword(false, 8)
 				if err != nil {
-					//openwLogger.Log.Errorf("unexpect error: %v", err)
 					return err
 				}
 
-				//配置钱包密码
-				h := common.NewString(password).SHA256()
-
-				// 创建一个地址用于验证密码是否可以,默认账户ID = 2147483648 = 0x80000000
-				testAccountid := fmt.Sprintf("%s@2147483648", w.WalletID)
-				_, err = CreateAddress(testAccountid, h)
-				if err != nil {
-					openwLogger.Log.Errorf("The password to unlock wallet is incorrect! ")
-					continue
-				}
-
-				w.Password = h
+				w.Password = password
 
 				AddWalletInSummary(w.WalletID, w)
 			} else {

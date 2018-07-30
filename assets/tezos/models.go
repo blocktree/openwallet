@@ -26,14 +26,27 @@ func (k *Key) DecryptPrivateKey() string {
 }
 
 //SaveKeyToWallet 保存私钥给钱包数据库
-func SaveKeyToWallet(wallet *openwallet.Wallet, key *Key) error {
-
+func SaveKeyToWallet(wallet *openwallet.Wallet, keys []*Key) error {
 	db, err := wallet.OpenDB()
 	if err != nil {
 		return err
 	}
-	db.Close()
-	return db.Save(key)
+	defer db.Close()
+
+	tx, err := db.Begin(true)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	for _, a := range keys {
+		err = tx.Save(a)
+		if err != nil {
+			continue
+		}
+	}
+
+	return tx.Commit()
 }
 
 
@@ -49,7 +62,7 @@ func GetWallets() ([]*openwallet.Wallet, error) {
 	)
 
 	//扫描key目录的所有钱包
-	files, err := ioutil.ReadDir(dataDir)
+	files, err := ioutil.ReadDir(dbPath)
 	if err != nil {
 		return wallets, err
 	}
