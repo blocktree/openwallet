@@ -118,10 +118,11 @@ type FullnodeContainerPathConfig struct {
 }
 
 type FullnodeContainerConfig struct {
-	CMD     [2][]string // Commands to run fullnode wallet ex: {{"/bin/sh", "mainnet"}, {"/bin/sh", "testnet"}}
-	PORT    [][3]string // Which ports need to be mapped, ex: {{innerPort, mainNetPort, testNetPort}, ...}
-	APIPORT string      // Port of default fullnode API(within container), from PORT
-	IMAGE   string      // Image that container run from
+	WORKPATH string
+	CMD      [2][]string // Commands to run fullnode wallet ex: {{"/bin/sh", "mainnet"}, {"/bin/sh", "testnet"}}
+	PORT     [][3]string // Which ports need to be mapped, ex: {{innerPort, mainNetPort, testNetPort}, ...}
+	APIPORT  string      // Port of default fullnode API(within container), from PORT
+	IMAGE    string      // Image that container run from
 }
 
 func (p *FullnodeContainerPathConfig) init(symbol string) error {
@@ -175,6 +176,13 @@ func init() {
 			PORT:    [][3]string{{"18265/tcp", "10051", "20051"}},
 			APIPORT: string("18265/tcp"),
 			IMAGE:   string("openwallet/iota:latest"),
+		},
+		"bopo": &FullnodeContainerConfig{
+			WORKPATH: "/usr/local/paicode",
+			CMD:      [2][]string{{"/bin/bash", "-c", "cd /usr/local/paicode; ./gamepaicore --listen 0.0.0.0:7280 >> /openwallet/data/run.log 2>&1"}, {}},
+			PORT:     [][3]string{{"7280/tcp", "10061", "20061"}},
+			APIPORT:  string("7280/tcp"),
+			IMAGE:    string("openwallet/bopo:latest"),
 		},
 	}
 	// FullnodeContainerPath = &FullnodeContainerPathConfig{
