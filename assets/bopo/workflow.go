@@ -19,7 +19,8 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	// "github.com/astaxie/beego/config"
+	"github.com/astaxie/beego/config"
+	// "github.com/tidwall/gjson"
 	// "github.com/blocktree/OpenWallet/common"
 	// "github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/keystore"
@@ -31,13 +32,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 	"io/ioutil"
-	// "log"
+	"log"
 	// "math"
 	"os"
 	"path/filepath"
 	// "sort"
 	"strings"
-	// "time"
+	//"time"
 )
 
 const (
@@ -78,19 +79,51 @@ func printWalletList(list []*Wallet) {
 
 //getWalletList 获取钱包列表
 func getWalletList() ([]*Wallet, error) {
-
-	wallets, err := GetWalletKeys(keyDir)
-	if err != nil {
+	// Load config
+	if err := loadConfig(); err != nil {
 		return nil, err
 	}
 
-	//获取钱包余额
-	for _, w := range wallets {
-		balance := GetWalletBalance(w.WalletID)
-		w.Balance = balance
+	// var (
+	// 	wallets = make([]*Wallet, 0)
+	// )
+	_, err := client.Call("account", "GET", nil)
+	if err != nil {
+		log.Println("EEE = ", err)
 	}
 
-	return wallets, nil
+	// a := gjson.ParseBytes(res)
+	// wallets = append(wallets, NewWallet(a))
+
+	//   fmt.Printf("\nres=%T\n", res)
+	//   // wallets := gjson.ParseBytes(res)
+	//   wallets := gjson.GetBytes(res, "data")
+	//   // wallets := gjson.Get(res, "data")
+	//   fmt.Printf("\n%T\n", wallets)
+	//   fmt.Printf("\n%v\n", wallets)
+	// fmt.Println("\n")
+	// fmt.Println("EEEE = ", wallets)
+
+	// 	request := []interface{}{
+	// 		account,
+	// 	}
+	//
+
+	// request := []interface{}{}
+
+	// wallets, err := GetWalletKeys(keyDir)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// //获取钱包余额
+	// for _, w := range wallets {
+	// 	balance := GetWalletBalance(w.WalletID)
+	// 	w.Balance = balance
+	// }
+
+	return []*Wallet{}, nil
+	// return wallets, nil
 }
 
 //GetWalletKeys 通过给定的文件路径加载keystore文件得到钱包列表
@@ -605,8 +638,8 @@ func GetWalletBalance(name string) string {
 //
 // 	return &w, keyFile, nil
 // }
-//
-// //EncryptWallet 通过密码加密钱包，只在第一次加密码时才有效
+
+//EncryptWallet 通过密码加密钱包，只在第一次加密码时才有效
 // func EncryptWallet(password string) error {
 //
 // 	request := []interface{}{
@@ -619,8 +652,7 @@ func GetWalletBalance(name string) string {
 // 	}
 // 	return nil
 // }
-//
-//
+
 // //GetWalletInfo 获取钱包列表
 // func GetWalletInfo(walletID string) (*Wallet, error) {
 //
@@ -940,15 +972,16 @@ func ListUnspent(min uint64) ([]*Unspent, error) {
 		min,
 	}
 
-	result, err := client.Call("listunspent", request)
+	result, err := client.Call("listunspent", "GET", request)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("Result=", result)
 
-	array := result.Array()
-	for _, a := range array {
-		utxos = append(utxos, NewUnspent(&a))
-	}
+	// array := result.Array()
+	// for _, a := range array {
+	// 	utxos = append(utxos, NewUnspent(&a))
+	// }
 
 	return utxos, nil
 
@@ -1601,44 +1634,44 @@ func skipKeyFile(fi os.FileInfo) bool {
 	return false
 }
 
-// // loadConfig 读取配置
-// func loadConfig() error {
-//
-// 	var (
-// 		c   config.Configer
-// 		err error
-// 	)
-//
-// 	//读取配置
-// 	absFile := filepath.Join(configFilePath, configFileName)
-// 	c, err = config.NewConfig("ini", absFile)
-// 	if err != nil {
-// 		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
-// 	}
-//
-// 	serverAPI = c.String("apiURL")
-// 	threshold, _ = decimal.NewFromString(c.String("threshold"))
-// 	sumAddress = c.String("sumAddress")
-// 	rpcUser = c.String("rpcUser")
-// 	rpcPassword = c.String("rpcPassword")
-// 	nodeInstallPath = c.String("nodeInstallPath")
-// 	isTestNet, _ = c.Bool("isTestNet")
-// 	if isTestNet {
-// 		walletDataPath = c.String("testNetDataPath")
-// 	} else {
-// 		walletDataPath = c.String("mainNetDataPath")
-// 	}
-//
-// 	token := basicAuth(rpcUser, rpcPassword)
-//
-// 	client = &Client{
-// 		BaseURL:     serverAPI,
-// 		Debug:       false,
-// 		AccessToken: token,
-// 	}
-// 	return nil
-// }
-///
+// loadConfig 读取配置
+func loadConfig() error {
+
+	var (
+		c   config.Configer
+		err error
+	)
+
+	//读取配置
+	absFile := filepath.Join(configFilePath, configFileName)
+	c, err = config.NewConfig("ini", absFile)
+	if err != nil {
+		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
+	}
+
+	serverAPI = c.String("apiURL")
+	threshold, _ = decimal.NewFromString(c.String("threshold"))
+	sumAddress = c.String("sumAddress")
+	rpcUser = c.String("rpcUser")
+	rpcPassword = c.String("rpcPassword")
+	nodeInstallPath = c.String("nodeInstallPath")
+	isTestNet, _ = c.Bool("isTestNet")
+	if isTestNet {
+		walletDataPath = c.String("testNetDataPath")
+	} else {
+		walletDataPath = c.String("mainNetDataPath")
+	}
+
+	// token := basicAuth(rpcUser, rpcPassword)
+
+	client = &Client{
+		BaseURL: serverAPI,
+		Debug:   false,
+		// AccessToken: token,
+	}
+	return nil
+}
+
 // //startNode 开启节点
 // func startNode() error {
 //

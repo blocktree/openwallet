@@ -16,120 +16,66 @@
 package bopo
 
 import (
-	"encoding/base64"
-	"errors"
 	"fmt"
 	"github.com/imroc/req"
+	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
 	"log"
+	"net/http"
 )
 
-// A struct of Client for Bitcoincash RPC client
+// A Client is a Bitcoin RPC client. It performs RPCs over HTTP using JSON
+// request and responses. A Client must be configured with a secret token
+// to authenticate with other Cores on the network.
 type Client struct {
-	BaseURL     string
-	AccessToken string
-	Debug       bool
+	BaseURL string
+	Auth    string
+	Debug   bool
 }
 
-// A struct of Response for Bitcoincash RPC response
-type Response struct {
-	Code    int         `json:"code,omitempty"`
-	Message string      `json:"message,omitempty"`
-	Error   interface{} `json:"error,omitempty"`
-	Result  interface{} `json:"result,omitempty"`
-	Id      string      `json:"id,omitempty"`
-}
+// // A struct of Response for Bitcoincash RPC response
+// type Response struct {
+// 	Code    int         `json:"code,omitempty"`
+// 	Error   interface{} `json:"error,omitempty"`
+// 	Result  interface{} `json:"result,omitempty"`
+// 	Message string      `json:"message,omitempty"`
+// 	Id      string      `json:"id,omitempty"`
+// }
 
-// A method of struct Client, call a remote procedure
-func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error) {
+func (c *Client) Call(path, method string, request interface{}) ([]byte, error) {
 
-	var (
-		body = make(map[string]interface{}, 0)
-	)
-
-	authHeader := req.Header{
-		// "Accept":        "application/json",
-		// "Authorization": "Basic " + c.AccessToken,
-	}
-
-	//json-rpc
-	body["jsonrpc"] = "2.0"
-	body["id"] = "1"
-	body["method"] = path
-	body["params"] = request
+	url := c.BaseURL + "/" + path
+	authHeader := req.Header{"Accept": "application/json"}
 
 	if c.Debug {
 		log.Println("Start Request API...")
 	}
 
-	r, err := req.Post(c.BaseURL, req.BodyJSON(&body), authHeader)
-	// TEST: fmt.Println("api.go 1 = ", c)
-	// TEST: fmt.Println("api.go 2 = ", c.BaseURL)
+	r, err := req.Do(method, url, request, authHeader)
+	if err != nil {
+		log.Printf("%+v\n", r)
+		return nil, err
+	}
 
 	if c.Debug {
 		log.Println("Request API Completed")
 	}
 
-	if c.Debug {
-		log.Printf("%+v\n", r)
+	if r.Response().StatusCode != http.StatusOK {
+		message := gjson.GetBytes(r.Bytes(), "message").String()
+		message = fmt.Sprintf("[%s]%s", r.Response().Status, message)
+		return nil, errors.New(message)
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
-	resp := gjson.ParseBytes(r.Bytes())
-	err = isError(&resp)
-	if err != nil {
-		return nil, err
-	}
-
-	result := resp.Get("result")
-
-	return &result, nil
-}
-
-// See 2 (end of page 4) http://www.ietf.org/rfc/rfc2617.txt
-// "To receive authorization, the client sends the userid and password,
-// separated by a single colon (":") character, within a base64
-// encoded string in the credentials."
-// It is not meant to be urlencoded.
-func basicAuth(username, password string) string {
-	auth := username + ":" + password
-	return base64.StdEncoding.EncodeToString([]byte(auth))
-}
-
-//isError 是否报错
-func isError(result *gjson.Result) error {
-	var (
-		err error
-	)
-
-	/*
-		//failed 返回错误
-		{
-			"result": null,
-			"error": {
-				"code": -8,
-				"message": "Block height out of range"
-			},
-			"id": "foo"
+	// Bopo 方面 API 在变，暂不验证^
+	res := gjson.ParseBytes(r.Bytes()).Map()
+	if code, ok := res["code"]; !ok || code.Int() != 0 {
+		if msg, ok := res["msg"]; ok {
+			log.Println(errors.New(msg.String()))
+		} else {
+			log.Println(errors.New("Invalid data format of Bopo Network!"))
 		}
-	*/
-
-	if !result.Get("error").IsObject() {
-
-		if !result.Get("result").Exists() {
-			return errors.New("Response is empty! ")
-		}
-
-		return nil
+		// return nil, errors.New(res["msg"].String())	// 500
 	}
-
-	errInfo := fmt.Sprintf("[%d]%s",
-		result.Get("error.code").Int(),
-		result.Get("error.message").String())
-	err = errors.New(errInfo)
-
-	return err
+	return r.Bytes(), nil
 }
