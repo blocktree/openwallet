@@ -20,14 +20,12 @@ import (
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/console"
-	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/timer"
-	"github.com/shopspring/decimal"
+	//"github.com/shopspring/decimal"
 	"log"
 	"path/filepath"
 	"strings"
 	"errors"
-	"github.com/ontio/ontology/account"
 )
 
 
@@ -385,104 +383,6 @@ func (w *WalletManager) BackupWalletFlow() error {
 
 //SendTXFlow 发送交易
 func (w *WalletManager) TransferFlow() error {
-
-	//先加载是否有配置文件
-	err := loadConfig()
-	if err != nil {
-		return err
-	}
-
-	list, err := GetWalletInfo()
-	if err != nil {
-		return err
-	}
-
-	//打印钱包列表
-	printWalletList(list)
-
-	fmt.Printf("[Please select a wallet to send transaction] \n")
-
-	//选择钱包
-	num, err := console.InputNumber("Enter wallet No. : ", true)
-	if err != nil {
-		return err
-	}
-
-	if int(num) >= len(list) {
-		return errors.New("Input number is out of index! ")
-	}
-
-	wallet := list[num]
-
-	// 等待用户输入发送数量
-	amount, err := console.InputRealNumber("Enter amount to send: ", true)
-	if err != nil {
-		return err
-	}
-
-	atculAmount, _ := decimal.NewFromString(amount)
-	atculAmount = atculAmount.Mul(coinDecimal)
-	balance, err := decimal.NewFromString(wallet.Balance)
-
-	if atculAmount.GreaterThan(balance) {
-		return errors.New("Input amount is greater than balance! ")
-	}
-
-	// 等待用户输入发送数量
-	receiver, err := console.InputText("Enter receiver address: ", true)
-	if err != nil {
-		return err
-	}
-
-	//汇总所有有钱的账户
-	accounts, err := GetAccountInfo(wallet.WalletID)
-	if err != nil {
-		return err
-	}
-
-	if len(accounts) == 0 {
-		return errors.New("Wallet is empty account! ")
-	}
-
-	//计算预估手续费
-
-	for _, a := range accounts {
-		//大于最小额度才转账
-		accountAmount, _ := decimal.NewFromString(a.Amount)
-		if accountAmount.GreaterThan(atculAmount) && atculAmount.GreaterThan(minFees) {
-
-			fmt.Printf("-----------------------------------------------\n")
-			fmt.Printf("From Wallet Account: %s\n", a.AcountID)
-			fmt.Printf("To Address: %s\n", receiver)
-			fmt.Printf("Send: %v\n", atculAmount.Div(coinDecimal))
-			fmt.Printf("Fees: %v\n", minFees.Div(coinDecimal))
-			fmt.Printf("Receive: %v\n", atculAmount.Sub(minFees).Div(coinDecimal))
-			fmt.Printf("-----------------------------------------------\n")
-
-			fmt.Printf("[Please unlock wallet to send transaction]\n")
-
-			//输入密码解锁钱包
-			password, err := console.InputPassword(false, 8)
-			if err != nil {
-				return err
-			}
-
-			//配置钱包密码
-			h := common.NewString(password).SHA256()
-
-			tx, err := SendTx(a.AcountID, receiver, uint64(atculAmount.Sub(minFees).IntPart()), h)
-			if err != nil {
-				log.Printf("Send transaction failed, unexpected error：%v\n", err)
-				continue
-			} else {
-				log.Printf("Send transaction successfully, TXID：%s\n", tx.TxID)
-				return nil
-			}
-		} else {
-			fmt.Printf("The amount to is more then balance or less then fees! \n")
-		}
-	}
-
 	return nil
 }
 
@@ -499,7 +399,7 @@ func (w *WalletManager) GetWalletList() error {
 		return err
 	}
 
-	list, err := GetWalletInfo()
+	list, err := GetWallets()
 	if err != nil {
 		return err
 	}

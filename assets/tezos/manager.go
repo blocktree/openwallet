@@ -16,6 +16,9 @@ import (
 	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/bndr/gotabulate"
+	"fmt"
+	"github.com/blocktree/OpenWallet/common/file"
 )
 
 const (
@@ -119,17 +122,17 @@ func signTransaction(hash string, sk string, wm []byte) (string, string, error) 
 	return edsig, sbyte, nil
 }
 
-func transfer(keys map[string]string, dst string, fee, gas_limit, storage_limit, amount string) (string, string){
+func transfer(keys Key, dst string, fee, gas_limit, storage_limit, amount string) (string, string){
 	header := callGetHeader()
 	blk_hash := gjson.GetBytes(header, "hash").Str
 	chain_id := gjson.GetBytes(header, "chain_id").Str
 	protocol := gjson.GetBytes(header, "protocol").Str
 
-	counter :=callGetCounter(keys["pkh"])
+	counter :=callGetCounter(keys.Address)
 	icounter,_ := strconv.Atoi(string(counter))
 	icounter = icounter + 1
 
-	manager_key := callGetManagerKey(keys["pkh"])
+	manager_key := callGetManagerKey(keys.Address)
 	//manager := gjson.GetBytes(ret, "manager")
 	key := gjson.GetBytes(manager_key, "key")
 
@@ -137,8 +140,8 @@ func transfer(keys map[string]string, dst string, fee, gas_limit, storage_limit,
 	reverl := map[string]string{
 		"kind": "reveal",
 		"fee": fee,
-		"public_key": keys["pk"],
-		"source": keys["pkh"],
+		"public_key": keys.PublicKey,
+		"source": keys.Address,
 		"gas_limit": gas_limit,
 		"storage_limit": storage_limit,
 		"counter": strconv.Itoa(icounter),
@@ -156,7 +159,7 @@ func transfer(keys map[string]string, dst string, fee, gas_limit, storage_limit,
 		"gas_limit": gas_limit,
 		"storage_limit": storage_limit,
 		"counter": strconv.Itoa(icounter),
-		"source": keys["pkh"],
+		"source": keys.Address,
 	}
 
 	ops = append(ops, transaction)
@@ -166,7 +169,7 @@ func transfer(keys map[string]string, dst string, fee, gas_limit, storage_limit,
 	hash := callForgeOps(chain_id, blk_hash, opOb)
 
 	//sign
-	edsig, sbyte, _ := signTransaction(hash, keys["sk"], watermark["generic"])
+	edsig, sbyte, _ := signTransaction(hash, keys.PrivateKey, watermark["generic"])
 
 	//preapply operations
 	var opObs []interface{}
@@ -180,8 +183,41 @@ func transfer(keys map[string]string, dst string, fee, gas_limit, storage_limit,
 	return string(inj), string(pre)
 }
 
+//exportAddressToFile 导出地址到文件中
+func exportAddressToFile(keys []*Key, filePath string) {
+
+	var (
+		content string
+	)
+
+	for _, a := range keys {
+
+		log.Printf("Export: %s \n", a.Address)
+
+		content = content + a.Address + "\n"
+	}
+
+	file.MkdirAll(addressDir)
+	file.WriteFile(filePath, []byte(content), true)
+}
+
+func createAddressWork(producer chan<- []*Key, password string, start, end uint64) {
+	runAddress := make([]*Key, 0)
+
+	for i := start; i < end; i++ {
+		// 生成地址
+		pk, sk, pkh := createAccount()
+		esk, _ := Encrypt(password, sk)
+		key := &Key{pkh, pk, esk}
+		runAddress = append(runAddress, key)
+	}
+
+	//生成完成
+	producer <- runAddress
+}
+
 //CreateNewWallet 创建钱包
-func CreateNewWallet(name, pw string) error {
+func CreateNewWallet(name string) error {
 
 	walletID := openwallet.NewWalletID()
 
@@ -195,6 +231,154 @@ func CreateNewWallet(name, pw string) error {
 	}
 	db.Close()
 	return db.Save(wallet)
+}
+
+func AddWalletInSummary(wid string, wallet *openwallet.Wallet) {
+	walletsInSum[wid] = wallet
+}
+
+//打印钱包列表
+func printWalletList(list []*openwallet.Wallet) {
+
+	tableInfo := make([][]interface{}, 0)
+
+	for i, w := range list {
+
+		tableInfo = append(tableInfo, []interface{}{
+			i, w.WalletID, w.Alias, w.DBFile,
+		})
+	}
+
+	t := gotabulate.Create(tableInfo)
+	// Set Headers
+	t.SetHeaders([]string{"No.", "ID", "Name", "DBFile"})
+
+	//打印信息
+	fmt.Println(t.Render("simple"))
+
+}
+
+func CreateBatchAddress(walletId, password string, count uint64) (string, []*Key, error) {
+	var (
+		synCount   uint64 = 20
+		quit              = make(chan struct{})
+		done              = 0 //完成标记
+		shouldDone        = 0 //需要完成的总数
+	)
+
+	w, _ := GetWalletByID(walletId)
+
+	timestamp := time.Now()
+	//建立文件名，时间格式2006-01-02 15:04:05
+	filename := "address-" + common.TimeFormat("20060102150405", timestamp) + ".txt"
+	filePath := filepath.Join(addressDir, filename)
+
+	//生产通道
+	producer := make(chan []*Key)
+	defer close(producer)
+
+	//消费通道
+	worker := make(chan []*Key)
+	defer close(worker)
+
+	//保存地址过程
+	saveAddressWork := func(addresses chan []*Key, filename string, w *openwallet.Wallet) {
+		var (
+			saveErr error
+		)
+
+		for {
+			//回收创建的地址
+			getAddrs := <-addresses
+
+			//批量写入数据库
+			saveErr = SaveKeyToWallet(w, getAddrs)
+			//数据保存成功才导出文件
+			if saveErr == nil {
+				//导出一批地址
+				exportAddressToFile(getAddrs, filename)
+			}
+
+			//累计完成的线程数
+			done++
+			if done == shouldDone {
+				close(quit) //关闭通道，等于给通道传入nil
+			}
+		}
+	}
+
+	/*	开启导出的线程，监听新地址，批量导出	*/
+
+	go saveAddressWork(worker, filePath, w)
+
+	/*	计算synCount个线程，内部运行的次数	*/
+
+	//每个线程内循环的数量，以synCount个线程并行处理
+	runCount := count / synCount
+	otherCount := count % synCount
+
+	if runCount > 0 {
+
+		for i := uint64(0); i < synCount; i++ {
+
+			//开始创建地址
+			log.Printf("Start create address thread[%d]\n", i)
+			s := i * runCount
+			e := (i + 1) * runCount
+			go createAddressWork(producer, password, s, e)
+
+			shouldDone++
+		}
+	}
+
+	if otherCount > 0 {
+
+		//开始创建地址
+		log.Printf("Start create address thread[REST]\n")
+		s := count - otherCount
+		e := count
+		go createAddressWork(producer, password, s, e)
+
+		shouldDone++
+	}
+
+	values := make([][]*Key, 0)
+	outputAddress := make([]*Key, 0)
+
+	//以下使用生产消费模式
+
+	for {
+
+		var activeWorker chan<- []*Key
+		var activeValue []*Key
+
+		//当数据队列有数据时，释放顶部，激活消费
+		if len(values) > 0 {
+			activeWorker = worker
+			activeValue = values[0]
+
+		}
+
+		select {
+
+		//生成者不断生成数据，插入到数据队列尾部
+		case pa := <-producer:
+			values = append(values, pa)
+			outputAddress = append(outputAddress, pa...)
+			//log.Printf("completed %d", len(pa))
+			//当激活消费者后，传输数据给消费者，并把顶部数据出队
+		case activeWorker <- activeValue:
+			//log.Printf("Get %d", len(activeValue))
+			values = values[1:]
+
+		case <-quit:
+			//退出
+			log.Printf("All addresses have been created!")
+			return filePath, outputAddress, nil
+		}
+	}
+
+	return filePath, outputAddress, nil
 }
 
 //inputNumber 输入地址数量
@@ -252,4 +436,41 @@ func loadConfig() error {
 	sumAddress = c.String("sumAddress")
 
 	return nil
+}
+
+func summaryWallet(wallet *openwallet.Wallet, password string) error{
+	db, err := wallet.OpenDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	var keys []*Key
+	db.All(&keys)
+
+	for _, k := range keys {
+		decimal_balance, _ := decimal.NewFromString(string(callGetbalance(k.Address)))
+		sk, _ := Decrypt(password, k.PrivateKey)
+		amount := decimal_balance.Sub(minFees.Add(gasLimit).Add(storageLimit))
+		k.PrivateKey = sk
+		if decimal_balance.GreaterThan(threshold) {
+			txid, _ := transfer(*k, sumAddress, strconv.FormatInt(minFees.IntPart(), 10), strconv.FormatInt(gasLimit.IntPart(), 10),
+				strconv.FormatInt(gasLimit.IntPart(), 10),strconv.FormatInt(amount.IntPart(), 10))
+
+			log.Printf("summary address:%s, amount:%d, txid:%s\n", k.Address, amount.IntPart(), txid)
+		}
+	}
+
+	return nil
+}
+
+func SummaryWallets() {
+	log.Printf("[Summary Wallet Start]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+
+	//读取参与汇总的钱包
+	for _, wallet := range walletsInSum {
+		summaryWallet(wallet, wallet.Password)
+	}
+
+	log.Printf("[Summary Wallet end]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
 }
