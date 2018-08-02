@@ -17,11 +17,13 @@ package bopo
 
 import (
 	"fmt"
+	"github.com/codeskyblue/go-sh"
 	"github.com/imroc/req"
 	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
 	"log"
 	"net/http"
+	"strings"
 )
 
 // A Client is a Bitcoin RPC client. It performs RPCs over HTTP using JSON
@@ -62,20 +64,61 @@ func (c *Client) Call(path, method string, request interface{}) ([]byte, error) 
 	}
 
 	if r.Response().StatusCode != http.StatusOK {
-		message := gjson.GetBytes(r.Bytes(), "message").String()
+		message := gjson.ParseBytes(r.Bytes()).String()
 		message = fmt.Sprintf("[%s]%s", r.Response().Status, message)
+		// log.Println(message)
 		return nil, errors.New(message)
 	}
 
-	// Bopo 方面 API 在变，暂不验证^
-	res := gjson.ParseBytes(r.Bytes()).Map()
-	if code, ok := res["code"]; !ok || code.Int() != 0 {
-		if msg, ok := res["msg"]; ok {
-			log.Println(errors.New(msg.String()))
-		} else {
-			log.Println(errors.New("Invalid data format of Bopo Network!"))
+	// 500: Bopo 方面 API 在变，测试链和公链返回值结构不稳定，暂不验证^
+	rs := r.Bytes()
+	code := gjson.GetBytes(rs, "code")
+	if code.Exists() != true || code.Int() != 0 {
+		msg := gjson.GetBytes(rs, "msg")
+		if msg.Exists() != true {
+			return nil, errors.New(fmt.Sprintf("Bopo returns invalid! \nReturn: ", gjson.ParseBytes(rs).String()))
 		}
-		// return nil, errors.New(res["msg"].String())	// 500
+		return nil, errors.New(msg.String())
+		// log.Println(fmt.Sprintf("Bopo returns invalid! \nReturn: ", gjson.ParseBytes(rs).String()))
 	}
-	return r.Bytes(), nil
+	data := gjson.GetBytes(rs, "data")
+	if data.Exists() != true {
+		return nil, errors.New(fmt.Sprintf("Bopo fullnode returns invalid 'data'! \nReturn: %s", gjson.ParseBytes(rs).String()))
+	}
+
+	return []byte(data.String()), nil
+
+	// 500: Bopo 方面 API 在变，测试链和公链返回值结构不稳定，暂不验证^
+	// res := gjson.ParseBytes(r.Bytes()).Map()
+	// if code, ok := res["code"]; !ok || code.Int() != 0 {
+	// 	if msg, ok := res["msg"]; ok {
+	// 		log.Println(errors.New(msg.String()))
+	// 	} else {
+	// 		log.Println(errors.New("Invalid data format of Bopo Network!"))
+	// 	}
+	// 	// return nil, errors.New(res["msg"].String())	// 500
+	// }
+	// return r.Bytes(), nil
+}
+
+//cmdCall 执行命令
+func cmdCall(cmd string, wait bool) error {
+	var (
+		cmdName string
+		args    []string
+	)
+
+	cmds := strings.Split(cmd, " ")
+	if len(cmds) > 0 {
+		cmdName = cmds[0]
+		args = cmds[1:]
+	} else {
+		return errors.New("command not found ")
+	}
+	session := sh.Command(cmdName, args)
+	if wait {
+		return session.Run()
+	} else {
+		return session.Start()
+	}
 }

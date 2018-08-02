@@ -39,7 +39,11 @@ func (w *WalletManager) ShowConfig() error {
 }
 
 func (w *WalletManager) CreateWalletFlow() error {
-	return errors.New("Writing!")
+
+	if _, err := createNewWallet("c4"); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (w *WalletManager) CreateAddressFlow() error {
@@ -55,6 +59,7 @@ func (w *WalletManager) BackupWalletFlow() error {
 }
 
 func (w *WalletManager) GetWalletList() error {
+
 	list, err := getWalletList()
 	if err != nil {
 		return err

@@ -27,19 +27,20 @@ import (
 //Wallet 钱包模型
 type Wallet struct {
 	WalletID string `json:"rootid"`
-	Alias    string `json:"alias"`
+	Addr     string `json:"addr"`
 	Balance  string `json:"balance"`
+	Alias    string `json:"alias"`
 	Password string `json:"password"`
 	RootPub  string `json:"rootpub"`
 	KeyFile  string
 }
 
-//NewWallet 创建钱包
+// //NewWallet 创建钱包
 // func NewWallet(json gjson.Result) *Wallet {
 // 	w := &Wallet{}
 // 	//解析json
-// 	w.Alias = gjson.Get(json.Raw, "alias").String()
-// 	w.PublicKey = gjson.Get(json.Raw, "xpub").String()
+// 	// w.Alias = gjson.Get(json.Raw, "alias").String()
+// 	// w.PublicKey = gjson.Get(json.Raw, "xpub").String()
 // 	w.WalletID = common.NewString(w.PublicKey).SHA1()
 // 	return w
 // }
