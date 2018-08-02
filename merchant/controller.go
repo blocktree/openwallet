@@ -60,7 +60,7 @@ func (m *MerchantNode) setupRouter() {
 //subscribe 订阅方法
 func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 
-	log.Printf("Merchat Call: subscribe \n")
+	log.Printf("Merchant Call: subscribe \n")
 	log.Printf("params: %v\n", ctx.Params())
 
 	var (
@@ -117,7 +117,7 @@ func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 
 func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 
-	log.Printf("Merchat Call: createWallet \n")
+	log.Printf("Merchant Call: createWallet \n")
 	log.Printf("params: %v\n", ctx.Params())
 
 	/*
@@ -188,7 +188,7 @@ func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 
 func (m *MerchantNode) configWallet(ctx *owtp.Context) {
 
-	log.Printf("Merchat Call: createWallet \n")
+	log.Printf("Merchant Call: configWallet \n")
 	log.Printf("params: %v\n", ctx.Params())
 
 	/*
@@ -224,7 +224,7 @@ func (m *MerchantNode) configWallet(ctx *owtp.Context) {
 
 func (m *MerchantNode) getWalletList(ctx *owtp.Context) {
 
-	log.Printf("Merchat Call: getWalletList \n")
+	log.Printf("Merchant Call: getWalletList \n")
 	log.Printf("params: %v\n", ctx.Params())
 
 	coin := ctx.Params().Get("coin").String()
@@ -285,7 +285,7 @@ func (m *MerchantNode) getWalletList(ctx *owtp.Context) {
 
 func (m *MerchantNode) createAddress(ctx *owtp.Context) {
 
-	log.Printf("Merchat Call: createAddress \n")
+	log.Printf("Merchant Call: createAddress \n")
 	log.Printf("params: %v\n", ctx.Params())
 
 	/*
@@ -354,7 +354,7 @@ func (m *MerchantNode) createAddress(ctx *owtp.Context) {
 
 func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
 
-	log.Printf("Merchat Call: getAddressList \n")
+	log.Printf("Merchant Call: getAddressList \n")
 	log.Printf("params: %v\n", ctx.Params())
 
 	/*
@@ -417,7 +417,7 @@ func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
 
 func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 
-	log.Printf("Merchat Call: submitTransaction \n")
+	log.Printf("Merchant Call: submitTransaction \n")
 	log.Printf("params: %v\n", ctx.Params())
 
 	var (

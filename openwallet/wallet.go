@@ -24,6 +24,9 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"reflect"
+	"bufio"
+	"os"
+	"encoding/json"
 )
 
 type Wallet struct {
@@ -52,6 +55,31 @@ func NewHDWallet(key *keystore.HDKey) (*Wallet, error) {
 func NewWalletID() uuid.UUID {
 	id := uuid.NewRandom()
 	return id
+}
+
+func NewWallet(walletID string, symbol string) *Wallet {
+
+	dbDir := GetDBDir(symbol)
+	keyDir := GetKeyDir(symbol)
+
+	//检查目录是否已存在钱包私钥文件，有则用私钥创建这个钱包
+	wallets, err := GetWalletsByKeyDir(keyDir)
+	if err != nil {
+		return nil
+	}
+
+	for _, w := range wallets  {
+		if w.WalletID == walletID {
+			w.KeyFile = filepath.Join(dbDir, w.KeyFile)
+			w.DBFile = filepath.Join(dbDir, w.DBFile)
+			return w
+		}
+	}
+
+	watchOnlyWallet := NewWatchOnlyWallet(walletID, symbol)
+
+	return watchOnlyWallet
+
 }
 
 //NewWatchOnlyWallet 只读钱包，用于观察冷钱包
@@ -93,6 +121,16 @@ func (w *Wallet) HDKey(password string) (*keystore.HDKey, error) {
 //openDB 打开钱包数据库
 func (w *Wallet) OpenDB() (*storm.DB, error) {
 	return storm.Open(w.DBFile)
+}
+
+//SaveToDB 保存到数据库
+func (w *Wallet) SaveToDB() error {
+	db, err := w.OpenDB()
+	if err != nil {
+		return nil
+	}
+	defer db.Close()
+	return db.Save(w)
 }
 
 //GetAssetsAccounts 获取某种区块链的全部资产账户
@@ -189,6 +227,73 @@ func (w *Wallet) GetRecharges(height ...uint64) ([]*Recharge, error) {
 
 	return list, nil
 }
+
+
+//GetWalletsByKeyDir 通过给定的文件路径加载keystore文件得到钱包列表
+func GetWalletsByKeyDir(dir string) ([]*Wallet, error) {
+
+	var (
+		wallets = make([]*Wallet, 0)
+	)
+
+	//扫描key目录的所有钱包
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return wallets, err
+	}
+
+	for _, fi := range files {
+		// Skip any non-key files from the folder
+		if !file.IsUserFile(fi) {
+			continue
+		}
+		if fi.IsDir() {
+			continue
+		}
+
+		path := filepath.Join(dir, fi.Name())
+
+		w := ReadWalletByKey(path)
+		w.KeyFile = path
+		wallets = append(wallets, w)
+
+	}
+
+	return wallets, nil
+
+}
+
+
+
+//ReadWalletByKey 加载文件，实例化钱包
+func ReadWalletByKey(keyPath string) *Wallet {
+
+	var (
+		buf = new(bufio.Reader)
+		key struct {
+			   Alias  string `json:"alias"`
+			   RootId string `json:"rootid"`
+		   }
+	)
+
+	fd, err := os.Open(keyPath)
+	defer fd.Close()
+	if err != nil {
+		return nil
+	}
+
+	buf.Reset(fd)
+	// Parse the address.
+	key.Alias = ""
+	key.RootId = ""
+	err = json.NewDecoder(buf).Decode(&key)
+	if err != nil {
+		return nil
+	}
+
+	return &Wallet{WalletID: key.RootId, Alias: key.Alias}
+}
+
 
 /*
 //NewWallet 创建钱包
