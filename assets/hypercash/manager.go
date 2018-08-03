@@ -264,7 +264,7 @@ func (wm *WalletManager) LockWallet() error {
 func (wm *WalletManager) CreateBatchAddress(name, password string, count uint64) (string, []*openwallet.Address, error) {
 
 	var (
-		synCount   uint64 = 20
+		synCount   uint64 = 10
 		quit              = make(chan struct{})
 		done              = 0 //完成标记
 		shouldDone        = 0 //需要完成的总数
@@ -812,7 +812,7 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 //GetBlockChainInfo 获取钱包区块链信息
 func (wm *WalletManager) GetBlockChainInfo() (*BlockchainInfo, error) {
 
-	result, err := wm.client.Call("getblockchaininfo", nil)
+	result, err := wm.client.Call("getinfo", nil)
 	if err != nil {
 		return nil, err
 	}

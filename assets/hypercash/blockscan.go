@@ -570,7 +570,7 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, txid string) E
 			amount := output.Get("value").String()
 			n := output.Get("n").Uint()
 			addresses := output.Get("scriptPubKey.addresses").Array()
-			if len(addresses) > 0 {
+			if len(addresses) == 1 {
 				addr := addresses[0].String()
 				wallet, ok := bs.GetWalletByAddress(addr)
 				if ok {

@@ -199,3 +199,8 @@ func (w *WalletManager) RemoveMerchantObserverForBlockScan(obj openwallet.BlockS
 		w.blockscanner.Clear()
 	}
 }
+
+//GetBlockchainInfo 获取区块链信息
+func (w *WalletManager) GetBlockchainInfo() (*openwallet.Blockchain, error) {
+	return nil, nil
+}

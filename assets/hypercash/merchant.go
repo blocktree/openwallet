@@ -192,3 +192,24 @@ func (wm *WalletManager) RemoveMerchantObserverForBlockScan(obj openwallet.Block
 		wm.blockscanner.Clear()
 	}
 }
+
+//GetBlockchainInfo 获取区块链信息
+func (wm *WalletManager) GetBlockchainInfo() (*openwallet.Blockchain, error) {
+
+	//先加载是否有配置文件
+	err := wm.loadConfig()
+	if err != nil {
+		return nil, errors.New("The wallet node is not config!")
+	}
+
+	height, err := wm.GetBlockHeight()
+	if err != nil {
+		return nil, err
+	}
+
+	info := openwallet.Blockchain{
+		Blocks:height,
+	}
+
+	return &info, nil
+}

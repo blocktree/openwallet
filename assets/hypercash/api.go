@@ -49,7 +49,7 @@ func NewClient(url, token string, debug bool) *Client {
 	c := Client{
 		BaseURL:     url,
 		AccessToken: token,
-		Debug:       true,
+		Debug:       debug,
 	}
 
 	api := req.New()

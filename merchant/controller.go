@@ -65,7 +65,7 @@ func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 
 	var (
 		subscriptions []*Subscription
-		wallet *openwallet.Wallet
+		wallet        *openwallet.Wallet
 	)
 
 	db, err := m.OpenDB()
@@ -387,8 +387,7 @@ func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
 	}
 
 	//导入到每个币种的数据库
-	mer := assets.GetMerchantAssets(coin)
-	addrs, err := mer.GetMerchantAddressList(wallet, wallet.SingleAssetsAccount(coin), offset, limit)
+	addrs, err := am.GetMerchantAddressList(wallet, wallet.SingleAssetsAccount(coin), offset, limit)
 
 	if err != nil {
 		responseError(ctx, err)
@@ -448,8 +447,8 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 			log.Printf(errMsg)
 
 			txIDMaps = append(txIDMaps, map[string]interface{}{
-				"sid":  s.Sid,
-				"txid": "",
+				"sid":    s.Sid,
+				"txid":   "",
 				"status": 2,
 				"reason": errMsg,
 			})
@@ -458,7 +457,6 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 		}
 
 		//withdraws = append(withdraws, s)
-
 
 		tmpArray = wallets[s.WalletID]
 		if tmpArray == nil {
@@ -471,7 +469,6 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 	}
 
 	db.Close()
-
 
 	for wid, withs := range wallets {
 		if len(withs) > 0 {
@@ -500,8 +497,8 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 
 			for _, with := range withs {
 				txIDMaps = append(txIDMaps, map[string]interface{}{
-					"sid":  with.Sid,
-					"txid": txID,
+					"sid":    with.Sid,
+					"txid":   txID,
 					"status": status,
 					"reason": err.Error(),
 				})
@@ -516,6 +513,39 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 
 	result := map[string]interface{}{
 		"withdraws": txIDMaps,
+	}
+
+	responseSuccess(ctx, result)
+}
+
+func (m *MerchantNode) getNewHeight(ctx *owtp.Context) {
+
+	log.Printf("Merchant Call: getNewHeight \n")
+	log.Printf("params: %v\n", ctx.Params())
+
+	/*
+		| 参数名称 | 类型   | 是否可空 | 描述     |
+		|----------|--------|----------|----------|
+		| coin     | string | 否       | 币种标识 |
+		| walletID | string | 否       | 钱包ID   |
+		| offset    | uint   | 是       | 从0开始     |
+		| limit    | uint   | 是       | 查询条数     |
+	*/
+
+	coin := ctx.Params().Get("coin").String()
+	walletID := ctx.Params().Get("walletID").String()
+
+	am := assets.GetMerchantAssets(coin)
+	blockchain, err := am.GetBlockchainInfo()
+	if err != nil {
+		responseError(ctx, err)
+		return
+	}
+
+	result := map[string]interface{}{
+		"coin":     coin,
+		"walletID": walletID,
+		"height":   blockchain.Blocks,
 	}
 
 	responseSuccess(ctx, result)
