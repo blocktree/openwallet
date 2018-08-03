@@ -17,27 +17,20 @@ package bopo
 
 import (
 	"fmt"
-	"testing"
+	"github.com/pkg/errors"
+	"github.com/tidwall/gjson"
+	//"log"
 )
 
-var ()
-
-func init() {
-	serverAPI = "http://192.168.2.194:10061"
-	isTestNet = false
-	client = &Client{
-		BaseURL: serverAPI,
-		Debug:   true,
-	}
-}
-
-func TestGetBlockChainInfo(t *testing.T) {
-	b, err := GetBlockChainInfo()
-	if err != nil {
-		t.Errorf("GetBlockChainInfo failed unexpected error: %v\n", err)
+// -----------------------------------------------------------------------------
+// Verify address
+func verifyAddr(addr string) error {
+	if r, err := client.Call(fmt.Sprintf("account/verify/%s", addr), "GET", nil); err != nil {
+		return err
 	} else {
-		t.Logf("GetBlockChainInfo info: %v\n", b)
+		if data := gjson.GetBytes(r, "verifyState").Bool(); data != true {
+			return errors.New("Address invalid!")
+		}
 	}
-
-	fmt.Printf("TestGetBlockChainInfo: \n\t%+v\n", b)
+	return nil
 }

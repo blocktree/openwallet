@@ -16,7 +16,7 @@
 package bopo
 
 import (
-	"fmt"
+	// "fmt"
 	"testing"
 )
 
@@ -31,13 +31,13 @@ func init() {
 	}
 }
 
-func TestGetBlockChainInfo(t *testing.T) {
-	b, err := GetBlockChainInfo()
-	if err != nil {
-		t.Errorf("GetBlockChainInfo failed unexpected error: %v\n", err)
-	} else {
-		t.Logf("GetBlockChainInfo info: %v\n", b)
+func TestVerifyAddr(t *testing.T) {
+	// Invalid addr, return err
+	if err := verifyAddr("failureaddr"); err == nil {
+		t.Errorf("TestVerifyAddr: %v\n", err)
 	}
-
-	fmt.Printf("TestGetBlockChainInfo: \n\t%+v\n", b)
+	// Verified addr, return nil
+	if err := verifyAddr("5SJrzpTvUjMoTi2KvjM9pKvrh04_LoTYwg"); err != nil {
+		t.Errorf("TestVerifyAddr: %v\n", err)
+	}
 }

@@ -16,30 +16,9 @@
 package bopo
 
 import (
-	"github.com/imroc/req"
-	// "bufio"
-	// "encoding/json"
 	"fmt"
-	// "github.com/blocktree/OpenWallet/assets/bopo"
-	// "github.com/astaxie/beego/config"
+	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
-	// "github.com/blocktree/OpenWallet/common"
-	// "github.com/blocktree/OpenWallet/common/file"
-	// "github.com/blocktree/OpenWallet/keystore"
-	// "github.com/btcsuite/btcd/chaincfg"
-	// "github.com/btcsuite/btcutil"
-	// "github.com/btcsuite/btcutil/hdkeychain"
-	// "github.com/codeskyblue/go-sh"
-	// "github.com/pkg/errors"
-	// "github.com/shopspring/decimal"
-	// "io/ioutil"
-	// "log"
-	// "math"
-	// "os"
-	// "path/filepath"
-	// "sort"
-	// "strings"
-	//"time"
 )
 
 //getWalletList 获取钱包列表
@@ -52,40 +31,23 @@ func getWalletList() ([]*Wallet, error) {
 	}
 	data := gjson.ParseBytes(r).Map()
 
-	for walletid, a := range data {
+	for wid, a := range data {
 		addr := a.String()
-		w := &Wallet{Alias: walletid, Addr: addr}
-
-		//  // Get balance
-		//  if d, err := client.Call(fmt.Sprintf("chain/%s", addr), "GET", nil); err == nil {
-		//  	w.Balance = gjson.ParseBytes(d).Map()["pais"].String()
-		//  }
-
+		w := &Wallet{Alias: wid, Addr: addr}
 		wallets = append(wallets, w)
 	}
 
 	return wallets, nil
 }
 
-// Get one wallet info
-func getWalletInfo(name string) (*Wallet, error) {
-
-	if r, err := client.Call(fmt.Sprintf("account/%s", name), "GET", nil); err != nil {
-		return nil, err
-	} else {
-		data := gjson.ParseBytes(r).Map()
-		return &Wallet{Alias: name, Addr: data["address"].String()}, nil
-	}
-}
-
 //CreateNewWallet 创建钱包
-func createWallet(name string) (*Wallet, error) {
+func createWallet(wid string) (*Wallet, error) {
 	var wallet *Wallet
 
-	if _, err := client.Call("account", "POST", req.Param{"id": name}); err != nil {
+	if _, err := client.Call("account", "POST", req.Param{"id": wid}); err != nil {
 		return nil, err
 	} else {
-		if w, err := getWalletInfo(name); err != nil {
+		if w, err := getWalletInfo(wid); err != nil {
 			wallet = &Wallet{}
 		} else {
 			wallet = w
@@ -95,7 +57,18 @@ func createWallet(name string) (*Wallet, error) {
 	return wallet, nil
 }
 
-// ----------------------------------------------------------------------------- inner
+// -----------------------------------------------------------------------------
+// Get one wallet info
+func getWalletInfo(wid string) (*Wallet, error) {
+
+	if r, err := client.Call(fmt.Sprintf("account/%s", wid), "GET", nil); err != nil {
+		return nil, err
+	} else {
+		data := gjson.ParseBytes(r).Map()
+		return &Wallet{Alias: wid, Addr: data["address"].String()}, nil
+	}
+}
+
 // //BackupWalletData 备份钱包
 // func BackupWalletData(dest string) error {
 //
