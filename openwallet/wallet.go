@@ -62,6 +62,9 @@ func NewWallet(walletID string, symbol string) *Wallet {
 	dbDir := GetDBDir(symbol)
 	keyDir := GetKeyDir(symbol)
 
+	file.MkdirAll(dbDir)
+	file.MkdirAll(keyDir)
+
 	//检查目录是否已存在钱包私钥文件，有则用私钥创建这个钱包
 	wallets, err := GetWalletsByKeyDir(keyDir)
 	if err != nil {

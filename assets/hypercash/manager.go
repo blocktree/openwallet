@@ -18,9 +18,6 @@ package hypercash
 import (
 	"errors"
 	"fmt"
-	"github.com/HcashOrg/hcd/chaincfg"
-	"github.com/HcashOrg/hcd/chaincfg/chainec"
-	"github.com/HcashOrg/hcutil"
 	"github.com/asdine/storm"
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
@@ -44,15 +41,11 @@ const (
 )
 
 type WalletManager struct {
-
-	//秘钥存取
-	storage *keystore.HDKeystore
-	// 节点客户端
-	client *Client
-	//钱包管理配置
-	config *WalletConfig
-	//参与汇总的钱包
-	walletsInSum map[string]*openwallet.Wallet
+	storage      *keystore.HDKeystore          //秘钥存取
+	client       *Client                       // 节点客户端
+	config       *WalletConfig                 //钱包管理配置
+	walletsInSum map[string]*openwallet.Wallet //参与汇总的钱包
+	blockscanner *BTCBlockScanner              //区块扫描器
 }
 
 func NewWalletManager() *WalletManager {
@@ -62,31 +55,27 @@ func NewWalletManager() *WalletManager {
 	wm.storage = storage
 	//参与汇总的钱包
 	wm.walletsInSum = make(map[string]*openwallet.Wallet)
+	//区块扫描器
+	wm.blockscanner = NewBTCBlockScanner(&wm)
 	return &wm
-}
-
-//GetBlockHeight 获取区块链高度
-func (wm *WalletManager) GetBlockHeight() (uint64, error) {
-
-	result, err := wm.client.Call("getblockcount", nil)
-	if err != nil {
-		return 0, err
-	}
-
-	return result.Uint(), nil
 }
 
 func (wm *WalletManager) GetAddressesByAccount(walletID string) ([]string, error) {
 
 	var (
 		addresses = make([]string, 0)
+		//request []interface{}
 	)
 
-	request := []interface{}{
-		walletID,
-	}
+	//if walletID == "" {
+	//	request = nil
+	//} else {
+	//	request = []interface{}{
+	//		walletID,
+	//	}
+	//}
 
-	result, err := wm.client.Call("getaddressesbyaccount", request)
+	result, err := wm.client.Call("getaddressesbyaccount", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -129,6 +118,51 @@ func (wm *WalletManager) GetAddressesFromLocalDB(walletID string, offset, limit 
 	return addresses, nil
 
 }
+
+//CreateNewAddress 给指定账户创建地址
+func (wm *WalletManager) CreateNewAddress(key *keystore.HDKey) (*openwallet.Address, error) {
+
+	request := []interface{}{
+		"default",
+		"ignore",
+	}
+
+	result, err := wm.client.Call("getnewaddress", request)
+	if err != nil {
+		return nil, err
+	}
+
+	addr := openwallet.Address{
+		Address:   result.String(),
+		AccountID: key.RootId,
+		HDPath:    "",
+		CreatedAt: time.Now(),
+		Symbol:    wm.config.symbol,
+		Index:     0,
+		WatchOnly: true,
+	}
+
+	return &addr, err
+
+}
+
+//CreateNewAccount 创建新账户
+//func (wm *WalletManager) ImportPrivateKey(wif string, walletID string) error {
+//
+//	request := []interface{}{
+//		wif,
+//		walletID,
+//		false,
+//	}
+//
+//	_, err := wm.client.Call("importprivkey", request)
+//	if err != nil {
+//		return err
+//	}
+//
+//	return nil
+//
+//}
 
 //ImportMulti 批量导入地址和私钥
 func (wm *WalletManager) ImportMulti(addresses []*openwallet.Address, keys []string, walletID string, watchOnly bool) ([]int, error) {
@@ -278,6 +312,8 @@ func (wm *WalletManager) CreateBatchAddress(name, password string, count uint64)
 			if saveErr == nil {
 				//导出一批地址
 				wm.exportAddressToFile(getAddrs, filename)
+			} else {
+				log.Printf("saveAddressToDB unexpected error: %v\n", saveErr)
 			}
 
 			//累计完成的线程数
@@ -380,7 +416,7 @@ func (wm *WalletManager) CreateNewWallet(name, password string) (*openwallet.Wal
 	)
 
 	//检查钱包名是否存在
-	wallets, err = openwallet.GetWalletsByKeyDir(wm.config.keyDir)
+	wallets, err = wm.GetWallets()
 	for _, w := range wallets {
 		if w.Alias == name {
 			return nil, "", errors.New("The wallet's alias is duplicated! ")
@@ -413,7 +449,10 @@ func (wm *WalletManager) CreateNewWallet(name, password string) (*openwallet.Wal
 		return nil, "", err
 	}
 
-	w := openwallet.Wallet{
+	file.MkdirAll(wm.config.dbPath)
+	file.MkdirAll(wm.config.keyDir)
+
+	w := &openwallet.Wallet{
 		WalletID: key.RootId,
 		Alias:    key.Alias,
 		KeyFile:  keyFile,
@@ -424,7 +463,7 @@ func (wm *WalletManager) CreateNewWallet(name, password string) (*openwallet.Wal
 
 	//w := Wallet{WalletID: key.RootId, Alias: key.Alias}
 
-	return &w, keyFile, nil
+	return w, keyFile, nil
 }
 
 //EncryptWallet 通过密码加密钱包，只在第一次加密码时才有效
@@ -441,8 +480,8 @@ func (wm *WalletManager) EncryptWallet(password string) error {
 	return nil
 }
 
-//GetWalletList 获取钱包列表
-func (wm *WalletManager) GetWalletList() ([]*openwallet.Wallet, error) {
+//GetWallets 获取钱包列表
+func (wm *WalletManager) GetWallets() ([]*openwallet.Wallet, error) {
 
 	wallets, err := openwallet.GetWalletsByKeyDir(wm.config.keyDir)
 	if err != nil {
@@ -459,7 +498,7 @@ func (wm *WalletManager) GetWalletList() ([]*openwallet.Wallet, error) {
 //GetWalletInfo 获取钱包列表
 func (wm *WalletManager) GetWalletInfo(walletID string) (*openwallet.Wallet, error) {
 
-	wallets, err := openwallet.GetWalletsByKeyDir(wm.config.keyDir)
+	wallets, err := wm.GetWallets()
 	if err != nil {
 		return nil, err
 	}
@@ -514,74 +553,74 @@ func (wm *WalletManager) GetWalletBalance(accountID string) string {
 }
 
 //CreateNewPrivateKey 创建私钥，返回私钥wif格式字符串
-func (wm *WalletManager) CreateNewPrivateKey(key *keystore.HDKey, start, index uint64) (string, *openwallet.Address, error) {
-
-	derivedPath := fmt.Sprintf("%s/%d/%d", key.RootPath, start, index)
-	//fmt.Printf("derivedPath = %s\n", derivedPath)
-	childKey, err := key.DerivedKeyWithPath(derivedPath)
-
-	privateKey, err := childKey.ECPrivKey()
-	if err != nil {
-		return "", nil, err
-	}
-
-	privKey, _ := chainec.Secp256k1.PrivKeyFromBytes(privateKey.Serialize())
-
-	cfg := chaincfg.MainNetParams
-	if wm.config.isTestNet {
-		cfg = chaincfg.TestNet2Params
-	}
-
-	wif, err := hcutil.NewWIF(privKey, &cfg, chainec.ECTypeSecp256k1)
-	if err != nil {
-		return "", nil, err
-	}
-
-	publicKey, err := childKey.ECPubKey()
-	if err != nil {
-		return "", nil, err
-	}
-
-	pkHash := hcutil.Hash160(publicKey.SerializeCompressed())
-	address, err := hcutil.NewAddressPubKeyHash(pkHash, &cfg, chainec.ECTypeSecp256k1)
-
-	//address, err := childKey.Address(&cfg)
-	if err != nil {
-		return "", nil, err
-	}
-
-	addr := openwallet.Address{
-		Address:   address.String(),
-		AccountID: key.RootId,
-		HDPath:    derivedPath,
-		CreatedAt: time.Now(),
-		Symbol:    wm.config.symbol,
-		Index:     index,
-	}
-
-	return wif.String(), &addr, err
-	//return "", &addr, err
-}
+//func (wm *WalletManager) CreateNewPrivateKey(key *keystore.HDKey, start, index uint64) (string, *openwallet.Address, error) {
+//
+//	derivedPath := fmt.Sprintf("%s/%d/%d", key.RootPath, start, index)
+//	//fmt.Printf("derivedPath = %s\n", derivedPath)
+//	childKey, err := key.DerivedKeyWithPath(derivedPath)
+//
+//	privateKey, err := childKey.ECPrivKey()
+//	if err != nil {
+//		return "", nil, err
+//	}
+//
+//	privKey, _ := chainec.Secp256k1.PrivKeyFromBytes(privateKey.Serialize())
+//
+//	cfg := chaincfg.MainNetParams
+//	if wm.config.isTestNet {
+//		cfg = chaincfg.TestNet2Params
+//	}
+//
+//	wif, err := hcutil.NewWIF(privKey, &cfg, chainec.ECTypeSecp256k1)
+//	if err != nil {
+//		return "", nil, err
+//	}
+//
+//	publicKey, err := childKey.ECPubKey()
+//	if err != nil {
+//		return "", nil, err
+//	}
+//
+//	pkHash := hcutil.Hash160(publicKey.SerializeCompressed())
+//	address, err := hcutil.NewAddressPubKeyHash(pkHash, &cfg, chainec.ECTypeSecp256k1)
+//
+//	//address, err := childKey.Address(&cfg)
+//	if err != nil {
+//		return "", nil, err
+//	}
+//
+//	addr := openwallet.Address{
+//		Address:   address.String(),
+//		AccountID: key.RootId,
+//		HDPath:    derivedPath,
+//		CreatedAt: time.Now(),
+//		Symbol:    wm.config.symbol,
+//		Index:     index,
+//	}
+//
+//	return wif.String(), &addr, err
+//	//return "", &addr, err
+//}
 
 //CreateBatchPrivateKey
-func (wm *WalletManager) CreateBatchPrivateKey(key *keystore.HDKey, count uint64) ([]string, error) {
-
-	var (
-		wifs = make([]string, 0)
-	)
-
-	start := time.Now().Unix()
-	for i := uint64(0); i < count; i++ {
-		wif, _, err := wm.CreateNewPrivateKey(key, uint64(start), i)
-		if err != nil {
-			continue
-		}
-		wifs = append(wifs, wif)
-	}
-
-	return wifs, nil
-
-}
+//func (wm *WalletManager) CreateBatchPrivateKey(key *keystore.HDKey, count uint64) ([]string, error) {
+//
+//	var (
+//		wifs = make([]string, 0)
+//	)
+//
+//	start := time.Now().Unix()
+//	for i := uint64(0); i < count; i++ {
+//		wif, _, err := wm.CreateNewPrivateKey(key, uint64(start), i)
+//		if err != nil {
+//			continue
+//		}
+//		wifs = append(wifs, wif)
+//	}
+//
+//	return wifs, nil
+//
+//}
 
 //BackupWalletData 备份钱包
 func (wm *WalletManager) BackupWalletData(dest string) error {
@@ -816,7 +855,7 @@ func (wm *WalletManager) RebuildWalletUnspent(walletID string) error {
 		wallet *openwallet.Wallet
 	)
 
-	wallets, err := openwallet.GetWalletsByKeyDir(wm.config.keyDir)
+	wallets, err := wm.GetWallets()
 	if err != nil {
 		return err
 	}
@@ -881,7 +920,7 @@ func (wm *WalletManager) ListUnspentFromLocalDB(walletID string) ([]*Unspent, er
 		wallet *openwallet.Wallet
 	)
 
-	wallets, err := openwallet.GetWalletsByKeyDir(wm.config.keyDir)
+	wallets, err := wm.GetWallets()
 	if err != nil {
 		return nil, err
 	}
@@ -977,40 +1016,40 @@ func (wm *WalletManager) BuildTransaction(utxos []*Unspent, to []string, change 
 //SignRawTransaction 钱包交易单
 func (wm *WalletManager) SignRawTransaction(txHex, walletID string, key *keystore.HDKey, utxos []*Unspent) (string, error) {
 
-	var (
-		wifs = make([]string, 0)
-	)
-
-	//查找未花签名需要的私钥
-	for _, u := range utxos {
-
-		childKey, err := key.DerivedKeyWithPath(u.HDAddress.HDPath)
-
-		privateKey, err := childKey.ECPrivKey()
-		if err != nil {
-			return "", err
-		}
-
-		privKey, _ := chainec.Secp256k1.PrivKeyFromBytes(privateKey.Serialize())
-
-		cfg := chaincfg.MainNetParams
-		if wm.config.isTestNet {
-			cfg = chaincfg.TestNet2Params
-		}
-
-		wif, err := hcutil.NewWIF(privKey, &cfg, chainec.ECTypeSecp256k1)
-		if err != nil {
-			return "", err
-		}
-
-		wifs = append(wifs, wif.String())
-
-	}
+	//var (
+	//	wifs = make([]string, 0)
+	//)
+	//
+	////查找未花签名需要的私钥
+	//for _, u := range utxos {
+	//
+	//	childKey, err := key.DerivedKeyWithPath(u.HDAddress.HDPath)
+	//
+	//	privateKey, err := childKey.ECPrivKey()
+	//	if err != nil {
+	//		return "", err
+	//	}
+	//
+	//	privKey, _ := chainec.Secp256k1.PrivKeyFromBytes(privateKey.Serialize())
+	//
+	//	cfg := chaincfg.MainNetParams
+	//	if wm.config.isTestNet {
+	//		cfg = chaincfg.TestNet2Params
+	//	}
+	//
+	//	wif, err := hcutil.NewWIF(privKey, &cfg, chainec.ECTypeSecp256k1)
+	//	if err != nil {
+	//		return "", err
+	//	}
+	//
+	//	wifs = append(wifs, wif.String())
+	//
+	//}
 
 	request := []interface{}{
 		txHex,
 		utxos,
-		wifs,
+		//wifs,
 	}
 
 	result, err := wm.client.Call("signrawtransaction", request)
@@ -1559,16 +1598,19 @@ func (wm *WalletManager) clearUnspends(utxos []*Unspent, wallet *openwallet.Wall
 }
 
 //createAddressWork 创建地址过程
-func (wm *WalletManager) createAddressWork(k *keystore.HDKey, producer chan<- []*openwallet.Address, walletID string, index, start, end uint64) {
+func (wm *WalletManager) createAddressWork(key *keystore.HDKey, producer chan<- []*openwallet.Address, walletID string, index, start, end uint64) {
 
 	runAddress := make([]*openwallet.Address, 0)
-	runWIFs := make([]string, 0)
+	//runWIFs := make([]string, 0)
 
 	for i := start; i < end; i++ {
+
 		// 生成地址
-		wif, address, errRun := wm.CreateNewPrivateKey(k, index, i)
+		address, errRun := wm.CreateNewAddress(key)
+
+		//wif, address, errRun := wm.CreateNewPrivateKey(k, index, i)
 		if errRun != nil {
-			log.Printf("Create new privKey failed unexpected error: %v\n", errRun)
+			log.Printf("Create new address failed unexpected error: %v\n", errRun)
 			continue
 		}
 
@@ -1580,20 +1622,20 @@ func (wm *WalletManager) createAddressWork(k *keystore.HDKey, producer chan<- []
 		//}
 
 		runAddress = append(runAddress, address)
-		runWIFs = append(runWIFs, wif)
+		//runWIFs = append(runWIFs, wif)
 	}
 
 	//批量导入私钥
-	failed, errRun := wm.ImportMulti(runAddress, runWIFs, walletID, true)
-	if errRun != nil {
-		producer <- make([]*openwallet.Address, 0)
-		return
-	}
+	//failed, errRun := wm.ImportMulti(runAddress, runWIFs, walletID, true)
+	//if errRun != nil {
+	//	producer <- make([]*openwallet.Address, 0)
+	//	return
+	//}
 
 	//删除导入失败的
-	for _, fi := range failed {
-		runAddress = append(runAddress[:fi], runAddress[fi+1:]...)
-	}
+	//for _, fi := range failed {
+	//	runAddress = append(runAddress[:fi], runAddress[fi+1:]...)
+	//}
 
 	//生成完成
 	producer <- runAddress
@@ -1698,6 +1740,7 @@ func (wm *WalletManager) printWalletList(list []*openwallet.Wallet) {
 
 	for i, w := range list {
 		a := w.SingleAssetsAccount(wm.config.symbol)
+		a.Balance = wm.GetWalletBalance(a.AccountID)
 		tableInfo = append(tableInfo, []interface{}{
 			i, a.AccountID, a.Alias, a.Balance,
 		})

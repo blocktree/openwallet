@@ -17,10 +17,8 @@ package hypercash
 
 import (
 	"fmt"
-	"github.com/HcashOrg/hcrpcclient"
 	"github.com/codeskyblue/go-sh"
 	"github.com/shopspring/decimal"
-	"log"
 	"math"
 	"path/filepath"
 	"testing"
@@ -42,27 +40,17 @@ func init() {
 	tw.client = NewClient(tw.config.serverAPI, token, true)
 }
 
-func TestWalletManager_GetBlockHeight(t *testing.T) {
-
-	height, err := tw.GetBlockHeight()
-	if err != nil {
-		t.Errorf("GetBlockHeight failed unexpected error: %v\n", err)
-		return
-	}
-	t.Logf("GetBlockHeight height = %d \n", height)
-
-}
-
 func TestCreateNewWallet(t *testing.T) {
-	_, _, err := tw.CreateNewWallet("ZBG2", "123456")
+	_, _, err := tw.CreateNewWallet("ZBX", "123")
 	if err != nil {
 		t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
 		return
 	}
 }
 
+
 func TestGetAddressesByAccount(t *testing.T) {
-	addresses, err := tw.GetAddressesByAccount("WKboeMWpu9cRFp3smkciS6qVY8TECRTxzJ")
+	addresses, err := tw.GetAddressesByAccount("")
 	if err != nil {
 		t.Errorf("GetAddressesByAccount failed unexpected error: %v\n", err)
 		return
@@ -74,7 +62,7 @@ func TestGetAddressesByAccount(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	_, _, err := tw.CreateBatchAddress("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", "1234qwer", 100)
+	_, _, err := tw.CreateBatchAddress("WLAioxPDFh8LbSd5pC7VVyS8qpFiFbcVHW", "123", 50)
 	if err != nil {
 		t.Errorf("CreateBatchAddress failed unexpected error: %v\n", err)
 		return
@@ -120,42 +108,69 @@ func TestGetWalletBalance(t *testing.T) {
 
 }
 
-func TestGetWalleList(t *testing.T) {
-	wallets, err := tw.GetWalletList()
+func TestGetWallets(t *testing.T) {
+	wallets, err := tw.GetWallets()
 	if err != nil {
-		t.Errorf("GetWalleList failed unexpected error: %v\n", err)
+		t.Errorf("GetWallets failed unexpected error: %v\n", err)
 		return
 	}
 
 	for i, w := range wallets {
-		t.Logf("GetWalleList wallet[%d] = %v", i, w)
+		t.Logf("GetWallets wallet[%d] = %v", i, w)
 	}
 }
 
-func TestCreateBatchPrivateKey(t *testing.T) {
 
-	w, err := tw.GetWalletInfo("WKD6QUMLyv93qBBdnURokKCrQKHeTQYeVu")
+func TestGetWalletList(t *testing.T) {
+	err := tw.GetWalletList()
 	if err != nil {
-		t.Errorf("CreateBatchPrivateKey failed unexpected error: %v\n", err)
+		t.Errorf("GetWalleList failed unexpected error: %v\n", err)
 		return
 	}
+}
 
-	key, err := w.HDKey("123")
-	if err != nil {
-		t.Errorf("CreateBatchPrivateKey failed unexpected error: %v\n", err)
-		return
-	}
+//func TestCreateBatchPrivateKey(t *testing.T) {
+//
+//	w, err := tw.GetWalletInfo("WKD6QUMLyv93qBBdnURokKCrQKHeTQYeVu")
+//	if err != nil {
+//		t.Errorf("CreateBatchPrivateKey failed unexpected error: %v\n", err)
+//		return
+//	}
+//
+//	key, err := w.HDKey("123")
+//	if err != nil {
+//		t.Errorf("CreateBatchPrivateKey failed unexpected error: %v\n", err)
+//		return
+//	}
+//
+//	wifs, err := tw.CreateBatchPrivateKey(key, 5)
+//	if err != nil {
+//		t.Errorf("CreateBatchPrivateKey failed unexpected error: %v\n", err)
+//		return
+//	}
+//
+//	for i, wif := range wifs {
+//		t.Logf("CreateBatchPrivateKey[%d] wif = %v \n", i, wif)
+//	}
+//
+//}
+//
+//func TestWalletManager_ImportPrivateKey(t *testing.T) {
+//	tw.UnlockWallet("123",5)
+//	err := tw.ImportPrivateKey("PtWVHGkven8UKMgrjbrnNDvBBQ6a4NN3GxtMefXNNhiEiDK1umBq2","imported")
+//	if err != nil {
+//		t.Errorf("ImportPrivateKey failed unexpected error: %v\n", err)
+//		return
+//	}
+//}
 
-	wifs, err := tw.CreateBatchPrivateKey(key, 5)
-	if err != nil {
-		t.Errorf("CreateBatchPrivateKey failed unexpected error: %v\n", err)
-		return
-	}
-
-	for i, wif := range wifs {
-		t.Logf("CreateBatchPrivateKey[%d] wif = %v \n", i, wif)
-	}
-
+func TestWalletManager_CreateNewAddress(t *testing.T) {
+	//address, err := tw.CreateNewAddress("")
+	//if err != nil {
+	//	t.Errorf("CreateNewAddress failed unexpected error: %v\n", err)
+	//	return
+	//}
+	//t.Logf("address: %s \n", address)
 }
 
 //func TestImportMulti(t *testing.T) {
@@ -234,7 +249,7 @@ func TestListUnspent(t *testing.T) {
 }
 
 func TestGetAddressesFromLocalDB(t *testing.T) {
-	addresses, err := tw.GetAddressesFromLocalDB("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", 0, -1)
+	addresses, err := tw.GetAddressesFromLocalDB("WLAioxPDFh8LbSd5pC7VVyS8qpFiFbcVHW", 0, -1)
 	if err != nil {
 		t.Errorf("GetAddressesFromLocalDB failed unexpected error: %v\n", err)
 		return
@@ -247,7 +262,7 @@ func TestGetAddressesFromLocalDB(t *testing.T) {
 
 func TestRebuildWalletUnspent(t *testing.T) {
 
-	err := tw.RebuildWalletUnspent("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ")
+	err := tw.RebuildWalletUnspent("WLAioxPDFh8LbSd5pC7VVyS8qpFiFbcVHW")
 	if err != nil {
 		t.Errorf("RebuildWalletUnspent failed unexpected error: %v\n", err)
 		return
@@ -257,7 +272,7 @@ func TestRebuildWalletUnspent(t *testing.T) {
 }
 
 func TestListUnspentFromLocalDB(t *testing.T) {
-	utxos, err := tw.ListUnspentFromLocalDB("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ")
+	utxos, err := tw.ListUnspentFromLocalDB("WLAioxPDFh8LbSd5pC7VVyS8qpFiFbcVHW")
 	if err != nil {
 		t.Errorf("ListUnspentFromLocalDB failed unexpected error: %v\n", err)
 		return
@@ -375,47 +390,4 @@ func TestRestoreWallet(t *testing.T) {
 		t.Errorf("RestoreWallet failed unexpected error: %v\n", err)
 	}
 
-}
-
-func TestGetBlockHeight(t *testing.T) {
-	// Load the certificate for the TLS connection which is automatically
-	// generated by hcd when it starts the RPC server and doesn't already
-	// have one.
-	//hcdHomeDir := hcutil.AppDataDir("hcd", false)
-	//certs, err := ioutil.ReadFile(filepath.Join(hcdHomeDir, "rpc.cert"))
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//
-	//// Create a new RPC client using websockets.  Since this example is
-	//// not long-lived, the connection will be closed as soon as the program
-	//// exits.
-	//connCfg := &hcrpcclient.ConnConfig{
-	//	Host:         "localhost:9678",
-	//	Endpoint:     "ws",
-	//	User:         "USER",
-	//	Pass:         "PASSWORD",
-	//	Certificates: certs,
-	//}
-
-	connCfg := &hcrpcclient.ConnConfig{
-		Host:       "192.168.2.193:10127",
-		Endpoint:   "ws",
-		User:       "wallethcd",
-		Pass:       "wallethcdpw",
-		DisableTLS: true,
-	}
-
-	client, err := hcrpcclient.New(connCfg, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer client.Shutdown()
-
-	// Query the RPC server for the current block count and display it.
-	blockCount, err := client.GetBlockCount()
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Printf("Block count: %d", blockCount)
 }

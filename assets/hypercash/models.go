@@ -16,8 +16,11 @@
 package hypercash
 
 import (
-	"github.com/tidwall/gjson"
+	"fmt"
+	"github.com/blocktree/OpenWallet/crypto"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/tidwall/gjson"
 )
 
 //BlockchainInfo 本地节点区块链信息
@@ -153,6 +156,7 @@ type Block struct {
 	Confirmations     uint64
 	Merkleroot        string
 	tx                []string
+	stx               []string
 	Previousblockhash string
 	Height            uint64 `storm:"id"`
 	Version           uint64
@@ -172,7 +176,13 @@ func NewBlock(json *gjson.Result) *Block {
 		txs = append(txs, tx.String())
 	}
 
+	stxs := make([]string, 0)
+	for _, tx := range gjson.Get(json.Raw, "stx").Array() {
+		stxs = append(txs, tx.String())
+	}
+
 	obj.tx = txs
+	obj.stx = stxs
 	obj.Previousblockhash = gjson.Get(json.Raw, "previousblockhash").String()
 	obj.Height = gjson.Get(json.Raw, "height").Uint()
 	obj.Version = gjson.Get(json.Raw, "version").Uint()
@@ -195,5 +205,22 @@ func (b *Block) BlockHeader() *openwallet.BlockHeader {
 	obj.Time = b.Time
 	obj.Symbol = Symbol
 
+	return &obj
+}
+
+//UnscanRecords 扫描失败的区块及交易
+type UnscanRecord struct {
+	ID          string `storm:"id"` // primary key
+	BlockHeight uint64
+	TxID        string
+	Reason      string
+}
+
+func NewUnscanRecord(height uint64, txID, reason string) *UnscanRecord {
+	obj := UnscanRecord{}
+	obj.BlockHeight = height
+	obj.TxID = txID
+	obj.Reason = reason
+	obj.ID = common.Bytes2Hex(crypto.SHA256([]byte(fmt.Sprintf("%d_%s", height, txID))))
 	return &obj
 }
