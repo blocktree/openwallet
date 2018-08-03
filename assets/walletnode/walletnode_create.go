@@ -50,20 +50,22 @@ func _CheckAndCreateConfig(symbol string) error {
 	// Check <Symbol>.ini
 	if err := loadConfig(symbol); err == nil {
 		// <Symbol>.ini exist, return and go next
-		return nil
+		// return nil
 	} else {
 		fmt.Println("Current: ", err)
 	}
 
 	// Ask about whether create new
 	dirname, _ := filepath.Abs("./")
-	if isnew, err := console.InputText(fmt.Sprintf("Init new %s wallet fullnode in '%s/'(yes, no)[yes]: ", s.ToUpper(symbol), dirname), false); err != nil {
+	if isnew, err := console.InputText(fmt.Sprintf("Init new %s wallet fullnode in '%s/'(yes, no, quit)[yes]: ", s.ToUpper(symbol), dirname), false); err != nil {
 		log.Println(err)
 		return err
 	} else {
 		switch isnew {
 		case "", "yes":
 		case "no":
+			return nil
+		case "quit":
 			return errors.New("Init terminated!")
 		default:
 			return errors.New("Invalid!")

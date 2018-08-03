@@ -33,9 +33,9 @@ func init() {
 
 	tw = NewWalletManager()
 
-	tw.config.serverAPI = "https://192.168.2.193:10128"
-	tw.config.rpcUser = "wallethcd"
-	tw.config.rpcPassword = "wallethcdpw"
+	tw.config.serverAPI = "https://192.168.2.194:24009"
+	tw.config.rpcUser = "wallet"
+	tw.config.rpcPassword = "walletPassword2017"
 	token := basicAuth(tw.config.rpcUser, tw.config.rpcPassword)
 	tw.client = NewClient(tw.config.serverAPI, token, true)
 }

@@ -18,6 +18,7 @@ package assets
 import (
 	"github.com/blocktree/OpenWallet/assets/bitcoin"
 	"github.com/blocktree/OpenWallet/assets/bitcoincash"
+	"github.com/blocktree/OpenWallet/assets/bopo"
 	"github.com/blocktree/OpenWallet/assets/bytom"
 	"github.com/blocktree/OpenWallet/assets/cardano"
 	"github.com/blocktree/OpenWallet/assets/hypercash"
@@ -109,8 +110,9 @@ func init() {
 	log.Printf("Register wallet manager ......")
 	RegWMD(strings.ToLower(cardano.Symbol), &cardano.WalletManager{})
 	RegWMD(strings.ToLower(bytom.Symbol), &bytom.WalletManager{})
-	RegWMD(strings.ToLower(bitcoin.Symbol), bitcoin.NewWalletManager())
+	RegWMD(strings.ToLower(bopo.Symbol), &bopo.WalletManager{})
 	RegWMD(strings.ToLower(bitcoincash.Symbol), &bitcoincash.WalletManager{})
 	RegWMD(strings.ToLower(sia.Symbol), &sia.WalletManager{})
+	RegWMD(strings.ToLower(bitcoin.Symbol), bitcoin.NewWalletManager())
 	RegWMD(strings.ToLower(hypercash.Symbol), hypercash.NewWalletManager())
 }

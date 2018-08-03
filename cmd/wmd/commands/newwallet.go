@@ -16,10 +16,10 @@
 package commands
 
 import (
+	"github.com/blocktree/OpenWallet/assets"
 	"github.com/blocktree/OpenWallet/cmd/utils"
 	"github.com/blocktree/OpenWallet/logger"
 	"gopkg.in/urfave/cli.v1"
-	"github.com/blocktree/OpenWallet/assets"
 )
 
 var (
@@ -53,6 +53,16 @@ This command will init the wallet node.
 	`,
 			},
 			{
+				//获取钱包列表信息
+				Name:     "list",
+				Usage:    "Get all wallet information",
+				Action:   getWalletList,
+				Category: "WALLET COMMANDS",
+				Flags: []cli.Flag{
+					utils.SymbolFlag,
+				},
+			},
+			{
 				//创建钱包
 				Name:      "new",
 				Usage:     "new a currency wallet",
@@ -71,10 +81,10 @@ This command will start the wallet node, and create new wallet.
 			},
 			{
 				//批量创建地址
-				Name:      "batchaddr",
-				Usage:     "Create batch address for wallet",
-				Action:    batchAddress,
-				Category:  "WALLET COMMANDS",
+				Name:     "batchaddr",
+				Usage:    "Create batch address for wallet",
+				Action:   batchAddress,
+				Category: "WALLET COMMANDS",
 				Flags: []cli.Flag{
 					utils.SymbolFlag,
 					utils.BatchFlag,
@@ -89,10 +99,10 @@ This command will create batch address for your given wallet id.
 
 			{
 				//启动定时器汇总钱包
-				Name:      "startsum",
-				Usage:     "Start a timer to sum wallet balance",
-				Action:    startSummary,
-				Category:  "WALLET COMMANDS",
+				Name:     "startsum",
+				Usage:    "Start a timer to sum wallet balance",
+				Action:   startSummary,
+				Category: "WALLET COMMANDS",
 				Flags: []cli.Flag{
 					utils.SymbolFlag,
 					utils.BatchFlag,
@@ -107,37 +117,11 @@ to a sum address.
 	`,
 			},
 			{
-				//备份钱包私钥
-				Name:      "backup",
-				Usage:     "Backup wallet key in filePath: ./data/<symbol>/key/",
-				Action:    backupWalletKey,
-				Category:  "WALLET COMMANDS",
-				Flags: []cli.Flag{
-					utils.SymbolFlag,
-				},
-				Description: `
-	wmd wallet backup -s ada
-
-This command will Backup wallet key in filePath: ./data/<symbol>/key/.
-
-	`,
-			},
-			{
-				//获取钱包列表信息
-				Name:      "list",
-				Usage:     "Get all wallet information",
-				Action:    getWalletList,
-				Category:  "WALLET COMMANDS",
-				Flags: []cli.Flag{
-					utils.SymbolFlag,
-				},
-			},
-			{
 				//发起交易单
-				Name:      "transfer",
-				Usage:     "Select a wallet transfer assets",
-				Action:    sendTransaction,
-				Category:  "WALLET COMMANDS",
+				Name:     "transfer",
+				Usage:    "Select a wallet transfer assets",
+				Action:   sendTransaction,
+				Category: "WALLET COMMANDS",
 				Flags: []cli.Flag{
 					utils.SymbolFlag,
 				},
@@ -149,11 +133,27 @@ This command will transfer the coin.
 	`,
 			},
 			{
+				//备份钱包私钥
+				Name:     "backup",
+				Usage:    "Backup wallet key in filePath: ./data/<symbol>/key/",
+				Action:   backupWalletKey,
+				Category: "WALLET COMMANDS",
+				Flags: []cli.Flag{
+					utils.SymbolFlag,
+				},
+				Description: `
+	wmd wallet backup -s ada
+
+This command will Backup wallet key in filePath: ./data/<symbol>/key/.
+
+	`,
+			},
+			{
 				//恢复钱包
-				Name:      "restore",
-				Usage:     "Restore a wallet by backup data",
-				Action:    restoreWallet,
-				Category:  "WALLET COMMANDS",
+				Name:     "restore",
+				Usage:    "Restore a wallet by backup data",
+				Action:   restoreWallet,
+				Category: "WALLET COMMANDS",
 				Flags: []cli.Flag{
 					utils.SymbolFlag,
 				},
@@ -239,7 +239,7 @@ func startSummary(c *cli.Context) error {
 }
 
 //backupWalletKey 备份钱包
-func backupWalletKey(c *cli.Context) error  {
+func backupWalletKey(c *cli.Context) error {
 	symbol := c.String("symbol")
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
@@ -256,7 +256,7 @@ func backupWalletKey(c *cli.Context) error  {
 }
 
 //getWalletList 获取钱包列表信息
-func getWalletList(c *cli.Context) error  {
+func getWalletList(c *cli.Context) error {
 	symbol := c.String("symbol")
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
@@ -273,7 +273,7 @@ func getWalletList(c *cli.Context) error  {
 }
 
 //sendTransaction 发起交易单
-func sendTransaction(c *cli.Context) error  {
+func sendTransaction(c *cli.Context) error {
 	symbol := c.String("symbol")
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
@@ -290,7 +290,7 @@ func sendTransaction(c *cli.Context) error  {
 }
 
 //restoreWallet 恢复钱包
-func restoreWallet(c *cli.Context) error  {
+func restoreWallet(c *cli.Context) error {
 	symbol := c.String("symbol")
 	if len(symbol) == 0 {
 		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
