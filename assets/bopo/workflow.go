@@ -20,6 +20,7 @@ import (
 	// "encoding/json"
 	"fmt"
 	"github.com/astaxie/beego/config"
+	"github.com/tidwall/gjson"
 	// "github.com/tidwall/gjson"
 	// "github.com/blocktree/OpenWallet/common"
 	// "github.com/blocktree/OpenWallet/common/file"
@@ -54,6 +55,12 @@ func printWalletList(list []*Wallet) {
 	tableInfo := make([][]interface{}, 0)
 
 	for i, w := range list {
+
+		// Get balance
+		if d, err := client.Call(fmt.Sprintf("chain/%s", w.Addr), "GET", nil); err == nil {
+			w.Balance = gjson.ParseBytes(d).Map()["pais"].String()
+		}
+
 		tableInfo = append(tableInfo, []interface{}{
 			i, w.WalletID, w.Alias, w.Addr, w.Balance,
 		})
@@ -70,14 +77,11 @@ func printWalletList(list []*Wallet) {
 // loadConfig 读取配置
 func loadConfig() error {
 
-	var (
-		c   config.Configer
-		err error
-	)
+	var c config.Configer
 
 	//读取配置
 	absFile := filepath.Join(configFilePath, configFileName)
-	c, err = config.NewConfig("ini", absFile)
+	c, err := config.NewConfig("ini", absFile)
 	if err != nil {
 		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
 	}

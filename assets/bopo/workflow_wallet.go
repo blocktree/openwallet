@@ -42,7 +42,6 @@ import (
 	//"time"
 )
 
-// -----------------------------------------------------------------------------------
 //getWalletList 获取钱包列表
 func getWalletList() ([]*Wallet, error) {
 	var wallets = make([]*Wallet, 0)
@@ -57,10 +56,10 @@ func getWalletList() ([]*Wallet, error) {
 		addr := a.String()
 		w := &Wallet{Alias: walletid, Addr: addr}
 
-		// Get balance
-		if d, err := client.Call(fmt.Sprintf("chain/%s", addr), "GET", nil); err == nil {
-			w.Balance = gjson.ParseBytes(d).Map()["pais"].String()
-		}
+		//  // Get balance
+		//  if d, err := client.Call(fmt.Sprintf("chain/%s", addr), "GET", nil); err == nil {
+		//  	w.Balance = gjson.ParseBytes(d).Map()["pais"].String()
+		//  }
 
 		wallets = append(wallets, w)
 	}
@@ -96,6 +95,7 @@ func createWallet(name string) (*Wallet, error) {
 	return wallet, nil
 }
 
+// ----------------------------------------------------------------------------- inner
 // //BackupWalletData 备份钱包
 // func BackupWalletData(dest string) error {
 //
@@ -277,6 +277,7 @@ func createWallet(name string) (*Wallet, error) {
 //
 // 	return err
 // }
+
 // //SummaryWallets 执行汇总流程
 // func SummaryWallets() {
 //

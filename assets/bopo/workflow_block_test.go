@@ -15,4 +15,34 @@
 
 package bopo
 
-import ()
+import (
+	"fmt"
+	"testing"
+)
+
+var (
+	testUser    = "SimonLuo"
+	testPass    = "1234qwer"
+	testDataDir = "/openwallet/data/bch/testnet3/"
+	testKey     = "" // Generating within testing CreateNewWallet
+)
+
+func init() {
+	serverAPI = "http://192.168.2.194:10061"
+	isTestNet = false
+	client = &Client{
+		BaseURL: serverAPI,
+		Debug:   true,
+	}
+}
+
+func TestGetBlockChainInfo(t *testing.T) {
+	b, err := GetBlockChainInfo()
+	if err != nil {
+		t.Errorf("GetBlockChainInfo failed unexpected error: %v\n", err)
+	} else {
+		t.Logf("GetBlockChainInfo info: %v\n", b)
+	}
+
+	fmt.Printf("TestGetBlockChainInfo: \n\t%+v\n", b)
+}
