@@ -21,6 +21,7 @@ import (
 	"github.com/blocktree/OpenWallet/assets/bopo"
 	"github.com/blocktree/OpenWallet/assets/bytom"
 	"github.com/blocktree/OpenWallet/assets/cardano"
+	"github.com/blocktree/OpenWallet/assets/hypercash"
 	"github.com/blocktree/OpenWallet/assets/sia"
 	"log"
 	"strings"
@@ -113,4 +114,5 @@ func init() {
 	RegWMD(strings.ToLower(bitcoincash.Symbol), &bitcoincash.WalletManager{})
 	RegWMD(strings.ToLower(sia.Symbol), &sia.WalletManager{})
 	RegWMD(strings.ToLower(bitcoin.Symbol), bitcoin.NewWalletManager())
+	RegWMD(strings.ToLower(hypercash.Symbol), hypercash.NewWalletManager())
 }

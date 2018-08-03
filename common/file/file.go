@@ -221,6 +221,21 @@ func Delete(file string) bool {
 	}
 }
 
+
+// IsUserFile ignores editor backups, hidden files and folders/symlinks.
+func IsUserFile(fi os.FileInfo) bool {
+	// Skip editor backups and UNIX-style hidden files.
+	if strings.HasSuffix(fi.Name(), "~") || strings.HasPrefix(fi.Name(), ".") {
+		return false
+	}
+	// Skip misc special files, directories (yes, symlinks too).
+	if fi.IsDir() || fi.Mode()&os.ModeType != 0 {
+		return false
+	}
+	return true
+}
+
+
 // TODO: implement those functions
 func isReadable(mode os.FileMode) bool { return mode&0400 != 0 }
 
