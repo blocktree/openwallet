@@ -17,33 +17,108 @@ package bopo
 
 import (
 	"errors"
-	// "fmt"
-	// "github.com/blocktree/OpenWallet/common"
-	// "github.com/blocktree/OpenWallet/console"
-	// "github.com/blocktree/OpenWallet/logger"
-	// "github.com/blocktree/OpenWallet/timer"
-	// "github.com/shopspring/decimal"
-	// "log"
-	// "path/filepath"
-	// "strings"
+	"github.com/blocktree/OpenWallet/console"
+	"time"
 )
 
 type WalletManager struct{}
 
 func (w *WalletManager) InitConfigFlow() error {
-	return errors.New("Writing!")
+	return errors.New("Writing1!")
 }
 
 func (w *WalletManager) ShowConfig() error {
-	return errors.New("Writing!")
+	return errors.New("Writing2!")
+}
+
+func (w *WalletManager) GetWalletList() error {
+	// Load config
+	if err := loadConfig(); err != nil {
+		return err
+	}
+
+	wallets, err := getWalletList()
+	if err != nil {
+		return err
+	}
+
+	printWalletList(wallets)
+	return nil
 }
 
 func (w *WalletManager) CreateWalletFlow() error {
-
-	if _, err := createNewWallet("c4"); err != nil {
+	// Load config
+	if err := loadConfig(); err != nil {
 		return err
 	}
+
+	name, err := console.InputText("Wallet name: ", true)
+	if err != nil {
+		return err
+	}
+
+	if wallet, err := createWallet(name); err != nil {
+		return err
+	} else {
+		printWalletList([]*Wallet{wallet})
+	}
+
 	return nil
+}
+
+func (w *WalletManager) TransferFlow() error {
+	// Load config
+	if err := loadConfig(); err != nil {
+		return err
+	}
+
+	// Show all wallet addr
+	if err := w.GetWalletList(); err != nil {
+		return err
+	}
+
+	// Wallet ID
+	wid, err := console.InputText("Use wallet (By: alias): ", true)
+	if err != nil {
+		return err
+	}
+	// To addr
+	toaddr, err := console.InputText("To address: ", true)
+	if err != nil {
+		return err
+	}
+	// Amount
+	amount, err := console.InputText("Amount(Unit: pais, 1 bopo = 10^8 pais): ", true)
+	if err != nil {
+		return err
+	}
+	message := time.Now().UTC().Format(time.RFC850)
+
+	if wallet, err := toTransfer(wid, toaddr, amount, message); err != nil {
+		return err
+	} else {
+		printWalletList([]*Wallet{wallet})
+	}
+
+	return nil
+}
+
+func (w *WalletManager) BackupWalletFlow() error {
+	// Load config
+	if err := loadConfig(); err != nil {
+		return err
+	}
+
+	return errors.New("Writing!")
+}
+
+func (w *WalletManager) RestoreWalletFlow() error {
+	// Load config
+	if err := loadConfig(); err != nil {
+		return err
+	}
+
+	return errors.New("Writing!")
 }
 
 func (w *WalletManager) CreateAddressFlow() error {
@@ -51,28 +126,5 @@ func (w *WalletManager) CreateAddressFlow() error {
 }
 
 func (w *WalletManager) SummaryFollow() error {
-	return errors.New("Writing!")
-}
-
-func (w *WalletManager) BackupWalletFlow() error {
-	return errors.New("Writing!")
-}
-
-func (w *WalletManager) GetWalletList() error {
-
-	list, err := getWalletList()
-	if err != nil {
-		return err
-	}
-
-	printWalletList(list)
-	return nil
-}
-
-func (w *WalletManager) TransferFlow() error {
-	return errors.New("Writing!")
-}
-
-func (w *WalletManager) RestoreWalletFlow() error {
 	return errors.New("Writing!")
 }

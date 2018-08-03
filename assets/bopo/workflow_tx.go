@@ -15,4 +15,28 @@
 
 package bopo
 
-import ()
+import (
+	// "fmt"
+	"github.com/imroc/req"
+	// "github.com/tidwall/gjson"
+	// "github.com/pkg/errors"
+	// "log"
+)
+
+// Transfer
+func toTransfer(wid, toaddr, amount, message string) (*Wallet, error) {
+	var wallet *Wallet
+
+	request := req.Param{"id": wid, "to": toaddr, "amount": amount, "message": message}
+	if _, err := client.Call("rpc/fund", "POST", request); err != nil {
+		return nil, err
+	} else {
+		if w, err := getWalletInfo(wid); err != nil {
+			wallet = &Wallet{}
+		} else {
+			wallet = w
+		}
+	}
+
+	return wallet, nil
+}

@@ -76,10 +76,10 @@ func (c *Client) Call(path, method string, request interface{}) ([]byte, error) 
 	if code.Exists() != true || code.Int() != 0 {
 		msg := gjson.GetBytes(rs, "msg")
 		if msg.Exists() != true {
-			return nil, errors.New(fmt.Sprintf("Bopo returns invalid! \nReturn: ", gjson.ParseBytes(rs).String()))
+			// 500: return nil, errors.New(fmt.Sprintf("Bopo returns invalid! \nReturn: ", gjson.ParseBytes(rs).String()))
 		}
-		return nil, errors.New(msg.String())
-		// log.Println(fmt.Sprintf("Bopo returns invalid! \nReturn: ", gjson.ParseBytes(rs).String()))
+		// 500: return nil, errors.New(msg.String())
+		log.Println(fmt.Sprintf("Bopo returns invalid! \nReturn: ", gjson.ParseBytes(rs).String()))
 	}
 	data := gjson.GetBytes(rs, "data")
 	if data.Exists() != true {

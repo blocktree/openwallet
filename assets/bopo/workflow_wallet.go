@@ -25,8 +25,7 @@ import (
 	"github.com/tidwall/gjson"
 	// "github.com/blocktree/OpenWallet/common"
 	// "github.com/blocktree/OpenWallet/common/file"
-	"github.com/blocktree/OpenWallet/keystore"
-	"github.com/bndr/gotabulate"
+	// "github.com/blocktree/OpenWallet/keystore"
 	// "github.com/btcsuite/btcd/chaincfg"
 	// "github.com/btcsuite/btcutil"
 	// "github.com/btcsuite/btcutil/hdkeychain"
@@ -43,46 +42,10 @@ import (
 	//"time"
 )
 
-var (
-	//秘钥存取
-	storage *keystore.HDKeystore
-	// 节点客户端
-	client *Client
-)
-
-func init() {
-	storage = keystore.NewHDKeystore(keyDir, keystore.StandardScryptN,
-		keystore.StandardScryptP)
-}
-
-//打印钱包列表
-func printWalletList(list []*Wallet) {
-
-	tableInfo := make([][]interface{}, 0)
-
-	for i, w := range list {
-		tableInfo = append(tableInfo, []interface{}{
-			i, w.WalletID, w.Alias, w.Addr, w.Balance,
-		})
-	}
-
-	t := gotabulate.Create(tableInfo)
-	// Set Headers
-	t.SetHeaders([]string{"No.", "ID", "Alias", "Addr", "Balance"})
-
-	//打印信息
-	fmt.Println(t.Render("simple"))
-}
-
 // -----------------------------------------------------------------------------------
 //getWalletList 获取钱包列表
 func getWalletList() ([]*Wallet, error) {
 	var wallets = make([]*Wallet, 0)
-
-	// Load config
-	if err := loadConfig(); err != nil {
-		return nil, err
-	}
 
 	r, err := client.Call("account", "GET", nil)
 	if err != nil {
@@ -105,19 +68,29 @@ func getWalletList() ([]*Wallet, error) {
 	return wallets, nil
 }
 
-//CreateNewWallet 创建钱包
-func createNewWallet(name string) (*Wallet, error) {
-	var wallet *Wallet
+// Get one wallet info
+func getWalletInfo(name string) (*Wallet, error) {
 
-	// Load config
-	if err := loadConfig(); err != nil {
+	if r, err := client.Call(fmt.Sprintf("account/%s", name), "GET", nil); err != nil {
 		return nil, err
+	} else {
+		data := gjson.ParseBytes(r).Map()
+		return &Wallet{Alias: name, Addr: data["address"].String()}, nil
 	}
+}
+
+//CreateNewWallet 创建钱包
+func createWallet(name string) (*Wallet, error) {
+	var wallet *Wallet
 
 	if _, err := client.Call("account", "POST", req.Param{"id": name}); err != nil {
 		return nil, err
 	} else {
-		wallet = &Wallet{WalletID: name}
+		if w, err := getWalletInfo(name); err != nil {
+			wallet = &Wallet{}
+		} else {
+			wallet = w
+		}
 	}
 
 	return wallet, nil
