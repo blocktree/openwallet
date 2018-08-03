@@ -17,6 +17,7 @@ package walletnode
 
 import (
 	"github.com/shopspring/decimal"
+	"log"
 	s "strings"
 	"time"
 )
@@ -24,7 +25,7 @@ import (
 var (
 	Symbol                   string                              // Current fullnode wallet's symbol
 	FullnodeContainerConfigs map[string]*FullnodeContainerConfig // All configs of fullnode wallet for Docker
-	FullnodeContainerPath    *FullnodeContainerPathConfig        // All paths of fullnode wallet on Docker
+	// FullnodeContainerPath    *FullnodeContainerPathConfig        // All paths of fullnode wallet on Docker
 )
 
 // Node setup 节点配置
@@ -51,8 +52,8 @@ var (
 	configFilePath = ""
 
 	// data path
-	mainNetDataPath = ""
-	testNetDataPath = ""
+	mainNetDataPath = "/data"
+	testNetDataPath = "/data/testdata"
 
 	// Fullnode API URL
 	apiURL = ""
@@ -90,15 +91,15 @@ nodeInstallPath = ""
 # node api url
 apiURL = ""
 # Is network test?
-isTestNet = false
+isTestNet = true
 # RPC Authentication Username
-rpcUser = ""
+rpcUser = "wallet"
 # RPC Authentication Password
-rpcPassword = ""
+rpcPassword = "walletPassword2017"
 # mainnet data path
-mainNetDataPath = ""
+mainNetDataPath = "/data"
 # testnet data path
-testNetDataPath = ""
+testNetDataPath = "/data/testdata"
 # the safe address that wallet send money to.
 sumAddress = ""
 # when wallet's balance is over this value, the wallet willl send money to [sumAddress]
@@ -112,14 +113,13 @@ serverPort = ""
 )
 
 type FullnodeContainerPathConfig struct {
-	EXEC_PATH     string
-	DATA_PATH     string
-	TESTDATA_PATH string
+	EXEC_PATH string
+	DATA_PATH string
 }
 
 type FullnodeContainerConfig struct {
-	CMD     []string    // Commands to run fullnode wallet ex: {"/bin/sh", "-c", "ls -l"}
-	PORT    [][2]string // Which ports need to be mapped, ex: {{hostport, innerport}, ...}
+	CMD     [2][]string // Commands to run fullnode wallet ex: {{"/bin/sh", "mainnet"}, {"/bin/sh", "testnet"}}
+	PORT    [][3]string // Which ports need to be mapped, ex: {{innerPort, mainNetPort, testNetPort}, ...}
 	APIPORT string      // Port of default fullnode API(within container), from PORT
 	IMAGE   string      // Image that container run from
 }
@@ -127,42 +127,60 @@ type FullnodeContainerConfig struct {
 func (p *FullnodeContainerPathConfig) init(symbol string) error {
 	p.EXEC_PATH = s.Replace(p.EXEC_PATH, "<Symbol>", symbol, 1)
 	p.DATA_PATH = s.Replace(p.DATA_PATH, "<Symbol>", symbol, 1)
-	p.TESTDATA_PATH = s.Replace(p.TESTDATA_PATH, "<Symbol>", symbol, 1)
 	return nil
 }
 
 func init() {
+	log.SetFlags(log.Lshortfile | log.LstdFlags)
+
 	FullnodeContainerConfigs = map[string]*FullnodeContainerConfig{
 		"btc": &FullnodeContainerConfig{
-			CMD:     []string{"/bin/sh", "-c", "while true; do ping 8.8.8.8; done"},
-			PORT:    [][2]string{{"22/tcp", "10122"}, {"80/tcp", "10180"}},
-			APIPORT: string("80/tcp"), // Same within PORT
-			IMAGE:   string("uu-nginx"),
+			CMD: [2][]string{{"/usr/bin/bitcoind", "-datadir=/openwallet/data", "-conf=/etc/bitcoin.conf"},
+				{"/usr/bin/bitcoind", "-datadir=/openwallet/testdata", "-conf=/etc/bitcoin-test.conf"}},
+			PORT:    [][3]string{{"18332/tcp", "10001", "20001"}},
+			APIPORT: string("18332/tcp"), // Same within PORT
+			IMAGE:   string("openwallet/btc:0.15.1"),
 		},
 		"bch": &FullnodeContainerConfig{
-			CMD:     []string{"/bin/sh", "-c", "while true; do ping 8.8.8.8; done"},
-			PORT:    [][2]string{{"22/tcp", "10222"}, {"80/tcp", "10280"}},
-			APIPORT: string("80/tcp"),
-			IMAGE:   string("uu-nginx"),
+			CMD: [2][]string{{"/usr/bin/bitcoind", "-datadir=/openwallet/data", "-conf=/etc/bitcoin.conf"},
+				{"/usr/bin/bitcoind", "-datadir=/openwallet/testdata", "-conf=/etc/bitcoin-test.conf"}},
+			PORT:    [][3]string{{"18335/tcp", "10011", "20011"}},
+			APIPORT: string("18335/tcp"),
+			IMAGE:   string("openwallet/bch:0.17.1"),
 		},
 		"eth": &FullnodeContainerConfig{
-			CMD:     []string{"/bin/sh", "-c", "while true; do ping 8.8.8.8; done"},
-			PORT:    [][2]string{{"22/tcp", "10322"}, {"80/tcp", "10380"}},
-			APIPORT: string("80/tcp"),
-			IMAGE:   string("uu-nginx"),
+			// CMD: [2][]string{{"/usr/bin/parity", "--port=30307", "--datadir=/openwallet/data", "--cache-size=4096", "--min-peers=25", "--max-peers=50", "--jsonrpc-interface=0.0.0.0", "--jsonrpc-port=18332"},
+			// 	{"/usr/bin/parity", "--port=30307", "--datadir=/openwallet/testdata", "--cache-size=4096", "--min-peers=25", "--max-peers=50", "--jsonrpc-interface=0.0.0.0", "--jsonrpc-port=18332"}},
+			CMD: [2][]string{{"/bin/bash", "-c", "/usr/sbin/geth.eth --port=30301 --datadir=/openwallet/data --rpcapi=eth,personal,net -rpc --rpcaddr=0.0.0.0 --rpcport=18332 >> /openwallet/data/run.log 2>&1"},
+				{"/bin/bash", "-c", "cp -rf /root/chain/* /openwallet/testdata/ && /usr/sbin/geth.eth --port=30301 --datadir=/openwallet/testdata --rpcapi=eth,personal,net -rpc --rpcaddr=0.0.0.0 --rpcport=18332 --nodiscover >> /openwallet/testdata/run.log 2>&1"}},
+			PORT:    [][3]string{{"18332/tcp", "10021", "20021"}},
+			APIPORT: string("18332/tcp"),
+			IMAGE:   string("openwallet/eth:geth-1.7.3"),
 		},
 		"eos": &FullnodeContainerConfig{
-			CMD:     []string{"/bin/sh", "-c", "while true; do ping 8.8.8.8; done"},
-			PORT:    [][2]string{{"22/tcp", "10422"}, {"80/tcp", "10480"}},
-			APIPORT: string("80/tcp"),
-			IMAGE:   string("uu-nginx"),
+			CMD:     [2][]string{{"/bin/bash", "-c", "while sleep 1; do date; done"}, {}},
+			PORT:    [][3]string{{"3000/tcp", "10031", "20031"}, {"8888/tcp", "10032", "20032"}},
+			APIPORT: string("3000/tcp"),
+			IMAGE:   string("openwallet/eos:latest"),
+		},
+		"sc": &FullnodeContainerConfig{
+			CMD: [2][]string{{"/usr/bin/siad", "-M gctwrh", "--api-addr=0.0.0.0:9980", "--authenticate-api", "--disable-api-security"},
+				{"/usr/bin/siad", "-M gctwrh", "--api-addr=0.0.0.0:9980", "--authenticate-api", "--disable-api-security"}},
+			PORT:    [][3]string{{"9980/tcp", "10041", "20041"}, {"9981/tcp", "10042", "20042"}},
+			APIPORT: string("9980/tcp"),
+			IMAGE:   string("openwallet/sc:1.3.3"),
+		},
+		"iota": &FullnodeContainerConfig{
+			CMD:     [2][]string{{"/bin/bash", "-c", "while sleep 1; do date; done"}, {}},
+			PORT:    [][3]string{{"18265/tcp", "10051", "20051"}},
+			APIPORT: string("18265/tcp"),
+			IMAGE:   string("openwallet/iota:latest"),
 		},
 	}
-	FullnodeContainerPath = &FullnodeContainerPathConfig{
-		EXEC_PATH:     "/storage/openwallet/exec/<Symbol>/",
-		DATA_PATH:     "/storage/openwallet/data/<Symbol>/data/",
-		TESTDATA_PATH: "/storage/openwallet/data/<Symbol>/testdata/",
-	}
+	// FullnodeContainerPath = &FullnodeContainerPathConfig{
+	// 	EXEC_PATH: "/openwallet/exec/<Symbol>/",
+	// 	DATA_PATH: "/openwallet/data/<Symbol>/",
+	// }
 }
 
 // Private function, generate container name by <Symbol> and <isTestNet>
@@ -175,8 +193,8 @@ func _GetCName(symbol string) (string, error) {
 
 	// Within testnet, use "<Symbol>_testnet" as container name
 	if isTestNet == "true" {
-		return "e" + s.ToLower(symbol) + "_testnet", nil
+		return s.ToLower(symbol) + "_testnet", nil
 	} else {
-		return "e" + s.ToLower(symbol), nil
+		return s.ToLower(symbol), nil
 	}
 }

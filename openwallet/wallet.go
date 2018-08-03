@@ -154,7 +154,6 @@ func (w *Wallet) GetAddress(address string) *Address {
 	return &obj
 }
 
-
 //GetAddressesByAccountID 通过账户ID获取地址列表
 func (w *Wallet) GetAddressesByAccount(accountID string) []*Address {
 	db, err := w.OpenDB()
