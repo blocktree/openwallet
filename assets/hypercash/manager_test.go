@@ -33,11 +33,13 @@ func init() {
 
 	tw = NewWalletManager()
 
-	tw.config.serverAPI = "https://192.168.2.194:24009"
-	tw.config.rpcUser = "wallet"
-	tw.config.rpcPassword = "walletPassword2017"
+	tw.config.walletAPI = "https://192.168.2.193:10128"
+	tw.config.chainAPI = "https://192.168.2.193:10127"
+	tw.config.rpcUser = "wallethcd"
+	tw.config.rpcPassword = "wallethcdpw"
 	token := basicAuth(tw.config.rpcUser, tw.config.rpcPassword)
-	tw.client = NewClient(tw.config.serverAPI, token, true)
+	tw.walletClient = NewClient(tw.config.walletAPI, token, true)
+	tw.hcdClient = NewClient(tw.config.chainAPI, token, true)
 }
 
 func TestCreateNewWallet(t *testing.T) {

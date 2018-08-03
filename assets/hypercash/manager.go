@@ -42,7 +42,8 @@ const (
 
 type WalletManager struct {
 	storage      *keystore.HDKeystore          //秘钥存取
-	client       *Client                       // 节点客户端
+	hcdClient    *Client                       // 全节点客户端
+	walletClient *Client                       // 节点客户端
 	config       *WalletConfig                 //钱包管理配置
 	walletsInSum map[string]*openwallet.Wallet //参与汇总的钱包
 	blockscanner *BTCBlockScanner              //区块扫描器
@@ -75,7 +76,7 @@ func (wm *WalletManager) GetAddressesByAccount(walletID string) ([]string, error
 	//	}
 	//}
 
-	result, err := wm.client.Call("getaddressesbyaccount", nil)
+	result, err := wm.walletClient.Call("getaddressesbyaccount", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +128,7 @@ func (wm *WalletManager) CreateNewAddress(key *keystore.HDKey) (*openwallet.Addr
 		"ignore",
 	}
 
-	result, err := wm.client.Call("getnewaddress", request)
+	result, err := wm.walletClient.Call("getnewaddress", request)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +156,7 @@ func (wm *WalletManager) CreateNewAddress(key *keystore.HDKey) (*openwallet.Addr
 //		false,
 //	}
 //
-//	_, err := wm.client.Call("importprivkey", request)
+//	_, err := wm.walletClient.Call("importprivkey", request)
 //	if err != nil {
 //		return err
 //	}
@@ -217,7 +218,7 @@ func (wm *WalletManager) ImportMulti(addresses []*openwallet.Address, keys []str
 		},
 	}
 
-	result, err := wm.client.Call("importmulti", request)
+	result, err := wm.walletClient.Call("importmulti", request)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +241,7 @@ func (wm *WalletManager) UnlockWallet(passphrase string, seconds int) error {
 		seconds,
 	}
 
-	_, err := wm.client.Call("walletpassphrase", request)
+	_, err := wm.walletClient.Call("walletpassphrase", request)
 	if err != nil {
 		return err
 	}
@@ -252,7 +253,7 @@ func (wm *WalletManager) UnlockWallet(passphrase string, seconds int) error {
 //LockWallet 锁钱包
 func (wm *WalletManager) LockWallet() error {
 
-	_, err := wm.client.Call("walletlock", nil)
+	_, err := wm.walletClient.Call("walletlock", nil)
 	if err != nil {
 		return err
 	}
@@ -473,7 +474,7 @@ func (wm *WalletManager) EncryptWallet(password string) error {
 		password,
 	}
 
-	_, err := wm.client.Call("encryptwallet", request)
+	_, err := wm.walletClient.Call("encryptwallet", request)
 	if err != nil {
 		return err
 	}
@@ -629,7 +630,7 @@ func (wm *WalletManager) BackupWalletData(dest string) error {
 		dest,
 	}
 
-	_, err := wm.client.Call("backupwallet", request)
+	_, err := wm.walletClient.Call("backupwallet", request)
 	if err != nil {
 		return err
 	}
@@ -655,20 +656,20 @@ func (wm *WalletManager) BackupWallet(walletID string) (string, error) {
 	file.MkdirAll(newBackupDir)
 
 	//创建临时备份文件wallet.dat
-	tmpWalletDat := fmt.Sprintf("tmp-walllet-%d.dat", time.Now().Unix())
-	tmpWalletDat = filepath.Join(wm.config.walletDataPath, tmpWalletDat)
+	//tmpWalletDat := fmt.Sprintf("tmp-walllet-%d.dat", time.Now().Unix())
+	coreWalletDat := filepath.Join(wm.config.walletDataPath, "wallet.db")
 
 	//1. 备份核心钱包的wallet.dat
-	err = wm.BackupWalletData(tmpWalletDat)
-	if err != nil {
-		return "", err
-	}
+	//err = wm.BackupWalletData(tmpWalletDat)
+	//if err != nil {
+	//	return "", err
+	//}
 
 	//复制临时文件到备份文件夹
-	file.Copy(tmpWalletDat, filepath.Join(newBackupDir, "wallet.dat"))
+	file.Copy(coreWalletDat, filepath.Join(newBackupDir, "wallet.db"))
 
 	//删除临时文件
-	file.Delete(tmpWalletDat)
+	//file.Delete(tmpWalletDat)
 
 	//2. 备份种子文件
 	file.Copy(w.KeyFile, newBackupDir)
@@ -812,7 +813,7 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 //GetBlockChainInfo 获取钱包区块链信息
 func (wm *WalletManager) GetBlockChainInfo() (*BlockchainInfo, error) {
 
-	result, err := wm.client.Call("getinfo", nil)
+	result, err := wm.walletClient.Call("getinfo", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -834,7 +835,7 @@ func (wm *WalletManager) ListUnspent(min uint64) ([]*Unspent, error) {
 		min,
 	}
 
-	result, err := wm.client.Call("listunspent", request)
+	result, err := wm.walletClient.Call("listunspent", request)
 	if err != nil {
 		return nil, err
 	}
@@ -1005,7 +1006,7 @@ func (wm *WalletManager) BuildTransaction(utxos []*Unspent, to []string, change 
 		outputs,
 	}
 
-	rawTx, err := wm.client.Call("createrawtransaction", request)
+	rawTx, err := wm.walletClient.Call("createrawtransaction", request)
 	if err != nil {
 		return "", decimal.New(0, 0), err
 	}
@@ -1052,7 +1053,7 @@ func (wm *WalletManager) SignRawTransaction(txHex, walletID string, key *keystor
 		//wifs,
 	}
 
-	result, err := wm.client.Call("signrawtransaction", request)
+	result, err := wm.walletClient.Call("signrawtransaction", request)
 	if err != nil {
 		return "", err
 	}
@@ -1068,7 +1069,7 @@ func (wm *WalletManager) SendRawTransaction(txHex string) (string, error) {
 		txHex,
 	}
 
-	result, err := wm.client.Call("sendrawtransaction", request)
+	result, err := wm.walletClient.Call("sendrawtransaction", request)
 	if err != nil {
 		return "", err
 	}
@@ -1520,7 +1521,7 @@ func (wm *WalletManager) EstimateFeeRate() (decimal.Decimal, error) {
 		2,
 	}
 
-	result, err := wm.client.Call("estimatefee", request)
+	result, err := wm.walletClient.Call("estimatefee", request)
 	if err != nil {
 		return decimal.New(0, 0), err
 	}
@@ -1709,7 +1710,8 @@ func (wm *WalletManager) loadConfig() error {
 		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
 	}
 
-	wm.config.serverAPI = c.String("apiURL")
+	wm.config.walletAPI = c.String("walletAPI")
+	wm.config.chainAPI = c.String("chainAPI")
 	wm.config.threshold, _ = decimal.NewFromString(c.String("threshold"))
 	wm.config.sumAddress = c.String("sumAddress")
 	wm.config.rpcUser = c.String("rpcUser")
@@ -1724,8 +1726,14 @@ func (wm *WalletManager) loadConfig() error {
 
 	token := basicAuth(wm.config.rpcUser, wm.config.rpcPassword)
 
-	wm.client = &Client{
-		BaseURL:     wm.config.serverAPI,
+	wm.walletClient = &Client{
+		BaseURL:     wm.config.walletAPI,
+		Debug:       false,
+		AccessToken: token,
+	}
+
+	wm.hcdClient = &Client{
+		BaseURL:     wm.config.chainAPI,
 		Debug:       false,
 		AccessToken: token,
 	}
@@ -1772,6 +1780,9 @@ func (wm *WalletManager) startNode() error {
 
 //stopNode 关闭节点
 func (wm *WalletManager) stopNode() error {
+
+
+
 	//读取配置
 	//absFile := filepath.Join(configFilePath, configFileName)
 	//c, err := config.NewConfig("ini", absFile)

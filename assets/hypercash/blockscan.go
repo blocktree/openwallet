@@ -805,7 +805,7 @@ func (bs *BTCBlockScanner) GetWalletByAddress(address string) (*openwallet.Walle
 //GetBlockHeight 获取区块链高度
 func (wm *WalletManager) GetBlockHeight() (uint64, error) {
 
-	result, err := wm.client.Call("getblockcount", nil)
+	result, err := wm.hcdClient.Call("getblockcount", nil)
 	if err != nil {
 		return 0, err
 	}
@@ -880,7 +880,7 @@ func (wm *WalletManager) GetBlockHash(height uint64) (string, error) {
 		height,
 	}
 
-	result, err := wm.client.Call("getblockhash", request)
+	result, err := wm.hcdClient.Call("getblockhash", request)
 	if err != nil {
 		return "", err
 	}
@@ -916,7 +916,7 @@ func (wm *WalletManager) GetBlock(hash string) (*Block, error) {
 		hash,
 	}
 
-	result, err := wm.client.Call("getblock", request)
+	result, err := wm.hcdClient.Call("getblock", request)
 	if err != nil {
 		return nil, err
 	}
@@ -931,7 +931,7 @@ func (wm *WalletManager) GetTxIDsInMemPool() ([]string, error) {
 		txids = make([]string, 0)
 	)
 
-	result, err := wm.client.Call("getrawmempool", nil)
+	result, err := wm.hcdClient.Call("getrawmempool", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -951,7 +951,7 @@ func (wm *WalletManager) GetTransaction(txid string) (*gjson.Result, error) {
 		1,
 	}
 
-	result, err := wm.client.Call("getrawtransaction", request)
+	result, err := wm.hcdClient.Call("getrawtransaction", request)
 	if err != nil {
 		return nil, err
 	}

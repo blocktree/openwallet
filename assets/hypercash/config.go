@@ -75,8 +75,10 @@ type WalletConfig struct {
 	dbPath string
 	//备份路径
 	backupDir string
+	//链服务API
+	chainAPI string
 	//钱包服务API
-	serverAPI string
+	walletAPI string
 	//钱包安装的路径
 	nodeInstallPath string
 	//钱包数据文件目录
@@ -129,8 +131,10 @@ func NewConfig() *WalletConfig {
 	c.dbPath = filepath.Join("data", strings.ToLower(c.symbol), "db")
 	//备份路径
 	c.backupDir = filepath.Join("data", strings.ToLower(c.symbol), "backup")
+	//链服务API
+	c.chainAPI = "http://127.0.0.1:10000"
 	//钱包服务API
-	c.serverAPI = "http://127.0.0.1:10000"
+	c.walletAPI = "http://127.0.0.1:10000"
 	//钱包安装的路径
 	c.nodeInstallPath = ""
 	//钱包数据文件目录
@@ -154,8 +158,10 @@ nodeInstallPath = ""
 mainNetDataPath = ""
 # testnet data path
 testNetDataPath = ""
-# node api url
-apiURL = ""
+# hcd api url
+chainAPI = ""
+# hcwallet api url
+walletAPI = ""
 # RPC Authentication Username
 rpcUser = ""
 # RPC Authentication Password
