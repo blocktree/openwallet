@@ -16,6 +16,9 @@
 package assets
 
 import (
+	"log"
+	"strings"
+
 	"github.com/blocktree/OpenWallet/assets/bitcoin"
 	"github.com/blocktree/OpenWallet/assets/bitcoincash"
 	"github.com/blocktree/OpenWallet/assets/bopo"
@@ -24,8 +27,6 @@ import (
 	"github.com/blocktree/OpenWallet/assets/hypercash"
 	"github.com/blocktree/OpenWallet/assets/sia"
 	"github.com/blocktree/OpenWallet/assets/tezos"
-	"log"
-	"strings"
 )
 
 //WalletManager 钱包管理器
@@ -114,7 +115,7 @@ func init() {
 	RegWMD(strings.ToLower(bopo.Symbol), &bopo.WalletManager{})
 	RegWMD(strings.ToLower(bitcoincash.Symbol), &bitcoincash.WalletManager{})
 	RegWMD(strings.ToLower(sia.Symbol), &sia.WalletManager{})
-	RegWMD(strings.ToLower(tezos.Symbol), &tezos.WalletManager{})
 	RegWMD(strings.ToLower(bitcoin.Symbol), bitcoin.NewWalletManager())
 	RegWMD(strings.ToLower(hypercash.Symbol), hypercash.NewWalletManager())
+	RegWMD(strings.ToLower(tezos.Symbol), &tezos.WalletManager{})
 }
