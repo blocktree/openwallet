@@ -26,7 +26,10 @@ import (
 	"log"
 )
 
-func CopyFromContainer(c *docker.Client, Cname, src string) error {
+// Copy file from container to local filesystem
+//
+//	src/dst: filename
+func CopyFromContainer(c *docker.Client, Cname, src, dst string) error {
 
 	var buf bytes.Buffer
 
@@ -42,14 +45,14 @@ func CopyFromContainer(c *docker.Client, Cname, src string) error {
 		return err
 	}
 
-	if err = ioutil.WriteFile("./www2.dat", buf.Bytes()[512:], 0600); err != nil {
+	if err = ioutil.WriteFile(dst, buf.Bytes()[512:], 0600); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func CopyToContainer(c *docker.Client, Cname, src, path string) error {
+func CopyToContainer(c *docker.Client, Cname, src, dst string) error {
 	// func(vals ...interface{}) {}(
 	// 	tar.Writer{}, os.File{},
 	// ) // Delete before commit
@@ -77,7 +80,7 @@ func CopyToContainer(c *docker.Client, Cname, src, path string) error {
 	}
 
 	// ctx context.Context, container, path string, content io.Reader, options types.CopyToContainerOptions
-	if err := c.CopyToContainer(context.Background(), Cname, path, content, types.CopyToContainerOptions{}); err != nil {
+	if err := c.CopyToContainer(context.Background(), Cname, dst, content, types.CopyToContainerOptions{}); err != nil {
 		log.Println(err)
 		return err
 	}
@@ -106,15 +109,14 @@ func main() {
 	}
 
 	src = "/usr/local/paicode/data/wallet.dat"
-	if err := CopyFromContainer(c, Cname, src); err != nil {
+	dst = "./bk/wallet.dat"
+	if err := CopyFromContainer(c, Cname, src, dst); err != nil {
 		return err
 	}
 
-	// if CopyToContainer(c, Cname, "./www.dat", "/root/") != nil {
-	// if err := CopyToContainer(c, Cname, "./wallet.dat", "/tmp"); err != nil {
 	src = "./conf/BOPO.ini"
-	if err := CopyToContainer(c, Cname, src, "/tmp"); err != nil {
-		// log.Println(err)
+	dst = "/tmp"
+	if err := CopyToContainer(c, Cname, src, dst); err != nil {
 		return err
 	}
 
