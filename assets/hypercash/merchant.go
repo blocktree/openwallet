@@ -133,7 +133,7 @@ func (wm *WalletManager) GetMerchantAddressList(wallet *openwallet.Wallet, accou
 }
 
 //SubmitTransaction 提交转账申请
-func (wm *WalletManager) SubmitTransactions(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, withdraws []*openwallet.Withdraw) (*openwallet.Transaction, error) {
+func (wm *WalletManager) SubmitTransactions(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, withdraws []*openwallet.Withdraw, surplus string) (*openwallet.Transaction, error) {
 
 	//先加载是否有配置文件
 	err := wm.loadConfig()
@@ -141,9 +141,9 @@ func (wm *WalletManager) SubmitTransactions(wallet *openwallet.Wallet, account *
 		return nil, errors.New("The wallet node is not config!")
 	}
 
-	//coreWallet := readWallet(wallet.KeyFile)
 	addrs := make([]string, 0)
 	amounts := make([]decimal.Decimal, 0)
+	totalSend := decimal.New(0, 0)
 	for _, with := range withdraws {
 
 		if len(with.Address) == 0 {
@@ -153,11 +153,17 @@ func (wm *WalletManager) SubmitTransactions(wallet *openwallet.Wallet, account *
 		amount, _ := decimal.NewFromString(with.Amount)
 		addrs = append(addrs, with.Address)
 		amounts = append(amounts, amount)
-
+		totalSend = totalSend.Add(amount)
 	}
 
-	//重新加载utxo
-	wm.RebuildWalletUnspent(wallet.WalletID)
+	balance := wm.GetWalletBalance(wallet.WalletID)
+	b, _ := decimal.NewFromString(balance)
+	sp, _ := decimal.NewFromString(surplus)
+	//【余额—剩余额】低于提币数量，不允许提
+	if b.Sub(sp).LessThan(totalSend) {
+		return nil, errors.New("the wallet balance is lower than surplus. ")
+	}
+
 
 	txID, err := wm.SendBatchTransaction(wallet.WalletID, addrs, amounts, wallet.Password)
 	if err != nil {
@@ -212,4 +218,14 @@ func (wm *WalletManager) GetBlockchainInfo() (*openwallet.Blockchain, error) {
 	}
 
 	return &info, nil
+}
+
+//GetMerchantAssetsAccount 获取账户资产
+func (wm *WalletManager) GetMerchantWalletBalance(walletID string) (string, error) {
+	return wm.GetWalletBalance(walletID), nil
+}
+
+//GetMerchantAssetsAccount 获取地址资产
+func (wm *WalletManager) GetMerchantAddressBalance(walletID, address string) (string, error) {
+	return wm.GetAddressBalance(walletID, address), nil
 }

@@ -35,7 +35,7 @@ func init() {
 	tw.config.rpcUser = "wallethcd"
 	tw.config.rpcPassword = "wallethcdpw"
 	token := basicAuth(tw.config.rpcUser, tw.config.rpcPassword)
-	tw.walletClient = NewClient(tw.config.walletAPI, token, true)
+	tw.walletClient = NewClient(tw.config.walletAPI, token, false)
 	tw.hcdClient = NewClient(tw.config.chainAPI, token, false)
 }
 
@@ -61,7 +61,7 @@ func TestGetAddressesByAccount(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	_, _, err := tw.CreateBatchAddress("WLAioxPDFh8LbSd5pC7VVyS8qpFiFbcVHW", "123", 10000)
+	_, _, err := tw.CreateBatchAddress("WLAioxPDFh8LbSd5pC7VVyS8qpFiFbcVHW", "123", 50000)
 	if err != nil {
 		t.Errorf("CreateBatchAddress failed unexpected error: %v\n", err)
 		return
@@ -83,7 +83,7 @@ func TestGetWalletBalance(t *testing.T) {
 		tag  string
 	}{
 		{
-			name: "W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ",
+			name: "WLAioxPDFh8LbSd5pC7VVyS8qpFiFbcVHW",
 			tag:  "first",
 		},
 		{
@@ -328,14 +328,14 @@ func TestEstimateFee(t *testing.T) {
 func TestSendTransaction(t *testing.T) {
 
 	sends := []string{
-		"TsVm9WQFxKHACotTeeB763nuH2qHieJKf9M",
+		"TsUGQjoCkqECLCyjpvTcZhcQSsoUJZmkA1b",
 	}
 
 	tw.RebuildWalletUnspent("WLAioxPDFh8LbSd5pC7VVyS8qpFiFbcVHW")
 
 	for _, to := range sends {
 
-		txIDs, err := tw.SendTransaction("WLAioxPDFh8LbSd5pC7VVyS8qpFiFbcVHW", to, decimal.NewFromFloat(25.689), "123", true)
+		txIDs, err := tw.SendTransaction("WLAioxPDFh8LbSd5pC7VVyS8qpFiFbcVHW", to, decimal.NewFromFloat(299.990594), "123", false)
 
 		if err != nil {
 			t.Errorf("SendTransaction failed unexpected error: %v\n", err)
@@ -396,4 +396,18 @@ func TestRestoreWallet(t *testing.T) {
 		t.Errorf("RestoreWallet failed unexpected error: %v\n", err)
 	}
 
+}
+
+func TestStopNode(t *testing.T) {
+	err := tw.stopNode()
+	if err != nil {
+		t.Errorf("stopNode failed unexpected error: %v\n", err)
+	}
+}
+
+func TestStartNode(t *testing.T) {
+	err := tw.startNode()
+	if err != nil {
+		t.Errorf("startNode failed unexpected error: %v\n", err)
+	}
 }

@@ -55,6 +55,9 @@ func (m *MerchantNode) setupRouter() {
 	m.Node.HandleFunc("configWallet", m.configWallet)
 	m.Node.HandleFunc("getWalletList", m.getWalletList)
 	m.Node.HandleFunc("submitTransaction", m.submitTransaction)
+	m.Node.HandleFunc("getNewHeight", m.getNewHeight)
+	m.Node.HandleFunc("getBalanceByAddress", m.getBalanceByAddress)
+	m.Node.HandleFunc("getWalletBalance", m.getWalletBalance)
 }
 
 //subscribe 订阅方法
@@ -484,8 +487,11 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 			if mer == nil {
 				continue
 			}
+
+			walletConfig, _ := m.GetMerchantWalletConfig(withs[0].Symbol, wid)
+
 			status := 0
-			txID, err := mer.SubmitTransactions(wallet, wallet.SingleAssetsAccount(withs[0].Symbol), withs)
+			txID, err := mer.SubmitTransactions(wallet, wallet.SingleAssetsAccount(withs[0].Symbol), withs, walletConfig.Surplus)
 			if err != nil {
 				log.Printf("SubmitTransactions unexpected error: %v", err)
 				status = 3
@@ -527,9 +533,6 @@ func (m *MerchantNode) getNewHeight(ctx *owtp.Context) {
 		| 参数名称 | 类型   | 是否可空 | 描述     |
 		|----------|--------|----------|----------|
 		| coin     | string | 否       | 币种标识 |
-		| walletID | string | 否       | 钱包ID   |
-		| offset    | uint   | 是       | 从0开始     |
-		| limit    | uint   | 是       | 查询条数     |
 	*/
 
 	coin := ctx.Params().Get("coin").String()
@@ -546,6 +549,66 @@ func (m *MerchantNode) getNewHeight(ctx *owtp.Context) {
 		"coin":     coin,
 		"walletID": walletID,
 		"height":   blockchain.Blocks,
+	}
+
+	responseSuccess(ctx, result)
+}
+
+func (m *MerchantNode) getWalletBalance(ctx *owtp.Context) {
+
+	log.Printf("Merchant Call: getWalletBalance \n")
+	log.Printf("params: %v\n", ctx.Params())
+
+	/*
+		| 参数名称     | 类型   | 是否可空 | 描述   |
+		|--------------|--------|----------|--------|
+		| coin         | string | 否       | 币名   |
+		| walletID     | string | 否       | 钱包ID |
+	*/
+
+	coin := ctx.Params().Get("coin").String()
+	walletID := ctx.Params().Get("walletID").String()
+
+	am := assets.GetMerchantAssets(coin)
+	balance, err := am.GetMerchantWalletBalance(walletID)
+	if err != nil {
+		responseError(ctx, err)
+		return
+	}
+
+	result := map[string]interface{}{
+		"balance": balance,
+	}
+
+	responseSuccess(ctx, result)
+}
+
+func (m *MerchantNode) getBalanceByAddress(ctx *owtp.Context) {
+
+	log.Printf("Merchant Call: getBalanceByAddress \n")
+	log.Printf("params: %v\n", ctx.Params())
+
+	/*
+	| 参数名称     | 类型   | 是否可空 | 描述   |
+	|--------------|--------|----------|--------|
+	| coin         | string | 否       | 币名   |
+	| walletID     | string | 否       | 钱包ID |
+	| address      | string  | 否        | 地址 |
+	*/
+
+	coin := ctx.Params().Get("coin").String()
+	walletID := ctx.Params().Get("walletID").String()
+	address := ctx.Params().Get("address").String()
+
+	am := assets.GetMerchantAssets(coin)
+	balance, err := am.GetMerchantAddressBalance(walletID, address)
+	if err != nil {
+		responseError(ctx, err)
+		return
+	}
+
+	result := map[string]interface{}{
+		"balance":     balance,
 	}
 
 	responseSuccess(ctx, result)

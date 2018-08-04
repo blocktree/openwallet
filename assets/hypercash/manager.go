@@ -34,6 +34,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"github.com/blocktree/OpenWallet/walletnode"
 )
 
 const (
@@ -549,6 +550,40 @@ func (wm *WalletManager) GetWalletBalance(accountID string) string {
 	//if err != nil {
 	//	return "", err
 	//}
+
+	return balance.StringFixed(8)
+}
+
+//GetAddressBalance 获取地址余额
+func (wm *WalletManager) GetAddressBalance(walletID, address string) string {
+
+	wm.RebuildWalletUnspent(walletID)
+
+	wallet, err := wm.GetWalletInfo(walletID)
+	if err != nil {
+		return "0"
+	}
+
+	db, err := wallet.OpenDB()
+	if err != nil {
+		return "0"
+	}
+	defer db.Close()
+
+	var utxos []*Unspent
+	err = db.Find("Address", address, &utxos)
+	if err != nil {
+		return "0"
+	}
+
+	balance := decimal.New(0, 0)
+
+	for _, utxo := range utxos {
+		if walletID == utxo.Address {
+			amount, _ := decimal.NewFromString(utxo.Amount)
+			balance = balance.Add(amount)
+		}
+	}
 
 	return balance.StringFixed(8)
 }
@@ -1519,7 +1554,7 @@ func (wm *WalletManager) EstimateFee(inputs, outputs int64, feeRate decimal.Deci
 	trx_bytes := decimal.New(inputs*148+outputs*34+piece*10, 0)
 	trx_fee := trx_bytes.Div(decimal.New(1000, 0)).Mul(feeRate)
 
-	log.Printf("inputs: %d, outpusts: %d, fees: %s \n", inputs, outputs, trx_fee.StringFixed(8))
+	//log.Printf("inputs: %d, outpusts: %d, fees: %s \n", inputs, outputs, trx_fee.StringFixed(8))
 
 	return trx_fee, nil
 }
@@ -1770,31 +1805,15 @@ func (wm *WalletManager) printWalletList(list []*openwallet.Wallet) {
 //startNode 开启节点
 func (wm *WalletManager) startNode() error {
 
-	//读取配置
-	//absFile := filepath.Join(configFilePath, configFileName)
-	//c, err := config.NewConfig("ini", absFile)
-	//if err != nil {
-	//	return errors.New("Config is not setup! ")
-	//}
-	//
-	//startNodeCMD := c.String("startNodeCMD")
-	//return cmdCall(startNodeCMD, false)
-	return nil
+	wn := walletnode.NodeManagerStruct{}
+	return wn.StartNodeFlow(wm.config.symbol)
 }
 
 //stopNode 关闭节点
 func (wm *WalletManager) stopNode() error {
 
-	//读取配置
-	//absFile := filepath.Join(configFilePath, configFileName)
-	//c, err := config.NewConfig("ini", absFile)
-	//if err != nil {
-	//	return errors.New("Config is not setup! ")
-	//}
-	//
-	//stopNodeCMD := c.String("stopNodeCMD")
-	//return cmdCall(stopNodeCMD, true)
-	return nil
+	wn := walletnode.NodeManagerStruct{}
+	return wn.StopNodeFlow(wm.config.symbol)
 }
 
 //cmdCall 执行命令
