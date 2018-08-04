@@ -224,3 +224,12 @@ func NewUnscanRecord(height uint64, txID, reason string) *UnscanRecord {
 	obj.ID = common.Bytes2Hex(crypto.SHA256([]byte(fmt.Sprintf("%d_%s", height, txID))))
 	return &obj
 }
+
+
+
+type FloatStr string
+
+func (n FloatStr) MarshalJSON() ([]byte, error) {
+	// There are probably better ways to do it. It is just an example
+	return []byte(fmt.Sprintf("%s", n)), nil
+}

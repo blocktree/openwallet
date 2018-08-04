@@ -874,7 +874,7 @@ func (wm *WalletManager) RebuildWalletUnspent(walletID string) error {
 	}
 
 	//查找核心钱包确认数大于1的
-	utxos, err := wm.ListUnspent(1)
+	utxos, err := wm.ListUnspent(0)
 	if err != nil {
 		return err
 	}
@@ -986,16 +986,19 @@ func (wm *WalletManager) BuildTransaction(utxos []*Unspent, to []string, change 
 		return "", decimal.New(0, 0), errors.New("The balance is not enough!")
 	}
 
+	log.Printf("fees: %s\n", fees.StringFixed(8))
+
 	changeAmount := totalAmount.Sub(totalSend).Sub(fees)
 	if changeAmount.GreaterThan(decimal.New(0, 0)) {
 		//ca, _ := changeAmount.Float64()
-		outputs[change] = changeAmount.StringFixed(8)
+		outputs[change] = FloatStr(changeAmount.StringFixed(8))
 
 		fmt.Printf("Create change address for receiving %s coin.\n", outputs[change])
 	}
 
 	for i, r := range to {
-		outputs[r] = amount[i].StringFixed(8)
+		//ta, _ := amount[i].Float64()
+		outputs[r] = FloatStr(amount[i].StringFixed(8))
 	}
 
 	//ta, _ := amount.Float64()
@@ -1006,7 +1009,7 @@ func (wm *WalletManager) BuildTransaction(utxos []*Unspent, to []string, change 
 		outputs,
 	}
 
-	rawTx, err := wm.walletClient.Call("createrawtransaction", request)
+	rawTx, err := wm.hcdClient.Call("createrawtransaction", request)
 	if err != nil {
 		return "", decimal.New(0, 0), err
 	}
@@ -1049,7 +1052,7 @@ func (wm *WalletManager) SignRawTransaction(txHex, walletID string, key *keystor
 
 	request := []interface{}{
 		txHex,
-		utxos,
+		//utxos,
 		//wifs,
 	}
 
@@ -1069,7 +1072,7 @@ func (wm *WalletManager) SendRawTransaction(txHex string) (string, error) {
 		txHex,
 	}
 
-	result, err := wm.walletClient.Call("sendrawtransaction", request)
+	result, err := wm.hcdClient.Call("sendrawtransaction", request)
 	if err != nil {
 		return "", err
 	}
@@ -1234,10 +1237,10 @@ func (wm *WalletManager) SendTransaction(walletID, to string, amount decimal.Dec
 		}
 
 		//计算手续费，找零地址有2个，一个是发送，一个是新创建的
-		piecefees, err := wm.EstimateFee(int64(len(sendUxto)), int64(len(to)+1), feesRate)
-		if piecefees.LessThan(decimal.NewFromFloat(0.00001)) {
-			piecefees = decimal.NewFromFloat(0.00001)
-		}
+		piecefees, err := wm.EstimateFee(int64(len(sendUxto)), 2, feesRate)
+		//if piecefees.LessThan(decimal.NewFromFloat(0.001)) {
+		//	piecefees = decimal.NewFromFloat(0.001)
+		//}
 		if err != nil {
 			return nil, err
 		}
@@ -1485,8 +1488,13 @@ func (wm *WalletManager) CreateChangeAddress(walletID string, key *keystore.HDKe
 		return nil, errors.New("Change address creation failed!")
 	}
 
+	wallet, err := wm.GetWalletInfo(walletID)
+	if err != nil {
+		return nil, err
+	}
+
 	//批量写入数据库
-	err := wm.saveAddressToDB(getAddrs, &openwallet.Wallet{Alias: key.Alias, WalletID: key.RootId})
+	err = wm.saveAddressToDB(getAddrs, wallet)
 	if err != nil {
 		return nil, err
 	}
@@ -1508,13 +1516,15 @@ func (wm *WalletManager) EstimateFee(inputs, outputs int64, feeRate decimal.Deci
 	trx_bytes := decimal.New(inputs*148+outputs*34+piece*10, 0)
 	trx_fee := trx_bytes.Div(decimal.New(1000, 0)).Mul(feeRate)
 
+	log.Printf("inputs: %d, outpusts: %d, fees: %s \n", inputs, outputs, trx_fee.StringFixed(8))
+
 	return trx_fee, nil
 }
 
 //EstimateFeeRate 预估的没KB手续费率
 func (wm *WalletManager) EstimateFeeRate() (decimal.Decimal, error) {
 
-	defaultRate, _ := decimal.NewFromString("0.0001")
+	defaultRate, _ := decimal.NewFromString("0.001")
 
 	//估算交易大小 手续费
 	request := []interface{}{

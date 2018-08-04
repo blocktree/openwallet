@@ -1330,7 +1330,7 @@ func SendTransaction(walletID, to string, amount decimal.Decimal, password strin
 		}
 
 		//计算手续费，找零地址有2个，一个是发送，一个是新创建的
-		piecefees, err := EstimateFee(int64(len(sendUxto)), int64(len(to) + 1), feesRate)
+		piecefees, err := EstimateFee(int64(len(sendUxto)), 2, feesRate)
 		if piecefees.LessThan(decimal.NewFromFloat(0.00001)) {
 			piecefees = decimal.NewFromFloat(0.00001)
 		}
