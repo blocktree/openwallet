@@ -13,31 +13,33 @@
  * GNU Lesser General Public License for more details.
  */
 
- package walletnode
+package walletnode
 
- import (
+import (
 	"context"
-	"docker.io/go-docker"
 	"docker.io/go-docker/api/types"
 	"fmt"
 )
 
 func (w *NodeManagerStruct) StartNodeFlow(symbol string) error {
+
+	if err := loadConfig(symbol); err != nil {
+		return err
+	}
+
 	// Init docker client
-	c, err := docker.NewEnvClient()
+	c, err := _GetClient()
 	if err != nil {
-		return (err)
+		return err
 	}
 	// Action within client
 	cName, err := _GetCName(symbol) // container name
 	if err != nil {
 		return err
 	}
-	ctx := context.Background() // nil
-	err = c.ContainerStart(ctx, cName, types.ContainerStartOptions{})
+	err = c.ContainerStart(context.Background(), cName, types.ContainerStartOptions{})
 	if err == nil {
 		fmt.Printf("%s walletnode start in success!\n", symbol)
 	}
-
 	return err
 }

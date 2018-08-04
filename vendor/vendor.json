@@ -154,6 +154,102 @@
 			"revisionTime": "2018-05-08T23:20:20Z"
 		},
 		{
+			"checksumSHA1": "JoGpRUz+j/rW+xTZ0VwHS+J56dY=",
+			"path": "github.com/HcashOrg/bliss",
+			"revision": "f5d53c2a9b7d05ffa1600cad036d3d51dd5423cc",
+			"revisionTime": "2018-07-19T03:51:30Z"
+		},
+		{
+			"checksumSHA1": "Z8wM/1vq0qe8qfvzPKI239MeFsc=",
+			"path": "github.com/HcashOrg/bliss/huffman",
+			"revision": "f5d53c2a9b7d05ffa1600cad036d3d51dd5423cc",
+			"revisionTime": "2018-07-19T03:51:30Z"
+		},
+		{
+			"checksumSHA1": "hkXTQccWZOVI2TQaI7m0+jyxFjg=",
+			"path": "github.com/HcashOrg/bliss/params",
+			"revision": "f5d53c2a9b7d05ffa1600cad036d3d51dd5423cc",
+			"revisionTime": "2018-07-19T03:51:30Z"
+		},
+		{
+			"checksumSHA1": "DHKeQxES5cnoBxQRujSI7TaefQ0=",
+			"path": "github.com/HcashOrg/bliss/poly",
+			"revision": "f5d53c2a9b7d05ffa1600cad036d3d51dd5423cc",
+			"revisionTime": "2018-07-19T03:51:30Z"
+		},
+		{
+			"checksumSHA1": "+qHBPW7tuGR8n1MeulBsfYskiEc=",
+			"path": "github.com/HcashOrg/bliss/sampler",
+			"revision": "f5d53c2a9b7d05ffa1600cad036d3d51dd5423cc",
+			"revisionTime": "2018-07-19T03:51:30Z"
+		},
+		{
+			"checksumSHA1": "/k+q08KDU2GyW2Y7xEF6thGdl7I=",
+			"path": "github.com/HcashOrg/hcd/chaincfg",
+			"revision": "3e4cce8e3779e03de2996b7f68ceca145024b3a7",
+			"revisionTime": "2018-07-31T10:42:41Z"
+		},
+		{
+			"checksumSHA1": "Wb0cG6Z0xpkfbLIIXxEWc2LP+Pw=",
+			"path": "github.com/HcashOrg/hcd/chaincfg/chainec",
+			"revision": "3e4cce8e3779e03de2996b7f68ceca145024b3a7",
+			"revisionTime": "2018-07-31T10:42:41Z"
+		},
+		{
+			"checksumSHA1": "45BRHJokXSPzNcOWTNp/9WVgDiA=",
+			"path": "github.com/HcashOrg/hcd/chaincfg/chainhash",
+			"revision": "3e4cce8e3779e03de2996b7f68ceca145024b3a7",
+			"revisionTime": "2018-07-31T10:42:41Z"
+		},
+		{
+			"checksumSHA1": "uuvMaYf+6aAKKMKetU4GEUK6BZ0=",
+			"path": "github.com/HcashOrg/hcd/crypto",
+			"revision": "3e4cce8e3779e03de2996b7f68ceca145024b3a7",
+			"revisionTime": "2018-07-31T10:42:41Z"
+		},
+		{
+			"checksumSHA1": "Z3oz4/Xa8bZNCAOWo0PdTpZZcQI=",
+			"path": "github.com/HcashOrg/hcd/crypto/bliss",
+			"revision": "3e4cce8e3779e03de2996b7f68ceca145024b3a7",
+			"revisionTime": "2018-07-31T10:42:41Z"
+		},
+		{
+			"checksumSHA1": "EyjfcDxM5hPbyJuKF2vwpmF9O/c=",
+			"path": "github.com/HcashOrg/hcd/dcrec/edwards",
+			"revision": "3e4cce8e3779e03de2996b7f68ceca145024b3a7",
+			"revisionTime": "2018-07-31T10:42:41Z"
+		},
+		{
+			"checksumSHA1": "OrQoNX27orDn4zRbSAHodSu+ZWI=",
+			"path": "github.com/HcashOrg/hcd/dcrec/secp256k1",
+			"revision": "3e4cce8e3779e03de2996b7f68ceca145024b3a7",
+			"revisionTime": "2018-07-31T10:42:41Z"
+		},
+		{
+			"checksumSHA1": "U9mz4lmgyZ5U+g2yX6waq+8F5/s=",
+			"path": "github.com/HcashOrg/hcd/dcrec/secp256k1/schnorr",
+			"revision": "3e4cce8e3779e03de2996b7f68ceca145024b3a7",
+			"revisionTime": "2018-07-31T10:42:41Z"
+		},
+		{
+			"checksumSHA1": "uMz/DFrUf8nqR0YmdfUKlw0RCw0=",
+			"path": "github.com/HcashOrg/hcd/wire",
+			"revision": "3e4cce8e3779e03de2996b7f68ceca145024b3a7",
+			"revisionTime": "2018-07-31T10:42:41Z"
+		},
+		{
+			"checksumSHA1": "2eLXsGs89xkCvK0NgwimixzgQqE=",
+			"path": "github.com/HcashOrg/hcutil",
+			"revision": "3744332ddbf115271697b74199630785dc87c474",
+			"revisionTime": "2018-07-27T13:54:35Z"
+		},
+		{
+			"checksumSHA1": "FXjXY4E4DEAsDr0cH5sVMVfy5MM=",
+			"path": "github.com/HcashOrg/hcutil/base58",
+			"revision": "3744332ddbf115271697b74199630785dc87c474",
+			"revisionTime": "2018-07-27T13:54:35Z"
+		},
+		{
 			"checksumSHA1": "tedpGUYUzWTxnH6hteiS8tuWRAs=",
 			"path": "github.com/Microsoft/go-winio",
 			"revision": "67921128fb397dd80339870d2193d6b1e6856fd4",
@@ -177,6 +273,18 @@
 			"path": "github.com/Workiva/go-datastructures/queue",
 			"revision": "f338bf48899950e415caffa02222a7273fbdeaf6",
 			"revisionTime": "2018-06-12T15:49:46Z"
+		},
+		{
+			"checksumSHA1": "LLVyR2dAgkihu0+HdZF+JK0gMMs=",
+			"path": "github.com/agl/ed25519",
+			"revision": "5312a61534124124185d41f09206b9fef1d88403",
+			"revisionTime": "2017-01-16T20:05:12Z"
+		},
+		{
+			"checksumSHA1": "30PBqj9BW03KCVqASvLg3bR+xYc=",
+			"path": "github.com/agl/ed25519/edwards25519",
+			"revision": "5312a61534124124185d41f09206b9fef1d88403",
+			"revisionTime": "2017-01-16T20:05:12Z"
 		},
 		{
 			"checksumSHA1": "USkefO0g1U9mr+8hagv3fpSkrxg=",
@@ -466,6 +574,12 @@
 			"path": "github.com/davecgh/go-spew/spew",
 			"revision": "8991bc29aa16c548c550c7ff78260e27b9ab7c73",
 			"revisionTime": "2018-02-21T22:46:20Z"
+		},
+		{
+			"checksumSHA1": "Q5YN3JDk0g8zt0gZulGLn+uFC30=",
+			"path": "github.com/dchest/blake256",
+			"revision": "dee3fe6eb0e98dc774a94fc231f85baf7c29d360",
+			"revisionTime": "2015-09-03T10:16:04Z"
 		},
 		{
 			"checksumSHA1": "2Fy1Y6Z3lRRX1891WF/+HT4XS2I=",

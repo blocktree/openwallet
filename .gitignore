@@ -22,5 +22,8 @@ _testmain.go
 *.exe
 *.test
 *.prof
+*.swp
 .idea/
+conf/
+data/
 assets/sia/data/sc/address/

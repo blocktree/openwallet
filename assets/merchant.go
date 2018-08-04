@@ -52,6 +52,9 @@ type MerchantAssets interface {
 
 	//SubmitTransaction 提交转账申请
 	SubmitTransactions(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, withdraws []*openwallet.Withdraw) (*openwallet.Transaction, error)
+
+	//GetBlockchainInfo 获取区块链信息
+	GetBlockchainInfo() (*openwallet.Blockchain, error)
 }
 
 // GetMerchantAssets 根据币种类型获取已注册的管理者

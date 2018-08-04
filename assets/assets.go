@@ -16,14 +16,16 @@
 package assets
 
 import (
-	"strings"
-	"github.com/blocktree/OpenWallet/assets/cardano"
-	"github.com/blocktree/OpenWallet/assets/bytom"
 	"github.com/blocktree/OpenWallet/assets/bitcoin"
 	"github.com/blocktree/OpenWallet/assets/bitcoincash"
+	"github.com/blocktree/OpenWallet/assets/bopo"
+	"github.com/blocktree/OpenWallet/assets/bytom"
+	"github.com/blocktree/OpenWallet/assets/cardano"
+	"github.com/blocktree/OpenWallet/assets/hypercash"
 	"github.com/blocktree/OpenWallet/assets/sia"
 	"github.com/blocktree/OpenWallet/assets/tezos"
 	"log"
+	"strings"
 )
 
 //WalletManager 钱包管理器
@@ -106,11 +108,13 @@ func GetWMD(symbol string) interface{} {
 //注册钱包管理工具
 func init() {
 	//注册钱包管理工具
-	log.Printf("Register wallet manager successfully.")
+	log.Printf("Register wallet manager ......")
 	RegWMD(strings.ToLower(cardano.Symbol), &cardano.WalletManager{})
 	RegWMD(strings.ToLower(bytom.Symbol), &bytom.WalletManager{})
-	RegWMD(strings.ToLower(bitcoin.Symbol), bitcoin.NewWalletManager())
+	RegWMD(strings.ToLower(bopo.Symbol), &bopo.WalletManager{})
 	RegWMD(strings.ToLower(bitcoincash.Symbol), &bitcoincash.WalletManager{})
 	RegWMD(strings.ToLower(sia.Symbol), &sia.WalletManager{})
 	RegWMD(strings.ToLower(tezos.Symbol), &tezos.WalletManager{})
+	RegWMD(strings.ToLower(bitcoin.Symbol), bitcoin.NewWalletManager())
+	RegWMD(strings.ToLower(hypercash.Symbol), hypercash.NewWalletManager())
 }

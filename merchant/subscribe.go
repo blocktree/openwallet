@@ -273,6 +273,12 @@ func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 				continue
 			}
 
+			config, err := m.GetMerchantWalletConfig(s.Coin,s.WalletID)
+			if err != nil {
+				log.Printf("GetNewRecharges get wallet config unexpected error: %v", err)
+				continue
+			}
+
 			if len(recharges) > 0 {
 
 				params := map[string]interface{}{
@@ -281,11 +287,33 @@ func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 					"recharges": recharges,
 				}
 
+				db, inErr := wallet.OpenDB()
+				if inErr != nil {
+					continue
+				}
+				tx, inErr := db.Begin(true)
+				if inErr != nil {
+					db.Close()
+					continue
+				}
+
 				//更新确认数
 				for _, r := range recharges {
 					log.Printf("Submit Recharges: %v", *r)
 					r.Confirm = int64(blockHeight - r.BlockHeight)
+
+					//确认数大于配置的确认数
+					if r.Confirm >= int64(config.Confirm) {
+						//删除已超过确认数的充值记录
+						tx.DeleteStruct(r)
+
+						log.Printf("delete recharge: %s \n ", r.Sid)
+					}
 				}
+				tx.Commit()
+				db.Close()
+
+
 
 				//提交充值记录
 				SubmitRechargeTrasaction(
@@ -295,6 +323,7 @@ func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 					func(confirms []uint64, status uint64, msg string) {
 						//删除提交已确认的
 						if status == owtp.StatusSuccess {
+							/*
 							for _, c := range confirms {
 
 								if c < uint64(len(recharges)) {
@@ -324,6 +353,7 @@ func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 								}
 
 							}
+							*/
 						}
 					})
 			}
