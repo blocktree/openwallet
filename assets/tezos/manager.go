@@ -498,13 +498,15 @@ func summaryWallet(wallet *openwallet.Wallet, password string) error{
 		}
 		// 将该地址多余额减去矿工费后，全部转到汇总地址
 		amount := decimal_balance.Sub(fee)
+		//该地址预留一点币，否则交易会失败，暂定20／1000000 tez
+		amount = amount.Sub(decimal.RequireFromString("20"))
 
 		log.Printf("address:%s banlance:%d amount:%d fee:%d\n", k.Address, decimal_balance.IntPart(), amount.IntPart(), fee.IntPart())
 
 		k.PrivateKey = sk
 		if decimal_balance.GreaterThan(threshold) {
 			txid, _ := transfer(*k, sumAddress, strconv.FormatInt(minFees.IntPart(), 10), strconv.FormatInt(gasLimit.IntPart(), 10),
-				strconv.FormatInt(gasLimit.IntPart(), 10),strconv.FormatInt(amount.IntPart(), 10))
+				strconv.FormatInt(storageLimit.IntPart(), 10),strconv.FormatInt(amount.IntPart(), 10))
 
 			log.Printf("summary address:%s, to address:%s, amount:%d, txid:%s\n", k.Address, sumAddress, amount.IntPart(), txid)
 		}

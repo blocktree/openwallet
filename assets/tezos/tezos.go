@@ -347,36 +347,14 @@ func (w *WalletManager) BackupWalletFlow() error {
 	backupPath := filepath.Join(keyDir, "backup")
 	file.MkdirAll(backupPath)
 
-	//linux
-	//备份secret.key, secret.key.lock, wallet-db
-	/*
-	err = file.Copy(filepath.Join(walletPath, "secret.key"), backupPath)
-	if err != nil {
-		return err
-	}
-	err = file.Copy(filepath.Join(walletPath, "secret.key.lock"), backupPath)
-	if err != nil {
-		return err
-	}
-	err = file.Copy(filepath.Join(walletPath, "wallet-db"), backupPath)
-	if err != nil {
-		return err
-	}
-	*/
 
-	//macOS
-	//备份secret.key, secret.key.lock, wallet-db
-	//err = file.Copy(filepath.Join(walletPath, "Secrets-1.0"), filepath.Join(backupPath))
-	//if err != nil {
-	//	return err
-	//}
-	//err = file.Copy(filepath.Join(walletPath, "Wallet-1.0"), filepath.Join(backupPath))
-	//if err != nil {
-	//	return err
-	//}
+	err = file.Copy(dbPath, filepath.Join(backupPath))
+	if err != nil {
+		return err
+	}
 
 	//输出备份导出目录
-	fmt.Printf("Wallet backup file path: %s", backupPath)
+	log.Printf("Wallet backup file path: %s", backupPath)
 
 	return nil
 
