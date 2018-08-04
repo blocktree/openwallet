@@ -90,7 +90,9 @@ func GetWallets() ([]*openwallet.Wallet, error) {
 		if fi.IsDir() {
 			continue
 		}
-		w, err := GetWalletByID(fi.Name())
+		fileName := strings.TrimSuffix(fi.Name(),".db")
+		//log.Printf("filename: %v\n", fileName)
+		w, err := GetWalletByID(fileName)
 		if err != nil {
 			continue
 		}

@@ -986,7 +986,7 @@ func (wm *WalletManager) BuildTransaction(utxos []*Unspent, to []string, change 
 		return "", decimal.New(0, 0), errors.New("The balance is not enough!")
 	}
 
-	log.Printf("fees: %s\n", fees.StringFixed(8))
+	//log.Printf("fees: %s\n", fees.StringFixed(8))
 
 	changeAmount := totalAmount.Sub(totalSend).Sub(fees)
 	if changeAmount.GreaterThan(decimal.New(0, 0)) {
