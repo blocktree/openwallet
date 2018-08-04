@@ -624,20 +624,20 @@ func (wm *WalletManager) GetWalletBalance(accountID string) string {
 //}
 
 //BackupWalletData 备份钱包
-func (wm *WalletManager) BackupWalletData(dest string) error {
-
-	request := []interface{}{
-		dest,
-	}
-
-	_, err := wm.walletClient.Call("backupwallet", request)
-	if err != nil {
-		return err
-	}
-
-	return nil
-
-}
+//func (wm *WalletManager) BackupWalletData(dest string) error {
+//
+//	request := []interface{}{
+//		dest,
+//	}
+//
+//	_, err := wm.walletClient.Call("backupwallet", request)
+//	if err != nil {
+//		return err
+//	}
+//
+//	return nil
+//
+//}
 
 //FileName 该钱包定义的文件名规则
 func (wm *WalletManager) WalletFileName(w *openwallet.Wallet) string {
@@ -655,11 +655,11 @@ func (wm *WalletManager) BackupWallet(walletID string) (string, error) {
 	newBackupDir := filepath.Join(wm.config.backupDir, wm.WalletFileName(w)+"-"+common.TimeFormat("20060102150405"))
 	file.MkdirAll(newBackupDir)
 
-	//创建临时备份文件wallet.dat
+	//创建临时备份文件wallet.db
 	//tmpWalletDat := fmt.Sprintf("tmp-walllet-%d.dat", time.Now().Unix())
 	coreWalletDat := filepath.Join(wm.config.walletDataPath, "wallet.db")
 
-	//1. 备份核心钱包的wallet.dat
+	//1. 备份核心钱包的wallet.db
 	//err = wm.BackupWalletData(tmpWalletDat)
 	//if err != nil {
 	//	return "", err
@@ -683,13 +683,13 @@ func (wm *WalletManager) BackupWallet(walletID string) (string, error) {
 //RestoreWallet 恢复钱包
 func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string) error {
 
-	//根据流程，提供种子文件路径，wallet.dat文件的路径，钱包数据库文件的路径。
+	//根据流程，提供种子文件路径，wallet.db文件的路径，钱包数据库文件的路径。
 	//输入钱包密码。
-	//先备份核心钱包原来的wallet.dat到临时文件夹。
-	//关闭钱包节点，复制wallet.dat到钱包的data目录下。
+	//先备份核心钱包原来的wallet.db到临时文件夹。
+	//关闭钱包节点，复制wallet.db到钱包的data目录下。
 	//启动钱包，通过GetCoreWalletinfo检查钱包是否启动了。
 	//检查密码是否可以解析种子文件，是否可以解锁钱包。
-	//如果密码错误，关闭钱包节点，恢复原钱包的wallet.dat。
+	//如果密码错误，关闭钱包节点，恢复原钱包的wallet.db。
 	//重新启动钱包。
 	//复制种子文件到data/btc/key/。
 	//复制钱包数据库文件到data/btc/db/。
@@ -706,22 +706,25 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 	//检查密码是否可以解析种子文件，是否可以解锁钱包。
 	key, err = wm.storage.GetKey("", keyFile, password)
 	if err != nil {
-		return errors.New("Passowrd is incorrect!")
+		return errors.New("Passowrd is incorrect! ")
 	}
 
 	//钱包当前的dat文件
-	curretWDFile := filepath.Join(wm.config.walletDataPath, "wallet.dat")
+	curretWDFile := filepath.Join(wm.config.walletDataPath, "wallet.db")
 
-	//创建临时备份文件wallet.dat，备份
+	//创建临时备份文件wallet.db，备份
 	tmpWalletDat := fmt.Sprintf("restore-walllet-%d.dat", time.Now().Unix())
 	tmpWalletDat = filepath.Join(wm.config.walletDataPath, tmpWalletDat)
 
-	fmt.Printf("Backup current wallet.dat file... \n")
+	fmt.Printf("Backup current wallet.db file... \n")
 
-	err = wm.BackupWalletData(tmpWalletDat)
-	if err != nil {
-		return err
-	}
+	//复制临时文件到备份文件夹
+	file.Copy(curretWDFile, tmpWalletDat)
+
+	//err = wm.BackupWalletData(tmpWalletDat)
+	//if err != nil {
+	//	return err
+	//}
 
 	//调试使用
 	//file.Copy(curretWDFile, tmpWalletDat)
@@ -732,7 +735,7 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 	wm.stopNode()
 	time.Sleep(sleepTime)
 
-	fmt.Printf("Restore wallet.dat file... \n")
+	fmt.Printf("Restore wallet.db file... \n")
 
 	//删除当前钱包文件
 	file.Delete(curretWDFile)
@@ -751,7 +754,7 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 
 	fmt.Printf("Validating wallet password... \n")
 
-	//检查wallet.dat是否可以解锁钱包
+	//检查wallet.db是否可以解锁钱包
 	err = wm.UnlockWallet(password, 1)
 	if err != nil {
 		restoreSuccess = false
@@ -787,7 +790,7 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 		wm.stopNode()
 		time.Sleep(sleepTime)
 
-		fmt.Printf("Restore original wallet.data... \n")
+		fmt.Printf("Restore original wallet.db... \n")
 
 		//删除当前钱包文件
 		file.Delete(curretWDFile)
@@ -1736,17 +1739,8 @@ func (wm *WalletManager) loadConfig() error {
 
 	token := basicAuth(wm.config.rpcUser, wm.config.rpcPassword)
 
-	wm.walletClient = &Client{
-		BaseURL:     wm.config.walletAPI,
-		Debug:       false,
-		AccessToken: token,
-	}
-
-	wm.hcdClient = &Client{
-		BaseURL:     wm.config.chainAPI,
-		Debug:       false,
-		AccessToken: token,
-	}
+	wm.walletClient = NewClient(wm.config.walletAPI, token, false)
+	wm.hcdClient = NewClient(wm.config.chainAPI, token, false)
 
 	return nil
 }
@@ -1790,8 +1784,6 @@ func (wm *WalletManager) startNode() error {
 
 //stopNode 关闭节点
 func (wm *WalletManager) stopNode() error {
-
-
 
 	//读取配置
 	//absFile := filepath.Join(configFilePath, configFileName)

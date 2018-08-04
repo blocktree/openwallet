@@ -16,13 +16,10 @@
 package hypercash
 
 import (
-	"fmt"
 	"github.com/codeskyblue/go-sh"
 	"github.com/shopspring/decimal"
 	"math"
-	"path/filepath"
 	"testing"
-	"time"
 )
 
 var (
@@ -38,7 +35,7 @@ func init() {
 	tw.config.rpcUser = "wallethcd"
 	tw.config.rpcPassword = "wallethcdpw"
 	token := basicAuth(tw.config.rpcUser, tw.config.rpcPassword)
-	tw.walletClient = NewClient(tw.config.walletAPI, token, false)
+	tw.walletClient = NewClient(tw.config.walletAPI, token, true)
 	tw.hcdClient = NewClient(tw.config.chainAPI, token, false)
 }
 
@@ -198,7 +195,9 @@ func TestWalletManager_CreateNewAddress(t *testing.T) {
 
 func TestBackupWallet(t *testing.T) {
 
-	backupFile, err := tw.BackupWallet("W9JyC464XAZEJgdiAZxUXbPpsZZ2JeAujV")
+	tw.config.walletDataPath = "/Users/maizhiquan/Library/Application Support/hcGUI/wallets/testnet/Chance/testnet2/"
+
+	backupFile, err := tw.BackupWallet("WLAioxPDFh8LbSd5pC7VVyS8qpFiFbcVHW")
 	if err != nil {
 		t.Errorf("BackupWallet failed unexpected error: %v\n", err)
 	} else {
@@ -206,17 +205,17 @@ func TestBackupWallet(t *testing.T) {
 	}
 }
 
-func TestBackupWalletData(t *testing.T) {
-	tw.config.walletDataPath = "/home/www/btc/testdata/testnet3/"
-	tmpWalletDat := fmt.Sprintf("tmp-walllet-%d.dat", time.Now().Unix())
-	backupFile := filepath.Join(tw.config.walletDataPath, tmpWalletDat)
-	err := tw.BackupWalletData(backupFile)
-	if err != nil {
-		t.Errorf("BackupWallet failed unexpected error: %v\n", err)
-	} else {
-		t.Errorf("BackupWallet filePath: %v\n", backupFile)
-	}
-}
+//func TestBackupWalletData(t *testing.T) {
+//	tw.config.walletDataPath = "/home/www/btc/testdata/testnet3/"
+//	tmpWalletDat := fmt.Sprintf("tmp-walllet-%d.dat", time.Now().Unix())
+//	backupFile := filepath.Join(tw.config.walletDataPath, tmpWalletDat)
+//	err := tw.BackupWalletData(backupFile)
+//	if err != nil {
+//		t.Errorf("BackupWallet failed unexpected error: %v\n", err)
+//	} else {
+//		t.Errorf("BackupWallet filePath: %v\n", backupFile)
+//	}
+//}
 
 func TestGOSH(t *testing.T) {
 	//text, err := sh.Command("go", "env").Output()
@@ -246,7 +245,7 @@ func TestListUnspent(t *testing.T) {
 	}
 
 	for _, u := range utxos {
-		t.Logf("ListUnspent %s: %s = %s\n", u.Address, u.AccountID, u.Amount)
+		t.Logf("ListUnspent %s - %s: %s, confirms: %d\n", u.Address, u.AccountID, u.Amount, u.Confirmations)
 	}
 }
 
