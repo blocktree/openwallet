@@ -64,7 +64,7 @@ func TestGetAddressesByAccount(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	_, _, err := tw.CreateBatchAddress("WLAioxPDFh8LbSd5pC7VVyS8qpFiFbcVHW", "123", 10)
+	_, _, err := tw.CreateBatchAddress("WLAioxPDFh8LbSd5pC7VVyS8qpFiFbcVHW", "123", 10000)
 	if err != nil {
 		t.Errorf("CreateBatchAddress failed unexpected error: %v\n", err)
 		return
