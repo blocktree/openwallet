@@ -83,13 +83,13 @@ func (w *WalletManager) InitConfigFlow() error {
 			return err
 		}
 
-		fmt.Printf("[Suggest the transfer fees no less than %f]\n", 100)
+		fmt.Printf("[Suggest the transfer fees no less than %f]\n", 0.0001)
 		minFees, err = console.InputRealNumber("Set transfer fees: ", true)
 		if err != nil {
 			return err
 		}
 
-		fmt.Printf("[Suggest the gas limit no less than %f]\n", 100)
+		fmt.Printf("[Suggest the gas limit no less than %f]\n", 0.0001)
 		gasLimit, err = console.InputRealNumber("Set gas limit: ", true)
 		if err != nil {
 			return err
