@@ -43,8 +43,6 @@ const (
 var (
 	//钱包服务API
 	serverAPI = "https://rpc.tezrpc.me"
-	//钱包主链私钥文件路径
-	walletPath = ""
 	//小数位长度
 	coinDecimal decimal.Decimal = decimal.NewFromFloat(1000000)
 	//参与汇总的钱包
@@ -55,11 +53,13 @@ var (
 	minSendAmount decimal.Decimal = decimal.NewFromFloat(1).Mul(coinDecimal)
 	//最小矿工费
 	minFees decimal.Decimal = decimal.NewFromFloat(0.0001).Mul(coinDecimal)
+
+	//gas limit 和 storage limit
 	gasLimit decimal.Decimal = decimal.NewFromFloat(0.0001).Mul(coinDecimal)
-	storageLimit decimal.Decimal = decimal.NewFromFloat(0).Mul(coinDecimal)
+	storageLimit decimal.Decimal = decimal.NewFromFloat(0.0001).Mul(coinDecimal)
 	sumAddress = ""
 	//汇总执行间隔时间
-	cycleSeconds = time.Second * 10
+	cycleSeconds = time.Second * 300
 )
 
 
@@ -143,6 +143,19 @@ func signTransaction(hash string, sk string, wm []byte) (string, string, error) 
 	sbyte := hash + hex.EncodeToString(sig[:])
 
 	return edsig, sbyte, nil
+}
+
+//判断该key是否需要reverl
+func isReverlKey(pubkey string) bool {
+	manager_key := callGetManagerKey(pubkey)
+	//manager := gjson.GetBytes(ret, "manager")
+	key := gjson.GetBytes(manager_key, "key")
+
+	if key.Str == "" {
+		return true
+	}
+
+	return false
 }
 
 //转账
@@ -389,7 +402,6 @@ func CreateBatchAddress(walletId, password string, count uint64) (string, []*Key
 		case pa := <-producer:
 			values = append(values, pa)
 			outputAddress = append(outputAddress, pa...)
-			//log.Printf("completed %d", len(pa))
 			//当激活消费者后，传输数据给消费者，并把顶部数据出队
 		case activeWorker <- activeValue:
 			//log.Printf("Get %d", len(activeValue))
@@ -446,7 +458,6 @@ func loadConfig() error {
 	}
 
 	serverAPI = c.String("apiURL")
-	walletPath = c.String("walletPath")
 	threshold, _ = decimal.NewFromString(c.String("threshold"))
 	threshold = threshold.Mul(coinDecimal)
 	minSendAmount, _ = decimal.NewFromString(c.String("minSendAmount"))
@@ -473,15 +484,29 @@ func summaryWallet(wallet *openwallet.Wallet, password string) error{
 	db.All(&keys)
 
 	for _, k := range keys {
+		//get balance
 		decimal_balance, _ := decimal.NewFromString(string(callGetbalance(k.Address)))
+		//decrypt sk
 		sk, _ := Decrypt(password, k.PrivateKey)
-		amount := decimal_balance.Sub(minFees.Add(gasLimit).Add(storageLimit))
+
+		//判断是否是reveal交易
+		fee := minFees
+		isReverl := isReverlKey(k.Address)
+		if isReverl {
+			//多了reveal操作后，fee * 2
+			fee = minFees.Mul(decimal.RequireFromString("2"))
+		}
+		// 将该地址多余额减去矿工费后，全部转到汇总地址
+		amount := decimal_balance.Sub(fee)
+
+		log.Printf("address:%s banlance:%d amount:%d fee:%d\n", k.Address, decimal_balance.IntPart(), amount.IntPart(), fee.IntPart())
+
 		k.PrivateKey = sk
 		if decimal_balance.GreaterThan(threshold) {
 			txid, _ := transfer(*k, sumAddress, strconv.FormatInt(minFees.IntPart(), 10), strconv.FormatInt(gasLimit.IntPart(), 10),
 				strconv.FormatInt(gasLimit.IntPart(), 10),strconv.FormatInt(amount.IntPart(), 10))
 
-			log.Printf("summary address:%s, amount:%d, txid:%s\n", k.Address, amount.IntPart(), txid)
+			log.Printf("summary address:%s, to address:%s, amount:%d, txid:%s\n", k.Address, sumAddress, amount.IntPart(), txid)
 		}
 	}
 

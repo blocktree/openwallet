@@ -349,6 +349,7 @@ func (w *WalletManager) BackupWalletFlow() error {
 
 	//linux
 	//备份secret.key, secret.key.lock, wallet-db
+	/*
 	err = file.Copy(filepath.Join(walletPath, "secret.key"), backupPath)
 	if err != nil {
 		return err
@@ -361,6 +362,7 @@ func (w *WalletManager) BackupWalletFlow() error {
 	if err != nil {
 		return err
 	}
+	*/
 
 	//macOS
 	//备份secret.key, secret.key.lock, wallet-db

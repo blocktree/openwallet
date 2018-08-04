@@ -116,6 +116,8 @@ func callGetbalance(addr string) []byte {
 		return nil
 	}
 
-	return r.Bytes()
+	//因为结果为"number"\n ，所以去掉双引号和\n
+	lenght := len(r.Bytes())
+	return r.Bytes()[1:lenght-2]
 }
 
