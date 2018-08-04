@@ -72,7 +72,6 @@ func (w *WalletManager) InitConfigFlow() error {
 			return err
 		}
 
-		fmt.Printf("[Please enter the amount of %s and must be numbers]\n", Symbol)
 
 		threshold, err = console.InputRealNumber("Set summary threshold: ", true)
 		if err != nil {
@@ -103,11 +102,11 @@ func (w *WalletManager) InitConfigFlow() error {
 		}
 
 		//最小发送数量不能超过汇总阀值
-		if minSendAmount > threshold {
-			return errors.New("The summary threshold must be greater than the minimum transfer amount! ")
-		}
-
 		if minFees > minSendAmount {
+			if minSendAmount > threshold {
+				return errors.New("The summary threshold must be greater than the minimum transfer amount! ")
+			}
+
 			return errors.New("The minimum transfer amount must be greater than the transfer fees! ")
 		}
 

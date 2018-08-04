@@ -1,3 +1,18 @@
+/*
+ * Copyright 2018 The OpenWallet Authors
+ * This file is part of the OpenWallet library.
+ *
+ * The OpenWallet library is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The OpenWallet library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ */
+
 package tezos
 
 import (
@@ -48,7 +63,8 @@ var (
 )
 
 
- var prefix = map[string][]byte{
+//地址，公钥，公钥哈希，私钥，签名前缀
+var prefix = map[string][]byte{
 	"tz1": {6, 161, 159},
 	"tz2": {6, 161, 161},
 	"edpk": {13, 15, 37, 217},
@@ -56,12 +72,15 @@ var (
 	"edsig": {9, 245, 205, 134, 18},
 }
 
+//消息前缀
 var watermark = map[string][]byte{
 	"block": {1},
 	"endorsement": {2},
 	"generic": {3},
 }
 
+
+//创建地址
 func createAccount() (string, string , string) {
 	pub, pri, err := ed25519.GenerateKey(nil)
 	if err != nil {
@@ -79,6 +98,8 @@ func createAccount() (string, string , string) {
 	return pk, sk, pkh
 }
 
+
+//加密私钥
 func encryptSecretKey(sk string, password string) string {
 	ret, err := Encrypt(password, sk)
 	if err != nil {
@@ -89,6 +110,7 @@ func encryptSecretKey(sk string, password string) string {
 	return ret
 }
 
+//解密私钥
 func decryptSecretKey(esk string, password string) string {
 	ret, err := Decrypt(password, esk)
 	if err != nil {
@@ -99,6 +121,7 @@ func decryptSecretKey(esk string, password string) string {
 	return ret
 }
 
+//签名交易
 func signTransaction(hash string, sk string, wm []byte) (string, string, error) {
 	bhash,_ := hex.DecodeString(hash)
 	merbuf := append(wm, bhash...)
@@ -122,6 +145,7 @@ func signTransaction(hash string, sk string, wm []byte) (string, string, error) 
 	return edsig, sbyte, nil
 }
 
+//转账
 func transfer(keys Key, dst string, fee, gas_limit, storage_limit, amount string) (string, string){
 	header := callGetHeader()
 	blk_hash := gjson.GetBytes(header, "hash").Str
@@ -223,13 +247,13 @@ func CreateNewWallet(name string) error {
 
 	wallet := openwallet.NewWatchOnlyWallet(walletID.String(), Symbol)
 	wallet.Alias = name
-	//wallet.Password = pw		//为了安全密码最后不记录数据库好点。
 
 	db, err := wallet.OpenDB()
 	if err != nil {
 		return err
 	}
-	db.Close()
+	defer db.Close()
+
 	return db.Save(wallet)
 }
 
@@ -464,6 +488,7 @@ func summaryWallet(wallet *openwallet.Wallet, password string) error{
 	return nil
 }
 
+//汇总钱包
 func SummaryWallets() {
 	log.Printf("[Summary Wallet Start]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
 
