@@ -88,37 +88,38 @@ func CopyToContainer(c *docker.Client, Cname, src, dst string) error {
 	return nil
 }
 
-func main() {
-
-	var src string
-
-	if err := loadConfig(symbol); err != nil {
-		return err
-	}
-
-	// Init docker client
-	c, err := _GetClient()
-	if err != nil {
-		return err
-	}
-
-	// Action within client
-	Cname, err := _GetCName(symbol) // container name
-	if err != nil {
-		return err
-	}
-
-	src = "/usr/local/paicode/data/wallet.dat"
-	dst = "./bk/wallet.dat"
-	if err := CopyFromContainer(c, Cname, src, dst); err != nil {
-		return err
-	}
-
-	src = "./conf/BOPO.ini"
-	dst = "/tmp"
-	if err := CopyToContainer(c, Cname, src, dst); err != nil {
-		return err
-	}
-
-	return nil
-}
+// func main() {
+//
+// 	var src string
+// 	var dst string
+//
+// 	if err := loadConfig(symbol); err != nil {
+// 		return err
+// 	}
+//
+// 	// Init docker client
+// 	c, err := _GetClient()
+// 	if err != nil {
+// 		return err
+// 	}
+//
+// 	// Action within client
+// 	Cname, err := _GetCName(symbol) // container name
+// 	if err != nil {
+// 		return err
+// 	}
+//
+// 	src = "/usr/local/paicode/data/wallet.dat"
+// 	dst = "./bk/wallet.dat"
+// 	if err := CopyFromContainer(c, Cname, src, dst); err != nil {
+// 		return err
+// 	}
+//
+// 	src = "./conf/BOPO.ini"
+// 	dst = "/tmp"
+// 	if err := CopyToContainer(c, Cname, src, dst); err != nil {
+// 		return err
+// 	}
+//
+// 	return nil
+// }
