@@ -24,6 +24,7 @@ import (
 	"sync"
 	"time"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/OpenWallet/assets"
 )
 
 var (
@@ -53,6 +54,8 @@ type MerchantNode struct {
 	subscriptions []*Subscription
 	//订阅地址任务
 	subscribeAddressTask *timer.TaskTimer
+	//定时器任务
+	TaskTimers map[string]*timer.TaskTimer
 }
 
 func NewMerchantNode(config NodeConfig) (*MerchantNode, error) {
@@ -98,15 +101,57 @@ func NewMerchantNode(config NodeConfig) (*MerchantNode, error) {
 
 //resetSubscriptions 重置订阅表
 func (m *MerchantNode) resetSubscriptions(news []*Subscription) {
+
+	//清除旧订阅
+	for _, s := range m.subscriptions {
+
+		am := assets.GetMerchantAssets(s.Coin)
+		if am == nil {
+			continue
+		}
+
+		//移除旧的订阅观察者
+		am.RemoveMerchantObserverForBlockScan(m)
+
+		//TODO: 重新订阅扫描地址
+	}
+
 	m.mu.Lock()
 	m.subscriptions = nil
 	m.subscriptions = news
 	m.mu.Unlock()
+
+	//加载新订阅
+	for _, s := range m.subscriptions {
+
+		am := assets.GetMerchantAssets(s.Coin)
+		if am == nil {
+			continue
+		}
+
+		wallet, err := m.GetMerchantWalletByID(s.WalletID)
+		if err != nil {
+			continue
+		}
+
+		//加入到区块链观测者表单
+		am.AddMerchantObserverForBlockScan(m, wallet)
+	}
 }
 
 //OpenDB 访问数据库
 func (m *MerchantNode) OpenDB() (*storm.DB, error) {
 	return storm.Open(m.Config.CacheFile)
+}
+
+//SaveToDB 保存到商户数据库
+func (m *MerchantNode) SaveToDB(data interface{})  error {
+	db, err := m.OpenDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	return db.Save(data)
 }
 
 //GetMerchantWalletByID 获取商户钱包
@@ -295,6 +340,7 @@ func (m *MerchantNode) StopTimerTask() {
 	//停止地址订阅任务
 	m.subscribeAddressTask.Pause()
 	//停止交易记录订阅任务
+
 }
 
 //DeleteAddressVersion 删除地址版本

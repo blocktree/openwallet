@@ -19,10 +19,29 @@ import (
 	"context"
 	"docker.io/go-docker"
 	"fmt"
+	"log"
 	s "strings"
 )
 
 type NodeManagerStruct struct{}
+
+func _GetClient() (*docker.Client, error) {
+	var c *docker.Client
+	var err error
+
+	// Init docker client
+	if _, ok := map[string]string{"localhost": "", "127.0.0.1": ""}[serverAddr]; ok {
+		c, err = docker.NewEnvClient()
+	} else {
+		host := fmt.Sprintf("tcp://%s:%s", serverAddr, serverPort)
+		c, err = docker.NewClient(host, "v1.37", nil, map[string]string{})
+	}
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return c, err
+}
 
 func (w *NodeManagerStruct) GetNodeStatus(symbol string) error {
 	// func(vals ...interface{}) {}(
@@ -32,19 +51,24 @@ func (w *NodeManagerStruct) GetNodeStatus(symbol string) error {
 	// 	api.DefaultVersion, s.ToLower("jij"),
 	// ) // Delete before commit
 
+	if err := loadConfig(symbol); err != nil {
+		log.Println(err)
+		return err
+	}
+
 	// Init docker client
-	c, err := docker.NewEnvClient()
+	c, err := _GetClient()
 	if err != nil {
 		return err
 	}
+
 	// Instantize parameters
 	cName, err := _GetCName(symbol) // container name
 	if err != nil {
 		return err
 	}
-	ctx := context.Background() // nil
 	// Action within client
-	res, err := c.ContainerInspect(ctx, cName)
+	res, err := c.ContainerInspect(context.Background(), cName)
 	if err != nil {
 		return err
 	}

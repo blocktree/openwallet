@@ -28,7 +28,17 @@ import (
 	"path/filepath"
 )
 
-type WalletManager struct{}
+type WalletManager struct{
+
+	blockscanner *BTCBlockScanner
+
+}
+
+func NewWalletManager() *WalletManager {
+	w := WalletManager{}
+	w.blockscanner = NewBTCBlockScanner()
+	return &w
+}
 
 //初始化配置流程
 func (w *WalletManager) InitConfigFlow() error {

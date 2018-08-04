@@ -17,7 +17,6 @@ package merchant
 
 import (
 	"github.com/blocktree/OpenWallet/owtp"
-	"log"
 	"github.com/blocktree/OpenWallet/openwallet"
 )
 
@@ -39,7 +38,7 @@ func GetChargeAddressVersion(
 		params,
 		sync,
 		func(resp owtp.Response) {
-			log.Printf(" getChargeAddressVersion Response: %v", resp)
+			//log.Printf(" getChargeAddressVersion Response: %v", resp)
 			result := resp.JsonData()
 			if result.Exists() {
 				addressVersion := NewAddressVersion(result)
@@ -85,6 +84,36 @@ func GetChargeAddress(
 			}
 
 			callback(addrs, resp.Status, resp.Msg)
+
+		})
+
+	return err
+}
+
+
+
+//SubmitRechargeTrasaction 提交充值到账记录
+func SubmitRechargeTrasaction(
+	node *owtp.OWTPNode,
+	params interface{},
+	sync bool,
+	callback func(confirms []uint64, status uint64, msg string)) error {
+
+	//获取订阅的地址版本
+	err := node.Call(
+		"submitRechargeTrasaction",
+		params,
+		sync,
+		func(resp owtp.Response) {
+			confirms := make([]uint64, 0)
+			result := resp.JsonData()
+			if result.Exists() {
+				arrs := result.Get("confirms").Array()
+				for _, c := range arrs {
+					confirms = append(confirms, c.Uint())
+				}
+			}
+			callback(confirms, resp.Status, resp.Msg)
 
 		})
 

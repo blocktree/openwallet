@@ -60,11 +60,12 @@ func (m *MerchantNode) setupRouter() {
 //subscribe 订阅方法
 func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 
-	log.Printf("Merchat Call: subscribe \n")
+	log.Printf("Merchant Call: subscribe \n")
 	log.Printf("params: %v\n", ctx.Params())
 
 	var (
 		subscriptions []*Subscription
+		wallet        *openwallet.Wallet
 	)
 
 	db, err := m.OpenDB()
@@ -72,7 +73,6 @@ func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 		responseError(ctx, err)
 		return
 	}
-	defer db.Close()
 	//
 	////每次订阅都先清除旧订阅
 	//db.Drop("subscribe")
@@ -85,16 +85,27 @@ func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 		}
 		subscriptions = append(subscriptions, s)
 		//log.Printf("s = %v\n", s)
-		//添加订阅钱包
-		wallet := openwallet.NewWatchOnlyWallet(s.WalletID, s.Coin)
-		err = db.Save(wallet)
+
+		//检查是否已有钱包
+		err = db.One("WalletID", s.WalletID, wallet)
+
+		if err != nil {
+			//添加订阅钱包
+			wallet = openwallet.NewWatchOnlyWallet(s.WalletID, s.Coin)
+			err = db.Save(wallet)
+		}
+
 		account := wallet.SingleAssetsAccount(s.Coin)
 		err = db.Save(account)
 		if err != nil {
 			responseError(ctx, err)
+			db.Close()
 			return
 		}
+
 	}
+
+	db.Close()
 
 	//重置订阅内容
 	m.resetSubscriptions(subscriptions)
@@ -106,7 +117,7 @@ func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 
 func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 
-	log.Printf("Merchat Call: createWallet \n")
+	log.Printf("Merchant Call: createWallet \n")
 	log.Printf("params: %v\n", ctx.Params())
 
 	/*
@@ -177,7 +188,7 @@ func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 
 func (m *MerchantNode) configWallet(ctx *owtp.Context) {
 
-	log.Printf("Merchat Call: createWallet \n")
+	log.Printf("Merchant Call: configWallet \n")
 	log.Printf("params: %v\n", ctx.Params())
 
 	/*
@@ -213,7 +224,7 @@ func (m *MerchantNode) configWallet(ctx *owtp.Context) {
 
 func (m *MerchantNode) getWalletList(ctx *owtp.Context) {
 
-	log.Printf("Merchat Call: getWalletList \n")
+	log.Printf("Merchant Call: getWalletList \n")
 	log.Printf("params: %v\n", ctx.Params())
 
 	coin := ctx.Params().Get("coin").String()
@@ -274,7 +285,7 @@ func (m *MerchantNode) getWalletList(ctx *owtp.Context) {
 
 func (m *MerchantNode) createAddress(ctx *owtp.Context) {
 
-	log.Printf("Merchat Call: createAddress \n")
+	log.Printf("Merchant Call: createAddress \n")
 	log.Printf("params: %v\n", ctx.Params())
 
 	/*
@@ -343,7 +354,7 @@ func (m *MerchantNode) createAddress(ctx *owtp.Context) {
 
 func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
 
-	log.Printf("Merchat Call: getAddressList \n")
+	log.Printf("Merchant Call: getAddressList \n")
 	log.Printf("params: %v\n", ctx.Params())
 
 	/*
@@ -376,8 +387,7 @@ func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
 	}
 
 	//导入到每个币种的数据库
-	mer := assets.GetMerchantAssets(coin)
-	addrs, err := mer.GetMerchantAddressList(wallet, wallet.SingleAssetsAccount(coin), offset, limit)
+	addrs, err := am.GetMerchantAddressList(wallet, wallet.SingleAssetsAccount(coin), offset, limit)
 
 	if err != nil {
 		responseError(ctx, err)
@@ -406,13 +416,14 @@ func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
 
 func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 
-	log.Printf("Merchat Call: submitTransaction \n")
+	log.Printf("Merchant Call: submitTransaction \n")
 	log.Printf("params: %v\n", ctx.Params())
 
 	var (
 		//withdraws = make([]*openwallet.Withdraw, 0)
 		wallets  = make(map[string][]*openwallet.Withdraw)
 		tmpArray []*openwallet.Withdraw
+		txIDMaps = make([]map[string]interface{}, 0)
 	)
 
 	db, err := m.OpenDB()
@@ -432,12 +443,20 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 		err = db.One("Sid", s.Sid, &openwallet.Withdraw{})
 		if err == nil {
 			//存在相关的sid不加入提现表
-			log.Printf("withdraw sid: %s is duplicate\n", s.Sid)
+			errMsg := fmt.Sprintf("withdraw sid: %s is duplicate\n", s.Sid)
+			log.Printf(errMsg)
+
+			txIDMaps = append(txIDMaps, map[string]interface{}{
+				"sid":    s.Sid,
+				"txid":   "",
+				"status": 2,
+				"reason": errMsg,
+			})
+
 			continue
 		}
 
 		//withdraws = append(withdraws, s)
-		db.Save(s)
 
 		tmpArray = wallets[s.WalletID]
 		if tmpArray == nil {
@@ -450,8 +469,6 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 	}
 
 	db.Close()
-
-	txIDMaps := make([]map[string]interface{}, 0)
 
 	for wid, withs := range wallets {
 		if len(withs) > 0 {
@@ -467,17 +484,28 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 			if mer == nil {
 				continue
 			}
+			status := 0
 			txID, err := mer.SubmitTransactions(wallet, wallet.SingleAssetsAccount(withs[0].Symbol), withs)
 			if err != nil {
 				log.Printf("SubmitTransactions unexpected error: %v", err)
-				continue
+				status = 3
+			} else {
+				status = 1
+
+				err = nil
 			}
 
 			for _, with := range withs {
 				txIDMaps = append(txIDMaps, map[string]interface{}{
-					"sid":  with.Sid,
-					"txid": txID,
+					"sid":    with.Sid,
+					"txid":   txID,
+					"status": status,
+					"reason": err.Error(),
 				})
+
+				if status == 1 {
+					m.SaveToDB(with)
+				}
 			}
 
 		}
@@ -485,6 +513,39 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 
 	result := map[string]interface{}{
 		"withdraws": txIDMaps,
+	}
+
+	responseSuccess(ctx, result)
+}
+
+func (m *MerchantNode) getNewHeight(ctx *owtp.Context) {
+
+	log.Printf("Merchant Call: getNewHeight \n")
+	log.Printf("params: %v\n", ctx.Params())
+
+	/*
+		| 参数名称 | 类型   | 是否可空 | 描述     |
+		|----------|--------|----------|----------|
+		| coin     | string | 否       | 币种标识 |
+		| walletID | string | 否       | 钱包ID   |
+		| offset    | uint   | 是       | 从0开始     |
+		| limit    | uint   | 是       | 查询条数     |
+	*/
+
+	coin := ctx.Params().Get("coin").String()
+	walletID := ctx.Params().Get("walletID").String()
+
+	am := assets.GetMerchantAssets(coin)
+	blockchain, err := am.GetBlockchainInfo()
+	if err != nil {
+		responseError(ctx, err)
+		return
+	}
+
+	result := map[string]interface{}{
+		"coin":     coin,
+		"walletID": walletID,
+		"height":   blockchain.Blocks,
 	}
 
 	responseSuccess(ctx, result)

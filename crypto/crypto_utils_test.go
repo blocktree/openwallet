@@ -11,10 +11,10 @@ func TestHmacSHA1(t *testing.T) {
 		appsecret  = "0dd1e322907ad7f55deaa35fec2aac97cae7931454d734364bc63f3e9b9f993a"
 		timestamp  = "1506565393"
 		period     = "3600"
-		ciphertext string
+		ciphertext []byte
 	)
 
-	ciphertext = HmacSHA1(appsecret, appkey+timestamp+period)
+	ciphertext = HmacSHA1(appsecret, []byte(appkey+timestamp+period))
 
-	fmt.Println("ciphertext = ", ciphertext)
+	fmt.Println("ciphertext = ", string(ciphertext))
 }

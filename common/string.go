@@ -21,7 +21,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/blocktree/OpenWallet/common/crypto"
+	"github.com/blocktree/OpenWallet/crypto"
 )
 
 // String AT的字符串库

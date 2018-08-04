@@ -307,13 +307,13 @@ func GetAddrBalance(address string) (*big.Int, error) {
 	balance := new(big.Int)
 	resultStr := result.String()
 	if strings.Index(resultStr, "0x") != -1 {
-		fmt.Println("resultStr:", resultStr)
+		//fmt.Println("resultStr:", resultStr)
 		resultStr = common.Substr(resultStr, 2, len(resultStr))
-		fmt.Println("ater trim resultStr:", resultStr)
+		//fmt.Println("ater trim resultStr:", resultStr)
 	}
 	_, success := balance.SetString(resultStr, 16)
 	if !success {
-		log.Fatal(fmt.Sprintf("get addr[%v] balance format failed, response is %v\n", address, result.String()))
+		log.Fatal(fmt.Sprintf("convert addr[%v] balance format to bigint failed, response is %v\n", address, result.String()))
 		return big.NewInt(0), err
 	}
 	return balance, nil

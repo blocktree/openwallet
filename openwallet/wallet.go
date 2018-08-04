@@ -24,6 +24,9 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"reflect"
+	"bufio"
+	"os"
+	"encoding/json"
 )
 
 type Wallet struct {
@@ -52,6 +55,34 @@ func NewHDWallet(key *keystore.HDKey) (*Wallet, error) {
 func NewWalletID() uuid.UUID {
 	id := uuid.NewRandom()
 	return id
+}
+
+func NewWallet(walletID string, symbol string) *Wallet {
+
+	dbDir := GetDBDir(symbol)
+	keyDir := GetKeyDir(symbol)
+
+	file.MkdirAll(dbDir)
+	file.MkdirAll(keyDir)
+
+	//检查目录是否已存在钱包私钥文件，有则用私钥创建这个钱包
+	wallets, err := GetWalletsByKeyDir(keyDir)
+	if err != nil {
+		return nil
+	}
+
+	for _, w := range wallets  {
+		if w.WalletID == walletID {
+			w.KeyFile = filepath.Join(dbDir, w.KeyFile)
+			w.DBFile = filepath.Join(dbDir, w.DBFile)
+			return w
+		}
+	}
+
+	watchOnlyWallet := NewWatchOnlyWallet(walletID, symbol)
+
+	return watchOnlyWallet
+
 }
 
 //NewWatchOnlyWallet 只读钱包，用于观察冷钱包
@@ -95,26 +126,176 @@ func (w *Wallet) OpenDB() (*storm.DB, error) {
 	return storm.Open(w.DBFile)
 }
 
+//SaveToDB 保存到数据库
+func (w *Wallet) SaveToDB() error {
+	db, err := w.OpenDB()
+	if err != nil {
+		return nil
+	}
+	defer db.Close()
+	return db.Save(w)
+}
+
 //GetAssetsAccounts 获取某种区块链的全部资产账户
 func (w *Wallet) GetAssetsAccounts(symbol string) []*AssetsAccount {
 	return nil
 }
 
+//GetAddress 通过地址字符串获取地址对象
+func (w *Wallet) GetAddress(address string) *Address {
+	db, err := w.OpenDB()
+	if err != nil {
+		return nil
+	}
+	defer db.Close()
+
+	var obj Address
+	db.One("Address", address, &obj)
+	return &obj
+}
+
+//GetAddressesByAccountID 通过账户ID获取地址列表
+func (w *Wallet) GetAddressesByAccount(accountID string) []*Address {
+	db, err := w.OpenDB()
+	if err != nil {
+		return nil
+	}
+	defer db.Close()
+
+	var obj []*Address
+	db.Find("AccountID", accountID, &obj)
+	return obj
+}
+
 //SingleAssetsAccount 把钱包作为一个单资产账户来使用
 func (w *Wallet) SingleAssetsAccount(symbol string) *AssetsAccount {
 	a := AssetsAccount{
-		WalletID: w.WalletID,
-		Alias:w.Alias,
-		AccountID:w.WalletID,
-		Index: 0,
-		HDPath: "",
-		Required:0,
-		PublicKeys:[]string{w.RootPub},
-		Symbol:symbol,
+		WalletID:   w.WalletID,
+		Alias:      w.Alias,
+		AccountID:  w.WalletID,
+		Index:      0,
+		HDPath:     "",
+		Required:   0,
+		PublicKeys: []string{w.RootPub},
+		Symbol:     symbol,
 	}
 
 	return &a
 }
+
+//SaveRecharge 保存交易记录
+func (w *Wallet) SaveRecharge(tx *Recharge) error {
+	db, err := w.OpenDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	return db.Save(tx)
+}
+
+//DropRecharge 删除充值记录表
+func (w *Wallet) DropRecharge() error {
+	db, err := w.OpenDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	return db.Drop("Recharge")
+	//return db.Save(tx)
+}
+
+//GetRecharges 获取钱包相关的充值记录
+func (w *Wallet) GetRecharges(height ...uint64) ([]*Recharge, error) {
+
+	var (
+		list []*Recharge
+	)
+
+	db, err := w.OpenDB()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	if len(height) > 0 {
+		err = db.Find("BlockHeight", height[0], &list)
+	} else {
+		err = db.All(&list)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
+
+//GetWalletsByKeyDir 通过给定的文件路径加载keystore文件得到钱包列表
+func GetWalletsByKeyDir(dir string) ([]*Wallet, error) {
+
+	var (
+		wallets = make([]*Wallet, 0)
+	)
+
+	//扫描key目录的所有钱包
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return wallets, err
+	}
+
+	for _, fi := range files {
+		// Skip any non-key files from the folder
+		if !file.IsUserFile(fi) {
+			continue
+		}
+		if fi.IsDir() {
+			continue
+		}
+
+		path := filepath.Join(dir, fi.Name())
+
+		w := ReadWalletByKey(path)
+		w.KeyFile = path
+		wallets = append(wallets, w)
+
+	}
+
+	return wallets, nil
+
+}
+
+
+
+//ReadWalletByKey 加载文件，实例化钱包
+func ReadWalletByKey(keyPath string) *Wallet {
+
+	var (
+		buf = new(bufio.Reader)
+		key struct {
+			   Alias  string `json:"alias"`
+			   RootId string `json:"rootid"`
+		   }
+	)
+
+	fd, err := os.Open(keyPath)
+	defer fd.Close()
+	if err != nil {
+		return nil
+	}
+
+	buf.Reset(fd)
+	// Parse the address.
+	key.Alias = ""
+	key.RootId = ""
+	err = json.NewDecoder(buf).Decode(&key)
+	if err != nil {
+		return nil
+	}
+
+	return &Wallet{WalletID: key.RootId, Alias: key.Alias}
+}
+
 
 /*
 //NewWallet 创建钱包

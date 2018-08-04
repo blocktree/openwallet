@@ -54,6 +54,10 @@ type Authorization interface {
 	AddAuth(data *DataPacket) bool
 	//VerifySignature 校验签名，若验证错误，可更新错误信息到DataPacket中
 	VerifyAuth(data *DataPacket) bool
+	//EncryptData 加密数据
+	EncryptData(data []byte) ([]byte, error)
+	//DecryptData 解密数据
+	DecryptData(data []byte) ([]byte, error)
 	//EnableAuth 开启授权
 	EnableAuth() bool
 }
@@ -327,7 +331,9 @@ func (c *Client) readPump() {
 				//创建上下面指针，处理请求参数
 				ctx := Context{Req: p.Req, nonce: p.Nonce, inputs: p.Data, Method: p.Method}
 
-				//log.Printf("ctx: %v\n", ctx)
+				if Debug {
+					log.Printf("ctx: %v\n", ctx)
+				}
 
 				client.handler.ServeOWTP(client, &ctx)
 
@@ -347,7 +353,9 @@ func (c *Client) readPump() {
 
 				ctx := Context{Req: p.Req, nonce: p.Nonce, inputs: nil, Method: p.Method, Resp: resp}
 
-				//log.Printf("ctx: %v\n", ctx)
+				if Debug {
+					log.Printf("ctx: %v\n", ctx)
+				}
 
 				client.handler.ServeOWTP(client, &ctx)
 

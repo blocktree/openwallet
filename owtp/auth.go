@@ -44,6 +44,10 @@ type OWTPAuth struct {
 	CacheFile string
 	//是否开启
 	Enable bool
+	//是否协商
+	isConsult bool
+	//协商类型
+	consultType string
 }
 
 //NewOWTPAuth 创建OWTP授权
@@ -87,9 +91,10 @@ func (auth *OWTPAuth) ConnectAuth(url string) string {
 	a := auth.PublickKey
 	n := time.Now().UnixNano()
 	t := time.Now().Unix()
+	c := auth.consultType
 	s := ""
 
-	url = fmt.Sprintf("%s?a=%s&n=%d&t=%d&s=%s", url, a, n, t, s)
+	url = fmt.Sprintf("%s?a=%s&n=%d&t=%d&s=%s&c=%s", url, a, n, t, s, c)
 	return url
 }
 
@@ -132,6 +137,24 @@ func (auth *OWTPAuth) VerifyAuth(data *DataPacket) bool {
 func (auth *OWTPAuth) EnableAuth() bool {
 
 	return auth.Enable
+}
+
+//EncryptData 加密数据
+func (auth *OWTPAuth) EncryptData(data []byte) ([]byte, error) {
+	return data, nil
+}
+
+//DecryptData 解密数据
+func (auth *OWTPAuth) DecryptData(data []byte) ([]byte, error) {
+	return data, nil
+}
+
+func (auth *OWTPAuth) CreateKeyAgreement(pubKey, tmpPubKey []byte) ([]byte, []byte, error) {
+	return nil, nil, nil
+}
+
+func (auth *OWTPAuth) HandlerKeyAgreement(ctx *Context) {
+
 }
 
 //verifySignature 钱包签名
