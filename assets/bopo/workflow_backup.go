@@ -13,32 +13,29 @@
  * GNU Lesser General Public License for more details.
  */
 
-package walletnode
+package bopo
 
 import (
-	"context"
-	"fmt"
+	// "fmt"
+	"github.com/tidwall/gjson"
+	// "github.com/pkg/errors"
+	// "log"
+	"github.com/blocktree/OpenWallet/walletnode"
 )
 
-func (w *NodeManagerStruct) RestartNodeFlow(symbol string) error {
+func Backup(symbol string) error {
+	Cname := symbol.ToLower()
+	src := "/usr/local/paicode/data/wallet.dat"
+	dst := fmt.Fprintf("./data/%s/key/", symbol)
+	if err := walletnode.CopyFromContainer(c, Cname, src, dst); err != nil {
+		return err
+	}
+	return nil
+}
 
-	if err := loadConfig(symbol); err != nil {
+func Restore() error {
+	if err := walletnode.CopyToContainer(); err != nil {
 		return err
 	}
-
-	// Init docker client
-	c, err := _GetClient()
-	if err != nil {
-		return err
-	}
-	// Action within client
-	cName, err := _GetCName(symbol) // container name
-	if err != nil {
-		return err
-	}
-	err = c.ContainerRestart(context.Background(), cName, nil)
-	if err == nil {
-		fmt.Printf("%s walletnode restart in success!\n", symbol)
-	}
-	return err
+	return nil
 }
