@@ -16,6 +16,9 @@
 package assets
 
 import (
+	"log"
+	"strings"
+
 	"github.com/blocktree/OpenWallet/assets/bitcoin"
 	"github.com/blocktree/OpenWallet/assets/bitcoincash"
 	"github.com/blocktree/OpenWallet/assets/bopo"
@@ -24,8 +27,6 @@ import (
 	"github.com/blocktree/OpenWallet/assets/hypercash"
 	"github.com/blocktree/OpenWallet/assets/sia"
 	"github.com/blocktree/OpenWallet/assets/tezos"
-	"log"
-	"strings"
 )
 
 //WalletManager 钱包管理器
