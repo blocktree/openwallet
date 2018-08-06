@@ -25,6 +25,7 @@ import (
 	"github.com/blocktree/OpenWallet/assets/sia"
 	"log"
 	"strings"
+	"github.com/blocktree/OpenWallet/assets/iota"
 )
 
 //WalletManager 钱包管理器
@@ -115,4 +116,5 @@ func init() {
 	RegWMD(strings.ToLower(sia.Symbol), &sia.WalletManager{})
 	RegWMD(strings.ToLower(bitcoin.Symbol), bitcoin.NewWalletManager())
 	RegWMD(strings.ToLower(hypercash.Symbol), hypercash.NewWalletManager())
+	RegWMD(strings.ToLower(iota.Symbol), &iota.WalletManager{})
 }

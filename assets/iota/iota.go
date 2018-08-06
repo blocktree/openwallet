@@ -16,30 +16,20 @@
 package iota
 
 import (
-	//"errors"
 	"fmt"
-	//"github.com/blocktree/OpenWallet/common"
-	//"github.com/blocktree/OpenWallet/logger"
-	//"github.com/blocktree/OpenWallet/timer"
-	//"github.com/shopspring/decimal"
 	"log"
-	//"strings"
 	"path/filepath"
 	"github.com/iotaledger/giota"
 	"github.com/blocktree/OpenWallet/console"
 )
 
-type WalletManager struct{
+type WalletManager struct{}
 
-	//blockscanner *BTCBlockScanner
-
-}
-
-func NewWalletManager() *WalletManager {
-	w := WalletManager{}
-	//w.blockscanner = NewBTCBlockScanner()
-	return &w
-}
+//func NewWalletManager() *WalletManager {
+//	w := WalletManager{}
+//	//w.blockscanner = NewBTCBlockScanner()
+//	return &w
+//}
 
 //初始化配置流程
 func (w *WalletManager) InitConfigFlow() error {
@@ -195,7 +185,7 @@ func (w *WalletManager) CreateAddressFlow() error {
 	}
 
 	// 输入地址数量
-	start, err := console.InputNumber("Enter the start number of addresses: ", false)
+	start, err := console.InputStartNumber("Enter the start number of addresses: ", false)
 	if err != nil {
 		return err
 	}
@@ -217,11 +207,13 @@ func (w *WalletManager) CreateAddressFlow() error {
 	log.Printf("Start batch creation\n")
 	log.Printf("-------------------------------------------------\n")
 
-	backupFile := CreateAddresses(trytes,startInt,countInt,security)
+	backupFile,err := CreateAddresses(trytes,startInt,countInt,security)
+	if err != nil{
+		return err
+	}
 
 	log.Printf("-------------------------------------------------\n")
 	log.Printf("All addresses have created, file path:%s\n", backupFile)
-
 	return nil
 }
 
@@ -238,97 +230,97 @@ func (w *WalletManager) CreateAddressFlow() error {
 6. 待已登记的汇总钱包达到阀值，发起账户汇总到配置下的地址。
 
 */
-/*
+
 // SummaryFollow 汇总流程
 func (w *WalletManager) SummaryFollow() error {
 
-	var (
-		endRunning = make(chan bool, 1)
-	)
-
-	//先加载是否有配置文件
-	err := loadConfig()
-	if err != nil {
-		return err
-	}
-
-	//判断汇总地址是否存在
-	if len(sumAddress) == 0 {
-
-		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
-	}
-
-	//查询所有钱包信息
-	wallets, err := GetWalletList()
-	if err != nil {
-		fmt.Printf("The node did not create any wallet!\n")
-		return err
-	}
-
-	//打印钱包
-	printWalletList(wallets)
-
-	fmt.Printf("[Please select the wallet to summary, and enter the numbers split by ','." +
-		" For example: 0,1,2,3] \n")
-
-	// 等待用户输入钱包名字
-	nums, err := console.InputText("Enter the No. group: ", true)
-	if err != nil {
-		return err
-	}
-
-	//分隔数组
-	array := strings.Split(nums, ",")
-
-	for _, numIput := range array {
-		if common.IsNumberString(numIput) {
-			numInt := common.NewString(numIput).Int()
-			if numInt < len(wallets) {
-				w := wallets[numInt]
-
-				fmt.Printf("Register summary wallet [%s]-[%s]\n", w.Alias, w.WalletID)
-				//输入钱包密码完成登记
-				password, err := console.InputPassword(false, 8)
-				if err != nil {
-					return err
-				}
-
-				//解锁钱包验证密码
-				_, err = w.HDKey(password)
-				if err != nil {
-					openwLogger.Log.Errorf("The password to unlock wallet is incorrect! ")
-					continue
-				}
-
-				//解锁钱包
-				err = UnlockWallet(password, 1)
-				if err != nil {
-					openwLogger.Log.Errorf("The password to unlock wallet is incorrect! ")
-					continue
-				}
-
-				w.Password = password
-
-				AddWalletInSummary(w.WalletID, w)
-			} else {
-				return errors.New("The input No. out of index! ")
-			}
-		} else {
-			return errors.New("The input No. is not numeric! ")
-		}
-	}
-
-	if len(walletsInSum) == 0 {
-		return errors.New("Not summary wallets to register! ")
-	}
-
-	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", cycleSeconds.Seconds())
-
-	//启动钱包汇总程序
-	sumTimer := timer.NewTask(cycleSeconds, SummaryWallets)
-	sumTimer.Start()
-
-	<-endRunning
+	//var (
+	//	endRunning = make(chan bool, 1)
+	//)
+	//
+	////先加载是否有配置文件
+	//err := loadConfig()
+	//if err != nil {
+	//	return err
+	//}
+	//
+	////判断汇总地址是否存在
+	//if len(sumAddress) == 0 {
+	//
+	//	return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
+	//}
+	//
+	////查询所有钱包信息
+	//wallets, err := GetWalletList()
+	//if err != nil {
+	//	fmt.Printf("The node did not create any wallet!\n")
+	//	return err
+	//}
+	//
+	////打印钱包
+	//printWalletList(wallets)
+	//
+	//fmt.Printf("[Please select the wallet to summary, and enter the numbers split by ','." +
+	//	" For example: 0,1,2,3] \n")
+	//
+	//// 等待用户输入钱包名字
+	//nums, err := console.InputText("Enter the No. group: ", true)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	////分隔数组
+	//array := strings.Split(nums, ",")
+	//
+	//for _, numIput := range array {
+	//	if common.IsNumberString(numIput) {
+	//		numInt := common.NewString(numIput).Int()
+	//		if numInt < len(wallets) {
+	//			w := wallets[numInt]
+	//
+	//			fmt.Printf("Register summary wallet [%s]-[%s]\n", w.Alias, w.WalletID)
+	//			//输入钱包密码完成登记
+	//			password, err := console.InputPassword(false, 8)
+	//			if err != nil {
+	//				return err
+	//			}
+	//
+	//			//解锁钱包验证密码
+	//			_, err = w.HDKey(password)
+	//			if err != nil {
+	//				openwLogger.Log.Errorf("The password to unlock wallet is incorrect! ")
+	//				continue
+	//			}
+	//
+	//			//解锁钱包
+	//			err = UnlockWallet(password, 1)
+	//			if err != nil {
+	//				openwLogger.Log.Errorf("The password to unlock wallet is incorrect! ")
+	//				continue
+	//			}
+	//
+	//			w.Password = password
+	//
+	//			AddWalletInSummary(w.WalletID, w)
+	//		} else {
+	//			return errors.New("The input No. out of index! ")
+	//		}
+	//	} else {
+	//		return errors.New("The input No. is not numeric! ")
+	//	}
+	//}
+	//
+	//if len(walletsInSum) == 0 {
+	//	return errors.New("Not summary wallets to register! ")
+	//}
+	//
+	//fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", cycleSeconds.Seconds())
+	//
+	////启动钱包汇总程序
+	//sumTimer := timer.NewTask(cycleSeconds, SummaryWallets)
+	//sumTimer.Start()
+	//
+	//<-endRunning
 
 	return nil
 }
@@ -336,46 +328,46 @@ func (w *WalletManager) SummaryFollow() error {
 //备份钱包流程
 func (w *WalletManager) BackupWalletFlow() error {
 
-	var (
-		err        error
-		backupPath string
-	)
-
-	//先加载是否有配置文件
-	err = loadConfig()
-	if err != nil {
-		return err
-	}
-
-	list, err := GetWalletList()
-	if err != nil {
-		return err
-	}
-
-	//打印钱包列表
-	printWalletList(list)
-
-	fmt.Printf("[Please select a wallet to backup] \n")
-
-	//选择钱包
-	num, err := console.InputNumber("Enter wallet No. : ", true)
-	if err != nil {
-		return err
-	}
-
-	if int(num) >= len(list) {
-		return errors.New("Input number is out of index! ")
-	}
-
-	wallet := list[num]
-
-	backupPath, err = BackupWallet(wallet.WalletID)
-	if err != nil {
-		return err
-	}
-
-	//输出备份导出目录
-	fmt.Printf("Wallet backup file path: %s\n", backupPath)
+	//var (
+	//	err        error
+	//	backupPath string
+	//)
+	//
+	////先加载是否有配置文件
+	//err = loadConfig()
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//list, err := GetWalletList()
+	//if err != nil {
+	//	return err
+	//}
+	//
+	////打印钱包列表
+	//printWalletList(list)
+	//
+	//fmt.Printf("[Please select a wallet to backup] \n")
+	//
+	////选择钱包
+	//num, err := console.InputNumber("Enter wallet No. : ", true)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//if int(num) >= len(list) {
+	//	return errors.New("Input number is out of index! ")
+	//}
+	//
+	//wallet := list[num]
+	//
+	//backupPath, err = BackupWallet(wallet.WalletID)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	////输出备份导出目录
+	//fmt.Printf("Wallet backup file path: %s\n", backupPath)
 
 	return nil
 
@@ -390,64 +382,42 @@ func (w *WalletManager) TransferFlow() error {
 		return err
 	}
 
-	list, err := GetWalletList()
+	//输入钱包seed
+	seed, err := console.InputText("Please enter the seed of your wallet: ", true)
 	if err != nil {
 		return err
 	}
 
-	//打印钱包列表
-	printWalletList(list)
+	// 输入发送地址
+	addr, err := console.InputText("Enter the receive address: ", false)
+	if err != nil {
+		return err
+	}
+	address := giota.Address(addr)
 
-	fmt.Printf("[Please select a wallet to send transaction] \n")
+	// 输入iota数量
+	amount, err := console.InputNumber("Enter the IOTA amount: ", false)
+	if err != nil {
+		return err
+	}
+	value := int64(amount)
 
-	//选择钱包
-	num, err := console.InputNumber("Enter wallet No. : ", true)
+	// 输入tag
+	note, err := console.InputText("Enter the tag(note): ", true)
+	if err != nil {
+		return err
+	}
+	tag,err := giota.ToTrytes(note)
 	if err != nil {
 		return err
 	}
 
-	if int(num) >= len(list) {
-		return errors.New("Input number is out of index! ")
-	}
-
-	wallet := list[num]
-
-	// 等待用户输入发送数量
-	amount, err := console.InputRealNumber("Enter amount to send: ", true)
-	if err != nil {
+	err = SendTransaction(seed, address, value, tag)
+	if err != nil{
 		return err
 	}
 
-	atculAmount, _ := decimal.NewFromString(amount)
-	balance, _ := decimal.NewFromString(wallet.Balance)
-
-	if atculAmount.GreaterThan(balance) {
-		return errors.New("Input amount is greater than balance! ")
-	}
-
-	// 等待用户输入发送数量
-	receiver, err := console.InputText("Enter receiver address: ", true)
-	if err != nil {
-		return err
-	}
-
-	//输入密码解锁钱包
-	password, err := console.InputPassword(false, 8)
-	if err != nil {
-		return err
-	}
-
-	//重新加载utxo
-	RebuildWalletUnspent(wallet.WalletID)
-
-	//建立交易单
-	txID, err := SendTransaction(wallet.WalletID,
-		receiver, atculAmount, password, true)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Send transaction successfully, TXID：%s\n", txID)
+	log.Printf("SendTransaction() successfully.\n")
 
 	return nil
 }
@@ -461,10 +431,35 @@ func (w *WalletManager) GetWalletList() error {
 		return err
 	}
 
-	list, err := GetWalletList()
+	//选择钱包
+	seed, err := console.InputText("Please enter the seed of the wallet: ", true)
+	if err != nil {
+		return err
+	}
 
-	//打印钱包列表
-	printWalletList(list)
+	if len(seed) != 81{
+		fmt.Printf("The input seed is wrong.")
+		return nil
+	}
+
+	fmt.Printf("Checking......please wait for a monent......\n")
+
+	_,adrs,totalBalance,err := GetWalletInfo(seed)
+	if err != nil {
+		return err
+	}
+
+	if len(adrs)==0{
+		fmt.Printf("There is no used addresses of this wallet.\n")
+	}else {
+		fmt.Printf("Used addresses of this wallet:\n")
+		for i:=0;i<len(adrs);i++{
+			fmt.Printf("%s\n",adrs[i])
+		}
+	}
+
+
+	fmt.Printf("Total balance of this wallet: %v\n",totalBalance)
 
 	return nil
 }
@@ -472,54 +467,54 @@ func (w *WalletManager) GetWalletList() error {
 //RestoreWalletFlow 恢复钱包流程
 func (w *WalletManager) RestoreWalletFlow() error {
 
-	var (
-		err      error
-		keyFile  string
-		dbFile   string
-		datFile  string
-		password string
-	)
-
-	//先加载是否有配置文件
-	err = loadConfig()
-	if err != nil {
-		return err
-	}
-
-	//输入恢复文件路径
-	keyFile, err = console.InputText("Enter backup key file path: ", true)
-	if err != nil {
-		return err
-	}
-
-	dbFile, err = console.InputText("Enter backup db file path: ", true)
-	if err != nil {
-		return err
-	}
-
-	datFile, err = console.InputText("Enter backup wallet.dat file path: ", true)
-	if err != nil {
-		return err
-	}
-
-	password, err = console.InputPassword(false, 8)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Wallet restoring, please wait a moment...\n")
-	err = RestoreWallet(keyFile, dbFile, datFile, password)
-	if err != nil {
-		return err
-	}
-
-	//输出备份导出目录
-	fmt.Printf("Restore wallet successfully.\n")
+	//var (
+	//	err      error
+	//	keyFile  string
+	//	dbFile   string
+	//	datFile  string
+	//	password string
+	//)
+	//
+	////先加载是否有配置文件
+	//err = loadConfig()
+	//if err != nil {
+	//	return err
+	//}
+	//
+	////输入恢复文件路径
+	//keyFile, err = console.InputText("Enter backup key file path: ", true)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//dbFile, err = console.InputText("Enter backup db file path: ", true)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//datFile, err = console.InputText("Enter backup wallet.dat file path: ", true)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//password, err = console.InputPassword(false, 8)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//fmt.Printf("Wallet restoring, please wait a moment...\n")
+	//err = RestoreWallet(keyFile, dbFile, datFile, password)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	////输出备份导出目录
+	//fmt.Printf("Restore wallet successfully.\n")
 
 	return nil
 
 }
-
+/*
 //InstallNode 安装节点
 func (w *WalletManager) InstallNodeFlow() error {
 	return errors.New("Install node is unsupport now. ")

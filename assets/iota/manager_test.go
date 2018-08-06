@@ -23,7 +23,7 @@ import (
 var(
 	//testServer          ="https://nodes.devnet.iota.org:443"
 	ourServer           = "http://47.52.16.168:14265"
-	seed                = "ZVPBLFLIEIGYTQGOGOMBDPKEUKEVHCXHUBJHLRYWDXPYMDLZNLNPQHPY9GNCEXCZZBSRMMNXBSXLKQEGA"
+	seed                = "BAXSMBAOWINJDKR9AWTBKJZDVURXRSNCCSRXBCRSSSIERR9SAJICUCPC9QAJEIKYBGJJIKEXWPWLHD9HV"
 	//skipTransferTest    = false
 )
 
@@ -80,43 +80,11 @@ func TestNewWallet(t *testing.T){
 
 func TestGetWalletInfo(t *testing.T){
 
-	var (
-		err  error
-		adr  giota.Address
-		adrs []giota.Address
-	)
-
-	trytes,err:=giota.ToTrytes(seed)
+	adr,adrs,totalBalance,err := GetWalletInfo(seed)
 	if err != nil{
 		t.Error(err)
 	}
-
-	for i := 0; i < 5; i++ {
-		api := giota.NewAPI(giota.RandomNode(), nil)
-		adr, adrs, err = giota.GetUsedAddress(api, trytes, 2)
-		if err == nil {
-			break
-		}
-	}
-
-	if err != nil {
-		t.Error(err)
-	}
-
 	t.Log(adr, adrs)
-	if len(adrs) < 1 {
-		t.Error("GetUsedAddress is incorrect")
-	}
-
-	//add by chenzhiwen
-	var totalBalance int64
-	for i:=0;i< len(adrs);i++{
-		api := giota.NewAPI(giota.RandomNode(), nil)
-		resp, err := api.GetBalances([]giota.Address{adrs[i]}, 100)
-		if err == nil {
-			totalBalance += resp.Balances[0]
-		}
-	}
 	t.Logf("Total Balance = %d\n",totalBalance)
 }
 
@@ -156,9 +124,12 @@ func TestCreateAddresses(t *testing.T) {
 	count:=100
 	security:=2
 
-	backupFile := CreateAddresses(trytes,start,count,security)
-
-	t.Logf("CreateAddresses successfully, backup path:%s",backupFile)
+	backupFile,err := CreateAddresses(trytes,start,count,security)
+	if err != nil{
+		t.Error(err)
+	}else {
+		t.Logf("CreateAddresses successfully, backup path:%s",backupFile)
+	}
 }
 
 //func init() {
@@ -243,66 +214,21 @@ func TestGetUsedAddressesAndTotalBalances(t *testing.T) {
 
 
 // nolint: gocyclo
-func TestTransfer(t *testing.T) {
-	//if skipTransferTest {
-	//	t.Skip("transfer test skipped because a valid $TRANSFER_TEST_SEED was not specified")
-	//}
+func TestSendTransaction(t *testing.T) {
 
-	var err error
-	trytes,err:=giota.ToTrytes(seed)
+	var(
+		address giota.Address
+		value int64
+		tag giota.Trytes
+	)
+
+	address="WRD9LXQGEM9WOIWWIRGCFDLOPMWBHZ9YFCXVAGZJBBHL9GKCSYFRAUJNM9DWGDIANUQMJ9FIZWLYDKKHW"
+	value=20
+	tag="MOUDAMEPO"
+
+	err := SendTransaction(seed, address, value, tag)
 	if err != nil{
-		t.Error(err)
-	}
-
-	trs := []giota.Transfer{
-		giota.Transfer{
-			Address: "SGBMKH9E9UVJSFGFHAAEXCQFKQRFUZJDYISIYPUYUECL9HGWEEBCKINIQSNWWQRNJM9BCXPIWYNHKDXQDPLXH9UVLX",
-			Value:   20,
-			Tag:     "MOUDAMEPO",
-		},
-	}
-
-	var bdl giota.Bundle
-	for i := 0; i < 5; i++ {
-		api := giota.NewAPI(giota.RandomNode(), nil)
-		bdl, err = giota.PrepareTransfers(api, trytes, trs, nil, "", 2)
-		if err == nil {
-			break
-		}
-	}
-
-	if err != nil {
-		t.Error(err)
-	}
-
-	if len(bdl) < 3 {
-		for _, tx := range bdl {
-			t.Log(tx.Trytes())
-		}
-		t.Fatal("PrepareTransfers is incorrect len(bdl)=", len(bdl))
-	}
-
-	if err = bdl.IsValid(); err != nil {
-		t.Error(err)
-	}
-
-	name, pow := giota.GetBestPoW()
-	t.Log("using PoW: ", name)
-
-	for i := 0; i < 5; i++ {
-		api := giota.NewAPI(giota.RandomNode(), nil)
-		bdl, err = giota.Send(api, trytes, 2, trs, 18, pow)
-		if err == nil {
-			break
-		}
-	}
-
-	if err != nil {
-		t.Error(err)
-	}
-
-	for _, tx := range bdl {
-		t.Log(tx.Trytes())
+		t.Errorf("TestSendTransaction() expected err to be nil but got: %v",err)
 	}
 }
 

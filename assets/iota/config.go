@@ -108,7 +108,7 @@ rpcPassword = ""
 isTestNet = false
 # the safe address that wallet send money to.
 sumAddress = ""
-# when wallet's balance is over this value, the wallet willl send money to [sumAddress]
+# when wallet's balance is over this value, the wallet will send money to [sumAddress]
 threshold = ""
 `
 )
