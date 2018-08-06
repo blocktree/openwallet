@@ -16,26 +16,28 @@
 package bopo
 
 import (
-	// "fmt"
-	"github.com/tidwall/gjson"
-	// "github.com/pkg/errors"
-	// "log"
-	"github.com/blocktree/OpenWallet/walletnode"
+// "fmt"
+// // "github.com/tidwall/gjson"
+// // "github.com/pkg/errors"
+// // "log"
+// "github.com/blocktree/OpenWallet/walletnode"
+// "strings"
 )
 
 func Backup(symbol string) error {
-	Cname := symbol.ToLower()
-	src := "/usr/local/paicode/data/wallet.dat"
-	dst := fmt.Fprintf("./data/%s/key/", symbol)
-	if err := walletnode.CopyFromContainer(c, Cname, src, dst); err != nil {
-		return err
-	}
+	// Cname := strings.ToLower(symbol)
+	// src := "/usr/local/paicode/data/wallet.dat"
+	// dst := fmt.Sprintf("./data/%s/key/", symbol)
+	// c := ""
+	// if err := walletnode.CopyFromContainer(c, Cname, src, dst); err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
 func Restore() error {
-	if err := walletnode.CopyToContainer(); err != nil {
-		return err
-	}
+	// if err := walletnode.CopyToContainer(); err != nil {
+	// 	return err
+	// }
 	return nil
 }

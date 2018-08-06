@@ -30,6 +30,7 @@ import (
 	"github.com/bndr/gotabulate"
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
+	"log"
 	"path/filepath"
 )
 
@@ -47,31 +48,6 @@ var (
 func init() {
 	// storage = keystore.NewHDKeystore(keyDir, keystore.StandardScryptN,
 	// 	keystore.StandardScryptP)
-}
-
-//打印钱包列表
-func printWalletList(list []*Wallet) {
-
-	tableInfo := make([][]interface{}, 0)
-
-	for i, w := range list {
-
-		// Get balance
-		if d, err := client.Call(fmt.Sprintf("chain/%s", w.Addr), "GET", nil); err == nil {
-			w.Balance = gjson.ParseBytes(d).Map()["pais"].String()
-		}
-
-		tableInfo = append(tableInfo, []interface{}{
-			i, w.WalletID, w.Alias, w.Addr, w.Balance,
-		})
-	}
-
-	t := gotabulate.Create(tableInfo)
-	// Set Headers
-	t.SetHeaders([]string{"No.", "ID", "Alias", "Addr", "Balance"})
-
-	//打印信息
-	fmt.Println(t.Render("simple"))
 }
 
 // loadConfig 读取配置
@@ -107,4 +83,56 @@ func loadConfig() error {
 		// AccessToken: token,
 	}
 	return nil
+}
+
+// 获取钱包信息
+func getWalletB(addr string) (wallet *Wallet, err error) {
+
+	// Get balance
+	if d, err := client.Call(fmt.Sprintf("chain/%s", addr), "GET", nil); err != nil {
+		// panic(err)
+		return nil, err
+	} else {
+		if status, ok := gjson.ParseBytes(d).Map()["status"]; ok != true || status.String() != "ok" {
+			log.Println("Bopo return data with 'status!=ok'!")
+			return nil, errors.New("Bopo return data with 'status!=ok'!")
+		}
+
+		if data, ok := gjson.ParseBytes(d).Map()["data"]; !ok {
+			return nil, nil
+		} else {
+			emp := data.Map()
+
+			wallet = &Wallet{
+				// Alias:
+				Addr:    addr,
+				Balance: emp["pais"].String(),
+			}
+		}
+	}
+
+	return wallet, nil
+}
+
+// 打印钱包列表
+func printWalletList(list []*Wallet) {
+
+	tableInfo := make([][]interface{}, 0)
+
+	for i, w := range list {
+
+		if ww, err := getWalletB(w.Addr); err == nil {
+			w.Balance = ww.Balance
+		}
+		tableInfo = append(tableInfo, []interface{}{
+			i + 1, w.WalletID, w.Alias, w.Addr, w.Balance,
+		})
+	}
+
+	t := gotabulate.Create(tableInfo)
+	// Set Headers
+	t.SetHeaders([]string{"No.", "ID", "Alias", "Addr", "Balance"})
+
+	//打印信息
+	fmt.Println(t.Render("simple"))
 }

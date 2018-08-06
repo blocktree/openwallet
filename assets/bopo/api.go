@@ -35,14 +35,14 @@ type Client struct {
 	Debug   bool
 }
 
-// // A struct of Response for Bitcoincash RPC response
-// type Response struct {
-// 	Code    int         `json:"code,omitempty"`
-// 	Error   interface{} `json:"error,omitempty"`
-// 	Result  interface{} `json:"result,omitempty"`
-// 	Message string      `json:"message,omitempty"`
-// 	Id      string      `json:"id,omitempty"`
-// }
+// A struct of Response for BOPO RESTful response
+type Response struct {
+	Code    int         `json:"code,omitempty"`
+	Error   interface{} `json:"error,omitempty"`
+	Result  interface{} `json:"result,omitempty"`
+	Message string      `json:"message,omitempty"`
+	Id      string      `json:"id,omitempty"`
+}
 
 func (c *Client) Call(path, method string, request interface{}) ([]byte, error) {
 
@@ -66,20 +66,19 @@ func (c *Client) Call(path, method string, request interface{}) ([]byte, error) 
 	if r.Response().StatusCode != http.StatusOK {
 		message := gjson.ParseBytes(r.Bytes()).String()
 		message = fmt.Sprintf("[%s]%s", r.Response().Status, message)
-		// log.Println(message)
 		return nil, errors.New(message)
 	}
 
-	// 500: Bopo 方面 API 在变，测试链和公链返回值结构不稳定，暂不验证^
+	// 500: Bopo API 变动较大，测试链和公链返回值结构不稳定，注意验证过程^
 	rs := r.Bytes()
 	code := gjson.GetBytes(rs, "code")
 	if code.Exists() != true || code.Int() != 0 {
 		msg := gjson.GetBytes(rs, "msg")
 		if msg.Exists() != true {
-			// 500: return nil, errors.New(fmt.Sprintf("Bopo returns invalid! \nReturn: ", gjson.ParseBytes(rs).String()))
+			return nil, errors.New(fmt.Sprintf("Bopo returns invalid! \nReturn: ", gjson.ParseBytes(rs).String()))
 		}
-		// 500: return nil, errors.New(msg.String())
-		log.Println(fmt.Sprintf("Bopo returns invalid! \nReturn: %s", gjson.ParseBytes(rs).String()))
+		// log.Println(fmt.Sprintf("Bopo returns invalid! \nReturn: %s", gjson.ParseBytes(rs).String()))
+		return nil, errors.New(msg.String())
 	}
 	data := gjson.GetBytes(rs, "data")
 	if data.Exists() != true {
@@ -87,18 +86,6 @@ func (c *Client) Call(path, method string, request interface{}) ([]byte, error) 
 	}
 
 	return []byte(data.String()), nil
-
-	// 500: Bopo 方面 API 在变，测试链和公链返回值结构不稳定，暂不验证^
-	// res := gjson.ParseBytes(r.Bytes()).Map()
-	// if code, ok := res["code"]; !ok || code.Int() != 0 {
-	// 	if msg, ok := res["msg"]; ok {
-	// 		log.Println(errors.New(msg.String()))
-	// 	} else {
-	// 		log.Println(errors.New("Invalid data format of Bopo Network!"))
-	// 	}
-	// 	// return nil, errors.New(res["msg"].String())	// 500
-	// }
-	// return r.Bytes(), nil
 }
 
 //cmdCall 执行命令

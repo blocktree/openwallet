@@ -180,7 +180,7 @@ func init() {
 		"bopo": &FullnodeContainerConfig{
 			WORKPATH: "/usr/local/paicode",
 			CMD:      [2][]string{{"/bin/bash", "-c", "cd /usr/local/paicode; ./gamepaicore --listen 0.0.0.0:7280 >> /openwallet/data/run.log 2>&1"}, {}},
-			PORT:     [][3]string{{"7280/tcp", "10061", "20061"}},
+			PORT:     [][3]string{{"7280/tcp", "17280", "27280"}},
 			APIPORT:  string("7280/tcp"),
 			IMAGE:    string("openwallet/bopo:latest"),
 		},
