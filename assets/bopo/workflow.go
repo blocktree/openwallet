@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/astaxie/beego/config"
 	"github.com/tidwall/gjson"
+	// "strings"
 	// "github.com/tidwall/gjson"
 	// "github.com/blocktree/OpenWallet/common"
 	// "github.com/blocktree/OpenWallet/common/file"
@@ -114,6 +115,20 @@ func getWalletB(addr string) (wallet *Wallet, err error) {
 	return wallet, nil
 }
 
+// // Insert inserts the value into the slice at the specified index,
+// // which must be in range.
+// // The slice must have room for the new element.
+// func Insert(slice []string, index int, value string) []string {
+// 	// Grow the slice by one element.
+// 	slice = slice[0 : len(slice)+1]
+// 	// Use copy to move the upper part of the slice out of the way and open a hole.
+// 	copy(slice[index+1:], slice[index:])
+// 	// Store the new value.
+// 	slice[index] = value
+// 	// Return the result.
+// 	return slice
+// }
+
 // 打印钱包列表
 func printWalletList(list []*Wallet) {
 
@@ -122,7 +137,12 @@ func printWalletList(list []*Wallet) {
 	for i, w := range list {
 
 		if ww, err := getWalletB(w.Addr); err == nil {
-			w.Balance = ww.Balance
+			bal := ww.Balance
+			if bal != "" {
+				cc, _ := decimal.NewFromString(bal)
+				bal = cc.Div(coinDecimal).String()
+				w.Balance = fmt.Sprintf("%s (%s coins)", ww.Balance, bal)
+			}
 		}
 		tableInfo = append(tableInfo, []interface{}{
 			i + 1, w.WalletID, w.Alias, w.Addr, w.Balance,
@@ -131,7 +151,7 @@ func printWalletList(list []*Wallet) {
 
 	t := gotabulate.Create(tableInfo)
 	// Set Headers
-	t.SetHeaders([]string{"No.", "ID", "Alias", "Addr", "Balance"})
+	t.SetHeaders([]string{"No.", "ID", "Alias", "Addr", "Balance(Unit: pais)"})
 
 	//打印信息
 	fmt.Println(t.Render("simple"))

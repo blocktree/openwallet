@@ -64,6 +64,7 @@ var (
 	walletDataPath = ""
 	//小数位长度
 	coinDecimal decimal.Decimal = decimal.NewFromFloat(100000000)
+	// coinDecimal decimal.Decimal = decimal.New(1, 8)
 	//参与汇总的钱包
 	walletsInSum = make(map[string]*Wallet)
 	//汇总阀值

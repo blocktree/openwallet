@@ -27,6 +27,12 @@ import (
 func toTransfer(wid, toaddr, amount, message string) (*Wallet, error) {
 	var wallet *Wallet
 
+	// Register
+	if _, err := client.Call("rpc/registar", "POST", req.Param{"id": wid}); err != nil {
+		return nil, err
+	}
+
+	// To transfer
 	request := req.Param{"id": wid, "to": toaddr, "amount": amount, "message": message}
 	if _, err := client.Call("rpc/fund", "POST", request); err != nil {
 		return nil, err

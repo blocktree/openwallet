@@ -17,7 +17,9 @@ package bopo
 
 import (
 	"errors"
+	"fmt"
 	"github.com/blocktree/OpenWallet/console"
+	"github.com/shopspring/decimal"
 	"time"
 )
 
@@ -88,15 +90,28 @@ func (w *WalletManager) TransferFlow() error {
 		return err
 	}
 	// Amount
-	amount, err := console.InputText("Amount(Unit: pais, 1 bopo = 10^8 pais): ", true)
+	amount, err := console.InputText("Amount(Unit: coin, 1 coin = 10^8 pais): ", true)
 	if err != nil {
 		return err
 	}
+	if cc, err := decimal.NewFromString(amount); err != nil {
+		return err
+	} else {
+		amount = cc.Mul(coinDecimal).String()
+	}
+	// Message
 	message := time.Now().UTC().Format(time.RFC850)
 
+	if cfi, err := console.InputText(fmt.Sprintf("To addr[%s] with amount[%s] from alias[%s]'s account(yes/no)? ", toaddr, amount, wid), true); err != nil || cfi != "yes" {
+		return err
+	}
+
+	fmt.Println("Transfer......")
 	if wallet, err := toTransfer(wid, toaddr, amount, message); err != nil {
 		return err
 	} else {
+		time.Sleep(12 * time.Second)
+		// printWalletList([]*Wallet{wallet, &Wallet{Addr: toaddr}})
 		printWalletList([]*Wallet{wallet})
 	}
 
