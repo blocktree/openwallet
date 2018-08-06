@@ -17,31 +17,10 @@ package walletnode
 
 import (
 	"context"
-	"docker.io/go-docker"
 	"fmt"
 	"log"
 	s "strings"
 )
-
-type NodeManagerStruct struct{}
-
-func _GetClient() (*docker.Client, error) {
-	var c *docker.Client
-	var err error
-
-	// Init docker client
-	if _, ok := map[string]string{"localhost": "", "127.0.0.1": ""}[serverAddr]; ok {
-		c, err = docker.NewEnvClient()
-	} else {
-		host := fmt.Sprintf("tcp://%s:%s", serverAddr, serverPort)
-		c, err = docker.NewClient(host, "v1.37", nil, map[string]string{})
-	}
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	return c, err
-}
 
 func (w *NodeManagerStruct) GetNodeStatus(symbol string) error {
 	// func(vals ...interface{}) {}(

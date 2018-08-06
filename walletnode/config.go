@@ -16,6 +16,8 @@
 package walletnode
 
 import (
+	"docker.io/go-docker"
+	"fmt"
 	"github.com/shopspring/decimal"
 	"log"
 	s "strings"
@@ -112,10 +114,7 @@ serverPort = ""
 `
 )
 
-type FullnodeContainerPathConfig struct {
-	EXEC_PATH string
-	DATA_PATH string
-}
+type NodeManagerStruct struct{}
 
 type FullnodeContainerConfig struct {
 	WORKPATH string
@@ -125,10 +124,50 @@ type FullnodeContainerConfig struct {
 	IMAGE    string      // Image that container run from
 }
 
-func (p *FullnodeContainerPathConfig) init(symbol string) error {
-	p.EXEC_PATH = s.Replace(p.EXEC_PATH, "<Symbol>", symbol, 1)
-	p.DATA_PATH = s.Replace(p.DATA_PATH, "<Symbol>", symbol, 1)
-	return nil
+// type FullnodeContainerPathConfig struct {
+// 	EXEC_PATH string
+// 	DATA_PATH string
+// }
+
+// func (p *FullnodeContainerPathConfig) init(symbol string) error {
+// 	p.EXEC_PATH = s.Replace(p.EXEC_PATH, "<Symbol>", symbol, 1)
+// 	p.DATA_PATH = s.Replace(p.DATA_PATH, "<Symbol>", symbol, 1)
+// 	return nil
+// }
+
+// Get docker client
+func _GetClient() (*docker.Client, error) {
+	var c *docker.Client
+	var err error
+
+	// Init docker client
+	if _, ok := map[string]string{"localhost": "", "127.0.0.1": ""}[serverAddr]; ok {
+		c, err = docker.NewEnvClient()
+	} else {
+		host := fmt.Sprintf("tcp://%s:%s", serverAddr, serverPort)
+		c, err = docker.NewClient(host, "v1.37", nil, map[string]string{})
+	}
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return c, err
+}
+
+// Private function, generate container name by <Symbol> and <isTestNet>
+func _GetCName(symbol string) (string, error) {
+	// Load global config
+	err := loadConfig(symbol)
+	if err != nil {
+		return "", err
+	}
+
+	// Within testnet, use "<Symbol>_testnet" as container name
+	if isTestNet == "true" {
+		return s.ToLower(symbol) + "_testnet", nil
+	} else {
+		return s.ToLower(symbol), nil
+	}
 }
 
 func init() {
@@ -193,21 +232,5 @@ func init() {
 			APIPORT: string("12010/tcp"),
 			IMAGE:   string("openwallet/hc:2.0.3dev"),
 		},
-	}
-}
-
-// Private function, generate container name by <Symbol> and <isTestNet>
-func _GetCName(symbol string) (string, error) {
-	// Load global config
-	err := loadConfig(symbol)
-	if err != nil {
-		return "", err
-	}
-
-	// Within testnet, use "<Symbol>_testnet" as container name
-	if isTestNet == "true" {
-		return s.ToLower(symbol) + "_testnet", nil
-	} else {
-		return s.ToLower(symbol), nil
 	}
 }
