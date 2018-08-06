@@ -19,20 +19,32 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
-	"docker.io/go-docker"
-	"docker.io/go-docker/api/types"
 	"io"
 	"io/ioutil"
 	"log"
+	"strings"
+
+	"docker.io/go-docker/api/types"
 )
 
 // Copy file from container to local filesystem
 //
 //	src/dst: filename
-func CopyFromContainer(c *docker.Client, Cname, src, dst string) error {
+func CopyFromContainer(symbol, src, dst string) error {
 
 	var buf bytes.Buffer
 
+	if err := loadConfig(symbol); err != nil {
+		return err
+	}
+
+	// Init docker client
+	c, err := _GetClient()
+	if err != nil {
+		return err
+	}
+
+	Cname := strings.ToLower(symbol)
 	// API: CopyFromContainer(io.ReadCloser, types.ContainerPathStat, error)
 	fp, _, err := c.CopyFromContainer(context.Background(), Cname, src)
 	if err != nil {
@@ -52,13 +64,24 @@ func CopyFromContainer(c *docker.Client, Cname, src, dst string) error {
 	return nil
 }
 
-func CopyToContainer(c *docker.Client, Cname, src, dst string) error {
+func CopyToContainer(symbol, src, dst string) error {
 	// func(vals ...interface{}) {}(
 	// 	tar.Writer{}, os.File{},
 	// ) // Delete before commit
 
 	var content io.Reader
 
+	if err := loadConfig(symbol); err != nil {
+		return err
+	}
+
+	// Init docker client
+	c, err := _GetClient()
+	if err != nil {
+		return err
+	}
+
+	Cname := strings.ToLower(symbol)
 	// ioutil.ReadFile() -> ([]byte, err)
 	if dat, err := ioutil.ReadFile(src); err != nil {
 		log.Println(err)
@@ -80,7 +103,7 @@ func CopyToContainer(c *docker.Client, Cname, src, dst string) error {
 	}
 
 	// ctx context.Context, container, path string, content io.Reader, options types.CopyToContainerOptions
-	if err := c.CopyToContainer(context.Background(), Cname, dst, content, types.CopyToContainerOptions{}); err != nil {
+	if err := c.CopyToContainer(context.Background(), Cname, dst, content, types.CopyToContainerOptions{AllowOverwriteDirWithFile: false}); err != nil {
 		log.Println(err)
 		return err
 	}

@@ -18,10 +18,11 @@ package walletnode
 import (
 	// "encoding/json"
 	"fmt"
-	bconfig "github.com/astaxie/beego/config"
-	"github.com/pkg/errors"
 	"path/filepath"
 	s "strings"
+
+	bconfig "github.com/astaxie/beego/config"
+	"github.com/pkg/errors"
 )
 
 // Update <Symbol>.ini file
@@ -47,7 +48,6 @@ func updateConfig(symbol string) error {
 	err = c.Set("apiurl", apiURL)
 	err = c.Set("mainnetdatapath", mainNetDataPath)
 	err = c.Set("testnetdatapath", testNetDataPath)
-	err = c.Set("threshold", isTestNet)
 
 	if err := c.SaveConfigFile(absFile); err != nil {
 		return err

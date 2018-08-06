@@ -16,12 +16,11 @@
 package walletnode
 
 import (
-	"docker.io/go-docker"
 	"fmt"
-	"github.com/shopspring/decimal"
 	"log"
 	s "strings"
-	"time"
+
+	"docker.io/go-docker"
 )
 
 var (
@@ -41,55 +40,19 @@ var (
 	rpcUser = "wallet"
 	//RPC认证账户密码
 	rpcPassword = "walletPassword2017"
-	//钥匙备份路径
-	// keyDir = filepath.Join("data", strings.ToLower(Symbol), "key")
 	//汇总地址
 	sumAddress = ""
-	keyDir     = ""
-	//地址导出路径
-	// addressDir = filepath.Join("data", strings.ToLower(Symbol), "address")
-	addressDir = ""
-	//配置文件路径
-	// configFilePath = filepath.Join("conf")
-	configFilePath = ""
 
 	// data path
-	mainNetDataPath = "/data"
-	testNetDataPath = "/data/testdata"
+	mainNetDataPath = "/openwallet/data"
+	testNetDataPath = "/openwallet/testdata"
 
 	// Fullnode API URL
 	apiURL = ""
 
-	//配置文件名
-	configFileName = Symbol + ".ini"
-	// 核心钱包是否只做监听
-	CoreWalletWatchOnly = true
-	//最大的输入数量
-	maxTxInputs = 50
-	//本地数据库文件路径
-	//dbPath = filepath.Join("data", strings.ToLower(Symbol), "db")
-	dbPath = ""
-	//备份路径
-	// backupDir = filepath.Join("data", strings.ToLower(Symbol), "backup")
-	backupDir = ""
-	//钱包数据文件目录
-	walletDataPath = ""
-	//小数位长度
-	coinDecimal decimal.Decimal = decimal.NewFromFloat(100000000)
-	//参与汇总的钱包
-	// walletsInSum = make(map[string]*Wallet)	// ? 500
-	//汇总阀值
-	threshold decimal.Decimal = decimal.NewFromFloat(5)
-	//汇总执行间隔时间
-	cycleSeconds = time.Second * 10
+	//------------------------------------------------------------------------------
 	//默认配置内容
 	defaultConfig = `
-# start node command
-startNodeCMD = ""
-# stop node command
-stopNodeCMD = ""
-# node install path
-nodeInstallPath = ""
 # node api url
 apiURL = ""
 # Is network test?
@@ -99,18 +62,18 @@ rpcUser = "wallet"
 # RPC Authentication Password
 rpcPassword = "walletPassword2017"
 # mainnet data path
-mainNetDataPath = "/data"
+mainNetDataPath = "/openwallet/data"
 # testnet data path
-testNetDataPath = "/data/testdata"
+testNetDataPath = "/openwallet/testdata"
 # the safe address that wallet send money to.
 sumAddress = ""
 # when wallet's balance is over this value, the wallet willl send money to [sumAddress]
-threshold = ""
+threshold = 
 
 # docker master server addr
 serverAddr = "localhost"
 # docker master server port
-serverPort = ""
+serverPort = "2375"
 `
 )
 

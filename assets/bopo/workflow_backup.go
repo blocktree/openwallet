@@ -16,28 +16,36 @@
 package bopo
 
 import (
-// "fmt"
-// // "github.com/tidwall/gjson"
-// // "github.com/pkg/errors"
-// // "log"
-// "github.com/blocktree/OpenWallet/walletnode"
-// "strings"
+	"path/filepath"
+	"strings"
+
+	"github.com/blocktree/OpenWallet/common"
+	"github.com/blocktree/OpenWallet/common/file"
+	"github.com/blocktree/OpenWallet/walletnode"
 )
 
-func Backup(symbol string) error {
-	// Cname := strings.ToLower(symbol)
-	// src := "/usr/local/paicode/data/wallet.dat"
-	// dst := fmt.Sprintf("./data/%s/key/", symbol)
-	// c := ""
-	// if err := walletnode.CopyFromContainer(c, Cname, src, dst); err != nil {
-	// 	return err
-	// }
+func backupWalletData() error {
+
+	newBackupDir := filepath.Join(backupDir,
+		strings.ToLower(Symbol)+"-"+common.TimeFormat("20060102150405"))
+	file.MkdirAll(newBackupDir) // os.MkdirAll(backupDir, os.ModePerm)
+
+	src := filepath.Join(walletDataPath, "wallet.dat")
+	dst := filepath.Join(newBackupDir, "wallet.dat")
+
+	if err := walletnode.CopyFromContainer(Symbol, src, dst); err != nil {
+		return err
+	}
 	return nil
 }
 
-func Restore() error {
-	// if err := walletnode.CopyToContainer(); err != nil {
-	// 	return err
-	// }
+func restoreWalletData(datFile string) error {
+	src := datFile
+	// dst := filepath.Join(walletDataPath, "wallet.dat")
+	dst := walletDataPath
+
+	if err := walletnode.CopyToContainer(Symbol, src, dst); err != nil {
+		return err
+	}
 	return nil
 }

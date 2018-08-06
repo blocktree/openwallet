@@ -16,75 +16,13 @@
 package bopo
 
 import (
-	// "bufio"
-	// "encoding/json"
 	"fmt"
-	"github.com/astaxie/beego/config"
-	"github.com/tidwall/gjson"
-	// "strings"
-	// "github.com/tidwall/gjson"
-	// "github.com/blocktree/OpenWallet/common"
-	// "github.com/blocktree/OpenWallet/common/file"
-	// "github.com/btcsuite/btcd/chaincfg"
-	// "github.com/btcsuite/btcutil"
-	// "github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/bndr/gotabulate"
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
+	"github.com/tidwall/gjson"
 	"log"
-	"path/filepath"
 )
-
-const (
-	maxAddresNum = 10000
-)
-
-var (
-	//秘钥存取
-	// storage *keystore.HDKeystore
-	// 节点客户端
-	client *Client
-)
-
-func init() {
-	// storage = keystore.NewHDKeystore(keyDir, keystore.StandardScryptN,
-	// 	keystore.StandardScryptP)
-}
-
-// loadConfig 读取配置
-func loadConfig() error {
-
-	var c config.Configer
-
-	//读取配置
-	absFile := filepath.Join(configFilePath, configFileName)
-	c, err := config.NewConfig("ini", absFile)
-	if err != nil {
-		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
-	}
-
-	serverAPI = c.String("apiURL")
-	threshold, _ = decimal.NewFromString(c.String("threshold"))
-	sumAddress = c.String("sumAddress")
-	rpcUser = c.String("rpcUser")
-	rpcPassword = c.String("rpcPassword")
-	nodeInstallPath = c.String("nodeInstallPath")
-	isTestNet, _ = c.Bool("isTestNet")
-	if isTestNet {
-		walletDataPath = c.String("testNetDataPath")
-	} else {
-		walletDataPath = c.String("mainNetDataPath")
-	}
-
-	// token := basicAuth(rpcUser, rpcPassword)
-
-	client = &Client{
-		BaseURL: serverAPI,
-		Debug:   false,
-		// AccessToken: token,
-	}
-	return nil
-}
 
 // 获取钱包信息
 func getWalletB(addr string) (wallet *Wallet, err error) {
@@ -151,7 +89,7 @@ func printWalletList(list []*Wallet) {
 
 	t := gotabulate.Create(tableInfo)
 	// Set Headers
-	t.SetHeaders([]string{"No.", "ID", "Alias", "Addr", "Balance(Unit: pais)"})
+	t.SetHeaders([]string{"No.", "ID", "Alias", "Addr", "Balance(1 coin=10^8 pais)"})
 
 	//打印信息
 	fmt.Println(t.Render("simple"))

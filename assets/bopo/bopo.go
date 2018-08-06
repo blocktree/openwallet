@@ -18,9 +18,13 @@ package bopo
 import (
 	"errors"
 	"fmt"
+	// "io/ioutil"
+	"os"
+	"path/filepath"
+	"time"
+
 	"github.com/blocktree/OpenWallet/console"
 	"github.com/shopspring/decimal"
-	"time"
 )
 
 type WalletManager struct{}
@@ -69,6 +73,14 @@ func (w *WalletManager) CreateWalletFlow() error {
 }
 
 func (w *WalletManager) TransferFlow() error {
+	var (
+		wid     string // Wallet Alias
+		toaddr  string // Wallet Address
+		amount  string // Amount
+		message string // Message to transfer (Uniform, and will be used to search as a global key)
+		err     error
+	)
+
 	// Load config
 	if err := loadConfig(); err != nil {
 		return err
@@ -80,27 +92,68 @@ func (w *WalletManager) TransferFlow() error {
 	}
 
 	// Wallet ID
-	wid, err := console.InputText("Use wallet (By: alias): ", true)
-	if err != nil {
-		return err
+	for i := 0; i < 3; i++ {
+		wid, err = console.InputText("Use wallet (By: alias): ", true)
+		if err != nil {
+			return err
+		}
+
+		// Check wid
+		if _, err := getWalletInfo(wid); err != nil {
+			fmt.Println(err)
+		} else {
+			break
+		}
+
+		// Stop after 3 times to check
+		if i == 2 {
+			return nil
+		}
 	}
+
 	// To addr
-	toaddr, err := console.InputText("To address: ", true)
-	if err != nil {
-		return err
+	for i := 0; i < 3; i++ {
+		toaddr, err = console.InputText("To address: ", true)
+		if err != nil {
+			return err
+		}
+
+		// Check addr
+		if err := verifyAddr(toaddr); err != nil {
+			fmt.Println(err)
+		} else {
+			break
+		}
+
+		// Stop after 3 times to check
+		if i == 2 {
+			return nil
+		}
 	}
+
 	// Amount
-	amount, err := console.InputText("Amount(Unit: coin, 1 coin = 10^8 pais): ", true)
-	if err != nil {
-		return err
+	for i := 0; i < 3; i++ {
+		amount, err = console.InputText("Amount(Unit: coin, 1 coin = 10^8 pais): ", true)
+		if err != nil {
+			fmt.Println(err)
+			//return err
+		}
+		if cc, err := decimal.NewFromString(amount); err != nil {
+			fmt.Println(err)
+			// return err
+		} else {
+			amount = cc.Mul(coinDecimal).String()
+			break
+		}
+
+		// Stop after 3 times to check
+		if i == 2 {
+			return nil
+		}
 	}
-	if cc, err := decimal.NewFromString(amount); err != nil {
-		return err
-	} else {
-		amount = cc.Mul(coinDecimal).String()
-	}
+
 	// Message
-	message := time.Now().UTC().Format(time.RFC850)
+	message = time.Now().UTC().Format(time.RFC850)
 
 	if cfi, err := console.InputText(fmt.Sprintf("To addr[%s] with amount[%s] from alias[%s]'s account(yes/no)? ", toaddr, amount, wid), true); err != nil || cfi != "yes" {
 		return err
@@ -119,21 +172,76 @@ func (w *WalletManager) TransferFlow() error {
 }
 
 func (w *WalletManager) BackupWalletFlow() error {
+
 	// Load config
 	if err := loadConfig(); err != nil {
 		return err
 	}
 
-	return errors.New("Writing!")
+	if err := backupWalletData(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func FilePathWalkDir(root string) ([]string, error) {
+	var files []string
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			files = append(files, path)
+		}
+		return nil
+	})
+	return files, err
 }
 
 func (w *WalletManager) RestoreWalletFlow() error {
+
+	var (
+		datFile string // The filepath of wallet.dat which will be restored from local
+
+		err error
+	)
+
 	// Load config
 	if err := loadConfig(); err != nil {
 		return err
 	}
 
-	return errors.New("Writing!")
+	// List all backup files
+	files, err := FilePathWalkDir("./data")
+	if err != nil {
+		return err
+	}
+	for _, f := range files {
+		fmt.Println(f)
+	}
+
+	// Input dataFile of wallet.dat
+	for i := 0; i < 3; i++ {
+		datFile, err = console.InputText("Enter backup wallet.dat file path: ", true)
+		if err != nil {
+			fmt.Println(err)
+		}
+		if _, err := os.Stat(datFile); os.IsNotExist(err) {
+			fmt.Println("No such file!")
+			continue
+		} else {
+			break
+		}
+
+		if i == 2 {
+			return nil
+		}
+	}
+
+	// To restore
+	if err := restoreWalletData(datFile); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (w *WalletManager) CreateAddressFlow() error {

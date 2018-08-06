@@ -18,18 +18,31 @@ package bopo
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/astaxie/beego/config"
-	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/shopspring/decimal"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/astaxie/beego/config"
+	"github.com/blocktree/OpenWallet/common/file"
+	"github.com/pkg/errors"
+	"github.com/shopspring/decimal"
 )
 
 const (
 	// 币
 	Symbol    = "BOPO"
 	MasterKey = "BopoPlat"
+)
+
+const (
+	maxAddresNum = 10000
+)
+
+var (
+	//秘钥存取
+	// storage *keystore.HDKeystore
+	// 节点客户端
+	client *Client
 )
 
 // Node setup 节点配置
@@ -100,6 +113,11 @@ threshold = ""
 `
 )
 
+func init() {
+	// storage = keystore.NewHDKeystore(keyDir, keystore.StandardScryptN,
+	// 	keystore.StandardScryptP)
+}
+
 func setWalletConfig(sumAddress string, threshold string) {
 
 }
@@ -146,6 +164,7 @@ func newConfigFile(
 func printConfig() error {
 
 	initConfig()
+
 	//读取配置
 	absFile := filepath.Join(configFilePath, configFileName)
 	//apiURL := c.String("apiURL")
@@ -184,4 +203,39 @@ func initConfig() {
 		file.WriteFile(absFile, []byte(defaultConfig), false)
 	}
 
+}
+
+// loadConfig 读取配置
+func loadConfig() error {
+
+	var c config.Configer
+
+	//读取配置
+	absFile := filepath.Join(configFilePath, configFileName)
+	c, err := config.NewConfig("ini", absFile)
+	if err != nil {
+		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
+	}
+
+	serverAPI = c.String("apiURL")
+	threshold, _ = decimal.NewFromString(c.String("threshold"))
+	sumAddress = c.String("sumAddress")
+	rpcUser = c.String("rpcUser")
+	rpcPassword = c.String("rpcPassword")
+	nodeInstallPath = c.String("nodeInstallPath")
+	isTestNet, _ = c.Bool("isTestNet")
+	if isTestNet {
+		walletDataPath = c.String("testNetDataPath")
+	} else {
+		walletDataPath = c.String("mainNetDataPath")
+	}
+
+	// token := basicAuth(rpcUser, rpcPassword)
+
+	client = &Client{
+		BaseURL: serverAPI,
+		Debug:   false,
+		// AccessToken: token,
+	}
+	return nil
 }

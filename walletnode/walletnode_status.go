@@ -42,12 +42,19 @@ func (w *NodeManagerStruct) GetNodeStatus(symbol string) error {
 	}
 
 	// Instantize parameters
-	cName, err := _GetCName(symbol) // container name
+	cname, err := _GetCName(symbol) // container name
 	if err != nil {
 		return err
 	}
+
+	// dst := "/openwallet/data/wallet.dat"
+	// src := "./eee.dat"
+	// if err := CopyToContainer(cname, src, dst); err != nil {
+	// 	return err
+	// }
+
 	// Action within client
-	res, err := c.ContainerInspect(context.Background(), cName)
+	res, err := c.ContainerInspect(context.Background(), cname)
 	if err != nil {
 		return err
 	}

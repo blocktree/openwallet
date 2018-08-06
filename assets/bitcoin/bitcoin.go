@@ -24,14 +24,12 @@ import (
 	"github.com/blocktree/OpenWallet/timer"
 	"github.com/shopspring/decimal"
 	"log"
-	"strings"
 	"path/filepath"
+	"strings"
 )
 
-type WalletManager struct{
-
+type WalletManager struct {
 	blockscanner *BTCBlockScanner
-
 }
 
 func NewWalletManager() *WalletManager {
@@ -48,97 +46,97 @@ func (w *WalletManager) InitConfigFlow() error {
 	return nil
 
 	/*
-	var (
-		err        error
-		apiURL     string
-		walletPath string
-		//汇总阀值
-		threshold string
-		//最小转账额度
-		//minSendAmount float64
-		//最小矿工费
-		//minFees float64
-		//汇总地址
-		sumAddress string
-		filePath   string
-		isTestNet  bool
-	)
+		var (
+			err        error
+			apiURL     string
+			walletPath string
+			//汇总阀值
+			threshold string
+			//最小转账额度
+			//minSendAmount float64
+			//最小矿工费
+			//minFees float64
+			//汇总地址
+			sumAddress string
+			filePath   string
+			isTestNet  bool
+		)
 
-	for {
+		for {
 
-		fmt.Printf("[Start setup wallet config]\n")
+			fmt.Printf("[Start setup wallet config]\n")
 
-		apiURL, err = console.InputText("Set node API url: ", true)
-		if err != nil {
-			return err
-		}
+			apiURL, err = console.InputText("Set node API url: ", true)
+			if err != nil {
+				return err
+			}
 
-		//删除末尾的/
-		apiURL = strings.TrimSuffix(apiURL, "/")
+			//删除末尾的/
+			apiURL = strings.TrimSuffix(apiURL, "/")
 
-		walletPath, err = console.InputText("Set wallet install path: ", false)
-		if err != nil {
-			return err
-		}
+			walletPath, err = console.InputText("Set wallet install path: ", false)
+			if err != nil {
+				return err
+			}
 
-		sumAddress, err = console.InputText("Set summary address: ", false)
-		if err != nil {
-			return err
-		}
+			sumAddress, err = console.InputText("Set summary address: ", false)
+			if err != nil {
+				return err
+			}
 
-		fmt.Printf("[Please enter the amount of %s and must be numbers]\n", Symbol)
+			fmt.Printf("[Please enter the amount of %s and must be numbers]\n", Symbol)
 
-		//threshold, err = console.InputNumber("设置汇总阀值: ")
-		//if err != nil {
-		//	return err
-		//}
+			//threshold, err = console.InputNumber("设置汇总阀值: ")
+			//if err != nil {
+			//	return err
+			//}
 
-		threshold, err = console.InputRealNumber("Set summary threshold: ", true)
-		if err != nil {
-			return err
-		}
+			threshold, err = console.InputRealNumber("Set summary threshold: ", true)
+			if err != nil {
+				return err
+			}
 
-		isTestNet, err = console.Stdin.PromptConfirm("The Network is TestNet? ")
-		if err != nil {
-			return err
+			isTestNet, err = console.Stdin.PromptConfirm("The Network is TestNet? ")
+			if err != nil {
+				return err
+			}
+
+			//换两行
+			fmt.Println()
+			fmt.Println()
+
+			//打印输入内容
+			fmt.Printf("Please check the following setups is correct?\n")
+			fmt.Printf("-----------------------------------------------------------\n")
+			fmt.Printf("Node API url: %s\n", apiURL)
+			fmt.Printf("Wallet install path: %s\n", walletPath)
+			fmt.Printf("Summary address: %s\n", sumAddress)
+			fmt.Printf("Summary threshold: %s\n", threshold)
+			fmt.Printf("Summary isTestNet: %v\n", isTestNet)
+			fmt.Printf("-----------------------------------------------------------\n")
+
+			flag, err := console.Stdin.PromptConfirm("Confirm to save the setups?")
+			if err != nil {
+				return err
+			}
+
+			if !flag {
+				continue
+			} else {
+				break
+			}
+
 		}
 
 		//换两行
 		fmt.Println()
 		fmt.Println()
 
-		//打印输入内容
-		fmt.Printf("Please check the following setups is correct?\n")
-		fmt.Printf("-----------------------------------------------------------\n")
-		fmt.Printf("Node API url: %s\n", apiURL)
-		fmt.Printf("Wallet install path: %s\n", walletPath)
-		fmt.Printf("Summary address: %s\n", sumAddress)
-		fmt.Printf("Summary threshold: %s\n", threshold)
-		fmt.Printf("Summary isTestNet: %v\n", isTestNet)
-		fmt.Printf("-----------------------------------------------------------\n")
+		_, filePath, err = newConfigFile(apiURL, walletPath, sumAddress, threshold, isTestNet)
 
-		flag, err := console.Stdin.PromptConfirm("Confirm to save the setups?")
-		if err != nil {
-			return err
-		}
+		fmt.Printf("Config file create, file path: %s\n", filePath)
 
-		if !flag {
-			continue
-		} else {
-			break
-		}
-
-	}
-
-	//换两行
-	fmt.Println()
-	fmt.Println()
-
-	_, filePath, err = newConfigFile(apiURL, walletPath, sumAddress, threshold, isTestNet)
-
-	fmt.Printf("Config file create, file path: %s\n", filePath)
-
-	return nil
+		return nil
 	*/
 }
 
