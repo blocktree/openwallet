@@ -57,6 +57,7 @@ var (
 	//gas limit 和 storage limit
 	gasLimit decimal.Decimal = decimal.NewFromFloat(0.0001).Mul(coinDecimal)
 	storageLimit decimal.Decimal = decimal.NewFromFloat(0.0001).Mul(coinDecimal)
+	//汇总转入地址
 	sumAddress = ""
 	//汇总执行间隔时间
 	cycleSeconds = time.Second * 300
@@ -169,9 +170,7 @@ func transfer(keys Key, dst string, fee, gas_limit, storage_limit, amount string
 	icounter,_ := strconv.Atoi(string(counter))
 	icounter = icounter + 1
 
-	manager_key := callGetManagerKey(keys.Address)
-	//manager := gjson.GetBytes(ret, "manager")
-	key := gjson.GetBytes(manager_key, "key")
+	isReverlKey := isReverlKey(keys.Address)
 
 	var ops []interface{}
 	reverl := map[string]string{
@@ -183,7 +182,7 @@ func transfer(keys Key, dst string, fee, gas_limit, storage_limit, amount string
 		"storage_limit": storage_limit,
 		"counter": strconv.Itoa(icounter),
 	}
-	if key.Str == ""{
+	if isReverlKey {
 		icounter = icounter + 1
 		ops = append(ops, reverl)
 	}
@@ -238,12 +237,14 @@ func exportAddressToFile(keys []*Key, filePath string) {
 	file.WriteFile(filePath, []byte(content), true)
 }
 
+
 func createAddressWork(producer chan<- []*Key, password string, start, end uint64) {
 	runAddress := make([]*Key, 0)
 
 	for i := start; i < end; i++ {
 		// 生成地址
 		pk, sk, pkh := createAccount()
+		//将私钥用输入的密码加密
 		esk, _ := Encrypt(password, sk)
 		key := &Key{pkh, pk, esk}
 		runAddress = append(runAddress, key)
@@ -320,9 +321,7 @@ func CreateBatchAddress(walletId, password string, count uint64) (string, []*Key
 
 	//保存地址过程
 	saveAddressWork := func(addresses chan []*Key, filename string, w *openwallet.Wallet) {
-		var (
-			saveErr error
-		)
+		var saveErr error
 
 		for {
 			//回收创建的地址
@@ -355,9 +354,7 @@ func CreateBatchAddress(walletId, password string, count uint64) (string, []*Key
 	otherCount := count % synCount
 
 	if runCount > 0 {
-
 		for i := uint64(0); i < synCount; i++ {
-
 			//开始创建地址
 			log.Printf("Start create address thread[%d]\n", i)
 			s := i * runCount
@@ -369,7 +366,6 @@ func CreateBatchAddress(walletId, password string, count uint64) (string, []*Key
 	}
 
 	if otherCount > 0 {
-
 		//开始创建地址
 		log.Printf("Start create address thread[REST]\n")
 		s := count - otherCount
@@ -383,9 +379,7 @@ func CreateBatchAddress(walletId, password string, count uint64) (string, []*Key
 	outputAddress := make([]*Key, 0)
 
 	//以下使用生产消费模式
-
 	for {
-
 		var activeWorker chan<- []*Key
 		var activeValue []*Key
 
@@ -397,7 +391,6 @@ func CreateBatchAddress(walletId, password string, count uint64) (string, []*Key
 		}
 
 		select {
-
 		//生成者不断生成数据，插入到数据队列尾部
 		case pa := <-producer:
 			values = append(values, pa)
@@ -406,7 +399,6 @@ func CreateBatchAddress(walletId, password string, count uint64) (string, []*Key
 		case activeWorker <- activeValue:
 			//log.Printf("Get %d", len(activeValue))
 			values = values[1:]
-
 		case <-quit:
 			//退出
 			log.Printf("All addresses have been created!")
@@ -419,10 +411,7 @@ func CreateBatchAddress(walletId, password string, count uint64) (string, []*Key
 
 //inputNumber 输入地址数量
 func inputNumber() uint64 {
-
-	var (
-		count uint64 = 0 // 输入的创建数量
-	)
+	var count uint64 = 0 // 输入的创建数量
 
 	for {
 		// 等待用户输入参数
@@ -444,7 +433,6 @@ func inputNumber() uint64 {
 
 //loadConfig 读取配置
 func loadConfig() error {
-
 	var (
 		c   config.Configer
 		err error
@@ -498,7 +486,7 @@ func summaryWallet(wallet *openwallet.Wallet, password string) error{
 		}
 		// 将该地址多余额减去矿工费后，全部转到汇总地址
 		amount := decimal_balance.Sub(fee)
-		//该地址预留一点币，否则交易会失败，暂定20／1000000 tez
+		//该地址预留一点币，否则交易会失败，暂定0.00002 tez
 		amount = amount.Sub(decimal.RequireFromString("20"))
 
 		log.Printf("address:%s banlance:%d amount:%d fee:%d\n", k.Address, decimal_balance.IntPart(), amount.IntPart(), fee.IntPart())
