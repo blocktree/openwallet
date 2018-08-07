@@ -17,8 +17,6 @@ package iota
 
 import (
 	"path/filepath"
-
-
 	//"time"
 	"github.com/astaxie/beego/config"
 	"github.com/shopspring/decimal"
@@ -269,6 +267,122 @@ func SendTransaction(seed string,address giota.Address,value int64,tag giota.Try
 	for _, tx := range bdl {
 		log.Printf(string(tx.Trytes()))
 	}
+
+	return nil
+}
+
+//SummaryWallets 执行汇总流程
+func SummaryWallets(seed string,sumAddress giota.Address,tag giota.Trytes) error{
+
+	log.Printf("[Summary Wallet Start]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+
+		//统计钱包最新余额
+		var (
+			err  error
+			adrs []giota.Address
+		)
+
+		trytes,err:=giota.ToTrytes(seed)
+		if err != nil{
+			return err
+		}
+
+		for i := 0; i < 5; i++ {
+			api := giota.NewAPI(giota.RandomNode(), nil)
+			_, adrs, err = giota.GetUsedAddress(api, trytes, 2)
+			if err == nil {
+				break
+			}
+		}
+
+		if err != nil {
+			return err
+		}
+
+		//t.Log(adr, adrs)
+		if len(adrs) < 1 {
+			fmt.Errorf("GetUsedAddress is incorrect.\n")
+			return nil
+		}
+
+		//add by chenzhiwen
+		var balance decimal.Decimal
+		for i:=0;i< len(adrs);i++{
+			api := giota.NewAPI(giota.RandomNode(), nil)
+			resp, err := api.GetBalances([]giota.Address{adrs[i]}, 100)
+			if err == nil {
+				balance = balance.Add(decimal.New(resp.Balances[0],1))
+			}
+		}
+
+			//如果余额大于阀值，汇总的地址
+			if balance.GreaterThan(threshold) {
+
+				//log.Printf("Summary account balance = %v \n",  balance.Div(coinDecimal))
+				log.Printf("Summary account balance = %v. \n",  balance)
+				log.Printf("Summary account Start Send Transaction.\n")
+
+				value := balance.IntPart()
+				//发起转账
+				trs := []giota.Transfer{
+					giota.Transfer{
+						Address: sumAddress,
+						Value:   value,
+						Tag:     tag,
+					},
+				}
+
+				var bdl giota.Bundle
+				for i := 0; i < 5; i++ {
+					api := giota.NewAPI(giota.RandomNode(), nil)
+					bdl, err = giota.PrepareTransfers(api, trytes, trs, nil, "", 2)
+					if err == nil {
+						break
+					}
+				}
+
+				if err != nil {
+					return err
+				}
+
+				if len(bdl) < 3 {
+					for _, tx := range bdl {
+						log.Printf(string(tx.Trytes()))
+					}
+					fmt.Errorf("PrepareTransfers is incorrect len(bdl)=%d", len(bdl))
+					return nil
+				}
+
+				if err = bdl.IsValid(); err != nil {
+					return err
+				}
+
+				name, pow := giota.GetBestPoW()
+				log.Printf("using PoW: %s", name)
+
+				for i := 0; i < 5; i++ {
+					api := giota.NewAPI(giota.RandomNode(), nil)
+					bdl, err = giota.Send(api, trytes, 2, trs, 18, pow)
+					if err == nil {
+						break
+					}
+				}
+
+				if err != nil {
+					return err
+				}
+
+				for _, tx := range bdl {
+					log.Printf(string(tx.Trytes()))
+				}
+
+				log.Printf("Summary account successfully，sent amount: [%v], Received Address: [%s]", balance, sumAddress)
+
+			} else {
+				fmt.Errorf("Summary account unsuccessfully，Wallet Account Current Balance: %v，below threshold: %v\n", balance.Div(coinDecimal), threshold.Div(coinDecimal))
+			}
+
+	log.Printf("[Summary Wallet end]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
 
 	return nil
 }

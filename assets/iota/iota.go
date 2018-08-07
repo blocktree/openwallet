@@ -18,9 +18,11 @@ package iota
 import (
 	"fmt"
 	"log"
+	"errors"
 	"path/filepath"
 	"github.com/iotaledger/giota"
 	"github.com/blocktree/OpenWallet/console"
+	"time"
 )
 
 type WalletManager struct{}
@@ -183,6 +185,10 @@ func (w *WalletManager) CreateAddressFlow() error {
 	if err != nil {
 		return err
 	}
+	trytes,err:=giota.ToTrytes(seed)
+	if err != nil{
+		return err
+	}
 
 	// 输入地址数量
 	start, err := console.InputStartNumber("Enter the start number of addresses: ", false)
@@ -198,10 +204,7 @@ func (w *WalletManager) CreateAddressFlow() error {
 	}
 	countInt := int(count)
 
-	trytes,err:=giota.ToTrytes(seed)
-	if err != nil{
-		return err
-	}
+
 	security := 2
 
 	log.Printf("Start batch creation\n")
@@ -234,93 +237,50 @@ func (w *WalletManager) CreateAddressFlow() error {
 // SummaryFollow 汇总流程
 func (w *WalletManager) SummaryFollow() error {
 
-	//var (
-	//	endRunning = make(chan bool, 1)
-	//)
-	//
-	////先加载是否有配置文件
-	//err := loadConfig()
-	//if err != nil {
-	//	return err
-	//}
-	//
-	////判断汇总地址是否存在
-	//if len(sumAddress) == 0 {
-	//
-	//	return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
-	//}
-	//
-	////查询所有钱包信息
-	//wallets, err := GetWalletList()
-	//if err != nil {
-	//	fmt.Printf("The node did not create any wallet!\n")
-	//	return err
-	//}
-	//
-	////打印钱包
-	//printWalletList(wallets)
-	//
-	//fmt.Printf("[Please select the wallet to summary, and enter the numbers split by ','." +
-	//	" For example: 0,1,2,3] \n")
-	//
-	//// 等待用户输入钱包名字
-	//nums, err := console.InputText("Enter the No. group: ", true)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	////分隔数组
-	//array := strings.Split(nums, ",")
-	//
-	//for _, numIput := range array {
-	//	if common.IsNumberString(numIput) {
-	//		numInt := common.NewString(numIput).Int()
-	//		if numInt < len(wallets) {
-	//			w := wallets[numInt]
-	//
-	//			fmt.Printf("Register summary wallet [%s]-[%s]\n", w.Alias, w.WalletID)
-	//			//输入钱包密码完成登记
-	//			password, err := console.InputPassword(false, 8)
-	//			if err != nil {
-	//				return err
-	//			}
-	//
-	//			//解锁钱包验证密码
-	//			_, err = w.HDKey(password)
-	//			if err != nil {
-	//				openwLogger.Log.Errorf("The password to unlock wallet is incorrect! ")
-	//				continue
-	//			}
-	//
-	//			//解锁钱包
-	//			err = UnlockWallet(password, 1)
-	//			if err != nil {
-	//				openwLogger.Log.Errorf("The password to unlock wallet is incorrect! ")
-	//				continue
-	//			}
-	//
-	//			w.Password = password
-	//
-	//			AddWalletInSummary(w.WalletID, w)
-	//		} else {
-	//			return errors.New("The input No. out of index! ")
-	//		}
-	//	} else {
-	//		return errors.New("The input No. is not numeric! ")
-	//	}
-	//}
-	//
-	//if len(walletsInSum) == 0 {
-	//	return errors.New("Not summary wallets to register! ")
-	//}
-	//
-	//fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", cycleSeconds.Seconds())
-	//
-	////启动钱包汇总程序
-	//sumTimer := timer.NewTask(cycleSeconds, SummaryWallets)
-	//sumTimer.Start()
-	//
-	//<-endRunning
+	//先加载是否有配置文件
+	err := loadConfig()
+	if err != nil {
+		return err
+	}
+
+	//判断汇总地址是否存在
+	if len(sumAddress) == 0 {
+
+		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
+	}
+
+	//输入要汇总的钱包的种子
+	//输入钱包seed
+	seed, err := console.InputText("Please enter the seed of the wallet which you want to sum: ", true)
+	if err != nil {
+		return err
+	}
+
+	// 输入tag
+	note, err := console.InputText("Enter the tag (massage of this transaction): ", true)
+	if err != nil {
+		return err
+	}
+	tag,err := giota.ToTrytes(note)
+	if err != nil {
+		return err
+	}
+
+	//启动钱包汇总程序
+	for {
+		err := SummaryWallets(seed, giota.Address(sumAddress), tag)
+		if err != nil {
+			fmt.Printf("SummaryWallets expected err: %v\n", err)
+			fmt.Printf("SummaryWallets will be started in 10 seconds.\n")
+			time.Sleep(10000000000)
+			continue
+		}else {
+			fmt.Printf("SummaryWallets successfully.\n")
+			fmt.Printf("SummaryWallets will be started in 10 seconds.\n")
+			time.Sleep(10000000000)
+			continue
+		}
+	}
 
 	return nil
 }
@@ -403,7 +363,7 @@ func (w *WalletManager) TransferFlow() error {
 	value := int64(amount)
 
 	// 输入tag
-	note, err := console.InputText("Enter the tag(note): ", true)
+	note, err := console.InputText("Enter the tag (massage of this transaction): ", true)
 	if err != nil {
 		return err
 	}
