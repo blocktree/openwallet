@@ -2,6 +2,7 @@ package ethereum
 
 import (
 	"fmt"
+	"math/big"
 	"path/filepath"
 	"time"
 
@@ -11,19 +12,19 @@ import (
 )
 
 type Wallet struct {
-	WalletID string `json:"rootid"`
-	Alias    string `json:"alias"`
-	Balance  string `json:"balance"`
-	Password string `json:"password"`
-	RootPub  string `json:"rootpub"`
+	WalletID string   `json:"rootid"`
+	Alias    string   `json:"alias"`
+	Balance  *big.Int //string `json:"balance"`
+	Password string   `json:"password"`
+	RootPub  string   `json:"rootpub"`
 	KeyFile  string
 }
 
 type Address struct {
-	Address   string `json:"address" storm:"id"`
-	Account   string `json:"account" storm:"index"`
-	HDPath    string `json:"hdpath"`
-	Balance   string `json:"balance"`
+	Address   string   `json:"address" storm:"id"`
+	Account   string   `json:"account" storm:"index"`
+	HDPath    string   `json:"hdpath"`
+	balance   *big.Int //string `json:"balance"`
 	CreatedAt time.Time
 }
 

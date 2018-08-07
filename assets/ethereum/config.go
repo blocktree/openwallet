@@ -3,15 +3,16 @@ package ethereum
 import (
 	"errors"
 	"fmt"
+	"math/big"
 	"path/filepath"
 	"strings"
+	"time"
 
 	//	"github.com/astaxie/beego/config"
 	"encoding/json"
 
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/shopspring/decimal"
 )
 
 const (
@@ -42,7 +43,7 @@ var (
 	//钱包服务API
 	serverAPI = "http://127.0.0.1:8545"
 	//汇总阀值 ???--这个要设置成什么
-	threshold decimal.Decimal = decimal.NewFromFloat(5)
+	threshold *big.Int //decimal.Decimal = decimal.NewFromFloat(5)
 	//汇总地址
 	sumAddress = ""
 	//是否测试网络
@@ -51,6 +52,8 @@ var (
 	EthereumKeyPath = "/Users/peter/workspace/bitcoin/wallet/src/github.com/ethereum/go-ethereum/chain/keystore"
 	//钱包下keystore默认密码
 	DefaultPasswordForEthKey = "yjHFlngdBDl12"
+	//汇总执行间隔时间
+	cycleSeconds = time.Second * 10
 	//默认配置内容
 	defaultConfig = `
 # start node command
@@ -88,7 +91,7 @@ func loadConfig_() error {
 	}
 
 	serverAPI = c.String("apiURL")
-	threshold, _ = decimal.NewFromString(c.String("threshold"))
+	threshold, _ = threshold.SetString(c.String("threshold"), 10) //decimal.NewFromString(c.String("threshold"))
 	sumAddress = c.String("sumAddress")
 	isTestNet, _ = c.Bool("isTestNet")
 	if isTestNet {
