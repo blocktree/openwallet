@@ -152,7 +152,7 @@ func TestWallet_GetRecharges(t *testing.T) {
 		return
 	}
 
-	recharges, err := wallet.ToOpenWallet().GetRecharges()
+	recharges, err := wallet.ToOpenWallet().GetRecharges(false)
 	if err != nil {
 		t.Errorf("GetRecharges failed unexpected error: %v\n", err)
 		return

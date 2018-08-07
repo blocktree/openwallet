@@ -45,7 +45,7 @@ func (m *MerchantNode) GetChargeAddressVersion() error {
 
 	m.mu.RLock()
 	for _, s := range m.subscriptions {
-		if s.Type == SubscribeTypeCharge {
+		if s.Type == SubscribeTypeCharge || s.Type == SubscribeTypeBalance {
 			subs = append(subs, s)
 		}
 	}
@@ -76,7 +76,6 @@ func (m *MerchantNode) GetChargeAddressVersion() error {
 			func(addressVer *AddressVersion, status uint64, msg string) {
 
 				if addressVer != nil {
-					//log.Printf("new version = %v", *addressVer)
 					innerdb, err := m.OpenDB()
 					if err != nil {
 						return
@@ -88,7 +87,8 @@ func (m *MerchantNode) GetChargeAddressVersion() error {
 					if addressVer.Version > oldVersion.Version || err != nil {
 						m.getAddressesCh <- *addressVer
 
-						//log.Printf("new version = %v", *addressVer)
+						log.Printf("get new address version: %d \n", addressVer.Version)
+						log.Printf("get new address total: %d \n", addressVer.Total)
 
 						//更新记录
 						innerdb.Save(addressVer)
@@ -142,9 +142,9 @@ func (m *MerchantNode) getChargeAddress() error {
 
 						if status == owtp.StatusSuccess {
 							//log.Printf("GetMerchantWalletByID WalletID: %v\n", v.WalletID)
-							wallet, err := m.GetMerchantWalletByID(v.WalletID)
+							wallet, blockErr := m.GetMerchantWalletByID(v.WalletID)
 							if err != nil {
-								log.Printf("GetMerchantWalletByID unexpected error: %v\n", err)
+								log.Printf("GetMerchantWalletByID unexpected error: %v\n", blockErr)
 								return
 							}
 
@@ -152,8 +152,12 @@ func (m *MerchantNode) getChargeAddress() error {
 							mer := assets.GetMerchantAssets(v.Coin)
 							//log.Printf("mer = %v", mer)
 							if mer != nil {
-								//log.Printf("address count = %d", len(addrs))
-								mer.ImportMerchantAddress(wallet, wallet.SingleAssetsAccount(v.Coin), addrs)
+								log.Printf("address count = %d \n", len(addrs))
+								blockErr = mer.ImportMerchantAddress(wallet, wallet.SingleAssetsAccount(v.Coin), addrs)
+								if blockErr != nil {
+									log.Printf("ImportMerchantAddress unexpected error: %v", blockErr)
+								}
+
 							}
 							getCount = getCount + uint64(len(addrs))
 						}
@@ -241,7 +245,7 @@ func (m *MerchantNode) updateSubscribeAddress() {
 	//获取订阅地址的最新版本
 	err = m.GetChargeAddressVersion()
 	if err != nil {
-		//log.Printf("GetChargeAddressVersion unexpected error: %v", err)
+		log.Printf("GetChargeAddressVersion unexpected error: %v", err)
 	}
 }
 
@@ -267,17 +271,17 @@ func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 				continue
 			}
 
-			recharges, err := wallet.GetRecharges()
+			recharges, err := wallet.GetRecharges(false)
 			if err != nil {
 				log.Printf("GetNewRecharges get recharges unexpected error: %v", err)
 				continue
 			}
 
-			config, err := m.GetMerchantWalletConfig(s.Coin,s.WalletID)
-			if err != nil {
-				log.Printf("GetNewRecharges get wallet config unexpected error: %v", err)
-				continue
-			}
+			//config, err := m.GetMerchantWalletConfig(s.Coin,s.WalletID)
+			//if err != nil {
+			//	log.Printf("GetNewRecharges get wallet config unexpected error: %v", err)
+			//	continue
+			//}
 
 			if len(recharges) > 0 {
 
@@ -287,31 +291,31 @@ func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 					"recharges": recharges,
 				}
 
-				db, inErr := wallet.OpenDB()
-				if inErr != nil {
-					continue
-				}
-				tx, inErr := db.Begin(true)
-				if inErr != nil {
-					db.Close()
-					continue
-				}
-
-				//更新确认数
-				for _, r := range recharges {
-					log.Printf("Submit Recharges: %v", *r)
-					r.Confirm = int64(blockHeight - r.BlockHeight)
-
-					//确认数大于配置的确认数
-					if r.Confirm >= int64(config.Confirm) {
-						//删除已超过确认数的充值记录
-						tx.DeleteStruct(r)
-
-						log.Printf("delete recharge: %s \n ", r.Sid)
-					}
-				}
-				tx.Commit()
-				db.Close()
+				//db, inErr := wallet.OpenDB()
+				//if inErr != nil {
+				//	continue
+				//}
+				//tx, inErr := db.Begin(true)
+				//if inErr != nil {
+				//	db.Close()
+				//	continue
+				//}
+				//
+				////更新确认数
+				//for _, r := range recharges {
+				//	log.Printf("Submit Recharges: %v", *r)
+				//	r.Confirm = int64(blockHeight - r.BlockHeight)
+				//
+				//	//确认数大于配置的确认数
+				//	if r.Confirm >= int64(config.Confirm) {
+				//		//删除已超过确认数的充值记录
+				//		tx.DeleteStruct(r)
+				//
+				//		log.Printf("delete recharge: %s \n ", r.Sid)
+				//	}
+				//}
+				//tx.Commit()
+				//db.Close()
 
 
 
@@ -323,7 +327,7 @@ func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 					func(confirms []uint64, status uint64, msg string) {
 						//删除提交已确认的
 						if status == owtp.StatusSuccess {
-							/*
+
 							for _, c := range confirms {
 
 								if c < uint64(len(recharges)) {
@@ -339,8 +343,10 @@ func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 										return
 									}
 
-									//删除成功提交的记录
-									inErr = tx.DeleteStruct(recharges[c])
+									//标记已成功接收
+									recharges[c].Received = true
+									inErr = tx.Save(recharges[c])
+									//inErr = tx.DeleteStruct(recharges[c])
 									if inErr != nil {
 										tx.Rollback()
 										db.Close()
@@ -353,7 +359,7 @@ func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 								}
 
 							}
-							*/
+
 						}
 					})
 			}

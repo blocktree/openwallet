@@ -10,17 +10,17 @@
 
 	// 关闭
 	if err := wn.StopNodeFlow(symbol); err != nil {
-		log.Println(nil)
+		log.Println(err)
 	}
 
 	// 开启
 	if err := wn.StartNodeFlow(symbol); err != nil {
-		log.Println(nil)
+		log.Println(err)
 	}
 
 	// 重启
 	if err := wn.RestartNodeFlow(symbol); err != nil {
-		log.Println(nil)
+		log.Println(err)
 	}
 
 --------------

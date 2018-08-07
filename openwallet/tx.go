@@ -67,6 +67,7 @@ type Recharge struct {
 	IsMemo      bool   `json:"isMemo"`
 	Memo        string `json:"memo"`
 	Index       uint64 `json:"index"`
+	Received    bool
 }
 
 type Withdraw struct {

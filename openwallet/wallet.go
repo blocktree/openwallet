@@ -16,17 +16,19 @@
 package openwallet
 
 import (
+	"bufio"
+	"encoding/json"
 	"github.com/asdine/storm"
+	"github.com/asdine/storm/q"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/keystore"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"reflect"
-	"bufio"
-	"os"
-	"encoding/json"
+	"strings"
 )
 
 type Wallet struct {
@@ -39,6 +41,7 @@ type Wallet struct {
 	DBFile    string `json:"dbFile"`    //钱包的数据库文件
 	WatchOnly bool   `json:"watchOnly"` //创建watchonly的钱包，没有私钥文件，只有db文件
 	key       *keystore.HDKey
+	fileName  string //钱包文件命名，所有与钱包相关的都以这个filename命名
 
 	//核心钱包指针
 	core interface{}
@@ -71,10 +74,10 @@ func NewWallet(walletID string, symbol string) *Wallet {
 		return nil
 	}
 
-	for _, w := range wallets  {
+	for _, w := range wallets {
 		if w.WalletID == walletID {
-			w.KeyFile = filepath.Join(dbDir, w.KeyFile)
-			w.DBFile = filepath.Join(dbDir, w.DBFile)
+			w.KeyFile = filepath.Join(dbDir, w.FileName()+".key")
+			w.DBFile = filepath.Join(dbDir, w.FileName()+".db")
 			return w
 		}
 	}
@@ -98,6 +101,7 @@ func NewWatchOnlyWallet(walletID string, symbol string) *Wallet {
 		Alias:     walletID, //自定义ID也作为别名
 		WatchOnly: true,
 		DBFile:    dbFile,
+		fileName:  walletID,
 	}
 
 	return &w
@@ -119,6 +123,11 @@ func (w *Wallet) HDKey(password string) (*keystore.HDKey, error) {
 		return nil, err
 	}
 	return key, err
+}
+
+//FileName 钱包文件名
+func (w *Wallet) FileName() string {
+	return w.fileName
 }
 
 //openDB 打开钱包数据库
@@ -205,7 +214,7 @@ func (w *Wallet) DropRecharge() error {
 }
 
 //GetRecharges 获取钱包相关的充值记录
-func (w *Wallet) GetRecharges(height ...uint64) ([]*Recharge, error) {
+func (w *Wallet) GetRecharges(received bool, height ...uint64) ([]*Recharge, error) {
 
 	var (
 		list []*Recharge
@@ -218,9 +227,14 @@ func (w *Wallet) GetRecharges(height ...uint64) ([]*Recharge, error) {
 	defer db.Close()
 
 	if len(height) > 0 {
-		err = db.Find("BlockHeight", height[0], &list)
+		err = db.Select(q.And(
+			q.Eq("Received", received),
+			q.Eq("BlockHeight", height[0]),
+		)).Find(&list)
+		//err = db.Find("BlockHeight", height[0], &list)
 	} else {
-		err = db.All(&list)
+		err = db.Select(q.And(q.Eq("Received", received))).Find(&list)
+		//err = db.All(&list)
 	}
 
 	if err != nil {
@@ -229,7 +243,6 @@ func (w *Wallet) GetRecharges(height ...uint64) ([]*Recharge, error) {
 
 	return list, nil
 }
-
 
 //GetWalletsByKeyDir 通过给定的文件路径加载keystore文件得到钱包列表
 func GetWalletsByKeyDir(dir string) ([]*Wallet, error) {
@@ -253,10 +266,13 @@ func GetWalletsByKeyDir(dir string) ([]*Wallet, error) {
 			continue
 		}
 
+		fileName := strings.TrimSuffix(fi.Name(), ".key")
+
 		path := filepath.Join(dir, fi.Name())
 
 		w := ReadWalletByKey(path)
 		w.KeyFile = path
+		w.fileName = fileName
 		wallets = append(wallets, w)
 
 	}
@@ -265,17 +281,15 @@ func GetWalletsByKeyDir(dir string) ([]*Wallet, error) {
 
 }
 
-
-
 //ReadWalletByKey 加载文件，实例化钱包
 func ReadWalletByKey(keyPath string) *Wallet {
 
 	var (
 		buf = new(bufio.Reader)
 		key struct {
-			   Alias  string `json:"alias"`
-			   RootId string `json:"rootid"`
-		   }
+			Alias  string `json:"alias"`
+			RootId string `json:"rootid"`
+		}
 	)
 
 	fd, err := os.Open(keyPath)
@@ -295,7 +309,6 @@ func ReadWalletByKey(keyPath string) *Wallet {
 
 	return &Wallet{WalletID: key.RootId, Alias: key.Alias}
 }
-
 
 /*
 //NewWallet 创建钱包

@@ -19,10 +19,12 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/asdine/storm"
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/keystore"
+	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/bndr/gotabulate"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
@@ -38,8 +40,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-	"github.com/blocktree/OpenWallet/openwallet"
-	"github.com/asdine/storm"
 )
 
 const (
@@ -656,11 +656,11 @@ func CreateNewPrivateKey(key *keystore.HDKey, start, index uint64) (string, *ope
 
 	addr := openwallet.Address{
 		Address:   address.String(),
-		AccountID:   key.RootId,
+		AccountID: key.RootId,
 		HDPath:    derivedPath,
 		CreatedAt: time.Now(),
-		Symbol: Symbol,
-		Index: index,
+		Symbol:    Symbol,
+		Index:     index,
 	}
 
 	//addr := Address{
@@ -763,7 +763,7 @@ func RestoreWallet(keyFile, dbFile, datFile, password string) error {
 		restoreSuccess = false
 		err            error
 		key            *keystore.HDKey
-		sleepTime = 30 * time.Second
+		sleepTime      = 30 * time.Second
 	)
 
 	fmt.Printf("Validating key file... \n")
@@ -780,7 +780,6 @@ func RestoreWallet(keyFile, dbFile, datFile, password string) error {
 	//创建临时备份文件wallet.dat，备份
 	tmpWalletDat := fmt.Sprintf("restore-walllet-%d.dat", time.Now().Unix())
 	tmpWalletDat = filepath.Join(walletDataPath, tmpWalletDat)
-
 
 	fmt.Printf("Backup current wallet.dat file... \n")
 
@@ -1058,7 +1057,7 @@ func BuildTransaction(utxos []*Unspent, to []string, change string, amount []dec
 		inputs      = make([]interface{}, 0)
 		outputs     = make(map[string]interface{})
 		totalAmount = decimal.New(0, 0)
-		totalSend  = decimal.New(0, 0)
+		totalSend   = decimal.New(0, 0)
 	)
 
 	for _, u := range utxos {
@@ -1330,7 +1329,8 @@ func SendTransaction(walletID, to string, amount decimal.Decimal, password strin
 		}
 
 		//计算手续费，找零地址有2个，一个是发送，一个是新创建的
-		piecefees, err := EstimateFee(int64(len(sendUxto)), int64(len(to) + 1), feesRate)
+		piecefees, err := EstimateFee(int64(len(sendUxto)), int64(len(to)+1), feesRate)
+
 		if piecefees.LessThan(decimal.NewFromFloat(0.00001)) {
 			piecefees = decimal.NewFromFloat(0.00001)
 		}
@@ -1387,17 +1387,14 @@ func SendTransaction(walletID, to string, amount decimal.Decimal, password strin
 	return txIDs, nil
 }
 
-
-
-
 //SendBatchTransaction 发送批量交易
 func SendBatchTransaction(walletID string, to []string, amounts []decimal.Decimal, password string) (string, error) {
 
 	var (
-		usedUTXO   []*Unspent
-		balance    = decimal.New(0, 0)
+		usedUTXO []*Unspent
+		balance  = decimal.New(0, 0)
 		//totalSend  = amounts
-		totalSend    = decimal.New(0, 0)
+		totalSend  = decimal.New(0, 0)
 		actualFees = decimal.New(0, 0)
 		//sendTime   = 1
 		//txIDs      = make([]string, 0)
@@ -1491,7 +1488,7 @@ func SendBatchTransaction(walletID string, to []string, amounts []decimal.Decima
 		}
 
 		//计算手续费，找零地址有2个，一个是发送，一个是新创建的
-		fees, err := EstimateFee(int64(len(usedUTXO)), int64(len(to) + 1), feesRate)
+		fees, err := EstimateFee(int64(len(usedUTXO)), int64(len(to)+1), feesRate)
 		if err != nil {
 			return "", err
 		}
@@ -1526,7 +1523,6 @@ func SendBatchTransaction(walletID string, to []string, amounts []decimal.Decima
 	fmt.Printf("Receive: %v\n", computeTotalSend.StringFixed(8))
 	fmt.Printf("Change: %v\n", changeAmount.StringFixed(8))
 	fmt.Printf("-----------------------------------------------\n")
-
 
 	//解锁钱包
 	err = UnlockWallet(password, 120)
@@ -1568,7 +1564,6 @@ func SendBatchTransaction(walletID string, to []string, amounts []decimal.Decima
 
 	return txid, nil
 }
-
 
 //CreateChangeAddress 创建找零地址
 func CreateChangeAddress(walletID string, key *keystore.HDKey) (*openwallet.Address, error) {
@@ -1632,7 +1627,6 @@ func EstimateFeeRate() (decimal.Decimal, error) {
 	if feeRate.LessThan(defaultRate) {
 		feeRate = defaultRate
 	}
-
 
 	return feeRate, nil
 }
@@ -1835,7 +1829,6 @@ func loadConfig() error {
 		walletDataPath = c.String("mainNetDataPath")
 	}
 
-
 	token := basicAuth(rpcUser, rpcPassword)
 
 	client = &Client{
@@ -1853,9 +1846,9 @@ func readWallet(keyPath string) *Wallet {
 	var (
 		buf = new(bufio.Reader)
 		key struct {
-			   Alias  string `json:"alias"`
-			   RootId string `json:"rootid"`
-		   }
+			Alias  string `json:"alias"`
+			RootId string `json:"rootid"`
+		}
 	)
 
 	fd, err := os.Open(keyPath)
