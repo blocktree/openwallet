@@ -71,13 +71,12 @@ func isExistConfigFile() bool {
 
 //newConfigFile 创建配置文件
 func newConfigFile(
-	apiURL, walletPath, sumAddress,
+	apiURL, sumAddress,
 	threshold, minSendAmount, minFees, gasLimit, storageLimit string) (config.Configer, string, error) {
 
 	//	生成配置
 	configMap := map[string]interface{}{
 		"apiURL":         apiURL,
-		"walletPath":     walletPath,
 		"sumAddress":     sumAddress,
 		"threshold":      threshold,
 		"minSendAmount":  minSendAmount,
@@ -119,7 +118,6 @@ func printConfig() error {
 	}
 
 	apiURL := c.String("apiURL")
-	walletPath := c.String("walletPath")
 	threshold := c.String("threshold")
 	minSendAmount := c.String("minSendAmount")
 	minFees := c.String("minFees")
@@ -129,7 +127,6 @@ func printConfig() error {
 
 	fmt.Printf("-----------------------------------------------------------\n")
 	fmt.Printf("Node API url: %s\n", apiURL)
-	fmt.Printf("Wallet main net filePath: %s\n", walletPath)
 	fmt.Printf("Summary address: %s\n", sumAddress)
 	fmt.Printf("Summary threshold: %s\n", threshold)
 	fmt.Printf("Minimum transfer amount: %s\n", minSendAmount)

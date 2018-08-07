@@ -38,8 +38,8 @@ func init() {
 	tw.config.rpcUser = "wallethcd"
 	tw.config.rpcPassword = "wallethcdpw"
 	token := basicAuth(tw.config.rpcUser, tw.config.rpcPassword)
-	tw.walletClient = NewClient(tw.config.walletAPI, token, true)
-	tw.hcdClient = NewClient(tw.config.chainAPI, token, true)
+	tw.walletClient = NewClient(tw.config.walletAPI, token, false)
+	tw.hcdClient = NewClient(tw.config.chainAPI, token, false)
 }
 
 func TestCreateNewWallet(t *testing.T) {
@@ -64,7 +64,7 @@ func TestGetAddressesByAccount(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	_, _, err := tw.CreateBatchAddress("WLAioxPDFh8LbSd5pC7VVyS8qpFiFbcVHW", "123", 10)
+	_, _, err := tw.CreateBatchAddress("WLAioxPDFh8LbSd5pC7VVyS8qpFiFbcVHW", "123", 10000)
 	if err != nil {
 		t.Errorf("CreateBatchAddress failed unexpected error: %v\n", err)
 		return
@@ -290,14 +290,14 @@ func TestListUnspentFromLocalDB(t *testing.T) {
 }
 
 func TestBuildTransaction(t *testing.T) {
-	walletID := "W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ"
+	walletID := "WLAioxPDFh8LbSd5pC7VVyS8qpFiFbcVHW"
 	utxos, err := tw.ListUnspentFromLocalDB(walletID)
 	if err != nil {
 		t.Errorf("BuildTransaction failed unexpected error: %v\n", err)
 		return
 	}
 
-	txRaw, _, err := tw.BuildTransaction(utxos, []string{"mrThNMQ6bMf1YNPjBj9jYXmYYzw1Rt8GFU"}, "n33cHpEc9qAvECM9pFgabZ6ktJimLSeWdy", []decimal.Decimal{decimal.NewFromFloat(0.2)}, decimal.NewFromFloat(0.00002))
+	txRaw, _, err := tw.BuildTransaction(utxos, []string{"TsiTCM9KqDPTJLt6iVBV2FCtPKzAgAtZmQG"}, "TsjkXU58hAxA8w24tZZyjdPLHVSTMeeesd6", []decimal.Decimal{decimal.NewFromFloat(0.2)}, decimal.NewFromFloat(0.001))
 	if err != nil {
 		t.Errorf("BuildTransaction failed unexpected error: %v\n", err)
 		return
@@ -315,23 +315,28 @@ func TestBuildTransaction(t *testing.T) {
 }
 
 func TestEstimateFee(t *testing.T) {
-	feeRate, _ := tw.EstimateFeeRate()
+	feeRate, err := tw.EstimateFeeRate()
+	if err != nil {
+		t.Errorf("EstimateFeeRate failed unexpected error: %v\n", err)
+		return
+	}
+
 	t.Logf("EstimateFee feeRate = %s\n", feeRate.StringFixed(8))
-	fees, _ := tw.EstimateFee(10, 2, feeRate)
+	fees, _ := tw.EstimateFee(1, 2, feeRate)
 	t.Logf("EstimateFee fees = %s\n", fees.StringFixed(8))
 }
 
 func TestSendTransaction(t *testing.T) {
 
 	sends := []string{
-		"mpkUFiXonEZriywHUhig6PTDQXKzT6S5in",
+		"TsVm9WQFxKHACotTeeB763nuH2qHieJKf9M",
 	}
 
-	tw.RebuildWalletUnspent("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ")
+	tw.RebuildWalletUnspent("WLAioxPDFh8LbSd5pC7VVyS8qpFiFbcVHW")
 
 	for _, to := range sends {
 
-		txIDs, err := tw.SendTransaction("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", to, decimal.NewFromFloat(0.02), "1234qwer", false)
+		txIDs, err := tw.SendTransaction("WLAioxPDFh8LbSd5pC7VVyS8qpFiFbcVHW", to, decimal.NewFromFloat(25.689), "123", true)
 
 		if err != nil {
 			t.Errorf("SendTransaction failed unexpected error: %v\n", err)

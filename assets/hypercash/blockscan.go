@@ -704,7 +704,7 @@ func (bs *BTCBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, err
 	blockHeight, hash = bs.wm.GetLocalNewBlock()
 
 	//如果本地没有记录，查询接口的高度
-	if blockHeight == 0 {
+	if blockHeight < 0 {
 		blockHeight, err = bs.wm.GetBlockHeight()
 		if err != nil {
 
