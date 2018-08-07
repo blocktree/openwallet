@@ -75,7 +75,7 @@ func TestGetBlock(t *testing.T) {
 }
 
 func TestGetTransaction(t *testing.T) {
-	raw, err := tw.GetTransaction("3609c877b2a9b690869190f3cf9cd497ed00dacaf31374fe1312164a36524ecb")
+	raw, err := tw.GetTransaction("e52260af2020f723017dc383d680a794e9a33d3b1016d661950d92c8777edf43")
 	if err != nil {
 		t.Errorf("GetTransaction failed unexpected error: %v\n", err)
 		return
@@ -151,7 +151,7 @@ func TestWallet_GetRecharges(t *testing.T) {
 		return
 	}
 
-	recharges, err := wallet.GetRecharges()
+	recharges, err := wallet.GetRecharges(false)
 	if err != nil {
 		t.Errorf("GetRecharges failed unexpected error: %v\n", err)
 		return

@@ -16,11 +16,11 @@
 package hypercash
 
 import (
-	"github.com/blocktree/OpenWallet/openwallet"
-	"strings"
-	"log"
-	"github.com/shopspring/decimal"
 	"errors"
+	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/shopspring/decimal"
+	"log"
+	"strings"
 )
 
 //CreateMerchantWallet 创建钱包
@@ -93,7 +93,7 @@ func (wm *WalletManager) ImportMerchantAddress(wallet *openwallet.Wallet, accoun
 		a.WatchOnly = true //观察地址
 		a.Symbol = strings.ToLower(Symbol)
 		a.AccountID = account.AccountID
-		log.Printf("import %s address: %s", a.Symbol, a.Address)
+		log.Printf("import %s address: %s \n", a.Symbol, a.Address)
 		tx.Save(a)
 
 		wm.blockscanner.AddAddress(a.Address, wallet.WalletID, wallet)
@@ -164,7 +164,6 @@ func (wm *WalletManager) SubmitTransactions(wallet *openwallet.Wallet, account *
 		return nil, errors.New("the wallet balance is lower than surplus. ")
 	}
 
-
 	txID, err := wm.SendBatchTransaction(wallet.WalletID, addrs, amounts, wallet.Password)
 	if err != nil {
 		return nil, err
@@ -180,7 +179,7 @@ func (wm *WalletManager) AddMerchantObserverForBlockScan(obj openwallet.BlockSca
 	//先加载是否有配置文件
 	err := wm.loadConfig()
 	if err != nil {
-		return errors.New("The wallet node is not config!")
+		return errors.New("The wallet node is not config! ")
 	}
 
 	wm.blockscanner.AddObserver(obj)
@@ -214,7 +213,7 @@ func (wm *WalletManager) GetBlockchainInfo() (*openwallet.Blockchain, error) {
 	}
 
 	info := openwallet.Blockchain{
-		Blocks:height,
+		Blocks: height,
 	}
 
 	return &info, nil

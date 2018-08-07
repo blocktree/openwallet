@@ -21,13 +21,13 @@ import (
 	"github.com/blocktree/OpenWallet/crypto"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/timer"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
 	"log"
 	"path/filepath"
 	"sync"
 	"time"
+	"encoding/base64"
 )
 
 const (
@@ -588,7 +588,7 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, txid string) E
 					transaction.BlockHeight = blockHeight
 					transaction.Symbol = Symbol
 					transaction.Index = n
-					transaction.Sid = common.Bytes2Hex(crypto.SHA256([]byte(fmt.Sprintf("%s_%d_%s", txid, n, addr))))
+					transaction.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("%s_%d_%s", txid, n, addr))))
 
 					transactions = append(transactions, &transaction)
 
@@ -694,7 +694,7 @@ func (bs *BTCBlockScanner) DeleteRechargesByHeight(height uint64) error {
 
 	for _, wallet := range bs.walletInScanning {
 
-		list, err := wallet.GetRecharges(height)
+		list, err := wallet.GetRecharges(false, height)
 		if err != nil {
 			return err
 		}

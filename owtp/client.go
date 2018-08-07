@@ -69,6 +69,7 @@ type Client struct {
 	handler Handler
 	send    chan []byte
 	close   chan struct{}
+	isHost  bool
 }
 
 //DataPacket 数据包

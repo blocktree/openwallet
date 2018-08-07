@@ -24,6 +24,7 @@ import (
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/keystore"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/OpenWallet/walletnode"
 	"github.com/bndr/gotabulate"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/codeskyblue/go-sh"
@@ -34,7 +35,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-	"github.com/blocktree/OpenWallet/walletnode"
 )
 
 const (
@@ -66,18 +66,18 @@ func (wm *WalletManager) GetAddressesByAccount(walletID string) ([]string, error
 
 	var (
 		addresses = make([]string, 0)
-		//request []interface{}
+		request   []interface{}
 	)
 
-	//if walletID == "" {
-	//	request = nil
-	//} else {
-	//	request = []interface{}{
-	//		walletID,
-	//	}
-	//}
+	if walletID == "" {
+		request = nil
+	} else {
+		request = []interface{}{
+			walletID,
+		}
+	}
 
-	result, err := wm.walletClient.Call("getaddressesbyaccount", nil)
+	result, err := wm.walletClient.Call("getaddressesbyaccount", request)
 	if err != nil {
 		return nil, err
 	}
@@ -491,7 +491,7 @@ func (wm *WalletManager) GetWallets() ([]*openwallet.Wallet, error) {
 	}
 
 	for _, w := range wallets {
-		w.DBFile = filepath.Join(wm.config.dbPath, wm.WalletFileName(w)+".db")
+		w.DBFile = filepath.Join(wm.config.dbPath, w.FileName()+".db")
 	}
 
 	return wallets, nil
@@ -878,6 +878,10 @@ func (wm *WalletManager) ListUnspent(min uint64) ([]*Unspent, error) {
 		return nil, err
 	}
 
+	if !result.IsArray() {
+		return nil, nil
+	}
+
 	array := result.Array()
 	for _, a := range array {
 		utxos = append(utxos, NewUnspent(&a))
@@ -912,7 +916,7 @@ func (wm *WalletManager) RebuildWalletUnspent(walletID string) error {
 	}
 
 	//查找核心钱包确认数大于1的
-	utxos, err := wm.ListUnspent(0)
+	utxos, err := wm.ListUnspent(1)
 	if err != nil {
 		return err
 	}
@@ -938,6 +942,10 @@ func (wm *WalletManager) RebuildWalletUnspent(walletID string) error {
 	for _, utxo := range utxos {
 		var addr openwallet.Address
 		err = db.One("Address", utxo.Address, &addr)
+		if err != nil {
+			continue
+		}
+
 		utxo.AccountID = addr.AccountID
 		utxo.HDAddress = addr
 		key := common.NewString(fmt.Sprintf("%s_%d_%s", utxo.TxID, utxo.Vout, utxo.Address)).SHA256()
@@ -1622,6 +1630,22 @@ func (wm *WalletManager) SummaryWallets() {
 //AddWalletInSummary 添加汇总钱包账户
 func (wm *WalletManager) AddWalletInSummary(wid string, wallet *openwallet.Wallet) {
 	wm.walletsInSum[wid] = wallet
+}
+
+//RescanCorewallet 重扫钱包
+func (wm *WalletManager) RescanCorewallet(beginheight uint64) error {
+
+	request := []interface{}{
+		beginheight,
+	}
+
+	_, err := wm.walletClient.Call("rescanwallet", request)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
 }
 
 //clearUnspends 清楚已使用的UTXO

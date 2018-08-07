@@ -94,7 +94,7 @@ func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 
 		if err != nil {
 			//添加订阅钱包
-			wallet = openwallet.NewWatchOnlyWallet(s.WalletID, s.Coin)
+			wallet = openwallet.NewWallet(s.WalletID, s.Coin)
 			err = db.Save(wallet)
 		}
 
