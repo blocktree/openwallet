@@ -22,6 +22,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"path/filepath"
 	"strings"
 
 	"docker.io/go-docker/api/types"
@@ -31,6 +32,9 @@ import (
 //
 //	src/dst: filename
 func CopyFromContainer(symbol, src, dst string) error {
+	// func(vals ...interface{}) {}(
+	// 	tar.Writer{}, os.File{},
+	// ) // Delete before commit
 
 	var buf bytes.Buffer
 
@@ -44,30 +48,44 @@ func CopyFromContainer(symbol, src, dst string) error {
 		return err
 	}
 
-	Cname := strings.ToLower(symbol)
-	// API: CopyFromContainer(io.ReadCloser, types.ContainerPathStat, error)
-	fp, _, err := c.CopyFromContainer(context.Background(), Cname, src)
+	cname := strings.ToLower(symbol)
+	// API Return: CopyFromContainer -> (io.ReadCloser, types.ContainerPathStat, error)
+	fp, _, err := c.CopyFromContainer(context.Background(), cname, src)
 	if err != nil {
 		return err
 	}
 	defer fp.Close()
 
-	// buf := new(bytes.Buffer)
-	if _, err := buf.ReadFrom(fp); err != nil {
-		return err
+	tw := tar.NewReader(fp)
+	for {
+		// Copy file from container return within archive/tar
+		_, err := tw.Next()
+		if err == io.EOF {
+			break // End of archive
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+		// log.Printf("Contents of %s:\n", hdr.Name)
+
+		if _, err := buf.ReadFrom(tw); err != nil {
+			log.Fatal(err)
+			return err
+		}
 	}
 
-	if err = ioutil.WriteFile(dst, buf.Bytes()[512:], 0600); err != nil {
+	if err = ioutil.WriteFile(dst, buf.Bytes(), 0600); err != nil {
 		return err
 	}
 
 	return nil
 }
 
+// Copy file to container from local filesystem
+//
+//	src: filename
+//	dst: path
 func CopyToContainer(symbol, src, dst string) error {
-	// func(vals ...interface{}) {}(
-	// 	tar.Writer{}, os.File{},
-	// ) // Delete before commit
 
 	var content io.Reader
 
@@ -81,17 +99,17 @@ func CopyToContainer(symbol, src, dst string) error {
 		return err
 	}
 
-	Cname := strings.ToLower(symbol)
-	// ioutil.ReadFile() -> ([]byte, err)
+	cname := strings.ToLower(symbol)
+	// Return: ioutil.ReadFile() -> ([]byte, err)
 	if dat, err := ioutil.ReadFile(src); err != nil {
 		log.Println(err)
 		return err
 	} else {
-		// Copy file into container with tar
+		// Copy file into container within archive/tar
 		var buf bytes.Buffer
 		tw := tar.NewWriter(&buf)
 		tw.WriteHeader(&tar.Header{
-			Name: src, //file.Name,
+			Name: filepath.Base(src), //file.Name,
 			Mode: 0600,
 			Size: int64(len(dat)), //int64(len(file.Body)),
 		})
@@ -102,47 +120,11 @@ func CopyToContainer(symbol, src, dst string) error {
 		content = bytes.NewReader(buf.Bytes())
 	}
 
-	// ctx context.Context, container, path string, content io.Reader, options types.CopyToContainerOptions
-	if err := c.CopyToContainer(context.Background(), Cname, dst, content, types.CopyToContainerOptions{AllowOverwriteDirWithFile: false}); err != nil {
+	// API Params: (ctx context.Context, container, path string, content io.Reader, options types.CopyToContainerOptions)
+	if err := c.CopyToContainer(context.Background(), cname, dst, content, types.CopyToContainerOptions{AllowOverwriteDirWithFile: false}); err != nil {
 		log.Println(err)
 		return err
 	}
 
 	return nil
 }
-
-// func main() {
-//
-// 	var src string
-// 	var dst string
-//
-// 	if err := loadConfig(symbol); err != nil {
-// 		return err
-// 	}
-//
-// 	// Init docker client
-// 	c, err := _GetClient()
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	// Action within client
-// 	Cname, err := _GetCName(symbol) // container name
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	src = "/usr/local/paicode/data/wallet.dat"
-// 	dst = "./bk/wallet.dat"
-// 	if err := CopyFromContainer(c, Cname, src, dst); err != nil {
-// 		return err
-// 	}
-//
-// 	src = "./conf/BOPO.ini"
-// 	dst = "/tmp"
-// 	if err := CopyToContainer(c, Cname, src, dst); err != nil {
-// 		return err
-// 	}
-//
-// 	return nil
-// }

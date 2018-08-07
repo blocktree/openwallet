@@ -214,27 +214,34 @@ func (w *WalletManager) RestoreWalletFlow() error {
 	if err != nil {
 		return err
 	}
-	for _, f := range files {
-		fmt.Println(f)
+	dir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	for i, f := range files {
+		fmt.Printf("%d>\t %v \n", i+1, filepath.Join(dir, f))
 	}
 
-	// Input dataFile of wallet.dat
+	// Input dataFile of wallet.dat in Loop
 	for i := 0; i < 3; i++ {
+
 		datFile, err = console.InputText("Enter backup wallet.dat file path: ", true)
 		if err != nil {
 			fmt.Println(err)
 		}
 		if _, err := os.Stat(datFile); os.IsNotExist(err) {
 			fmt.Println("No such file!")
-			continue
 		} else {
 			break
 		}
 
+		// Stop after 3 times to check
 		if i == 2 {
 			return nil
 		}
+
 	}
+	fmt.Println("EMD")
 
 	// To restore
 	if err := restoreWalletData(datFile); err != nil {

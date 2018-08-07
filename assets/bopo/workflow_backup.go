@@ -36,16 +36,17 @@ func backupWalletData() error {
 	if err := walletnode.CopyFromContainer(Symbol, src, dst); err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func restoreWalletData(datFile string) error {
 	src := datFile
-	// dst := filepath.Join(walletDataPath, "wallet.dat")
 	dst := walletDataPath
 
 	if err := walletnode.CopyToContainer(Symbol, src, dst); err != nil {
 		return err
 	}
+
 	return nil
 }
