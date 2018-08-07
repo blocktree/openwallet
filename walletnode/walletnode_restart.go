@@ -38,7 +38,7 @@ func (w *NodeManagerStruct) RestartNodeFlow(symbol string) error {
 	}
 	err = c.ContainerRestart(context.Background(), cName, nil)
 	if err == nil {
-		fmt.Printf("%s walletnode stop in success!\n", symbol)
+		fmt.Printf("%s walletnode restart in success!\n", symbol)
 	}
 	return err
 }
