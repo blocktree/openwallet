@@ -38,7 +38,18 @@ func getWalletList() ([]*Wallet, error) {
 
 	for wid, a := range data {
 		addr := a.String()
-		w := &Wallet{Alias: wid, Addr: addr}
+
+		balance := ""
+		if ww, err := getWalletB(addr); err == nil {
+			balance = ww.Balance
+			// if bal != "" {
+			// 	cc, _ := decimal.NewFromString(bal)
+			// 	bal = cc.Div(coinDecimal).String()
+			// 	w.Balance = fmt.Sprintf("%s (%s coins)", ww.Balance, bal)
+			// }
+		}
+
+		w := &Wallet{Alias: wid, Addr: addr, Balance: balance}
 		wallets = append(wallets, w)
 	}
 
@@ -110,14 +121,14 @@ func printWalletList(list []*Wallet) {
 
 	for i, w := range list {
 
-		if ww, err := getWalletB(w.Addr); err == nil {
-			bal := ww.Balance
-			if bal != "" {
-				cc, _ := decimal.NewFromString(bal)
-				bal = cc.Div(coinDecimal).String()
-				w.Balance = fmt.Sprintf("%s (%s coins)", ww.Balance, bal)
-			}
+		// if ww, err := getWalletB(w.Addr); err == nil {
+		bal := w.Balance
+		if bal != "" {
+			cc, _ := decimal.NewFromString(bal)
+			bal = cc.Div(coinDecimal).String()
+			w.Balance = fmt.Sprintf("%s (%s coins)", w.Balance, bal)
 		}
+		// }
 		tableInfo = append(tableInfo, []interface{}{
 			i + 1, w.WalletID, w.Alias, w.Addr, w.Balance,
 		})

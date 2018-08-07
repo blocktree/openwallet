@@ -13,34 +13,19 @@
  * GNU Lesser General Public License for more details.
  */
 
-package walletnode
+package bopo
 
 import (
-	"context"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"time"
 )
 
-func (w *NodeManagerStruct) RestartNodeFlow(symbol string) error {
+func summaryWallets() {
+	fmt.Println(time.Now().Format("2006-01-02 15:04:05:000"))
 
-	if err := loadConfig(symbol); err != nil {
-		return err
+	if err := ioutil.WriteFile("/tmp/abcd.txt", []byte("AAAA"), 0600); err != nil {
+		log.Println(err)
 	}
-
-	// Init docker client
-	c, err := _GetClient()
-	if err != nil {
-		return err
-	}
-	// Action within client
-	cName, err := _GetCName(symbol) // container name
-	if err != nil {
-		return err
-	}
-	err = c.ContainerRestart(context.Background(), cName, nil)
-	if err != nil {
-		return err
-		// fmt.Printf("%s walletnode restart in success!\n", symbol)
-	}
-
-	return nil
-
 }
