@@ -21,7 +21,6 @@ import (
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/console"
 	"github.com/blocktree/OpenWallet/timer"
-	//"github.com/shopspring/decimal"
 	"log"
 	"path/filepath"
 	"strings"
@@ -39,7 +38,6 @@ func (w *WalletManager) InitConfigFlow() error {
 	var (
 		err        error
 		apiURL     string
-		walletPath string
 		//汇总阀值
 		threshold string
 		//最小转账额度
@@ -116,7 +114,6 @@ func (w *WalletManager) InitConfigFlow() error {
 		fmt.Printf("Please check the following setups is correct?\n")
 		fmt.Printf("-----------------------------------------------------------\n")
 		fmt.Printf("Node API url: %s\n", apiURL)
-		fmt.Printf("Wallet main net filePath: %s\n", walletPath)
 		fmt.Printf("Summary address: %s\n", sumAddress)
 		fmt.Printf("Summary threshold: %s\n", threshold)
 		fmt.Printf("Minimum transfer amount: %s\n", minSendAmount)
@@ -330,10 +327,8 @@ func (w *WalletManager) SummaryFollow() error {
 
 //备份钱包流程
 func (w *WalletManager) BackupWalletFlow() error {
+	var err error
 
-	var (
-		err error
-	)
 
 	//先加载是否有配置文件
 	err = loadConfig()
@@ -345,7 +340,6 @@ func (w *WalletManager) BackupWalletFlow() error {
 	backupPath := filepath.Join(keyDir, "backup")
 	file.MkdirAll(backupPath)
 
-
 	err = file.Copy(dbPath, filepath.Join(backupPath))
 	if err != nil {
 		return err
@@ -353,9 +347,7 @@ func (w *WalletManager) BackupWalletFlow() error {
 
 	//输出备份导出目录
 	log.Printf("Wallet backup file path: %s", backupPath)
-
 	return nil
-
 }
 
 //SendTXFlow 发送交易
@@ -457,7 +449,7 @@ func (w *WalletManager) TransferFlow() error {
 		} else {
 			send := sendStruct{k, fee, amount}
 			sends = append(sends, send)
-			log.Printf("address:%s, amount:%d, resultSub:%d\n", k.Address, amount.IntPart(), resultSub.IntPart())
+			//log.Printf("address:%s, amount:%d, resultSub:%d\n", k.Address, amount.IntPart(), resultSub.IntPart())
 		}
 		resultSub = resultSub.Sub(amount)
 		log.Printf("resultSub:%d\n", resultSub.IntPart())
@@ -482,10 +474,7 @@ func (w *WalletManager) TransferFlow() error {
 
 //GetWalletList 获取钱包列表
 func (w *WalletManager) GetWalletList() error {
-
-	var (
-		err error
-	)
+	var err error
 
 	//先加载是否有配置文件
 	err = loadConfig()
@@ -506,9 +495,7 @@ func (w *WalletManager) GetWalletList() error {
 
 //RestoreWalletFlow 恢复钱包
 func (w *WalletManager) RestoreWalletFlow() error {
-
 	fmt.Printf("Restore wallet is unavailable now.\n")
-
 	return nil
 }
 

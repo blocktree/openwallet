@@ -53,7 +53,6 @@ var (
 	minSendAmount decimal.Decimal = decimal.NewFromFloat(1).Mul(coinDecimal)
 	//最小矿工费
 	minFees decimal.Decimal = decimal.NewFromFloat(0.0001).Mul(coinDecimal)
-
 	//gas limit 和 storage limit
 	gasLimit decimal.Decimal = decimal.NewFromFloat(0.0001).Mul(coinDecimal)
 	storageLimit decimal.Decimal = decimal.NewFromFloat(0.0001).Mul(coinDecimal)
@@ -221,10 +220,7 @@ func transfer(keys Key, dst string, fee, gas_limit, storage_limit, amount string
 
 //exportAddressToFile 导出地址到文件中
 func exportAddressToFile(keys []*Key, filePath string) {
-
-	var (
-		content string
-	)
+	var content string
 
 	for _, a := range keys {
 
@@ -256,7 +252,6 @@ func createAddressWork(producer chan<- []*Key, password string, start, end uint6
 
 //CreateNewWallet 创建钱包
 func CreateNewWallet(name string) error {
-
 	walletID := openwallet.NewWalletID()
 
 	wallet := openwallet.NewWatchOnlyWallet(walletID.String(), Symbol)
@@ -277,7 +272,6 @@ func AddWalletInSummary(wid string, wallet *openwallet.Wallet) {
 
 //打印钱包列表
 func printWalletList(list []*openwallet.Wallet) {
-
 	tableInfo := make([][]interface{}, 0)
 
 	for i, w := range list {
@@ -293,7 +287,6 @@ func printWalletList(list []*openwallet.Wallet) {
 
 	//打印信息
 	fmt.Println(t.Render("simple"))
-
 }
 
 func CreateBatchAddress(walletId, password string, count uint64) (string, []*Key, error) {
@@ -344,11 +337,9 @@ func CreateBatchAddress(walletId, password string, count uint64) (string, []*Key
 	}
 
 	/*	开启导出的线程，监听新地址，批量导出	*/
-
 	go saveAddressWork(worker, filePath, w)
 
 	/*	计算synCount个线程，内部运行的次数	*/
-
 	//每个线程内循环的数量，以synCount个线程并行处理
 	runCount := count / synCount
 	otherCount := count % synCount
@@ -488,8 +479,7 @@ func summaryWallet(wallet *openwallet.Wallet, password string) error{
 		amount := decimal_balance.Sub(fee)
 		//该地址预留一点币，否则交易会失败，暂定0.00002 tez
 		amount = amount.Sub(decimal.RequireFromString("20"))
-
-		log.Printf("address:%s banlance:%d amount:%d fee:%d\n", k.Address, decimal_balance.IntPart(), amount.IntPart(), fee.IntPart())
+		//log.Printf("address:%s banlance:%d amount:%d fee:%d\n", k.Address, decimal_balance.IntPart(), amount.IntPart(), fee.IntPart())
 
 		k.PrivateKey = sk
 		if decimal_balance.GreaterThan(threshold) {
