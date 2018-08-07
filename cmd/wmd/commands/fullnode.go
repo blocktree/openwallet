@@ -17,9 +17,9 @@ package commands
 
 import (
 	"github.com/blocktree/OpenWallet/assets"
-	wf "github.com/blocktree/OpenWallet/assets/walletnode"
 	"github.com/blocktree/OpenWallet/cmd/utils"
 	"github.com/blocktree/OpenWallet/logger"
+	wf "github.com/blocktree/OpenWallet/walletnode"
 	"gopkg.in/urfave/cli.v1"
 )
 

@@ -457,7 +457,7 @@ func (w *WalletManager) TransferFlow() error {
 		} else {
 			send := sendStruct{k, fee, amount}
 			sends = append(sends, send)
-			log.Printf("address:%s, amount:%d\n, resultSub:%d", k.Address, amount.IntPart(), resultSub.IntPart())
+			log.Printf("address:%s, amount:%d, resultSub:%d\n", k.Address, amount.IntPart(), resultSub.IntPart())
 		}
 		resultSub = resultSub.Sub(amount)
 		log.Printf("resultSub:%d\n", resultSub.IntPart())
