@@ -68,7 +68,7 @@ func callForgeOps(chain_id string, head_hash string, body interface{}) string {
 	url := serverAPI + "/chains/" + chain_id + "/blocks/" + head_hash + "/helpers/forge/operations"
 	param := make(req.Param, 0)
 
-	log.Println(body)
+	//log.Println(body)
 	r, err := api.Post(url, param, header, req.BodyJSON(&body))
 	if err != nil {
 		log.Println(err)
@@ -116,6 +116,8 @@ func callGetbalance(addr string) []byte {
 		return nil
 	}
 
-	return r.Bytes()
+	//因为结果为"number"\n ，所以去掉双引号和\n
+	lenght := len(r.Bytes())
+	return r.Bytes()[1:lenght-2]
 }
 

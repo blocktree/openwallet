@@ -1,14 +1,13 @@
 package walletnode
 
 import (
-	// "encoding/json"
 	"fmt"
-	bconfig "github.com/astaxie/beego/config"
-	"github.com/pkg/errors"
-	"github.com/shopspring/decimal"
 	"log"
 	"path/filepath"
 	s "strings"
+
+	bconfig "github.com/astaxie/beego/config"
+	"github.com/pkg/errors"
 )
 
 // Load settings for global from local conf/<Symbol>.ini
@@ -16,6 +15,7 @@ import (
 //		- will change VAR
 func loadConfig(symbol string) error {
 	var c bconfig.Configer
+
 	configFilePath, _ := filepath.Abs("conf")
 	configFileName := s.ToUpper(symbol) + ".ini"
 	absFile := filepath.Join(configFilePath, configFileName)
@@ -31,15 +31,8 @@ func loadConfig(symbol string) error {
 	rpcUser = c.String("rpcUser")
 	rpcPassword = c.String("rpcPassword")
 	isTestNet = c.String("isTestNet")
-	sumAddress = c.String("sumAddress")
-	threshold, _ = decimal.NewFromString(c.String("threshold"))
 	serverAddr = c.String("serverAddr")
 	serverPort = c.String("serverPort")
 
-	if isTestNet == "true" {
-		walletDataPath = testNetDataPath
-	} else {
-		walletDataPath = mainNetDataPath
-	}
 	return nil
 }

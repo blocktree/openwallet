@@ -16,10 +16,11 @@
 package walletnode
 
 import (
-	"github.com/shopspring/decimal"
+	"fmt"
 	"log"
 	s "strings"
-	"time"
+
+	"docker.io/go-docker"
 )
 
 var (
@@ -39,55 +40,19 @@ var (
 	rpcUser = "wallet"
 	//RPC认证账户密码
 	rpcPassword = "walletPassword2017"
-	//钥匙备份路径
-	// keyDir = filepath.Join("data", strings.ToLower(Symbol), "key")
 	//汇总地址
 	sumAddress = ""
-	keyDir     = ""
-	//地址导出路径
-	// addressDir = filepath.Join("data", strings.ToLower(Symbol), "address")
-	addressDir = ""
-	//配置文件路径
-	// configFilePath = filepath.Join("conf")
-	configFilePath = ""
 
 	// data path
-	mainNetDataPath = "/data"
-	testNetDataPath = "/data/testdata"
+	mainNetDataPath = "/openwallet/data"
+	testNetDataPath = "/openwallet/testdata"
 
 	// Fullnode API URL
 	apiURL = ""
 
-	//配置文件名
-	configFileName = Symbol + ".ini"
-	// 核心钱包是否只做监听
-	CoreWalletWatchOnly = true
-	//最大的输入数量
-	maxTxInputs = 50
-	//本地数据库文件路径
-	//dbPath = filepath.Join("data", strings.ToLower(Symbol), "db")
-	dbPath = ""
-	//备份路径
-	// backupDir = filepath.Join("data", strings.ToLower(Symbol), "backup")
-	backupDir = ""
-	//钱包数据文件目录
-	walletDataPath = ""
-	//小数位长度
-	coinDecimal decimal.Decimal = decimal.NewFromFloat(100000000)
-	//参与汇总的钱包
-	// walletsInSum = make(map[string]*Wallet)	// ? 500
-	//汇总阀值
-	threshold decimal.Decimal = decimal.NewFromFloat(5)
-	//汇总执行间隔时间
-	cycleSeconds = time.Second * 10
+	//------------------------------------------------------------------------------
 	//默认配置内容
 	defaultConfig = `
-# start node command
-startNodeCMD = ""
-# stop node command
-stopNodeCMD = ""
-# node install path
-nodeInstallPath = ""
 # node api url
 apiURL = ""
 # Is network test?
@@ -97,25 +62,22 @@ rpcUser = "wallet"
 # RPC Authentication Password
 rpcPassword = "walletPassword2017"
 # mainnet data path
-mainNetDataPath = "/data"
+mainNetDataPath = "/openwallet/data"
 # testnet data path
-testNetDataPath = "/data/testdata"
+testNetDataPath = "/openwallet/testdata"
 # the safe address that wallet send money to.
 sumAddress = ""
 # when wallet's balance is over this value, the wallet willl send money to [sumAddress]
-threshold = ""
+threshold = 
 
 # docker master server addr
 serverAddr = "localhost"
 # docker master server port
-serverPort = ""
+serverPort = "2375"
 `
 )
 
-type FullnodeContainerPathConfig struct {
-	EXEC_PATH string
-	DATA_PATH string
-}
+type NodeManagerStruct struct{}
 
 type FullnodeContainerConfig struct {
 	WORKPATH string
@@ -125,10 +87,50 @@ type FullnodeContainerConfig struct {
 	IMAGE    string      // Image that container run from
 }
 
-func (p *FullnodeContainerPathConfig) init(symbol string) error {
-	p.EXEC_PATH = s.Replace(p.EXEC_PATH, "<Symbol>", symbol, 1)
-	p.DATA_PATH = s.Replace(p.DATA_PATH, "<Symbol>", symbol, 1)
-	return nil
+// type FullnodeContainerPathConfig struct {
+// 	EXEC_PATH string
+// 	DATA_PATH string
+// }
+
+// func (p *FullnodeContainerPathConfig) init(symbol string) error {
+// 	p.EXEC_PATH = s.Replace(p.EXEC_PATH, "<Symbol>", symbol, 1)
+// 	p.DATA_PATH = s.Replace(p.DATA_PATH, "<Symbol>", symbol, 1)
+// 	return nil
+// }
+
+// Get docker client
+func _GetClient() (*docker.Client, error) {
+	var c *docker.Client
+	var err error
+
+	// Init docker client
+	if _, ok := map[string]string{"localhost": "", "127.0.0.1": ""}[serverAddr]; ok {
+		c, err = docker.NewEnvClient()
+	} else {
+		host := fmt.Sprintf("tcp://%s:%s", serverAddr, serverPort)
+		c, err = docker.NewClient(host, "v1.37", nil, map[string]string{})
+	}
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return c, err
+}
+
+// Private function, generate container name by <Symbol> and <isTestNet>
+func _GetCName(symbol string) (string, error) {
+	// Load global config
+	err := loadConfig(symbol)
+	if err != nil {
+		return "", err
+	}
+
+	// Within testnet, use "<Symbol>_testnet" as container name
+	if isTestNet == "true" {
+		return s.ToLower(symbol) + "_testnet", nil
+	} else {
+		return s.ToLower(symbol), nil
+	}
 }
 
 func init() {
@@ -180,39 +182,18 @@ func init() {
 		"bopo": &FullnodeContainerConfig{
 			WORKPATH: "/usr/local/paicode",
 			CMD:      [2][]string{{"/bin/bash", "-c", "cd /usr/local/paicode; ./gamepaicore --listen 0.0.0.0:7280 >> /openwallet/data/run.log 2>&1"}, {}},
-			PORT:     [][3]string{{"7280/tcp", "10061", "20061"}},
+			PORT:     [][3]string{{"7280/tcp", "17280", "27280"}},
 			APIPORT:  string("7280/tcp"),
 			IMAGE:    string("openwallet/bopo:latest"),
 		},
 		"hc": &FullnodeContainerConfig{
 			WORKPATH: "/usr/local/paicode",
 			CMD: [2][]string{
-				{"/bin/bash", "-c", "/usr/local/hypercash/bin/hcd --datadir=/openwallet/data --logdir=/openwallet/data --rpcuser=wallet --rpcpass=walletPassword2017 --txindex --rpclisten=0.0.0.0:14009"},
-				// /usr/local/hypercash/bin/hcwallet --testnet --rpcconnect=127.0.0.1:14009 --username=wallet --password=walletPassword2017 --rpclisten=0.0.0.0:12010 &&
-				{"/bin/bash", "-c", "/usr/local/hypercash/bin/hcd --datadir=/openwallet/testdata --logdir=/openwallet/testdata --rpcuser=wallet --rpcpass=walletPassword2017 --txindex --rpclisten=0.0.0.0:14009 --testnet"}},
+				{"/bin/bash", "-c", "/usr/local/hypercash/bin/hcd --datadir=/openwallet/data --logdir=/openwallet/data --rpcuser=wallet --rpcpass=walletPassword2017 --txindex --rpclisten=0.0.0.0:14009 && /usr/local/hypercash/bin/hcwallet --rpcconnect=127.0.0.1:14009 --username=wallet --password=walletPassword2017 --rpclisten=0.0.0.0:12010"},
+				{"/bin/bash", "-c", "/usr/local/hypercash/bin/hcd --datadir=/openwallet/testdata --logdir=/openwallet/testdata --rpcuser=wallet --rpcpass=walletPassword2017 --txindex --rpclisten=0.0.0.0:14009 --testnet && /usr/local/hypercash/bin/hcwallet --testnet --rpcconnect=127.0.0.1:14009 --username=wallet --password=walletPassword2017 --rpclisten=0.0.0.0:12010"}},
 			PORT:    [][3]string{{"12010/tcp", "12010", "22010"}, {"14009/tcp", "14009", "24009"}},
 			APIPORT: string("12010/tcp"),
 			IMAGE:   string("openwallet/hc:2.0.3dev"),
 		},
-	}
-	// FullnodeContainerPath = &FullnodeContainerPathConfig{
-	// 	EXEC_PATH: "/openwallet/exec/<Symbol>/",
-	// 	DATA_PATH: "/openwallet/data/<Symbol>/",
-	// }
-}
-
-// Private function, generate container name by <Symbol> and <isTestNet>
-func _GetCName(symbol string) (string, error) {
-	// Load global config
-	err := loadConfig(symbol)
-	if err != nil {
-		return "", err
-	}
-
-	// Within testnet, use "<Symbol>_testnet" as container name
-	if isTestNet == "true" {
-		return s.ToLower(symbol) + "_testnet", nil
-	} else {
-		return s.ToLower(symbol), nil
 	}
 }

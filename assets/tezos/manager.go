@@ -43,8 +43,6 @@ const (
 var (
 	//钱包服务API
 	serverAPI = "https://rpc.tezrpc.me"
-	//钱包主链私钥文件路径
-	walletPath = ""
 	//小数位长度
 	coinDecimal decimal.Decimal = decimal.NewFromFloat(1000000)
 	//参与汇总的钱包
@@ -55,11 +53,14 @@ var (
 	minSendAmount decimal.Decimal = decimal.NewFromFloat(1).Mul(coinDecimal)
 	//最小矿工费
 	minFees decimal.Decimal = decimal.NewFromFloat(0.0001).Mul(coinDecimal)
+
+	//gas limit 和 storage limit
 	gasLimit decimal.Decimal = decimal.NewFromFloat(0.0001).Mul(coinDecimal)
-	storageLimit decimal.Decimal = decimal.NewFromFloat(0).Mul(coinDecimal)
+	storageLimit decimal.Decimal = decimal.NewFromFloat(0.0001).Mul(coinDecimal)
+	//汇总转入地址
 	sumAddress = ""
 	//汇总执行间隔时间
-	cycleSeconds = time.Second * 10
+	cycleSeconds = time.Second * 300
 )
 
 
@@ -145,6 +146,19 @@ func signTransaction(hash string, sk string, wm []byte) (string, string, error) 
 	return edsig, sbyte, nil
 }
 
+//判断该key是否需要reverl
+func isReverlKey(pubkey string) bool {
+	manager_key := callGetManagerKey(pubkey)
+	//manager := gjson.GetBytes(ret, "manager")
+	key := gjson.GetBytes(manager_key, "key")
+
+	if key.Str == "" {
+		return true
+	}
+
+	return false
+}
+
 //转账
 func transfer(keys Key, dst string, fee, gas_limit, storage_limit, amount string) (string, string){
 	header := callGetHeader()
@@ -156,9 +170,7 @@ func transfer(keys Key, dst string, fee, gas_limit, storage_limit, amount string
 	icounter,_ := strconv.Atoi(string(counter))
 	icounter = icounter + 1
 
-	manager_key := callGetManagerKey(keys.Address)
-	//manager := gjson.GetBytes(ret, "manager")
-	key := gjson.GetBytes(manager_key, "key")
+	isReverlKey := isReverlKey(keys.Address)
 
 	var ops []interface{}
 	reverl := map[string]string{
@@ -170,7 +182,7 @@ func transfer(keys Key, dst string, fee, gas_limit, storage_limit, amount string
 		"storage_limit": storage_limit,
 		"counter": strconv.Itoa(icounter),
 	}
-	if key.Str == ""{
+	if isReverlKey {
 		icounter = icounter + 1
 		ops = append(ops, reverl)
 	}
@@ -225,12 +237,14 @@ func exportAddressToFile(keys []*Key, filePath string) {
 	file.WriteFile(filePath, []byte(content), true)
 }
 
+
 func createAddressWork(producer chan<- []*Key, password string, start, end uint64) {
 	runAddress := make([]*Key, 0)
 
 	for i := start; i < end; i++ {
 		// 生成地址
 		pk, sk, pkh := createAccount()
+		//将私钥用输入的密码加密
 		esk, _ := Encrypt(password, sk)
 		key := &Key{pkh, pk, esk}
 		runAddress = append(runAddress, key)
@@ -307,9 +321,7 @@ func CreateBatchAddress(walletId, password string, count uint64) (string, []*Key
 
 	//保存地址过程
 	saveAddressWork := func(addresses chan []*Key, filename string, w *openwallet.Wallet) {
-		var (
-			saveErr error
-		)
+		var saveErr error
 
 		for {
 			//回收创建的地址
@@ -342,9 +354,7 @@ func CreateBatchAddress(walletId, password string, count uint64) (string, []*Key
 	otherCount := count % synCount
 
 	if runCount > 0 {
-
 		for i := uint64(0); i < synCount; i++ {
-
 			//开始创建地址
 			log.Printf("Start create address thread[%d]\n", i)
 			s := i * runCount
@@ -356,7 +366,6 @@ func CreateBatchAddress(walletId, password string, count uint64) (string, []*Key
 	}
 
 	if otherCount > 0 {
-
 		//开始创建地址
 		log.Printf("Start create address thread[REST]\n")
 		s := count - otherCount
@@ -370,9 +379,7 @@ func CreateBatchAddress(walletId, password string, count uint64) (string, []*Key
 	outputAddress := make([]*Key, 0)
 
 	//以下使用生产消费模式
-
 	for {
-
 		var activeWorker chan<- []*Key
 		var activeValue []*Key
 
@@ -384,17 +391,14 @@ func CreateBatchAddress(walletId, password string, count uint64) (string, []*Key
 		}
 
 		select {
-
 		//生成者不断生成数据，插入到数据队列尾部
 		case pa := <-producer:
 			values = append(values, pa)
 			outputAddress = append(outputAddress, pa...)
-			//log.Printf("completed %d", len(pa))
 			//当激活消费者后，传输数据给消费者，并把顶部数据出队
 		case activeWorker <- activeValue:
 			//log.Printf("Get %d", len(activeValue))
 			values = values[1:]
-
 		case <-quit:
 			//退出
 			log.Printf("All addresses have been created!")
@@ -407,10 +411,7 @@ func CreateBatchAddress(walletId, password string, count uint64) (string, []*Key
 
 //inputNumber 输入地址数量
 func inputNumber() uint64 {
-
-	var (
-		count uint64 = 0 // 输入的创建数量
-	)
+	var count uint64 = 0 // 输入的创建数量
 
 	for {
 		// 等待用户输入参数
@@ -432,7 +433,6 @@ func inputNumber() uint64 {
 
 //loadConfig 读取配置
 func loadConfig() error {
-
 	var (
 		c   config.Configer
 		err error
@@ -446,7 +446,6 @@ func loadConfig() error {
 	}
 
 	serverAPI = c.String("apiURL")
-	walletPath = c.String("walletPath")
 	threshold, _ = decimal.NewFromString(c.String("threshold"))
 	threshold = threshold.Mul(coinDecimal)
 	minSendAmount, _ = decimal.NewFromString(c.String("minSendAmount"))
@@ -473,15 +472,31 @@ func summaryWallet(wallet *openwallet.Wallet, password string) error{
 	db.All(&keys)
 
 	for _, k := range keys {
+		//get balance
 		decimal_balance, _ := decimal.NewFromString(string(callGetbalance(k.Address)))
+		//decrypt sk
 		sk, _ := Decrypt(password, k.PrivateKey)
-		amount := decimal_balance.Sub(minFees.Add(gasLimit).Add(storageLimit))
+
+		//判断是否是reveal交易
+		fee := minFees
+		isReverl := isReverlKey(k.Address)
+		if isReverl {
+			//多了reveal操作后，fee * 2
+			fee = minFees.Mul(decimal.RequireFromString("2"))
+		}
+		// 将该地址多余额减去矿工费后，全部转到汇总地址
+		amount := decimal_balance.Sub(fee)
+		//该地址预留一点币，否则交易会失败，暂定0.00002 tez
+		amount = amount.Sub(decimal.RequireFromString("20"))
+
+		log.Printf("address:%s banlance:%d amount:%d fee:%d\n", k.Address, decimal_balance.IntPart(), amount.IntPart(), fee.IntPart())
+
 		k.PrivateKey = sk
 		if decimal_balance.GreaterThan(threshold) {
 			txid, _ := transfer(*k, sumAddress, strconv.FormatInt(minFees.IntPart(), 10), strconv.FormatInt(gasLimit.IntPart(), 10),
-				strconv.FormatInt(gasLimit.IntPart(), 10),strconv.FormatInt(amount.IntPart(), 10))
+				strconv.FormatInt(storageLimit.IntPart(), 10),strconv.FormatInt(amount.IntPart(), 10))
 
-			log.Printf("summary address:%s, amount:%d, txid:%s\n", k.Address, amount.IntPart(), txid)
+			log.Printf("summary address:%s, to address:%s, amount:%d, txid:%s\n", k.Address, sumAddress, amount.IntPart(), txid)
 		}
 	}
 
