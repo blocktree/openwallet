@@ -51,10 +51,16 @@ type MerchantAssets interface {
 	RemoveMerchantObserverForBlockScan(obj openwallet.BlockScanNotificationObject)
 
 	//SubmitTransaction 提交转账申请
-	SubmitTransactions(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, withdraws []*openwallet.Withdraw) (*openwallet.Transaction, error)
+	SubmitTransactions(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, withdraws []*openwallet.Withdraw, surplus string) (*openwallet.Transaction, error)
 
 	//GetBlockchainInfo 获取区块链信息
 	GetBlockchainInfo() (*openwallet.Blockchain, error)
+
+	//GetMerchantAssetsAccount 获取账户资产
+	GetMerchantWalletBalance(walletID string) (string, error)
+
+	//GetMerchantAssetsAccount 获取地址资产
+	GetMerchantAddressBalance(walletID, address string) (string, error)
 }
 
 // GetMerchantAssets 根据币种类型获取已注册的管理者
