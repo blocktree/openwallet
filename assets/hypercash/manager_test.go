@@ -195,9 +195,9 @@ func TestWalletManager_CreateNewAddress(t *testing.T) {
 
 func TestBackupWallet(t *testing.T) {
 
-	tw.config.walletDataPath = "/Users/maizhiquan/Library/Application Support/hcGUI/wallets/testnet/Chance/testnet2/"
+	tw.config.walletDataPath = "/Users/maizhiquan/Library/Application Support/hcGUI/wallets/mainnet/zhiquan911/mainnet/"
 
-	backupFile, err := tw.BackupWallet("WLAioxPDFh8LbSd5pC7VVyS8qpFiFbcVHW")
+	backupFile, err := tw.BackupWallet("WBJH3u4QCFYcGTisDBiZvssrkG8YJAcmhS")
 	if err != nil {
 		t.Errorf("BackupWallet failed unexpected error: %v\n", err)
 	} else {
@@ -262,7 +262,7 @@ func TestGetAddressesFromLocalDB(t *testing.T) {
 }
 
 func TestWalletManager_RescanCorewallet(t *testing.T) {
-	err := tw.RescanCorewallet(0)
+	err := tw.RescanCorewallet(7000)
 	if err != nil {
 		t.Errorf("RescanCorewallet failed unexpected error: %v\n", err)
 		return
@@ -350,14 +350,14 @@ func TestEstimateFee(t *testing.T) {
 func TestSendTransaction(t *testing.T) {
 
 	sends := []string{
-		"TsTysSncU7Tj128LjgPB4X8YhdiKN3as6oU",
+		"TsWCKAzGN4DCGLeY9NRvfXEWEmPfFo2Ygta",
 	}
 
 	tw.RebuildWalletUnspent("WBso9KkzbhpV1iAfmDfCMTt3hAMHekHc1k")
 
 	for _, to := range sends {
 
-		txIDs, err := tw.SendTransaction("WBso9KkzbhpV1iAfmDfCMTt3hAMHekHc1k", to, decimal.NewFromFloat(5000), "123", true)
+		txIDs, err := tw.SendTransaction("WBso9KkzbhpV1iAfmDfCMTt3hAMHekHc1k", to, decimal.NewFromFloat(1000), "123", true)
 
 		if err != nil {
 			t.Errorf("SendTransaction failed unexpected error: %v\n", err)

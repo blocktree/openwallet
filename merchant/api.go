@@ -98,7 +98,6 @@ func SubmitRechargeTrasaction(
 	callback func(confirms []uint64, status uint64, msg string)) error {
 
 	log.Printf("Call Remote: submitRechargeTrasaction\n")
-	log.Printf("Params: %v\n", params)
 
 	//获取订阅的地址版本
 	err := node.Call(

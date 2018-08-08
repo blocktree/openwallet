@@ -17,11 +17,11 @@ package merchant
 
 import (
 	"github.com/blocktree/OpenWallet/owtp"
-	"testing"
-	"time"
-	"path/filepath"
 	"github.com/imroc/req"
 	"log"
+	"path/filepath"
+	"testing"
+	"time"
 )
 
 func init() {
@@ -45,7 +45,7 @@ func generateCTX(method string, inputs interface{}) *owtp.Context {
 func TestSubscribe(t *testing.T) {
 
 	var (
-		//endRunning = make(chan bool, 1)
+	//endRunning = make(chan bool, 1)
 	)
 
 	m, err := NewMerchantNode(nodeConfig)
@@ -53,17 +53,17 @@ func TestSubscribe(t *testing.T) {
 		t.Errorf("GetChargeAddressVersion failed unexpected error: %v", err)
 	}
 
-	inputs := []Subscription {
-		Subscription{Type: 1, Coin:"BTC",WalletID:"WFvvr5q83WxWp1neUMiTaNuH7ZbaxJFpWu",Version:1},
-		Subscription{Type: 2, Coin:"btm",WalletID:"AD044IDNF42",Version:1},
-		Subscription{Type: 2, Coin:"BTC",WalletID:"WFvvr5q83WxWp1neUMiTaNuH7ZbaxJFpWu",Version:1},
+	inputs := []Subscription{
+		Subscription{Type: 1, Coin: "BTC", WalletID: "WFvvr5q83WxWp1neUMiTaNuH7ZbaxJFpWu", Version: 1},
+		Subscription{Type: 2, Coin: "btm", WalletID: "AD044IDNF42", Version: 1},
+		Subscription{Type: 2, Coin: "BTC", WalletID: "WFvvr5q83WxWp1neUMiTaNuH7ZbaxJFpWu", Version: 1},
 	}
 
 	ctx := generateCTX("subscribe", inputs)
 
 	m.subscribe(ctx)
 
-	t.Logf("reponse: %v\n",ctx.Resp)
+	t.Logf("reponse: %v\n", ctx.Resp)
 
 	//<- endRunning
 }
@@ -71,7 +71,7 @@ func TestSubscribe(t *testing.T) {
 func TestCreateWallet(t *testing.T) {
 
 	var (
-		//endRunning = make(chan bool, 1)
+	//endRunning = make(chan bool, 1)
 	)
 
 	m, err := NewMerchantNode(nodeConfig)
@@ -80,23 +80,22 @@ func TestCreateWallet(t *testing.T) {
 		return
 	}
 
-	inputs := map[string] interface{} {
-		"coin": "btc",
-		"alias": "YOU Mac",
+	inputs := map[string]interface{}{
+		"coin":         "btc",
+		"alias":        "YOU Mac",
 		"passwordType": 0,
-		"password": "1234qwer",
+		"password":     "1234qwer",
 	}
 
 	ctx := generateCTX("createWallet", inputs)
 
 	m.createWallet(ctx)
 
-	t.Logf("reponse: %v\n",ctx.Resp)
+	t.Logf("reponse: %v\n", ctx.Resp)
 
 	//<- endRunning
 
 }
-
 
 func TestCreateAddress(t *testing.T) {
 
@@ -110,10 +109,10 @@ func TestCreateAddress(t *testing.T) {
 		return
 	}
 
-	inputs := map[string] interface{} {
-		"coin": "btc",
+	inputs := map[string]interface{}{
+		"coin":     "btc",
 		"walletID": "WAAVruvecxJTNxcuMBdZc6QRq5WQtMiXKe",
-		"count": 100,
+		"count":    100,
 		"password": "1234qwer",
 	}
 
@@ -121,12 +120,11 @@ func TestCreateAddress(t *testing.T) {
 
 	m.createAddress(ctx)
 
-	t.Logf("reponse: %v\n",ctx.Resp)
+	t.Logf("reponse: %v\n", ctx.Resp)
 
 	//<- endRunning
 
 }
-
 
 func TestGetAddressList(t *testing.T) {
 
@@ -140,23 +138,22 @@ func TestGetAddressList(t *testing.T) {
 		return
 	}
 
-	inputs := map[string] interface{} {
-		"coin": "btc",
+	inputs := map[string]interface{}{
+		"coin":     "btc",
 		"walletID": "WAAVruvecxJTNxcuMBdZc6QRq5WQtMiXKe",
-		"offset": 0,
-		"limit": 1000,
+		"offset":   0,
+		"limit":    1000,
 	}
 
 	ctx := generateCTX("getAddressList", inputs)
 
 	m.getAddressList(ctx)
 
-	t.Logf("reponse: %v\n",ctx.Resp)
+	t.Logf("reponse: %v\n", ctx.Resp)
 
 	//<- endRunning
 
 }
-
 
 func TestGetWalletList(t *testing.T) {
 
@@ -170,7 +167,7 @@ func TestGetWalletList(t *testing.T) {
 		return
 	}
 
-	inputs := map[string] interface{} {
+	inputs := map[string]interface{}{
 		"coin": "btc",
 	}
 
@@ -178,12 +175,11 @@ func TestGetWalletList(t *testing.T) {
 
 	m.getWalletList(ctx)
 
-	t.Logf("reponse: %v\n",ctx.Resp)
+	t.Logf("reponse: %v\n", ctx.Resp)
 
 	//<- endRunning
 
 }
-
 
 func TestSubmitTransaction(t *testing.T) {
 
@@ -197,15 +193,15 @@ func TestSubmitTransaction(t *testing.T) {
 		return
 	}
 
-	inputs := map[string] interface{} {
-		"withdraws": []interface{} {
-			map[string]interface{} {
-				"address":"mffc7puT4ZrCQGuAZAUuzjRWPKZKKYT4qG",
-				"amount":"0.0001",
-				"coin":"BTC",
-				"isMemo":0,
-				"sid":"BTC@WFvvr5q83WxWp1neUMiTaNuH7ZbaxJFpWu@null",
-				"walletID":"WFvvr5q83WxWp1neUMiTaNuH7ZbaxJFpWu",
+	inputs := map[string]interface{}{
+		"withdraws": []interface{}{
+			map[string]interface{}{
+				"address":  "mffc7puT4ZrCQGuAZAUuzjRWPKZKKYT4qG",
+				"amount":   "0.0001",
+				"coin":     "BTC",
+				"isMemo":   0,
+				"sid":      "BTC@WFvvr5q83WxWp1neUMiTaNuH7ZbaxJFpWu@null",
+				"walletID": "WFvvr5q83WxWp1neUMiTaNuH7ZbaxJFpWu",
 				"password": "1234qwer",
 			},
 		},
@@ -215,7 +211,7 @@ func TestSubmitTransaction(t *testing.T) {
 
 	m.submitTransaction(ctx)
 
-	t.Logf("reponse: %v\n",ctx.Resp)
+	t.Logf("reponse: %v\n", ctx.Resp)
 
 	//<- endRunning
 
@@ -228,4 +224,38 @@ func TestHTTP(t *testing.T) {
 		return
 	}
 	log.Printf("%+v\n", r)
+}
+
+func TestSubSlice(t *testing.T) {
+	pageSize := 10
+	recharges := []string{
+		//"11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
+		//"21", "22", "23", "24", "25", "26", "27", "28", "29", "30",
+		//"31", "32", "33", "34", "35", "36", "37", "38", "39", "40",
+		//"41", "42", "43", "44", "45", "46", "47", "48", "49", "50",
+		"51", "52", "53", "54", "55", "56", "57",
+	}
+
+	for {
+
+		var subRecharges []string
+
+		if len(recharges) == 0 {
+			break
+		}
+
+		if len(recharges) <= pageSize {
+			subRecharges = recharges
+			recharges = recharges[:0]
+		} else {
+			subRecharges = recharges[:pageSize]
+			recharges = recharges[pageSize:]
+		}
+
+		log.Print(subRecharges)
+
+	}
+
+	log.Println("Game over")
+
 }

@@ -61,6 +61,9 @@ type MerchantAssets interface {
 
 	//GetMerchantAssetsAccount 获取地址资产
 	GetMerchantAddressBalance(walletID, address string) (string, error)
+
+	//SetMerchantRescanBlockHeight 商户重置区块链扫描高度
+	SetMerchantRescanBlockHeight(height uint64) error
 }
 
 // GetMerchantAssets 根据币种类型获取已注册的管理者

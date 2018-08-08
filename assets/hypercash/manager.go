@@ -733,7 +733,7 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 		restoreSuccess = false
 		err            error
 		key            *keystore.HDKey
-		sleepTime      = 30 * time.Second
+		//sleepTime      = 30 * time.Second
 	)
 
 	fmt.Printf("Validating key file... \n")
@@ -764,11 +764,11 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 	//调试使用
 	//file.Copy(curretWDFile, tmpWalletDat)
 
-	fmt.Printf("Stop node server... \n")
+	//fmt.Printf("Stop node server... \n")
 
 	//关闭钱包节点
-	wm.stopNode()
-	time.Sleep(sleepTime)
+	//wm.stopNode()
+	//time.Sleep(sleepTime)
 
 	fmt.Printf("Restore wallet.db file... \n")
 
@@ -781,11 +781,11 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 		return err
 	}
 
-	fmt.Printf("Start node server... \n")
+	//fmt.Printf("Start node server... \n")
 
 	//重新启动钱包
-	wm.startNode()
-	time.Sleep(sleepTime)
+	//wm.startNode()
+	//time.Sleep(sleepTime)
 
 	fmt.Printf("Validating wallet password... \n")
 
@@ -819,11 +819,11 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 
 		fmt.Printf("Wallet unlock password is incorrect. \n")
 
-		fmt.Printf("Stop node server... \n")
+		//fmt.Printf("Stop node server... \n")
 
 		//关闭钱包节点
-		wm.stopNode()
-		time.Sleep(sleepTime)
+		//wm.stopNode()
+		//time.Sleep(sleepTime)
 
 		fmt.Printf("Restore original wallet.db... \n")
 
@@ -832,11 +832,11 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 
 		file.Copy(tmpWalletDat, curretWDFile)
 
-		fmt.Printf("Start node server... \n")
+		//fmt.Printf("Start node server... \n")
 
 		//重新启动钱包
-		wm.startNode()
-		time.Sleep(sleepTime)
+		//wm.startNode()
+		//time.Sleep(sleepTime)
 
 		fmt.Printf("Original wallet has been restored. \n")
 

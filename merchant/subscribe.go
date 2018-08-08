@@ -253,7 +253,8 @@ func (m *MerchantNode) updateSubscribeAddress() {
 func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 
 	var (
-		err error
+		err      error
+		pageSize = 10
 	)
 
 	//检查是否连接
@@ -285,83 +286,100 @@ func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 
 			if len(recharges) > 0 {
 
-				params := map[string]interface{}{
-					"coin":      s.Coin,
-					"walletID":  s.WalletID,
-					"recharges": recharges,
-				}
+				//做成分页发送交易记录，避免一次卡死
+			submitLoop:
+				for {
+					var subRecharges []*openwallet.Recharge
 
-				//db, inErr := wallet.OpenDB()
-				//if inErr != nil {
-				//	continue
-				//}
-				//tx, inErr := db.Begin(true)
-				//if inErr != nil {
-				//	db.Close()
-				//	continue
-				//}
-				//
-				////更新确认数
-				//for _, r := range recharges {
-				//	log.Printf("Submit Recharges: %v", *r)
-				//	r.Confirm = int64(blockHeight - r.BlockHeight)
-				//
-				//	//确认数大于配置的确认数
-				//	if r.Confirm >= int64(config.Confirm) {
-				//		//删除已超过确认数的充值记录
-				//		tx.DeleteStruct(r)
-				//
-				//		log.Printf("delete recharge: %s \n ", r.Sid)
-				//	}
-				//}
-				//tx.Commit()
-				//db.Close()
+					if len(recharges) == 0 {
+						break submitLoop
+					}
 
+					if len(recharges) <= pageSize {
+						subRecharges = recharges
+						recharges = recharges[:0]
+					} else {
+						subRecharges = recharges[:pageSize]
+						recharges = recharges[pageSize:]
+					}
 
+					params := map[string]interface{}{
+						"coin":      s.Coin,
+						"walletID":  s.WalletID,
+						"recharges": subRecharges,
+					}
 
-				//提交充值记录
-				SubmitRechargeTrasaction(
-					m.Node,
-					params,
-					true,
-					func(confirms []uint64, status uint64, msg string) {
-						//删除提交已确认的
-						if status == owtp.StatusSuccess {
+					//db, inErr := wallet.OpenDB()
+					//if inErr != nil {
+					//	continue
+					//}
+					//tx, inErr := db.Begin(true)
+					//if inErr != nil {
+					//	db.Close()
+					//	continue
+					//}
+					//
+					////更新确认数
+					//for _, r := range recharges {
+					//	log.Printf("Submit Recharges: %v", *r)
+					//	r.Confirm = int64(blockHeight - r.BlockHeight)
+					//
+					//	//确认数大于配置的确认数
+					//	if r.Confirm >= int64(config.Confirm) {
+					//		//删除已超过确认数的充值记录
+					//		tx.DeleteStruct(r)
+					//
+					//		log.Printf("delete recharge: %s \n ", r.Sid)
+					//	}
+					//}
+					//tx.Commit()
+					//db.Close()
 
-							for _, c := range confirms {
+					//提交充值记录
+					SubmitRechargeTrasaction(
+						m.Node,
+						params,
+						true,
+						func(confirms []uint64, status uint64, msg string) {
+							//删除提交已确认的
+							if status == owtp.StatusSuccess {
 
-								if c < uint64(len(recharges)) {
+								for _, c := range confirms {
 
-									db, inErr := wallet.OpenDB()
-									if inErr != nil {
-										return
-									}
+									if c < uint64(len(subRecharges)) {
 
-									tx, inErr := db.Begin(true)
-									if inErr != nil {
+										db, inErr := wallet.OpenDB()
+										if inErr != nil {
+											return
+										}
+
+										tx, inErr := db.Begin(true)
+										if inErr != nil {
+											db.Close()
+											return
+										}
+
+										//标记已成功接收
+										subRecharges[c].Received = true
+										inErr = tx.Save(subRecharges[c])
+										//inErr = tx.DeleteStruct(recharges[c])
+										if inErr != nil {
+											tx.Rollback()
+											db.Close()
+											return
+										}
+
+										tx.Commit()
+
 										db.Close()
-										return
 									}
 
-									//标记已成功接收
-									recharges[c].Received = true
-									inErr = tx.Save(recharges[c])
-									//inErr = tx.DeleteStruct(recharges[c])
-									if inErr != nil {
-										tx.Rollback()
-										db.Close()
-										return
-									}
-
-									tx.Commit()
-
-									db.Close()
 								}
 
 							}
+						})
+				}
 
-						}
-					})
 			}
 		}
 	}

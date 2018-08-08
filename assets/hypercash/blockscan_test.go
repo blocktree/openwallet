@@ -94,8 +94,8 @@ func TestGetTxIDsInMemPool(t *testing.T) {
 
 func TestBTCBlockScanner_scanning(t *testing.T) {
 
-	accountID := "WLAioxPDFh8LbSd5pC7VVyS8qpFiFbcVHW"
-	address := "TsmyNV6UrEoViJcszYdVjVfqyYQisR8MPfW"
+	accountID := "WBJH3u4QCFYcGTisDBiZvssrkG8YJAcmhS"
+	address := "TsosMFZ2mwvRffkWY2fyyEqUiDeokDvCiek"
 
 	wallet, err := tw.GetWalletInfo(accountID)
 	if err != nil {
@@ -107,7 +107,7 @@ func TestBTCBlockScanner_scanning(t *testing.T) {
 
 	bs.DropRechargeRecords(accountID)
 
-	bs.SetRescanBlockHeight(1)
+	bs.SetRescanBlockHeight(6433)
 
 	bs.AddAddress(address, accountID, wallet)
 
@@ -144,7 +144,7 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 }
 
 func TestWallet_GetRecharges(t *testing.T) {
-	accountID := "WFvvr5q83WxWp1neUMiTaNuH7ZbaxJFpWu"
+	accountID := "WBJH3u4QCFYcGTisDBiZvssrkG8YJAcmhS"
 	wallet, err := tw.GetWalletInfo(accountID)
 	if err != nil {
 		t.Errorf("GetRecharges failed unexpected error: %v\n", err)
@@ -158,9 +158,9 @@ func TestWallet_GetRecharges(t *testing.T) {
 	}
 
 	t.Logf("recharges.count = %v", len(recharges))
-	//for _, r := range recharges {
-	//	t.Logf("rechanges.count = %v", len(r))
-	//}
+	for _, r := range recharges {
+		t.Logf("rechanges = %v", r)
+	}
 }
 
 func TestBTCBlockScanner_DropRechargeRecords(t *testing.T) {

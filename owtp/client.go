@@ -60,6 +60,12 @@ type Authorization interface {
 	DecryptData(data []byte) ([]byte, error)
 	//EnableAuth 开启授权
 	EnableAuth() bool
+
+
+	//Header 协议头
+	//Header() map[string]string
+	////VerifyHeader 校验授权
+	//VerifyHeader(header map[string]string) bool
 }
 
 //Client 基于websocket的通信客户端

@@ -58,6 +58,8 @@ func (m *MerchantNode) setupRouter() {
 	m.Node.HandleFunc("getNewHeight", m.getNewHeight)
 	m.Node.HandleFunc("getBalanceByAddress", m.getBalanceByAddress)
 	m.Node.HandleFunc("getWalletBalance", m.getWalletBalance)
+	m.Node.HandleFunc("resetHeight", m.resetHeight)
+
 }
 
 //subscribe 订阅方法
@@ -589,11 +591,11 @@ func (m *MerchantNode) getBalanceByAddress(ctx *owtp.Context) {
 	log.Printf("params: %v\n", ctx.Params())
 
 	/*
-	| 参数名称     | 类型   | 是否可空 | 描述   |
-	|--------------|--------|----------|--------|
-	| coin         | string | 否       | 币名   |
-	| walletID     | string | 否       | 钱包ID |
-	| address      | string  | 否        | 地址 |
+		| 参数名称     | 类型   | 是否可空 | 描述   |
+		|--------------|--------|----------|--------|
+		| coin         | string | 否       | 币名   |
+		| walletID     | string | 否       | 钱包ID |
+		| address      | string  | 否        | 地址 |
 	*/
 
 	coin := ctx.Params().Get("coin").String()
@@ -608,10 +610,36 @@ func (m *MerchantNode) getBalanceByAddress(ctx *owtp.Context) {
 	}
 
 	result := map[string]interface{}{
-		"balance":     balance,
+		"balance": balance,
 	}
 
 	responseSuccess(ctx, result)
+}
+
+func (m *MerchantNode) resetHeight(ctx *owtp.Context) {
+	log.Printf("Merchant Call: resetHeight \n")
+	log.Printf("params: %v\n", ctx.Params())
+
+	/*
+		| 参数名称     | 类型   | 是否可空 | 描述   |
+		|--------------|--------|----------|--------|
+		| coin         | string | 否       | 币名   |
+		| walletID     | string | 否       | 钱包ID |
+		| height     | string | 否       | 高度 |
+	*/
+
+	coin := ctx.Params().Get("coin").String()
+	//walletID := ctx.Params().Get("walletID").String()
+	height := ctx.Params().Get("height").Uint()
+
+	am := assets.GetMerchantAssets(coin)
+	err := am.SetMerchantRescanBlockHeight(height)
+	if err != nil {
+		responseError(ctx, err)
+		return
+	}
+
+	responseSuccess(ctx, nil)
 }
 
 //responseSuccess 成功结果响应
