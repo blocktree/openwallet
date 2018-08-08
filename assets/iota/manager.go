@@ -29,6 +29,10 @@ import (
 	"github.com/blocktree/OpenWallet/common/file"
 )
 
+var(
+	ourServer = "http://47.52.16.168:14265"
+)
+
 //loadConfig 读取配置
 func loadConfig() error {
 
@@ -170,6 +174,7 @@ func GetWalletInfo(seed string)(giota.Address,[]giota.Address,int64,error){
 		err  error
 		adr  giota.Address
 		adrs []giota.Address
+		api  *giota.API
 	)
 
 	trytes,err:=giota.ToTrytes(seed)
@@ -178,7 +183,7 @@ func GetWalletInfo(seed string)(giota.Address,[]giota.Address,int64,error){
 	}
 
 	for i := 0; i < 5; i++ {
-		api := giota.NewAPI(giota.RandomNode(), nil)
+		api = giota.NewAPI(giota.RandomNode(), nil)
 		adr, adrs, err = giota.GetUsedAddress(api, trytes, 2)
 		if err == nil {
 			break
@@ -197,8 +202,8 @@ func GetWalletInfo(seed string)(giota.Address,[]giota.Address,int64,error){
 
 	//add by chenzhiwen
 	var totalBalance int64
+
 	for i:=0;i< len(adrs);i++{
-		api := giota.NewAPI(giota.RandomNode(), nil)
 		resp, err := api.GetBalances([]giota.Address{adrs[i]}, 100)
 		if err == nil {
 			totalBalance += resp.Balances[0]
@@ -210,7 +215,9 @@ func GetWalletInfo(seed string)(giota.Address,[]giota.Address,int64,error){
 
 func SendTransaction(seed string,address giota.Address,value int64,tag giota.Trytes) error{
 
-	var err error
+	var(
+		err error
+	)
 	trytes,err:=giota.ToTrytes(seed)
 	if err != nil{
 		return err
@@ -225,7 +232,7 @@ func SendTransaction(seed string,address giota.Address,value int64,tag giota.Try
 	}
 
 	var bdl giota.Bundle
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 8; i++ {
 		api := giota.NewAPI(giota.RandomNode(), nil)
 		bdl, err = giota.PrepareTransfers(api, trytes, trs, nil, "", 2)
 		if err == nil {
@@ -252,7 +259,7 @@ func SendTransaction(seed string,address giota.Address,value int64,tag giota.Try
 	name, pow := giota.GetBestPoW()
 	log.Printf("using PoW: %s", name)
 
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 8; i++ {
 		api := giota.NewAPI(giota.RandomNode(), nil)
 		bdl, err = giota.Send(api, trytes, 2, trs, 18, pow)
 		if err == nil {
@@ -284,10 +291,11 @@ func SummaryWallets(seed string,sumAddress giota.Address,tag giota.Trytes) error
 
 		trytes,err:=giota.ToTrytes(seed)
 		if err != nil{
+			log.Printf("The seed is wrong, please check it out.\n")
 			return err
 		}
 
-		for i := 0; i < 5; i++ {
+		for i := 0; i < 8; i++ {
 			api := giota.NewAPI(giota.RandomNode(), nil)
 			_, adrs, err = giota.GetUsedAddress(api, trytes, 2)
 			if err == nil {
@@ -296,13 +304,13 @@ func SummaryWallets(seed string,sumAddress giota.Address,tag giota.Trytes) error
 		}
 
 		if err != nil {
+			log.Printf("GetUsedAddress occured problem.\n")
 			return err
 		}
 
 		//t.Log(adr, adrs)
 		if len(adrs) < 1 {
-			fmt.Errorf("GetUsedAddress is incorrect.\n")
-			return nil
+			log.Printf("GetUsedAddress is incorrect.\n")
 		}
 
 		//add by chenzhiwen
@@ -342,6 +350,7 @@ func SummaryWallets(seed string,sumAddress giota.Address,tag giota.Trytes) error
 				}
 
 				if err != nil {
+					log.Printf("PrepareTransfers occured problem.\n")
 					return err
 				}
 
@@ -349,11 +358,11 @@ func SummaryWallets(seed string,sumAddress giota.Address,tag giota.Trytes) error
 					for _, tx := range bdl {
 						log.Printf(string(tx.Trytes()))
 					}
-					fmt.Errorf("PrepareTransfers is incorrect len(bdl)=%d", len(bdl))
-					return nil
+					log.Printf("PrepareTransfers is incorrect len(bdl)=%d", len(bdl))
 				}
 
 				if err = bdl.IsValid(); err != nil {
+					log.Printf("PrepareTransfers occured problem, bdl is not valid.\n")
 					return err
 				}
 
@@ -369,6 +378,7 @@ func SummaryWallets(seed string,sumAddress giota.Address,tag giota.Trytes) error
 				}
 
 				if err != nil {
+					log.Printf("Send iota occured problem.\n")
 					return err
 				}
 
@@ -379,7 +389,7 @@ func SummaryWallets(seed string,sumAddress giota.Address,tag giota.Trytes) error
 				log.Printf("Summary account successfully，sent amount: [%v], Received Address: [%s]", balance, sumAddress)
 
 			} else {
-				fmt.Errorf("Summary account unsuccessfully，Wallet Account Current Balance: %v，below threshold: %v\n", balance.Div(coinDecimal), threshold.Div(coinDecimal))
+				log.Printf("Summary account unsuccessfully，Wallet Account Current Balance: %v，below threshold: %v\n", balance.Div(coinDecimal), threshold.Div(coinDecimal))
 			}
 
 	log.Printf("[Summary Wallet end]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
