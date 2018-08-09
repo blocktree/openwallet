@@ -85,7 +85,7 @@ func NewMerchantNode(config NodeConfig) (*MerchantNode, error) {
 
 	//断开连接后，重新连接
 	m.Node.SetCloseHandler(func(n *owtp.OWTPNode) {
-		log.Printf("merchantNode disconnect. \n")
+		log.Info("merchantNode disconnect.")
 		m.disconnected <- struct{}{}
 	})
 

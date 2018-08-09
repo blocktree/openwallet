@@ -178,7 +178,7 @@ func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 	db.Save(&wallet)
 	db.Save(&account)
 
-	log.Printf("walletID = %s \n", wallet.WalletID)
+	log.Debug("walletID =", wallet.WalletID)
 
 	result := map[string]interface{}{
 		"coin":       coin,
