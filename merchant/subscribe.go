@@ -20,7 +20,7 @@ import (
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/owtp"
 	"github.com/blocktree/OpenWallet/timer"
-	"log"
+	"github.com/blocktree/OpenWallet/log"
 	"time"
 )
 
@@ -87,8 +87,8 @@ func (m *MerchantNode) GetChargeAddressVersion() error {
 					if addressVer.Version > oldVersion.Version || err != nil {
 						m.getAddressesCh <- *addressVer
 
-						log.Printf("get new address version: %d \n", addressVer.Version)
-						log.Printf("get new address total: %d \n", addressVer.Total)
+						log.Info("get new address version: %d \n", addressVer.Version)
+						log.Info("get new address total: %d \n", addressVer.Total)
 
 						//更新记录
 						innerdb.Save(addressVer)
@@ -144,7 +144,7 @@ func (m *MerchantNode) getChargeAddress() error {
 							//log.Printf("GetMerchantWalletByID WalletID: %v\n", v.WalletID)
 							wallet, blockErr := m.GetMerchantWalletByID(v.WalletID)
 							if err != nil {
-								log.Printf("GetMerchantWalletByID unexpected error: %v\n", blockErr)
+								log.Error("GetMerchantWalletByID unexpected error:", blockErr)
 								return
 							}
 
@@ -152,10 +152,10 @@ func (m *MerchantNode) getChargeAddress() error {
 							mer := assets.GetMerchantAssets(v.Coin)
 							//log.Printf("mer = %v", mer)
 							if mer != nil {
-								log.Printf("address count = %d \n", len(addrs))
+								log.Debug("address count =", len(addrs))
 								blockErr = mer.ImportMerchantAddress(wallet, wallet.SingleAssetsAccount(v.Coin), addrs)
 								if blockErr != nil {
-									log.Printf("ImportMerchantAddress unexpected error: %v", blockErr)
+									log.Error("ImportMerchantAddress unexpected error:", blockErr)
 								}
 
 							}
@@ -163,7 +163,7 @@ func (m *MerchantNode) getChargeAddress() error {
 						}
 					})
 				if err != nil {
-					log.Printf("GetChargeAddress unexpected error: %v", err)
+					log.Error("GetChargeAddress unexpected error:", err)
 					continue
 				}
 
@@ -226,7 +226,7 @@ func (m *MerchantNode) runSubscribeAddressTask() {
 		//开启获取地址消费者
 		go m.getChargeAddress()
 	}
-	log.Printf("Start Subscribe Address Task...\n")
+	log.Debug("Start Subscribe Address Task...")
 	m.subscribeAddressTask.Restart()
 }
 
@@ -245,7 +245,7 @@ func (m *MerchantNode) updateSubscribeAddress() {
 	//获取订阅地址的最新版本
 	err = m.GetChargeAddressVersion()
 	if err != nil {
-		log.Printf("GetChargeAddressVersion unexpected error: %v", err)
+		log.Error("GetChargeAddressVersion unexpected error:", err)
 	}
 }
 
@@ -268,13 +268,13 @@ func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 
 			wallet, err := m.GetMerchantWalletByID(s.WalletID)
 			if err != nil {
-				log.Printf("GetNewRecharges get wallet unexpected error: %v", err)
+				log.Error("GetNewRecharges get wallet unexpected error:", err)
 				continue
 			}
 
 			recharges, err := wallet.GetRecharges(false)
 			if err != nil {
-				log.Printf("GetNewRecharges get recharges unexpected error: %v", err)
+				log.Error("GetNewRecharges get recharges unexpected error:", err)
 				continue
 			}
 
@@ -393,6 +393,6 @@ func (m *MerchantNode) BlockScanNotify(header *openwallet.BlockHeader) {
 	//推送新的充值记录
 	err := m.SubmitNewRecharges(header.Height)
 	if err != nil {
-		log.Printf("SubmitNewRecharges unexpected error: %v", err)
+		log.Error("SubmitNewRecharges unexpected error:", err)
 	}
 }

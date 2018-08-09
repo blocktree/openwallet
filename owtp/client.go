@@ -198,7 +198,7 @@ func Dial(url string, router Handler, auth Authorization) (*Client, error) {
 	if auth != nil && auth.EnableAuth() {
 		authURL = auth.ConnectAuth(url)
 	}
-	log.Debug("Connecting URL: ", authURL)
+	log.Debug("Connecting URL:", authURL)
 
 
 

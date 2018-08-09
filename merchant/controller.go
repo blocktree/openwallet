@@ -22,7 +22,7 @@ import (
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/owtp"
 	"github.com/pkg/errors"
-	"log"
+	"github.com/blocktree/OpenWallet/log"
 )
 
 const (
@@ -65,8 +65,8 @@ func (m *MerchantNode) setupRouter() {
 //subscribe 订阅方法
 func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 
-	log.Printf("Merchant Call: subscribe \n")
-	log.Printf("params: %v\n", ctx.Params())
+	log.Info("Merchant Call: subscribe")
+	log.Info("params:", ctx.Params())
 
 	var (
 		subscriptions []*Subscription
@@ -122,8 +122,8 @@ func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 
 func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 
-	log.Printf("Merchant Call: createWallet \n")
-	log.Printf("params: %v\n", ctx.Params())
+	log.Info("Merchant Call: createWallet")
+	log.Info("params:", ctx.Params())
 
 	/*
 		| 参数名称     | 类型   | 是否可空 | 描述                    |
@@ -193,8 +193,8 @@ func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 
 func (m *MerchantNode) configWallet(ctx *owtp.Context) {
 
-	log.Printf("Merchant Call: configWallet \n")
-	log.Printf("params: %v\n", ctx.Params())
+	log.Info("Merchant Call: configWallet")
+	log.Info("params:", ctx.Params())
 
 	/*
 
@@ -229,8 +229,8 @@ func (m *MerchantNode) configWallet(ctx *owtp.Context) {
 
 func (m *MerchantNode) getWalletList(ctx *owtp.Context) {
 
-	log.Printf("Merchant Call: getWalletList \n")
-	log.Printf("params: %v\n", ctx.Params())
+	log.Info("Merchant Call: getWalletList")
+	log.Info("params:", ctx.Params())
 
 	coin := ctx.Params().Get("coin").String()
 
@@ -290,8 +290,8 @@ func (m *MerchantNode) getWalletList(ctx *owtp.Context) {
 
 func (m *MerchantNode) createAddress(ctx *owtp.Context) {
 
-	log.Printf("Merchant Call: createAddress \n")
-	log.Printf("params: %v\n", ctx.Params())
+	log.Info("Merchant Call: createAddress")
+	log.Info("params:", ctx.Params())
 
 	/*
 		| 参数名称 | 类型   | 是否可空 | 描述         |
@@ -359,8 +359,8 @@ func (m *MerchantNode) createAddress(ctx *owtp.Context) {
 
 func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
 
-	log.Printf("Merchant Call: getAddressList \n")
-	log.Printf("params: %v\n", ctx.Params())
+	log.Info("Merchant Call: getAddressList")
+	log.Info("params:", ctx.Params())
 
 	/*
 	| 参数名称  | 类型   | 是否可空 | 描述                                         |
@@ -423,8 +423,8 @@ func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
 
 func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 
-	log.Printf("Merchant Call: submitTransaction \n")
-	log.Printf("params: %v\n", ctx.Params())
+	log.Info("Merchant Call: submitTransaction")
+	log.Info("params:", ctx.Params())
 
 	var (
 		//withdraws = make([]*openwallet.Withdraw, 0)
@@ -499,7 +499,7 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 			txid := ""
 			tx, err := mer.SubmitTransactions(wallet, wallet.SingleAssetsAccount(withs[0].Symbol), withs, walletConfig.Surplus)
 			if err != nil {
-				log.Printf("SubmitTransactions unexpected error: %v", err)
+				log.Error("SubmitTransactions unexpected error:", err)
 				status = 3
 				reason = err.Error()
 				txid = ""
@@ -536,8 +536,8 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 
 func (m *MerchantNode) getNewHeight(ctx *owtp.Context) {
 
-	log.Printf("Merchant Call: getNewHeight \n")
-	log.Printf("params: %v\n", ctx.Params())
+	log.Info("Merchant Call: getNewHeight")
+	log.Info("params:", ctx.Params())
 
 	/*
 		| 参数名称 | 类型   | 是否可空 | 描述     |
@@ -566,8 +566,8 @@ func (m *MerchantNode) getNewHeight(ctx *owtp.Context) {
 
 func (m *MerchantNode) getWalletBalance(ctx *owtp.Context) {
 
-	log.Printf("Merchant Call: getWalletBalance \n")
-	log.Printf("params: %v\n", ctx.Params())
+	log.Info("Merchant Call: getWalletBalance")
+	log.Info("params:", ctx.Params())
 
 	/*
 		| 参数名称     | 类型   | 是否可空 | 描述   |
@@ -595,8 +595,8 @@ func (m *MerchantNode) getWalletBalance(ctx *owtp.Context) {
 
 func (m *MerchantNode) getBalanceByAddress(ctx *owtp.Context) {
 
-	log.Printf("Merchant Call: getBalanceByAddress \n")
-	log.Printf("params: %v\n", ctx.Params())
+	log.Info("Merchant Call: getBalanceByAddress")
+	log.Info("params:", ctx.Params())
 
 	/*
 		| 参数名称     | 类型   | 是否可空 | 描述   |
@@ -625,8 +625,8 @@ func (m *MerchantNode) getBalanceByAddress(ctx *owtp.Context) {
 }
 
 func (m *MerchantNode) resetHeight(ctx *owtp.Context) {
-	log.Printf("Merchant Call: resetHeight \n")
-	log.Printf("params: %v\n", ctx.Params())
+	log.Info("Merchant Call: resetHeight")
+	log.Info("params:", ctx.Params())
 
 	/*
 		| 参数名称     | 类型   | 是否可空 | 描述   |

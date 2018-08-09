@@ -19,9 +19,9 @@ package owtp
 import (
 	"github.com/pkg/errors"
 	"sync"
-	"log"
 	"time"
 	"fmt"
+	"github.com/blocktree/OpenWallet/log"
 )
 
 // 路由处理方法
@@ -155,12 +155,12 @@ func (mux *ServeMux) ServeOWTP(client *Client, ctx *Context) {
 		} else {
 			//响应与请求的方法不一致
 			//ctx.Resp = responseError("reponse method is not equal request", ErrResponseMethodDiffer)
-			log.Printf("reponse method is not equal request\n")
+			log.Error("reponse method is not equal request\n")
 		}
 
 	default:
 		//未知类型的日志记录
-		log.Printf("Unknown messages.\n")
+		log.Error("Unknown messages.\n")
 	}
 }
 
@@ -200,7 +200,7 @@ func (mux *ServeMux) timeoutRequestHandle() {
 					errInfo := fmt.Sprintf("request timeout over %s", mux.timeout.String())
 					resp := responseError(errInfo, ErrRequestTimeout)
 					if r.sync {
-						log.Printf("resp = %v \n", resp)
+						log.Error("resp = %v \n", resp)
 						r.respChan <- resp
 					} else {
 						r.h(resp)

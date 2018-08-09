@@ -18,7 +18,7 @@ package merchant
 import (
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/owtp"
-	"log"
+	"github.com/blocktree/OpenWallet/log"
 )
 
 //CallGetChargeAddressVersion 获取要订阅的地址版本信息
@@ -97,7 +97,7 @@ func SubmitRechargeTransaction(
 	sync bool,
 	callback func(confirms []uint64, status uint64, msg string)) error {
 
-	log.Printf("Call Remote: submitRechargeTransaction\n")
+	log.Info("Call Remote: submitRechargeTransaction")
 
 	//获取订阅的地址版本
 	err := node.Call(
