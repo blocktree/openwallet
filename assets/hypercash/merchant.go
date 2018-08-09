@@ -89,11 +89,13 @@ func (wm *WalletManager) ImportMerchantAddress(wallet *openwallet.Wallet, accoun
 	}
 	defer tx.Rollback()
 
+	log.Printf("block scanner import [%s] new addresses: %d \n", account.Symbol, len(addresses))
+
 	for _, a := range addresses {
 		a.WatchOnly = true //观察地址
 		a.Symbol = strings.ToLower(Symbol)
 		a.AccountID = account.AccountID
-		log.Printf("import %s address: %s \n", a.Symbol, a.Address)
+
 		tx.Save(a)
 
 		wm.blockscanner.AddAddress(a.Address, wallet.WalletID, wallet)
@@ -122,13 +124,13 @@ func (wm *WalletManager) CreateMerchantAddress(wallet *openwallet.Wallet, accoun
 }
 
 //GetMerchantAddressList 获取钱包地址
-func (wm *WalletManager) GetMerchantAddressList(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, offset uint64, limit uint64) ([]*openwallet.Address, error) {
+func (wm *WalletManager) GetMerchantAddressList(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, watchOnly bool, offset uint64, limit uint64) ([]*openwallet.Address, error) {
 	//先加载是否有配置文件
 	err := wm.loadConfig()
 	if err != nil {
 		return nil, errors.New("The wallet node is not config!")
 	}
-	return wm.GetAddressesFromLocalDB(wallet.WalletID, int(offset), int(limit))
+	return wm.GetAddressesFromLocalDB(wallet.WalletID, watchOnly, int(offset), int(limit))
 	//return nil, nil
 }
 

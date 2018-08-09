@@ -79,6 +79,7 @@ type Withdraw struct {
 	Amount   string `json:"amount"`
 	Memo     string `json:"memo"`
 	Password string `json:"password"`
+	TxID     string `json:"txid"`
 }
 
 //NewWithdraw 创建提现单

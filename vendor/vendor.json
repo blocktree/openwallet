@@ -480,6 +480,12 @@
 			"revisionTime": "2017-10-14T08:28:56Z"
 		},
 		{
+			"checksumSHA1": "yzFQtwng1gAJZQEzXMRUT44uqqU=",
+			"path": "github.com/blocktree/go-OWCrypt",
+			"revision": "8890773efc426c23e07321db0c2c16332378e93b",
+			"revisionTime": "2018-08-07T12:27:32Z"
+		},
+		{
 			"checksumSHA1": "APzA8rkuz7X5P2yh2uy22DG+rA8=",
 			"path": "github.com/bndr/gotabulate",
 			"revision": "bc555436bfd5d4e93a2dd35b462ce37e067afdda",

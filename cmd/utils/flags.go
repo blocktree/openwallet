@@ -106,4 +106,15 @@ var (
 		Name: "i, init",
 		Usage: "Init operate",
 	}
+
+	LogDirFlag = cli.StringFlag{
+		Name: "logdir",
+		Usage: "log files directory",
+	}
+
+	LogDebugFlag = cli.BoolFlag{
+		Name: "debug",
+		Usage: "print debug log info",
+	}
+
 )

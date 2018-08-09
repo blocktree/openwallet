@@ -363,16 +363,18 @@ func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
 	log.Printf("params: %v\n", ctx.Params())
 
 	/*
-		| 参数名称 | 类型   | 是否可空 | 描述     |
-		|----------|--------|----------|----------|
-		| coin     | string | 否       | 币种标识 |
-		| walletID | string | 否       | 钱包ID   |
-		| offset    | uint   | 是       | 从0开始     |
-		| limit    | uint   | 是       | 查询条数     |
+	| 参数名称  | 类型   | 是否可空 | 描述                                         |
+	|-----------|--------|----------|----------------------------------------------|
+	| coin      | string | 否       | 币种标识                                     |
+	| walletID  | string | 否       | 钱包ID                                       |
+	| watchOnly | uint   | 否       | 0: 钱包自己创建的地址,1：外部导入的订阅的地址 |
+	| offset    | uint   | 是       | 从0开始                                      |
+	| limit     | uint   | 是       | 查询条数                                     |
 	*/
 
 	coin := ctx.Params().Get("coin").String()
 	walletID := ctx.Params().Get("walletID").String()
+	watchOnly := ctx.Params().Get("watchOnly").Bool()
 	offset := ctx.Params().Get("offset").Uint()
 	limit := ctx.Params().Get("limit").Uint()
 
@@ -392,7 +394,7 @@ func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
 	}
 
 	//导入到每个币种的数据库
-	addrs, err := am.GetMerchantAddressList(wallet, wallet.SingleAssetsAccount(coin), offset, limit)
+	addrs, err := am.GetMerchantAddressList(wallet, wallet.SingleAssetsAccount(coin), watchOnly, offset, limit)
 
 	if err != nil {
 		responseError(ctx, err)
@@ -443,17 +445,17 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 		if len(s.WalletID) == 0 {
 			continue
 		}
-
+		var replayWith *openwallet.Withdraw
 		//检查sid是否重放
-		err = db.One("Sid", s.Sid, &openwallet.Withdraw{})
-		if err == nil {
+		err = db.One("Sid", s.Sid, &replayWith)
+		if replayWith != nil {
 			//存在相关的sid不加入提现表
 			errMsg := fmt.Sprintf("withdraw sid: %s is duplicate\n", s.Sid)
-			log.Printf(errMsg)
+			//log.Printf(errMsg)
 
 			txIDMaps = append(txIDMaps, map[string]interface{}{
 				"sid":    s.Sid,
-				"txid":   "",
+				"txid":   replayWith.TxID,
 				"status": 2,
 				"reason": errMsg,
 			})
@@ -493,25 +495,31 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 			walletConfig, _ := m.GetMerchantWalletConfig(withs[0].Symbol, wid)
 
 			status := 0
-			txID, err := mer.SubmitTransactions(wallet, wallet.SingleAssetsAccount(withs[0].Symbol), withs, walletConfig.Surplus)
+			reason := ""
+			txid := ""
+			tx, err := mer.SubmitTransactions(wallet, wallet.SingleAssetsAccount(withs[0].Symbol), withs, walletConfig.Surplus)
 			if err != nil {
 				log.Printf("SubmitTransactions unexpected error: %v", err)
 				status = 3
+				reason = err.Error()
+				txid = ""
 			} else {
 				status = 1
-
 				err = nil
+				reason = ""
+				txid = tx.TxID
 			}
 
 			for _, with := range withs {
 				txIDMaps = append(txIDMaps, map[string]interface{}{
 					"sid":    with.Sid,
-					"txid":   txID,
+					"txid":   txid,
 					"status": status,
-					"reason": err.Error(),
+					"reason": reason,
 				})
 
 				if status == 1 {
+					with.TxID = txid
 					m.SaveToDB(with)
 				}
 			}
@@ -538,7 +546,7 @@ func (m *MerchantNode) getNewHeight(ctx *owtp.Context) {
 	*/
 
 	coin := ctx.Params().Get("coin").String()
-	walletID := ctx.Params().Get("walletID").String()
+	//walletID := ctx.Params().Get("walletID").String()
 
 	am := assets.GetMerchantAssets(coin)
 	blockchain, err := am.GetBlockchainInfo()
@@ -548,9 +556,9 @@ func (m *MerchantNode) getNewHeight(ctx *owtp.Context) {
 	}
 
 	result := map[string]interface{}{
-		"coin":     coin,
-		"walletID": walletID,
-		"height":   blockchain.Blocks,
+		"coin":      coin,
+		"cmdHeight": blockchain.ScanHeight,
+		"height":    blockchain.Blocks,
 	}
 
 	responseSuccess(ctx, result)

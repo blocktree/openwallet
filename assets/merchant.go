@@ -42,7 +42,7 @@ type MerchantAssets interface {
 	CreateMerchantAddress(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, count uint64) ([]*openwallet.Address, error)
 
 	//GetMerchantAddressList 获取钱包地址
-	GetMerchantAddressList(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, offset uint64, limit uint64) ([]*openwallet.Address, error)
+	GetMerchantAddressList(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, watchOnly bool, offset uint64, limit uint64) ([]*openwallet.Address, error)
 
 	//AddMerchantObserverForBlockScan 添加区块链观察者，当扫描出新区块时进行通知
 	AddMerchantObserverForBlockScan(obj openwallet.BlockScanNotificationObject, wallets *openwallet.Wallet) error

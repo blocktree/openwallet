@@ -413,7 +413,7 @@ func (wm *WalletManager) RestoreWalletFlow() error {
 		return err
 	}
 
-	datFile, err = console.InputText("Enter backup wallet.dat file path: ", true)
+	datFile, err = console.InputText("Enter backup wallet.db file path: ", true)
 	if err != nil {
 		return err
 	}

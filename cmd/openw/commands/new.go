@@ -45,7 +45,7 @@ Creates a OpenWallet application for the given app name in the current directory
 //createNewApp 创建新应用
 func createNewApp(c *cli.Context) error {
 	if len(c.Args()) != 1 {
-		openwLogger.Log.Fatal("Argument [appname] is missing")
+		log.Log.Fatal("Argument [appname] is missing")
 	}
 	//读取第一个参数作为应用名
 	fmt.Printf("New App %v\n", c.Args().Get(0))

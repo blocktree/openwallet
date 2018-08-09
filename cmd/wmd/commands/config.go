@@ -18,8 +18,8 @@ package commands
 import (
 	"github.com/blocktree/OpenWallet/assets"
 	"github.com/blocktree/OpenWallet/cmd/utils"
-	"github.com/blocktree/OpenWallet/logger"
 	"gopkg.in/urfave/cli.v1"
+	"github.com/blocktree/OpenWallet/log"
 )
 
 var (
@@ -78,12 +78,12 @@ Manage wallet config
 func configWMD(c *cli.Context) error {
 	symbol := c.String("symbol")
 	if len(symbol) == 0 {
-		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+		log.Error("Argument -s <symbol> is missing")
 		return nil
 	}
 	m, ok := assets.GetWMD(symbol).(assets.ConfigManager)
 	if !ok {
-		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
+		log.Error(symbol, " wallet manager is not register")
 		return nil
 	}
 	isInit := c.Bool("init")
@@ -100,18 +100,18 @@ func configWMD(c *cli.Context) error {
 func configWallet(c *cli.Context) error {
 	symbol := c.String("symbol")
 	if len(symbol) == 0 {
-		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+		log.Error("Argument -s <symbol> is missing")
 		return nil
 	}
 	m, ok := assets.GetWMD(symbol).(assets.WalletManager)
 	if !ok {
-		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
+		log.Error(symbol, " wallet manager is not register")
 		return nil
 	}
 	//配置钱包
 	err := m.InitConfigFlow()
 	if err != nil {
-		openwLogger.Log.Errorf("%v", err)
+		log.Error("unexpected error: ", err)
 	}
 	return err
 }
@@ -120,17 +120,17 @@ func configWallet(c *cli.Context) error {
 func configSee(c *cli.Context) error {
 	symbol := c.String("symbol")
 	if len(symbol) == 0 {
-		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+		log.Error("Argument -s <symbol> is missing")
 		return nil
 	}
 	m, ok := assets.GetWMD(symbol).(assets.WalletManager)
 	if !ok {
-		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
+		log.Error(symbol, " wallet manager is not register")
 		return nil
 	}
 	err := m.ShowConfig()
 	if err != nil {
-		openwLogger.Log.Errorf("%v", err)
+		log.Error("unexpected error: ", err)
 	}
 	return err
 }

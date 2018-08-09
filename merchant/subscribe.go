@@ -336,7 +336,7 @@ func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 					//db.Close()
 
 					//提交充值记录
-					SubmitRechargeTrasaction(
+					SubmitRechargeTransaction(
 						m.Node,
 						params,
 						true,

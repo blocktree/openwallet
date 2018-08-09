@@ -250,7 +250,7 @@ func TestListUnspent(t *testing.T) {
 }
 
 func TestGetAddressesFromLocalDB(t *testing.T) {
-	addresses, err := tw.GetAddressesFromLocalDB("W2nkCYRX1GodNKExL7my5DvQnxz8FjrVDY", 0, -1)
+	addresses, err := tw.GetAddressesFromLocalDB("W2nkCYRX1GodNKExL7my5DvQnxz8FjrVDY", true,0, 10)
 	if err != nil {
 		t.Errorf("GetAddressesFromLocalDB failed unexpected error: %v\n", err)
 		return

@@ -18,7 +18,6 @@ package hypercash
 import (
 	"errors"
 	"fmt"
-	"github.com/asdine/storm"
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
@@ -35,6 +34,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"github.com/asdine/storm/q"
 )
 
 const (
@@ -92,7 +92,7 @@ func (wm *WalletManager) GetAddressesByAccount(walletID string) ([]string, error
 }
 
 //GetAddressesFromLocalDB 从本地数据库
-func (wm *WalletManager) GetAddressesFromLocalDB(walletID string, offset, limit int) ([]*openwallet.Address, error) {
+func (wm *WalletManager) GetAddressesFromLocalDB(walletID string, watchOnly bool, offset, limit int) ([]*openwallet.Address, error) {
 
 	wallet, err := wm.GetWalletInfo(walletID)
 	if err != nil {
@@ -108,9 +108,20 @@ func (wm *WalletManager) GetAddressesFromLocalDB(walletID string, offset, limit 
 	var addresses []*openwallet.Address
 	//err = db.Find("WalletID", walletID, &addresses)
 	if limit > 0 {
-		err = db.Find("AccountID", walletID, &addresses, storm.Limit(limit), storm.Skip(offset))
+
+		err = db.Select(q.And(
+			q.Eq("AccountID", walletID),
+			q.Eq("WatchOnly", watchOnly),
+		)).Limit(limit).Skip(offset).Find(&addresses)
+
+		//err = db.Find("AccountID", walletID, &addresses, storm.Limit(limit), storm.Skip(offset))
 	} else {
-		err = db.Find("AccountID", walletID, &addresses, storm.Skip(offset))
+
+		err = db.Select(q.And(
+			q.Eq("AccountID", walletID),
+			q.Eq("WatchOnly", watchOnly),
+		)).Skip(offset).Find(&addresses)
+
 	}
 
 	if err != nil {
@@ -141,7 +152,7 @@ func (wm *WalletManager) CreateNewAddress(key *keystore.HDKey) (*openwallet.Addr
 		CreatedAt: time.Now(),
 		Symbol:    wm.config.symbol,
 		Index:     0,
-		WatchOnly: true,
+		WatchOnly: false,
 	}
 
 	return &addr, err
@@ -813,6 +824,8 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 
 		fmt.Printf("Backup wallet has been restored. \n")
 
+		fmt.Printf("Finally, you should restart the hcwallet to ensure. \n")
+
 		err = nil
 	} else {
 		/* 恢复失败还远原来的文件 */
@@ -916,7 +929,7 @@ func (wm *WalletManager) RebuildWalletUnspent(walletID string) error {
 	}
 
 	//查找核心钱包确认数大于1的
-	utxos, err := wm.ListUnspent(1)
+	utxos, err := wm.ListUnspent(0)
 	if err != nil {
 		return err
 	}
@@ -942,10 +955,11 @@ func (wm *WalletManager) RebuildWalletUnspent(walletID string) error {
 	for _, utxo := range utxos {
 		var addr openwallet.Address
 		err = db.One("Address", utxo.Address, &addr)
-		if err != nil {
+		//找不到或观测的地址不计入utxo
+		if err != nil || addr.WatchOnly == true {
 			continue
 		}
-
+		//log.Printf("utxo.addr watchonly: %v", addr.WatchOnly)
 		utxo.AccountID = addr.AccountID
 		utxo.HDAddress = addr
 		key := common.NewString(fmt.Sprintf("%s_%d_%s", utxo.TxID, utxo.Vout, utxo.Address)).SHA256()
