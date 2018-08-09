@@ -113,6 +113,8 @@ func (bs *BTCBlockScanner) AddWallet(accountID string, wallet *openwallet.Wallet
 
 //IsExistAddress 指定地址是否已登记扫描
 func (bs *BTCBlockScanner) IsExistAddress(address string) bool {
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
 	_, exist := bs.addressInScanning[address]
 	return exist
 }
@@ -747,6 +749,8 @@ func (bs *BTCBlockScanner) SaveUnscanRecord(record *UnscanRecord) error {
 
 //GetWalletByAddress 获取地址对应的钱包
 func (bs *BTCBlockScanner) GetWalletByAddress(address string) (*openwallet.Wallet, bool) {
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
 	account, ok := bs.addressInScanning[address]
 	if ok {
 		wallet, ok := bs.walletInScanning[account]

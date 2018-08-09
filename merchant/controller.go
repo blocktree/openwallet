@@ -22,7 +22,7 @@ import (
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/owtp"
 	"github.com/pkg/errors"
-	"log"
+	"github.com/blocktree/OpenWallet/log"
 )
 
 const (
@@ -58,13 +58,15 @@ func (m *MerchantNode) setupRouter() {
 	m.Node.HandleFunc("getNewHeight", m.getNewHeight)
 	m.Node.HandleFunc("getBalanceByAddress", m.getBalanceByAddress)
 	m.Node.HandleFunc("getWalletBalance", m.getWalletBalance)
+	m.Node.HandleFunc("resetHeight", m.resetHeight)
+
 }
 
 //subscribe 订阅方法
 func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 
-	log.Printf("Merchant Call: subscribe \n")
-	log.Printf("params: %v\n", ctx.Params())
+	log.Info("Merchant Call: subscribe")
+	log.Info("params:", ctx.Params())
 
 	var (
 		subscriptions []*Subscription
@@ -120,8 +122,8 @@ func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 
 func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 
-	log.Printf("Merchant Call: createWallet \n")
-	log.Printf("params: %v\n", ctx.Params())
+	log.Info("Merchant Call: createWallet")
+	log.Info("params:", ctx.Params())
 
 	/*
 		| 参数名称     | 类型   | 是否可空 | 描述                    |
@@ -176,7 +178,7 @@ func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 	db.Save(&wallet)
 	db.Save(&account)
 
-	log.Printf("walletID = %s \n", wallet.WalletID)
+	log.Debug("walletID =", wallet.WalletID)
 
 	result := map[string]interface{}{
 		"coin":       coin,
@@ -191,8 +193,8 @@ func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 
 func (m *MerchantNode) configWallet(ctx *owtp.Context) {
 
-	log.Printf("Merchant Call: configWallet \n")
-	log.Printf("params: %v\n", ctx.Params())
+	log.Info("Merchant Call: configWallet")
+	log.Info("params:", ctx.Params())
 
 	/*
 
@@ -227,8 +229,8 @@ func (m *MerchantNode) configWallet(ctx *owtp.Context) {
 
 func (m *MerchantNode) getWalletList(ctx *owtp.Context) {
 
-	log.Printf("Merchant Call: getWalletList \n")
-	log.Printf("params: %v\n", ctx.Params())
+	log.Info("Merchant Call: getWalletList")
+	log.Info("params:", ctx.Params())
 
 	coin := ctx.Params().Get("coin").String()
 
@@ -288,8 +290,8 @@ func (m *MerchantNode) getWalletList(ctx *owtp.Context) {
 
 func (m *MerchantNode) createAddress(ctx *owtp.Context) {
 
-	log.Printf("Merchant Call: createAddress \n")
-	log.Printf("params: %v\n", ctx.Params())
+	log.Info("Merchant Call: createAddress")
+	log.Info("params:", ctx.Params())
 
 	/*
 		| 参数名称 | 类型   | 是否可空 | 描述         |
@@ -357,20 +359,22 @@ func (m *MerchantNode) createAddress(ctx *owtp.Context) {
 
 func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
 
-	log.Printf("Merchant Call: getAddressList \n")
-	log.Printf("params: %v\n", ctx.Params())
+	log.Info("Merchant Call: getAddressList")
+	log.Info("params:", ctx.Params())
 
 	/*
-		| 参数名称 | 类型   | 是否可空 | 描述     |
-		|----------|--------|----------|----------|
-		| coin     | string | 否       | 币种标识 |
-		| walletID | string | 否       | 钱包ID   |
-		| offset    | uint   | 是       | 从0开始     |
-		| limit    | uint   | 是       | 查询条数     |
+	| 参数名称  | 类型   | 是否可空 | 描述                                         |
+	|-----------|--------|----------|----------------------------------------------|
+	| coin      | string | 否       | 币种标识                                     |
+	| walletID  | string | 否       | 钱包ID                                       |
+	| watchOnly | uint   | 否       | 0: 钱包自己创建的地址,1：外部导入的订阅的地址 |
+	| offset    | uint   | 是       | 从0开始                                      |
+	| limit     | uint   | 是       | 查询条数                                     |
 	*/
 
 	coin := ctx.Params().Get("coin").String()
 	walletID := ctx.Params().Get("walletID").String()
+	watchOnly := ctx.Params().Get("watchOnly").Bool()
 	offset := ctx.Params().Get("offset").Uint()
 	limit := ctx.Params().Get("limit").Uint()
 
@@ -390,7 +394,7 @@ func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
 	}
 
 	//导入到每个币种的数据库
-	addrs, err := am.GetMerchantAddressList(wallet, wallet.SingleAssetsAccount(coin), offset, limit)
+	addrs, err := am.GetMerchantAddressList(wallet, wallet.SingleAssetsAccount(coin), watchOnly, offset, limit)
 
 	if err != nil {
 		responseError(ctx, err)
@@ -419,8 +423,8 @@ func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
 
 func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 
-	log.Printf("Merchant Call: submitTransaction \n")
-	log.Printf("params: %v\n", ctx.Params())
+	log.Info("Merchant Call: submitTransaction")
+	log.Info("params:", ctx.Params())
 
 	var (
 		//withdraws = make([]*openwallet.Withdraw, 0)
@@ -441,17 +445,17 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 		if len(s.WalletID) == 0 {
 			continue
 		}
-
+		var replayWith *openwallet.Withdraw
 		//检查sid是否重放
-		err = db.One("Sid", s.Sid, &openwallet.Withdraw{})
-		if err == nil {
+		err = db.One("Sid", s.Sid, &replayWith)
+		if replayWith != nil {
 			//存在相关的sid不加入提现表
 			errMsg := fmt.Sprintf("withdraw sid: %s is duplicate\n", s.Sid)
-			log.Printf(errMsg)
+			//log.Printf(errMsg)
 
 			txIDMaps = append(txIDMaps, map[string]interface{}{
 				"sid":    s.Sid,
-				"txid":   "",
+				"txid":   replayWith.TxID,
 				"status": 2,
 				"reason": errMsg,
 			})
@@ -491,25 +495,31 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 			walletConfig, _ := m.GetMerchantWalletConfig(withs[0].Symbol, wid)
 
 			status := 0
-			txID, err := mer.SubmitTransactions(wallet, wallet.SingleAssetsAccount(withs[0].Symbol), withs, walletConfig.Surplus)
+			reason := ""
+			txid := ""
+			tx, err := mer.SubmitTransactions(wallet, wallet.SingleAssetsAccount(withs[0].Symbol), withs, walletConfig.Surplus)
 			if err != nil {
-				log.Printf("SubmitTransactions unexpected error: %v", err)
+				log.Error("SubmitTransactions unexpected error:", err)
 				status = 3
+				reason = err.Error()
+				txid = ""
 			} else {
 				status = 1
-
 				err = nil
+				reason = ""
+				txid = tx.TxID
 			}
 
 			for _, with := range withs {
 				txIDMaps = append(txIDMaps, map[string]interface{}{
 					"sid":    with.Sid,
-					"txid":   txID,
+					"txid":   txid,
 					"status": status,
-					"reason": err.Error(),
+					"reason": reason,
 				})
 
 				if status == 1 {
+					with.TxID = txid
 					m.SaveToDB(with)
 				}
 			}
@@ -526,8 +536,8 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 
 func (m *MerchantNode) getNewHeight(ctx *owtp.Context) {
 
-	log.Printf("Merchant Call: getNewHeight \n")
-	log.Printf("params: %v\n", ctx.Params())
+	log.Info("Merchant Call: getNewHeight")
+	log.Info("params:", ctx.Params())
 
 	/*
 		| 参数名称 | 类型   | 是否可空 | 描述     |
@@ -536,7 +546,7 @@ func (m *MerchantNode) getNewHeight(ctx *owtp.Context) {
 	*/
 
 	coin := ctx.Params().Get("coin").String()
-	walletID := ctx.Params().Get("walletID").String()
+	//walletID := ctx.Params().Get("walletID").String()
 
 	am := assets.GetMerchantAssets(coin)
 	blockchain, err := am.GetBlockchainInfo()
@@ -546,9 +556,9 @@ func (m *MerchantNode) getNewHeight(ctx *owtp.Context) {
 	}
 
 	result := map[string]interface{}{
-		"coin":     coin,
-		"walletID": walletID,
-		"height":   blockchain.Blocks,
+		"coin":      coin,
+		"cmdHeight": blockchain.ScanHeight,
+		"height":    blockchain.Blocks,
 	}
 
 	responseSuccess(ctx, result)
@@ -556,8 +566,8 @@ func (m *MerchantNode) getNewHeight(ctx *owtp.Context) {
 
 func (m *MerchantNode) getWalletBalance(ctx *owtp.Context) {
 
-	log.Printf("Merchant Call: getWalletBalance \n")
-	log.Printf("params: %v\n", ctx.Params())
+	log.Info("Merchant Call: getWalletBalance")
+	log.Info("params:", ctx.Params())
 
 	/*
 		| 参数名称     | 类型   | 是否可空 | 描述   |
@@ -585,15 +595,15 @@ func (m *MerchantNode) getWalletBalance(ctx *owtp.Context) {
 
 func (m *MerchantNode) getBalanceByAddress(ctx *owtp.Context) {
 
-	log.Printf("Merchant Call: getBalanceByAddress \n")
-	log.Printf("params: %v\n", ctx.Params())
+	log.Info("Merchant Call: getBalanceByAddress")
+	log.Info("params:", ctx.Params())
 
 	/*
-	| 参数名称     | 类型   | 是否可空 | 描述   |
-	|--------------|--------|----------|--------|
-	| coin         | string | 否       | 币名   |
-	| walletID     | string | 否       | 钱包ID |
-	| address      | string  | 否        | 地址 |
+		| 参数名称     | 类型   | 是否可空 | 描述   |
+		|--------------|--------|----------|--------|
+		| coin         | string | 否       | 币名   |
+		| walletID     | string | 否       | 钱包ID |
+		| address      | string  | 否        | 地址 |
 	*/
 
 	coin := ctx.Params().Get("coin").String()
@@ -608,10 +618,36 @@ func (m *MerchantNode) getBalanceByAddress(ctx *owtp.Context) {
 	}
 
 	result := map[string]interface{}{
-		"balance":     balance,
+		"balance": balance,
 	}
 
 	responseSuccess(ctx, result)
+}
+
+func (m *MerchantNode) resetHeight(ctx *owtp.Context) {
+	log.Info("Merchant Call: resetHeight")
+	log.Info("params:", ctx.Params())
+
+	/*
+		| 参数名称     | 类型   | 是否可空 | 描述   |
+		|--------------|--------|----------|--------|
+		| coin         | string | 否       | 币名   |
+		| walletID     | string | 否       | 钱包ID |
+		| height     | string | 否       | 高度 |
+	*/
+
+	coin := ctx.Params().Get("coin").String()
+	//walletID := ctx.Params().Get("walletID").String()
+	height := ctx.Params().Get("height").Uint()
+
+	am := assets.GetMerchantAssets(coin)
+	err := am.SetMerchantRescanBlockHeight(height)
+	if err != nil {
+		responseError(ctx, err)
+		return
+	}
+
+	responseSuccess(ctx, nil)
 }
 
 //responseSuccess 成功结果响应

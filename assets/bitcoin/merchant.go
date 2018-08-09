@@ -211,7 +211,29 @@ func (wm *WalletManager) RemoveMerchantObserverForBlockScan(obj openwallet.Block
 
 //GetBlockchainInfo 获取区块链信息
 func (wm *WalletManager) GetBlockchainInfo() (*openwallet.Blockchain, error) {
-	return nil, nil
+
+	//先加载是否有配置文件
+	err := loadConfig()
+	if err != nil {
+		return nil, errors.New("The wallet node is not config! ")
+	}
+
+	height, err := GetBlockHeight()
+	if err != nil {
+		return nil, err
+	}
+
+	localHeight, _ := GetLocalNewBlock()
+	if err != nil {
+		return nil, err
+	}
+
+	info := openwallet.Blockchain{
+		Blocks: height,
+		ScanHeight: localHeight,
+	}
+
+	return &info, nil
 }
 
 //GetMerchantAssetsAccount 获取账户资产
@@ -222,4 +244,9 @@ func (wm *WalletManager) GetMerchantWalletBalance(walletID string) (string, erro
 //GetMerchantAssetsAccount 获取地址资产
 func (wm *WalletManager) GetMerchantAddressBalance(walletID, address string) (string, error) {
 	return "0", nil
+}
+
+//SetMerchantRescanBlockHeight 商户重置区块链扫描高度
+func (wm *WalletManager) SetMerchantRescanBlockHeight(height uint64) error {
+	return wm.blockscanner.SetRescanBlockHeight(height)
 }

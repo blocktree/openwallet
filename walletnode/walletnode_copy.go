@@ -31,7 +31,7 @@ import (
 // Copy file from container to local filesystem
 //
 //	src/dst: filename
-func (w *NodeManagerStruct) CopyFromContainer(symbol, src, dst string) error {
+func CopyFromContainer(symbol, src, dst string) error {
 	// func(vals ...interface{}) {}(
 	// 	tar.Writer{}, os.File{},
 	// ) // Delete before commit
@@ -85,7 +85,7 @@ func (w *NodeManagerStruct) CopyFromContainer(symbol, src, dst string) error {
 //
 //	src: filename
 //	dst: path
-func (w *NodeManagerStruct) CopyToContainer(symbol, src, dst string) error {
+func CopyToContainer(symbol, src, dst string) error {
 
 	var content io.Reader
 

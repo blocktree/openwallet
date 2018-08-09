@@ -480,6 +480,12 @@
 			"revisionTime": "2017-10-14T08:28:56Z"
 		},
 		{
+			"checksumSHA1": "yzFQtwng1gAJZQEzXMRUT44uqqU=",
+			"path": "github.com/blocktree/go-OWCrypt",
+			"revision": "8890773efc426c23e07321db0c2c16332378e93b",
+			"revisionTime": "2018-08-07T12:27:32Z"
+		},
+		{
 			"checksumSHA1": "APzA8rkuz7X5P2yh2uy22DG+rA8=",
 			"path": "github.com/bndr/gotabulate",
 			"revision": "bc555436bfd5d4e93a2dd35b462ce37e067afdda",
@@ -2322,6 +2328,12 @@
 			"path": "github.com/tidwall/match",
 			"revision": "1731857f09b1f38450e2c12409748407822dc6be",
 			"revisionTime": "2017-10-02T07:59:45Z"
+		},
+		{
+			"checksumSHA1": "dGdLMDgFp6R5VqX1VYpzQDSW9MM=",
+			"path": "github.com/tildeleb/hashland/keccakpg",
+			"revision": "07375b562deaa8d6891f9618a04e94a0b98e2ee7",
+			"revisionTime": "2017-10-03T00:32:32Z"
 		},
 		{
 			"checksumSHA1": "vW7IiPtoA4hQQ/ScHlbmRktY89U=",

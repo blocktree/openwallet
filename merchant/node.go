@@ -20,7 +20,7 @@ import (
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/owtp"
 	"github.com/blocktree/OpenWallet/timer"
-	"log"
+	"github.com/blocktree/OpenWallet/log"
 	"sync"
 	"time"
 	"github.com/blocktree/OpenWallet/openwallet"
@@ -85,7 +85,7 @@ func NewMerchantNode(config NodeConfig) (*MerchantNode, error) {
 
 	//断开连接后，重新连接
 	m.Node.SetCloseHandler(func(n *owtp.OWTPNode) {
-		log.Printf("merchantNode disconnect. \n")
+		log.Info("merchantNode disconnect.")
 		m.disconnected <- struct{}{}
 	})
 
@@ -265,20 +265,20 @@ func (m *MerchantNode) Run() error {
 	//启动连接
 	m.reconnect <- true
 
-	log.Printf("Merchant node running now... \n")
+	log.Info("Merchant node running now...")
 
 	//节点运行时
 	for {
 		select {
 		case <-m.reconnect:
 			//重新连接
-			log.Printf("Connecting to %s\n", m.Node.URL)
+			log.Info("Connecting to", m.Node.URL)
 			err = m.Node.Connect()
 			if err != nil {
-				log.Printf("Connect merchant node faild unexpected error: %v. \n", err)
+				log.Error("Connect merchant node faild unexpected error:", err)
 				m.disconnected <- struct{}{}
 			} else {
-				log.Printf("Connect merchant node successfully. \n")
+				log.Info("Connect merchant node successfully. \n")
 			}
 
 			//启动定时任务
@@ -291,7 +291,7 @@ func (m *MerchantNode) Run() error {
 
 			if m.isReconnect {
 				//重新连接，前等待
-				log.Printf("Reconnect after %d seconds... \n", m.ReconnectWait)
+				log.Info("Reconnect after", m.ReconnectWait, "seconds...")
 				time.Sleep(m.ReconnectWait * time.Second)
 				m.reconnect <- true
 			} else {
@@ -326,7 +326,7 @@ func (m *MerchantNode) Stop() {
 //StartTimerTask 启动定时任务
 func (m *MerchantNode) StartTimerTask() {
 
-	log.Printf("Merchant timer task start...\n")
+	log.Info("Merchant timer task start...")
 
 	//启动订阅地址任务
 	m.runSubscribeAddressTask()
@@ -335,7 +335,7 @@ func (m *MerchantNode) StartTimerTask() {
 //StopTimerTask 停止定时任务
 func (m *MerchantNode) StopTimerTask() {
 
-	log.Printf("Merchant timer task stop...\n")
+	log.Info("Merchant timer task stop...")
 
 	//停止地址订阅任务
 	m.subscribeAddressTask.Pause()

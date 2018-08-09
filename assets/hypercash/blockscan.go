@@ -115,12 +115,17 @@ func (bs *BTCBlockScanner) AddWallet(accountID string, wallet *openwallet.Wallet
 
 //IsExistAddress 指定地址是否已登记扫描
 func (bs *BTCBlockScanner) IsExistAddress(address string) bool {
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
+
 	_, exist := bs.addressInScanning[address]
 	return exist
 }
 
 //IsExistWallet 指定账户的钱包是否已登记扫描
 func (bs *BTCBlockScanner) IsExistWallet(accountID string) bool {
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
 
 	_, exist := bs.walletInScanning[accountID]
 	return exist
@@ -272,6 +277,8 @@ func (bs *BTCBlockScanner) scanBlock() {
 
 			//删除上一区块链的所有充值记录
 			bs.DeleteRechargesByHeight(currentHeight - 1)
+			//删除上一区块链的未扫记录
+			bs.wm.DeleteUnscanRecord(currentHeight - 1)
 			currentHeight = currentHeight - 2 //倒退2个区块重新扫描
 			if currentHeight <= 0 {
 				currentHeight = 1
@@ -727,6 +734,9 @@ func (bs *BTCBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, err
 
 //DropRechargeRecords 清楚钱包的全部充值记录
 func (bs *BTCBlockScanner) DropRechargeRecords(accountID string) error {
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
+
 	wallet, ok := bs.walletInScanning[accountID]
 	if !ok {
 		errMsg := fmt.Sprintf("accountID: %s wallet is not found", accountID)
@@ -738,6 +748,9 @@ func (bs *BTCBlockScanner) DropRechargeRecords(accountID string) error {
 
 //DeleteRechargesByHeight 删除某区块高度的充值记录
 func (bs *BTCBlockScanner) DeleteRechargesByHeight(height uint64) error {
+
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
 
 	for _, wallet := range bs.walletInScanning {
 
@@ -794,6 +807,9 @@ func (bs *BTCBlockScanner) SaveUnscanRecord(record *UnscanRecord) error {
 
 //GetWalletByAddress 获取地址对应的钱包
 func (bs *BTCBlockScanner) GetWalletByAddress(address string) (*openwallet.Wallet, bool) {
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
+
 	account, ok := bs.addressInScanning[address]
 	if ok {
 		wallet, ok := bs.walletInScanning[account]
