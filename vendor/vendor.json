@@ -2324,6 +2324,12 @@
 			"revisionTime": "2017-10-02T07:59:45Z"
 		},
 		{
+			"checksumSHA1": "dGdLMDgFp6R5VqX1VYpzQDSW9MM=",
+			"path": "github.com/tildeleb/hashland/keccakpg",
+			"revision": "07375b562deaa8d6891f9618a04e94a0b98e2ee7",
+			"revisionTime": "2017-10-03T00:32:32Z"
+		},
+		{
 			"checksumSHA1": "vW7IiPtoA4hQQ/ScHlbmRktY89U=",
 			"path": "github.com/tyler-smith/go-bip39",
 			"revision": "8e7a99b3e716f36d3b080a9a70f9eb45abe4edcc",
