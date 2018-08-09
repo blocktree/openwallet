@@ -10,7 +10,7 @@ import (
 
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/console"
-	"github.com/blocktree/OpenWallet/timer"
+	"github.com/blocktree/OpenWallet/logger"
 	"github.com/bndr/gotabulate"
 )
 
@@ -38,7 +38,7 @@ const (
 func toHexBigIntForEtherTrans(value string, base int, unit int64) (*big.Int, error) {
 	amount, err := convertToBigInt(value, base)
 	if err != nil {
-		log.Fatal("format transaction value failed, err = ", err)
+		openwLogger.Log.Errorf("format transaction value failed, err = %v", err)
 		return big.NewInt(0), err
 	}
 
@@ -236,8 +236,9 @@ func (this *WalletManager) SummaryFollow() error {
 	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", cycleSeconds.Seconds())
 
 	//启动钱包汇总程序
-	sumTimer := timer.NewTask(cycleSeconds, SummaryWallets)
-	sumTimer.Start()
+	//sumTimer := timer.NewTask(cycleSeconds, SummaryWallets)
+	//sumTimer.Start()
+	go SummaryWallets()
 
 	<-endRunning
 	return nil
@@ -318,9 +319,11 @@ func (this *WalletManager) TransferFlow() error {
 
 	amountInt, err := toHexBigIntForEtherTrans(amount, 10, int64(unit))
 	if err != nil {
-		log.Fatal("wrong amount inputed. ")
+		openwLogger.Log.Errorf("wrong amount inputed. ")
 		return err
 	}
+
+	fmt.Println("amount input:", amountInt.String())
 
 	if wallet.Balance.Cmp(amountInt) < 0 {
 		return errors.New("Input amount is greater than balance! ")
@@ -348,7 +351,7 @@ func (this *WalletManager) BackupWalletFlow() error {
 
 	wallets, err := GetWalletList()
 	if err != nil {
-		log.Fatal("get wallet list failed, err = ", err)
+		openwLogger.Log.Errorf("get wallet list failed, err = ", err)
 		return err
 	}
 
@@ -369,18 +372,39 @@ func (this *WalletManager) BackupWalletFlow() error {
 
 	wallet := wallets[num]
 
-	backupPath, err := BackupWallet(wallet)
+	backupPath, err := BackupWalletToDefaultPath(wallet)
 	if err != nil {
 		return err
 	}
 
 	//输出备份导出目录
-	fmt.Printf("Wallet backup file path: %s\n", backupPath)
+	fmt.Printf("--Wallet backup file path: %s\n", backupPath)
 
 	return nil
 }
 
 //恢复钱包
 func (this *WalletManager) RestoreWalletFlow() error {
+	//先加载是否有配置文件
+	err := loadConfig()
+	if err != nil {
+		return err
+	}
+
+	//输入恢复文件路径
+	keyPath, err := console.InputText("Enter backup key file path: ", true)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Wallet restoring, please wait a moment...\n")
+	err = RestoreWallet(keyPath)
+	if err != nil {
+		return err
+	}
+
+	//输出备份导出目录
+	fmt.Printf("Restore wallet successfully.\n")
+
 	return nil
 }

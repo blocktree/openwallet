@@ -16,8 +16,9 @@ import (
 )
 
 const (
-	Symbol    = "ETH"
-	MasterKey = "Ethereum seed"
+	Symbol       = "ETH"
+	MasterKey    = "Ethereum seed"
+	TIME_POSTFIX = "20060102150405"
 )
 
 var (
@@ -43,9 +44,9 @@ var (
 	//钱包服务API
 	serverAPI = "http://127.0.0.1:8545"
 	//汇总阀值 ???--这个要设置成什么
-	threshold *big.Int //decimal.Decimal = decimal.NewFromFloat(5)
+	threshold = big.NewInt(0) //decimal.Decimal = decimal.NewFromFloat(5)
 	//汇总地址
-	sumAddress = ""
+	sumAddress = "0x2a63b2203955b84fefe52baca3881b3614991b34"
 	//是否测试网络
 	isTestNet = true
 	//ethereum key存放路径

@@ -2,6 +2,7 @@ package tech
 
 import (
 	"fmt"
+	"log"
 	"math/big"
 
 	"github.com/blocktree/OpenWallet/assets/ethereum"
@@ -37,6 +38,40 @@ func TestBitInt() {
 	if success {
 		fmt.Println("i:", i.String())
 	}
+}
 
-	//fmt.Println("false, i:", i.String())
+func TestTransferFlow() {
+	manager := &ethereum.WalletManager{}
+
+	err := manager.TransferFlow()
+	if err != nil {
+		log.Fatal("transfer flow failed, err = ", err)
+	}
+}
+
+func TestSummaryFlow() {
+	manager := &ethereum.WalletManager{}
+
+	err := manager.SummaryFollow()
+	if err != nil {
+		log.Fatal("summary flow failed, err = ", err)
+	}
+}
+
+func TestBackupWallet() {
+	manager := &ethereum.WalletManager{}
+
+	err := manager.BackupWalletFlow()
+	if err != nil {
+		log.Fatal("backup wallet flow failed, err = ", err)
+	}
+}
+
+func TestRestoreWallet() {
+	manager := &ethereum.WalletManager{}
+
+	err := manager.RestoreWalletFlow()
+	if err != nil {
+		log.Fatal("restore wallet flow failed, err = ", err)
+	}
 }
