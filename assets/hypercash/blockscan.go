@@ -22,12 +22,12 @@ import (
 	"github.com/blocktree/OpenWallet/crypto"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/timer"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/tidwall/gjson"
 	"log"
 	"path/filepath"
 	"sync"
 	"time"
+	"encoding/base64"
 )
 
 const (
@@ -115,12 +115,17 @@ func (bs *BTCBlockScanner) AddWallet(accountID string, wallet *openwallet.Wallet
 
 //IsExistAddress 指定地址是否已登记扫描
 func (bs *BTCBlockScanner) IsExistAddress(address string) bool {
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
+
 	_, exist := bs.addressInScanning[address]
 	return exist
 }
 
 //IsExistWallet 指定账户的钱包是否已登记扫描
 func (bs *BTCBlockScanner) IsExistWallet(accountID string) bool {
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
 
 	_, exist := bs.walletInScanning[accountID]
 	return exist
@@ -272,6 +277,8 @@ func (bs *BTCBlockScanner) scanBlock() {
 
 			//删除上一区块链的所有充值记录
 			bs.DeleteRechargesByHeight(currentHeight - 1)
+			//删除上一区块链的未扫记录
+			bs.wm.DeleteUnscanRecord(currentHeight - 1)
 			currentHeight = currentHeight - 2 //倒退2个区块重新扫描
 			if currentHeight <= 0 {
 				currentHeight = 1
@@ -356,6 +363,8 @@ func (bs *BTCBlockScanner) ScanBlock(height uint64) error {
 
 //ScanTxMemPool 扫描交易内存池
 func (bs *BTCBlockScanner) ScanTxMemPool() {
+
+	log.Printf("block scanner scanning mempool ...\n")
 
 	//提取未确认的交易单
 	txIDsInMemPool, err := bs.wm.GetTxIDsInMemPool()
@@ -590,7 +599,7 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, txid string) E
 					transaction.BlockHeight = blockHeight
 					transaction.Symbol = Symbol
 					transaction.Index = n
-					transaction.Sid = common.Bytes2Hex(crypto.SHA256([]byte(fmt.Sprintf("%s_%d_%s", txid, n, addr))))
+					transaction.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("%s_%d_%s", txid, n, addr))))
 
 					transactions = append(transactions, &transaction)
 
@@ -704,7 +713,7 @@ func (bs *BTCBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, err
 	blockHeight, hash = bs.wm.GetLocalNewBlock()
 
 	//如果本地没有记录，查询接口的高度
-	if blockHeight == 0 {
+	if blockHeight <= 0 {
 		blockHeight, err = bs.wm.GetBlockHeight()
 		if err != nil {
 
@@ -725,6 +734,9 @@ func (bs *BTCBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, err
 
 //DropRechargeRecords 清楚钱包的全部充值记录
 func (bs *BTCBlockScanner) DropRechargeRecords(accountID string) error {
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
+
 	wallet, ok := bs.walletInScanning[accountID]
 	if !ok {
 		errMsg := fmt.Sprintf("accountID: %s wallet is not found", accountID)
@@ -737,9 +749,12 @@ func (bs *BTCBlockScanner) DropRechargeRecords(accountID string) error {
 //DeleteRechargesByHeight 删除某区块高度的充值记录
 func (bs *BTCBlockScanner) DeleteRechargesByHeight(height uint64) error {
 
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
+
 	for _, wallet := range bs.walletInScanning {
 
-		list, err := wallet.GetRecharges(height)
+		list, err := wallet.GetRecharges(false, height)
 		if err != nil {
 			return err
 		}
@@ -792,6 +807,9 @@ func (bs *BTCBlockScanner) SaveUnscanRecord(record *UnscanRecord) error {
 
 //GetWalletByAddress 获取地址对应的钱包
 func (bs *BTCBlockScanner) GetWalletByAddress(address string) (*openwallet.Wallet, bool) {
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
+
 	account, ok := bs.addressInScanning[address]
 	if ok {
 		wallet, ok := bs.walletInScanning[account]
@@ -934,6 +952,10 @@ func (wm *WalletManager) GetTxIDsInMemPool() ([]string, error) {
 	result, err := wm.hcdClient.Call("getrawmempool", nil)
 	if err != nil {
 		return nil, err
+	}
+
+	if !result.IsArray() {
+		return nil, errors.New("no query record")
 	}
 
 	for _, txid := range result.Array() {

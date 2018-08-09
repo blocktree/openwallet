@@ -21,9 +21,9 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/mitchellh/mapstructure"
 	"github.com/tidwall/gjson"
-	"log"
 	"net/http"
 	"time"
+	"github.com/blocktree/OpenWallet/log"
 )
 
 //局部常量
@@ -31,11 +31,9 @@ const (
 	WriteWait       = 60 * time.Second //超时为6秒
 	PongWait        = 30 * time.Second
 	PingPeriod      = (PongWait * 9) / 10
-	MaxMessageSize  = 1 * 1024 // 最大消息通道数
-	ReadBufferSize  = 1024 * 1024
-	WriteBufferSize = 1024 * 1024
 	WSRequest       = 1 //wesocket请求标识
 	WSResponse      = 2 //wesocket响应标识
+	MaxMessageSize  = 1 * 1024
 )
 
 var (
@@ -60,6 +58,11 @@ type Authorization interface {
 	DecryptData(data []byte) ([]byte, error)
 	//EnableAuth 开启授权
 	EnableAuth() bool
+
+	//Header 协议头
+	//Header() map[string]string
+	////VerifyHeader 校验授权
+	//VerifyHeader(header map[string]string) bool
 }
 
 //Client 基于websocket的通信客户端
@@ -69,6 +72,9 @@ type Client struct {
 	handler Handler
 	send    chan []byte
 	close   chan struct{}
+	isHost  bool
+	ReadBufferSize  int
+	WriteBufferSize int
 }
 
 //DataPacket 数据包
@@ -192,13 +198,24 @@ func Dial(url string, router Handler, auth Authorization) (*Client, error) {
 	if auth != nil && auth.EnableAuth() {
 		authURL = auth.ConnectAuth(url)
 	}
-	log.Printf("Connecting URL: %s", authURL)
+	log.Debug("Connecting URL:", authURL)
+
+
+
+	client := &Client{
+		handler: router,
+		send:    make(chan []byte, MaxMessageSize),
+		auth:    auth,
+		close:   make(chan struct{}),
+		ReadBufferSize: 1024 * 1024,
+		WriteBufferSize: 1024 * 1024,
+	}
 
 	dialer := websocket.Dialer{
-		ReadBufferSize:   ReadBufferSize,
-		WriteBufferSize:  WriteBufferSize,
 		Proxy:            http.ProxyFromEnvironment,
 		HandshakeTimeout: 45 * time.Second,
+		ReadBufferSize: client.ReadBufferSize,
+		WriteBufferSize: client.WriteBufferSize,
 	}
 
 	c, _, err := dialer.Dial(authURL, nil)
@@ -206,13 +223,7 @@ func Dial(url string, router Handler, auth Authorization) (*Client, error) {
 		return nil, err
 	}
 
-	client := &Client{
-		ws:      c,
-		handler: router,
-		send:    make(chan []byte, MaxMessageSize),
-		auth:    auth,
-		close:   make(chan struct{}),
-	}
+	client.ws = c
 
 	//发送通道
 	go client.writePump()
@@ -254,7 +265,7 @@ func (c *Client) writePump() {
 	defer func() {
 		ticker.Stop()
 		c.Close()
-		log.Printf("writePump end \n")
+		log.Debug("writePump end")
 	}()
 	for {
 		select {
@@ -265,7 +276,7 @@ func (c *Client) writePump() {
 				return
 			}
 			if Debug {
-				log.Printf("Send: %s\n", string(message))
+				log.Debug("Send: ", string(message))
 			}
 			if err := c.write(websocket.TextMessage, message); err != nil {
 				return
@@ -298,18 +309,18 @@ func (c *Client) readPump() {
 	})
 	defer func() {
 		//c.Close()
-		log.Printf("readPump end \n")
+		log.Debug("readPump end")
 	}()
 
 	for {
 		_, message, err := c.ws.ReadMessage()
 		if err != nil {
-			log.Printf("Read unexpected error: %v \n", err)
-			close(c.send) //读取通道异常，关闭读通道
+			log.Error("Read unexpected error: ", err)
+			//close(c.send) //读取通道异常，关闭读通道
 			break
 		}
 		if Debug {
-			log.Printf("Read: %s\n", string(message))
+			log.Debug("Read: ", string(message))
 		}
 
 		packet := NewDataPacket(gjson.ParseBytes(message))
@@ -320,7 +331,7 @@ func (c *Client) readPump() {
 			//验证授权
 			if client.auth != nil && client.auth.EnableAuth() {
 				if !c.auth.VerifyAuth(&p) {
-					log.Printf("auth failed: %v\n", p)
+					log.Error("auth failed: ", p)
 					client.Send(p) //发送验证失败结果
 					return
 				}
@@ -330,10 +341,6 @@ func (c *Client) readPump() {
 
 				//创建上下面指针，处理请求参数
 				ctx := Context{Req: p.Req, nonce: p.Nonce, inputs: p.Data, Method: p.Method}
-
-				if Debug {
-					log.Printf("ctx: %v\n", ctx)
-				}
 
 				client.handler.ServeOWTP(client, &ctx)
 
@@ -347,15 +354,11 @@ func (c *Client) readPump() {
 				var resp Response
 				runErr := mapstructure.Decode(p.Data, &resp)
 				if runErr != nil {
-					log.Printf("Response decode error: %v", runErr)
+					log.Error("Response decode error: ", runErr)
 					return
 				}
 
 				ctx := Context{Req: p.Req, nonce: p.Nonce, inputs: nil, Method: p.Method, Resp: resp}
-
-				if Debug {
-					log.Printf("ctx: %v\n", ctx)
-				}
 
 				client.handler.ServeOWTP(client, &ctx)
 
@@ -367,7 +370,7 @@ func (c *Client) readPump() {
 
 //Close 关闭连接
 func (c *Client) Close() {
-	log.Printf("client close\n")
+	log.Debug("client close\n")
 	c.ws.Close()
 	//close(c.send)
 	c.close <- struct{}{}

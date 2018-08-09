@@ -148,3 +148,30 @@ func InputRealNumber(prompt string, p bool) (string, error) {
 
 	return realNum, nil
 }
+
+//InputStartNumber 输入数值
+func InputStartNumber(prompt string, zero bool) (uint64, error) {
+
+	var (
+		num uint64
+	)
+
+	for {
+		// 等待用户输入参数
+		line, err := Stdin.PromptInput(prompt)
+		if err != nil {
+			openwLogger.Log.Errorf("unexpected error: %v\n", err)
+			return 0, err
+		}
+		num = common.NewString(line).UInt64()
+
+		if !zero && num < 0 {
+			fmt.Printf("Input can not be empty, and must be greater than or equal to 0.\n")
+			continue
+		}
+
+		break
+	}
+
+	return num, nil
+}

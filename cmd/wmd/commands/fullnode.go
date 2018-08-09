@@ -17,10 +17,10 @@ package commands
 
 import (
 	"github.com/blocktree/OpenWallet/assets"
-	wf "github.com/blocktree/OpenWallet/assets/walletnode"
 	"github.com/blocktree/OpenWallet/cmd/utils"
-	"github.com/blocktree/OpenWallet/logger"
+	wf "github.com/blocktree/OpenWallet/walletnode"
 	"gopkg.in/urfave/cli.v1"
+	"github.com/blocktree/OpenWallet/log"
 )
 
 var (
@@ -189,15 +189,17 @@ var (
 func getNode(c *cli.Context) error {
 	symbol := c.String("symbol")
 	if len(symbol) == 0 {
-		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+		log.Error("Argument -s <symbol> is missing")
+		return nil
 	}
 	m := assets.NodeManager(&wf.NodeManagerStruct{})
 	if m == nil {
-		openwLogger.Log.Errorf("%s walletnode manager did not load\n", symbol)
+		log.Error(symbol, " walletnode manager did not load")
+		return nil
 	}
 	err := m.GetNodeStatus(symbol)
 	if err != nil {
-		openwLogger.Log.Errorf("%v", err)
+		log.Error("unexpected error: ", err)
 	}
 	return err
 }
@@ -205,15 +207,17 @@ func getNode(c *cli.Context) error {
 func createNode(c *cli.Context) error {
 	symbol := c.String("symbol")
 	if len(symbol) == 0 {
-		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+		log.Error("Argument -s <symbol> is missing")
+		return nil
 	}
 	m := assets.NodeManager(&wf.NodeManagerStruct{})
 	if m == nil {
-		openwLogger.Log.Errorf("%s walletnode manager did not load\n", symbol)
+		log.Error(symbol, " walletnode manager did not load")
+		return nil
 	}
 	err := m.CreateNodeFlow(symbol)
 	if err != nil {
-		openwLogger.Log.Errorf("%v", err)
+		log.Error("unexpected error: ", err)
 	}
 	return err
 }
@@ -221,15 +225,17 @@ func createNode(c *cli.Context) error {
 func startNode(c *cli.Context) error {
 	symbol := c.String("symbol")
 	if len(symbol) == 0 {
-		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+		log.Error("Argument -s <symbol> is missing")
+		return nil
 	}
 	m := assets.NodeManager(&wf.NodeManagerStruct{})
 	if m == nil {
-		openwLogger.Log.Errorf("%s walletnode manager did not load\n", symbol)
+		log.Error(symbol, " walletnode manager did not load")
+		return nil
 	}
 	err := m.StartNodeFlow(symbol)
 	if err != nil {
-		openwLogger.Log.Errorf("%v", err)
+		log.Error("unexpected error: ", err)
 	}
 	return err
 }
@@ -237,15 +243,17 @@ func startNode(c *cli.Context) error {
 func stopNode(c *cli.Context) error {
 	symbol := c.String("symbol")
 	if len(symbol) == 0 {
-		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+		log.Error("Argument -s <symbol> is missing")
+		return nil
 	}
 	m := assets.NodeManager(&wf.NodeManagerStruct{})
 	if m == nil {
-		openwLogger.Log.Errorf("%s walletnode manager did not load\n", symbol)
+		log.Error(symbol, " walletnode manager did not load")
+		return nil
 	}
 	err := m.StopNodeFlow(symbol)
 	if err != nil {
-		openwLogger.Log.Errorf("%v", err)
+		log.Error("unexpected error: ", err)
 	}
 	return err
 }
@@ -253,15 +261,17 @@ func stopNode(c *cli.Context) error {
 func restartNode(c *cli.Context) error {
 	symbol := c.String("symbol")
 	if len(symbol) == 0 {
-		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+		log.Error("Argument -s <symbol> is missing")
+		return nil
 	}
 	m := assets.NodeManager(&wf.NodeManagerStruct{})
 	if m == nil {
-		openwLogger.Log.Errorf("%s walletnode manager did not load\n", symbol)
+		log.Error(symbol, " walletnode manager did not load")
+		return nil
 	}
 	err := m.RestartNodeFlow(symbol)
 	if err != nil {
-		openwLogger.Log.Errorf("%v", err)
+		log.Error("unexpected error: ", err)
 	}
 	return err
 }
@@ -269,32 +279,34 @@ func restartNode(c *cli.Context) error {
 func removeNode(c *cli.Context) error {
 	symbol := c.String("symbol")
 	if len(symbol) == 0 {
-		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+		log.Error("Argument -s <symbol> is missing")
+		return nil
 	}
 	m := assets.NodeManager(&wf.NodeManagerStruct{})
 	if m == nil {
-		openwLogger.Log.Errorf("%s walletnode manager did not load\n", symbol)
+		log.Error(symbol, " walletnode manager did not load")
+		return nil
 	}
 	err := m.RemoveNodeFlow(symbol)
 	if err != nil {
-		openwLogger.Log.Errorf("%v", err)
+		log.Error("unexpected error: ", err)
 	}
-	return err
+	return nil
 }
 
 //func initNodeConfig(c *cli.Context) (error) {
 //	symbol := c.String("symbol")
 //	if len(symbol) == 0 {
-//		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+//		log.Error("Argument -s <symbol> is missing")
 //	}
 //	m := assets.GetWMD(symbol).(assets.NodeManager)
 //	if m == nil {
-//		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
+//		log.Log.Errorf("%s wallet manager is not register\n", symbol)
 //	}
 //	//配置钱包
 //	err := m.InitNodeConfig()
 //	if err != nil {
-//		openwLogger.Log.Errorf("%v", err)
+//		log.Error("unexpected error: ", err)
 //	}
 //	return err
 //}
@@ -302,16 +314,16 @@ func removeNode(c *cli.Context) error {
 //func buildImage(c *cli.Context) error {
 //	symbol := c.String("symbol")
 //	if len(symbol) == 0 {
-//		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+//		log.Error("Argument -s <symbol> is missing")
 //	}
 //	m := assets.GetWMD(symbol).(assets.NodeManager)
 //	if m == nil {
-//		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
+//		log.Log.Errorf("%s wallet manager is not register\n", symbol)
 //	}
 //	//配置钱包
 //	err := m.BuildImage()
 //	if err != nil {
-//		openwLogger.Log.Errorf("%v", err)
+//		log.Error("unexpected error: ", err)
 //	}
 //	return err
 //}
@@ -319,16 +331,16 @@ func removeNode(c *cli.Context) error {
 //func loginContainer(c *cli.Context) error {
 //	symbol := c.String("symbol")
 //	if len(symbol) == 0 {
-//		openwLogger.Log.Fatal("Argument -s <symbol> is missing")
+//		log.Error("Argument -s <symbol> is missing")
 //	}
 //	m := assets.GetWMD(symbol).(assets.NodeManager)
 //	if m == nil {
-//		openwLogger.Log.Errorf("%s wallet manager is not register\n", symbol)
+//		log.Log.Errorf("%s wallet manager is not register\n", symbol)
 //	}
 //	//配置钱包
 //	err := m.LoginContainer()
 //	if err != nil {
-//		openwLogger.Log.Errorf("%v", err)
+//		log.Error("unexpected error: ", err)
 //	}
 //	return err
 //}

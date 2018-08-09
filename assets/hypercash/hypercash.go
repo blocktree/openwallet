@@ -31,6 +31,7 @@ import (
 //初始化配置流程
 func (wm *WalletManager) InitConfigFlow() error {
 
+	wm.config.initConfig()
 	file := filepath.Join(wm.config.configFilePath, wm.config.configFileName)
 	fmt.Printf("You can run 'vim %s' to edit wallet's config.\n", file)
 	return nil
@@ -61,7 +62,7 @@ func (wm *WalletManager) CreateWalletFlow() error {
 	name, err = console.InputText("Enter wallet's name: ", true)
 
 	// 等待用户输入密码
-	password, err = console.InputPassword(true, 8)
+	password, err = console.InputPassword(false, 3)
 
 	_, keyFile, err = wm.CreateNewWallet(name, password)
 	if err != nil {
@@ -70,8 +71,6 @@ func (wm *WalletManager) CreateWalletFlow() error {
 
 	fmt.Printf("\n")
 	fmt.Printf("Wallet create successfully, key path: %s\n", keyFile)
-
-	//重启钱包
 
 	return nil
 
@@ -121,7 +120,7 @@ func (wm *WalletManager) CreateAddressFlow() error {
 	}
 
 	//输入密码
-	password, err := console.InputPassword(false, 8)
+	password, err := console.InputPassword(false, 3)
 
 	log.Printf("Start batch creation\n")
 	log.Printf("-------------------------------------------------\n")
@@ -200,7 +199,7 @@ func (wm *WalletManager) SummaryFollow() error {
 
 				fmt.Printf("Register summary wallet [%s]-[%s]\n", w.Alias, w.WalletID)
 				//输入钱包密码完成登记
-				password, err := console.InputPassword(false, 8)
+				password, err := console.InputPassword(false, 3)
 				if err != nil {
 					return err
 				}
@@ -344,7 +343,7 @@ func (wm *WalletManager) TransferFlow() error {
 	}
 
 	//输入密码解锁钱包
-	password, err := console.InputPassword(false, 8)
+	password, err := console.InputPassword(false, 3)
 	if err != nil {
 		return err
 	}
@@ -374,6 +373,11 @@ func (wm *WalletManager) GetWalletList() error {
 	}
 
 	list, err := wm.GetWallets()
+
+	if len(list) == 0 {
+		log.Printf("No any wallets have created.\n")
+		return nil
+	}
 
 	//打印钱包列表
 	wm.printWalletList(list)
@@ -409,12 +413,12 @@ func (wm *WalletManager) RestoreWalletFlow() error {
 		return err
 	}
 
-	datFile, err = console.InputText("Enter backup wallet.dat file path: ", true)
+	datFile, err = console.InputText("Enter backup wallet.db file path: ", true)
 	if err != nil {
 		return err
 	}
 
-	password, err = console.InputPassword(false, 8)
+	password, err = console.InputPassword(false, 3)
 	if err != nil {
 		return err
 	}

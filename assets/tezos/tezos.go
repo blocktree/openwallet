@@ -20,14 +20,14 @@ import (
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/console"
-	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/timer"
-	"github.com/shopspring/decimal"
+	//"github.com/shopspring/decimal"
 	"log"
 	"path/filepath"
 	"strings"
 	"errors"
-	"github.com/ontio/ontology/account"
+	"github.com/shopspring/decimal"
+	"strconv"
 )
 
 
@@ -64,17 +64,12 @@ func (w *WalletManager) InitConfigFlow() error {
 			return err
 		}
 
-		walletPath, err = console.InputText("Set wallet main net filePath: ", false)
-		if err != nil {
-			return err
-		}
 
 		sumAddress, err = console.InputText("Set summary address: ", false)
 		if err != nil {
 			return err
 		}
 
-		fmt.Printf("[Please enter the amount of %s and must be numbers]\n", Symbol)
 
 		threshold, err = console.InputRealNumber("Set summary threshold: ", true)
 		if err != nil {
@@ -86,13 +81,13 @@ func (w *WalletManager) InitConfigFlow() error {
 			return err
 		}
 
-		fmt.Printf("[Suggest the transfer fees no less than %f]\n", 100)
+		fmt.Printf("[Suggest the transfer fees no less than %f]\n", 0.0001)
 		minFees, err = console.InputRealNumber("Set transfer fees: ", true)
 		if err != nil {
 			return err
 		}
 
-		fmt.Printf("[Suggest the gas limit no less than %f]\n", 100)
+		fmt.Printf("[Suggest the gas limit no less than %f]\n", 0.0001)
 		gasLimit, err = console.InputRealNumber("Set gas limit: ", true)
 		if err != nil {
 			return err
@@ -105,11 +100,11 @@ func (w *WalletManager) InitConfigFlow() error {
 		}
 
 		//最小发送数量不能超过汇总阀值
-		if minSendAmount > threshold {
-			return errors.New("The summary threshold must be greater than the minimum transfer amount! ")
-		}
-
 		if minFees > minSendAmount {
+			if minSendAmount > threshold {
+				return errors.New("The summary threshold must be greater than the minimum transfer amount! ")
+			}
+
 			return errors.New("The minimum transfer amount must be greater than the transfer fees! ")
 		}
 
@@ -147,7 +142,7 @@ func (w *WalletManager) InitConfigFlow() error {
 	fmt.Println()
 	fmt.Println()
 
-	_, filePath, err = newConfigFile(apiURL, walletPath, sumAddress, threshold, minSendAmount, minFees, gasLimit, storageLimit)
+	_, filePath, err = newConfigFile(apiURL, sumAddress, threshold, minSendAmount, minFees, gasLimit, storageLimit)
 
 	fmt.Printf("Config file create, file path: %s\n", filePath)
 
@@ -350,34 +345,14 @@ func (w *WalletManager) BackupWalletFlow() error {
 	backupPath := filepath.Join(keyDir, "backup")
 	file.MkdirAll(backupPath)
 
-	//linux
-	//备份secret.key, secret.key.lock, wallet-db
-	err = file.Copy(filepath.Join(walletPath, "secret.key"), backupPath)
-	if err != nil {
-		return err
-	}
-	err = file.Copy(filepath.Join(walletPath, "secret.key.lock"), backupPath)
-	if err != nil {
-		return err
-	}
-	err = file.Copy(filepath.Join(walletPath, "wallet-db"), backupPath)
-	if err != nil {
-		return err
-	}
 
-	//macOS
-	//备份secret.key, secret.key.lock, wallet-db
-	//err = file.Copy(filepath.Join(walletPath, "Secrets-1.0"), filepath.Join(backupPath))
-	//if err != nil {
-	//	return err
-	//}
-	//err = file.Copy(filepath.Join(walletPath, "Wallet-1.0"), filepath.Join(backupPath))
-	//if err != nil {
-	//	return err
-	//}
+	err = file.Copy(dbPath, filepath.Join(backupPath))
+	if err != nil {
+		return err
+	}
 
 	//输出备份导出目录
-	fmt.Printf("Wallet backup file path: %s", backupPath)
+	log.Printf("Wallet backup file path: %s", backupPath)
 
 	return nil
 
@@ -385,20 +360,19 @@ func (w *WalletManager) BackupWalletFlow() error {
 
 //SendTXFlow 发送交易
 func (w *WalletManager) TransferFlow() error {
-
 	//先加载是否有配置文件
 	err := loadConfig()
 	if err != nil {
 		return err
 	}
 
-	list, err := GetWalletInfo()
+	wallets, err := GetWallets()
 	if err != nil {
 		return err
 	}
 
 	//打印钱包列表
-	printWalletList(list)
+	printWalletList(wallets)
 
 	fmt.Printf("[Please select a wallet to send transaction] \n")
 
@@ -408,11 +382,11 @@ func (w *WalletManager) TransferFlow() error {
 		return err
 	}
 
-	if int(num) >= len(list) {
+	if int(num) >= len(wallets) {
 		return errors.New("Input number is out of index! ")
 	}
 
-	wallet := list[num]
+	wallet := wallets[num]
 
 	// 等待用户输入发送数量
 	amount, err := console.InputRealNumber("Enter amount to send: ", true)
@@ -422,65 +396,85 @@ func (w *WalletManager) TransferFlow() error {
 
 	atculAmount, _ := decimal.NewFromString(amount)
 	atculAmount = atculAmount.Mul(coinDecimal)
-	balance, err := decimal.NewFromString(wallet.Balance)
 
-	if atculAmount.GreaterThan(balance) {
-		return errors.New("Input amount is greater than balance! ")
-	}
-
-	// 等待用户输入发送数量
+	// 等待用户输入发送地址
 	receiver, err := console.InputText("Enter receiver address: ", true)
 	if err != nil {
 		return err
 	}
 
-	//汇总所有有钱的账户
-	accounts, err := GetAccountInfo(wallet.WalletID)
+	//输入密码解锁钱包
+	password, err := console.InputPassword(false, 8)
 	if err != nil {
 		return err
 	}
+	//加载钱包数据库数据
+	db, err := wallet.OpenDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
 
-	if len(accounts) == 0 {
-		return errors.New("Wallet is empty account! ")
+	var keys []*Key
+	db.All(&keys)
+
+	haveEnoughBalance := false
+
+
+	type sendStruct struct {
+		sednKeys *Key
+		fee      decimal.Decimal
+		amount   decimal.Decimal
 	}
 
-	//计算预估手续费
+	var sends []sendStruct
+	var resultSub decimal.Decimal = atculAmount
+	//新建发送地址列表以及验证余额是否足够
+	for _, k := range keys {
+		//get balance
+		decimal_balance, _ := decimal.NewFromString(string(callGetbalance(k.Address)))
 
-	for _, a := range accounts {
-		//大于最小额度才转账
-		accountAmount, _ := decimal.NewFromString(a.Amount)
-		if accountAmount.GreaterThan(atculAmount) && atculAmount.GreaterThan(minFees) {
-
-			fmt.Printf("-----------------------------------------------\n")
-			fmt.Printf("From Wallet Account: %s\n", a.AcountID)
-			fmt.Printf("To Address: %s\n", receiver)
-			fmt.Printf("Send: %v\n", atculAmount.Div(coinDecimal))
-			fmt.Printf("Fees: %v\n", minFees.Div(coinDecimal))
-			fmt.Printf("Receive: %v\n", atculAmount.Sub(minFees).Div(coinDecimal))
-			fmt.Printf("-----------------------------------------------\n")
-
-			fmt.Printf("[Please unlock wallet to send transaction]\n")
-
-			//输入密码解锁钱包
-			password, err := console.InputPassword(false, 8)
-			if err != nil {
-				return err
-			}
-
-			//配置钱包密码
-			h := common.NewString(password).SHA256()
-
-			tx, err := SendTx(a.AcountID, receiver, uint64(atculAmount.Sub(minFees).IntPart()), h)
-			if err != nil {
-				log.Printf("Send transaction failed, unexpected error：%v\n", err)
-				continue
-			} else {
-				log.Printf("Send transaction successfully, TXID：%s\n", tx.TxID)
-				return nil
-			}
-		} else {
-			fmt.Printf("The amount to is more then balance or less then fees! \n")
+		//判断是否是reveal交易
+		fee := minFees
+		isReverl := isReverlKey(k.Address)
+		if isReverl {
+			//多了reveal操作后，fee * 2
+			fee = minFees.Mul(decimal.RequireFromString("2"))
 		}
+		// 将该地址多余额减去矿工费
+		amount := decimal_balance.Sub(fee)
+		//该地址预留一点币，否则交易会失败，暂定0.00002 tez
+		amount = amount.Sub(decimal.RequireFromString("20"))
+		if amount.IntPart() < 0 {
+			continue
+		}
+
+		if resultSub.LessThanOrEqual(amount) {
+			send := sendStruct{k, fee, resultSub}
+			sends = append(sends, send)
+			haveEnoughBalance = true
+			break
+		} else {
+			send := sendStruct{k, fee, amount}
+			sends = append(sends, send)
+			log.Printf("address:%s, amount:%d, resultSub:%d\n", k.Address, amount.IntPart(), resultSub.IntPart())
+		}
+		resultSub = resultSub.Sub(amount)
+		log.Printf("resultSub:%d\n", resultSub.IntPart())
+	}
+
+	if haveEnoughBalance {
+		for _, send := range sends {
+			sk, _ := Decrypt(password, send.sednKeys.PrivateKey)
+			send.sednKeys.PrivateKey = sk
+
+			txid, _ := transfer(*send.sednKeys, receiver, strconv.FormatInt(minFees.IntPart(), 10), strconv.FormatInt(gasLimit.IntPart(), 10),
+				strconv.FormatInt(storageLimit.IntPart(), 10),strconv.FormatInt(send.amount.IntPart(), 10))
+			log.Printf("transfer address:%s, to address:%s, amount:%d, txid:%s\n", send.sednKeys.Address, sumAddress, send.amount.IntPart(), txid)
+		}
+	} else {
+		log.Printf("not enough balance\n")
+		return errors.New("Wallet have not enough balance to transfer\n")
 	}
 
 	return nil
@@ -499,7 +493,7 @@ func (w *WalletManager) GetWalletList() error {
 		return err
 	}
 
-	list, err := GetWalletInfo()
+	list, err := GetWallets()
 	if err != nil {
 		return err
 	}

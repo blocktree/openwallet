@@ -21,13 +21,13 @@ import (
 	"github.com/blocktree/OpenWallet/crypto"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/timer"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
 	"log"
 	"path/filepath"
 	"sync"
 	"time"
+	"encoding/base64"
 )
 
 const (
@@ -113,6 +113,8 @@ func (bs *BTCBlockScanner) AddWallet(accountID string, wallet *openwallet.Wallet
 
 //IsExistAddress 指定地址是否已登记扫描
 func (bs *BTCBlockScanner) IsExistAddress(address string) bool {
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
 	_, exist := bs.addressInScanning[address]
 	return exist
 }
@@ -588,7 +590,7 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, txid string) E
 					transaction.BlockHeight = blockHeight
 					transaction.Symbol = Symbol
 					transaction.Index = n
-					transaction.Sid = common.Bytes2Hex(crypto.SHA256([]byte(fmt.Sprintf("%s_%d_%s", txid, n, addr))))
+					transaction.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("%s_%d_%s", txid, n, addr))))
 
 					transactions = append(transactions, &transaction)
 
@@ -694,7 +696,7 @@ func (bs *BTCBlockScanner) DeleteRechargesByHeight(height uint64) error {
 
 	for _, wallet := range bs.walletInScanning {
 
-		list, err := wallet.GetRecharges(height)
+		list, err := wallet.GetRecharges(false, height)
 		if err != nil {
 			return err
 		}
@@ -747,6 +749,8 @@ func (bs *BTCBlockScanner) SaveUnscanRecord(record *UnscanRecord) error {
 
 //GetWalletByAddress 获取地址对应的钱包
 func (bs *BTCBlockScanner) GetWalletByAddress(address string) (*openwallet.Wallet, bool) {
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
 	account, ok := bs.addressInScanning[address]
 	if ok {
 		wallet, ok := bs.walletInScanning[account]

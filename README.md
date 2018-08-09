@@ -106,37 +106,84 @@ $ xgo --targets=linux/amd64 .
 wmd是一款多币种钱包维护工具。你只需要在服务器安装某币种的官方全节点钱包，并且wmd已经支持的币种。
 你就可以使用wmd的规范的命令完成钱包维护工作。
 
+#### 节点相关
+
 ```shell
 
-# 上传wmd文件到你的钱包服务器
+# 自动安装[symbol]的官方节点，到[dir]目录。
+$ ./wmd node install -s [symbol] -p [dir]
 
-# 命令行中： -s <symbol> 是针对某个币
+# 执行来自配置文件启动[symbol]节点的命令
+$ ./wmd node start -s [symbol]
 
-#执行初始化配置文件，文件保存在./conf/<symbol>.json
-$ ./wmd config init -s <symbol>
+# 执行来自配置文件关闭[symbol]节点的命令
+$ ./wmd node stop -s [symbol]
 
-#执行查看钱包管理工具的配置文件
-$ ./wmd config see -s <symbol>
+# 执行来自配置文件关闭[symbol]节点和启动[symbol]节点的命令
+$ ./wmd node restart -s [symbol]
 
-#创建钱包，成功后，文件保存在./data/<symbol>/key/
-$ ./wmd wallet new -s <symbol>
+# 查看与[symbol]节点相关的信息
+$ ./wmd node info -s [symbol]
 
-#备份钱包私钥和账户相关文件，文件保存在./data/<symbol>/key/backup/
-$ ./wmd wallet backup -s <symbol>
+# 查看./conf/[symbol].ini文件中与节点相关的配置信息
+$ ./wmd node config -s [symbol]
 
-# 执行恢复钱包，提供钱包的备份文件
-$ ./wmd wallet restore -s <symbol>
-
-#执行批量创建地址命令，文件保存在./conf/<symbol>/address/
-$ ./wmd wallet batchaddr -s <symbol>
-
-#启动批量汇总监听器
-$ ./wmd wallet startsum -s <symbol>
-
-#查询钱包列表
-$ ./wmd wallet list -s <symbol>
-
-#发起转行交易
-$ ./wmd wallet transfer -s <symbol>
+# 执行重新初始化节点配置
+$ ./wmd node config -s [symbol] -i
 
 ```
+
+#### 钱包相关
+
+```shell
+
+# 创建钱包，成功后，文件保存在./data/[symbol]/key/
+$ ./wmd wallet new -s [symbol]
+
+# 备份钱包私钥和账户相关文件，文件保存在./data/[symbol]/key/backup/
+$ ./wmd wallet backup -s [symbol]
+
+# 执行恢复钱包，提供钱包的备份文件
+$ ./wmd wallet restore -s [symbol]
+
+# 执行批量创建地址命令，文件保存在./conf/[symbol]/address/
+$ ./wmd wallet batchaddr -s [symbol]
+
+# 启动批量汇总监听器
+$ ./wmd wallet startsum -s [symbol]
+
+# 查询钱包列表
+$ ./wmd wallet list -s [symbol]
+
+# 发起转行交易
+$ ./wmd wallet transfer -s [symbol]
+
+# 查看./conf/[symbol].ini文件中与钱包相关的配置信息
+$ ./wmd wallet config -s [symbol]
+
+# 执行重新初始化钱包配置
+$ ./wmd wallet config -s [symbol] -i
+
+```
+
+#### 商户相关
+
+```shell
+
+# 查看通信的客户端和服务端公钥，没有自动创建客户端密钥对
+$ ./wmd merchant keychain
+
+# 重新创建客户端密钥对
+$ ./wmd merchant keychain -i
+
+# 根据配置文件中的相关商户设置信息，连接到商户服务
+$ ./wmd merchant join
+
+# 查看./merchant_data/merchant.ini文件中与商户相关的配置信息
+$ ./wmd merchant config
+
+# 执行重新初始化商户配置
+$ ./wmd merchant config  -i
+
+```
+

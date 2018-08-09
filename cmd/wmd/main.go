@@ -26,7 +26,7 @@ import (
 
 const (
 	clientIdentifier = "wmd" // Client identifier to advertise over the network
-	version          = "0.1.1"
+	version          = "0.3.0"
 )
 
 var (
@@ -34,14 +34,11 @@ var (
 	gitCommit = ""
 	// The app that holds all commands and flags.
 	app = utils.NewApp(gitCommit, "the Wallet Manager Driver command line interface")
-	//flags that configure the node
-	nodeFlags = []cli.Flag{
-		utils.AppNameFlag,
-	}
 )
 
 func init() {
 	// Initialize the CLI app and start openw
+	app.Name = "wmd"
 	app.Action = wmd
 	app.HideVersion = true // we have a command to print the version
 	app.Copyright = "Copyright 2018 The OpenWallet Authors"
@@ -52,11 +49,17 @@ func init() {
 		commands.CmdNode,
 		commands.CmdMerchant,
 	}
+	app.Flags = []cli.Flag{
+		utils.AppNameFlag,
+		utils.LogDirFlag,
+		utils.LogDebugFlag,
+	}
 
 	sort.Sort(cli.CommandsByName(app.Commands))
 }
 
 func main() {
+
 	if err := app.Run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -65,5 +68,6 @@ func main() {
 
 //wmd is a util to manager multi currency symbol wallet
 func wmd(ctx *cli.Context) error {
+
 	return nil
 }

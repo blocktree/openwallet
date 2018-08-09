@@ -67,6 +67,10 @@ func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error)
 		body = make(map[string]interface{}, 0)
 	)
 
+	if c.client == nil {
+		return nil, errors.New("API url is not setup. ")
+	}
+
 	authHeader := req.Header{
 		"Accept":        "application/json",
 		"Authorization": "Basic " + c.AccessToken,

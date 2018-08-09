@@ -67,6 +67,7 @@ type Recharge struct {
 	IsMemo      bool   `json:"isMemo"`
 	Memo        string `json:"memo"`
 	Index       uint64 `json:"index"`
+	Received    bool
 }
 
 type Withdraw struct {
@@ -78,6 +79,7 @@ type Withdraw struct {
 	Amount   string `json:"amount"`
 	Memo     string `json:"memo"`
 	Password string `json:"password"`
+	TxID     string `json:"txid"`
 }
 
 //NewWithdraw 创建提现单
