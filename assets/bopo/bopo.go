@@ -18,12 +18,15 @@ package bopo
 import (
 	"errors"
 	"fmt"
-	// "io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/console"
+	"github.com/blocktree/OpenWallet/timer"
+	"github.com/blocktree/OpenWallet/walletnode"
 	"github.com/shopspring/decimal"
 )
 
@@ -86,22 +89,23 @@ func (w *WalletManager) TransferFlow() error {
 		return err
 	}
 
-	// Show all wallet addr
-	if err := w.GetWalletList(); err != nil {
-		return err
-	}
+	// // Show all wallet addr
+	// if err := w.GetWalletList(); err != nil {
+	// 	return err
+	// }
 
 	// Wallet ID
 	for i := 0; i < 3; i++ {
-		wid, err = console.InputText("Use wallet (By: alias): ", true)
+		wid, err = console.InputText("Use wallet (By: WalletID): ", true)
 		if err != nil {
 			return err
 		}
 
 		// Check wid
-		if _, err := getWalletInfo(wid); err != nil {
+		if w, err := getWalletInfo(wid); err != nil {
 			fmt.Println(err)
 		} else {
+			printWalletList([]*Wallet{w})
 			break
 		}
 
@@ -136,14 +140,12 @@ func (w *WalletManager) TransferFlow() error {
 		amount, err = console.InputText("Amount(Unit: coin, 1 coin = 10^8 pais): ", true)
 		if err != nil {
 			fmt.Println(err)
-			//return err
 		}
 		if cc, err := decimal.NewFromString(amount); err != nil {
 			fmt.Println(err)
-			// return err
 		} else {
 			amount = cc.Mul(coinDecimal).String()
-			break
+			break // Success
 		}
 
 		// Stop after 3 times to check
@@ -159,12 +161,14 @@ func (w *WalletManager) TransferFlow() error {
 		return err
 	}
 
+	// Transferring
 	fmt.Println("Transfer......")
 	if wallet, err := toTransfer(wid, toaddr, amount, message); err != nil {
 		return err
 	} else {
 		time.Sleep(12 * time.Second)
 		// printWalletList([]*Wallet{wallet, &Wallet{Addr: toaddr}})
+		wallet, err = getWalletInfo(wid)
 		printWalletList([]*Wallet{wallet})
 	}
 
@@ -196,6 +200,7 @@ func FilePathWalkDir(root string) ([]string, error) {
 	return files, err
 }
 
+// Restore BOPO wallet
 func (w *WalletManager) RestoreWalletFlow() error {
 
 	var (
@@ -241,20 +246,82 @@ func (w *WalletManager) RestoreWalletFlow() error {
 		}
 
 	}
-	fmt.Println("EMD")
 
 	// To restore
+	fmt.Printf("Restoring wallet.dat file \t ...... ")
 	if err := restoreWalletData(datFile); err != nil {
+		fmt.Printf("Failed\n")
 		return err
 	}
+	fmt.Printf("Done\n")
+
+	// Restart wallet
+	fmt.Printf("Restarting wallet nodes \t ...... ")
+	wn := walletnode.NodeManagerStruct{}
+	if err := wn.RestartNodeFlow(Symbol); err != nil {
+		fmt.Printf("Failed\n")
+		return err
+	}
+	fmt.Printf("Done\n")
 
 	return nil
 }
 
 func (w *WalletManager) CreateAddressFlow() error {
-	return errors.New("Writing!")
+	return errors.New("Same as 'wmd wallet new -s XXXX'!")
 }
 
 func (w *WalletManager) SummaryFollow() error {
-	return errors.New("Writing!")
+
+	fmt.Printf("[Summary Wallet Start]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+
+	// Load config
+	if err := loadConfig(); err != nil {
+		return err
+	}
+
+	// Check summary addr
+	if len(sumAddress) == 0 {
+		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
+	}
+	if err := verifyAddr(sumAddress); err != nil {
+		fmt.Println("Summary address invalid!")
+		return err
+	}
+	if w, err := getWalletInfo2(sumAddress); err != nil {
+		log.Println(err)
+		return err
+	} else {
+		fmt.Println("The summary address info: ")
+		printWalletList([]*Wallet{w})
+
+		// Confirm summary wallet
+		if cfi, err := console.InputText(fmt.Sprintf("Confirm  wid[%s](addr[%s]) to summary (yes/no)? ", w.WalletID, w.Addr), true); err != nil || cfi != "yes" {
+			return err
+		}
+	}
+
+	//	// List all wallets that have balance to summary (without summaryAddr)
+	//	wallets, err := getWalletList()
+	//	if err != nil {
+	//		return err
+	//	}
+	//	tmp := wallets[:0]
+	//	for _, w := range wallets {
+	//		// fmt.Printf("Summary: %d = %+v\t %+v\t %+v\t\n", 1, w.Alias, w.Balance, w.Balance == "")
+	//		if w.Balance != "" && w.Addr != sumAddress {
+	//			tmp = append(tmp, w)
+	//		}
+	//	}
+	//	wallets = tmp
+	//	fmt.Println("\nFollows will be summary")
+	//	printWalletList(wallets)
+
+	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", cycleSeconds.Seconds())
+
+	// Start timer
+	sumTimer := timer.NewTask(cycleSeconds, summaryWallets)
+	sumTimer.Start()
+
+	return nil
 }

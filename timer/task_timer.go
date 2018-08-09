@@ -36,7 +36,7 @@ func (t *TaskTimer) Start() {
 
 	t.timer = time.NewTicker(t.duration)
 
-	go func(innerT *TaskTimer) {
+	func(innerT *TaskTimer) {
 		defer func() {
 			innerT.timer.Stop()
 			innerT.timer = nil
