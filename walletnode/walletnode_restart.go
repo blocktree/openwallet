@@ -17,7 +17,6 @@ package walletnode
 
 import (
 	"context"
-	"fmt"
 )
 
 func (w *NodeManagerStruct) RestartNodeFlow(symbol string) error {
@@ -37,8 +36,11 @@ func (w *NodeManagerStruct) RestartNodeFlow(symbol string) error {
 		return err
 	}
 	err = c.ContainerRestart(context.Background(), cName, nil)
-	if err == nil {
-		fmt.Printf("%s walletnode restart in success!\n", symbol)
+	if err != nil {
+		return err
+		// fmt.Printf("%s walletnode restart in success!\n", symbol)
 	}
-	return err
+
+	return nil
+
 }
