@@ -22,8 +22,7 @@ import (
 
 var(
 	//testServer          ="https://nodes.devnet.iota.org:443"
-	ourServer           = "http://47.52.16.168:14265"
-	seed                = "ZVPBLFLIEIGYTQGOGOMBDPKEUKEVHCXHUBJHLRYWDXPYMDLZNLNPQHPY9GNCEXCZZBSRMMNXBSXLKQEGA"
+	seed                = "EQWIOMCAWKJBRQCBRCBSOKVEXQOWUCAFVTGJZLXJVIGOLWYPXIVIKQJWRZGW9KDQLPECZGAAZOGIYCRVP"
 	//skipTransferTest    = false
 )
 

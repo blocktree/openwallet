@@ -220,19 +220,6 @@ func (w *WalletManager) CreateAddressFlow() error {
 	return nil
 }
 
-//汇总钱包流程
-
-/*
-
-汇总执行流程：
-1. 执行启动汇总某个币种命令。
-2. 列出该币种的全部可用钱包信息。
-3. 输入需要汇总的钱包序号数组（以,号分隔）。
-4. 输入每个汇总钱包的密码，完成汇总登记。
-5. 工具启动定时器监听钱包，并输出日志到log文件夹。
-6. 待已登记的汇总钱包达到阀值，发起账户汇总到配置下的地址。
-
-*/
 
 // SummaryFollow 汇总流程
 func (w *WalletManager) SummaryFollow() error {
@@ -250,7 +237,6 @@ func (w *WalletManager) SummaryFollow() error {
 	}
 
 	//输入要汇总的钱包的种子
-	//输入钱包seed
 	seed, err := console.InputText("Please enter the seed of the wallet which you want to sum: ", true)
 	if err != nil {
 		return err
@@ -275,7 +261,6 @@ func (w *WalletManager) SummaryFollow() error {
 			time.Sleep(10000000000)
 			continue
 		}else {
-			fmt.Printf("SummaryWallets successfully.\n")
 			fmt.Printf("SummaryWallets will be started in 10 seconds.\n")
 			time.Sleep(10000000000)
 			continue
