@@ -18,6 +18,7 @@ package bopo
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -88,22 +89,23 @@ func (w *WalletManager) TransferFlow() error {
 		return err
 	}
 
-	// Show all wallet addr
-	if err := w.GetWalletList(); err != nil {
-		return err
-	}
+	// // Show all wallet addr
+	// if err := w.GetWalletList(); err != nil {
+	// 	return err
+	// }
 
 	// Wallet ID
 	for i := 0; i < 3; i++ {
-		wid, err = console.InputText("Use wallet (By: alias): ", true)
+		wid, err = console.InputText("Use wallet (By: WalletID): ", true)
 		if err != nil {
 			return err
 		}
 
 		// Check wid
-		if _, err := getWalletInfo(wid); err != nil {
+		if w, err := getWalletInfo(wid); err != nil {
 			fmt.Println(err)
 		} else {
+			printWalletList([]*Wallet{w})
 			break
 		}
 
@@ -143,7 +145,7 @@ func (w *WalletManager) TransferFlow() error {
 			fmt.Println(err)
 		} else {
 			amount = cc.Mul(coinDecimal).String()
-			break
+			break // Success
 		}
 
 		// Stop after 3 times to check
@@ -166,6 +168,7 @@ func (w *WalletManager) TransferFlow() error {
 	} else {
 		time.Sleep(12 * time.Second)
 		// printWalletList([]*Wallet{wallet, &Wallet{Addr: toaddr}})
+		wallet, err = getWalletInfo(wid)
 		printWalletList([]*Wallet{wallet})
 	}
 
@@ -285,32 +288,40 @@ func (w *WalletManager) SummaryFollow() error {
 		fmt.Println("Summary address invalid!")
 		return err
 	}
-	// wallet, err := getWalletInfo(wid); err != nil {
-	// printWalletList([]*Wallet{wallet})
-
-	// Confirm summary wallet
-
-	// List all wallets that have balance to summary (without summaryAddr)
-	wallets, err := getWalletList()
-	if err != nil {
+	if w, err := getWalletInfo2(sumAddress); err != nil {
+		log.Println(err)
 		return err
-	}
-	tmp := wallets[:0]
-	for _, w := range wallets {
-		// fmt.Printf("Summary: %d = %+v\t %+v\t %+v\t\n", 1, w.Alias, w.Balance, w.Balance == "")
-		if w.Balance != "" && w.Addr != sumAddress {
-			tmp = append(tmp, w)
+	} else {
+		fmt.Println("The summary address info: ")
+		printWalletList([]*Wallet{w})
+
+		// Confirm summary wallet
+		if cfi, err := console.InputText(fmt.Sprintf("Confirm  wid[%s](addr[%s]) to summary (yes/no)? ", w.WalletID, w.Addr), true); err != nil || cfi != "yes" {
+			return err
 		}
 	}
-	wallets = tmp
-	fmt.Println("\nFollows will be summary")
-	printWalletList(wallets)
+
+	//	// List all wallets that have balance to summary (without summaryAddr)
+	//	wallets, err := getWalletList()
+	//	if err != nil {
+	//		return err
+	//	}
+	//	tmp := wallets[:0]
+	//	for _, w := range wallets {
+	//		// fmt.Printf("Summary: %d = %+v\t %+v\t %+v\t\n", 1, w.Alias, w.Balance, w.Balance == "")
+	//		if w.Balance != "" && w.Addr != sumAddress {
+	//			tmp = append(tmp, w)
+	//		}
+	//	}
+	//	wallets = tmp
+	//	fmt.Println("\nFollows will be summary")
+	//	printWalletList(wallets)
+
+	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", cycleSeconds.Seconds())
 
 	// Start timer
 	sumTimer := timer.NewTask(cycleSeconds, summaryWallets)
 	sumTimer.Start()
-
-	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", cycleSeconds.Seconds())
 
 	return nil
 }

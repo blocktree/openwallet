@@ -17,15 +17,40 @@ package bopo
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"time"
 )
 
 func summaryWallets() {
-	fmt.Println(time.Now().Format("2006-01-02 15:04:05:000"))
+	fmt.Printf("%s -> ", time.Now().Format("2006-01-02 15:04:05:000"))
 
-	if err := ioutil.WriteFile("/tmp/abcd.txt", []byte("AAAA"), 0600); err != nil {
+	// List all wallets that have balance to summary (without summaryAddr)
+	wallets, err := getWalletList()
+	if err != nil {
 		log.Println(err)
 	}
+
+	tmp := wallets[:0]
+	for _, w := range wallets {
+		if w.Balance != "" && w.Addr != sumAddress {
+			tmp = append(tmp, w)
+		}
+	}
+	wallets = tmp
+	fmt.Printf("There are %d wallets will be summary······", len(wallets))
+	// if len(wallets) > 0 {
+	// 	printWalletList(wallets)		// 加上后，会转账失败！原因未知？留作提醒
+	// }
+
+	// Summary
+	for _, w := range wallets {
+		message := time.Now().UTC().Format(time.RFC850)
+
+		if _, err := toTransfer(w.WalletID, sumAddress, w.Balance, message); err != nil {
+			log.Println(err)
+		}
+	}
+	time.Sleep(time.Second * 1)
+	fmt.Printf("Done\n")
+
 }

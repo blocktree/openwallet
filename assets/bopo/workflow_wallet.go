@@ -40,16 +40,11 @@ func getWalletList() ([]*Wallet, error) {
 		addr := a.String()
 
 		balance := ""
-		if ww, err := getWalletB(addr); err == nil {
+		if ww, err := getWalletBalance(addr); err == nil {
 			balance = ww.Balance
-			// if bal != "" {
-			// 	cc, _ := decimal.NewFromString(bal)
-			// 	bal = cc.Div(coinDecimal).String()
-			// 	w.Balance = fmt.Sprintf("%s (%s coins)", ww.Balance, bal)
-			// }
 		}
 
-		w := &Wallet{Alias: wid, Addr: addr, Balance: balance}
+		w := &Wallet{WalletID: wid, Addr: addr, Balance: balance}
 		wallets = append(wallets, w)
 	}
 
@@ -75,18 +70,52 @@ func createWallet(wid string) (*Wallet, error) {
 
 // -----------------------------------------------------------------------------
 // Get one wallet info
-func getWalletInfo(wid string) (*Wallet, error) {
+func getWalletInfo(wid string) (wallet *Wallet, err error) {
 
 	if r, err := client.Call(fmt.Sprintf("account/%s", wid), "GET", nil); err != nil {
 		return nil, err
 	} else {
 		data := gjson.ParseBytes(r).Map()
-		return &Wallet{Alias: wid, Addr: data["address"].String()}, nil
+		addr := data["address"].String()
+
+		balance := ""
+		if ww, err := getWalletBalance(addr); err == nil {
+			balance = ww.Balance
+		}
+
+		return &Wallet{WalletID: wid, Addr: addr, Balance: balance}, nil
+	}
+}
+
+// Get one wallet info by addr
+func getWalletInfo2(addr string) (wallet *Wallet, err error) {
+	var (
+		wid, balance string
+	)
+
+	if r, err := client.Call("account", "GET", nil); err != nil {
+		return nil, err
+	} else {
+		data := gjson.ParseBytes(r).Map()
+
+		for id, a := range data {
+			if addr == a.String() {
+				wid = id
+
+				if ww, err := getWalletBalance(addr); err == nil {
+					balance = ww.Balance
+				}
+
+				break
+			}
+		}
+
+		return &Wallet{WalletID: wid, Addr: addr, Balance: balance}, nil
 	}
 }
 
 // 获取钱包信息
-func getWalletB(addr string) (wallet *Wallet, err error) {
+func getWalletBalance(addr string) (wallet *Wallet, err error) {
 
 	// Get balance
 	if d, err := client.Call(fmt.Sprintf("chain/%s", addr), "GET", nil); err != nil {
@@ -104,6 +133,7 @@ func getWalletB(addr string) (wallet *Wallet, err error) {
 			emp := data.Map()
 
 			wallet = &Wallet{
+				WalletID: "",
 				// Alias:
 				Addr:    addr,
 				Balance: emp["pais"].String(),
@@ -121,14 +151,13 @@ func printWalletList(list []*Wallet) {
 
 	for i, w := range list {
 
-		// if ww, err := getWalletB(w.Addr); err == nil {
 		bal := w.Balance
 		if bal != "" {
 			cc, _ := decimal.NewFromString(bal)
 			bal = cc.Div(coinDecimal).String()
 			w.Balance = fmt.Sprintf("%s (%s coins)", w.Balance, bal)
 		}
-		// }
+
 		tableInfo = append(tableInfo, []interface{}{
 			i + 1, w.WalletID, w.Alias, w.Addr, w.Balance,
 		})
