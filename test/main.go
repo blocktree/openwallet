@@ -39,9 +39,9 @@ func main() {
 	//tech.TestBatchCreateAddr()
 	//tech.TestBitInt()
 	//tech.TestTransferFlow()
-	tech.TestSummaryFlow()
+	//tech.TestSummaryFlow()
 	//tech.TestBackupWallet()
-	//tech.TestRestoreWallet()
+	tech.TestRestoreWallet()
 
 	fmt.Println("done ... ")
 }

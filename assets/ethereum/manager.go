@@ -86,26 +86,30 @@ func CreateNewWallet(name, password string) (*Wallet, string, error) {
 	return &w, keyFile, nil
 }
 
-func GetWalletKey(file string) (*Wallet, error) {
-	finfo, err := os.Stat(file)
+func GetWalletKey(fileWitoutProfix string) (*Wallet, error) {
+
+	keyfile := fileWitoutProfix + ".key"
+	//dbfile := fileWitoutProfix + ".db"
+	finfo, err := os.Stat(keyfile)
 	if err != nil {
-		openwLogger.Log.Errorf("stat file [%v] failed, err = %v", file, err)
+		openwLogger.Log.Errorf("stat file [%v] failed, err = %v", keyfile, err)
 		return nil, err
 	}
 
-	if strings.Index(finfo.Name(), ".key") != (len(finfo.Name()) - 5) {
+	/*if strings.Index(finfo.Name(), ".key") != (len(finfo.Name()) - 5) {
 		openwLogger.Log.Errorf("file name error")
-		return nil, err
-	}
+		return nil, errors.New("verify key file name error")
+	}*/
 	var key struct {
 		Alias  string `json:"alias"`
 		RootId string `json:"rootid"`
 	}
 	buf := new(bufio.Reader)
 
-	fd, err := os.Open(file)
+	fd, err := os.Open(keyfile)
 	defer fd.Close()
 	if err != nil {
+		openwLogger.Log.Errorf("get wallet key, open db failed, err = %v", err)
 		return nil, err
 	}
 
@@ -908,16 +912,18 @@ func RestoreWallet(keyFile string, password string) error {
 		openwLogger.Log.Errorf(errinfo)
 		return err
 	}
-	parts := filepath.SplitList(keyFile)
+	/*parts := strings.Split(keyFile, "\\") //filepath.SplitList(keyFile)
 	l := len(parts)
 	if l == 0 {
 		errinfo := fmt.Sprintf("wrong keyFile[%v] passed through...", keyFile)
 		openwLogger.Log.Errorf(errinfo)
 		return errors.New(errinfo)
 	}
+	*/
+	dirName := finfo.Name()
 
-	dirName := parts[l-1]
-	parts = strings.Split(dirName, "-")
+	fmt.Println("dirName:", dirName)
+	parts := strings.Split(dirName, "-")
 	if len(parts) != 3 {
 		errinfo := fmt.Sprintf("invalid directory name[%v] ", dirName)
 		openwLogger.Log.Errorf(errinfo)
@@ -933,13 +939,17 @@ func RestoreWallet(keyFile string, password string) error {
 
 	walletId := parts[1]
 	//检查备份路径下key文件的密码
-	walletKeyBackupPath := keyFile + "/" + parts[0] + "-" + walletId + ".key"
+	fmt.Println("keyFiel:", keyFile)
+	fmt.Println("part0:", parts[0])
+	fmt.Println("part1:", parts[1])
+	fmt.Println("part2:", parts[2])
+	walletKeyBackupPath := keyFile + "/" + parts[0] + "-" + walletId
 	walletBackup, err := GetWalletKey(walletKeyBackupPath)
 	if err != nil {
 		openwLogger.Log.Errorf("parse the key file [%v] failed, err= %v.", walletKeyBackupPath, err)
 		return err
 	}
-
+	fmt.Println("walletBackup:", walletBackup)
 	err = verifyBackupWallet(walletBackup, keyFile, password)
 	if err != nil {
 		openwLogger.Log.Errorf("verify the backup wallet [%v] password failed, err= %v.", walletKeyBackupPath, err)
