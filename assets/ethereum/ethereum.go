@@ -88,6 +88,10 @@ func (this *WalletManager) CreateWalletFlow() error {
 
 	// 等待用户输入密码
 	password, err := console.InputPassword(true, 8)
+	if err != nil {
+		openwLogger.Log.Errorf("input password failed, err = %v", err)
+		return err
+	}
 
 	_, keyFile, err := CreateNewWallet(name, password)
 	if err != nil {
@@ -165,6 +169,16 @@ func (this *WalletManager) CreateAddressFlow() error {
 
 	//输入密码
 	password, err := console.InputPassword(false, 8)
+	if err != nil {
+		openwLogger.Log.Errorf("input password failed, err = %v", err)
+		return err
+	}
+
+	err = UnlockWallet(account, password)
+	if err != nil {
+		openwLogger.Log.Errorf("unlock wallet [%v] failed, err = %v", account.WalletID, err)
+		return err
+	}
 
 	log.Printf("Start batch creation\n")
 	log.Printf("-------------------------------------------------\n")
@@ -219,6 +233,19 @@ func (this *WalletManager) SummaryFollow() error {
 			if numInt < len(wallets) {
 				w := wallets[numInt]
 				fmt.Printf("Register summary wallet [%s]-[%s]\n", w.Alias, w.WalletID)
+
+				password, err := console.InputPassword(false, 8)
+				if err != nil {
+					openwLogger.Log.Errorf("input wallet password failed, err=%v", err)
+					return err
+				}
+
+				err = UnlockWallet(w, password)
+				if err != nil {
+					openwLogger.Log.Errorf("unlock wallet [%v] failed, err = %v", w.WalletID, err)
+					return err
+				}
+				w.Password = password
 				AddWalletInSummary(w.WalletID, w)
 			} else {
 				return errors.New("The input No. out of index! ")
@@ -297,6 +324,13 @@ func (this *WalletManager) TransferFlow() error {
 	wallet := list[num]
 	fmt.Println("wallet[", wallet.Alias, "] is chosen. ")
 
+	// 等待用户输入密码
+	password, err := console.InputPassword(false, 8)
+	if err != nil {
+		openwLogger.Log.Errorf("input password failed, err=%v", err)
+		return err
+	}
+
 	// 等待用户输入发送数量
 	receiver, err := console.InputText("Enter receiver address: ", true)
 	if err != nil {
@@ -331,7 +365,7 @@ func (this *WalletManager) TransferFlow() error {
 
 	//建立交易单
 	txID, err := SendTransaction(wallet,
-		receiver, amountInt, DefaultPasswordForEthKey, true)
+		receiver, amountInt, password, true)
 	if err != nil {
 		return err
 	}
@@ -372,13 +406,20 @@ func (this *WalletManager) BackupWalletFlow() error {
 
 	wallet := wallets[num]
 
-	backupPath, err := BackupWalletToDefaultPath(wallet)
+	// 等待用户输入密码
+	password, err := console.InputPassword(false, 8)
+	if err != nil {
+		openwLogger.Log.Errorf("input password failed, err = %v", err)
+		return err
+	}
+
+	backupPath, err := BackupWalletToDefaultPath(wallet, password)
 	if err != nil {
 		return err
 	}
 
 	//输出备份导出目录
-	fmt.Printf("--Wallet backup file path: %s\n", backupPath)
+	fmt.Printf("Wallet backup file path: %s\n", backupPath)
 
 	return nil
 }
@@ -397,8 +438,15 @@ func (this *WalletManager) RestoreWalletFlow() error {
 		return err
 	}
 
+	// 等待用户输入密码
+	password, err := console.InputPassword(false, 8)
+	if err != nil {
+		openwLogger.Log.Errorf("input password failed, err = %v", err)
+		return err
+	}
+
 	fmt.Printf("Wallet restoring, please wait a moment...\n")
-	err = RestoreWallet(keyPath)
+	err = RestoreWallet(keyPath, password)
 	if err != nil {
 		return err
 	}

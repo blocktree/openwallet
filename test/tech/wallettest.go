@@ -26,7 +26,7 @@ func TestBatchCreateAddr() {
 
 	err := manager.CreateAddressFlow()
 	if err != nil {
-		fmt.Println("CreateAddressFlow faile, err=%", err)
+		fmt.Println("CreateAddressFlow failed, err=", err)
 	}
 
 	//ethereum.GetWalletList()

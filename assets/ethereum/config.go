@@ -52,7 +52,7 @@ var (
 	//ethereum key存放路径
 	EthereumKeyPath = "/Users/peter/workspace/bitcoin/wallet/src/github.com/ethereum/go-ethereum/chain/keystore"
 	//钱包下keystore默认密码
-	DefaultPasswordForEthKey = "yjHFlngdBDl12"
+	//DefaultPasswordForEthKey = "yjHFlngdBDl12"
 	//汇总执行间隔时间
 	cycleSeconds = time.Second * 10
 	//默认配置内容

@@ -86,6 +86,42 @@ func CreateNewWallet(name, password string) (*Wallet, string, error) {
 	return &w, keyFile, nil
 }
 
+func GetWalletKey(file string) (*Wallet, error) {
+	finfo, err := os.Stat(file)
+	if err != nil {
+		openwLogger.Log.Errorf("stat file [%v] failed, err = %v", file, err)
+		return nil, err
+	}
+
+	if strings.Index(finfo.Name(), ".key") != (len(finfo.Name()) - 5) {
+		openwLogger.Log.Errorf("file name error")
+		return nil, err
+	}
+	var key struct {
+		Alias  string `json:"alias"`
+		RootId string `json:"rootid"`
+	}
+	buf := new(bufio.Reader)
+
+	fd, err := os.Open(file)
+	defer fd.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	buf.Reset(fd)
+	// Parse the address.
+	key.Alias = ""
+	key.RootId = ""
+	err = json.NewDecoder(buf).Decode(&key)
+	if err != nil {
+		openwLogger.Log.Errorf("decode key file error, err = %v", err)
+		return nil, err
+	}
+
+	return &Wallet{WalletID: key.RootId, Alias: key.Alias, KeyFile: finfo.Name()}, nil
+}
+
 func GetWalletKeys(dir string) ([]*Wallet, error) {
 	var key struct {
 		Alias  string `json:"alias"`
@@ -200,16 +236,22 @@ func exec_shell(s string) (string, error) {
 	return out.String(), err
 }
 
-func BackupWalletToDefaultPath(wallet *Wallet) (string, error) {
+func BackupWalletToDefaultPath(wallet *Wallet, password string) (string, error) {
 	newBackupDir := filepath.Join(backupDir, wallet.FileName()+"-"+common.TimeFormat(TIME_POSTFIX))
-	return BackupWallet(newBackupDir, wallet)
+	return BackupWallet(newBackupDir, wallet, password)
 }
 
-func BackupWallet(newBackupDir string, wallet *Wallet) (string, error) {
+func BackupWallet(newBackupDir string, wallet *Wallet, password string) (string, error) {
 	/*w, err := GetWalletInfo(wallet.WalletID)
 	if err != nil {
 		return "", err
 	}*/
+
+	err := UnlockWallet(wallet, password)
+	if err != nil {
+		openwLogger.Log.Errorf("unlock wallet failed, err=%v", err)
+		return "", err
+	}
 
 	addressMap := make(map[string]int)
 	files := make([]string, 0)
@@ -356,6 +398,25 @@ func CreateNewPrivateKey(parentKey *keystore.HDKey, timestamp, index uint64) (*e
 	return keyCombo, &addr, err
 }
 
+func verifyBackupWallet(wallet *Wallet, keyPath string, password string) error {
+	s := keystore.NewHDKeystore(keyPath, keystore.StandardScryptN, keystore.StandardScryptP)
+	_, err := wallet.HDKey(password, s)
+	if err != nil {
+		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey from path[%v], err=%v\n", keyPath, err))
+		return err
+	}
+	return nil
+}
+
+func UnlockWallet(wallet *Wallet, password string) error {
+	_, err := wallet.HDKey(password, storage)
+	if err != nil {
+		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
+		return err
+	}
+	return nil
+}
+
 func CreateBatchAddress(name, password string, count uint64) error {
 	//读取钱包
 	w, err := GetWalletInfo(name)
@@ -364,8 +425,8 @@ func CreateBatchAddress(name, password string, count uint64) error {
 		return err
 	}
 
-	//加载钱包
-	keyroot, err := w.HDKey(password)
+	//验证钱包
+	keyroot, err := w.HDKey(password, storage)
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
 		return err
@@ -397,7 +458,12 @@ func CreateBatchAddress(name, password string, count uint64) error {
 			errcount++
 			continue
 		}
-		ethKeyStore.NewAccountForWalletBT(keyCombo, DefaultPasswordForEthKey)
+		_, err = ethKeyStore.NewAccountForWalletBT(keyCombo, password)
+		if err != nil {
+			openwLogger.Log.Errorf("NewAccountForWalletBT failed, err = %v", err)
+			errcount++
+			continue
+		}
 		//ethKeyStore.StoreNewKeyForWalletBT(ethKeyStore, keyCombo, DefaultPasswordForEthKey)
 
 		err = tx.Save(address)
@@ -463,6 +529,13 @@ func GetTransactionFeeEstimated(from string, to string, amount *big.Int) (*txFee
 
 func SendTransaction(wallet *Wallet, to string, amount *big.Int, password string, feesInSender bool) ([]string, error) {
 	var txIds []string
+
+	err := UnlockWallet(wallet, password)
+	if err != nil {
+		openwLogger.Log.Errorf("unlock wallet [%v]. failed, err=%v", wallet.WalletID, err)
+		return nil, err
+	}
+
 	addrs, err := GetAddressesByWallet(wallet)
 	if err != nil {
 		openwLogger.Log.Errorf("failed to get addresses from db, err = %v", err)
@@ -480,6 +553,12 @@ func SendTransaction(wallet *Wallet, to string, amount *big.Int, password string
 		var fee *txFeeInfo
 
 		fmt.Println("amount remained:", amount.String())
+		//空账户直接跳过
+		if amount.Cmp(big.NewInt(0)) == 0 {
+			openwLogger.Log.Infof("skip the address[%v] with 0 balance. ", addrs[i].Address)
+			continue
+		}
+
 		//如果该地址的余额足够支付转账
 		if addrs[i].balance.Cmp(amount) >= 0 {
 			amountToSend = *amount
@@ -495,7 +574,7 @@ func SendTransaction(wallet *Wallet, to string, amount *big.Int, password string
 			//灰尘账户, 余额不足以发起一次transaction
 			fmt.Println("amount to send ignore fee:", amountToSend.String())
 			if balanceLeft.Cmp(big.NewInt(0)) < 0 {
-				errinfo := fmt.Sprintf("[%v] is a dust address, will skip. /n", addrs[i].Address)
+				errinfo := fmt.Sprintf("[%v] is a dust address, will skip. ", addrs[i].Address)
 				openwLogger.Log.Errorf(errinfo)
 				continue
 			}
@@ -516,7 +595,7 @@ func SendTransaction(wallet *Wallet, to string, amount *big.Int, password string
 
 			//灰尘账户, 余额不足以发起一次transaction
 			if amountToSend.Cmp(fee.Fee) <= 0 {
-				errinfo := fmt.Sprintf("[%v] is a dust address, will skip. /n", addrs[i].Address)
+				errinfo := fmt.Sprintf("[%v] is a dust address, will skip. ", addrs[i].Address)
 				openwLogger.Log.Errorf(errinfo)
 				continue
 			}
@@ -806,7 +885,7 @@ func SummaryWallets() {
 			log.Printf("Summary account[%s]balance = %v \n", wallet.WalletID, balance)
 			log.Printf("Summary account[%s]Start Send Transaction\n", wallet.WalletID)
 
-			txId, err := SendTransaction(wallet, sumAddress, balance, DefaultPasswordForEthKey, true)
+			txId, err := SendTransaction(wallet, sumAddress, balance, wallet.Password, true)
 			if err != nil {
 				log.Printf("Summary account[%s]unexpected error: %v\n", wallet.WalletID, err)
 				continue
@@ -820,7 +899,7 @@ func SummaryWallets() {
 }
 
 //RestoreWallet 恢复钱包
-func RestoreWallet(keyFile string) error {
+func RestoreWallet(keyFile string, password string) error {
 	fmt.Printf("Validating key file... \n")
 
 	finfo, err := os.Stat(keyFile)
@@ -853,19 +932,41 @@ func RestoreWallet(keyFile string) error {
 	}
 
 	walletId := parts[1]
-	wallet, err := GetWalletInfo(walletId)
+	//检查备份路径下key文件的密码
+	walletKeyBackupPath := keyFile + "/" + parts[0] + "-" + walletId + ".key"
+	walletBackup, err := GetWalletKey(walletKeyBackupPath)
+	if err != nil {
+		openwLogger.Log.Errorf("parse the key file [%v] failed, err= %v.", walletKeyBackupPath, err)
+		return err
+	}
+
+	err = verifyBackupWallet(walletBackup, keyFile, password)
+	if err != nil {
+		openwLogger.Log.Errorf("verify the backup wallet [%v] password failed, err= %v.", walletKeyBackupPath, err)
+		return err
+	}
+
+	walletexist, err := GetWalletInfo(walletId)
 	if err != nil && err.Error() != WALLET_NOT_EXIST_ERR {
 		errinfo := fmt.Sprintf("get wallet [%v] info failed, err = %v ", walletId, err)
 		openwLogger.Log.Errorf(errinfo)
 		return errors.New(errinfo)
 	} else if err == nil {
-		newBackupDir := filepath.Join(backupDir+"/restore", wallet.FileName()+"-"+common.TimeFormat(TIME_POSTFIX))
-		_, err := BackupWallet(newBackupDir, wallet)
+		err = UnlockWallet(walletexist, password)
 		if err != nil {
-			errinfo := fmt.Sprintf("backup wallet[%v] before restore failed,err = %v ", wallet.WalletID, err)
+			openwLogger.Log.Errorf("unlock the existing wallet [%v] password failed, err= %v.", walletKeyBackupPath, err)
+			return err
+		}
+
+		newBackupDir := filepath.Join(backupDir+"/restore", walletexist.FileName()+"-"+common.TimeFormat(TIME_POSTFIX))
+		_, err := BackupWallet(newBackupDir, walletexist, password)
+		if err != nil {
+			errinfo := fmt.Sprintf("backup wallet[%v] before restore failed,err = %v ", walletexist.WalletID, err)
 			openwLogger.Log.Errorf(errinfo)
 			return errors.New(errinfo)
 		}
+	} else {
+
 	}
 
 	files, err := ioutil.ReadDir(keyFile)

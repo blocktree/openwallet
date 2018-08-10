@@ -29,9 +29,9 @@ type Address struct {
 }
 
 //HDKey 获取钱包密钥，需要密码
-func (w *Wallet) HDKey(password string) (*keystore.HDKey, error) {
+func (w *Wallet) HDKey(password string, s *keystore.HDKeystore) (*keystore.HDKey, error) {
 	fmt.Println("w.KeyFile:", w.KeyFile)
-	key, err := storage.GetKey(w.WalletID, w.KeyFile, password)
+	key, err := s.GetKey(w.WalletID, w.KeyFile, password)
 	if err != nil {
 		return nil, err
 	}
@@ -44,6 +44,10 @@ func (w *Wallet) OpenDB() (*storm.DB, error) {
 	file := w.DBFile()
 	fmt.Println("dbpath:", dbPath, ", file:", file)
 	return storm.Open(file)
+}
+
+func (w *Wallet) OpenDbByPath(path string) (*storm.DB, error) {
+	return storm.Open(path)
 }
 
 //DBFile 数据库文件
