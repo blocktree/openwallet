@@ -187,6 +187,8 @@ func (wm *WalletManager) AddMerchantObserverForBlockScan(obj openwallet.BlockSca
 	wm.blockscanner.AddObserver(obj)
 	wm.blockscanner.AddWallet(wallet.WalletID, wallet)
 
+	//wm.blockscanner.SetRescanBlockHeight(3200)
+
 	wm.blockscanner.Run()
 	return nil
 }

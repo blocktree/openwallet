@@ -17,11 +17,17 @@
 package owtp
 
 import (
+	"fmt"
+	"github.com/asdine/storm"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/bwmarrin/snowflake"
+	"github.com/mitchellh/mapstructure"
 	"math/rand"
 	"sync"
 	"time"
 )
+
+type ConnectType int
 
 const (
 
@@ -42,115 +48,246 @@ const (
 	ErrInternalServerError uint64 = 500
 	//请求与响应的方法不一致
 	ErrResponseMethodDiffer uint64 = 501
+	//协商失败
+	ErrKeyAgreementFailed uint64 = 502
+
 	//60X: 自定义错误
 	ErrCustomError uint64 = 600
+
+	Websocket ConnectType = 0
+
+	KeyAgreementMethod = "internal_keyAgreement"
 )
 
 //OWTPNode 实现OWTP协议的节点
 type OWTPNode struct {
-	URL string
 	//客户端
 	client *Client
 	//nonce生成器
 	nonceGen *snowflake.Node
+	//缓存文件
+	cacheFile string
 	//默认路由
 	serveMux *ServeMux
-	//是否已经连接
-	isConnected bool
+	//是否监听连接中
+	listening bool
+	//节点运行中
+	running bool
 	//读写锁
 	mu sync.RWMutex
 	//关闭连接时的回调
-	disconnectHandler func(n *OWTPNode)
-	//授权
-	Auth Authorization
+	disconnectHandler func(n *OWTPNode, peer Peer)
+	//连接时的回调
+	connectHandler func(n *OWTPNode, peer Peer)
+	//节点存储器
+	peerstore Peerstore
+	//服务监听器
+	listener Listener
+	//授权证书
+	cert Certificate
+	//Broadcast   chan BroadcastMessage
+	Join  chan Peer
+	Leave chan Peer
+	Stop  chan struct{}
+
+	//通道的读写缓存大小
+	ReadBufferSize, WriteBufferSize int
 }
 
+var (
+	DefaultNode = NewOWTPNode(Certificate{}, 0, 0)
+)
+
 //NewOWTPNode 创建OWTP协议节点
-func NewOWTPNode(nodeID int64, url string, auth Authorization) *OWTPNode {
+func NewOWTPNode(cert Certificate, readBufferSize, writeBufferSize int) *OWTPNode {
 
 	node := &OWTPNode{}
-	node.URL = url
-	node.nonceGen, _ = snowflake.NewNode(nodeID)
+	node.nonceGen, _ = snowflake.NewNode(1)
 	node.serveMux = &ServeMux{timeout: 120 * time.Second}
-	node.Auth = auth
+	node.cert = cert
+	node.peerstore = NewPeerstore()
+	node.ReadBufferSize = readBufferSize
+	node.WriteBufferSize = writeBufferSize
+	node.Join = make(chan Peer)
+	node.Leave = make(chan Peer)
+	node.Stop = make(chan struct{})
+
+	//内部配置一个协商密码处理过程
+	node.HandleFunc(KeyAgreementMethod, node.keyAgreement)
+
+	//马上执行
+	go node.Run()
+
 	return node
 }
 
-//IsConnected 是否已连接
-func (node *OWTPNode) IsConnected() bool {
-	return node.isConnected
+//Listen 监听TCP地址
+func (node *OWTPNode) Listen(addr string) error {
+
+	if node.listening {
+		return fmt.Errorf("the node is listening, please close listener first")
+	}
+
+	l, err := ListenAddr(addr, node)
+	if err != nil {
+		return err
+	}
+	node.listener = l
+
+	go func(listener Listener) {
+		for {
+			peer, err := listener.Accept()
+			if err != nil {
+				return
+			}
+			node.Join <- peer
+		}
+	}(l)
+
+	node.listening = true
+
+	return nil
+}
+
+//listening 是否监听中
+func (node *OWTPNode) Listening() bool {
+	return node.listening
 }
 
 //Connect 建立长连接
-func (node *OWTPNode) Connect() error {
+func (node *OWTPNode) Connect(addr string, pid string) error {
 
-	//已经连接过了
-	if node.client != nil && node.isConnected {
-		return nil
+	if len(addr) == 0 {
+		return fmt.Errorf("the peer address is empty")
 	}
 
-	//建立链接，记录默认的客户端
-	client, err := Dial(node.URL, node.serveMux, node.Auth)
+	url := addr + "/" + pid
+
+	auth, err := NewOWTPAuthWithCertificate(node.cert)
+
+	//发起协商密钥
+	err = auth.InitKeyAgreement()
 	if err != nil {
 		return err
 	}
 
-	node.mu.Lock()
-	//设置一个全局的webscoket
-	node.client = client
-	//node.client.SetCloseHandler(node.disconnect)
-	node.isConnected = true
-	node.serveMux.ResetQueue()
-	node.mu.Unlock()
+	//建立链接，记录默认的客户端
+	client, err := Dial(pid, url, node, auth.AuthHeader(), node.ReadBufferSize, node.WriteBufferSize)
+	if err != nil {
+		return err
+	}
 
-	go node.run()
+	//设置授权规则
+	client.auth = auth
+
+	node.peerstore.SaveAddr(pid, addr)
 
 	return nil
 }
 
 //SetCloseHandler 设置关闭连接时的回调
-func (node *OWTPNode) SetCloseHandler(h func(n *OWTPNode)) {
+func (node *OWTPNode) SetCloseHandler(h func(n *OWTPNode, peer Peer)) {
 	node.disconnectHandler = h
 }
 
-//run 运行监听连接关闭
-func (node *OWTPNode) run() {
+// Run 运行,go Run运行一条线程
+func (node *OWTPNode) Run() error {
+
+	defer func() {
+		node.running = false
+	}()
+
+	if node.running {
+		return fmt.Errorf("node is running")
+	}
+
+	node.running = true
+
+	//开启节点管理运行时
 	for {
 		select {
-		case <-node.client.close:
-			node.isConnected = false
-			node.serveMux.ResetQueue()
-			node.disconnectHandler(node)
-			return
+		case peer := <-node.Join:
+			//客户端加入
+			log.Info("节点加入:", peer.PID())
+			node.peerstore.AddOnlinePeer(peer)
+
+			//加入后打开数据流通道
+			if err := peer.OpenPipe(); err != nil {
+				log.Error("peer:", peer.PID(), "open pipe failed")
+				continue
+			}
+
+			//非我方主动连接的，并且开启授权，向其发起密钥协商
+			if !peer.IsHost() && peer.Auth().EnableAuth() {
+				//加入成功后，进行密码协商
+				node.callKeyAgreement(peer)
+			}
+
+			if node.connectHandler != nil {
+				go node.connectHandler(node, peer)
+			}
+
+			break
+		case peer := <-node.Leave:
+			//客户端离开
+			log.Info("节点断开:", peer.PID())
+			node.serveMux.ResetRequestQueue(peer.PID())
+			node.peerstore.RemoveOfflinePeer(peer.PID())
+
+			if node.disconnectHandler != nil {
+				go node.disconnectHandler(node, peer)
+			}
+
+			break
+		case <- node.Stop:
+			return nil
+			//case m := <-p.Broadcast:
+			//	//推送消息给客户端
+			//	beego.Debug("推送消息给客户端:", m)
+			//	p.broadcastMessage(m)
+			//	break
 		}
 	}
+
+	return nil
 }
 
-//disconnect 断开连接实现回调
-//func (node *OWTPNode) disconnect(code int, text string) error {
-//	node.isConnected = false
-//	node.serveMux.ResetQueue()
-//	node.disconnectHandler(node)
-//	return nil
-//}
+//ClosePeer 断开连接节点
+func (node *OWTPNode) ClosePeer(pid string) {
+
+	//检查是否已经连接服务
+	peer := node.peerstore.GetOnlinePeer(pid)
+	if peer == nil {
+		return
+	}
+	peer.Close()
+}
 
 //Close 关闭节点
 func (node *OWTPNode) Close() {
 
-	if !node.isConnected {
-		return
+	if node.listener != nil {
+		node.listener.Close()
+		node.mu.Lock()
+		node.listening = false
+		node.mu.Unlock()
 	}
 
-	//中断客户端连接
-	node.client.Close()
-	node.serveMux.ResetQueue()
-	node.mu.Lock()
-	node.isConnected = false
-	node.mu.Unlock()
+	//中断所有客户端连接
+	for _, peer := range node.peerstore.OnlinePeers() {
+		peer.Close()
+		node.serveMux.ResetRequestQueue(peer.PID())
+	}
+
+	//通知停止运行
+	node.Stop <- struct{}{}
+
+	//node.client.Close()
 }
 
 //Call 向对方节点进行调用
 func (node *OWTPNode) Call(
+	pid string,
 	method string,
 	params interface{},
 	sync bool,
@@ -162,8 +299,15 @@ func (node *OWTPNode) Call(
 	)
 
 	//检查是否已经连接服务
-	if !node.isConnected {
-		err = node.Connect() //重新连接
+	peer := node.peerstore.GetOnlinePeer(pid)
+	if peer == nil {
+
+		peerAddr := node.peerstore.GetAddr(pid)
+		if peerAddr == "" {
+			return fmt.Errorf("the peer: %s is not in address book", pid)
+		}
+
+		err = node.Connect(peerAddr, peer.PID()) //重新连接
 		if err != nil {
 			return err
 		}
@@ -181,14 +325,14 @@ func (node *OWTPNode) Call(
 		Data:      params,
 	}
 
-	//发送请求
-	err = node.client.Send(packet)
+	//向节点发送请求
+	err = peer.Send(packet)
 	if err != nil {
 		return err
 	}
 
 	//添加请求到队列，异步或同步等待结果
-	node.serveMux.AddRequest(nonce, time, method, reqFunc, respChan, sync)
+	node.serveMux.AddRequest(peer.PID(), nonce, time, method, reqFunc, respChan, sync)
 	if sync {
 		//等待返回
 		result := <-respChan
@@ -203,11 +347,183 @@ func (node *OWTPNode) HandleFunc(method string, handler HandlerFunc) {
 	node.serveMux.HandleFunc(method, handler)
 }
 
+//callKeyAgreement 发起协商计算
+func (node *OWTPNode) callKeyAgreement(peer Peer) error {
+
+	inputs := map[string]interface{}{
+		"localPrivateKey": node.cert.privateKeyBytes,
+		"localPublicKey":  node.cert.publicKeyBytes,
+	}
+
+	//计算密钥，并请求协商
+	params, err := peer.Auth().RequestKeyAgreement(inputs)
+	if err != nil {
+		return err
+	}
+
+	err = node.Call(
+		peer.PID(),
+		KeyAgreementMethod,
+		params,
+		true,
+		func(resp Response) {
+			if resp.Status == StatusSuccess {
+				sa := resp.JsonData().Get("sa").String()
+				finalErr := peer.Auth().VerifyKeyAgreement(sa)
+				if finalErr != nil {
+					//协商失败，断开连接
+					peer.Close()
+				}
+			}
+		})
+	return err
+}
+
+//keyAgreement 协商密钥
+func (node *OWTPNode) keyAgreement(ctx *Context) {
+
+	//检查是否已经连接服务
+	peer := node.peerstore.GetOnlinePeer(ctx.PID)
+	if peer == nil {
+		responseError(fmt.Sprintf("peer: %s is not connected.", ctx.PID), ErrKeyAgreementFailed)
+		return
+	}
+
+	pubkeyResponder := ctx.Params().Get("pubkeyResponder").String()
+	tmpPubkeyResponder := ctx.Params().Get("tmpPubkeyResponder").String()
+	sb := ctx.Params().Get("sb").String()
+
+	inputs := map[string]interface{}{
+		"remotePublicKey":    pubkeyResponder,
+		"remoteTmpPublicKey": tmpPubkeyResponder,
+		"sb":                 sb,
+	}
+
+	result, err := peer.Auth().ResponseKeyAgreement(inputs)
+	if err != nil {
+		responseError(err.Error(), ErrKeyAgreementFailed)
+		return
+	}
+
+	ctx.Response(result, StatusSuccess, "success")
+}
+
+//OnPeerOpen 节点连接成功
+func (node *OWTPNode) OnPeerOpen(peer Peer) {
+	node.Join <- peer
+}
+
+//OnPeerClose 节点关闭
+func (node *OWTPNode) OnPeerClose(peer Peer, reason string) {
+	node.Leave <- peer
+}
+
+//OnPeerNewDataPacketReceived 节点获取新数据包
+func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket) {
+
+	//重复攻击检查
+	if !node.checkNonceReplay(packet) {
+		log.Error("nonce duplicate: ", packet)
+		peer.Send(*packet)
+		return
+	}
+
+	//验证授权
+	if peer.Auth() != nil && peer.Auth().EnableAuth() {
+
+		//授权检查
+		if !peer.Auth().VerifySignature(packet) {
+			log.Error("auth failed: ", packet)
+			peer.Send(*packet) //发送验证失败结果
+			return
+		}
+	}
+
+	if packet.Req == WSRequest {
+
+		//创建上下面指针，处理请求参数
+		ctx := Context{PID: peer.PID(), Req: packet.Req, nonce: packet.Nonce, inputs: packet.Data, Method: packet.Method}
+
+		node.serveMux.ServeOWTP(peer.PID(), &ctx)
+
+		//处理完请求，推送响应结果给服务端
+		packet.Req = WSResponse
+		packet.Data = ctx.Resp
+		peer.Send(*packet)
+	} else if packet.Req == WSResponse {
+
+		//创建上下面指针，处理响应
+		var resp Response
+		runErr := mapstructure.Decode(packet.Data, &resp)
+		if runErr != nil {
+			log.Error("Response decode error: ", runErr)
+			return
+		}
+
+		ctx := Context{Req: packet.Req, nonce: packet.Nonce, inputs: nil, Method: packet.Method, Resp: resp}
+
+		node.serveMux.ServeOWTP(peer.PID(), &ctx)
+
+	}
+
+}
+
 //GenerateRangeNum 生成范围内的随机整数
 func GenerateRangeNum(min, max int) int {
 	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
 	randNum := rand.Intn(max-min) + min
 	return randNum
+}
+
+//checkNonceReplay 检查nonce是否重放
+func (node *OWTPNode) checkNonceReplay(data *DataPacket) bool {
+
+	var (
+		status = StatusSuccess
+		errMsg = ""
+	)
+
+	if data.Nonce == 0 || data.Timestamp == 0 {
+		//没有nonce直接跳过
+		status = ErrReplayAttack
+		errMsg = "no nonce"
+		//return ErrReplayAttack, "no nonce"
+	}
+
+	//检查是否重放
+	db, err := storm.Open(node.cacheFile)
+	if err != nil {
+		status = ErrReplayAttack
+		errMsg = "client system cache error"
+		//return ErrReplayAttack, "client system cache error"
+	}
+	defer db.Close()
+
+	var existPacket DataPacket
+	db.One("Nonce", data.Nonce, &existPacket)
+	if &existPacket != nil {
+		status = ErrReplayAttack
+		errMsg = "this is a replay attack"
+		//return ErrReplayAttack, "this is a replay attack"
+	}
+
+	//检查
+	//status, errMsg = auth.checkNonceReplay(*data)
+
+	if status != StatusSuccess {
+		resp := Response{
+			Status: status,
+			Msg:    errMsg,
+			Result: nil,
+		}
+		data.Req = WSResponse
+		data.Data = resp
+		data.Timestamp = time.Now().Unix()
+		return false
+	}
+
+	return true
+
 }
 
 //responseError 返回一个错误数据包

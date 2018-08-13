@@ -18,64 +18,28 @@ package owtp
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/gorilla/websocket"
-	"github.com/mitchellh/mapstructure"
 	"github.com/tidwall/gjson"
 	"net/http"
+	"sync"
 	"time"
-	"github.com/blocktree/OpenWallet/log"
 )
 
 //局部常量
 const (
-	WriteWait       = 60 * time.Second //超时为6秒
-	PongWait        = 30 * time.Second
-	PingPeriod      = (PongWait * 9) / 10
-	WSRequest       = 1 //wesocket请求标识
-	WSResponse      = 2 //wesocket响应标识
-	MaxMessageSize  = 1 * 1024
+	WriteWait      = 60 * time.Second //超时为6秒
+	PongWait       = 30 * time.Second
+	PingPeriod     = (PongWait * 9) / 10
+	WSRequest      = 1 //wesocket请求标识
+	WSResponse     = 2 //wesocket响应标识
+	MaxMessageSize = 1 * 1024
 )
 
 var (
 	Debug = false
 )
-
-type Handler interface {
-	ServeOWTP(client *Client, ctx *Context)
-}
-
-//Authorization 授权
-type Authorization interface {
-	//ConnectAuth 连接授权，处理连接授权参数，返回完整的授权连接
-	ConnectAuth(url string) string
-	//GenerateSignature 生成签名，并把签名加入到DataPacket中
-	AddAuth(data *DataPacket) bool
-	//VerifySignature 校验签名，若验证错误，可更新错误信息到DataPacket中
-	VerifyAuth(data *DataPacket) bool
-	//EncryptData 加密数据
-	EncryptData(data []byte) ([]byte, error)
-	//DecryptData 解密数据
-	DecryptData(data []byte) ([]byte, error)
-	//EnableAuth 开启授权
-	EnableAuth() bool
-
-	//Header 协议头
-	//Header() map[string]string
-	////VerifyHeader 校验授权
-	//VerifyHeader(header map[string]string) bool
-}
-
-//Client 基于websocket的通信客户端
-type Client struct {
-	auth    Authorization
-	ws      *websocket.Conn
-	handler Handler
-	send    chan []byte
-	close   chan struct{}
-	isHost  bool
-	ReadBufferSize  int
-	WriteBufferSize int
-}
 
 //DataPacket 数据包
 type DataPacket struct {
@@ -114,6 +78,8 @@ type Param struct {
 }
 
 type Context struct {
+	//节点ID
+	PID string
 	//传输类型，1：请求，2：响应
 	Req uint64
 	//请求序号
@@ -129,10 +95,11 @@ type Context struct {
 }
 
 //NewContext
-func NewContext(req, nonce uint64, method string, inputs interface{}) *Context {
+func NewContext(req, nonce uint64, pid, method string, inputs interface{}) *Context {
 	ctx := Context{
 		Req:    req,
 		nonce:  nonce,
+		PID:    pid,
 		Method: method,
 		inputs: inputs,
 	}
@@ -186,57 +153,154 @@ func NewDataPacket(json gjson.Result) *DataPacket {
 	return dp
 }
 
-// Dial connects a client to the given URL.
-func Dial(url string, router Handler, auth Authorization) (*Client, error) {
+//Client 基于websocket的通信客户端
+type Client struct {
+	auth            Authorization
+	ws              *websocket.Conn
+	handler         PeerHandler
+	send            chan []byte
+	isHost          bool
+	ReadBufferSize  int
+	WriteBufferSize int
+	pid             string
+	isConnect       bool
+	mu              sync.RWMutex //读写锁
+	closeChan           chan struct{}
+}
 
-	if router == nil {
-		return nil, errors.New("router should not be nil!")
+// Dial connects a client to the given URL.
+func Dial(
+	pid, url string,
+	handler PeerHandler,
+	header map[string]string,
+	ReadBufferSize, WriteBufferSize int) (*Client, error) {
+
+	var (
+		httpHeader http.Header
+	)
+
+	if handler == nil {
+		return nil, errors.New("hander should not be nil! ")
 	}
 
 	//处理连接授权
-	authURL := url
-	if auth != nil && auth.EnableAuth() {
-		authURL = auth.ConnectAuth(url)
-	}
-	log.Debug("Connecting URL:", authURL)
-
-
-
-	client := &Client{
-		handler: router,
-		send:    make(chan []byte, MaxMessageSize),
-		auth:    auth,
-		close:   make(chan struct{}),
-		ReadBufferSize: 1024 * 1024,
-		WriteBufferSize: 1024 * 1024,
-	}
+	//authURL := url
+	//if auth != nil && auth.EnableAuth() {
+	//	authURL = auth.ConnectAuth(url)
+	//}
+	log.Debug("Connecting URL:", url)
 
 	dialer := websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
 		HandshakeTimeout: 45 * time.Second,
-		ReadBufferSize: client.ReadBufferSize,
-		WriteBufferSize: client.WriteBufferSize,
+		ReadBufferSize:   ReadBufferSize,
+		WriteBufferSize:  WriteBufferSize,
 	}
 
-	c, _, err := dialer.Dial(authURL, nil)
+	if header != nil {
+		httpHeader = make(http.Header)
+		for key, value := range header {
+			httpHeader.Add(key, value)
+		}
+	}
+
+	ws, _, err := dialer.Dial(url, httpHeader)
 	if err != nil {
 		return nil, err
 	}
 
-	client.ws = c
+	client, err := NewClient(pid, ws, handler, nil)
+	if err != nil {
+		return nil, err
+	}
 
-	//发送通道
-	go client.writePump()
-
-	//监听消息
-	go client.readPump()
+	client.isConnect = true
+	client.isHost = true //我方主动连接
+	client.handler.OnPeerOpen(client)
 
 	return client, nil
 }
 
-//SetCloseHandler 设置关闭连接时的回调
-func (c *Client) SetCloseHandler(h func(code int, text string) error) {
-	c.ws.SetCloseHandler(h)
+func NewClient(pid string, conn *websocket.Conn, hander PeerHandler, auth Authorization) (*Client, error) {
+
+	if hander == nil {
+		return nil, errors.New("hander should not be nil! ")
+	}
+
+	client := &Client{
+		pid:   pid,
+		ws:    conn,
+		send:  make(chan []byte, MaxMessageSize),
+		closeChan: make(chan struct{}),
+		auth:  auth,
+	}
+
+	client.isConnect = true
+	client.SetHandler(hander)
+
+	return client, nil
+}
+
+func (c *Client) PID() string {
+	return c.pid
+}
+
+func (c *Client) Auth() Authorization {
+
+	return c.auth
+}
+
+func (c *Client) SetHandler(handler PeerHandler) error {
+	c.handler = handler
+	return nil
+}
+
+func (c *Client) IsHost() bool {
+	return c.isHost
+}
+
+func (c *Client) IsConnected() bool {
+	return c.isConnect
+}
+
+//Close 关闭连接
+func (c *Client) Close() error {
+
+	//外部被动执行
+	c.close(false)
+	return nil
+}
+
+
+//close 内部关闭连接
+func (c *Client) close(active bool) error {
+
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	//log.Debug("start close")
+	//
+	//log.Debug("peer:", c.PID(), "c.isConnect:", c.isConnect)
+
+	if !c.isConnect {
+		//log.Debug("end close")
+		return errors.New("client has been closed")
+	}
+
+	c.ws.Close()
+	c.isConnect = false
+
+	//主动执行，给通道通知
+	if active {
+		//log.Debug("send close chan:", c.PID())
+		c.closeChan <- struct{}{}
+
+	}
+
+	c.handler.OnPeerClose(c, "client close")
+	//log.Debug("end close")
+	return nil
 }
 
 //Send 发送消息
@@ -244,7 +308,7 @@ func (c *Client) Send(data DataPacket) error {
 
 	//添加授权
 	if c.auth != nil && c.auth.EnableAuth() {
-		if !c.auth.AddAuth(&data) {
+		if !c.auth.GenerateSignature(&data) {
 			return errors.New("OWTP: authorization failed")
 		}
 	}
@@ -253,8 +317,32 @@ func (c *Client) Send(data DataPacket) error {
 	if err != nil {
 		return err
 	}
+
+	if c.auth != nil && c.auth.EnableAuth() {
+		respBytes, err = c.auth.EncryptData(respBytes)
+		if err != nil {
+			return errors.New("OWTP: EncryptData failed")
+		}
+	}
+
 	//log.Printf("Send: %s\n", string(respBytes))
 	c.send <- respBytes
+	return nil
+}
+
+//OpenPipe 打开通道
+func (c *Client) OpenPipe() error {
+
+	if !c.IsConnected() {
+		return fmt.Errorf("client is not connect")
+	}
+
+	//发送通道
+	go c.writePump()
+
+	//监听消息
+	go c.readPump()
+
 	return nil
 }
 
@@ -264,7 +352,7 @@ func (c *Client) writePump() {
 	ticker := time.NewTicker(PingPeriod) //发送心跳间隔事件要<等待时间
 	defer func() {
 		ticker.Stop()
-		c.Close()
+		c.close(true)
 		log.Debug("writePump end")
 	}()
 	for {
@@ -308,17 +396,26 @@ func (c *Client) readPump() {
 		return nil
 	})
 	defer func() {
-		//c.Close()
+		c.close(true)
 		log.Debug("readPump end")
 	}()
 
 	for {
 		_, message, err := c.ws.ReadMessage()
 		if err != nil {
-			log.Error("Read unexpected error: ", err)
+			log.Error("peer:", c.PID(), "Read unexpected error: ", err)
 			//close(c.send) //读取通道异常，关闭读通道
 			break
 		}
+
+		if c.auth != nil && c.auth.EnableAuth() {
+			message, err = c.auth.DecryptData(message)
+			if err != nil {
+				log.Critical("OWTP: DecryptData failed")
+				continue
+			}
+		}
+
 		if Debug {
 			log.Debug("Read: ", string(message))
 		}
@@ -326,52 +423,7 @@ func (c *Client) readPump() {
 		packet := NewDataPacket(gjson.ParseBytes(message))
 
 		//开一个goroutine处理消息
-		go func(p DataPacket, client *Client) {
-
-			//验证授权
-			if client.auth != nil && client.auth.EnableAuth() {
-				if !c.auth.VerifyAuth(&p) {
-					log.Error("auth failed: ", p)
-					client.Send(p) //发送验证失败结果
-					return
-				}
-			}
-
-			if p.Req == WSRequest {
-
-				//创建上下面指针，处理请求参数
-				ctx := Context{Req: p.Req, nonce: p.Nonce, inputs: p.Data, Method: p.Method}
-
-				client.handler.ServeOWTP(client, &ctx)
-
-				//处理完请求，推送响应结果给服务端
-				p.Req = WSResponse
-				p.Data = ctx.Resp
-				client.Send(p)
-			} else if p.Req == WSResponse {
-
-				//创建上下面指针，处理响应
-				var resp Response
-				runErr := mapstructure.Decode(p.Data, &resp)
-				if runErr != nil {
-					log.Error("Response decode error: ", runErr)
-					return
-				}
-
-				ctx := Context{Req: p.Req, nonce: p.Nonce, inputs: nil, Method: p.Method, Resp: resp}
-
-				client.handler.ServeOWTP(client, &ctx)
-
-			}
-		}(*packet, c)
+		go c.handler.OnPeerNewDataPacketReceived(c, packet)
 
 	}
-}
-
-//Close 关闭连接
-func (c *Client) Close() {
-	log.Debug("client close\n")
-	c.ws.Close()
-	//close(c.send)
-	c.close <- struct{}{}
 }

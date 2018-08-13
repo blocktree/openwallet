@@ -84,7 +84,7 @@ func NewMerchantNode(config NodeConfig) (*MerchantNode, error) {
 	m.Config = config
 
 	//断开连接后，重新连接
-	m.Node.SetCloseHandler(func(n *owtp.OWTPNode) {
+	m.Node.SetCloseHandler(func(n *owtp.OWTPNode, peer owtp.Peer) {
 		log.Info("merchantNode disconnect.")
 		m.disconnected <- struct{}{}
 	})

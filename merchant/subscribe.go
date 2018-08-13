@@ -319,19 +319,23 @@ func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 					//	continue
 					//}
 					//
-					////更新确认数
-					//for _, r := range recharges {
-					//	log.Printf("Submit Recharges: %v", *r)
-					//	r.Confirm = int64(blockHeight - r.BlockHeight)
-					//
-					//	//确认数大于配置的确认数
-					//	if r.Confirm >= int64(config.Confirm) {
-					//		//删除已超过确认数的充值记录
-					//		tx.DeleteStruct(r)
-					//
-					//		log.Printf("delete recharge: %s \n ", r.Sid)
-					//	}
-					//}
+					//更新确认数
+					for _, r := range recharges {
+						//log.Printf("Submit Recharges: %v", *r)
+						if r.BlockHeight > 0 {
+							r.Confirm = int64(blockHeight - r.BlockHeight)
+						} else {
+							r.Confirm = 0
+						}
+
+						//确认数大于配置的确认数
+						//if r.Confirm >= int64(config.Confirm) {
+						//	//删除已超过确认数的充值记录
+						//	tx.DeleteStruct(r)
+						//
+						//	log.Printf("delete recharge: %s \n ", r.Sid)
+						//}
+					}
 					//tx.Commit()
 					//db.Close()
 

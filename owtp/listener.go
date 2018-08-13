@@ -16,73 +16,112 @@
 package owtp
 
 import (
-	"context"
 	"fmt"
+	"github.com/blocktree/OpenWallet/log"
 	ws "github.com/gorilla/websocket"
+	"github.com/pkg/errors"
 	"net"
 	"net/http"
 )
 
+//Listener 监听接口定义
+type Listener interface {
+	Accept() (Peer, error)
+	Close() error
+	Addr() net.Addr
+}
+
 // Default gorilla upgrader
 var upgrader = ws.Upgrader{}
 
-type listener struct {
+//owtp监听器
+type owtpListener struct {
 	net.Listener
-	auth     Authorization
+	handler  PeerHandler
 	closed   chan struct{}
-	incoming chan *Client
+	incoming chan Peer
+	laddr    string
 }
 
-func (l *listener) serve() {
+//serve 监听服务
+func (l *owtpListener) serve() error {
+
+	if l.Listener == nil {
+		return errors.New("listener is not setup.")
+	}
+
 	defer close(l.closed)
+	//http.ListenAndServe(l.laddr, l)
 	http.Serve(l.Listener, l)
+
+	return nil
 }
 
-func (l *listener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+//ServeHTTP 实现HTTP服务监听
+func (l *owtpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	log.Debug("http url path:", r.URL.Path)
+
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, "Failed to upgrade websocket", 400)
 		return
 	}
 
-	ctx, _ := context.WithCancel(context.Background())
+	//ctx, _ := context.WithCancel(context.Background())
 
 	var cnCh <-chan bool
 	if cn, ok := w.(http.CloseNotifier); ok {
 		cnCh = cn.CloseNotify()
 	}
 
-	wscon := &Client{
-		ws:      c,
-		handler: nil,
-		send:    make(chan []byte, MaxMessageSize),
-		close:   make(chan struct{}),
+	auth, err := NewOWTPAuthWithHTTPHeader(r.Header)
+	if err != nil {
+		log.Debug("NewOWTPAuth unexpected error:", err)
+		http.Error(w, "Failed to upgrade websocket", 400)
+		return
 	}
 
+	log.Debug("NewOWTPAuth successfully")
+
+	peer, err := NewClient(auth.RemotePID(), c, l.handler, auth)
+	if err != nil {
+		log.Debug("NewClient unexpected error:", err)
+		http.Error(w, "authorization not passed", 401)
+		return
+	}
 	// Just to make sure.
-	defer wscon.Close()
+	//defer peer.Close()
+
+	log.Debug("NewClient successfully")
 
 	select {
-	case l.incoming <- wscon:
+	case l.incoming <- peer:
 	case <-l.closed:
-		c.Close()
+		//peer.Close()
 		return
 	case <-cnCh:
+		log.Debug("http CloseNotify")
 		return
 	}
 
 	// wait until conn gets closed, otherwise the handler closes it early
 	select {
-	case <-ctx.Done():
-	case <-l.closed:
-		c.Close()
+	case <-peer.closeChan:
+		log.Debug("peer 1:", peer.PID(), "closed")
 		return
+	case <-l.closed:
+		log.Debug("peer 2:", peer.PID(), "closed")
+		peer.Close()
 	case <-cnCh:
+		log.Debug("http CloseNotify")
 		return
 	}
+
 }
 
-func (l *listener) Accept() (*Client, error) {
+//Accept 接收新节点链接，线程阻塞
+func (l *owtpListener) Accept() (Peer, error) {
 	select {
 	case c, ok := <-l.incoming:
 		if !ok {
@@ -92,4 +131,23 @@ func (l *listener) Accept() (*Client, error) {
 	case <-l.closed:
 		return nil, fmt.Errorf("listener is closed")
 	}
+}
+
+//ListenAddr 创建OWTP协议通信监听
+func ListenAddr(addr string, handler PeerHandler) (*owtpListener, error) {
+	l, err := net.Listen("tcp", addr)
+	if err != nil {
+		return nil, err
+	}
+	listener := owtpListener{
+		Listener: l,
+		laddr:    addr,
+		handler:  handler,
+		incoming: make(chan Peer),
+		closed:   make(chan struct{}),
+	}
+
+	go listener.serve()
+
+	return &listener, nil
 }

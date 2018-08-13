@@ -15,50 +15,27 @@
 
 package owtp
 
-import (
-	"encoding/json"
-	"testing"
-	"time"
-)
+import "testing"
 
-var (
-	testUrl = "ws://192.168.30.4:8083/websocket?a=dajosidjaiosjdioajsdioajsdiowhefi&t=1529669837&n=2&s=adisjdiasjdioajsdiojasidjioasjdojasd"
-)
-
-func init() {
-
+func TestRandomPrivateKey(t *testing.T) {
+	key := RandomPrivateKey()
+	t.Logf("key: %v", key)
 }
 
-func TestDial(t *testing.T) {
+func TestNewOWTPAuthWithCertificate(t *testing.T) {
 
-	client, err := Dial("hello", testUrl, nil, nil, 1024, 1024)
+	cert, err := NewCertificate(RandomPrivateKey(),"")
 	if err != nil {
 		t.Errorf("Dial failed unexpected error: %v", err)
 		return
 	}
-	defer client.Close()
-
-	client.OpenPipe()
-}
-
-func TestEncodeDataPacket(t *testing.T) {
-
-	//封装数据包
-	packet := DataPacket{
-		Method:    "subscribe",
-		Req:       WSRequest,
-		Nonce:     1,
-		Timestamp: time.Now().Unix(),
-		Data: map[string]interface{}{
-			"sss": "sdfsdf",
-		},
-	}
-
-	respBytes, err := json.Marshal(packet)
+	//t.Logf("cert: %v", cert)
+	auth, err := NewOWTPAuthWithCertificate(cert)
 	if err != nil {
 		t.Errorf("Dial failed unexpected error: %v", err)
 		return
 	}
-	t.Logf("Send: %s \n", string(respBytes))
-
+	//t.Logf("localPublicKey: %v", auth.localPublicKey)
+	t.Logf("nodeID: %v", auth.LocalPID())
+	t.Logf("auth header: %v", auth.AuthHeader())
 }

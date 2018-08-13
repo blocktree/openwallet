@@ -1623,6 +1623,12 @@
 			"revisionTime": "2018-02-20T23:01:11Z"
 		},
 		{
+			"checksumSHA1": "3mf6G9NWxo5UakHoJrzyGaoqiHc=",
+			"path": "github.com/mr-tron/base58/base58",
+			"revision": "4df4dc6e86a912614d09719d10cad427b087cbfb",
+			"revisionTime": "2018-06-21T14:11:32Z"
+		},
+		{
 			"checksumSHA1": "Yk1x0hNZCbTpN+kQxHt+BOR6p6A=",
 			"path": "github.com/ontio/ontology-crypto/ec",
 			"revision": "a421fcc85da6c079fc5abd28b04d3067e35e911a",

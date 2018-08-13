@@ -15,7 +15,10 @@
 
 package owtp
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestGenerateRangeNum(t *testing.T) {
 	for i := 0;i<1000 ;i++  {
@@ -26,19 +29,69 @@ func TestGenerateRangeNum(t *testing.T) {
 
 func TestConnectNode(t *testing.T) {
 
-	var (
-		endRunning = make(chan bool, 1)
-	)
+	//var (
+	//	endRunning = make(chan bool, 1)
+	//)
 
-	auth, _ := NewOWTPAuth("", "", "", true)
+	//cert = Certificate{}
 
-	testUrl := "ws://192.168.30.4:8083/websocket?a=dajosidjaiosjdioajsdioajsdiowhefi&t=1529669837&n=4&s=adisjdiasjdioajsdiojasidjioasjdojasd"
-	node := NewOWTPNode(1, testUrl, auth)
-	err := node.Connect()
+	//testUrl := "ws://192.168.30.28:8084/websocket"
+	testUrl := "ws://127.0.0.1:9094"
+	pid := "merchant"
+
+	//主机
+	host := DefaultNode
+	host.Listen(":9094")
+
+	time.Sleep(5 * time.Second)
+
+	//客户端
+	certA, _ := NewCertificate(RandomPrivateKey(),"")
+	nodeA := NewOWTPNode(certA, 0, 0)
+
+	err := nodeA.Connect(testUrl, pid)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
 	}
+
+	time.Sleep(2 * time.Second)
+
+	certB, _ := NewCertificate(RandomPrivateKey(),"")
+	nodeB := NewOWTPNode(certB, 0, 0)
+
+	err = nodeB.Connect(testUrl, pid)
+	if err != nil {
+		t.Errorf("Connect failed unexpected error: %v", err)
+		return
+	}
+
+	time.Sleep(2 * time.Second)
+
+	certC, _ := NewCertificate(RandomPrivateKey(),"")
+	nodeC := NewOWTPNode(certC, 0, 0)
+
+	err = nodeC.Connect(testUrl, pid)
+	if err != nil {
+		t.Errorf("Connect failed unexpected error: %v", err)
+		return
+	}
+
+	time.Sleep(3 * time.Second)
+
+	t.Logf("node close \n")
+
+	nodeA.ClosePeer(pid)
+
+	time.Sleep(5 * time.Second)
+
+	host.Close()
+
+	t.Logf("stop running \n")
+
+	time.Sleep(10 * time.Second)
+
+	t.Logf("end testing \n")
 
 	//{
 	//	"r": 2,
@@ -54,20 +107,30 @@ func TestConnectNode(t *testing.T) {
 	//}
 	//
 
-	node.HandleFunc("getWalletInfo", getWalletInfo)
+	//node.HandleFunc("getWalletInfo", getWalletInfo)
+	//
+	//err = node.Call("merchant", "subscribe", nil, false, func(resp Response) {
+	//
+	//})
+	//
+	//if err != nil {
+	//	t.Errorf("Call failed unexpected error: %v", err)
+	//	return
+	//}
 
-	err = node.Call("subscribe", nil, false, func(resp Response) {
+}
 
-	})
+func TestListener(t *testing.T) {
 
-	if err != nil {
-		t.Errorf("Call failed unexpected error: %v", err)
-		return
-	}
+	var (
+		endRunning = make(chan bool, 1)
+	)
+
+	node := DefaultNode
+	node.Listen(":9094")
 
 	<- endRunning
-	t.Logf("end connect \n")
-
+	t.Logf("end listening \n")
 }
 
 func getWalletInfo(ctx *Context) {
