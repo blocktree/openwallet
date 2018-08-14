@@ -24,6 +24,7 @@ import (
 	"math/rand"
 	"sync"
 	"time"
+	"strings"
 )
 
 type ConnectType int
@@ -180,7 +181,7 @@ func (node *OWTPNode) Connect(addr string, pid string) error {
 		return fmt.Errorf("the peer address is empty")
 	}
 
-	url := addr + "/" + pid
+	url := strings.TrimSuffix(addr,"/") + "/" + pid
 
 	auth, err := NewOWTPAuthWithCertificate(node.cert)
 

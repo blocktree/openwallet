@@ -67,6 +67,28 @@ type Certificate struct {
 	consultType     string //协商类型
 }
 
+//RandomPrivateKey 生成随机私钥
+func NewRandomCertificate(consultType string) Certificate {
+	priKey := make([]byte, 32)
+	_, err := rand.Read(priKey)
+	if err != nil {
+		return Certificate{}
+	}
+
+	pubkey, ret := owcrypt.GenPubkey(priKey, owcrypt.ECC_CURVE_SM2_STANDARD)
+	if ret != owcrypt.SUCCESS {
+		return Certificate{}
+	}
+
+	cert := Certificate{
+		privateKeyBytes: priKey,
+		publicKeyBytes:  pubkey,
+		consultType:     consultType,
+	}
+
+	return cert
+}
+
 func NewCertificate(privateKey string, consultType string) (Certificate, error) {
 
 	if len(privateKey) == 0 {
@@ -92,7 +114,7 @@ func NewCertificate(privateKey string, consultType string) (Certificate, error) 
 	}, nil
 }
 
-func (cert *Certificate) KeyPair() (string, string) {
+func (cert *Certificate) KeyPair() (priv string, pub string) {
 	return base58.Encode(cert.privateKeyBytes), base58.Encode(cert.publicKeyBytes)
 }
 
@@ -243,30 +265,30 @@ func (auth *OWTPAuth) LocalPID() string {
 //GenerateSignature 生成签名，并把签名加入到DataPacket中
 func (auth *OWTPAuth) GenerateSignature(data *DataPacket) bool {
 
-	//TODO:添加授权后的数据包到缓存数据库
-
+	//TODO:给数据包生成签名
 	return true
 }
 
 //VerifySignature 校验签名，若验证错误，可更新错误信息到DataPacket中
 func (auth *OWTPAuth) VerifySignature(data *DataPacket) bool {
-
+	//TODO:验证数据包签名是否合法
 	return true
 }
 
 //EnableAuth 开启授权
 func (auth *OWTPAuth) EnableAuth() bool {
-
 	return auth.Enable
 }
 
 //EncryptData 加密数据
 func (auth *OWTPAuth) EncryptData(data []byte) ([]byte, error) {
+	//TODO:使用协商密钥加密数据
 	return data, nil
 }
 
 //DecryptData 解密数据
 func (auth *OWTPAuth) DecryptData(data []byte) ([]byte, error) {
+	//TODO:使用协商密钥解密数据
 	return data, nil
 }
 
@@ -307,7 +329,7 @@ func (auth *OWTPAuth) AuthHeader() map[string]string {
 		"p": p,
 		"n": n,
 		"t": t,
-		"c": "",
+		"c": c,
 		"s": s,
 	}
 }

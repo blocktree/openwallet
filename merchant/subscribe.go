@@ -71,7 +71,7 @@ func (m *MerchantNode) GetChargeAddressVersion() error {
 		}{sub.Coin, sub.WalletID}
 
 		//获取订阅的地址版本
-		GetChargeAddressVersion(m.Node, m.Config.NodeID, params,
+		GetChargeAddressVersion(m.Node, m.Config.MerchantNodeID, params,
 			true,
 			func(addressVer *AddressVersion, status uint64, msg string) {
 
@@ -136,7 +136,7 @@ func (m *MerchantNode) getChargeAddress() error {
 					Limit    uint64 `json:"limit"`
 				}{v.Coin, v.WalletID, i, limit}
 
-				err = GetChargeAddress(m.Node, m.Config.NodeID, params,
+				err = GetChargeAddress(m.Node, m.Config.MerchantNodeID, params,
 					true,
 					func(addrs []*openwallet.Address, status uint64, msg string) {
 
@@ -342,7 +342,7 @@ func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 					//提交充值记录
 					SubmitRechargeTransaction(
 						m.Node,
-						m.Config.NodeID,
+						m.Config.MerchantNodeID,
 						params,
 						true,
 						func(confirms []uint64, status uint64, msg string) {

@@ -77,7 +77,7 @@ func NewMerchantNode(config NodeConfig) (*MerchantNode, error) {
 	//	config.CacheFile,
 	//)
 
-	cert, err := owtp.NewCertificate(config.PrivateKey, "")
+	cert, err := owtp.NewCertificate(config.LocalPrivateKey, "")
 
 	if err != nil {
 		return nil, err
@@ -278,7 +278,7 @@ func (m *MerchantNode) Run() error {
 		case <-m.reconnect:
 			//重新连接
 			log.Info("Connecting to", m.Config.MerchantNodeURL)
-			err = m.Node.Connect(m.Config.MerchantNodeURL, m.Config.NodeID)
+			err = m.Node.Connect(m.Config.MerchantNodeURL, m.Config.MerchantNodeID)
 			if err != nil {
 				log.Error("Connect merchant node faild unexpected error:", err)
 				m.disconnected <- struct{}{}
@@ -316,7 +316,7 @@ func (m *MerchantNode) IsConnected() error {
 		return ErrMerchantNodeDisconnected
 	}
 
-	if !m.Node.IsConnectPeer(m.Config.NodeID) {
+	if !m.Node.IsConnectPeer(m.Config.MerchantNodeID) {
 		return ErrMerchantNodeDisconnected
 	}
 	return nil

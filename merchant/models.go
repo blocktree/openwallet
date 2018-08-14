@@ -23,9 +23,9 @@ import (
 
 //NodeConfig 节点配置
 type NodeConfig struct {
-	NodeID         string
-	PublicKey       string
-	PrivateKey      string
+	MerchantNodeID  string
+	LocalPublicKey  string
+	LocalPrivateKey string
 	MerchantNodeURL string
 	CacheFile       string
 }
