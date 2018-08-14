@@ -17,11 +17,19 @@
 package owtp
 
 import (
+	"encoding/json"
+	"fmt"
+	"github.com/astaxie/beego/cache"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/pkg/errors"
+	"github.com/tidwall/gjson"
 	"sync"
 	"time"
-	"fmt"
-	"github.com/blocktree/OpenWallet/log"
+)
+
+const (
+	WSRequest  = 1 //wesocket请求标识
+	WSResponse = 2 //wesocket响应标识
 )
 
 // 路由处理方法
@@ -33,22 +41,6 @@ type RequestFunc func(resp Response)
 //请求队列
 type RequestQueue map[uint64]requestEntry
 
-//ServeMux 多路复用服务
-type ServeMux struct {
-	//读写锁
-	mu sync.RWMutex
-	//路由方法绑定
-	m map[string]muxEntry
-	//请求队列
-	//requestQueue map[uint64]requestEntry
-	//超时时间
-	timeout time.Duration
-	//是否启动了请求超时检查
-	startRequestTimeoutCheck bool
-	//节点的请求队列
-	peerRequest map[string]RequestQueue
-}
-
 type muxEntry struct {
 	h      HandlerFunc
 	method string
@@ -59,7 +51,116 @@ type requestEntry struct {
 	method   string
 	h        RequestFunc
 	respChan chan Response
-	time int64
+	time     int64
+}
+
+type Response struct {
+	Status uint64      `json:"status"`
+	Msg    string      `json:"msg"`
+	Result interface{} `json:"result"`
+}
+
+type Param struct {
+	rawValue interface{}
+}
+
+type Context struct {
+	//节点ID
+	PID string
+	//传输类型，1：请求，2：响应
+	Req uint64
+	//请求序号
+	nonce uint64
+	//参数内部
+	params gjson.Result
+	//方法
+	Method string
+	//响应
+	Resp Response
+	//传入参数，map的结构
+	inputs interface{}
+}
+
+//NewContext
+func NewContext(req, nonce uint64, pid, method string, inputs interface{}) *Context {
+	ctx := Context{
+		Req:    req,
+		nonce:  nonce,
+		PID:    pid,
+		Method: method,
+		inputs: inputs,
+	}
+
+	return &ctx
+}
+
+//Params 获取参数
+func (ctx *Context) Params() gjson.Result {
+	//如果param没有值，使用inputs初始化
+	if !ctx.params.Exists() {
+		inbs, err := json.Marshal(ctx.inputs)
+		if err == nil {
+			ctx.params = gjson.ParseBytes(inbs)
+		}
+	}
+	return ctx.params
+}
+
+func (ctx *Context) Response(result interface{}, status uint64, msg string) {
+
+	resp := Response{
+		Status: status,
+		Msg:    msg,
+		Result: result,
+	}
+
+	ctx.Resp = resp
+}
+
+//JsonData the result of Response encode gjson
+func (resp *Response) JsonData() gjson.Result {
+	var jsondata gjson.Result
+	inbs, err := json.Marshal(resp.Result)
+	if err == nil {
+		jsondata = gjson.ParseBytes(inbs)
+	}
+
+	return jsondata
+}
+
+//ServeMux 多路复用服务
+type ServeMux struct {
+	//读写锁
+	mu sync.RWMutex
+	//路由方法绑定
+	m map[string]muxEntry
+	//超时时间
+	timeout time.Duration
+	//是否启动了请求超时检查
+	startRequestTimeoutCheck bool
+	//节点的请求队列
+	peerRequest map[string]RequestQueue
+	//请求缓存
+	peerRequestCache cache.Cache
+	//请求nonce的市场限制
+	requestNonceLimit time.Duration
+}
+
+func NewServeMux(timeoutSEC int) *ServeMux {
+
+	cache, err := cache.NewCache("memory", `{"interval":3600}`)
+	if err != nil {
+		log.Debug("NewServeMux unexpected err:", err)
+	}
+
+	serveMux := ServeMux{
+		timeout:           time.Duration(timeoutSEC) * time.Second,
+		peerRequest:       make(map[string]RequestQueue),
+		m:                 make(map[string]muxEntry),
+		peerRequestCache:  cache,
+		requestNonceLimit: 60 * time.Minute,
+	}
+	return &serveMux
 }
 
 //HandleFunc 路由处理器绑定
@@ -113,31 +214,11 @@ func (mux *ServeMux) AddRequest(pid string, nonce uint64, time int64, method str
 	}
 
 	requestQueue[nonce] = requestEntry{sync, method, reqFunc, respChan, time}
+	if mux.peerRequestCache != nil {
+		mux.peerRequestCache.Put(fmt.Sprintf("%s_%d", pid, nonce), method, mux.requestNonceLimit)
+	}
 	return nil
 }
-
-//ResetQueue 重置请求队列
-//func (mux *ServeMux) ResetQueue() {
-//	mux.mu.Lock()
-//	defer mux.mu.Unlock()
-//
-//	if mux.requestQueue == nil {
-//		mux.requestQueue = make(map[uint64]requestEntry)
-//	}
-//
-//	//处理所有未完成的请求，返回连接断开的异常
-//	for n, r := range mux.requestQueue {
-//		resp := responseError("network disconnected", ErrNetworkDisconnected)
-//		if r.sync {
-//			r.respChan <- resp
-//		} else {
-//			r.h(resp)
-//		}
-//		delete(mux.requestQueue, n)
-//	}
-//
-//}
-
 
 //ResetRequestQueue 重置请求队列
 func (mux *ServeMux) ResetRequestQueue(pid string) {
@@ -164,19 +245,23 @@ func (mux *ServeMux) ResetRequestQueue(pid string) {
 	mux.peerRequest[pid] = requestQueue
 }
 
-
 //ServeOWTP OWTP协议消息监听方法
 func (mux *ServeMux) ServeOWTP(pid string, ctx *Context) {
 
 	switch ctx.Req {
 	case WSRequest: //对方发送请求
 
-		f, ok := mux.m[ctx.Method]
-		if ok {
-			f.h(ctx)
+		//重复攻击检查
+		if !mux.checkNonceReplay(ctx) {
+			log.Error("nonce duplicate: ", ctx)
 		} else {
-			//找不到方法的处理
-			ctx.Resp = responseError("can not find method", ErrNotFoundMethod)
+			f, ok := mux.m[ctx.Method]
+			if ok {
+				f.h(ctx)
+			} else {
+				//找不到方法的处理
+				ctx.Resp = responseError("can not find method", ErrNotFoundMethod)
+			}
 		}
 	case WSResponse: //我方请求后，对方响应返回
 		mux.mu.Lock()
@@ -262,3 +347,38 @@ func (mux *ServeMux) timeoutRequestHandle() {
 	}
 }
 
+//checkNonceReplay 检查nonce是否重放
+func (mux *ServeMux) checkNonceReplay(ctx *Context) bool {
+
+	//检查
+	status, errMsg := mux.checkNonceReplayReason(ctx.PID, ctx.nonce)
+
+	if status != StatusSuccess {
+		resp := Response{
+			Status: status,
+			Msg:    errMsg,
+			Result: nil,
+		}
+		ctx.Resp = resp
+		return false
+	}
+
+	return true
+
+}
+
+//checkNonceReplayReason 检查是否重放攻击
+func (mux *ServeMux) checkNonceReplayReason(pid string, nonce uint64) (uint64, string) {
+
+	if nonce == 0 {
+		//没有nonce直接跳过
+		return ErrReplayAttack, "no nonce"
+	}
+
+	//检查是否重放
+	if mux.peerRequestCache.IsExist(fmt.Sprintf("%s_%d", pid, nonce)) {
+		return ErrReplayAttack, "this is a replay attack"
+	}
+
+	return StatusSuccess, ""
+}

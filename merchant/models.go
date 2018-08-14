@@ -23,11 +23,10 @@ import (
 
 //NodeConfig 节点配置
 type NodeConfig struct {
-	NodeKey         string
+	NodeID         string
 	PublicKey       string
 	PrivateKey      string
 	MerchantNodeURL string
-	NodeID          int64
 	CacheFile       string
 }
 

@@ -17,10 +17,16 @@ package owtp
 
 import (
 	"fmt"
+	"net"
 	"sync"
 )
 
-type PeerInfo map[string]interface{}
+type PeerInfo struct {
+	ID    string
+	Addrs string
+}
+
+type PeerAttribute map[string]interface{}
 
 // Peer 节点
 type Peer interface {
@@ -28,10 +34,13 @@ type Peer interface {
 	PID() string                          //节点ID
 	OpenPipe() error                      //OpenPipe 打开通道
 	Send(data DataPacket) error           //发送请求
-	IsHost() bool						  //是否主机，我方主动连接的节点
+	IsHost() bool                         //是否主机，我方主动连接的节点
 	IsConnected() bool                    //是否已经连接
 	SetHandler(handler PeerHandler) error //设置节点的服务者
 	Close() error                         //关闭节点
+
+	LocalAddr() net.Addr  //本地节点地址
+	RemoteAddr() net.Addr //远程节点地址
 }
 
 // PeerHandler 节点监听器
@@ -53,29 +62,32 @@ type Peerstore interface {
 	// DeleteAddr 删除节点的地址
 	DeleteAddr(id string)
 
+	//PeerInfo 节点信息
+	PeerInfo(id string) PeerInfo
+
 	// Get 获取节点属性
 	Get(id string, key string) (interface{}, error)
 
 	// Put 设置节点属性
 	Put(id string, key string, val interface{}) error
 
-	// Peers 节点列表
-	OnlinePeers() []Peer
-
-	// GetOnlinePeer 获取当前在线的Peer
-	GetOnlinePeer(id string) Peer
-
-	// AddOnlinePeer 添加在线节点
-	AddOnlinePeer(peer Peer)
-
-	//RemoveOfflinePeer 移除不在线的节点
-	RemoveOfflinePeer(id string)
+	//// Peers 节点列表
+	//OnlinePeers() []Peer
+	//
+	//// GetOnlinePeer 获取当前在线的Peer
+	//GetOnlinePeer(id string) Peer
+	//
+	//// AddOnlinePeer 添加在线节点
+	//AddOnlinePeer(peer Peer)
+	//
+	////RemoveOfflinePeer 移除不在线的节点
+	//RemoveOfflinePeer(id string)
 }
 
 type owtpPeerstore struct {
 	onlinePeers map[string]Peer
 	peerAddrs   map[string]string
-	peerInfos   map[string]PeerInfo
+	peerInfos   map[string]PeerAttribute
 	mu          sync.RWMutex
 }
 
@@ -84,7 +96,7 @@ func NewPeerstore() *owtpPeerstore {
 	store := owtpPeerstore{
 		onlinePeers: make(map[string]Peer),
 		peerAddrs:   make(map[string]string),
-		peerInfos:   make(map[string]PeerInfo),
+		peerInfos:   make(map[string]PeerAttribute),
 	}
 	return &store
 }
@@ -120,6 +132,18 @@ func (store *owtpPeerstore) DeleteAddr(id string) {
 	delete(store.peerAddrs, id)
 }
 
+//PeerInfo 节点信息
+func (store *owtpPeerstore) PeerInfo(id string) PeerInfo {
+	if store.peerAddrs == nil {
+		return PeerInfo{}
+	}
+	addr := store.peerAddrs[id]
+	return PeerInfo{
+		ID:    id,
+		Addrs: addr,
+	}
+}
+
 // Get 获取节点属性
 func (store *owtpPeerstore) Get(id string, key string) (interface{}, error) {
 	store.mu.RLock()
@@ -127,11 +151,11 @@ func (store *owtpPeerstore) Get(id string, key string) (interface{}, error) {
 	if store.peerInfos == nil {
 		return nil, fmt.Errorf("no peer for this peer.id")
 	}
-	peerInfo := store.peerInfos[id]
-	if peerInfo == nil {
+	peerAttribute := store.peerInfos[id]
+	if peerAttribute == nil {
 		return nil, fmt.Errorf("no peer for this peer.id")
 	}
-	return peerInfo[key], nil
+	return peerAttribute[key], nil
 }
 
 // Put 设置节点属性
@@ -139,15 +163,15 @@ func (store *owtpPeerstore) Put(id string, key string, val interface{}) error {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 	if store.peerInfos == nil {
-		store.peerInfos = make(map[string]PeerInfo)
+		store.peerInfos = make(map[string]PeerAttribute)
 	}
-	peerInfo := store.peerInfos[id]
-	if peerInfo == nil {
-		peerInfo = make(map[string]interface{})
-		store.peerInfos[id] = peerInfo
+	peerAttribute := store.peerInfos[id]
+	if peerAttribute == nil {
+		peerAttribute = make(map[string]interface{})
+		store.peerInfos[id] = peerAttribute
 	}
 
-	peerInfo[key] = val
+	peerAttribute[key] = val
 	return nil
 }
 
@@ -191,4 +215,3 @@ func (store *owtpPeerstore) RemoveOfflinePeer(id string) {
 	}
 	delete(store.onlinePeers, id)
 }
-

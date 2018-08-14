@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"sync"
 	"time"
+	"net"
 )
 
 //局部常量
@@ -32,8 +33,6 @@ const (
 	WriteWait      = 60 * time.Second //超时为6秒
 	PongWait       = 30 * time.Second
 	PingPeriod     = (PongWait * 9) / 10
-	WSRequest      = 1 //wesocket请求标识
-	WSResponse     = 2 //wesocket响应标识
 	MaxMessageSize = 1 * 1024
 )
 
@@ -67,79 +66,6 @@ type DataPacket struct {
 	Signature string      `json:"s"`
 }
 
-type Response struct {
-	Status uint64      `json:"status"`
-	Msg    string      `json:"msg"`
-	Result interface{} `json:"result"`
-}
-
-type Param struct {
-	rawValue interface{}
-}
-
-type Context struct {
-	//节点ID
-	PID string
-	//传输类型，1：请求，2：响应
-	Req uint64
-	//请求序号
-	nonce uint64
-	//参数内部
-	params gjson.Result
-	//方法
-	Method string
-	//响应
-	Resp Response
-	//传入参数，map的结构
-	inputs interface{}
-}
-
-//NewContext
-func NewContext(req, nonce uint64, pid, method string, inputs interface{}) *Context {
-	ctx := Context{
-		Req:    req,
-		nonce:  nonce,
-		PID:    pid,
-		Method: method,
-		inputs: inputs,
-	}
-
-	return &ctx
-}
-
-//Params 获取参数
-func (ctx *Context) Params() gjson.Result {
-	//如果param没有值，使用inputs初始化
-	if !ctx.params.Exists() {
-		inbs, err := json.Marshal(ctx.inputs)
-		if err == nil {
-			ctx.params = gjson.ParseBytes(inbs)
-		}
-	}
-	return ctx.params
-}
-
-func (ctx *Context) Response(result interface{}, status uint64, msg string) {
-
-	resp := Response{
-		Status: status,
-		Msg:    msg,
-		Result: result,
-	}
-
-	ctx.Resp = resp
-}
-
-//JsonData the result of Response encode gjson
-func (resp *Response) JsonData() gjson.Result {
-	var jsondata gjson.Result
-	inbs, err := json.Marshal(resp.Result)
-	if err == nil {
-		jsondata = gjson.ParseBytes(inbs)
-	}
-
-	return jsondata
-}
 
 //NewDataPacket 通过 gjson转为DataPacket
 func NewDataPacket(json gjson.Result) *DataPacket {
@@ -192,7 +118,7 @@ func Dial(
 
 	dialer := websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
-		HandshakeTimeout: 45 * time.Second,
+		HandshakeTimeout: 60 * time.Second,
 		ReadBufferSize:   ReadBufferSize,
 		WriteBufferSize:  WriteBufferSize,
 	}
@@ -271,6 +197,22 @@ func (c *Client) Close() error {
 	return nil
 }
 
+//LocalAddr 本地节点地址
+func (c *Client) LocalAddr() net.Addr {
+	if c.ws == nil {
+		return nil
+	}
+	return c.ws.LocalAddr()
+}
+
+//RemoteAddr 远程节点地址
+func (c *Client) RemoteAddr() net.Addr {
+	if c.ws == nil {
+		return nil
+	}
+	return c.ws.RemoteAddr()
+}
+
 
 //close 内部关闭连接
 func (c *Client) close(active bool) error {
@@ -312,7 +254,7 @@ func (c *Client) Send(data DataPacket) error {
 			return errors.New("OWTP: authorization failed")
 		}
 	}
-	//log.Printf("Send: %v\n", data)
+	//log.Emergency("Send DataPacket:", data)
 	respBytes, err := json.Marshal(data)
 	if err != nil {
 		return err

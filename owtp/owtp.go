@@ -18,7 +18,6 @@ package owtp
 
 import (
 	"fmt"
-	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/bwmarrin/snowflake"
 	"github.com/mitchellh/mapstructure"
@@ -80,7 +79,7 @@ type OWTPNode struct {
 	//连接时的回调
 	connectHandler func(n *OWTPNode, peer Peer)
 	//节点存储器
-	peerstore Peerstore
+	peerstore *owtpPeerstore
 	//服务监听器
 	listener Listener
 	//授权证书
@@ -94,16 +93,26 @@ type OWTPNode struct {
 	ReadBufferSize, WriteBufferSize int
 }
 
-var (
-	DefaultNode = NewOWTPNode(Certificate{}, 0, 0)
-)
+//RandomOWTPNode 创建随机密钥节点
+func RandomOWTPNode(consultType ...string) *OWTPNode {
+	c := ""
+	if len(consultType) > 0 {
+		c = consultType[0]
+	}
+	cert, err := NewCertificate(RandomPrivateKey(), c)
+	if err != nil {
+		return nil
+	}
+	node := NewOWTPNode(cert, 0, 0)
+	return node
+}
 
 //NewOWTPNode 创建OWTP协议节点
 func NewOWTPNode(cert Certificate, readBufferSize, writeBufferSize int) *OWTPNode {
 
 	node := &OWTPNode{}
 	node.nonceGen, _ = snowflake.NewNode(1)
-	node.serveMux = &ServeMux{timeout: 120 * time.Second}
+	node.serveMux = NewServeMux(120)
 	node.cert = cert
 	node.peerstore = NewPeerstore()
 	node.ReadBufferSize = readBufferSize
@@ -119,6 +128,16 @@ func NewOWTPNode(cert Certificate, readBufferSize, writeBufferSize int) *OWTPNod
 	go node.Run()
 
 	return node
+}
+
+//NodeID 节点的ID
+func (node *OWTPNode) NodeID() string {
+	return node.cert.ID()
+}
+
+//Peerstore 节点存储器
+func (node *OWTPNode) Peerstore() Peerstore {
+	return node.peerstore
 }
 
 //Listen 监听TCP地址
@@ -180,8 +199,6 @@ func (node *OWTPNode) Connect(addr string, pid string) error {
 	//设置授权规则
 	client.auth = auth
 
-	node.peerstore.SaveAddr(pid, addr)
-
 	return nil
 }
 
@@ -208,9 +225,9 @@ func (node *OWTPNode) Run() error {
 		select {
 		case peer := <-node.Join:
 			//客户端加入
-			log.Info("节点加入:", peer.PID())
+			log.Info("New Node Join:", peer.PID())
 			node.peerstore.AddOnlinePeer(peer)
-
+			node.peerstore.SaveAddr(peer.PID(), peer.RemoteAddr().String())
 			//加入后打开数据流通道
 			if err := peer.OpenPipe(); err != nil {
 				log.Error("peer:", peer.PID(), "open pipe failed")
@@ -227,10 +244,9 @@ func (node *OWTPNode) Run() error {
 				go node.connectHandler(node, peer)
 			}
 
-			break
 		case peer := <-node.Leave:
 			//客户端离开
-			log.Info("节点断开:", peer.PID())
+			log.Info("New Node Leave:", peer.PID())
 			node.serveMux.ResetRequestQueue(peer.PID())
 			node.peerstore.RemoveOfflinePeer(peer.PID())
 
@@ -238,8 +254,7 @@ func (node *OWTPNode) Run() error {
 				go node.disconnectHandler(node, peer)
 			}
 
-			break
-		case <- node.Stop:
+		case <-node.Stop:
 			return nil
 			//case m := <-p.Broadcast:
 			//	//推送消息给客户端
@@ -247,9 +262,19 @@ func (node *OWTPNode) Run() error {
 			//	p.broadcastMessage(m)
 			//	break
 		}
+		log.Info("Total Nodes:", len(node.peerstore.onlinePeers))
 	}
 
 	return nil
+}
+
+//IsConnectPeer 是否连接某个节点
+func (node *OWTPNode) IsConnectPeer(pid string) bool {
+	peer := node.peerstore.GetOnlinePeer(pid)
+	if peer == nil {
+		return false
+	}
+	return peer.IsConnected()
 }
 
 //ClosePeer 断开连接节点
@@ -421,12 +446,12 @@ func (node *OWTPNode) OnPeerClose(peer Peer, reason string) {
 //OnPeerNewDataPacketReceived 节点获取新数据包
 func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket) {
 
-	//重复攻击检查
-	if !node.checkNonceReplay(packet) {
-		log.Error("nonce duplicate: ", packet)
-		peer.Send(*packet)
-		return
-	}
+	////重复攻击检查
+	//if !node.checkNonceReplay(packet) {
+	//	log.Error("nonce duplicate: ", packet)
+	//	peer.Send(*packet)
+	//	return
+	//}
 
 	//验证授权
 	if peer.Auth() != nil && peer.Auth().EnableAuth() {
@@ -475,40 +500,13 @@ func GenerateRangeNum(min, max int) int {
 	return randNum
 }
 
+/*
+
 //checkNonceReplay 检查nonce是否重放
 func (node *OWTPNode) checkNonceReplay(data *DataPacket) bool {
 
-	var (
-		status = StatusSuccess
-		errMsg = ""
-	)
-
-	if data.Nonce == 0 || data.Timestamp == 0 {
-		//没有nonce直接跳过
-		status = ErrReplayAttack
-		errMsg = "no nonce"
-		//return ErrReplayAttack, "no nonce"
-	}
-
-	//检查是否重放
-	db, err := storm.Open(node.cacheFile)
-	if err != nil {
-		status = ErrReplayAttack
-		errMsg = "client system cache error"
-		//return ErrReplayAttack, "client system cache error"
-	}
-	defer db.Close()
-
-	var existPacket DataPacket
-	db.One("Nonce", data.Nonce, &existPacket)
-	if &existPacket != nil {
-		status = ErrReplayAttack
-		errMsg = "this is a replay attack"
-		//return ErrReplayAttack, "this is a replay attack"
-	}
-
 	//检查
-	//status, errMsg = auth.checkNonceReplay(*data)
+	status, errMsg := node.checkNonceReplayReason(data)
 
 	if status != StatusSuccess {
 		resp := Response{
@@ -525,6 +523,31 @@ func (node *OWTPNode) checkNonceReplay(data *DataPacket) bool {
 	return true
 
 }
+
+//checkNonceReplayReason 检查是否重放攻击
+func (node *OWTPNode) checkNonceReplayReason(data *DataPacket) (uint64, string) {
+
+	if data.Nonce == 0 || data.Timestamp == 0 {
+		//没有nonce直接跳过
+		return ErrReplayAttack, "no nonce"
+	}
+
+	//检查是否重放
+	db, err := storm.Open(node.cacheFile)
+	if err != nil {
+		return ErrReplayAttack, "client system cache error"
+	}
+	defer db.Close()
+
+	var existPacket DataPacket
+	db.One("Nonce", data.Nonce, &existPacket)
+	if &existPacket != nil {
+		return ErrReplayAttack, "this is a replay attack"
+	}
+
+	return StatusSuccess, ""
+}
+*/
 
 //responseError 返回一个错误数据包
 func responseError(err string, status uint64) Response {

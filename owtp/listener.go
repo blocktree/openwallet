@@ -108,10 +108,10 @@ func (l *owtpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// wait until conn gets closed, otherwise the handler closes it early
 	select {
 	case <-peer.closeChan:
-		log.Debug("peer 1:", peer.PID(), "closed")
+		//log.Debug("peer 1:", peer.PID(), "closed")
 		return
 	case <-l.closed:
-		log.Debug("peer 2:", peer.PID(), "closed")
+		//log.Debug("peer 2:", peer.PID(), "closed")
 		peer.Close()
 	case <-cnCh:
 		log.Debug("http CloseNotify")

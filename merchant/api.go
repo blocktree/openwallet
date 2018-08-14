@@ -16,14 +16,15 @@
 package merchant
 
 import (
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/owtp"
-	"github.com/blocktree/OpenWallet/log"
 )
 
 //CallGetChargeAddressVersion 获取要订阅的地址版本信息
 func GetChargeAddressVersion(
 	node *owtp.OWTPNode,
+	nodeID string,
 	params interface{},
 	sync bool,
 	callback func(addressVer *AddressVersion, status uint64, msg string)) error {
@@ -35,6 +36,7 @@ func GetChargeAddressVersion(
 
 	//获取订阅的地址版本
 	err := node.Call(
+		nodeID,
 		"getChargeAddressVersion",
 		params,
 		sync,
@@ -56,6 +58,7 @@ func GetChargeAddressVersion(
 //GetChargeAddress 获取订阅的地址表
 func GetChargeAddress(
 	node *owtp.OWTPNode,
+	nodeID string,
 	params interface{},
 	sync bool,
 	callback func(addrs []*openwallet.Address, status uint64, msg string)) error {
@@ -69,6 +72,7 @@ func GetChargeAddress(
 
 	//获取订阅的地址版本
 	err := node.Call(
+		nodeID,
 		"getChargeAddress",
 		params,
 		sync,
@@ -93,6 +97,7 @@ func GetChargeAddress(
 //SubmitRechargeTransaction 提交充值到账记录
 func SubmitRechargeTransaction(
 	node *owtp.OWTPNode,
+	nodeID string,
 	params interface{},
 	sync bool,
 	callback func(confirms []uint64, status uint64, msg string)) error {
@@ -101,6 +106,7 @@ func SubmitRechargeTransaction(
 
 	//获取订阅的地址版本
 	err := node.Call(
+		nodeID,
 		"submitRechargeTransaction",
 		params,
 		sync,

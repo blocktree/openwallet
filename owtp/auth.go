@@ -17,7 +17,6 @@ package owtp
 
 import (
 	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/go-OWCrypt"
@@ -84,7 +83,7 @@ func NewCertificate(privateKey string, consultType string) (Certificate, error) 
 		return Certificate{}, err
 	}
 
-	log.Debug("SME PUB:", hex.EncodeToString(pubkey))
+	//log.Debug("SME PUB:", hex.EncodeToString(pubkey))
 
 	return Certificate{
 		privateKeyBytes: priKey,
@@ -95,6 +94,11 @@ func NewCertificate(privateKey string, consultType string) (Certificate, error) 
 
 func (cert *Certificate) KeyPair() (string, string) {
 	return base58.Encode(cert.privateKeyBytes), base58.Encode(cert.publicKeyBytes)
+}
+
+func (cert *Certificate) ID() string {
+	nodeID := owcrypt.Hash(cert.publicKeyBytes, 0, owcrypt.HASH_ALG_SHA256)
+	return base58.Encode(nodeID)
 }
 
 func (cert *Certificate) PublicKeyBytes() []byte {
