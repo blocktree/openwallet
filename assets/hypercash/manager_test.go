@@ -83,11 +83,11 @@ func TestGetWalletBalance(t *testing.T) {
 		tag  string
 	}{
 		{
-			name: "WBso9KkzbhpV1iAfmDfCMTt3hAMHekHc1k",
+			name: "WG4rn9R9rbr6xQyJCKYcQJCWNzcDR7WrXj",
 			tag:  "first",
 		},
 		{
-			name: "Wallet Test",
+			name: "W3K2C9q4tM4PDiRQfwz3FbsZcH2AMfpqH6",
 			tag:  "second",
 		},
 		{
@@ -250,14 +250,18 @@ func TestListUnspent(t *testing.T) {
 }
 
 func TestGetAddressesFromLocalDB(t *testing.T) {
-	addresses, err := tw.GetAddressesFromLocalDB("W2nkCYRX1GodNKExL7my5DvQnxz8FjrVDY", true,0, 10)
+	//wallet, _ := tw.GetWalletInfo("W3K2C9q4tM4PDiRQfwz3FbsZcH2AMfpqH6")
+	addresses, err := tw.GetAddressesFromLocalDB("WG4rn9R9rbr6xQyJCKYcQJCWNzcDR7WrXj", true,0, -1)
 	if err != nil {
 		t.Errorf("GetAddressesFromLocalDB failed unexpected error: %v\n", err)
 		return
 	}
-
+	//db, _ := wallet.OpenDB()
+	//defer db.Close()
 	for i, a := range addresses {
 		t.Logf("GetAddressesFromLocalDB address[%d] = %v\n", i, a)
+		//a.WatchOnly = false
+		//db.Save(a)
 	}
 }
 
@@ -418,6 +422,15 @@ func TestRestoreWallet(t *testing.T) {
 		t.Errorf("RestoreWallet failed unexpected error: %v\n", err)
 	}
 
+}
+
+func TestWalletManager_CreateNewChangeAddress(t *testing.T) {
+	address, err := tw.CreateNewChangeAddress("W3K2C9q4tM4PDiRQfwz3FbsZcH2AMfpqH6")
+	if err != nil {
+		t.Errorf("CreateNewChangeAddress failed unexpected error: %v\n", err)
+		return
+	}
+	t.Logf("address: %v", address)
 }
 
 func TestStopNode(t *testing.T) {

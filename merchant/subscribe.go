@@ -17,10 +17,10 @@ package merchant
 
 import (
 	"github.com/blocktree/OpenWallet/assets"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/owtp"
 	"github.com/blocktree/OpenWallet/timer"
-	"github.com/blocktree/OpenWallet/log"
 	"time"
 )
 
@@ -71,7 +71,7 @@ func (m *MerchantNode) GetChargeAddressVersion() error {
 		}{sub.Coin, sub.WalletID}
 
 		//获取订阅的地址版本
-		GetChargeAddressVersion(m.Node, params,
+		GetChargeAddressVersion(m.Node, m.Config.MerchantNodeID, params,
 			true,
 			func(addressVer *AddressVersion, status uint64, msg string) {
 
@@ -136,7 +136,7 @@ func (m *MerchantNode) getChargeAddress() error {
 					Limit    uint64 `json:"limit"`
 				}{v.Coin, v.WalletID, i, limit}
 
-				err = GetChargeAddress(m.Node, params,
+				err = GetChargeAddress(m.Node, m.Config.MerchantNodeID, params,
 					true,
 					func(addrs []*openwallet.Address, status uint64, msg string) {
 
@@ -274,7 +274,7 @@ func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 
 			recharges, err := wallet.GetRecharges(false)
 			if err != nil {
-				log.Error("GetNewRecharges get recharges unexpected error:", err)
+				//log.Error("GetNewRecharges get recharges unexpected error:", err)
 				continue
 			}
 
@@ -319,25 +319,30 @@ func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 					//	continue
 					//}
 					//
-					////更新确认数
-					//for _, r := range recharges {
-					//	log.Printf("Submit Recharges: %v", *r)
-					//	r.Confirm = int64(blockHeight - r.BlockHeight)
-					//
-					//	//确认数大于配置的确认数
-					//	if r.Confirm >= int64(config.Confirm) {
-					//		//删除已超过确认数的充值记录
-					//		tx.DeleteStruct(r)
-					//
-					//		log.Printf("delete recharge: %s \n ", r.Sid)
-					//	}
-					//}
+					//更新确认数
+					for _, r := range recharges {
+						//log.Printf("Submit Recharges: %v", *r)
+						if r.BlockHeight > 0 {
+							r.Confirm = int64(blockHeight - r.BlockHeight)
+						} else {
+							r.Confirm = 0
+						}
+
+						//确认数大于配置的确认数
+						//if r.Confirm >= int64(config.Confirm) {
+						//	//删除已超过确认数的充值记录
+						//	tx.DeleteStruct(r)
+						//
+						//	log.Printf("delete recharge: %s \n ", r.Sid)
+						//}
+					}
 					//tx.Commit()
 					//db.Close()
 
 					//提交充值记录
 					SubmitRechargeTransaction(
 						m.Node,
+						m.Config.MerchantNodeID,
 						params,
 						true,
 						func(confirms []uint64, status uint64, msg string) {

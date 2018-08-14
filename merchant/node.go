@@ -29,6 +29,9 @@ import (
 
 var (
 	PeriodOfTask = 5 * time.Second
+	//通道的读写缓存大小
+	ReadBufferSize = 1024 * 1024
+	WriteBufferSize = 1024 * 1024
 )
 
 //商户节点
@@ -66,25 +69,27 @@ func NewMerchantNode(config NodeConfig) (*MerchantNode, error) {
 	}
 
 	//授权配置
-	auth, err := owtp.NewOWTPAuth(
-		config.NodeKey,
-		config.PublicKey,
-		config.PrivateKey,
-		true,
-		config.CacheFile,
-	)
+	//auth, err := owtp.NewOWTPAuth(
+	//	config.NodeKey,
+	//	config.PublicKey,
+	//	config.PrivateKey,
+	//	true,
+	//	config.CacheFile,
+	//)
+
+	cert, err := owtp.NewCertificate(config.LocalPrivateKey, "")
 
 	if err != nil {
 		return nil, err
 	}
 
 	//创建节点，连接商户
-	node := owtp.NewOWTPNode(config.NodeID, config.MerchantNodeURL, auth)
+	node := owtp.NewOWTPNode(cert, ReadBufferSize, WriteBufferSize)
 	m.Node = node
 	m.Config = config
 
 	//断开连接后，重新连接
-	m.Node.SetCloseHandler(func(n *owtp.OWTPNode) {
+	m.Node.SetCloseHandler(func(n *owtp.OWTPNode, peer owtp.Peer) {
 		log.Info("merchantNode disconnect.")
 		m.disconnected <- struct{}{}
 	})
@@ -272,8 +277,8 @@ func (m *MerchantNode) Run() error {
 		select {
 		case <-m.reconnect:
 			//重新连接
-			log.Info("Connecting to", m.Node.URL)
-			err = m.Node.Connect()
+			log.Info("Connecting to", m.Config.MerchantNodeURL)
+			err = m.Node.Connect(m.Config.MerchantNodeURL, m.Config.MerchantNodeID)
 			if err != nil {
 				log.Error("Connect merchant node faild unexpected error:", err)
 				m.disconnected <- struct{}{}
@@ -311,7 +316,7 @@ func (m *MerchantNode) IsConnected() error {
 		return ErrMerchantNodeDisconnected
 	}
 
-	if !m.Node.IsConnected() {
+	if !m.Node.IsConnectPeer(m.Config.MerchantNodeID) {
 		return ErrMerchantNodeDisconnected
 	}
 	return nil

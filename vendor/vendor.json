@@ -402,19 +402,19 @@
 			"revisionTime": "2018-03-11T15:17:39Z"
 		},
 		{
-			"checksumSHA1": "P/YiamlyGvQBE5kb9fgp3a+CckI=",
+			"checksumSHA1": "LgZecWOcp+Fd6s2er2kwpdRApcI=",
 			"path": "github.com/astaxie/beego",
-			"revision": "c5118e9535f237996bae7c7baebe4ed4247cb2c6",
-			"revisionTime": "2017-10-14T08:28:56Z"
+			"revision": "053a075344c118a5cc41981b29ef612bb53d20ca",
+			"revisionTime": "2018-07-31T13:18:48Z"
 		},
 		{
-			"checksumSHA1": "sLZf4pM2CTDW1FrEKLnTrXMxM0s=",
+			"checksumSHA1": "yX3T7B4g4JawmMzGD1Rl2d52gew=",
 			"path": "github.com/astaxie/beego/cache",
 			"revision": "c5118e9535f237996bae7c7baebe4ed4247cb2c6",
 			"revisionTime": "2017-10-14T08:28:56Z"
 		},
 		{
-			"checksumSHA1": "zgHK1vxUJDZTXAPCw+Bls7St0Ks=",
+			"checksumSHA1": "m+xzAT4nURcPGkMePX2zklJK/lI=",
 			"path": "github.com/astaxie/beego/config",
 			"revision": "c5118e9535f237996bae7c7baebe4ed4247cb2c6",
 			"revisionTime": "2017-10-14T08:28:56Z"
@@ -1402,16 +1402,16 @@
 			"revisionTime": "2016-01-25T20:49:56Z"
 		},
 		{
-			"checksumSHA1": "WX1+2gktHcBmE9MGwFSGs7oqexU=",
+			"checksumSHA1": "JZV+pLo8Z/kIYExrZr1Zu9KSKyU=",
 			"path": "github.com/golang/protobuf/proto",
-			"revision": "e09c5db296004fbe3f74490e84dcd62c3c5ddb1b",
-			"revisionTime": "2018-03-28T16:31:53Z"
+			"revision": "9eb2c01ac278a5d89ce4b2be68fe4500955d8179",
+			"revisionTime": "2018-06-22T17:40:09Z"
 		},
 		{
-			"checksumSHA1": "XNHQiRltA7NQJV0RvUroY+cf+zg=",
+			"checksumSHA1": "DA2cyOt1W92RTyXAqKQ4JWKGR8U=",
 			"path": "github.com/golang/protobuf/protoc-gen-go/descriptor",
-			"revision": "e09c5db296004fbe3f74490e84dcd62c3c5ddb1b",
-			"revisionTime": "2018-03-28T16:31:53Z"
+			"revision": "9eb2c01ac278a5d89ce4b2be68fe4500955d8179",
+			"revisionTime": "2018-06-22T17:40:09Z"
 		},
 		{
 			"checksumSHA1": "tkJPssYejSjuAwE2tdEnoEIj93Q=",
@@ -1621,6 +1621,12 @@
 			"path": "github.com/mitchellh/mapstructure",
 			"revision": "00c29f56e2386353d58c599509e8dc3801b0d716",
 			"revisionTime": "2018-02-20T23:01:11Z"
+		},
+		{
+			"checksumSHA1": "3mf6G9NWxo5UakHoJrzyGaoqiHc=",
+			"path": "github.com/mr-tron/base58/base58",
+			"revision": "4df4dc6e86a912614d09719d10cad427b087cbfb",
+			"revisionTime": "2018-06-21T14:11:32Z"
 		},
 		{
 			"checksumSHA1": "Yk1x0hNZCbTpN+kQxHt+BOR6p6A=",
@@ -3079,6 +3085,13 @@
 			"path": "gopkg.in/urfave/cli.v1",
 			"revision": "cfb38830724cc34fedffe9a2a29fb54fa9169cd1",
 			"revisionTime": "2017-08-11T01:42:03Z"
+		},
+		{
+			"checksumSHA1": "ZSWoOPUNRr5+3dhkLK3C4cZAQPk=",
+			"origin": "github.com/astaxie/beego/vendor/gopkg.in/yaml.v2",
+			"path": "gopkg.in/yaml.v2",
+			"revision": "053a075344c118a5cc41981b29ef612bb53d20ca",
+			"revisionTime": "2018-07-31T13:18:48Z"
 		}
 	],
 	"rootPath": "github.com/blocktree/OpenWallet"

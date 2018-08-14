@@ -18,6 +18,9 @@ package hypercash
 import (
 	"github.com/pborman/uuid"
 	"testing"
+	"encoding/base64"
+	"github.com/blocktree/OpenWallet/openwallet"
+	"path/filepath"
 )
 
 func TestGetBTCBlockHeight(t *testing.T) {
@@ -75,7 +78,7 @@ func TestGetBlock(t *testing.T) {
 }
 
 func TestGetTransaction(t *testing.T) {
-	raw, err := tw.GetTransaction("e52260af2020f723017dc383d680a794e9a33d3b1016d661950d92c8777edf43")
+	raw, err := tw.GetTransaction("8e52cc6bd22b55d1c2cb3174cbbbbd5da96716ccc204138c7a7e050bd1e690fa")
 	if err != nil {
 		t.Errorf("GetTransaction failed unexpected error: %v\n", err)
 		return
@@ -94,22 +97,24 @@ func TestGetTxIDsInMemPool(t *testing.T) {
 
 func TestBTCBlockScanner_scanning(t *testing.T) {
 
-	accountID := "WBJH3u4QCFYcGTisDBiZvssrkG8YJAcmhS"
-	address := "TsosMFZ2mwvRffkWY2fyyEqUiDeokDvCiek"
+	accountID := "hccharge"
+	//address := "TsosMFZ2mwvRffkWY2fyyEqUiDeokDvCiek"
 
-	wallet, err := tw.GetWalletInfo(accountID)
-	if err != nil {
-		t.Errorf("BTCBlockScanner_scanning failed unexpected error: %v\n", err)
-		return
-	}
+	wallet := &openwallet.Wallet{WalletID: accountID, DBFile:filepath.Join(tw.config.dbPath, accountID + ".db")}
+	//wallet, err := tw.GetWalletInfo(accountID)
+	//if err != nil {
+	//	t.Errorf("BTCBlockScanner_scanning failed unexpected error: %v\n", err)
+	//	return
+	//}
 
 	bs := tw.blockscanner
 
 	bs.DropRechargeRecords(accountID)
 
-	bs.SetRescanBlockHeight(6433)
+	bs.SetRescanBlockHeight(3000)
 
-	bs.AddAddress(address, accountID, wallet)
+	//bs.AddAddress(address, accountID, wallet)
+	bs.AddWallet(accountID, wallet)
 
 	bs.scanBlock()
 }
@@ -144,12 +149,15 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 }
 
 func TestWallet_GetRecharges(t *testing.T) {
-	accountID := "WBJH3u4QCFYcGTisDBiZvssrkG8YJAcmhS"
-	wallet, err := tw.GetWalletInfo(accountID)
-	if err != nil {
-		t.Errorf("GetRecharges failed unexpected error: %v\n", err)
-		return
-	}
+	//accountID := "WG4rn9R9rbr6xQyJCKYcQJCWNzcDR7WrXj"
+	accountID := "hccharge"
+	wallet := &openwallet.Wallet{WalletID: accountID, DBFile:filepath.Join(tw.config.dbPath, accountID + ".db")}
+
+	//wallet, err := tw.GetWalletInfo(accountID)
+	//if err != nil {
+	//	t.Errorf("GetRecharges failed unexpected error: %v\n", err)
+	//	return
+	//}
 
 	recharges, err := wallet.GetRecharges(false)
 	if err != nil {
@@ -192,4 +200,12 @@ func TestFullAddress(t *testing.T) {
 	for i := 0; i < 20000000; i++ {
 		dic[uuid.NewUUID().String()] = uuid.NewUUID().String()
 	}
+}
+
+func TestTransactionID(t *testing.T) {
+	encode := "+mWTaTmBwGu08mDPY0HOrn8xs3E="
+	bytes, _ := base64.StdEncoding.DecodeString(encode)
+	t.Logf("id: %v", string(bytes))
+	id := base64.StdEncoding.EncodeToString(bytes)
+	t.Logf("encode: %v", id)
 }

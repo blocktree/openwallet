@@ -571,6 +571,7 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, txid string) E
 	} else {
 
 		blockhash := trx.Get("blockhash").String()
+		realBlockHeight := trx.Get("blockheight").Uint()
 		confirmations := trx.Get("confirmations").Int()
 		vout := trx.Get("vout")
 
@@ -593,13 +594,17 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, txid string) E
 					transaction.TxID = txid
 					transaction.Address = addr
 					transaction.AccountID = a.AccountID
-					transaction.Confirm = confirmations
-					transaction.BlockHash = blockhash
-					transaction.Amount = amount
-					transaction.BlockHeight = blockHeight
 					transaction.Symbol = Symbol
 					transaction.Index = n
+					transaction.Amount = amount
 					transaction.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("%s_%d_%s", txid, n, addr))))
+
+					//有高度记录高度信息
+					if realBlockHeight > 0 {
+						transaction.BlockHeight = realBlockHeight
+						transaction.BlockHash = blockhash
+						transaction.Confirm = confirmations
+					}
 
 					transactions = append(transactions, &transaction)
 
@@ -689,7 +694,7 @@ func (bs *BTCBlockScanner) SaveRechargeToWalletDB(height uint64, list []*openwal
 				//记录未扫区块
 				unscanRecord := NewUnscanRecord(height, r.TxID, err.Error())
 				bs.SaveUnscanRecord(unscanRecord)
-				log.Printf("block height: %d, txID: %s extract failed.\n", height, r.TxID)
+				log.Printf("block height: %d, txID: %s save to wallet failed.\n", height, r.TxID)
 			}
 
 		} else {

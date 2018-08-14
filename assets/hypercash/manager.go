@@ -159,6 +159,44 @@ func (wm *WalletManager) CreateNewAddress(key *keystore.HDKey) (*openwallet.Addr
 
 }
 
+
+//CreateNewAddress 给指定账户创建地址
+func (wm *WalletManager) CreateNewChangeAddress(walletID string) (*openwallet.Address, error) {
+
+	request := []interface{}{
+		"default",
+	}
+
+	result, err := wm.walletClient.Call("getrawchangeaddress", request)
+	if err != nil {
+		return nil, err
+	}
+
+	addr := openwallet.Address{
+		Address:   result.String(),
+		AccountID: walletID,
+		HDPath:    "",
+		CreatedAt: time.Now(),
+		Symbol:    wm.config.symbol,
+		Index:     0,
+		WatchOnly: false,
+	}
+
+	wallet, err := wm.GetWalletInfo(walletID)
+	if err != nil {
+		return nil, err
+	}
+
+	//写入数据库
+	err = wm.saveAddressToDB([]*openwallet.Address{&addr}, wallet)
+	if err != nil {
+		return nil, err
+	}
+
+	return &addr, err
+
+}
+
 //CreateNewAccount 创建新账户
 //func (wm *WalletManager) ImportPrivateKey(wif string, walletID string) error {
 //
@@ -1194,7 +1232,7 @@ func (wm *WalletManager) SendTransaction(walletID, to string, amount decimal.Dec
 	}
 
 	//创建找零地址
-	changeAddr, err := wm.CreateChangeAddress(walletID, key)
+	changeAddr, err := wm.CreateNewChangeAddress(walletID)
 	if err != nil {
 		return nil, err
 	}
@@ -1204,7 +1242,7 @@ func (wm *WalletManager) SendTransaction(walletID, to string, amount decimal.Dec
 		return nil, err
 	}
 
-	fmt.Printf("Calculating wallet unspent record to build transaction...\n")
+	log.Printf("Calculating wallet unspent record to build transaction...\n")
 
 	//循环的计算余额是否足够支付发送数额+手续费
 	for {
@@ -1419,7 +1457,7 @@ func (wm *WalletManager) SendBatchTransaction(walletID string, to []string, amou
 	}
 
 	//创建找零地址
-	changeAddr, err := wm.CreateChangeAddress(walletID, key)
+	changeAddr, err := wm.CreateNewChangeAddress(walletID)
 	if err != nil {
 		return "", err
 	}
@@ -1533,34 +1571,34 @@ func (wm *WalletManager) SendBatchTransaction(walletID string, to []string, amou
 }
 
 //CreateChangeAddress 创建找零地址
-func (wm *WalletManager) CreateChangeAddress(walletID string, key *keystore.HDKey) (*openwallet.Address, error) {
-
-	//生产通道
-	producer := make(chan []*openwallet.Address)
-	defer close(producer)
-
-	go wm.createAddressWork(key, producer, walletID, uint64(time.Now().Unix()), 0, 1)
-
-	//回收创建的地址
-	getAddrs := <-producer
-
-	if len(getAddrs) == 0 {
-		return nil, errors.New("Change address creation failed!")
-	}
-
-	wallet, err := wm.GetWalletInfo(walletID)
-	if err != nil {
-		return nil, err
-	}
-
-	//批量写入数据库
-	err = wm.saveAddressToDB(getAddrs, wallet)
-	if err != nil {
-		return nil, err
-	}
-
-	return getAddrs[0], nil
-}
+//func (wm *WalletManager) CreateChangeAddress(walletID string, key *keystore.HDKey) (*openwallet.Address, error) {
+//
+//	//生产通道
+//	producer := make(chan []*openwallet.Address)
+//	defer close(producer)
+//
+//	go wm.createAddressWork(key, producer, walletID, uint64(time.Now().Unix()), 0, 1)
+//
+//	//回收创建的地址
+//	getAddrs := <-producer
+//
+//	if len(getAddrs) == 0 {
+//		return nil, errors.New("Change address creation failed!")
+//	}
+//
+//	wallet, err := wm.GetWalletInfo(walletID)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	//批量写入数据库
+//	err = wm.saveAddressToDB(getAddrs, wallet)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	return getAddrs[0], nil
+//}
 
 //EstimateFee 预估手续费
 func (wm *WalletManager) EstimateFee(inputs, outputs int64, feeRate decimal.Decimal) (decimal.Decimal, error) {

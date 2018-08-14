@@ -54,14 +54,14 @@ import "unsafe"
 
 const (
 	HASH_ALG_SHA1          = uint32(0xA0000000)
-	HASH_ALG_SHA256        = uint32(0xA0000001)
-	HASH_ALG_SHA512        = uint32(0xA0000002)
-	HASH_ALG_MD4           = uint32(0xA0000003)
-	HASH_ALG_MD5           = uint32(0xA0000004)
-	HASH_ALG_RIPEMD160     = uint32(0xA0000005)
-	HASH_ALG_BLAKE2B       = uint32(0xA0000006)
-	HASH_ALG_BLAKE2S       = uint32(0xA0000007)
-	HASH_ALG_SM3           = uint32(0xA0000008)
+	HASH_ALG_SHA256        = uint32(0xA0000002)
+	HASH_ALG_SHA512        = uint32(0xA0000003)
+	HASH_ALG_MD4           = uint32(0xA0000004)
+	HASH_ALG_MD5           = uint32(0xA0000005)
+	HASH_ALG_RIPEMD160     = uint32(0xA0000006)
+	HASH_ALG_BLAKE2B       = uint32(0xA0000007)
+	HASH_ALG_BLAKE2S       = uint32(0xA0000008)
+	HASH_ALG_SM3           = uint32(0xA0000009)
 	HASh_ALG_DOUBLE_SHA256 = uint32(0xA000000A)
 	HASH_ALG_HASH160       = uint32(0xA000000B)
 

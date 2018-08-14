@@ -25,11 +25,10 @@ import (
 
 func init() {
 	nodeConfig = NodeConfig{
-		NodeKey:         "",
+		NodeID:         "",
 		PublicKey:       "dajosidjaiosjdioajsdioajsdiowhefi",
 		PrivateKey:      "",
 		MerchantNodeURL: "ws://192.168.30.4:8084/websocket",
-		NodeID:          1,
 		CacheFile:       filepath.Join(merchantDir, cacheFile),
 	}
 

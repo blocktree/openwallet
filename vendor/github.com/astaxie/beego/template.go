@@ -218,9 +218,10 @@ func BuildTemplate(dir string, files ...string) error {
 				}
 				if err != nil {
 					logs.Error("parse template err:", file, err)
-				} else {
-					beeTemplates[file] = t
+					templatesLock.Unlock()
+					return err
 				}
+				beeTemplates[file] = t
 				templatesLock.Unlock()
 			}
 		}
