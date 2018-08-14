@@ -22,10 +22,10 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/gorilla/websocket"
 	"github.com/tidwall/gjson"
+	"net"
 	"net/http"
 	"sync"
 	"time"
-	"net"
 )
 
 //局部常量
@@ -66,7 +66,6 @@ type DataPacket struct {
 	Signature string      `json:"s"`
 }
 
-
 //NewDataPacket 通过 gjson转为DataPacket
 func NewDataPacket(json gjson.Result) *DataPacket {
 	dp := &DataPacket{}
@@ -91,7 +90,8 @@ type Client struct {
 	pid             string
 	isConnect       bool
 	mu              sync.RWMutex //读写锁
-	closeChan           chan struct{}
+	closeOnce       sync.Once
+	done            func()
 }
 
 // Dial connects a client to the given URL.
@@ -135,7 +135,7 @@ func Dial(
 		return nil, err
 	}
 
-	client, err := NewClient(pid, ws, handler, nil)
+	client, err := NewClient(pid, ws, handler, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -147,18 +147,18 @@ func Dial(
 	return client, nil
 }
 
-func NewClient(pid string, conn *websocket.Conn, hander PeerHandler, auth Authorization) (*Client, error) {
+func NewClient(pid string, conn *websocket.Conn, hander PeerHandler, auth Authorization, done func()) (*Client, error) {
 
 	if hander == nil {
 		return nil, errors.New("hander should not be nil! ")
 	}
 
 	client := &Client{
-		pid:   pid,
-		ws:    conn,
-		send:  make(chan []byte, MaxMessageSize),
-		closeChan: make(chan struct{}),
-		auth:  auth,
+		pid:  pid,
+		ws:   conn,
+		send: make(chan []byte, MaxMessageSize),
+		auth: auth,
+		done: done,
 	}
 
 	client.isConnect = true
@@ -191,10 +191,28 @@ func (c *Client) IsConnected() bool {
 
 //Close 关闭连接
 func (c *Client) Close() error {
+	var err error
 
-	//外部被动执行
-	c.close(false)
-	return nil
+	//保证节点只关闭一次
+	c.closeOnce.Do(func() {
+
+		if !c.isConnect {
+			//log.Debug("end close")
+			return
+		}
+
+		//调用关闭函数通知上级
+		if c.done != nil {
+			c.done()
+			// Be nice to GC
+			c.done = nil
+		}
+
+		err = c.ws.Close()
+		c.isConnect = false
+		c.handler.OnPeerClose(c, "client close")
+	})
+	return err
 }
 
 //LocalAddr 本地节点地址
@@ -213,37 +231,35 @@ func (c *Client) RemoteAddr() net.Addr {
 	return c.ws.RemoteAddr()
 }
 
-
 //close 内部关闭连接
-func (c *Client) close(active bool) error {
-
-
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	//log.Debug("start close")
-	//
-	//log.Debug("peer:", c.PID(), "c.isConnect:", c.isConnect)
-
-	if !c.isConnect {
-		//log.Debug("end close")
-		return errors.New("client has been closed")
-	}
-
-	c.ws.Close()
-	c.isConnect = false
-
-	//主动执行，给通道通知
-	if active {
-		//log.Debug("send close chan:", c.PID())
-		c.closeChan <- struct{}{}
-
-	}
-
-	c.handler.OnPeerClose(c, "client close")
-	//log.Debug("end close")
-	return nil
-}
+//func (c *Client) close(active bool) error {
+//
+//	c.mu.Lock()
+//	defer c.mu.Unlock()
+//
+//	//log.Debug("start close")
+//	//
+//	log.Debug("peer:", c.PID(), "c.isConnect:", c.isConnect)
+//
+//	if !c.isConnect {
+//		//log.Debug("end close")
+//		return errors.New("client has been closed")
+//	}
+//
+//	c.ws.Close()
+//	c.isConnect = false
+//
+//	//主动执行，给通道通知
+//	if active {
+//		//log.Debug("send close chan:", c.PID())
+//		c.closeChan <- struct{}{}
+//
+//	}
+//
+//	c.handler.OnPeerClose(c, "client close")
+//	//log.Debug("end close")
+//	return nil
+//}
 
 //Send 发送消息
 func (c *Client) Send(data DataPacket) error {
@@ -294,7 +310,7 @@ func (c *Client) writePump() {
 	ticker := time.NewTicker(PingPeriod) //发送心跳间隔事件要<等待时间
 	defer func() {
 		ticker.Stop()
-		c.close(true)
+		c.Close()
 		log.Debug("writePump end")
 	}()
 	for {
@@ -338,7 +354,7 @@ func (c *Client) readPump() {
 		return nil
 	})
 	defer func() {
-		c.close(true)
+		c.Close()
 		log.Debug("readPump end")
 	}()
 
@@ -347,7 +363,7 @@ func (c *Client) readPump() {
 		if err != nil {
 			log.Error("peer:", c.PID(), "Read unexpected error: ", err)
 			//close(c.send) //读取通道异常，关闭读通道
-			break
+			return
 		}
 
 		if c.auth != nil && c.auth.EnableAuth() {

@@ -274,7 +274,7 @@ func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 
 			recharges, err := wallet.GetRecharges(false)
 			if err != nil {
-				log.Error("GetNewRecharges get recharges unexpected error:", err)
+				//log.Error("GetNewRecharges get recharges unexpected error:", err)
 				continue
 			}
 

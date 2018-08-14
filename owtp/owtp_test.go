@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	hostURL = "ws://127.0.0.1:9432"
+	hostURL = "127.0.0.1:9432"
 )
 
 func init() {
@@ -157,7 +157,7 @@ func TestConcurrentConnect(t *testing.T) {
 
 	time.Sleep(5 * time.Second)
 
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 100; i++ {
 		go func(h *OWTPNode) {
 
 			//客户端
@@ -167,6 +167,10 @@ func TestConcurrentConnect(t *testing.T) {
 				t.Errorf("Connect failed unexpected error: %v", err)
 				return
 			}
+
+			time.Sleep(3 * time.Second)
+
+			node.ClosePeer(host.NodeID())
 
 		}(host)
 	}

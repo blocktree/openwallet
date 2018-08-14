@@ -181,7 +181,7 @@ func (node *OWTPNode) Connect(addr string, pid string) error {
 		return fmt.Errorf("the peer address is empty")
 	}
 
-	url := strings.TrimSuffix(addr,"/") + "/" + pid
+	url := "ws://" + strings.TrimSuffix(addr,"/") + "/" + pid
 
 	auth, err := NewOWTPAuthWithCertificate(node.cert)
 
@@ -226,7 +226,7 @@ func (node *OWTPNode) Run() error {
 		select {
 		case peer := <-node.Join:
 			//客户端加入
-			log.Info("New Node Join:", peer.PID())
+			log.Info("Node Join:", peer.PID())
 			node.peerstore.AddOnlinePeer(peer)
 			node.peerstore.SaveAddr(peer.PID(), peer.RemoteAddr().String())
 			//加入后打开数据流通道
@@ -247,7 +247,7 @@ func (node *OWTPNode) Run() error {
 
 		case peer := <-node.Leave:
 			//客户端离开
-			log.Info("New Node Leave:", peer.PID())
+			log.Info("Node Leave:", peer.PID())
 			node.serveMux.ResetRequestQueue(peer.PID())
 			node.peerstore.RemoveOfflinePeer(peer.PID())
 

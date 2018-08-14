@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"net"
 	"net/http"
+	"context"
 )
 
 //Listener 监听接口定义
@@ -68,7 +69,8 @@ func (l *owtpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//ctx, _ := context.WithCancel(context.Background())
+	//创建一个上下文通知，监控节点是否已经关闭
+	ctx, cancel := context.WithCancel(context.Background())
 
 	var cnCh <-chan bool
 	if cn, ok := w.(http.CloseNotifier); ok {
@@ -84,7 +86,7 @@ func (l *owtpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	log.Debug("NewOWTPAuth successfully")
 
-	peer, err := NewClient(auth.RemotePID(), c, l.handler, auth)
+	peer, err := NewClient(auth.RemotePID(), c, l.handler, auth, cancel)
 	if err != nil {
 		log.Debug("NewClient unexpected error:", err)
 		http.Error(w, "authorization not passed", 401)
@@ -107,7 +109,7 @@ func (l *owtpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// wait until conn gets closed, otherwise the handler closes it early
 	select {
-	case <-peer.closeChan:
+	case <-ctx.Done():	//收到节点关闭的通知
 		//log.Debug("peer 1:", peer.PID(), "closed")
 		return
 	case <-l.closed:
