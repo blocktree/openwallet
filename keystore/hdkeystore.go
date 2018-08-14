@@ -20,9 +20,10 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"github.com/btcsuite/btcutil/hdkeychain"
 	"io/ioutil"
 	"path/filepath"
+
+	"github.com/btcsuite/btcutil/hdkeychain"
 )
 
 const (
@@ -62,8 +63,8 @@ var (
 type HDKeystore struct {
 	keysDirPath string
 	//MasterKey   string
-	scryptN     int
-	scryptP     int
+	scryptN int
+	scryptP int
 }
 
 // NewHDKeystore 实例化HDKeystore
@@ -88,7 +89,6 @@ func StoreHDKey(dir, alias, auth string, scryptN, scryptP int) (*HDKey, string, 
 
 	return StoreHDKeyWithSeed(dir, alias, auth, seed, scryptN, scryptP)
 }
-
 
 // StoreHDKey 创建HDKey
 func StoreHDKeyWithSeed(dir, alias, auth string, seed []byte, scryptN, scryptP int) (*HDKey, string, error) {

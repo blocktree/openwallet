@@ -403,6 +403,15 @@ func (ks *KeyStore) expire(addr common.Address, u *unlocked, timeout time.Durati
 	}
 }
 
+func (ks *KeyStore) NewAccountForWalletBT(key *Key, passphrase string) (accounts.Account, error) {
+	_, account := StoreNewKeyForWalletBT(ks, key, passphrase)
+	// Add the account to the cache immediately rather
+	// than waiting for file system notifications to pick it up.
+	ks.cache.add(account)
+	ks.refreshWallets()
+	return account, nil
+}
+
 // NewAccount generates a new key and stores it into the key directory,
 // encrypting it with the passphrase.
 func (ks *KeyStore) NewAccount(passphrase string) (accounts.Account, error) {
