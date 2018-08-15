@@ -17,6 +17,7 @@ package bopo
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
 	//"log"
