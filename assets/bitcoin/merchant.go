@@ -21,6 +21,8 @@ import (
 	"strings"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/pkg/errors"
+	"fmt"
+	"time"
 )
 
 //CreateMerchantWallet 创建钱包
@@ -90,18 +92,24 @@ func (wm *WalletManager) ImportMerchantAddress(wallet *openwallet.Wallet, accoun
 	defer tx.Rollback()
 
 	log.Std.Info("block scanner import [%s] new addresses: %d ", account.Symbol, len(addresses))
-
+	createdAt := time.Now()
 	for _, a := range addresses {
 		a.WatchOnly = true //观察地址
 		a.Symbol = strings.ToLower(Symbol)
 		a.AccountID = account.AccountID
-
-		tx.Save(a)
+		a.CreatedAt = createdAt
+		err = tx.Save(a)
+		if err != nil {
+			return err
+		}
 
 		wm.blockscanner.AddAddress(a.Address, wallet.WalletID, wallet)
 	}
 
-	tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -164,7 +172,9 @@ func (wm *WalletManager) SubmitTransactions(wallet *openwallet.Wallet, account *
 	sp, _ := decimal.NewFromString(surplus)
 	//【余额—剩余额】低于提币数量，不允许提
 	if b.Sub(sp).LessThan(totalSend) {
-		return nil, errors.New("the wallet balance is lower than surplus. ")
+		return nil, fmt.Errorf("the wallet balance: %s is lower than surplus. total send amount: %s ",
+			b.StringFixed(8), totalSend.StringFixed(8))
+		//return nil, errors.New("the wallet balance is lower than surplus. ")
 	}
 
 	txID, err := wm.SendBatchTransaction(wallet.WalletID, addrs, amounts, wallet.Password)

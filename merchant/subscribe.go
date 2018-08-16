@@ -45,7 +45,7 @@ func (m *MerchantNode) GetChargeAddressVersion() error {
 
 	m.mu.RLock()
 	for _, s := range m.subscriptions {
-		if s.Type == SubscribeTypeCharge || s.Type == SubscribeTypeBalance {
+		if s.Type == SubscribeTypeCharge {
 			subs = append(subs, s)
 		}
 	}

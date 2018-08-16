@@ -20,6 +20,10 @@ import (
 	"github.com/shopspring/decimal"
 	"math"
 	"testing"
+	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/asdine/storm/q"
+	"github.com/asdine/storm"
+	"path/filepath"
 )
 
 var (
@@ -251,7 +255,7 @@ func TestListUnspent(t *testing.T) {
 
 func TestGetAddressesFromLocalDB(t *testing.T) {
 	//wallet, _ := tw.GetWalletInfo("W3K2C9q4tM4PDiRQfwz3FbsZcH2AMfpqH6")
-	addresses, err := tw.GetAddressesFromLocalDB("WG4rn9R9rbr6xQyJCKYcQJCWNzcDR7WrXj", true,0, -1)
+	addresses, err := tw.GetAddressesFromLocalDB("hccharge", false,0, -1)
 	if err != nil {
 		t.Errorf("GetAddressesFromLocalDB failed unexpected error: %v\n", err)
 		return
@@ -263,6 +267,30 @@ func TestGetAddressesFromLocalDB(t *testing.T) {
 		//a.WatchOnly = false
 		//db.Save(a)
 	}
+}
+
+//GetAddressesFromLocalDB 从本地数据库
+func TestGetAddressesFromLocalDBPath(t *testing.T) {
+
+
+	db, err := storm.Open(filepath.Join(tw.config.dbPath, "Hot-Wallet-W5VwCLbhiSJr9Qa9Kr8Xyad7uwhkrrjBbx.db"))
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	var addresses []*openwallet.Address
+	//err = db.Find("WalletID", walletID, &addresses)
+	err = db.Select(q.And(
+		q.Eq("AccountID", "W5VwCLbhiSJr9Qa9Kr8Xyad7uwhkrrjBbx"),
+		q.Eq("WatchOnly", true),
+	)).Skip(0).Find(&addresses)
+
+	for i, a := range addresses {
+		t.Logf("GetAddressesFromLocalDB address[%d] = %v\n", i, a)
+		//a.WatchOnly = false
+	}
+
 }
 
 func TestWalletManager_RescanCorewallet(t *testing.T) {
