@@ -23,7 +23,7 @@ import (
 	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/timer"
 	"github.com/shopspring/decimal"
-	"log"
+	"github.com/blocktree/OpenWallet/log"
 	"path/filepath"
 	"strings"
 )
@@ -116,22 +116,22 @@ func (wm *WalletManager) CreateAddressFlow() error {
 	}
 
 	if count > maxAddresNum {
-		return errors.New(fmt.Sprintf("The number of addresses can not exceed %d\n", maxAddresNum))
+		return errors.New(fmt.Sprintf("The number of addresses can not exceed %d", maxAddresNum))
 	}
 
 	//输入密码
 	password, err := console.InputPassword(false, 3)
 
-	log.Printf("Start batch creation\n")
-	log.Printf("-------------------------------------------------\n")
+	log.Std.Info("Start batch creation")
+	log.Std.Info("-------------------------------------------------")
 
 	filePath, _, err := wm.CreateBatchAddress(account.WalletID, password, count)
 	if err != nil {
 		return err
 	}
 
-	log.Printf("-------------------------------------------------\n")
-	log.Printf("All addresses have created, file path:%s\n", filePath)
+	log.Std.Info("-------------------------------------------------")
+	log.Std.Info("All addresses have created, file path:%s", filePath)
 
 	return nil
 }
@@ -375,7 +375,7 @@ func (wm *WalletManager) GetWalletList() error {
 	list, err := wm.GetWallets()
 
 	if len(list) == 0 {
-		log.Printf("No any wallets have created.\n")
+		log.Std.Info("No any wallets have created.")
 		return nil
 	}
 

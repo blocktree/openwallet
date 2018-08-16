@@ -439,7 +439,7 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 		return
 	}
 
-	for _, p := range ctx.Params().Get("withdraws").Array() {
+	for _, p := range ctx.Params().Get("withdraws").Map() {
 		s := openwallet.NewWithdraw(p)
 
 		if len(s.WalletID) == 0 {
