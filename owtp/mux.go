@@ -32,6 +32,11 @@ const (
 	WSResponse = 2 //wesocket响应标识
 )
 
+var (
+	//重放限制时长，数据包的时间戳超过后，这个间隔，可以重复nonce
+	replayLimit = 2 * time.Hour
+)
+
 // 路由处理方法
 type HandlerFunc func(ctx *Context)
 
@@ -147,8 +152,8 @@ type ServeMux struct {
 }
 
 func NewServeMux(timeoutSEC int) *ServeMux {
-
-	cache, err := cache.NewCache("memory", `{"interval":3600}`)
+	//6小时清理一次内存中的请求nonce
+	cache, err := cache.NewCache("memory", `{"interval":21600}`)
 	if err != nil {
 		log.Debug("NewServeMux unexpected err:", err)
 	}
@@ -158,7 +163,7 @@ func NewServeMux(timeoutSEC int) *ServeMux {
 		peerRequest:       make(map[string]RequestQueue),
 		m:                 make(map[string]muxEntry),
 		peerRequestCache:  cache,
-		requestNonceLimit: 60 * time.Minute,
+		requestNonceLimit: replayLimit,
 	}
 	return &serveMux
 }
@@ -214,9 +219,7 @@ func (mux *ServeMux) AddRequest(pid string, nonce uint64, time int64, method str
 	}
 
 	requestQueue[nonce] = requestEntry{sync, method, reqFunc, respChan, time}
-	if mux.peerRequestCache != nil {
-		mux.peerRequestCache.Put(fmt.Sprintf("%s_%d", pid, nonce), method, mux.requestNonceLimit)
-	}
+
 	return nil
 }
 
@@ -258,6 +261,15 @@ func (mux *ServeMux) ServeOWTP(pid string, ctx *Context) {
 			f, ok := mux.m[ctx.Method]
 			if ok {
 				f.h(ctx)
+
+				//添加已完成的请求
+				if mux.peerRequestCache != nil {
+					mux.peerRequestCache.Put(
+						fmt.Sprintf("%s_%d", pid, ctx.nonce),
+						ctx.Method,
+						mux.requestNonceLimit)
+				}
+
 			} else {
 				//找不到方法的处理
 				ctx.Resp = responseError("can not find method", ErrNotFoundMethod)

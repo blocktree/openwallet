@@ -28,7 +28,7 @@ import (
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/codeskyblue/go-sh"
 	"github.com/shopspring/decimal"
-	"log"
+	"github.com/blocktree/OpenWallet/log"
 	"math"
 	"path/filepath"
 	"sort"
@@ -364,7 +364,7 @@ func (wm *WalletManager) CreateBatchAddress(name, password string, count uint64)
 				//导出一批地址
 				wm.exportAddressToFile(getAddrs, filename)
 			} else {
-				log.Printf("saveAddressToDB unexpected error: %v\n", saveErr)
+				log.Std.Info("saveAddressToDB unexpected error: %v", saveErr)
 			}
 
 			//累计完成的线程数
@@ -396,7 +396,7 @@ func (wm *WalletManager) CreateBatchAddress(name, password string, count uint64)
 		for i := uint64(0); i < synCount; i++ {
 
 			//开始创建地址
-			log.Printf("Start create address thread[%d]\n", i)
+			log.Std.Info("Start create address thread[%d]", i)
 			s := i * runCount
 			e := (i + 1) * runCount
 			go wm.createAddressWork(key, producer, name, uint64(timestamp.Unix()), s, e)
@@ -408,7 +408,7 @@ func (wm *WalletManager) CreateBatchAddress(name, password string, count uint64)
 	if otherCount > 0 {
 
 		//开始创建地址
-		log.Printf("Start create address thread[REST]\n")
+		log.Std.Info("Start create address thread[REST]")
 		s := count - otherCount
 		e := count
 		go wm.createAddressWork(key, producer, name, uint64(timestamp.Unix()), s, e)
@@ -439,16 +439,16 @@ func (wm *WalletManager) CreateBatchAddress(name, password string, count uint64)
 		case pa := <-producer:
 			values = append(values, pa)
 			outputAddress = append(outputAddress, pa...)
-			//log.Printf("completed %d", len(pa))
+			//log.Std.Info("completed %d", len(pa))
 			//当激活消费者后，传输数据给消费者，并把顶部数据出队
 		case activeWorker <- activeValue:
-			//log.Printf("Get %d", len(activeValue))
+			//log.Std.Info("Get %d", len(activeValue))
 			values = values[1:]
 
 		case <-quit:
 			//退出
 			wm.LockWallet()
-			log.Printf("All addresses have been created!")
+			log.Std.Info("All addresses have been created!")
 			return filePath, outputAddress, nil
 		}
 	}
@@ -480,7 +480,7 @@ func (wm *WalletManager) CreateNewWallet(name, password string) (*openwallet.Wal
 	err = wm.UnlockWallet(password, 1)
 	if err != nil {
 		fmt.Printf("%v\n", err)
-		return nil, "", errors.New("The wallet's password is not equal hcwallet wallet!\n")
+		return nil, "", errors.New("The wallet's password is not equal hcwallet wallet!")
 	}
 
 	fmt.Printf("Create new wallet keystore...\n")
@@ -620,7 +620,11 @@ func (wm *WalletManager) GetAddressBalance(walletID, address string) string {
 	defer db.Close()
 
 	var utxos []*Unspent
-	err = db.Find("Address", address, &utxos)
+
+	err = db.Select(q.And(
+		q.Eq("AccountID", walletID),
+		q.Eq("Address", address),
+	)).Find( &utxos)
 	if err != nil {
 		return "0"
 	}
@@ -628,10 +632,8 @@ func (wm *WalletManager) GetAddressBalance(walletID, address string) string {
 	balance := decimal.New(0, 0)
 
 	for _, utxo := range utxos {
-		if walletID == utxo.Address {
-			amount, _ := decimal.NewFromString(utxo.Amount)
-			balance = balance.Add(amount)
-		}
+		amount, _ := decimal.NewFromString(utxo.Amount)
+		balance = balance.Add(amount)
 	}
 
 	return balance.StringFixed(8)
@@ -997,7 +999,7 @@ func (wm *WalletManager) RebuildWalletUnspent(walletID string) error {
 		if err != nil || addr.WatchOnly == true {
 			continue
 		}
-		//log.Printf("utxo.addr watchonly: %v", addr.WatchOnly)
+		//log.Std.Info("utxo.addr watchonly: %v", addr.WatchOnly)
 		utxo.AccountID = addr.AccountID
 		utxo.HDAddress = addr
 		key := common.NewString(fmt.Sprintf("%s_%d_%s", utxo.TxID, utxo.Vout, utxo.Address)).SHA256()
@@ -1084,7 +1086,7 @@ func (wm *WalletManager) BuildTransaction(utxos []*Unspent, to []string, change 
 		return "", decimal.New(0, 0), errors.New("The balance is not enough!")
 	}
 
-	//log.Printf("fees: %s\n", fees.StringFixed(8))
+	//log.Std.Info("fees: %s\n", fees.StringFixed(8))
 
 	changeAmount := totalAmount.Sub(totalSend).Sub(fees)
 	if changeAmount.GreaterThan(decimal.New(0, 0)) {
@@ -1106,6 +1108,8 @@ func (wm *WalletManager) BuildTransaction(utxos []*Unspent, to []string, change 
 		inputs,
 		outputs,
 	}
+
+	log.Debug("createrawtransaction:", request)
 
 	rawTx, err := wm.hcdClient.Call("createrawtransaction", request)
 	if err != nil {
@@ -1242,7 +1246,7 @@ func (wm *WalletManager) SendTransaction(walletID, to string, amount decimal.Dec
 		return nil, err
 	}
 
-	log.Printf("Calculating wallet unspent record to build transaction...\n")
+	log.Std.Info("Calculating wallet unspent record to build transaction...")
 
 	//循环的计算余额是否足够支付发送数额+手续费
 	for {
@@ -1349,9 +1353,9 @@ func (wm *WalletManager) SendTransaction(walletID, to string, amount decimal.Dec
 			return nil, err
 		}
 
-		//log.Printf("pieceOfSend = %s \n", pieceOfSend.StringFixed(8))
-		//log.Printf("piecefees = %s \n", piecefees.StringFixed(8))
-		//log.Printf("feesRate = %s \n", feesRate.StringFixed(8))
+		//log.Std.Info("pieceOfSend = %s \n", pieceOfSend.StringFixed(8))
+		//log.Std.Info("piecefees = %s \n", piecefees.StringFixed(8))
+		//log.Std.Info("feesRate = %s \n", feesRate.StringFixed(8))
 
 		//创建交易
 		txRaw, _, err := wm.BuildTransaction(sendUxto, []string{to}, changeAddr.Address, []decimal.Decimal{pieceOfSend}, piecefees)
@@ -1535,9 +1539,9 @@ func (wm *WalletManager) SendBatchTransaction(walletID string, to []string, amou
 		return "", err
 	}
 
-	//log.Printf("pieceOfSend = %s \n", pieceOfSend.StringFixed(8))
-	//log.Printf("piecefees = %s \n", piecefees.StringFixed(8))
-	//log.Printf("feesRate = %s \n", feesRate.StringFixed(8))
+	//log.Std.Info("pieceOfSend = %s \n", pieceOfSend.StringFixed(8))
+	//log.Std.Info("piecefees = %s \n", piecefees.StringFixed(8))
+	//log.Std.Info("feesRate = %s \n", feesRate.StringFixed(8))
 
 	//创建交易
 	txRaw, _, err := wm.BuildTransaction(usedUTXO, to, changeAddr.Address, amounts, actualFees)
@@ -1546,6 +1550,8 @@ func (wm *WalletManager) SendBatchTransaction(walletID string, to []string, amou
 	}
 
 	fmt.Printf("Build Transaction Successfully\n")
+
+	log.Debug("TXRaw:", txRaw)
 
 	//签名交易
 	signedHex, err := wm.SignRawTransaction(txRaw, walletID, key, usedUTXO)
@@ -1614,7 +1620,7 @@ func (wm *WalletManager) EstimateFee(inputs, outputs int64, feeRate decimal.Deci
 	trx_bytes := decimal.New(inputs*148+outputs*34+piece*10, 0)
 	trx_fee := trx_bytes.Div(decimal.New(1000, 0)).Mul(feeRate)
 
-	//log.Printf("inputs: %d, outpusts: %d, fees: %s \n", inputs, outputs, trx_fee.StringFixed(8))
+	//log.Std.Info("inputs: %d, outpusts: %d, fees: %s \n", inputs, outputs, trx_fee.StringFixed(8))
 
 	return trx_fee, nil
 }
@@ -1646,7 +1652,7 @@ func (wm *WalletManager) EstimateFeeRate() (decimal.Decimal, error) {
 //SummaryWallets 执行汇总流程
 func (wm *WalletManager) SummaryWallets() {
 
-	log.Printf("[Summary Wallet Start]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+	log.Std.Info("[Summary Wallet Start]------%s", common.TimeFormat("2006-01-02 15:04:05"))
 
 	//读取参与汇总的钱包
 	for wid, wallet := range wm.walletsInSum {
@@ -1661,22 +1667,22 @@ func (wm *WalletManager) SummaryWallets() {
 		//如果余额大于阀值，汇总的地址
 		if balance.GreaterThan(wm.config.threshold) {
 
-			log.Printf("Summary account[%s]balance = %v \n", wallet.WalletID, balance)
-			log.Printf("Summary account[%s]Start Send Transaction\n", wallet.WalletID)
+			log.Std.Info("Summary account[%s]balance = %v ", wallet.WalletID, balance)
+			log.Std.Info("Summary account[%s]Start Send Transaction", wallet.WalletID)
 
 			txID, err := wm.SendTransaction(wallet.WalletID, wm.config.sumAddress, balance, wallet.Password, false)
 			if err != nil {
-				log.Printf("Summary account[%s]unexpected error: %v\n", wallet.WalletID, err)
+				log.Std.Info("Summary account[%s]unexpected error: %v", wallet.WalletID, err)
 				continue
 			} else {
-				log.Printf("Summary account[%s]successfully，Received Address[%s], TXID：%s\n", wallet.WalletID, wm.config.sumAddress, txID)
+				log.Std.Info("Summary account[%s]successfully，Received Address[%s], TXID：%s", wallet.WalletID, wm.config.sumAddress, txID)
 			}
 		} else {
-			log.Printf("Wallet Account[%s]-[%s]Current Balance: %v，below threshold: %v\n", wallet.Alias, wallet.WalletID, balance, wm.config.threshold)
+			log.Std.Info("Wallet Account[%s]-[%s]Current Balance: %v，below threshold: %v", wallet.Alias, wallet.WalletID, balance, wm.config.threshold)
 		}
 	}
 
-	log.Printf("[Summary Wallet end]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+	log.Std.Info("[Summary Wallet end]------%s", common.TimeFormat("2006-01-02 15:04:05"))
 }
 
 //AddWalletInSummary 添加汇总钱包账户
@@ -1735,14 +1741,14 @@ func (wm *WalletManager) createAddressWork(key *keystore.HDKey, producer chan<- 
 
 		//wif, address, errRun := wm.CreateNewPrivateKey(k, index, i)
 		if errRun != nil {
-			log.Printf("Create new address failed unexpected error: %v\n", errRun)
+			log.Std.Info("Create new address failed unexpected error: %v", errRun)
 			continue
 		}
 
 		////导入私钥
 		//errRun = ImportPrivKey(wif, alias)
 		//if errRun != nil {
-		//	log.Printf("Import privKey failed unexpected error: %v\n", errRun)
+		//	log.Std.Info("Import privKey failed unexpected error: %v", errRun)
 		//	continue
 		//}
 
@@ -1785,7 +1791,7 @@ func (wm *WalletManager) exportAddressToFile(addrs []*openwallet.Address, filePa
 
 	for _, a := range addrs {
 
-		log.Printf("Export: %s \n", a.Address)
+		log.Std.Info("Export: %s ", a.Address)
 
 		content = content + a.Address + "\n"
 	}

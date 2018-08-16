@@ -41,7 +41,7 @@ func GetChargeAddressVersion(
 		params,
 		sync,
 		func(resp owtp.Response) {
-			//log.Printf(" getChargeAddressVersion Response: %v", resp)
+			//log.Std.Info(" getChargeAddressVersion Response: %v", resp)
 			result := resp.JsonData()
 			if result.Exists() {
 				addressVersion := NewAddressVersion(result)

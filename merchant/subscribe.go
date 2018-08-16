@@ -320,7 +320,7 @@ func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 					//}
 					//
 					//更新确认数
-					for _, r := range recharges {
+					for _, r := range subRecharges {
 						//log.Printf("Submit Recharges: %v", *r)
 						if r.BlockHeight > 0 {
 							r.Confirm = int64(blockHeight - r.BlockHeight)

@@ -148,10 +148,6 @@ func NewConfig() *WalletConfig {
 
 	//默认配置内容
 	c.defaultConfig = `
-# start node command
-startNodeCMD = ""
-# stop node command
-stopNodeCMD = ""
 # node install path
 nodeInstallPath = ""
 # mainnet data path
