@@ -227,6 +227,7 @@ func (node *OWTPNode) Run() error {
 		case peer := <-node.Join:
 			//客户端加入
 			log.Info("Node Join:", peer.PID())
+			log.Info("Node IP:", peer.RemoteAddr().String())
 			node.peerstore.AddOnlinePeer(peer)
 			node.peerstore.SaveAddr(peer.PID(), peer.RemoteAddr().String())
 			//加入后打开数据流通道
@@ -333,7 +334,7 @@ func (node *OWTPNode) Call(
 			return fmt.Errorf("the peer: %s is not in address book", pid)
 		}
 
-		err = node.Connect(peerAddr, peer.PID()) //重新连接
+		err = node.Connect(peerAddr, pid) //重新连接
 		if err != nil {
 			return err
 		}

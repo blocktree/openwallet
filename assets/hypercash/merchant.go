@@ -19,7 +19,7 @@ import (
 	"errors"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/shopspring/decimal"
-	"log"
+	"github.com/blocktree/OpenWallet/log"
 	"strings"
 )
 
@@ -89,7 +89,7 @@ func (wm *WalletManager) ImportMerchantAddress(wallet *openwallet.Wallet, accoun
 	}
 	defer tx.Rollback()
 
-	log.Printf("block scanner import [%s] new addresses: %d \n", account.Symbol, len(addresses))
+	log.Std.Info("block scanner import [%s] new addresses: %d ", account.Symbol, len(addresses))
 
 	for _, a := range addresses {
 		a.WatchOnly = true //观察地址
@@ -114,7 +114,7 @@ func (wm *WalletManager) CreateMerchantAddress(wallet *openwallet.Wallet, accoun
 	if err != nil {
 		return nil, errors.New("The wallet node is not config!")
 	}
-	log.Printf("wallet: %s create %d address...\n", wallet.WalletID, count)
+	log.Std.Info("wallet: %s create %d address...", wallet.WalletID, count)
 	_, newAddrs, err := wm.CreateBatchAddress(wallet.WalletID, wallet.Password, count)
 	if err != nil {
 		return nil, err
@@ -186,8 +186,6 @@ func (wm *WalletManager) AddMerchantObserverForBlockScan(obj openwallet.BlockSca
 
 	wm.blockscanner.AddObserver(obj)
 	wm.blockscanner.AddWallet(wallet.WalletID, wallet)
-
-	//wm.blockscanner.SetRescanBlockHeight(3200)
 
 	wm.blockscanner.Run()
 	return nil
