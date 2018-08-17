@@ -34,14 +34,17 @@ func GetChargeAddressVersion(
 	//| coin     | string | 是       | 币名     |
 	//| walletID | string | 是       | 钱包ID   |
 
+	method := "getChargeAddressVersion"
+	log.Info("Merchant Call:", method)
+
 	//获取订阅的地址版本
 	err := node.Call(
 		nodeID,
-		"getChargeAddressVersion",
+		method,
 		params,
 		sync,
 		func(resp owtp.Response) {
-			//log.Std.Info(" getChargeAddressVersion Response: %v", resp)
+			log.Info(method, ":", "Response:", resp.JsonData())
 			result := resp.JsonData()
 			if result.Exists() {
 				addressVersion := NewAddressVersion(result)
@@ -70,13 +73,16 @@ func GetChargeAddress(
 	//| offset   | int    | 是       | 偏移量   |
 	//| limit    | int    | 是       | 读取条数 |
 
+	method := "getChargeAddress"
+	log.Info("Merchant Call:", method)
 	//获取订阅的地址版本
 	err := node.Call(
 		nodeID,
-		"getChargeAddress",
+		method,
 		params,
 		sync,
 		func(resp owtp.Response) {
+			log.Info(method, ":", "Response:", resp.JsonData())
 			addrs := make([]*openwallet.Address, 0)
 			result := resp.JsonData()
 			if result.Exists() {
@@ -101,16 +107,17 @@ func SubmitRechargeTransaction(
 	params interface{},
 	sync bool,
 	callback func(confirms []uint64, status uint64, msg string)) error {
-
-	log.Info("Call Remote: submitRechargeTransaction")
+	method := "submitRechargeTransaction"
+	log.Info("Merchant Call:", method)
 
 	//获取订阅的地址版本
 	err := node.Call(
 		nodeID,
-		"submitRechargeTransaction",
+		method,
 		params,
 		sync,
 		func(resp owtp.Response) {
+			log.Info(method, ":", "Response:", resp.JsonData())
 			confirms := make([]uint64, 0)
 			result := resp.JsonData()
 			if result.Exists() {

@@ -32,15 +32,15 @@ import (
 //初始化配置流程
 func (wm *WalletManager) InitConfigFlow() error {
 
-	wm.config.initConfig()
-	file := filepath.Join(wm.config.configFilePath, wm.config.configFileName)
-	fmt.Printf("You can run 'vim %s' to edit wallet's config.\n", file)
+	wm.Config.InitConfig()
+	file := filepath.Join(wm.Config.configFilePath, wm.Config.configFileName)
+	fmt.Printf("You can run 'vim %s' to edit wallet's Config.\n", file)
 	return nil
 }
 
 //查看配置信息
 func (wm *WalletManager) ShowConfig() error {
-	return wm.config.printConfig()
+	return wm.Config.PrintConfig()
 }
 
 //创建钱包流程
@@ -54,7 +54,7 @@ func (wm *WalletManager) CreateWalletFlow() error {
 	)
 
 	//先加载是否有配置文件
-	err = wm.loadConfig()
+	err = wm.LoadConfig()
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func (wm *WalletManager) CreateWalletFlow() error {
 func (wm *WalletManager) CreateAddressFlow() error {
 
 	//先加载是否有配置文件
-	err := wm.loadConfig()
+	err := wm.LoadConfig()
 	if err != nil {
 		return err
 	}
@@ -159,13 +159,13 @@ func (wm *WalletManager) SummaryFollow() error {
 	)
 
 	//先加载是否有配置文件
-	err := wm.loadConfig()
+	err := wm.LoadConfig()
 	if err != nil {
 		return err
 	}
 
 	//判断汇总地址是否存在
-	if len(wm.config.sumAddress) == 0 {
+	if len(wm.Config.SumAddress) == 0 {
 
 		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
 	}
@@ -230,14 +230,14 @@ func (wm *WalletManager) SummaryFollow() error {
 		}
 	}
 
-	if len(wm.walletsInSum) == 0 {
+	if len(wm.WalletsInSum) == 0 {
 		return errors.New("Not summary wallets to register! ")
 	}
 
-	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", wm.config.cycleSeconds.Seconds())
+	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", wm.Config.CycleSeconds.Seconds())
 
 	//启动钱包汇总程序
-	sumTimer := timer.NewTask(wm.config.cycleSeconds, wm.SummaryWallets)
+	sumTimer := timer.NewTask(wm.Config.CycleSeconds, wm.SummaryWallets)
 	sumTimer.Start()
 
 	<-endRunning
@@ -254,7 +254,7 @@ func (wm *WalletManager) BackupWalletFlow() error {
 	)
 
 	//先加载是否有配置文件
-	err = wm.loadConfig()
+	err = wm.LoadConfig()
 	if err != nil {
 		return err
 	}
@@ -297,7 +297,7 @@ func (wm *WalletManager) BackupWalletFlow() error {
 func (wm *WalletManager) TransferFlow() error {
 
 	//先加载是否有配置文件
-	err := wm.loadConfig()
+	err := wm.LoadConfig()
 	if err != nil {
 		return err
 	}
@@ -368,7 +368,7 @@ func (wm *WalletManager) TransferFlow() error {
 func (wm *WalletManager) GetWalletList() error {
 
 	//先加载是否有配置文件
-	err := wm.loadConfig()
+	err := wm.LoadConfig()
 	if err != nil {
 		return err
 	}
@@ -398,7 +398,7 @@ func (wm *WalletManager) RestoreWalletFlow() error {
 	)
 
 	//先加载是否有配置文件
-	err = wm.loadConfig()
+	err = wm.LoadConfig()
 	if err != nil {
 		return err
 	}
@@ -472,13 +472,13 @@ func (wm *WalletManager) ShowNodeInfo() error {
 
 //SetConfigFlow 初始化配置流程
 func (wm *WalletManager) SetConfigFlow(subCmd string) error {
-	file := wm.config.configFilePath + wm.config.configFileName
-	fmt.Printf("You can run 'vim %s' to edit %s config.\n", file, subCmd)
+	file := wm.Config.configFilePath + wm.Config.configFileName
+	fmt.Printf("You can run 'vim %s' to edit %s Config.\n", file, subCmd)
 	return nil
 }
 
 //ShowConfigInfo 查看配置信息
 func (wm *WalletManager) ShowConfigInfo(subCmd string) error {
-	wm.config.printConfig()
+	wm.Config.PrintConfig()
 	return nil
 }
