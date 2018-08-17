@@ -1109,7 +1109,7 @@ func (wm *WalletManager) BuildTransaction(utxos []*Unspent, to []string, change 
 		outputs,
 	}
 
-	log.Debug("createrawtransaction:", request)
+	//log.Debug("createrawtransaction:", request)
 
 	rawTx, err := wm.hcdClient.Call("createrawtransaction", request)
 	if err != nil {
@@ -1551,7 +1551,7 @@ func (wm *WalletManager) SendBatchTransaction(walletID string, to []string, amou
 
 	fmt.Printf("Build Transaction Successfully\n")
 
-	log.Debug("TXRaw:", txRaw)
+	//log.Debug("TXRaw:", txRaw)
 
 	//签名交易
 	signedHex, err := wm.SignRawTransaction(txRaw, walletID, key, usedUTXO)
@@ -1645,6 +1645,8 @@ func (wm *WalletManager) EstimateFeeRate() (decimal.Decimal, error) {
 	if feeRate.LessThan(defaultRate) {
 		feeRate = defaultRate
 	}
+	// 2倍矿工费
+	feeRate = feeRate.Mul(decimal.NewFromFloat(1.5))
 
 	return feeRate, nil
 }

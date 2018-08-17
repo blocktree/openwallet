@@ -29,7 +29,7 @@ import (
 func (wm *WalletManager) CreateMerchantWallet(wallet *openwallet.Wallet) error {
 
 	//先加载是否有配置文件
-	err := wm.loadConfig()
+	err := wm.LoadConfig()
 	if err != nil {
 		return errors.New("The wallet node is not config!")
 	}
@@ -58,7 +58,7 @@ func (wm *WalletManager) GetMerchantWalletList() ([]*openwallet.Wallet, error) {
 func (wm *WalletManager) GetMerchantAssetsAccountList(wallet *openwallet.Wallet) ([]*openwallet.AssetsAccount, error) {
 
 	//先加载是否有配置文件
-	err := wm.loadConfig()
+	err := wm.LoadConfig()
 	if err != nil {
 		return nil, errors.New("The wallet node is not config!")
 	}
@@ -103,7 +103,7 @@ func (wm *WalletManager) ImportMerchantAddress(wallet *openwallet.Wallet, accoun
 			return err
 		}
 
-		wm.blockscanner.AddAddress(a.Address, wallet.WalletID, wallet)
+		wm.Blockscanner.AddAddress(a.Address, wallet.WalletID, wallet)
 	}
 
 	err = tx.Commit()
@@ -118,7 +118,7 @@ func (wm *WalletManager) ImportMerchantAddress(wallet *openwallet.Wallet, accoun
 func (wm *WalletManager) CreateMerchantAddress(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, count uint64) ([]*openwallet.Address, error) {
 
 	//先加载是否有配置文件
-	err := wm.loadConfig()
+	err := wm.LoadConfig()
 	if err != nil {
 		return nil, errors.New("The wallet node is not config!")
 	}
@@ -134,7 +134,7 @@ func (wm *WalletManager) CreateMerchantAddress(wallet *openwallet.Wallet, accoun
 //GetMerchantAddressList 获取钱包地址
 func (wm *WalletManager) GetMerchantAddressList(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, offset uint64, limit uint64) ([]*openwallet.Address, error) {
 	//先加载是否有配置文件
-	err := wm.loadConfig()
+	err := wm.LoadConfig()
 	if err != nil {
 		return nil, errors.New("The wallet node is not config!")
 	}
@@ -146,7 +146,7 @@ func (wm *WalletManager) GetMerchantAddressList(wallet *openwallet.Wallet, accou
 func (wm *WalletManager) SubmitTransactions(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, withdraws []*openwallet.Withdraw, surplus string) (*openwallet.Transaction, error) {
 
 	//先加载是否有配置文件
-	err := wm.loadConfig()
+	err := wm.LoadConfig()
 	if err != nil {
 		return nil, errors.New("The wallet node is not config!")
 	}
@@ -190,24 +190,24 @@ func (wm *WalletManager) SubmitTransactions(wallet *openwallet.Wallet, account *
 func (wm *WalletManager) AddMerchantObserverForBlockScan(obj openwallet.BlockScanNotificationObject, wallet *openwallet.Wallet) error {
 
 	//先加载是否有配置文件
-	err := wm.loadConfig()
+	err := wm.LoadConfig()
 	if err != nil {
 		return errors.New("The wallet node is not config!")
 	}
 
-	wm.blockscanner.AddObserver(obj)
-	wm.blockscanner.AddWallet(wallet.WalletID, wallet)
+	wm.Blockscanner.AddObserver(obj)
+	wm.Blockscanner.AddWallet(wallet.WalletID, wallet)
 
-	wm.blockscanner.Run()
+	wm.Blockscanner.Run()
 	return nil
 }
 
 //RemoveMerchantObserverForBlockScan 移除区块链扫描的观测者
 func (wm *WalletManager) RemoveMerchantObserverForBlockScan(obj openwallet.BlockScanNotificationObject) {
-	wm.blockscanner.RemoveObserver(obj)
-	if len(wm.blockscanner.observers) == 0 {
-		wm.blockscanner.Stop()
-		wm.blockscanner.Clear()
+	wm.Blockscanner.RemoveObserver(obj)
+	if len(wm.Blockscanner.observers) == 0 {
+		wm.Blockscanner.Stop()
+		wm.Blockscanner.Clear()
 	}
 }
 
@@ -215,7 +215,7 @@ func (wm *WalletManager) RemoveMerchantObserverForBlockScan(obj openwallet.Block
 func (wm *WalletManager) GetBlockchainInfo() (*openwallet.Blockchain, error) {
 
 	//先加载是否有配置文件
-	err := wm.loadConfig()
+	err := wm.LoadConfig()
 	if err != nil {
 		return nil, errors.New("The wallet node is not config! ")
 	}
@@ -250,5 +250,5 @@ func (wm *WalletManager) GetMerchantAddressBalance(walletID, address string) (st
 
 //SetMerchantRescanBlockHeight 商户重置区块链扫描高度
 func (wm *WalletManager) SetMerchantRescanBlockHeight(height uint64) error {
-	return wm.blockscanner.SetRescanBlockHeight(height)
+	return wm.Blockscanner.SetRescanBlockHeight(height)
 }
