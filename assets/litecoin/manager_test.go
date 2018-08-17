@@ -13,18 +13,19 @@
  * GNU Lesser General Public License for more details.
  */
 
-package bitcoin
+package litecoin
 
 import (
-	"fmt"
-	"github.com/blocktree/OpenWallet/keystore"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcutil"
-	"github.com/codeskyblue/go-sh"
 	"github.com/shopspring/decimal"
-	"math"
-	"path/filepath"
 	"testing"
+	"github.com/blocktree/OpenWallet/keystore"
+	"github.com/btcsuite/btcutil"
+	"fmt"
+	"path/filepath"
+	"github.com/codeskyblue/go-sh"
+	"math"
+	"github.com/blocktree/OpenWallet/assets/bitcoin"
+	"github.com/btcsuite/btcd/chaincfg"
 	"time"
 )
 
@@ -37,11 +38,18 @@ func init() {
 
 	tw = NewWalletManager()
 
-	tw.Config.ServerAPI = "http://192.168.2.194:20001"
-	tw.Config.RpcUser = "wallet"
+	tw.Config.ServerAPI = "http://192.168.2.192:10000"
+	tw.Config.RpcUser = "walletUser"
 	tw.Config.RpcPassword = "walletPassword2017"
-	token := BasicAuth(tw.Config.RpcUser, tw.Config.RpcPassword)
-	tw.WalletClient = NewClient(tw.Config.ServerAPI, token, true)
+	tw.Config.IsTestNet = false
+	token := bitcoin.BasicAuth(tw.Config.RpcUser, tw.Config.RpcPassword)
+	tw.WalletClient = bitcoin.NewClient(tw.Config.ServerAPI, token, true)
+}
+
+func TestWalletManager(t *testing.T) {
+
+	t.Log("Symbol:", tw.Config.Symbol)
+	t.Log("ServerAPI:", tw.Config.ServerAPI)
 }
 
 func TestImportPrivKey(t *testing.T) {
@@ -163,7 +171,7 @@ func TestCreateReceiverAddress(t *testing.T) {
 }
 
 func TestGetAddressesByAccount(t *testing.T) {
-	addresses, err := tw.GetAddressesByAccount("WKboeMWpu9cRFp3smkciS6qVY8TECRTxzJ")
+	addresses, err := tw.GetAddressesByAccount("")
 	if err != nil {
 		t.Errorf("GetAddressesByAccount failed unexpected error: %v\n", err)
 		return
@@ -175,7 +183,7 @@ func TestGetAddressesByAccount(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	_, _, err := tw.CreateBatchAddress("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", "1234qwer", 100)
+	_, _, err := tw.CreateBatchAddress("VyXf14q31HBfDKPXBAZdTwDD8EoQ5QL85i", "1234qwer", 100)
 	if err != nil {
 		t.Errorf("CreateBatchAddress failed unexpected error: %v\n", err)
 		return

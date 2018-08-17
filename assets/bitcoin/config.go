@@ -46,15 +46,15 @@ const (
 type WalletConfig struct {
 
 	//币种
-	symbol    string
-	masterKey string
+	Symbol    string
+	MasterKey string
 
 	//RPC认证账户名
-	rpcUser string
+	RpcUser string
 	//RPC认证账户密码
-	rpcPassword string
+	RpcPassword string
 	//证书目录
-	certsDir string
+	CertsDir string
 	//钥匙备份路径
 	keyDir string
 	//地址导出路径
@@ -64,88 +64,88 @@ type WalletConfig struct {
 	//配置文件名
 	configFileName string
 	//rpc证书
-	certFileName string
+	CertFileName string
 	//区块链数据文件
-	blockchainFile string
+	BlockchainFile string
 	//是否测试网络
-	isTestNet bool
+	IsTestNet bool
 	// 核心钱包是否只做监听
 	CoreWalletWatchOnly bool
 	//最大的输入数量
-	maxTxInputs int
+	MaxTxInputs int
 	//本地数据库文件路径
 	dbPath string
 	//备份路径
 	backupDir string
 	//钱包服务API
-	serverAPI string
+	ServerAPI string
 	//钱包安装的路径
-	nodeInstallPath string
+	NodeInstallPath string
 	//钱包数据文件目录
-	walletDataPath string
+	WalletDataPath string
 	//汇总阀值
-	threshold decimal.Decimal
+	Threshold decimal.Decimal
 	//汇总地址
-	sumAddress string
+	SumAddress string
 	//汇总执行间隔时间
-	cycleSeconds time.Duration
+	CycleSeconds time.Duration
 	//默认配置内容
-	defaultConfig string
+	DefaultConfig string
 }
 
-func NewConfig() *WalletConfig {
+func NewConfig(symbol string, masterKey string) *WalletConfig {
 
 	c := WalletConfig{}
 
 	//币种
-	c.symbol = Symbol
-	c.masterKey = MasterKey
+	c.Symbol = symbol
+	c.MasterKey = masterKey
 
 	//RPC认证账户名
-	c.rpcUser = ""
+	c.RpcUser = ""
 	//RPC认证账户密码
-	c.rpcPassword = ""
+	c.RpcPassword = ""
 	//证书目录
-	c.certsDir = filepath.Join("data", strings.ToLower(c.symbol), "certs")
+	c.CertsDir = filepath.Join("data", strings.ToLower(c.Symbol), "certs")
 	//钥匙备份路径
-	c.keyDir = filepath.Join("data", strings.ToLower(c.symbol), "key")
+	c.keyDir = filepath.Join("data", strings.ToLower(c.Symbol), "key")
 	//地址导出路径
-	c.addressDir = filepath.Join("data", strings.ToLower(c.symbol), "address")
+	c.addressDir = filepath.Join("data", strings.ToLower(c.Symbol), "address")
 	//区块链数据
 	//blockchainDir = filepath.Join("data", strings.ToLower(Symbol), "blockchain")
 	//配置文件路径
 	c.configFilePath = filepath.Join("conf")
 	//配置文件名
-	c.configFileName = c.symbol + ".ini"
+	c.configFileName = c.Symbol + ".ini"
 	//rpc证书
-	c.certFileName = "rpc.cert"
+	c.CertFileName = "rpc.cert"
 	//区块链数据文件
-	c.blockchainFile = "blockchain.db"
+	c.BlockchainFile = "blockchain.db"
 	//是否测试网络
-	c.isTestNet = true
+	c.IsTestNet = true
 	// 核心钱包是否只做监听
 	c.CoreWalletWatchOnly = true
 	//最大的输入数量
-	c.maxTxInputs = 50
+	c.MaxTxInputs = 50
 	//本地数据库文件路径
-	c.dbPath = filepath.Join("data", strings.ToLower(c.symbol), "db")
+	c.dbPath = filepath.Join("data", strings.ToLower(c.Symbol), "db")
 	//备份路径
-	c.backupDir = filepath.Join("data", strings.ToLower(c.symbol), "backup")
+	c.backupDir = filepath.Join("data", strings.ToLower(c.Symbol), "backup")
 	//钱包服务API
-	c.serverAPI = "http://127.0.0.1:10000"
+	c.ServerAPI = "http://127.0.0.1:10000"
 	//钱包安装的路径
-	c.nodeInstallPath = ""
+	c.NodeInstallPath = ""
 	//钱包数据文件目录
-	c.walletDataPath = ""
+	c.WalletDataPath = ""
 	//汇总阀值
-	c.threshold = decimal.NewFromFloat(5)
+	c.Threshold = decimal.NewFromFloat(5)
 	//汇总地址
-	c.sumAddress = ""
+	c.SumAddress = ""
 	//汇总执行间隔时间
-	c.cycleSeconds = time.Second * 10
+	c.CycleSeconds = time.Second * 10
 
 	//默认配置内容
-	c.defaultConfig = `
+	c.DefaultConfig = `
 # start node command
 startNodeCMD = ""
 # stop node command
@@ -176,9 +176,9 @@ threshold = ""
 }
 
 //printConfig Print config information
-func (wc *WalletConfig) printConfig() error {
+func (wc *WalletConfig) PrintConfig() error {
 
-	wc.initConfig()
+	wc.InitConfig()
 	//读取配置
 	absFile := filepath.Join(wc.configFilePath, wc.configFileName)
 	//apiURL := c.String("apiURL")
@@ -209,13 +209,13 @@ func (wc *WalletConfig) printConfig() error {
 }
 
 //initConfig 初始化配置文件
-func (wc *WalletConfig) initConfig() {
+func (wc *WalletConfig) InitConfig() {
 
 	//读取配置
 	absFile := filepath.Join(wc.configFilePath, wc.configFileName)
 	if !file.Exists(absFile) {
 		file.MkdirAll(wc.configFilePath)
-		file.WriteFile(absFile, []byte(wc.defaultConfig), false)
+		file.WriteFile(absFile, []byte(wc.DefaultConfig), false)
 	}
 
 }

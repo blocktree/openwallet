@@ -29,6 +29,7 @@ import (
 	"github.com/blocktree/OpenWallet/assets/iota"
 	"github.com/blocktree/OpenWallet/assets/sia"
 	"github.com/blocktree/OpenWallet/assets/tezos"
+	"github.com/blocktree/OpenWallet/assets/litecoin"
 )
 
 //WalletManager 钱包管理器
@@ -111,7 +112,7 @@ func GetWMD(symbol string) interface{} {
 //注册钱包管理工具
 func init() {
 	//注册钱包管理工具
-	log.Debug("Register wallet manager ......")
+	log.Notice("Wallet Manager Load Successfully.")
 	RegWMD(strings.ToLower(cardano.Symbol), &cardano.WalletManager{})
 	RegWMD(strings.ToLower(bytom.Symbol), &bytom.WalletManager{})
 	RegWMD(strings.ToLower(bopo.Symbol), &bopo.WalletManager{})
@@ -122,4 +123,5 @@ func init() {
 	RegWMD(strings.ToLower(hypercash.Symbol), hypercash.NewWalletManager())
 	RegWMD(strings.ToLower(iota.Symbol), &iota.WalletManager{})
 	RegWMD(strings.ToLower(tezos.Symbol), &tezos.WalletManager{})
+	RegWMD(strings.ToLower(litecoin.Symbol), litecoin.NewWalletManager())
 }
