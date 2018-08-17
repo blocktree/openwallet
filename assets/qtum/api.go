@@ -17,21 +17,21 @@ package qtum
 
 import (
 	"encoding/base64"
-	"github.com/imroc/req"
-	"log"
-	"github.com/tidwall/gjson"
-	"fmt"
 	"errors"
+	"fmt"
+	"github.com/imroc/req"
+	"github.com/tidwall/gjson"
+	"github.com/blocktree/OpenWallet/log"
 )
 
-// A Client is a Qtum RPC client. It performs RPCs over HTTP using JSON
+// A Client is a Bitcoin RPC client. It performs RPCs over HTTP using JSON
 // request and responses. A Client must be configured with a secret token
 // to authenticate with other Cores on the network.
 type Client struct {
 	BaseURL     string
 	AccessToken string
 	Debug       bool
-
+	client      *req.Req
 	//Client *req.Req
 }
 
@@ -43,12 +43,32 @@ type Response struct {
 	Id      string      `json:"id,omitempty"`
 }
 
+
+func NewClient(url, token string, debug bool) *Client {
+	c := Client{
+		BaseURL:     url,
+		AccessToken: token,
+		Debug:       debug,
+	}
+
+	api := req.New()
+	//trans, _ := api.Client().Transport.(*http.Transport)
+	//trans.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	c.client = api
+
+	return &c
+}
+
 // Call calls a remote procedure on another node, specified by the path.
 func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error) {
 
 	var (
 		body = make(map[string]interface{}, 0)
 	)
+
+	if c.client == nil {
+		return nil, errors.New("API url is not setup. ")
+	}
 
 	authHeader := req.Header{
 		"Accept":        "application/json",
@@ -62,17 +82,17 @@ func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error)
 	body["params"] = request
 
 	if c.Debug {
-		log.Println("Start Request API...")
+		log.Std.Info("Start Request API...")
 	}
 
-	r, err := req.Post(c.BaseURL, req.BodyJSON(&body), authHeader)
+	r, err := c.client.Post(c.BaseURL, req.BodyJSON(&body), authHeader)
 
 	if c.Debug {
-		log.Println("Request API Completed")
+		log.Std.Info("Request API Completed")
 	}
 
 	if c.Debug {
-		log.Printf("%+v\n", r)
+		log.Std.Info("%+v", r)
 	}
 
 	if err != nil {
@@ -136,4 +156,3 @@ func isError(result *gjson.Result) error {
 
 	return err
 }
-
