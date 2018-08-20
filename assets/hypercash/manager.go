@@ -21,7 +21,7 @@ import (
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/blocktree/OpenWallet/keystore"
+	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/walletnode"
 	"github.com/bndr/gotabulate"
@@ -42,7 +42,7 @@ const (
 )
 
 type WalletManager struct {
-	storage      *keystore.HDKeystore          //秘钥存取
+	storage      *hdkeystore.HDKeystore          //秘钥存取
 	hcdClient    *Client                       // 全节点客户端
 	walletClient *Client                       // 节点客户端
 	config       *WalletConfig                 //钱包管理配置
@@ -53,7 +53,7 @@ type WalletManager struct {
 func NewWalletManager() *WalletManager {
 	wm := WalletManager{}
 	wm.config = NewConfig()
-	storage := keystore.NewHDKeystore(wm.config.keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	storage := hdkeystore.NewHDKeystore(wm.config.keyDir, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
 	wm.storage = storage
 	//参与汇总的钱包
 	wm.walletsInSum = make(map[string]*openwallet.Wallet)
@@ -133,7 +133,7 @@ func (wm *WalletManager) GetAddressesFromLocalDB(walletID string, watchOnly bool
 }
 
 //CreateNewAddress 给指定账户创建地址
-func (wm *WalletManager) CreateNewAddress(key *keystore.HDKey) (*openwallet.Address, error) {
+func (wm *WalletManager) CreateNewAddress(key *hdkeystore.HDKey) (*openwallet.Address, error) {
 
 	request := []interface{}{
 		"default",
@@ -147,7 +147,7 @@ func (wm *WalletManager) CreateNewAddress(key *keystore.HDKey) (*openwallet.Addr
 
 	addr := openwallet.Address{
 		Address:   result.String(),
-		AccountID: key.RootId,
+		AccountID: key.KeyID,
 		HDPath:    "",
 		CreatedAt: time.Now(),
 		Symbol:    wm.config.symbol,
@@ -483,19 +483,19 @@ func (wm *WalletManager) CreateNewWallet(name, password string) (*openwallet.Wal
 		return nil, "", errors.New("The wallet's password is not equal hcwallet wallet!")
 	}
 
-	fmt.Printf("Create new wallet keystore...\n")
+	fmt.Printf("Create new wallet hdkeystore...\n")
 
 	seed, err := hdkeychain.GenerateSeed(32)
 	if err != nil {
 		return nil, "", err
 	}
 
-	extSeed, err := keystore.GetExtendSeed(seed, wm.config.masterKey)
+	extSeed, err := hdkeystore.GetExtendSeed(seed, wm.config.masterKey)
 	if err != nil {
 		return nil, "", err
 	}
 
-	key, keyFile, err := keystore.StoreHDKeyWithSeed(wm.config.keyDir, name, password, extSeed, keystore.StandardScryptN, keystore.StandardScryptP)
+	key, keyFile, err := hdkeystore.StoreHDKeyWithSeed(wm.config.keyDir, name, password, extSeed, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
 	if err != nil {
 		return nil, "", err
 	}
@@ -504,10 +504,10 @@ func (wm *WalletManager) CreateNewWallet(name, password string) (*openwallet.Wal
 	file.MkdirAll(wm.config.keyDir)
 
 	w := &openwallet.Wallet{
-		WalletID: key.RootId,
+		WalletID: key.KeyID,
 		Alias:    key.Alias,
 		KeyFile:  keyFile,
-		DBFile:   filepath.Join(wm.config.dbPath, key.Alias+"-"+key.RootId+".db"),
+		DBFile:   filepath.Join(wm.config.dbPath, key.Alias+"-"+key.KeyID+".db"),
 	}
 
 	w.SaveToDB()
@@ -640,7 +640,7 @@ func (wm *WalletManager) GetAddressBalance(walletID, address string) string {
 }
 
 //CreateNewPrivateKey 创建私钥，返回私钥wif格式字符串
-//func (wm *WalletManager) CreateNewPrivateKey(key *keystore.HDKey, start, index uint64) (string, *openwallet.Address, error) {
+//func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index uint64) (string, *openwallet.Address, error) {
 //
 //	derivedPath := fmt.Sprintf("%s/%d/%d", key.RootPath, start, index)
 //	//fmt.Printf("derivedPath = %s\n", derivedPath)
@@ -690,7 +690,7 @@ func (wm *WalletManager) GetAddressBalance(walletID, address string) string {
 //}
 
 //CreateBatchPrivateKey
-//func (wm *WalletManager) CreateBatchPrivateKey(key *keystore.HDKey, count uint64) ([]string, error) {
+//func (wm *WalletManager) CreateBatchPrivateKey(key *hdkeystore.HDKey, count uint64) ([]string, error) {
 //
 //	var (
 //		wifs = make([]string, 0)
@@ -783,7 +783,7 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 	var (
 		restoreSuccess = false
 		err            error
-		key            *keystore.HDKey
+		key            *hdkeystore.HDKey
 		//sleepTime      = 30 * time.Second
 	)
 
@@ -1120,7 +1120,7 @@ func (wm *WalletManager) BuildTransaction(utxos []*Unspent, to []string, change 
 }
 
 //SignRawTransaction 钱包交易单
-func (wm *WalletManager) SignRawTransaction(txHex, walletID string, key *keystore.HDKey, utxos []*Unspent) (string, error) {
+func (wm *WalletManager) SignRawTransaction(txHex, walletID string, key *hdkeystore.HDKey, utxos []*Unspent) (string, error) {
 
 	//var (
 	//	wifs = make([]string, 0)
@@ -1577,7 +1577,7 @@ func (wm *WalletManager) SendBatchTransaction(walletID string, to []string, amou
 }
 
 //CreateChangeAddress 创建找零地址
-//func (wm *WalletManager) CreateChangeAddress(walletID string, key *keystore.HDKey) (*openwallet.Address, error) {
+//func (wm *WalletManager) CreateChangeAddress(walletID string, key *hdkeystore.HDKey) (*openwallet.Address, error) {
 //
 //	//生产通道
 //	producer := make(chan []*openwallet.Address)
@@ -1731,7 +1731,7 @@ func (wm *WalletManager) clearUnspends(utxos []*Unspent, wallet *openwallet.Wall
 }
 
 //createAddressWork 创建地址过程
-func (wm *WalletManager) createAddressWork(key *keystore.HDKey, producer chan<- []*openwallet.Address, walletID string, index, start, end uint64) {
+func (wm *WalletManager) createAddressWork(key *hdkeystore.HDKey, producer chan<- []*openwallet.Address, walletID string, index, start, end uint64) {
 
 	runAddress := make([]*openwallet.Address, 0)
 	//runWIFs := make([]string, 0)

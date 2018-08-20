@@ -352,7 +352,7 @@ func (bs *BTCBlockScanner) ScanBlock(height uint64) error {
 	}
 
 	//保存区块
-	bs.wm.SaveLocalBlock(block)
+	//bs.wm.SaveLocalBlock(block)
 
 	//通知新区块给观测者，异步处理
 	go bs.newBlockNotify(block)
@@ -599,7 +599,7 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 					transaction.Index = n
 					transaction.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("%s_%d_%s", txid, n, addr))))
 
-					//有高度记录高度信息
+					//TODO:有高度记录高度信息，已经把没blockHash的记录加入到重扫，这里直接读取交易单上的记录
 					if blockHeight > 0 {
 						transaction.BlockHeight = blockHeight
 						transaction.BlockHash = blockHash
@@ -637,23 +637,27 @@ func (bs *BTCBlockScanner) SaveRechargeToWalletDB(height uint64, list []*openwal
 		wallet, ok := bs.GetWalletByAddress(r.Address)
 		if ok {
 
-			a := wallet.GetAddress(r.Address)
-			if a == nil {
-				continue
-			}
-
-			r.AccountID = a.AccountID
+			//a := wallet.GetAddress(r.Address)
+			//if a == nil {
+			//	continue
+			//}
+			//
+			//r.AccountID = a.AccountID
 
 			err := wallet.SaveRecharge(r)
-			if err != nil {
-				//保存为未扫记录
+			//如果blockHash没有值，添加到重扫，避免遗留
+			if err != nil || len(r.BlockHash) == 0 {
 
 				//记录未扫区块
-				unscanRecord := NewUnscanRecord(height, r.TxID, err.Error())
-				bs.SaveUnscanRecord(unscanRecord)
-				log.Std.Info("block height: %d, txID: %s extract failed.", height, r.TxID)
-			}
+				unscanRecord := NewUnscanRecord(height, r.TxID, "save to wallet failed.")
+				err = bs.SaveUnscanRecord(unscanRecord)
+				if err != nil {
+					log.Std.Error("block height: %d, txID: %s save unscan record failed. unexpected error: %v", height, r.TxID, err.Error())
+				}
 
+			} else {
+				log.Info("block scanner save blockHeight:", height, "txid:", r.TxID, "address:", r.Address, "successfully.")
+			}
 		} else {
 			return errors.New("address in wallet is not found")
 		}
@@ -753,9 +757,9 @@ func (bs *BTCBlockScanner) SaveUnscanRecord(record *UnscanRecord) error {
 		return errors.New("the unscan record to save is nil")
 	}
 
-	if record.BlockHeight == 0 {
-		return errors.New("unconfirmed transaction do not rescan")
-	}
+	//if record.BlockHeight == 0 {
+	//	return errors.New("unconfirmed transaction do not rescan")
+	//}
 
 	//获取本地区块高度
 	db, err := storm.Open(filepath.Join(bs.wm.Config.dbPath, bs.wm.Config.BlockchainFile))

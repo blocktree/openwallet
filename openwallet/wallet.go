@@ -199,7 +199,11 @@ func (w *Wallet) SaveRecharge(tx *Recharge) error {
 		return err
 	}
 	defer db.Close()
-	return db.Save(tx)
+	err = db.Save(tx)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 //DropRecharge 删除充值记录表

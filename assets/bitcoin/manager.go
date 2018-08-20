@@ -683,6 +683,40 @@ func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index
 	return wif.String(), &addr, err
 }
 
+//PrivateKeyToWIF 私钥转WIF格式
+func (wm *WalletManager) PrivateKeyToWIF(priv []byte) (string, error) {
+
+	cfg := chaincfg.MainNetParams
+	if wm.Config.IsTestNet {
+		cfg = chaincfg.TestNet3Params
+	}
+
+	privateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), priv)
+	wif, err := btcutil.NewWIF(privateKey, &cfg, true)
+	if err != nil {
+		return "", err
+	}
+
+	return wif.String(), err
+}
+
+//PublicKeyToAddress 公钥转地址
+func (wm *WalletManager) PublicKeyToAddress(pub []byte) (string, error) {
+
+	cfg := chaincfg.MainNetParams
+	if wm.Config.IsTestNet {
+		cfg = chaincfg.TestNet3Params
+	}
+
+	pkHash := btcutil.Hash160(pub)
+	address, err :=  btcutil.NewAddressPubKeyHash(pkHash, &cfg)
+	if err != nil {
+		return "", err
+	}
+
+	return address.String(), err
+}
+
 //CreateBatchPrivateKey
 //func (wm *WalletManager) CreateBatchPrivateKey(key *hdkeystore.HDKey, count uint64) ([]string, error) {
 //
@@ -1599,7 +1633,12 @@ func (wm *WalletManager) CreateChangeAddress(walletID string, key *hdkeystore.HD
 	}
 
 	//批量写入数据库
-	err := wm.saveAddressToDB(getAddrs, &openwallet.Wallet{Alias: key.Alias, WalletID: key.KeyID})
+	wallet, err := wm.GetWalletInfo(walletID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = wm.saveAddressToDB(getAddrs, wallet)
 	if err != nil {
 		return nil, err
 	}

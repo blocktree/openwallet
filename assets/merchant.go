@@ -64,6 +64,9 @@ type MerchantAssets interface {
 
 	//SetMerchantRescanBlockHeight 商户重置区块链扫描高度
 	SetMerchantRescanBlockHeight(height uint64) error
+
+	//MerchantRescanBlockHeight 商户重置区块链扫描高度范围
+	MerchantRescanBlockHeight(startHeight uint64, endHeight uint64) error
 }
 
 // GetMerchantAssets 根据币种类型获取已注册的管理者

@@ -19,10 +19,10 @@ import (
 	"fmt"
 	"github.com/blocktree/OpenWallet/assets"
 	"github.com/blocktree/OpenWallet/common"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/owtp"
 	"github.com/pkg/errors"
-	"github.com/blocktree/OpenWallet/log"
 )
 
 const (
@@ -58,7 +58,7 @@ func (m *MerchantNode) setupRouter() {
 	m.Node.HandleFunc("getNewHeight", m.getNewHeight)
 	m.Node.HandleFunc("getBalanceByAddress", m.getBalanceByAddress)
 	m.Node.HandleFunc("getWalletBalance", m.getWalletBalance)
-	m.Node.HandleFunc("resetHeight", m.resetHeight)
+	m.Node.HandleFunc("rescanBlockHeight", m.rescanBlockHeight)
 
 }
 
@@ -363,13 +363,13 @@ func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
 	log.Info("params:", ctx.Params())
 
 	/*
-	| 参数名称  | 类型   | 是否可空 | 描述                                         |
-	|-----------|--------|----------|----------------------------------------------|
-	| coin      | string | 否       | 币种标识                                     |
-	| walletID  | string | 否       | 钱包ID                                       |
-	| watchOnly | uint   | 否       | 0: 钱包自己创建的地址,1：外部导入的订阅的地址 |
-	| offset    | uint   | 是       | 从0开始                                      |
-	| limit     | uint   | 是       | 查询条数                                     |
+		| 参数名称  | 类型   | 是否可空 | 描述                                         |
+		|-----------|--------|----------|----------------------------------------------|
+		| coin      | string | 否       | 币种标识                                     |
+		| walletID  | string | 否       | 钱包ID                                       |
+		| watchOnly | uint   | 否       | 0: 钱包自己创建的地址,1：外部导入的订阅的地址 |
+		| offset    | uint   | 是       | 从0开始                                      |
+		| limit     | uint   | 是       | 查询条数                                     |
 	*/
 
 	coin := ctx.Params().Get("coin").String()
@@ -624,24 +624,34 @@ func (m *MerchantNode) getBalanceByAddress(ctx *owtp.Context) {
 	responseSuccess(ctx, result)
 }
 
-func (m *MerchantNode) resetHeight(ctx *owtp.Context) {
-	log.Info("Merchant handle: resetHeight")
+func (m *MerchantNode) rescanBlockHeight(ctx *owtp.Context) {
+	log.Info("Merchant handle: rescanBlockHeight")
 	log.Info("params:", ctx.Params())
 
 	/*
-		| 参数名称     | 类型   | 是否可空 | 描述   |
-		|--------------|--------|----------|--------|
-		| coin         | string | 否       | 币名   |
-		| walletID     | string | 否       | 钱包ID |
-		| height     | string | 否       | 高度 |
+	| 参数名称    | 类型   | 是否可空 | 描述                   |
+	|-------------|--------|----------|------------------------|
+	| coin        | string | 否       | 币名                   |
+	| startHeight | string | 否       | 起始高度               |
+	| endHeight   | string | 否       | 结束高度，0代表最新高度 |
 	*/
+
+	var (
+		err error
+	)
 
 	coin := ctx.Params().Get("coin").String()
 	//walletID := ctx.Params().Get("walletID").String()
-	height := ctx.Params().Get("height").Uint()
+	startHeight := ctx.Params().Get("startHeight").Uint()
+	endHeight := ctx.Params().Get("endHeight").Uint()
 
 	am := assets.GetMerchantAssets(coin)
-	err := am.SetMerchantRescanBlockHeight(height)
+	if endHeight == 0 {
+		err = am.SetMerchantRescanBlockHeight(startHeight)
+	} else {
+		err = am.MerchantRescanBlockHeight(startHeight, endHeight)
+	}
+
 	if err != nil {
 		responseError(ctx, err)
 		return

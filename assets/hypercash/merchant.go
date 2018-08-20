@@ -251,3 +251,20 @@ func (wm *WalletManager) GetMerchantAddressBalance(walletID, address string) (st
 func (wm *WalletManager) SetMerchantRescanBlockHeight(height uint64) error {
 	return wm.blockscanner.SetRescanBlockHeight(height)
 }
+
+//MerchantRescanBlockHeight 商户重置区块链扫描高度范围
+func (wm *WalletManager) MerchantRescanBlockHeight(startHeight uint64, endHeight uint64) error {
+
+	if startHeight <= endHeight {
+		for i := startHeight;i<=endHeight;i++ {
+			err := wm.blockscanner.ScanBlock(i)
+			if err != nil {
+				continue
+			}
+		}
+	} else {
+		return fmt.Errorf("start block height: %d is greater than end block height: %d", startHeight, endHeight)
+	}
+
+	return nil
+}
