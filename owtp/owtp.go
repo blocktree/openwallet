@@ -177,8 +177,16 @@ func (node *OWTPNode) Listening() bool {
 //Connect 建立长连接
 func (node *OWTPNode) Connect(addr string, pid string) error {
 
+	_, err := node.connect(addr, pid)
+
+	return err
+}
+
+//connect 建立长连接，内部调用
+func (node *OWTPNode) connect(addr string, pid string) (Peer, error) {
+
 	if len(addr) == 0 {
-		return fmt.Errorf("the peer address is empty")
+		return nil, fmt.Errorf("the peer address is empty")
 	}
 
 	url := "ws://" + strings.TrimSuffix(addr,"/") + "/" + pid
@@ -188,19 +196,19 @@ func (node *OWTPNode) Connect(addr string, pid string) error {
 	//发起协商密钥
 	err = auth.InitKeyAgreement()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	//建立链接，记录默认的客户端
 	client, err := Dial(pid, url, node, auth.AuthHeader(), node.ReadBufferSize, node.WriteBufferSize)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	//设置授权规则
 	client.auth = auth
 
-	return nil
+	return client, nil
 }
 
 //SetCloseHandler 设置关闭连接时的回调
@@ -227,6 +235,7 @@ func (node *OWTPNode) Run() error {
 		case peer := <-node.Join:
 			//客户端加入
 			log.Info("Node Join:", peer.PID())
+			log.Info("Node IP:", peer.RemoteAddr().String())
 			node.peerstore.AddOnlinePeer(peer)
 			node.peerstore.SaveAddr(peer.PID(), peer.RemoteAddr().String())
 			//加入后打开数据流通道
@@ -333,7 +342,7 @@ func (node *OWTPNode) Call(
 			return fmt.Errorf("the peer: %s is not in address book", pid)
 		}
 
-		err = node.Connect(peerAddr, peer.PID()) //重新连接
+		peer, err = node.connect(peerAddr, pid) //重新连接
 		if err != nil {
 			return err
 		}

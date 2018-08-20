@@ -22,17 +22,8 @@ import (
 	"github.com/blocktree/go-OWCrypt"
 	"github.com/mr-tron/base58/base58"
 	"net/http"
-	"path/filepath"
 	"strconv"
 	"time"
-)
-
-var (
-	//默认的缓存文件路径
-	defaultCachePath = filepath.Join(".", "owptp_cahce")
-	defaultCacheFile = "openw.db"
-	//重放限制时长，数据包的时间戳超过后，这个间隔，可以重复nonce
-	replayLimit = 7 * 24 * time.Hour
 )
 
 //Authorization 授权

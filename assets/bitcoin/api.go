@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
-	"log"
+	"github.com/blocktree/OpenWallet/log"
 )
 
 // A Client is a Bitcoin RPC client. It performs RPCs over HTTP using JSON
@@ -31,7 +31,7 @@ type Client struct {
 	BaseURL     string
 	AccessToken string
 	Debug       bool
-
+	client      *req.Req
 	//Client *req.Req
 }
 
@@ -43,12 +43,32 @@ type Response struct {
 	Id      string      `json:"id,omitempty"`
 }
 
+
+func NewClient(url, token string, debug bool) *Client {
+	c := Client{
+		BaseURL:     url,
+		AccessToken: token,
+		Debug:       debug,
+	}
+
+	api := req.New()
+	//trans, _ := api.Client().Transport.(*http.Transport)
+	//trans.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	c.client = api
+
+	return &c
+}
+
 // Call calls a remote procedure on another node, specified by the path.
 func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error) {
 
 	var (
 		body = make(map[string]interface{}, 0)
 	)
+
+	if c.client == nil {
+		return nil, errors.New("API url is not setup. ")
+	}
 
 	authHeader := req.Header{
 		"Accept":        "application/json",
@@ -62,17 +82,17 @@ func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error)
 	body["params"] = request
 
 	if c.Debug {
-		log.Println("Start Request API...")
+		log.Std.Info("Start Request API...")
 	}
 
-	r, err := req.Post(c.BaseURL, req.BodyJSON(&body), authHeader)
+	r, err := c.client.Post(c.BaseURL, req.BodyJSON(&body), authHeader)
 
 	if c.Debug {
-		log.Println("Request API Completed")
+		log.Std.Info("Request API Completed")
 	}
 
 	if c.Debug {
-		log.Printf("%+v\n", r)
+		log.Std.Info("%+v", r)
 	}
 
 	if err != nil {
@@ -95,7 +115,7 @@ func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error)
 // separated by a single colon (":") character, within a base64
 // encoded string in the credentials."
 // It is not meant to be urlencoded.
-func basicAuth(username, password string) string {
+func BasicAuth(username, password string) string {
 	auth := username + ":" + password
 	return base64.StdEncoding.EncodeToString([]byte(auth))
 }

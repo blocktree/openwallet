@@ -16,13 +16,11 @@
 package bitcoin
 
 import (
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/shopspring/decimal"
 )
@@ -44,51 +42,110 @@ const (
 	MasterKey = "Bitcoin seed"
 )
 
-var (
+
+type WalletConfig struct {
+
+	//币种
+	Symbol    string
+	MasterKey string
+
 	//RPC认证账户名
-	rpcUser = ""
+	RpcUser string
 	//RPC认证账户密码
-	rpcPassword = ""
+	RpcPassword string
+	//证书目录
+	CertsDir string
 	//钥匙备份路径
-	keyDir = filepath.Join("data", strings.ToLower(Symbol), "key")
+	keyDir string
 	//地址导出路径
-	addressDir = filepath.Join("data", strings.ToLower(Symbol), "address")
+	addressDir string
+	//配置文件路径
+	configFilePath string
+	//配置文件名
+	configFileName string
+	//rpc证书
+	CertFileName string
+	//区块链数据文件
+	BlockchainFile string
+	//是否测试网络
+	IsTestNet bool
+	// 核心钱包是否只做监听
+	CoreWalletWatchOnly bool
+	//最大的输入数量
+	MaxTxInputs int
+	//本地数据库文件路径
+	dbPath string
+	//备份路径
+	backupDir string
+	//钱包服务API
+	ServerAPI string
+	//钱包安装的路径
+	NodeInstallPath string
+	//钱包数据文件目录
+	WalletDataPath string
+	//汇总阀值
+	Threshold decimal.Decimal
+	//汇总地址
+	SumAddress string
+	//汇总执行间隔时间
+	CycleSeconds time.Duration
+	//默认配置内容
+	DefaultConfig string
+}
+
+func NewConfig(symbol string, masterKey string) *WalletConfig {
+
+	c := WalletConfig{}
+
+	//币种
+	c.Symbol = symbol
+	c.MasterKey = masterKey
+
+	//RPC认证账户名
+	c.RpcUser = ""
+	//RPC认证账户密码
+	c.RpcPassword = ""
+	//证书目录
+	c.CertsDir = filepath.Join("data", strings.ToLower(c.Symbol), "certs")
+	//钥匙备份路径
+	c.keyDir = filepath.Join("data", strings.ToLower(c.Symbol), "key")
+	//地址导出路径
+	c.addressDir = filepath.Join("data", strings.ToLower(c.Symbol), "address")
 	//区块链数据
 	//blockchainDir = filepath.Join("data", strings.ToLower(Symbol), "blockchain")
 	//配置文件路径
-	configFilePath = filepath.Join("conf")
+	c.configFilePath = filepath.Join("conf")
 	//配置文件名
-	configFileName = Symbol + ".ini"
+	c.configFileName = c.Symbol + ".ini"
+	//rpc证书
+	c.CertFileName = "rpc.cert"
 	//区块链数据文件
-	blockchainFile = "blockchain.db"
+	c.BlockchainFile = "blockchain.db"
 	//是否测试网络
-	isTestNet = true
+	c.IsTestNet = true
 	// 核心钱包是否只做监听
-	CoreWalletWatchOnly = true
+	c.CoreWalletWatchOnly = true
 	//最大的输入数量
-	maxTxInputs = 50
+	c.MaxTxInputs = 50
 	//本地数据库文件路径
-	dbPath = filepath.Join("data", strings.ToLower(Symbol), "db")
+	c.dbPath = filepath.Join("data", strings.ToLower(c.Symbol), "db")
 	//备份路径
-	backupDir = filepath.Join("data", strings.ToLower(Symbol), "backup")
+	c.backupDir = filepath.Join("data", strings.ToLower(c.Symbol), "backup")
 	//钱包服务API
-	serverAPI = "http://127.0.0.1:10000"
+	c.ServerAPI = "http://127.0.0.1:10000"
 	//钱包安装的路径
-	nodeInstallPath = ""
+	c.NodeInstallPath = ""
 	//钱包数据文件目录
-	walletDataPath = ""
-	//小数位长度
-	coinDecimal decimal.Decimal = decimal.NewFromFloat(100000000)
-	//参与汇总的钱包
-	walletsInSum = make(map[string]*Wallet)
+	c.WalletDataPath = ""
 	//汇总阀值
-	threshold decimal.Decimal = decimal.NewFromFloat(5)
+	c.Threshold = decimal.NewFromFloat(5)
 	//汇总地址
-	sumAddress = ""
+	c.SumAddress = ""
 	//汇总执行间隔时间
-	cycleSeconds = time.Second * 10
+	c.CycleSeconds = time.Second * 10
+
 	//默认配置内容
-	defaultConfig = `
+	c.DefaultConfig = `
 # start node command
 startNodeCMD = ""
 # stop node command
@@ -99,8 +156,10 @@ nodeInstallPath = ""
 mainNetDataPath = ""
 # testnet data path
 testNetDataPath = ""
-# node api url
-apiURL = ""
+# hcd api url
+chainAPI = ""
+# hcwallet api url
+walletAPI = ""
 # RPC Authentication Username
 rpcUser = ""
 # RPC Authentication Password
@@ -112,56 +171,16 @@ sumAddress = ""
 # when wallet's balance is over this value, the wallet willl send money to [sumAddress]
 threshold = ""
 `
-)
 
-func setWalletConfig(sumAddress string, threshold string) {
-
-}
-
-//newConfigFile 创建配置文件
-func newConfigFile(
-	apiURL, walletPath, sumAddress string,
-	threshold string, isTestNet bool) (config.Configer, string, error) {
-
-	//	生成配置
-	configMap := map[string]interface{}{
-		"apiURL":     apiURL,
-		"walletPath": walletPath,
-		"sumAddress": sumAddress,
-		"threshold":  threshold,
-		"isTestNet":  isTestNet,
-	}
-
-	filepath.Join()
-
-	bytes, err := json.Marshal(configMap)
-	if err != nil {
-		return nil, "", err
-	}
-
-	//实例化配置
-	c, err := config.NewConfigData("json", bytes)
-	if err != nil {
-		return nil, "", err
-	}
-
-	//写入配置到文件
-	file.MkdirAll(configFilePath)
-	absFile := filepath.Join(configFilePath, configFileName)
-	err = c.SaveConfigFile(absFile)
-	if err != nil {
-		return nil, "", err
-	}
-
-	return c, absFile, nil
+	return &c
 }
 
 //printConfig Print config information
-func printConfig() error {
+func (wc *WalletConfig) PrintConfig() error {
 
-	initConfig()
+	wc.InitConfig()
 	//读取配置
-	absFile := filepath.Join(configFilePath, configFileName)
+	absFile := filepath.Join(wc.configFilePath, wc.configFileName)
 	//apiURL := c.String("apiURL")
 	//walletPath := c.String("walletPath")
 	//threshold := c.String("threshold")
@@ -190,13 +209,13 @@ func printConfig() error {
 }
 
 //initConfig 初始化配置文件
-func initConfig() {
+func (wc *WalletConfig) InitConfig() {
 
 	//读取配置
-	absFile := filepath.Join(configFilePath, configFileName)
+	absFile := filepath.Join(wc.configFilePath, wc.configFileName)
 	if !file.Exists(absFile) {
-		file.MkdirAll(configFilePath)
-		file.WriteFile(absFile, []byte(defaultConfig), false)
+		file.MkdirAll(wc.configFilePath)
+		file.WriteFile(absFile, []byte(wc.DefaultConfig), false)
 	}
 
 }

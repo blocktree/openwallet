@@ -65,7 +65,7 @@ func (m *MerchantNode) setupRouter() {
 //subscribe 订阅方法
 func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 
-	log.Info("Merchant Call: subscribe")
+	log.Info("Merchant handle: subscribe")
 	log.Info("params:", ctx.Params())
 
 	var (
@@ -122,7 +122,7 @@ func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 
 func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 
-	log.Info("Merchant Call: createWallet")
+	log.Info("Merchant handle: createWallet")
 	log.Info("params:", ctx.Params())
 
 	/*
@@ -193,7 +193,7 @@ func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 
 func (m *MerchantNode) configWallet(ctx *owtp.Context) {
 
-	log.Info("Merchant Call: configWallet")
+	log.Info("Merchant handle: configWallet")
 	log.Info("params:", ctx.Params())
 
 	/*
@@ -229,7 +229,7 @@ func (m *MerchantNode) configWallet(ctx *owtp.Context) {
 
 func (m *MerchantNode) getWalletList(ctx *owtp.Context) {
 
-	log.Info("Merchant Call: getWalletList")
+	log.Info("Merchant handle: getWalletList")
 	log.Info("params:", ctx.Params())
 
 	coin := ctx.Params().Get("coin").String()
@@ -290,7 +290,7 @@ func (m *MerchantNode) getWalletList(ctx *owtp.Context) {
 
 func (m *MerchantNode) createAddress(ctx *owtp.Context) {
 
-	log.Info("Merchant Call: createAddress")
+	log.Info("Merchant handle: createAddress")
 	log.Info("params:", ctx.Params())
 
 	/*
@@ -359,7 +359,7 @@ func (m *MerchantNode) createAddress(ctx *owtp.Context) {
 
 func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
 
-	log.Info("Merchant Call: getAddressList")
+	log.Info("Merchant handle: getAddressList")
 	log.Info("params:", ctx.Params())
 
 	/*
@@ -423,7 +423,7 @@ func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
 
 func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 
-	log.Info("Merchant Call: submitTransaction")
+	log.Info("Merchant handle: submitTransaction")
 	log.Info("params:", ctx.Params())
 
 	var (
@@ -439,7 +439,7 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 		return
 	}
 
-	for _, p := range ctx.Params().Get("withdraws").Array() {
+	for _, p := range ctx.Params().Get("withdraws").Map() {
 		s := openwallet.NewWithdraw(p)
 
 		if len(s.WalletID) == 0 {
@@ -536,7 +536,7 @@ func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
 
 func (m *MerchantNode) getNewHeight(ctx *owtp.Context) {
 
-	log.Info("Merchant Call: getNewHeight")
+	log.Info("Merchant handle: getNewHeight")
 	log.Info("params:", ctx.Params())
 
 	/*
@@ -566,7 +566,7 @@ func (m *MerchantNode) getNewHeight(ctx *owtp.Context) {
 
 func (m *MerchantNode) getWalletBalance(ctx *owtp.Context) {
 
-	log.Info("Merchant Call: getWalletBalance")
+	log.Info("Merchant handle: getWalletBalance")
 	log.Info("params:", ctx.Params())
 
 	/*
@@ -595,7 +595,7 @@ func (m *MerchantNode) getWalletBalance(ctx *owtp.Context) {
 
 func (m *MerchantNode) getBalanceByAddress(ctx *owtp.Context) {
 
-	log.Info("Merchant Call: getBalanceByAddress")
+	log.Info("Merchant handle: getBalanceByAddress")
 	log.Info("params:", ctx.Params())
 
 	/*
@@ -625,7 +625,7 @@ func (m *MerchantNode) getBalanceByAddress(ctx *owtp.Context) {
 }
 
 func (m *MerchantNode) resetHeight(ctx *owtp.Context) {
-	log.Info("Merchant Call: resetHeight")
+	log.Info("Merchant handle: resetHeight")
 	log.Info("params:", ctx.Params())
 
 	/*
@@ -653,9 +653,11 @@ func (m *MerchantNode) resetHeight(ctx *owtp.Context) {
 //responseSuccess 成功结果响应
 func responseSuccess(ctx *owtp.Context, result interface{}) {
 	ctx.Response(result, owtp.StatusSuccess, "success")
+	log.Info(ctx.Method, ":", "Response:", ctx.Resp.JsonData())
 }
 
 //responseError 失败结果响应
 func responseError(ctx *owtp.Context, err error) {
 	ctx.Response(nil, owtp.ErrCustomError, err.Error())
+	log.Info(ctx.Method, ":", "Response:", ctx.Resp.JsonData())
 }
