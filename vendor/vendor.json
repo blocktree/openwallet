@@ -480,6 +480,24 @@
 			"revisionTime": "2017-10-14T08:28:56Z"
 		},
 		{
+			"checksumSHA1": "MqJPQvRK9tZFNJDcBvLddiJVfoo=",
+			"path": "github.com/blocktree/go-OWCBasedFuncs",
+			"revision": "2ac98f728698bd77765bea8e346bb58a4fdf4ff7",
+			"revisionTime": "2018-08-19T07:22:41Z"
+		},
+		{
+			"checksumSHA1": "AKpkpyNrw3MTrfaHnvM4JCzrLKg=",
+			"path": "github.com/blocktree/go-OWCBasedFuncs/owcrypt",
+			"revision": "b7cb2a471fdc0b7eb673a08841242b4752acb1cf",
+			"revisionTime": "2018-08-17T10:39:47Z"
+		},
+		{
+			"checksumSHA1": "5bDKq16ac6N2bw37ayy5QBWj3DE=",
+			"path": "github.com/blocktree/go-OWCBasedFuncs/owkeychain",
+			"revision": "b7cb2a471fdc0b7eb673a08841242b4752acb1cf",
+			"revisionTime": "2018-08-17T10:39:47Z"
+		},
+		{
 			"checksumSHA1": "yzFQtwng1gAJZQEzXMRUT44uqqU=",
 			"path": "github.com/blocktree/go-OWCrypt",
 			"revision": "8890773efc426c23e07321db0c2c16332378e93b",

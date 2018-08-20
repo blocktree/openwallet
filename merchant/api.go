@@ -36,7 +36,7 @@ func GetChargeAddressVersion(
 
 	method := "getChargeAddressVersion"
 	log.Info("Merchant Call:", method)
-
+	log.Info("params:", params)
 	//获取订阅的地址版本
 	err := node.Call(
 		nodeID,
@@ -75,6 +75,7 @@ func GetChargeAddress(
 
 	method := "getChargeAddress"
 	log.Info("Merchant Call:", method)
+	log.Info("params:", params)
 	//获取订阅的地址版本
 	err := node.Call(
 		nodeID,
@@ -109,7 +110,7 @@ func SubmitRechargeTransaction(
 	callback func(confirms []uint64, status uint64, msg string)) error {
 	method := "submitRechargeTransaction"
 	log.Info("Merchant Call:", method)
-
+	log.Info("params:", params)
 	//获取订阅的地址版本
 	err := node.Call(
 		nodeID,

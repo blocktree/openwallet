@@ -41,7 +41,7 @@ func init() {
 	tw.Config.RpcUser = "wallet"
 	tw.Config.RpcPassword = "walletPassword2017"
 	token := BasicAuth(tw.Config.RpcUser, tw.Config.RpcPassword)
-	tw.WalletClient = NewClient(tw.Config.ServerAPI, token, true)
+	tw.WalletClient = NewClient(tw.Config.ServerAPI, token, false)
 }
 
 func TestImportPrivKey(t *testing.T) {
@@ -175,7 +175,7 @@ func TestGetAddressesByAccount(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	_, _, err := tw.CreateBatchAddress("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", "1234qwer", 100)
+	_, _, err := tw.CreateBatchAddress("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek", "1234qwer", 100)
 	if err != nil {
 		t.Errorf("CreateBatchAddress failed unexpected error: %v\n", err)
 		return
@@ -199,7 +199,7 @@ func TestUnlockWallet(t *testing.T) {
 }
 
 func TestCreateNewWallet(t *testing.T) {
-	_, _, err := tw.CreateNewWallet("ZBG", "1234qwer")
+	_, _, err := tw.CreateNewWallet("OKCoin", "1234qwer")
 	if err != nil {
 		t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
 		return
@@ -257,7 +257,7 @@ func TestCreateNewPrivateKey(t *testing.T) {
 		tag      string
 	}{
 		{
-			name:     "Chance",
+			name:     "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek",
 			password: "1234qwer",
 			tag:      "wallet not exist",
 		},

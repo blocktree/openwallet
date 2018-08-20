@@ -6,6 +6,7 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"fmt"
+	"github.com/blocktree/OpenWallet/crypto/sha3"
 )
 
 //MD5 加密
@@ -53,4 +54,13 @@ func HmacMD5(secret string, data []byte) []byte {
 	h.Write(data)
 	md := h.Sum(nil)
 	return md
+}
+
+// Keccak256 calculates and returns the Keccak256 hash of the input data.
+func Keccak256(data ...[]byte) []byte {
+	d := sha3.NewKeccak256()
+	for _, b := range data {
+		d.Write(b)
+	}
+	return d.Sum(nil)
 }

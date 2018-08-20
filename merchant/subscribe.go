@@ -87,8 +87,8 @@ func (m *MerchantNode) GetChargeAddressVersion() error {
 					if addressVer.Version > oldVersion.Version || err != nil {
 						m.getAddressesCh <- *addressVer
 
-						log.Info("get new address version: %d \n", addressVer.Version)
-						log.Info("get new address total: %d \n", addressVer.Total)
+						log.Info("get new address version:", addressVer.Version)
+						log.Info("get new address total:", addressVer.Total)
 
 						//更新记录
 						innerdb.Save(addressVer)

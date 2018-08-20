@@ -21,7 +21,7 @@ import (
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
 	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/blocktree/OpenWallet/keystore"
+	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
 	"io/ioutil"
@@ -40,7 +40,7 @@ type Wallet struct {
 	KeyFile   string `json:"keyFile"`   //钱包的密钥文件
 	DBFile    string `json:"dbFile"`    //钱包的数据库文件
 	WatchOnly bool   `json:"watchOnly"` //创建watchonly的钱包，没有私钥文件，只有db文件
-	key       *keystore.HDKey
+	key       *hdkeystore.HDKey
 	fileName  string //钱包文件命名，所有与钱包相关的都以这个filename命名
 
 	//核心钱包指针
@@ -50,7 +50,7 @@ type Wallet struct {
 	unlocked map[string]unlocked
 }
 
-func NewHDWallet(key *keystore.HDKey) (*Wallet, error) {
+func NewHDWallet(key *hdkeystore.HDKey) (*Wallet, error) {
 
 	return nil, nil
 }
@@ -108,7 +108,7 @@ func NewWatchOnlyWallet(walletID string, symbol string) *Wallet {
 }
 
 //HDKey 获取钱包密钥，需要密码
-func (w *Wallet) HDKey(password string) (*keystore.HDKey, error) {
+func (w *Wallet) HDKey(password string) (*hdkeystore.HDKey, error) {
 
 	if len(w.KeyFile) == 0 {
 		return nil, errors.New("Wallet key is not exist!")
@@ -118,7 +118,7 @@ func (w *Wallet) HDKey(password string) (*keystore.HDKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	key, err := keystore.DecryptHDKey(keyjson, password)
+	key, err := hdkeystore.DecryptHDKey(keyjson, password)
 	if err != nil {
 		return nil, err
 	}
@@ -288,7 +288,7 @@ func ReadWalletByKey(keyPath string) *Wallet {
 		buf = new(bufio.Reader)
 		key struct {
 			Alias  string `json:"alias"`
-			RootId string `json:"rootid"`
+			KeyID string `json:"keyid"`
 		}
 	)
 
@@ -301,13 +301,13 @@ func ReadWalletByKey(keyPath string) *Wallet {
 	buf.Reset(fd)
 	// Parse the address.
 	key.Alias = ""
-	key.RootId = ""
+	key.KeyID = ""
 	err = json.NewDecoder(buf).Decode(&key)
 	if err != nil {
 		return nil
 	}
 
-	return &Wallet{WalletID: key.RootId, Alias: key.Alias}
+	return &Wallet{WalletID: key.KeyID, Alias: key.Alias}
 }
 
 /*
