@@ -248,6 +248,31 @@ func (w *Wallet) GetRecharges(received bool, height ...uint64) ([]*Recharge, err
 	return list, nil
 }
 
+//GetUnconfrimRecharges
+func (w *Wallet) GetUnconfrimRecharges(limitTime int64) ([]*Recharge, error) {
+	var (
+		list []*Recharge
+	)
+
+	db, err := w.OpenDB()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	err = db.Select(q.And(
+		q.Eq("BlockHeight", 0),
+		q.Eq("Delete", false),
+		q.Lte("CreateAt", limitTime),
+	)).Find(&list)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
 //GetWalletsByKeyDir 通过给定的文件路径加载keystore文件得到钱包列表
 func GetWalletsByKeyDir(dir string) ([]*Wallet, error) {
 

@@ -60,7 +60,7 @@ func TestSaveLocalBlockHeight(t *testing.T) {
 
 func TestGetBlockHash(t *testing.T) {
 	//height := GetLocalBlockHeight()
-	hash, err := tw.GetBlockHash(7294)
+	hash, err := tw.GetBlockHash(9164)
 	if err != nil {
 		t.Errorf("GetBlockHash failed unexpected error: %v\n", err)
 		return
@@ -69,7 +69,7 @@ func TestGetBlockHash(t *testing.T) {
 }
 
 func TestGetBlock(t *testing.T) {
-	raw, err := tw.GetBlock("00000000000000010871ac5209d7d33ba6d4e7438a49750cbb116b3ffc123dae")
+	raw, err := tw.GetBlock("0000000000000007b5ab4050d145167c154972ce13ad72622a8c783d5140fbf9")
 	if err != nil {
 		t.Errorf("GetBlock failed unexpected error: %v\n", err)
 		return
@@ -78,7 +78,7 @@ func TestGetBlock(t *testing.T) {
 }
 
 func TestGetTransaction(t *testing.T) {
-		raw, err := tw.GetTransaction("6cfa722c816832f18b250a58d0c30972020b46a01c209a0cf164d7c91f69eace")
+		raw, err := tw.GetTransaction("3d52d3c78aedd5efc9e5bdf4f2327c52d4e1fb611758e7e06aafd282b7d59870")
 	if err != nil {
 		t.Errorf("GetTransaction failed unexpected error: %v\n", err)
 		return
@@ -159,7 +159,7 @@ func TestBTCBlockScanner_ScanBlock(t *testing.T) {
 
 	bs := tw.blockscanner
 	bs.AddWallet(accountID, wallet)
-	bs.ScanBlock(7294)
+	bs.ScanBlock(9298)
 
 }
 

@@ -969,7 +969,7 @@ func (wm *WalletManager) RebuildWalletUnspent(walletID string) error {
 	}
 
 	//查找核心钱包确认数大于1的
-	utxos, err := wm.ListUnspent(0)
+	utxos, err := wm.ListUnspent(1)
 	if err != nil {
 		return err
 	}

@@ -239,16 +239,37 @@ func (wm *WalletManager) GetBlockchainInfo() (*openwallet.Blockchain, error) {
 
 //GetMerchantAssetsAccount 获取账户资产
 func (wm *WalletManager) GetMerchantWalletBalance(walletID string) (string, error) {
+
+	//先加载是否有配置文件
+	err := wm.loadConfig()
+	if err != nil {
+		return "0", errors.New("The wallet node is not config! ")
+	}
+
 	return wm.GetWalletBalance(walletID), nil
 }
 
 //GetMerchantAssetsAccount 获取地址资产
 func (wm *WalletManager) GetMerchantAddressBalance(walletID, address string) (string, error) {
+
+	//先加载是否有配置文件
+	err := wm.loadConfig()
+	if err != nil {
+		return "0", errors.New("The wallet node is not config! ")
+	}
+
 	return wm.GetAddressBalance(walletID, address), nil
 }
 
 //SetMerchantRescanBlockHeight 商户重置区块链扫描高度
 func (wm *WalletManager) SetMerchantRescanBlockHeight(height uint64) error {
+
+	//先加载是否有配置文件
+	err := wm.loadConfig()
+	if err != nil {
+		return errors.New("The wallet node is not config! ")
+	}
+
 	return wm.blockscanner.SetRescanBlockHeight(height)
 }
 

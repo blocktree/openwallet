@@ -282,7 +282,7 @@ func TestGetAddressesFromLocalDBPath(t *testing.T) {
 	var addresses []*openwallet.Address
 	//err = db.Find("WalletID", walletID, &addresses)
 	err = db.Select(q.And(
-		q.Eq("Address", "HsFrXrLNW85HMFv1UiXf1uS4bmRVhYgybBo"),
+		q.Eq("Address", "HsCs6baLioD9hDtpSkGSKp5RmXjYDuSbqTX"),
 		q.Eq("AccountID", "hccharge"),
 		q.Eq("WatchOnly", true),
 	)).Skip(0).Find(&addresses)
