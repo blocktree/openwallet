@@ -76,9 +76,9 @@ type OWTPNode struct {
 	//读写锁
 	mu sync.RWMutex
 	//关闭连接时的回调
-	disconnectHandler func(n *OWTPNode, peer Peer)
+	disconnectHandler func(n *OWTPNode, peerInfo PeerInfo)
 	//连接时的回调
-	connectHandler func(n *OWTPNode, peer Peer)
+	connectHandler func(n *OWTPNode, peerInfo PeerInfo)
 	//节点存储器
 	peerstore *owtpPeerstore
 	//服务监听器
@@ -211,8 +211,14 @@ func (node *OWTPNode) connect(addr string, pid string) (Peer, error) {
 	return client, nil
 }
 
+
 //SetCloseHandler 设置关闭连接时的回调
-func (node *OWTPNode) SetCloseHandler(h func(n *OWTPNode, peer Peer)) {
+func (node *OWTPNode) SetOpenHandler(h func(n *OWTPNode, peer PeerInfo)) {
+	node.connectHandler = h
+}
+
+//SetCloseHandler 设置关闭连接时的回调
+func (node *OWTPNode) SetCloseHandler(h func(n *OWTPNode, peer PeerInfo)) {
 	node.disconnectHandler = h
 }
 
@@ -251,7 +257,7 @@ func (node *OWTPNode) Run() error {
 			}
 
 			if node.connectHandler != nil {
-				go node.connectHandler(node, peer)
+				go node.connectHandler(node, node.Peerstore().PeerInfo(peer.PID()))
 			}
 
 		case peer := <-node.Leave:
@@ -261,7 +267,7 @@ func (node *OWTPNode) Run() error {
 			node.peerstore.RemoveOfflinePeer(peer.PID())
 
 			if node.disconnectHandler != nil {
-				go node.disconnectHandler(node, peer)
+				go node.disconnectHandler(node, node.Peerstore().PeerInfo(peer.PID()))
 			}
 
 		case <-node.Stop:

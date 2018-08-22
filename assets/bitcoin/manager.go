@@ -21,7 +21,7 @@ import (
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/blocktree/OpenWallet/keystore"
+	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/bndr/gotabulate"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -37,6 +37,7 @@ import (
 	"strings"
 	"time"
 	"github.com/asdine/storm/q"
+	"github.com/btcsuite/btcd/btcec"
 )
 
 const (
@@ -44,7 +45,7 @@ const (
 )
 
 type WalletManager struct {
-	Storage      *keystore.HDKeystore          //秘钥存取
+	Storage      *hdkeystore.HDKeystore          //秘钥存取
 	WalletClient *Client                       // 节点客户端
 	Config       *WalletConfig                 //钱包管理配置
 	WalletsInSum map[string]*openwallet.Wallet //参与汇总的钱包
@@ -54,7 +55,7 @@ type WalletManager struct {
 func NewWalletManager() *WalletManager {
 	wm := WalletManager{}
 	wm.Config = NewConfig(Symbol, MasterKey)
-	storage := keystore.NewHDKeystore(wm.Config.keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	storage := hdkeystore.NewHDKeystore(wm.Config.keyDir, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
 	wm.Storage = storage
 	//参与汇总的钱包
 	wm.WalletsInSum = make(map[string]*openwallet.Wallet)
@@ -472,12 +473,12 @@ func (wm *WalletManager) CreateNewWallet(name, password string) (*openwallet.Wal
 		return nil, "", err
 	}
 
-	extSeed, err := keystore.GetExtendSeed(seed, wm.Config.MasterKey)
+	extSeed, err := hdkeystore.GetExtendSeed(seed, wm.Config.MasterKey)
 	if err != nil {
 		return nil, "", err
 	}
 
-	key, keyFile, err := keystore.StoreHDKeyWithSeed(wm.Config.keyDir, name, password, extSeed, keystore.StandardScryptN, keystore.StandardScryptP)
+	key, keyFile, err := hdkeystore.StoreHDKeyWithSeed(wm.Config.keyDir, name, password, extSeed, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
 	if err != nil {
 		return nil, "", err
 	}
@@ -486,10 +487,10 @@ func (wm *WalletManager) CreateNewWallet(name, password string) (*openwallet.Wal
 	file.MkdirAll(wm.Config.keyDir)
 
 	w := &openwallet.Wallet{
-		WalletID: key.RootId,
+		WalletID: key.KeyID,
 		Alias:    key.Alias,
 		KeyFile:  keyFile,
-		DBFile:   filepath.Join(wm.Config.dbPath, key.Alias+"-"+key.RootId+".db"),
+		DBFile:   filepath.Join(wm.Config.dbPath, key.FileName() +".db"),
 	}
 
 	w.SaveToDB()
@@ -625,16 +626,24 @@ func (wm *WalletManager) GetAddressBalance(walletID, address string) string {
 
 
 //CreateNewPrivateKey 创建私钥，返回私钥wif格式字符串
-func (wm *WalletManager) CreateNewPrivateKey(key *keystore.HDKey, start, index uint64) (string, *openwallet.Address, error) {
+func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index uint64) (string, *openwallet.Address, error) {
 
 	derivedPath := fmt.Sprintf("%s/%d/%d", key.RootPath, start, index)
 	//fmt.Printf("derivedPath = %s\n", derivedPath)
-	childKey, err := key.DerivedKeyWithPath(derivedPath)
-
-	privateKey, err := childKey.ECPrivKey()
+	childKey, err := key.DerivedKeyWithPath(derivedPath, wm.Config.CurveType)
 	if err != nil {
 		return "", nil, err
 	}
+
+	keyBytes, err := childKey.GetPrivateKeyBytes()
+	if err != nil {
+		return "", nil, err
+	}
+
+	privateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
+	//if err != nil {
+	//	return "", nil, err
+	//}
 
 	cfg := chaincfg.MainNetParams
 	if wm.Config.IsTestNet {
@@ -646,14 +655,17 @@ func (wm *WalletManager) CreateNewPrivateKey(key *keystore.HDKey, start, index u
 		return "", nil, err
 	}
 
-	address, err := childKey.Address(&cfg)
+	publicKey := childKey.GetPublicKeyBytes()
+	pkHash := btcutil.Hash160(publicKey)
+	address, err :=  btcutil.NewAddressPubKeyHash(pkHash, &cfg)
+	//address, err := childKey.Address(&cfg)
 	if err != nil {
 		return "", nil, err
 	}
 
 	addr := openwallet.Address{
 		Address:   address.String(),
-		AccountID: key.RootId,
+		AccountID: key.KeyID,
 		HDPath:    derivedPath,
 		CreatedAt: time.Now(),
 		Symbol:    wm.Config.Symbol,
@@ -671,8 +683,42 @@ func (wm *WalletManager) CreateNewPrivateKey(key *keystore.HDKey, start, index u
 	return wif.String(), &addr, err
 }
 
+//PrivateKeyToWIF 私钥转WIF格式
+func (wm *WalletManager) PrivateKeyToWIF(priv []byte) (string, error) {
+
+	cfg := chaincfg.MainNetParams
+	if wm.Config.IsTestNet {
+		cfg = chaincfg.TestNet3Params
+	}
+
+	privateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), priv)
+	wif, err := btcutil.NewWIF(privateKey, &cfg, true)
+	if err != nil {
+		return "", err
+	}
+
+	return wif.String(), err
+}
+
+//PublicKeyToAddress 公钥转地址
+func (wm *WalletManager) PublicKeyToAddress(pub []byte) (string, error) {
+
+	cfg := chaincfg.MainNetParams
+	if wm.Config.IsTestNet {
+		cfg = chaincfg.TestNet3Params
+	}
+
+	pkHash := btcutil.Hash160(pub)
+	address, err :=  btcutil.NewAddressPubKeyHash(pkHash, &cfg)
+	if err != nil {
+		return "", err
+	}
+
+	return address.String(), err
+}
+
 //CreateBatchPrivateKey
-//func (wm *WalletManager) CreateBatchPrivateKey(key *keystore.HDKey, count uint64) ([]string, error) {
+//func (wm *WalletManager) CreateBatchPrivateKey(key *hdkeystore.HDKey, count uint64) ([]string, error) {
 //
 //	var (
 //		wifs = make([]string, 0)
@@ -760,7 +806,7 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 	var (
 		restoreSuccess = false
 		err            error
-		key            *keystore.HDKey
+		key            *hdkeystore.HDKey
 		sleepTime      = 30 * time.Second
 	)
 
@@ -1110,7 +1156,7 @@ func (wm *WalletManager) BuildTransaction(utxos []*Unspent, to []string, change 
 }
 
 //SignRawTransaction 钱包交易单
-func (wm *WalletManager) SignRawTransaction(txHex, walletID string, key *keystore.HDKey, utxos []*Unspent) (string, error) {
+func (wm *WalletManager) SignRawTransaction(txHex, walletID string, key *hdkeystore.HDKey, utxos []*Unspent) (string, error) {
 
 	var (
 		wifs = make([]string, 0)
@@ -1119,12 +1165,19 @@ func (wm *WalletManager) SignRawTransaction(txHex, walletID string, key *keystor
 	//查找未花签名需要的私钥
 	for _, u := range utxos {
 
-		childKey, err := key.DerivedKeyWithPath(u.HDAddress.HDPath)
+		childKey, err := key.DerivedKeyWithPath(u.HDAddress.HDPath, wm.Config.CurveType)
 
-		privateKey, err := childKey.ECPrivKey()
+		keyBytes, err := childKey.GetPrivateKeyBytes()
 		if err != nil {
 			return "", err
 		}
+
+		privateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
+
+		//privateKey, err := childKey.ECPrivKey()
+		//if err != nil {
+		//	return "", err
+		//}
 
 		cfg := chaincfg.MainNetParams
 		if wm.Config.IsTestNet {
@@ -1564,7 +1617,7 @@ func (wm *WalletManager) SendBatchTransaction(walletID string, to []string, amou
 }
 
 //CreateChangeAddress 创建找零地址
-func (wm *WalletManager) CreateChangeAddress(walletID string, key *keystore.HDKey) (*openwallet.Address, error) {
+func (wm *WalletManager) CreateChangeAddress(walletID string, key *hdkeystore.HDKey) (*openwallet.Address, error) {
 
 	//生产通道
 	producer := make(chan []*openwallet.Address)
@@ -1580,7 +1633,12 @@ func (wm *WalletManager) CreateChangeAddress(walletID string, key *keystore.HDKe
 	}
 
 	//批量写入数据库
-	err := wm.saveAddressToDB(getAddrs, &openwallet.Wallet{Alias: key.Alias, WalletID: key.RootId})
+	wallet, err := wm.GetWalletInfo(walletID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = wm.saveAddressToDB(getAddrs, wallet)
 	if err != nil {
 		return nil, err
 	}
@@ -1693,7 +1751,7 @@ func (wm *WalletManager) clearUnspends(utxos []*Unspent, wallet *openwallet.Wall
 }
 
 //createAddressWork 创建地址过程
-func (wm *WalletManager) createAddressWork(k *keystore.HDKey, producer chan<- []*openwallet.Address, walletID string, index, start, end uint64) {
+func (wm *WalletManager) createAddressWork(k *hdkeystore.HDKey, producer chan<- []*openwallet.Address, walletID string, index, start, end uint64) {
 
 	runAddress := make([]*openwallet.Address, 0)
 	runWIFs := make([]string, 0)

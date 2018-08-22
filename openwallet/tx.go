@@ -15,7 +15,9 @@
 
 package openwallet
 
-import "github.com/tidwall/gjson"
+import (
+	"github.com/tidwall/gjson"
+)
 
 type Transaction struct {
 
@@ -68,6 +70,8 @@ type Recharge struct {
 	Memo        string `json:"memo"`
 	Index       uint64 `json:"index"`
 	Received    bool
+	CreateAt    int64 `json:"createdAt"`
+	Delete      bool
 }
 
 type Withdraw struct {
