@@ -91,6 +91,8 @@ type WalletConfig struct {
 	cycleSeconds time.Duration
 	//默认配置内容
 	defaultConfig string
+	//曲线类型
+	CurveType uint32
 }
 
 func NewConfig() *WalletConfig {

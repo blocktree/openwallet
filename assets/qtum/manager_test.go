@@ -173,7 +173,7 @@ func TestGetAddressesByAccount(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	_, _, err := tw.CreateBatchAddress("WJjFgnZucp86LR3s18AbjxT3ju9csXduff", "1234qwer", 10)
+	_, _, err := tw.CreateBatchAddress("W8jQsguAa9hn8XTKA7MrEzZyaL6FnxiBKv", "1234qwer", 10)
 	if err != nil {
 		t.Errorf("CreateBatchAddress failed unexpected error: %v\n", err)
 		return
@@ -207,7 +207,7 @@ func TestUnlockWallet(t *testing.T) {
 }
 
 func TestCreateNewWallet(t *testing.T) {
-	_, _, err := tw.CreateNewWallet("Kevin", "1234qwer")
+	_, _, err := tw.CreateNewWallet("judy", "1234qwer")
 	if err != nil {
 		t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
 		return

@@ -39,6 +39,8 @@ import (
 	"github.com/asdine/storm/q"
 	"github.com/blocktree/go-OWCrypt"
 	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
+	"github.com/blocktree/OpenWallet/hdkeystore"
+	"github.com/btcsuite/btcd/btcec"
 )
 
 const (
@@ -627,16 +629,18 @@ func (wm *WalletManager) GetAddressBalance(walletID, address string) string {
 
 
 //CreateNewPrivateKey 创建私钥，返回私钥wif格式字符串
-func (wm *WalletManager) CreateNewPrivateKey(key *keystore.HDKey, start, index uint64) (string, *openwallet.Address, error) {
+func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index uint64) (string, *openwallet.Address, error) {
 
 	derivedPath := fmt.Sprintf("%s/%d/%d", key.RootPath, start, index)
 	//fmt.Printf("derivedPath = %s\n", derivedPath)
-	childKey, err := key.DerivedKeyWithPath(derivedPath)
+	childKey, err := key.DerivedKeyWithPath(derivedPath, wm.config.CurveType)
 
-	privateKey, err := childKey.ECPrivKey()
+	keyBytes, err := childKey.GetPrivateKeyBytes()
 	if err != nil {
 		return "", nil, err
 	}
+
+	privateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
 
 	cfg := chaincfg.MainNetParams
 	if wm.config.isTestNet {
@@ -669,7 +673,7 @@ func (wm *WalletManager) CreateNewPrivateKey(key *keystore.HDKey, start, index u
 
 	addr := openwallet.Address{
 		Address:   address,
-		AccountID: key.RootId,
+		AccountID: key.KeyID,
 		HDPath:    derivedPath,
 		CreatedAt: time.Now(),
 		Symbol:    wm.config.symbol,
@@ -1126,7 +1130,7 @@ func (wm *WalletManager) BuildTransaction(utxos []*Unspent, to []string, change 
 }
 
 //SignRawTransaction 钱包交易单
-func (wm *WalletManager) SignRawTransaction(txHex, walletID string, key *keystore.HDKey, utxos []*Unspent) (string, error) {
+func (wm *WalletManager) SignRawTransaction(txHex, walletID string, key *hdkeystore.HDKey, utxos []*Unspent) (string, error) {
 
 	var (
 		wifs = make([]string, 0)
@@ -1135,12 +1139,14 @@ func (wm *WalletManager) SignRawTransaction(txHex, walletID string, key *keystor
 	//查找未花签名需要的私钥
 	for _, u := range utxos {
 
-		childKey, err := key.DerivedKeyWithPath(u.HDAddress.HDPath)
+		childKey, err := key.DerivedKeyWithPath(u.HDAddress.HDPath, wm.config.CurveType)
 
-		privateKey, err := childKey.ECPrivKey()
+		keyBytes, err := childKey.GetPrivateKeyBytes()
 		if err != nil {
 			return "", err
 		}
+
+		privateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
 
 		cfg := chaincfg.MainNetParams
 		if wm.config.isTestNet {
@@ -1580,7 +1586,7 @@ func (wm *WalletManager) SendBatchTransaction(walletID string, to []string, amou
 }
 
 //CreateChangeAddress 创建找零地址
-func (wm *WalletManager) CreateChangeAddress(walletID string, key *keystore.HDKey) (*openwallet.Address, error) {
+func (wm *WalletManager) CreateChangeAddress(walletID string, key *hdkeystore.HDKey) (*openwallet.Address, error) {
 
 	//生产通道
 	producer := make(chan []*openwallet.Address)
@@ -1596,7 +1602,7 @@ func (wm *WalletManager) CreateChangeAddress(walletID string, key *keystore.HDKe
 	}
 
 	//批量写入数据库
-	err := wm.saveAddressToDB(getAddrs, &openwallet.Wallet{Alias: key.Alias, WalletID: key.RootId})
+	err := wm.saveAddressToDB(getAddrs, &openwallet.Wallet{Alias: key.Alias, WalletID: key.KeyID})
 	if err != nil {
 		return nil, err
 	}
@@ -1709,7 +1715,7 @@ func (wm *WalletManager) clearUnspends(utxos []*Unspent, wallet *openwallet.Wall
 }
 
 //createAddressWork 创建地址过程
-func (wm *WalletManager) createAddressWork(k *keystore.HDKey, producer chan<- []*openwallet.Address, walletID string, index, start, end uint64) {
+func (wm *WalletManager) createAddressWork(k *hdkeystore.HDKey, producer chan<- []*openwallet.Address, walletID string, index, start, end uint64) {
 
 	runAddress := make([]*openwallet.Address, 0)
 	runWIFs := make([]string, 0)
