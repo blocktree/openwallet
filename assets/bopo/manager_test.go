@@ -15,18 +15,16 @@
 
 package bopo
 
-import (
-	"testing"
-)
+import "testing"
 
-func TestVerifyAddr(t *testing.T) {
+var tw *WalletManager
 
-	// Invalid addr, return err
-	if err := tw.verifyAddr("failureaddr"); err == nil {
-		t.Errorf("TestVerifyAddr: %v\n", err)
-	}
-	// Verified addr, return nil
-	if err := tw.verifyAddr("5SJrzpTvUjMoTi2KvjM9pKvrh04_LoTYwg"); err != nil {
-		t.Errorf("TestVerifyAddr: %v\n", err)
-	}
+func init() {
+	tw = &WalletManager{}
+	tw.config.walletAPI = "http://192.168.2.194:17280"
+	tw.fullnodeClient = NewClient(tw.config.walletAPI, true)
+}
+
+func TestLoadConfig(t *testing.T) {
+	tw.loadConfig()
 }

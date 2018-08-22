@@ -29,7 +29,7 @@ import (
 //GetBlockHeight 获取区块链高度
 func (wm *WalletManager) GetBlockHeight() (uint64, error) {
 
-	if d, err := client.Call("synclog", "GET", nil); err != nil {
+	if d, err := wm.fullnodeClient.Call("synclog", "GET", nil); err != nil {
 		return 0, err
 	} else {
 		/*
@@ -53,7 +53,7 @@ func (wm *WalletManager) GetBlockChainInfo() (*BlockchainInfo, error) {
 
 	var blockchain *BlockchainInfo
 
-	if d, err := client.Call("synclog", "GET", nil); err != nil {
+	if d, err := wm.fullnodeClient.Call("synclog", "GET", nil); err != nil {
 		return nil, err
 	} else {
 		/*
@@ -70,7 +70,7 @@ func (wm *WalletManager) GetBlockChainInfo() (*BlockchainInfo, error) {
 //GetBlockContent 获取钱包区块链内容
 func (wm *WalletManager) GetBlockContent(height uint64) (block *Block, err error) {
 
-	d, err := client.Call(fmt.Sprintf("blocks/%d", height), "GET", nil)
+	d, err := wm.fullnodeClient.Call(fmt.Sprintf("blocks/%d", height), "GET", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func (wm *WalletManager) GetBlockContent(height uint64) (block *Block, err error
 //GetBlockTxPayload 获取区块中交易详情
 func (wm *WalletManager) GetBlockPayload(payload string) (payloadSpec *PayloadSpec, err error) {
 
-	d, err := client.Call("blocks/parsetxpayload", "POST", req.Param{"payload": string(payload)})
+	d, err := wm.fullnodeClient.Call("blocks/parsetxpayload", "POST", req.Param{"payload": string(payload)})
 	if err != nil {
 		if err.Error() != "Invalid payload" {
 			log.Println(err)
@@ -101,6 +101,21 @@ func (wm *WalletManager) GetBlockPayload(payload string) (payloadSpec *PayloadSp
 	}
 
 	return payloadSpec, err
+}
+
+//GetBlockHash 根据区块高度获得区块hash
+func (wm *WalletManager) GetBlockHash(height uint64) ([]byte, error) {
+
+	request := []interface{}{
+		height,
+	}
+
+	result, err := wm.fullnodeClient.Call("getblockhash", "POST", request)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return result, nil
 }
 
 /*

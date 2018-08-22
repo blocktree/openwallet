@@ -26,11 +26,11 @@ import (
 
 func (wm *WalletManager) backupWalletData() error {
 
-	newBackupDir := filepath.Join(backupDir,
-		strings.ToLower(Symbol)+"-"+common.TimeFormat("20060102150405"))
+	newBackupDir := filepath.Join(wm.config.backupDir,
+		strings.ToLower(wm.config.symbol)+"-"+common.TimeFormat("20060102150405"))
 	file.MkdirAll(newBackupDir) // os.MkdirAll(backupDir, os.ModePerm)
 
-	src := filepath.Join(walletDataPath, "wallet.dat")
+	src := filepath.Join(wm.config.walletDataPath, "wallet.dat")
 	dst := filepath.Join(newBackupDir, "wallet.dat")
 
 	if err := walletnode.CopyFromContainer(Symbol, src, dst); err != nil {
@@ -42,7 +42,7 @@ func (wm *WalletManager) backupWalletData() error {
 
 func (wm *WalletManager) restoreWalletData(datFile string) error {
 	src := datFile
-	dst := walletDataPath
+	dst := wm.config.walletDataPath
 
 	if err := walletnode.CopyToContainer(Symbol, src, dst); err != nil {
 		return err

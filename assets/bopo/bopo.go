@@ -38,7 +38,7 @@ func (w *WalletManager) ShowConfig() error {
 
 func (w *WalletManager) GetWalletList() error {
 	// Load config
-	if err := loadConfig(); err != nil {
+	if err := w.loadConfig(); err != nil {
 		return err
 	}
 
@@ -53,7 +53,7 @@ func (w *WalletManager) GetWalletList() error {
 
 func (w *WalletManager) CreateWalletFlow() error {
 	// Load config
-	if err := loadConfig(); err != nil {
+	if err := w.loadConfig(); err != nil {
 		return err
 	}
 
@@ -81,7 +81,7 @@ func (w *WalletManager) TransferFlow() error {
 	)
 
 	// Load config
-	if err := loadConfig(); err != nil {
+	if err := w.loadConfig(); err != nil {
 		return err
 	}
 
@@ -141,7 +141,7 @@ func (w *WalletManager) TransferFlow() error {
 			fmt.Println(err)
 			// return err
 		} else {
-			amount = cc.Mul(coinDecimal).String()
+			amount = cc.Mul(w.config.coinDecimal).String()
 			break
 		}
 
@@ -173,7 +173,7 @@ func (w *WalletManager) TransferFlow() error {
 func (w *WalletManager) BackupWalletFlow() error {
 
 	// Load config
-	if err := loadConfig(); err != nil {
+	if err := w.loadConfig(); err != nil {
 		return err
 	}
 
@@ -204,7 +204,7 @@ func (w *WalletManager) RestoreWalletFlow() error {
 	)
 
 	// Load config
-	if err := loadConfig(); err != nil {
+	if err := w.loadConfig(); err != nil {
 		return err
 	}
 
