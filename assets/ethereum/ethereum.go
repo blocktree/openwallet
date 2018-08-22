@@ -11,6 +11,7 @@ import (
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/console"
 	"github.com/blocktree/OpenWallet/logger"
+	"github.com/blocktree/OpenWallet/timer"
 	"github.com/bndr/gotabulate"
 )
 
@@ -104,6 +105,51 @@ func (this *WalletManager) CreateWalletFlow() error {
 	return nil
 }
 
+/*
+type ERC20Token struct {
+	Address  string `json:"address" storm:"id"`
+	Symbol   string `json:"symbol" storm:"index"`
+	Name     string `json:"name"`
+	Decimals int    `json:"decimals"`
+	Valid    int    `json:"valid"`
+	balance  *big.Int
+}
+*/
+
+func printTokenAvailable(list []ERC20Token) {
+	tableInfo := make([][]interface{}, 0)
+
+	for i, w := range list {
+		tableInfo = append(tableInfo, []interface{}{
+			i, w.Symbol, w.Name, w.Address, w.Name,
+		})
+	}
+	t := gotabulate.Create(tableInfo)
+	// Set Headers
+	t.SetHeaders([]string{"No.", "Symbol", "Name", "Contract Address", "Decimals"})
+
+	//打印信息
+	fmt.Println(t.Render("simple"))
+}
+
+func printTokenWalletList(list []*Wallet) {
+	tableInfo := make([][]interface{}, 0)
+
+	for i, w := range list {
+
+		tableInfo = append(tableInfo, []interface{}{
+			i, w.WalletID, w.Alias, w.erc20Token.Symbol, w.erc20Token.balance,
+		})
+	}
+
+	t := gotabulate.Create(tableInfo)
+	// Set Headers
+	t.SetHeaders([]string{"No.", "ID", "Name", "Symbol", "Balance"})
+
+	//打印信息
+	fmt.Println(t.Render("simple"))
+}
+
 //打印钱包列表
 func printWalletList(list []*Wallet) {
 
@@ -112,7 +158,7 @@ func printWalletList(list []*Wallet) {
 	for i, w := range list {
 
 		tableInfo = append(tableInfo, []interface{}{
-			i, w.WalletID, w.Alias, w.Balance,
+			i, w.WalletID, w.Alias, w.balance,
 		})
 	}
 
@@ -194,6 +240,108 @@ func (this *WalletManager) CreateAddressFlow() error {
 	return nil
 }
 
+func (this *WalletManager) ERC20TokenSummaryFollow() error {
+	endRunning := make(chan bool, 1)
+	//先加载是否有配置文件
+	err := loadConfig()
+	if err != nil {
+		return err
+	}
+
+	//判断汇总地址是否存在
+	if len(sumAddress) == 0 {
+		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
+	}
+
+	ercTokens, err := GetERC20TokenList()
+	if err != nil {
+		openwLogger.Log.Errorf("find tokens failed, err = %v", err)
+		return err
+	}
+
+	if len(ercTokens) == 0 {
+		openwLogger.Log.Errorf("no token available, config the tokens first.")
+		return err
+	}
+
+	printTokenAvailable(ercTokens)
+
+	//选择token
+	tokenId, err := console.InputNumber("Enter Token No. : ", true)
+	if err != nil {
+		return err
+	}
+
+	if int(tokenId) >= len(ercTokens) {
+		return errors.New("Input Token No. is out of index! ")
+	}
+
+	token := ercTokens[tokenId]
+	fmt.Println("token[", token.Symbol, "] is chosen. ")
+
+	wallets, err := ERC20GetWalletList(&token)
+	if err != nil {
+		return err
+	}
+
+	//打印钱包列表
+	printTokenWalletList(wallets)
+
+	fmt.Printf("[Please select the wallet to summary, and enter the numbers split by ','." +
+		" For example: 0,1,2,3] \n")
+
+	// 等待用户输入钱包名字
+	nums, err := console.InputText("Enter the No. group: ", true)
+	if err != nil {
+		return err
+	}
+
+	//分隔数组
+	array := strings.Split(nums, ",")
+
+	for _, numIput := range array {
+		if common.IsNumberString(numIput) {
+			numInt := common.NewString(numIput).Int()
+			if numInt < len(wallets) {
+				w := wallets[numInt]
+				fmt.Printf("Register summary wallet [%s]-[%s]\n", w.Alias, w.WalletID)
+
+				password, err := console.InputPassword(false, 8)
+				if err != nil {
+					openwLogger.Log.Errorf("input wallet password failed, err=%v", err)
+					return err
+				}
+
+				err = UnlockWallet(w, password)
+				if err != nil {
+					openwLogger.Log.Errorf("unlock wallet [%v] failed, err = %v", w.WalletID, err)
+					return err
+				}
+				w.Password = password
+				AddWalletInSummary(w.WalletID, w)
+			} else {
+				return errors.New("The input No. out of index! ")
+			}
+		} else {
+			return errors.New("The input No. is not numeric! ")
+		}
+	}
+
+	if len(walletsInSum) == 0 {
+		return errors.New("Not summary wallets to register! ")
+	}
+
+	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", cycleSeconds.Seconds())
+
+	//启动钱包汇总程序
+	sumTimer := timer.NewTask(cycleSeconds, ERC20SummaryWallets)
+	sumTimer.Start()
+	//go SummaryWallets()
+
+	<-endRunning
+	return nil
+}
+
 //汇总钱包流程
 func (this *WalletManager) SummaryFollow() error {
 	endRunning := make(chan bool, 1)
@@ -263,9 +411,9 @@ func (this *WalletManager) SummaryFollow() error {
 	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", cycleSeconds.Seconds())
 
 	//启动钱包汇总程序
-	//sumTimer := timer.NewTask(cycleSeconds, SummaryWallets)
-	//sumTimer.Start()
-	go SummaryWallets()
+	sumTimer := timer.NewTask(cycleSeconds, SummaryWallets)
+	sumTimer.Start()
+	//go SummaryWallets()
 
 	<-endRunning
 	return nil
@@ -290,6 +438,180 @@ func (this *WalletManager) GetWalletList() error {
 
 	//打印钱包列表
 	printWalletList(wallets)
+	return nil
+}
+
+func (this *WalletManager) ConfigERC20Token() error {
+	//先加载是否有配置文件
+	err := loadConfig()
+	if err != nil {
+		return err
+	}
+
+	ercTokens, err := GetERC20TokenList()
+	if err != nil {
+		openwLogger.Log.Errorf("find tokens failed, err = %v", err)
+		return err
+	}
+
+	if len(ercTokens) == 0 {
+		openwLogger.Log.Errorf("no token available, config the tokens first.")
+		return err
+	}
+
+	printTokenAvailable(ercTokens)
+
+	tokenName, err := console.InputText("Enter Token Name. : ", true)
+	if err != nil {
+		return err
+	}
+
+	tokenSymbol, err := console.InputText("Enter Token Symbol. : ", true)
+	if err != nil {
+		return err
+	}
+
+	tokenAddress, err := console.InputText("Enter Token Address. : ", true)
+	if err != nil {
+		return err
+	}
+
+	tokenDecimal, err := console.InputNumber("Enter Token Decimals. :", false)
+	if err != nil {
+		return err
+	}
+
+	tosave, err := console.InputText("Save Token Config [Y/N]. :", true)
+	if err != nil {
+		return err
+	}
+	tosave = strings.ToLower(tosave)
+	if tosave != "y" {
+		fmt.Println("give up token config. ")
+		return nil
+	}
+
+	tokenConfig := &ERC20Token{
+		Name:     tokenName,
+		Symbol:   tokenSymbol,
+		Address:  tokenAddress,
+		Decimals: int(tokenDecimal),
+	}
+
+	err = SaveERC20TokenConfig(tokenConfig)
+	if err != nil {
+		openwLogger.Log.Errorf("save token config failed, err = %v", err)
+		return err
+	}
+
+	ercTokens, err = GetERC20TokenList()
+	if err != nil {
+		openwLogger.Log.Errorf("find tokens failed, err = %v", err)
+		return err
+	}
+
+	if len(ercTokens) == 0 {
+		openwLogger.Log.Errorf("no token available, config the tokens first.")
+		return err
+	}
+
+	printTokenAvailable(ercTokens)
+
+	return nil
+}
+
+func (this *WalletManager) ERC20TokenTransferFlow() error {
+	//先加载是否有配置文件
+	err := loadConfig()
+	if err != nil {
+		return err
+	}
+
+	ercTokens, err := GetERC20TokenList()
+	if err != nil {
+		openwLogger.Log.Errorf("find tokens failed, err = %v", err)
+		return err
+	}
+
+	if len(ercTokens) == 0 {
+		openwLogger.Log.Errorf("no token available, config the tokens first.")
+		return err
+	}
+
+	printTokenAvailable(ercTokens)
+
+	//选择钱包
+	tokenId, err := console.InputNumber("Enter Token No. : ", true)
+	if err != nil {
+		return err
+	}
+
+	if int(tokenId) >= len(ercTokens) {
+		return errors.New("Input Token No. is out of index! ")
+	}
+
+	token := ercTokens[tokenId]
+	fmt.Println("token[", token.Symbol, "] is chosen. ")
+
+	list, err := ERC20GetWalletList(&token)
+	if err != nil {
+		return err
+	}
+
+	printTokenWalletList(list)
+
+	//选择钱包
+	num, err := console.InputNumber("Enter wallet No. : ", true)
+	if err != nil {
+		return err
+	}
+
+	if int(num) >= len(list) {
+		return errors.New("Input number is out of index! ")
+	}
+
+	wallet := list[num]
+	fmt.Println("wallet[", wallet.Alias, "] is chosen. ")
+
+	// 等待用户输入密码
+	password, err := console.InputPassword(false, 8)
+	if err != nil {
+		openwLogger.Log.Errorf("input password failed, err=%v", err)
+		return err
+	}
+
+	// 等待用户输入发送数量
+	receiver, err := console.InputText("Enter receiver address: ", true)
+	if err != nil {
+		return err
+	}
+
+	value, err := console.InputRealNumber("Enter amount to send : ", true)
+	if err != nil {
+		return err
+	}
+
+	amount, err := convertToBigInt(value, 10)
+	if err != nil {
+		openwLogger.Log.Errorf("convert to big int failed, err = %v", err)
+		return err
+	}
+
+	fmt.Println("amount input:", amount.String())
+
+	if wallet.erc20Token.balance.Cmp(amount) < 0 {
+		return errors.New("Input amount is greater than balance! ")
+	}
+
+	//建立交易单
+	txID, err := ERC20SendTransaction(wallet,
+		receiver, amount, password, true)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Send transaction successfully, TXID：%s\n", txID)
+
 	return nil
 }
 
@@ -359,7 +681,7 @@ func (this *WalletManager) TransferFlow() error {
 
 	fmt.Println("amount input:", amountInt.String())
 
-	if wallet.Balance.Cmp(amountInt) < 0 {
+	if wallet.balance.Cmp(amountInt) < 0 {
 		return errors.New("Input amount is greater than balance! ")
 	}
 

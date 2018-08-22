@@ -197,6 +197,58 @@ func skipKeyFile(fi os.FileInfo) bool {
 	return false
 }
 
+func SaveERC20TokenConfig(config *ERC20Token) error {
+	path := dbPath + "/erc20token.db"
+	db, err := OpenDB(path)
+	if err != nil {
+		openwLogger.Log.Errorf("open db for path [%v] failed, err = %v", path, err)
+		return err
+	}
+	err = db.Save(config)
+	if err != nil {
+		openwLogger.Log.Errorf("save db for path [%v] failed, err = %v", path, err)
+		return err
+	}
+	return nil
+}
+
+func GetERC20TokenList() ([]ERC20Token, error) {
+	path := dbPath + "/erc20token.db"
+	db, err := OpenDB(path)
+	if err != nil {
+		openwLogger.Log.Errorf("open db for path [%v] failed, err = %v", path, err)
+		return nil, err
+	}
+	tokens := make([]ERC20Token, 0)
+	err = db.All(tokens)
+	if err != nil {
+		openwLogger.Log.Errorf("query token list in db failed, err= %v", err)
+		return nil, err
+	}
+	return tokens, nil
+}
+
+func ERC20GetWalletList(erc20Token *ERC20Token) ([]*Wallet, error) {
+	wallets, err := GetWalletKeys(keyDir)
+	if err != nil {
+		return nil, err
+	}
+
+	for i, _ := range wallets {
+		wallets[i].erc20Token = &ERC20Token{}
+		*wallets[i].erc20Token = *erc20Token
+		tokenBanlance, err := ERC20GetWalletBalance(wallets[i])
+		if err != nil {
+
+			openwLogger.Log.Errorf(fmt.Sprintf("find wallet balance failed, err=%v\n", err))
+			return nil, err
+		}
+
+		wallets[i].erc20Token.balance = tokenBanlance
+	}
+	return wallets, nil
+}
+
 //GetWalletList 获取钱包列表
 func GetWalletList() ([]*Wallet, error) {
 
@@ -206,15 +258,15 @@ func GetWalletList() ([]*Wallet, error) {
 	}
 
 	//获取钱包余额
-	for _, w := range wallets {
+	for i, _ := range wallets {
 		//fmt.Println("loop to wallet balance")
-		balance, err := GetWalletBalance(w)
+		balance, err := GetWalletBalance(wallets[i])
 		if err != nil {
 
 			openwLogger.Log.Errorf(fmt.Sprintf("find wallet balance failed, err=%v\n", err))
 			return nil, err
 		}
-		w.Balance = balance
+		wallets[i].balance = balance
 	}
 
 	return wallets, nil
@@ -352,7 +404,7 @@ func GetWalletInfo(walletID string) (*Wallet, error) {
 			if err != nil {
 				return nil, err
 			}
-			w.Balance = balance
+			w.balance = balance
 			return w, nil
 		}
 
@@ -507,8 +559,8 @@ type txFeeInfo struct {
 	Fee      *big.Int
 }
 
-func GetTransactionFeeEstimated(from string, to string, amount *big.Int) (*txFeeInfo, error) {
-	gasLimit, err := ethGetGasEstimated(from, to, amount)
+func GetERC20TokenTransactionFeeEstimated(from string, to string, data string) (*txFeeInfo, error) {
+	gasLimit, err := ethGetGasEstimated(makeERC20TokenTransGasEstimatePara(from, to, data))
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("get gas limit failed, err = %v\n", err))
 		return nil, err
@@ -529,6 +581,99 @@ func GetTransactionFeeEstimated(from string, to string, amount *big.Int) (*txFee
 		Fee:      fee,
 	}
 	return feeInfo, nil
+}
+
+func GetSimpleTransactionFeeEstimated(from string, to string, amount *big.Int) (*txFeeInfo, error) {
+	gasLimit, err := ethGetGasEstimated(makeSimpleTransGasEstimatedPara(from, to, amount))
+	if err != nil {
+		openwLogger.Log.Errorf(fmt.Sprintf("get gas limit failed, err = %v\n", err))
+		return nil, err
+	}
+
+	gasPrice, err := ethGetGasPrice()
+	if err != nil {
+		openwLogger.Log.Errorf(fmt.Sprintf("get gas price failed, err = %v\n", err))
+		return nil, err
+	}
+
+	fee := new(big.Int)
+	fee.Mul(gasLimit, gasPrice)
+
+	feeInfo := &txFeeInfo{
+		GasLimit: gasLimit,
+		GasPrice: gasPrice,
+		Fee:      fee,
+	}
+	return feeInfo, nil
+}
+
+func ERC20SendTransaction(wallet *Wallet, to string, amount *big.Int, password string, feesInSender bool) ([]string, error) {
+	var txIds []string
+
+	err := UnlockWallet(wallet, password)
+	if err != nil {
+		openwLogger.Log.Errorf("unlock wallet [%v]. failed, err=%v", wallet.WalletID, err)
+		return nil, err
+	}
+
+	addrs, err := ERC20GetAddressesByWallet(wallet)
+	if err != nil {
+		openwLogger.Log.Errorf("failed to get addresses from db, err = %v", err)
+		return nil, err
+	}
+
+	sort.Sort(&AddrVec{addrs: addrs})
+	//检查下地址排序是否正确, 仅用于测试
+	for _, theAddr := range addrs {
+		fmt.Println("theAddr[", theAddr.Address, "]:", theAddr.balance)
+	}
+
+	for i := len(addrs) - 1; i >= 0 && amount.Cmp(big.NewInt(0)) > 0; i-- {
+		var fee *txFeeInfo
+		var amountToSend big.Int
+		fmt.Println("amount remained:", amount.String())
+		//空的token账户直接跳过
+		//if addrs[i].tokenBalance.Cmp(big.NewInt(0)) == 0 {
+		//	openwLogger.Log.Infof("skip the address[%v] with 0 balance. ", addrs[i].Address)
+		//	continue
+		//}
+
+		if addrs[i].tokenBalance.Cmp(amount) >= 0 {
+			amountToSend = *amount
+
+		} else {
+			amountToSend = *addrs[i].balance
+		}
+
+		dataPara, err := makeERC20TokenTransData(wallet.erc20Token.Address, to, &amountToSend)
+		if err != nil {
+			openwLogger.Log.Errorf("make token transaction data failed, err=%v", err)
+			return nil, err
+		}
+		fee, err = GetERC20TokenTransactionFeeEstimated(addrs[i].Address, wallet.erc20Token.Address, dataPara)
+		if err != nil {
+			openwLogger.Log.Errorf("get erc token transaction fee estimated failed, err = %v", err)
+			continue
+		}
+
+		if addrs[i].balance.Cmp(fee.Fee) < 0 {
+			openwLogger.Log.Errorf("address[%v] cannot afford a token transfer with a fee [%v]", addrs[i].Address, fee.Fee)
+			continue
+		}
+
+		txid, err := ethSendTransaction(makeERC20TokenTransactionPara(addrs[i], wallet.erc20Token.Address, dataPara, password, fee))
+		if err != nil {
+			openwLogger.Log.Errorf("SendTransactionToAddr failed, err=%v", err)
+			if txid == "" {
+				continue //txIds = append(txIds, txid)
+			}
+		}
+
+		txIds = append(txIds, txid)
+		amount.Sub(amount, &amountToSend)
+	}
+
+	return txIds, nil
 }
 
 func SendTransaction(wallet *Wallet, to string, amount *big.Int, password string, feesInSender bool) ([]string, error) {
@@ -558,15 +703,15 @@ func SendTransaction(wallet *Wallet, to string, amount *big.Int, password string
 
 		fmt.Println("amount remained:", amount.String())
 		//空账户直接跳过
-		if amount.Cmp(big.NewInt(0)) == 0 {
-			openwLogger.Log.Infof("skip the address[%v] with 0 balance. ", addrs[i].Address)
-			continue
-		}
+		//if addrs[i].balance.Cmp(big.NewInt(0)) == 0 {
+		//	openwLogger.Log.Infof("skip the address[%v] with 0 balance. ", addrs[i].Address)
+		//	continue
+		//}
 
 		//如果该地址的余额足够支付转账
 		if addrs[i].balance.Cmp(amount) >= 0 {
 			amountToSend = *amount
-			fee, err = GetTransactionFeeEstimated(addrs[i].Address, to, &amountToSend)
+			fee, err = GetSimpleTransactionFeeEstimated(addrs[i].Address, to, &amountToSend)
 			if err != nil {
 				openwLogger.Log.Errorf("%v", err)
 				continue
@@ -584,14 +729,14 @@ func SendTransaction(wallet *Wallet, to string, amount *big.Int, password string
 			}
 
 			//如果改地址的余额除去手续费后, 不足以支付转账, set 转账金额 = 账户余额 - 手续费
-			if balanceLeft.Cmp(amount) < 0 {
+			if balanceLeft.Cmp(&amountToSend) < 0 {
 				amountToSend = balanceLeft
 				fmt.Println("amount to send plus fee:", amountToSend.String())
 			}
 
 		} else {
 			amountToSend = *addrs[i].balance
-			fee, err = GetTransactionFeeEstimated(addrs[i].Address, to, &amountToSend)
+			fee, err = GetSimpleTransactionFeeEstimated(addrs[i].Address, to, &amountToSend)
 			if err != nil {
 				openwLogger.Log.Errorf("%v", err)
 				continue
@@ -609,7 +754,7 @@ func SendTransaction(wallet *Wallet, to string, amount *big.Int, password string
 			fmt.Println("amount to send applied fee, ", amountToSend.String())
 		}
 
-		txid, err := SendTransactionToAddr(addrs[i], to, &amountToSend, password, fee)
+		txid, err := SendTransactionToAddr(makeSimpleTransactionPara(addrs[i], to, &amountToSend, password, fee))
 		if err != nil {
 			openwLogger.Log.Errorf("SendTransactionToAddr failed, err=%v", err)
 			if txid == "" {
@@ -622,28 +767,6 @@ func SendTransaction(wallet *Wallet, to string, amount *big.Int, password string
 	}
 
 	return txIds, nil
-}
-
-func SendTransactionToAddr(addr *Address, to string, amount *big.Int, password string, fee *txFeeInfo) (string, error) {
-	err := UnlockAddr(addr.Address, password, 300)
-	if err != nil {
-		openwLogger.Log.Errorf("unlock addr failed, err = %v", err)
-		return "", err
-	}
-
-	txId, err := ethSendTransaction(addr.Address, to, amount, fee)
-	if err != nil {
-		openwLogger.Log.Errorf("ethSendTransaction failed, err = %v", err)
-		return "", err
-	}
-
-	err = LockAddr(addr.Address)
-	if err != nil {
-		openwLogger.Log.Errorf("lock addr failed, err = %v", err)
-		return txId, err
-	}
-
-	return txId, nil
 }
 
 func convertToBigInt(value string, base int) (*big.Int, error) {
@@ -728,103 +851,20 @@ func ethGetGasPrice() (*big.Int, error) {
 	return gasLimit, nil
 }
 
-func ethGetGasEstimated(fromAddr string, toAddr string, amount *big.Int) (*big.Int, error) {
-	trans := make(map[string]interface{})
-	trans["from"] = fromAddr
-	trans["to"] = toAddr
-	trans["value"] = "0x" + amount.Text(16)
-
-	params := []interface{}{
-		trans,
-	}
-
-	result, err := client.Call("eth_estimateGas", 1, params)
+func ERC20GetWalletBalance(wallet *Wallet) (*big.Int, error) {
+	addrs, err := ERC20GetAddressesByWallet(wallet)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get estimated gas limit from [%v] to [%v] faield, err = %v \n", fromAddr, toAddr, err))
-		return big.NewInt(0), err
+		openwLogger.Log.Errorf("get address by wallet failed, err = %v", err)
+		return big.NewInt(0), nil
 	}
 
-	if result.Type != gjson.String {
-		openwLogger.Log.Errorf(fmt.Sprintf("get estimated gas from [%v] to [%v] failed, response is %v\n", fromAddr, toAddr, err))
-		return big.NewInt(0), err
+	balanceTotal := new(big.Int)
+	for _, addr := range addrs {
+		fmt.Printf("addr[%v] : %v\n", addr.Address, addr.tokenBalance)
+		balanceTotal = balanceTotal.Add(balanceTotal, addr.tokenBalance)
 	}
 
-	gasLimit, err := convertToBigInt(result.String(), 16)
-	if err != nil {
-		errInfo := fmt.Sprintf("convert estimated gas[%v] format to bigint failed, err = %v\n", result.String(), err)
-		openwLogger.Log.Errorf(errInfo)
-		return big.NewInt(0), errors.New(errInfo)
-	}
-	return gasLimit, nil
-}
-
-/*
-params: [{
-  "from": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
-  "to": "0xd46e8dd67c5d32be8058bb8eb970870f07244567",
-  "gas": "0x76c0", // 30400
-  "gasPrice": "0x9184e72a000", // 10000000000000
-  "value": "0x9184e72a", // 2441406250
-  "data": "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
-}]
-*/
-
-func ethSendTransaction(fromAddr string, toAddr string, amount *big.Int, fee *txFeeInfo) (string, error) {
-	trans := make(map[string]interface{})
-	trans["from"] = fromAddr
-	trans["to"] = toAddr
-	trans["value"] = "0x" + amount.Text(16)
-	trans["gas"] = "0x" + fee.GasLimit.Text(16)
-	trans["gasPrice"] = "0x" + fee.GasPrice.Text(16)
-
-	params := []interface{}{
-		trans,
-	}
-
-	result, err := client.Call("eth_sendTransaction", 1, params)
-	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("start transaction from [%v] to [%v] faield, err = %v \n", fromAddr, toAddr, err))
-		return "", err
-	}
-
-	if result.Type != gjson.String {
-		openwLogger.Log.Errorf(fmt.Sprintf("send transaction from [%v] to [%v] failed, response is %v\n", fromAddr, toAddr, err))
-		return "", err
-	}
-	return result.String(), nil
-}
-
-func GetAddrBalance(address string) (*big.Int, error) {
-
-	params := []interface{}{
-		address,
-		"latest",
-	}
-	result, err := client.Call("eth_getBalance", 1, params)
-	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get addr[%v] balance failed, err=%v\n", address, err))
-		return big.NewInt(0), err
-	}
-	if result.Type != gjson.String {
-		openwLogger.Log.Errorf(fmt.Sprintf("get addr[%v] balance format failed, response is %v\n", address, result.Type))
-		return big.NewInt(0), err
-	}
-
-	/*balance := new(big.Int)
-	resultStr := result.String()
-	if strings.Index(resultStr, "0x") != -1 {
-		//fmt.Println("resultStr:", resultStr)
-		resultStr = common.Substr(resultStr, 2, len(resultStr))
-		//fmt.Println("ater trim resultStr:", resultStr)
-	}
-	_, success := balance.SetString(resultStr, 16)*/
-	balance, err := convertToBigInt(result.String(), 16)
-	if err != nil {
-		errInfo := fmt.Sprintf("convert addr[%v] balance format to bigint failed, response is %v, and err = %v\n", address, result.String(), err)
-		openwLogger.Log.Errorf(errInfo)
-		return big.NewInt(0), errors.New(errInfo)
-	}
-	return balance, nil
+	return balanceTotal, nil
 }
 
 //金额的单位是wei
@@ -847,6 +887,37 @@ func GetWalletBalance(wallet *Wallet) (*big.Int, error) {
 	}
 
 	return balanceTotal, nil
+}
+
+func ERC20GetAddressesByWallet(wallet *Wallet) ([]*Address, error) {
+	addrs := make([]*Address, 0)
+	db, err := wallet.OpenDB()
+	if err != nil {
+		return addrs, err
+	}
+	defer db.Close()
+
+	err = db.Find("Account", wallet.WalletID, &addrs)
+	if err != nil && strings.Index(err.Error(), "not found") == -1 {
+		return addrs, err
+	}
+
+	for i, _ := range addrs {
+		tokenBalance, err := ERC20GetAddressBalance(addrs[i].Address, wallet.erc20Token.Address)
+		if err != nil {
+			openwLogger.Log.Errorf("get address[%v] erc20 token balance failed, err=%v", addrs[i].Address, err)
+			return addrs, err
+		}
+
+		balance, err := GetAddrBalance(addrs[i].Address)
+		if err != nil {
+			errinfo := fmt.Sprintf("get balance of addr[%v] failed, err=%v", addrs[i].Address, err)
+			return addrs, errors.New(errinfo)
+		}
+		addrs[i].tokenBalance = tokenBalance
+		addrs[i].balance = balance
+	}
+	return addrs, nil
 }
 
 func GetAddressesByWallet(wallet *Wallet) ([]*Address, error) {
@@ -873,6 +944,31 @@ func GetAddressesByWallet(wallet *Wallet) ([]*Address, error) {
 	}
 
 	return addrs, nil
+}
+
+func ERC20SummaryWallets() {
+	log.Printf("[Summary Wallet Start]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+	//读取参与汇总的钱包
+	for _, wallet := range walletsInSum {
+		tokenBalance, err := ERC20GetWalletBalance(wallet)
+		if err != nil {
+			openwLogger.Log.Errorf(fmt.Sprintf("get wallet[%v] ERC20 token balance failed, err = %v", wallet.WalletID, err))
+			continue
+		}
+
+		if tokenBalance.Cmp(threshold) > 0 {
+			log.Printf("Summary account[%s]balance = %v \n", wallet.WalletID, tokenBalance)
+			log.Printf("Summary account[%s]Start Send Transaction\n", wallet.WalletID)
+
+			txId, err := ERC20SendTransaction(wallet, sumAddress, tokenBalance, wallet.Password, true)
+			if err != nil {
+				log.Printf("Summary account[%s]unexpected error: %v\n", wallet.WalletID, err)
+				continue
+			} else {
+				log.Printf("Summary account[%s]successfully，Received Address[%s], TXID：%s\n", wallet.WalletID, sumAddress, txId)
+			}
+		}
+	}
 }
 
 func SummaryWallets() {
@@ -939,17 +1035,12 @@ func RestoreWallet(keyFile string, password string) error {
 
 	walletId := parts[1]
 	//检查备份路径下key文件的密码
-	fmt.Println("keyFiel:", keyFile)
-	fmt.Println("part0:", parts[0])
-	fmt.Println("part1:", parts[1])
-	fmt.Println("part2:", parts[2])
 	walletKeyBackupPath := keyFile + "/" + parts[0] + "-" + walletId
 	walletBackup, err := GetWalletKey(walletKeyBackupPath)
 	if err != nil {
 		openwLogger.Log.Errorf("parse the key file [%v] failed, err= %v.", walletKeyBackupPath, err)
 		return err
 	}
-	fmt.Println("walletBackup:", walletBackup)
 	err = verifyBackupWallet(walletBackup, keyFile, password)
 	if err != nil {
 		openwLogger.Log.Errorf("verify the backup wallet [%v] password failed, err= %v.", walletKeyBackupPath, err)

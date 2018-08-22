@@ -12,20 +12,30 @@ import (
 )
 
 type Wallet struct {
-	WalletID string   `json:"rootid"`
-	Alias    string   `json:"alias"`
-	Balance  *big.Int //string `json:"balance"`
-	Password string   `json:"password"`
-	RootPub  string   `json:"rootpub"`
-	KeyFile  string
+	WalletID   string   `json:"rootid"`
+	Alias      string   `json:"alias"`
+	balance    *big.Int //string `json:"balance"`
+	erc20Token *ERC20Token
+	Password   string `json:"password"`
+	RootPub    string `json:"rootpub"`
+	KeyFile    string
+}
+
+type ERC20Token struct {
+	Address  string `json:"address" storm:"id"`
+	Symbol   string `json:"symbol" storm:"index"`
+	Name     string `json:"name"`
+	Decimals int    `json:"decimals"`
+	balance  *big.Int
 }
 
 type Address struct {
-	Address   string   `json:"address" storm:"id"`
-	Account   string   `json:"account" storm:"index"`
-	HDPath    string   `json:"hdpath"`
-	balance   *big.Int //string `json:"balance"`
-	CreatedAt time.Time
+	Address      string   `json:"address" storm:"id"`
+	Account      string   `json:"account" storm:"index"`
+	HDPath       string   `json:"hdpath"`
+	balance      *big.Int //string `json:"balance"`
+	tokenBalance *big.Int
+	CreatedAt    time.Time
 }
 
 //HDKey 获取钱包密钥，需要密码
@@ -58,4 +68,10 @@ func (w *Wallet) DBFile() string {
 //FileName 该钱包定义的文件名规则
 func (w *Wallet) FileName() string {
 	return w.Alias + "-" + w.WalletID
+}
+
+func OpenDB(dbPath string) (*storm.DB, error) {
+	file.MkdirAll(dbPath)
+	fmt.Println("OpenDB dbpath:", dbPath)
+	return storm.Open(dbPath)
 }
