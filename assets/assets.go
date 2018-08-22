@@ -30,6 +30,7 @@ import (
 	"github.com/blocktree/OpenWallet/assets/sia"
 	"github.com/blocktree/OpenWallet/assets/tezos"
 	"github.com/blocktree/OpenWallet/assets/litecoin"
+	"github.com/blocktree/OpenWallet/assets/qtum"
 )
 
 //WalletManager 钱包管理器
@@ -124,4 +125,5 @@ func init() {
 	RegWMD(strings.ToLower(iota.Symbol), &iota.WalletManager{})
 	RegWMD(strings.ToLower(tezos.Symbol), &tezos.WalletManager{})
 	RegWMD(strings.ToLower(litecoin.Symbol), litecoin.NewWalletManager())
+	RegWMD(strings.ToLower(qtum.Symbol), qtum.NewWalletManager())
 }

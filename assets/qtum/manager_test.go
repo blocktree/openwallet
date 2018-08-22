@@ -16,7 +16,6 @@
 package qtum
 
 import (
-	"fmt"
 	"github.com/blocktree/OpenWallet/keystore"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
@@ -142,10 +141,10 @@ func TestCreateReceiverAddress(t *testing.T) {
 			account: "john",
 			tag:     "normal",
 		},
-		//{
-		//	account: "Chance",
-		//	tag:     "normal",
-		//},
+		{
+			account: "Chance",
+			tag:     "normal",
+		},
 	}
 
 	for i, test := range tests {
@@ -162,7 +161,7 @@ func TestCreateReceiverAddress(t *testing.T) {
 }
 
 func TestGetAddressesByAccount(t *testing.T) {
-	addresses, err := tw.GetAddressesByAccount("john")
+	addresses, err := tw.GetAddressesByAccount("Chance")
 	if err != nil {
 		t.Errorf("GetAddressesByAccount failed unexpected error: %v\n", err)
 		return
@@ -173,12 +172,21 @@ func TestGetAddressesByAccount(t *testing.T) {
 	}
 }
 
-//待修改：不能批量生成地址
 func TestCreateBatchAddress(t *testing.T) {
-	_, _, err := tw.CreateBatchAddress("WJjFgnZucp86LR3s18AbjxT3ju9csXduff", "1234qwer", 100)
+	_, _, err := tw.CreateBatchAddress("WJjFgnZucp86LR3s18AbjxT3ju9csXduff", "1234qwer", 10)
 	if err != nil {
 		t.Errorf("CreateBatchAddress failed unexpected error: %v\n", err)
 		return
+	}
+}
+
+func TestGenerateQtumAddress(t *testing.T){
+	address,err :=tw.GenQtumAddress()
+	if err != nil {
+		t.Errorf("GenQtumAddress failed unexpected error: %v\n", err)
+		return
+	}else {
+		t.Logf("Generate Qtum address successfully, address is: %s",address)
 	}
 }
 
@@ -199,7 +207,7 @@ func TestUnlockWallet(t *testing.T) {
 }
 
 func TestCreateNewWallet(t *testing.T) {
-	_, _, err := tw.CreateNewWallet("ZBG", "1234qwer")
+	_, _, err := tw.CreateNewWallet("Kevin", "1234qwer")
 	if err != nil {
 		t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
 		return
@@ -218,7 +226,6 @@ func TestGetWalletKeys(t *testing.T) {
 	}
 }
 
-//待修改：不存在的钱包应该说明钱包不存在
 func TestGetWalletBalance(t *testing.T) {
 
 	tests := []struct {
@@ -367,17 +374,17 @@ func TestBackupWallet(t *testing.T) {
 	}
 }
 
-func TestBackupWalletData(t *testing.T) {
-	tw.config.walletDataPath = "/home/www/btc/testdata/testnet3/"
-	tmpWalletDat := fmt.Sprintf("tmp-walllet-%d.dat", time.Now().Unix())
-	backupFile := filepath.Join(tw.config.walletDataPath, tmpWalletDat)
-	err := tw.BackupWalletData(backupFile)
-	if err != nil {
-		t.Errorf("BackupWallet failed unexpected error: %v\n", err)
-	} else {
-		t.Errorf("BackupWallet filePath: %v\n", backupFile)
-	}
-}
+//func TestBackupWalletData(t *testing.T) {
+//	tw.config.walletDataPath = "/home/www/btc/testdata/testnet3/"
+//	tmpWalletDat := fmt.Sprintf("tmp-walllet-%d.dat", time.Now().Unix())
+//	backupFile := filepath.Join(tw.config.walletDataPath, tmpWalletDat)
+//	err := tw.BackupWalletData(backupFile)
+//	if err != nil {
+//		t.Errorf("BackupWallet failed unexpected error: %v\n", err)
+//	} else {
+//		t.Errorf("BackupWallet filePath: %v\n", backupFile)
+//	}
+//}
 
 func TestDumpWallet(t *testing.T) {
 	tw.UnlockWallet("1234qwer", 120)
@@ -393,7 +400,7 @@ func TestDumpWallet(t *testing.T) {
 func TestGOSH(t *testing.T) {
 	//text, err := sh.Command("go", "env").Output()
 	//text, err := sh.Command("wmd", "version").Output()
-	text, err := sh.Command("wmd", "config", "see", "-s", "btm").Output()
+	text, err := sh.Command("wmd", "config", "see", "-s", "qtum").Output()
 	if err != nil {
 		t.Errorf("GOSH failed unexpected error: %v\n", err)
 	} else {
@@ -410,6 +417,7 @@ func TestGetBlockChainInfo(t *testing.T) {
 	}
 }
 
+//还未有币，不能测试
 func TestListUnspent(t *testing.T) {
 	utxos, err := tw.ListUnspent(0)
 	if err != nil {
@@ -423,7 +431,7 @@ func TestListUnspent(t *testing.T) {
 }
 
 func TestGetAddressesFromLocalDB(t *testing.T) {
-	addresses, err := tw.GetAddressesFromLocalDB("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", 0, -1)
+	addresses, err := tw.GetAddressesFromLocalDB("WJjFgnZucp86LR3s18AbjxT3ju9csXduff", 0, -1)
 	if err != nil {
 		t.Errorf("GetAddressesFromLocalDB failed unexpected error: %v\n", err)
 		return
@@ -434,9 +442,10 @@ func TestGetAddressesFromLocalDB(t *testing.T) {
 	}
 }
 
+//还未有币，不能测试
 func TestRebuildWalletUnspent(t *testing.T) {
 
-	err := tw.RebuildWalletUnspent("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ")
+	err := tw.RebuildWalletUnspent("WJjFgnZucp86LR3s18AbjxT3ju9csXduff")
 	if err != nil {
 		t.Errorf("RebuildWalletUnspent failed unexpected error: %v\n", err)
 		return
@@ -445,8 +454,9 @@ func TestRebuildWalletUnspent(t *testing.T) {
 	t.Logf("RebuildWalletUnspent successfully.\n")
 }
 
+//还未有币，不能测试
 func TestListUnspentFromLocalDB(t *testing.T) {
-	utxos, err := tw.ListUnspentFromLocalDB("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ")
+	utxos, err := tw.ListUnspentFromLocalDB("WJjFgnZucp86LR3s18AbjxT3ju9csXduff")
 	if err != nil {
 		t.Errorf("ListUnspentFromLocalDB failed unexpected error: %v\n", err)
 		return
@@ -461,8 +471,9 @@ func TestListUnspentFromLocalDB(t *testing.T) {
 	t.Logf("ListUnspentFromLocalDB total = %s\n", total.StringFixed(8))
 }
 
+//还未有币，不能测试
 func TestBuildTransaction(t *testing.T) {
-	walletID := "W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ"
+	walletID := "WJjFgnZucp86LR3s18AbjxT3ju9csXduff"
 	utxos, err := tw.ListUnspentFromLocalDB(walletID)
 	if err != nil {
 		t.Errorf("BuildTransaction failed unexpected error: %v\n", err)
@@ -493,6 +504,7 @@ func TestEstimateFee(t *testing.T) {
 	t.Logf("EstimateFee fees = %s\n", fees.StringFixed(8))
 }
 
+//还未有币，不能测试
 func TestSendTransaction(t *testing.T) {
 
 	sends := []string{
@@ -516,6 +528,7 @@ func TestSendTransaction(t *testing.T) {
 
 }
 
+//还未有币，不能测试
 func TestSendBatchTransaction(t *testing.T) {
 
 	sends := []string{
@@ -558,10 +571,11 @@ func TestPrintConfig(t *testing.T) {
 	tw.config.printConfig()
 }
 
+//密码错误？
 func TestRestoreWallet(t *testing.T) {
-	keyFile := "/myspace/workplace/go-workspace/projects/bin/data/btc/key/MacOS-W9JyC464XAZEJgdiAZxUXbPpsZZ2JeAujV.key"
-	dbFile := "/myspace/workplace/go-workspace/projects/bin/data/btc/db/MacOS-W9JyC464XAZEJgdiAZxUXbPpsZZ2JeAujV.db"
-	datFile := "/myspace/workplace/go-workspace/projects/bin/testdatfile/wallet.dat"
+	keyFile := "QTUM03-W2JgPVMS2jEQZ7yUkfHEa4D1ST4NccLCAW.key"
+	dbFile := "QTUM03-W2JgPVMS2jEQZ7yUkfHEa4D1ST4NccLCAW.db"
+	datFile := "/data/qtum/backup/QTUM03-W2JgPVMS2jEQZ7yUkfHEa4D1ST4NccLCAW-20180821160056/wallet.dat"
 	tw.loadConfig()
 	err := tw.RestoreWallet(keyFile, dbFile, datFile, "1234qwer")
 	if err != nil {

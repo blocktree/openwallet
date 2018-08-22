@@ -136,7 +136,7 @@ func NewConfig() *WalletConfig {
 	//钱包安装的路径
 	c.nodeInstallPath = ""
 	//钱包数据文件目录
-	c.walletDataPath = ""
+	c.walletDataPath = "~/.qtum/"
 	//汇总阀值
 	c.threshold = decimal.NewFromFloat(5)
 	//汇总地址
@@ -168,8 +168,10 @@ rpcPassword = ""
 isTestNet = false
 # the safe address that wallet send money to.
 sumAddress = ""
-# when wallet's balance is over this value, the wallet willl send money to [sumAddress]
+# when wallet's balance is over this value, the wallet will send money to [sumAddress]
 threshold = ""
+# wallet data path
+walletDataPath = ""
 `
 
 	return &c

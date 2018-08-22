@@ -37,6 +37,8 @@ import (
 	"strings"
 	"time"
 	"github.com/asdine/storm/q"
+	"github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
 )
 
 const (
@@ -646,13 +648,27 @@ func (wm *WalletManager) CreateNewPrivateKey(key *keystore.HDKey, start, index u
 		return "", nil, err
 	}
 
-	address, err := childKey.Address(&cfg)
-	if err != nil {
-		return "", nil, err
-	}
+	//address, err := childKey.Address(&cfg)
+	//if err != nil {
+	//	return "", nil, err
+	//}
+
+	pubkey, _ := owcrypt.GenPubkey(privateKey.Serialize(), owcrypt.ECC_CURVE_SECP256K1)
+
+	//fmt.Println(hex.EncodeToString(pubkey))
+
+	pubdata := append([]byte{0x04}, pubkey[:]...)
+
+	//fmt.Println(hex.EncodeToString(pubdata))
+
+	pubkeyHash := owcrypt.Hash(pubdata, 0, owcrypt.HASH_ALG_HASH160)
+
+	//fmt.Println(hex.EncodeToString(pubkeyHash))
+
+	address, _ := addressEncoder.AddressEncode(pubkeyHash, addressEncoder.QTUM_mainnetAddressP2PKH)
 
 	addr := openwallet.Address{
-		Address:   address.String(),
+		Address:   address,
 		AccountID: key.RootId,
 		HDPath:    derivedPath,
 		CreatedAt: time.Now(),
@@ -1892,4 +1908,27 @@ func (wm *WalletManager) cmdCall(cmd string, wait bool) error {
 	} else {
 		return session.Start()
 	}
+}
+
+func (wm *WalletManager) GenQtumAddress() (string, error){
+
+	prikey := [32]byte{0x95, 0x59, 0xdb, 0xab, 0xf4, 0xd0, 0xb9, 0xf8, 0xae, 0x9a, 0x09, 0x5c, 0x93, 0x0e, 0xed, 0xe9, 0x32, 0xa5, 0x14, 0x76, 0x51, 0x86, 0xf8, 0xeb, 0x6d, 0xc3, 0x61, 0x6d, 0xcd, 0xf6, 0x68, 0xdb}
+
+	pubkey, _ := owcrypt.GenPubkey(prikey[:], owcrypt.ECC_CURVE_SECP256K1)
+
+	//fmt.Println(hex.EncodeToString(pubkey))
+
+	pubdata := append([]byte{0x04}, pubkey[:]...)
+
+	//fmt.Println(hex.EncodeToString(pubdata))
+
+	pubkeyHash := owcrypt.Hash(pubdata, 0, owcrypt.HASH_ALG_HASH160)
+
+	//fmt.Println(hex.EncodeToString(pubkeyHash))
+
+	address, _ := addressEncoder.AddressEncode(pubkeyHash, addressEncoder.QTUM_mainnetAddressP2PKH)
+
+	fmt.Println(address)
+
+	return address, nil
 }
