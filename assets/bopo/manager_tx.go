@@ -24,7 +24,7 @@ import (
 )
 
 // Transfer
-func toTransfer(wid, toaddr, amount, message string) (*Wallet, error) {
+func (wm *WalletManager) toTransfer(wid, toaddr, amount, message string) (*Wallet, error) {
 	var wallet *Wallet
 
 	// Register
@@ -37,7 +37,7 @@ func toTransfer(wid, toaddr, amount, message string) (*Wallet, error) {
 	if _, err := client.Call("rpc/fund", "POST", request); err != nil {
 		return nil, err
 	} else {
-		if w, err := getWalletInfo(wid); err != nil {
+		if w, err := wm.getWalletInfo(wid); err != nil {
 			wallet = &Wallet{}
 		} else {
 			wallet = w
@@ -45,4 +45,8 @@ func toTransfer(wid, toaddr, amount, message string) (*Wallet, error) {
 	}
 
 	return wallet, nil
+}
+
+// Get detail of a transzation
+func (wm *WalletManager) GetTransaction(txid string) {
 }

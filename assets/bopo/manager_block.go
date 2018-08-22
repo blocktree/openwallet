@@ -16,24 +16,138 @@
 package bopo
 
 import (
-	// "fmt"
+	//"errors"
+	"fmt"
+	"log"
+
+	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
-	// "github.com/pkg/errors"
-	// "log"
 )
 
-//GetBlockChainInfo 获取钱包区块链信息
-func GetBlockChainInfo() (*BlockchainInfo, error) {
+//var _ base64.StdEncoding
+
+//GetBlockHeight 获取区块链高度
+func (wm *WalletManager) GetBlockHeight() (uint64, error) {
+
+	if d, err := client.Call("synclog", "GET", nil); err != nil {
+		return 0, err
+	} else {
+		/*
+			d={"syncLog":{
+				"timestamp":"2018-08-03T06:02:34.533332344Z",
+				"currentBlocksHeight":262311}}
+		*/
+		syncLog := gjson.GetBytes(d, "syncLog").Map()
+
+		return syncLog["currentBlocksHeight"].Uint(), nil
+	}
+}
+
+/*
+GetBlockChainInfo 获取钱包区块链信息
+
+Return:
+	&{Chain: Blocks:377379 Headers:0 Bestblockhash: Difficulty: Mediantime:0 Verificationprogress: Chainwork: Pruned:false}
+*/
+func (wm *WalletManager) GetBlockChainInfo() (*BlockchainInfo, error) {
+
 	var blockchain *BlockchainInfo
 
-	if r, err := client.Call("synclog", "GET", nil); err != nil {
+	if d, err := client.Call("synclog", "GET", nil); err != nil {
 		return nil, err
 	} else {
-		// Bopo Return: data={"syncLog":{"timestamp":"2018-08-03T06:02:34.533332344Z","currentBlocksHeight":262311}}
-		syncLog := gjson.GetBytes(r, "syncLog").Map()
+		/*
+			d={"syncLog":{"timestamp":"2018-08-03T06:02:34.533332344Z", "currentBlocksHeight":262311}}
+		*/
+		syncLog := gjson.GetBytes(d, "syncLog").Map()
 
 		blockchain = &BlockchainInfo{Blocks: syncLog["currentBlocksHeight"].Uint()}
 	}
 
 	return blockchain, nil
 }
+
+//GetBlockContent 获取钱包区块链内容
+func (wm *WalletManager) GetBlockContent(height uint64) (block *Block, err error) {
+
+	d, err := client.Call(fmt.Sprintf("blocks/%d", height), "GET", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	block = &Block{}
+	if err := gjson.Unmarshal(d, block); err != nil {
+		return nil, err
+	}
+
+	return block, nil
+}
+
+//GetBlockTxPayload 获取区块中交易详情
+func (wm *WalletManager) GetBlockPayload(payload string) (payloadSpec *PayloadSpec, err error) {
+
+	d, err := client.Call("blocks/parsetxpayload", "POST", req.Param{"payload": string(payload)})
+	if err != nil {
+		if err.Error() != "Invalid payload" {
+			log.Println(err)
+		}
+		return nil, err
+	}
+
+	payloadSpec = &PayloadSpec{}
+	if err := gjson.Unmarshal(d, payloadSpec); err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	return payloadSpec, err
+}
+
+/*
+	func DecodeTxPayload(payload []byte) (chaincodeSpec *PayloadSpec, err error) {
+		chaincodeSpec = &PayloadSpec{}
+
+		// Protobuf decoding, to generate protos.ChaincodeInvocationSpec
+		cpp := &protos.ChaincodeInvocationSpec{}
+		if err := proto.Unmarshal(payload, cpp); err != nil {
+			log.Println(err)
+			return chaincodeSpec, err
+		}
+		chaincodeSpec.Spec = cpp
+
+		args := cpp.ChaincodeSpec.CtorMsg.Args
+		cpp.ChaincodeSpec.CtorMsg.Args = nil
+
+		// Get TX Detail - 1: Fund type
+		chaincodeSpec.Input.Type = string(args[0]) // example: "USER_FUND"
+
+		// Get TX Detail - 2: TX Header
+		userTxHeader := &pb.UserTxHeader{}
+		if d, err := base64.StdEncoding.DecodeString(string(args[1])); err != nil {
+		} else {
+			if err := proto.Unmarshal(d, userTxHeader); err != nil {
+			}
+		}
+		chaincodeSpec.Input.UserTxHeader = userTxHeader
+
+		// Get TX Detail - 3: TX Fund
+		fund := &pb.Fund{}
+		if d, err := base64.StdEncoding.DecodeString(string(args[2])); err != nil {
+		} else {
+			if err := proto.Unmarshal(d, fund); err != nil {
+			}
+		}
+		chaincodeSpec.Input.Fund = fund
+
+		// Get TX Detail - 4: TX Signature
+		signature := &pb.Signature{}
+		if d, err := base64.StdEncoding.DecodeString(string(args[3])); err != nil {
+		} else {
+			if err := proto.Unmarshal(d, signature); err != nil {
+			}
+		}
+		chaincodeSpec.Input.Signature = signature
+
+		return chaincodeSpec, nil
+	}
+*/

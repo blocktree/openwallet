@@ -23,7 +23,7 @@ import (
 var ()
 
 func init() {
-	serverAPI = "http://192.168.2.194:10061"
+	serverAPI = "http://192.168.2.194:17280"
 	isTestNet = false
 	client = &Client{
 		BaseURL: serverAPI,

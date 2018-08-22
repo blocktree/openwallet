@@ -15,20 +15,4 @@
 
 package bopo
 
-import (
-	"fmt"
-
-	"github.com/pkg/errors"
-	"github.com/tidwall/gjson"
-)
-
-func (wm *WalletManager) verifyAddr(addr string) error {
-	if r, err := client.Call(fmt.Sprintf("account/verify/%s", addr), "GET", nil); err != nil {
-		return err
-	} else {
-		if data := gjson.GetBytes(r, "verifyState").Bool(); data != true {
-			return errors.New("Address invalid!")
-		}
-	}
-	return nil
-}
+type WalletManager struct{}
