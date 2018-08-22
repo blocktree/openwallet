@@ -111,7 +111,7 @@ func SubmitRechargeTransaction(
 	callback func(confirms []uint64, status uint64, msg string)) error {
 	method := "submitRechargeTransaction"
 	log.Info("Merchant Call:", method)
-	log.Info("params:", paramsToJSON(params))
+	log.Debug("params:", paramsToJSON(params))
 	//获取订阅的地址版本
 	err := node.Call(
 		nodeID,

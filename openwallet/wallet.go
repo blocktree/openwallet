@@ -29,6 +29,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"github.com/blocktree/OpenWallet/log"
 )
 
 type Wallet struct {
@@ -199,6 +200,35 @@ func (w *Wallet) SaveRecharge(tx *Recharge) error {
 		return err
 	}
 	defer db.Close()
+
+	err = db.Save(tx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//SaveUnreceivedRecharge 保存未提交的充值记录
+func (w *Wallet) SaveUnreceivedRecharge(tx *Recharge) error {
+	db, err := w.OpenDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	//找是否已经有存在发送过的记录
+	var findReceived []*Recharge
+	err = db.Select(q.And(
+		q.Eq("Received", true),
+		q.Eq("Sid", tx.Sid),
+	)).Find(&findReceived)
+
+	if findReceived != nil {
+		//不执行保存
+		log.Error("findReceived:", findReceived)
+		return nil
+	}
+
 	err = db.Save(tx)
 	if err != nil {
 		return err

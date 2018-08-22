@@ -644,7 +644,7 @@ func (bs *BTCBlockScanner) SaveRechargeToWalletDB(height uint64, list []*openwal
 			//
 			//r.AccountID = a.AccountID
 
-			err := wallet.SaveRecharge(r)
+			err := wallet.SaveUnreceivedRecharge(r)
 			//如果blockHash没有值，添加到重扫，避免遗留
 			if err != nil || len(r.BlockHash) == 0 {
 

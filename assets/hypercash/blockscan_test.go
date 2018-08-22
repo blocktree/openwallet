@@ -78,7 +78,7 @@ func TestGetBlock(t *testing.T) {
 }
 
 func TestGetTransaction(t *testing.T) {
-		raw, err := tw.GetTransaction("3d52d3c78aedd5efc9e5bdf4f2327c52d4e1fb611758e7e06aafd282b7d59870")
+		raw, err := tw.GetTransaction("6b36618088202012ceaa4a894f260b71ccc9eb04253223af97f7aaabd2b7e367")
 	if err != nil {
 		t.Errorf("GetTransaction failed unexpected error: %v\n", err)
 		return
@@ -136,11 +136,13 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 
 	bs := tw.blockscanner
 
+	bs.AddWallet(accountID, wallet)
+
 	bs.DropRechargeRecords(accountID)
 
-	bs.SetRescanBlockHeight(9100)
+	bs.SetRescanBlockHeight(10000)
 
-	bs.AddWallet(accountID, wallet)
+
 
 	bs.Run()
 
@@ -187,8 +189,20 @@ func TestWallet_GetRecharges(t *testing.T) {
 }
 
 func TestBTCBlockScanner_DropRechargeRecords(t *testing.T) {
-	accountID := "W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ"
+	accountID := "W7LEupZ2mdM29ay4oZgAoph4ESD8qu5faH"
 	bs := tw.blockscanner
+
+	//address := "mpkUFiXonEZriywHUhig6PTDQXKzT6S5in"
+
+	wallet, err := tw.GetWalletInfo(accountID)
+	if err != nil {
+		t.Errorf("BTCBlockScanner_Run failed unexpected error: %v\n", err)
+		return
+	}
+
+	bs.AddWallet(accountID, wallet)
+
+
 	bs.DropRechargeRecords(accountID)
 }
 

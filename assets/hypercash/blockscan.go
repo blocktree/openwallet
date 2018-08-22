@@ -106,6 +106,9 @@ func (bs *BTCBlockScanner) AddWallet(accountID string, wallet *openwallet.Wallet
 
 	bs.walletInScanning[accountID] = wallet
 
+	//删除充值记录
+	//wallet.DropRecharge()
+
 	//导入钱包该账户的所有地址
 	addrs := wallet.GetAddressesByAccount(accountID)
 	if addrs == nil {
@@ -496,7 +499,7 @@ func (bs *BTCBlockScanner) RescanUnconfirmRechargeRecord() {
 			//删除过期的
 			if r.CreateAt <= clearTime.Unix() {
 				r.Delete = true
-				wallet.SaveRecharge(r)
+				wallet.SaveUnreceivedRecharge(r)
 			} else {
 				txs = append(txs, r.TxID)
 			}
@@ -747,7 +750,7 @@ func (bs *BTCBlockScanner) SaveRechargeToWalletDB(height uint64, list []*openwal
 			//
 			//r.AccountID = a.AccountID
 			reason := ""
-			err := wallet.SaveRecharge(r)
+			err := wallet.SaveUnreceivedRecharge(r)
 			//如果blockHash没有值，添加到重扫，避免遗留
 			if err != nil {
 				saveSuccess = false
