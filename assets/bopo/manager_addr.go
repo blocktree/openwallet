@@ -17,14 +17,12 @@ package bopo
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
-	//"log"
 )
 
-// -----------------------------------------------------------------------------
-// Verify address
-func verifyAddr(addr string) error {
+func (wm *WalletManager) verifyAddr(addr string) error {
 	if r, err := client.Call(fmt.Sprintf("account/verify/%s", addr), "GET", nil); err != nil {
 		return err
 	} else {
