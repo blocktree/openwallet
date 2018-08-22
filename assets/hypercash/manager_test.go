@@ -273,7 +273,7 @@ func TestGetAddressesFromLocalDB(t *testing.T) {
 func TestGetAddressesFromLocalDBPath(t *testing.T) {
 
 
-	db, err := storm.Open(filepath.Join(tw.config.dbPath, "Hot-Wallet-W5VwCLbhiSJr9Qa9Kr8Xyad7uwhkrrjBbx.db"))
+	db, err := storm.Open(filepath.Join(tw.config.dbPath, "hccharge.db"))
 	if err != nil {
 		return
 	}
@@ -282,7 +282,8 @@ func TestGetAddressesFromLocalDBPath(t *testing.T) {
 	var addresses []*openwallet.Address
 	//err = db.Find("WalletID", walletID, &addresses)
 	err = db.Select(q.And(
-		q.Eq("AccountID", "W5VwCLbhiSJr9Qa9Kr8Xyad7uwhkrrjBbx"),
+		q.Eq("Address", "HsCs6baLioD9hDtpSkGSKp5RmXjYDuSbqTX"),
+		q.Eq("AccountID", "hccharge"),
 		q.Eq("WatchOnly", true),
 	)).Skip(0).Find(&addresses)
 

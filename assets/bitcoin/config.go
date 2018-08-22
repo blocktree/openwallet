@@ -23,6 +23,7 @@ import (
 
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/shopspring/decimal"
+	"github.com/blocktree/go-OWCrypt"
 )
 
 /*
@@ -40,6 +41,7 @@ const (
 	//币种
 	Symbol    = "BTC"
 	MasterKey = "Bitcoin seed"
+	CurveType = owcrypt.ECC_CURVE_SECP256K1
 )
 
 
@@ -91,6 +93,8 @@ type WalletConfig struct {
 	CycleSeconds time.Duration
 	//默认配置内容
 	DefaultConfig string
+	//曲线类型
+	CurveType uint32
 }
 
 func NewConfig(symbol string, masterKey string) *WalletConfig {
@@ -100,6 +104,7 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	//币种
 	c.Symbol = symbol
 	c.MasterKey = masterKey
+	c.CurveType = CurveType
 
 	//RPC认证账户名
 	c.RpcUser = ""

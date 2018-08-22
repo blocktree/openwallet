@@ -19,6 +19,7 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/owtp"
+	"encoding/json"
 )
 
 //CallGetChargeAddressVersion 获取要订阅的地址版本信息
@@ -36,7 +37,7 @@ func GetChargeAddressVersion(
 
 	method := "getChargeAddressVersion"
 	log.Info("Merchant Call:", method)
-
+	log.Info("params:", paramsToJSON(params))
 	//获取订阅的地址版本
 	err := node.Call(
 		nodeID,
@@ -75,6 +76,7 @@ func GetChargeAddress(
 
 	method := "getChargeAddress"
 	log.Info("Merchant Call:", method)
+	log.Info("params:", paramsToJSON(params))
 	//获取订阅的地址版本
 	err := node.Call(
 		nodeID,
@@ -109,7 +111,7 @@ func SubmitRechargeTransaction(
 	callback func(confirms []uint64, status uint64, msg string)) error {
 	method := "submitRechargeTransaction"
 	log.Info("Merchant Call:", method)
-
+	log.Debug("params:", paramsToJSON(params))
 	//获取订阅的地址版本
 	err := node.Call(
 		nodeID,
@@ -131,4 +133,17 @@ func SubmitRechargeTransaction(
 		})
 
 	return err
+}
+
+
+func paramsToJSON(params interface{}) string {
+	var (
+		result = ""
+	)
+	jsonParams, err := json.Marshal(params)
+	if err != nil {
+		return result
+	}
+	result = string(jsonParams)
+	return result
 }
