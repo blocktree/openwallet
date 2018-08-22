@@ -41,7 +41,7 @@ func init() {
 	tw.Config.RpcUser = "wallet"
 	tw.Config.RpcPassword = "walletPassword2017"
 	token := BasicAuth(tw.Config.RpcUser, tw.Config.RpcPassword)
-	tw.WalletClient = NewClient(tw.Config.ServerAPI, token, true)
+	tw.WalletClient = NewClient(tw.Config.ServerAPI, token, false)
 }
 
 func TestImportPrivKey(t *testing.T) {
@@ -163,7 +163,7 @@ func TestCreateReceiverAddress(t *testing.T) {
 }
 
 func TestGetAddressesByAccount(t *testing.T) {
-	addresses, err := tw.GetAddressesByAccount("WKboeMWpu9cRFp3smkciS6qVY8TECRTxzJ")
+	addresses, err := tw.GetAddressesByAccount("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek")
 	if err != nil {
 		t.Errorf("GetAddressesByAccount failed unexpected error: %v\n", err)
 		return
@@ -175,7 +175,7 @@ func TestGetAddressesByAccount(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	_, _, err := tw.CreateBatchAddress("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", "1234qwer", 100)
+	_, _, err := tw.CreateBatchAddress("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek", "1234qwer", 100)
 	if err != nil {
 		t.Errorf("CreateBatchAddress failed unexpected error: %v\n", err)
 		return
@@ -199,7 +199,7 @@ func TestUnlockWallet(t *testing.T) {
 }
 
 func TestCreateNewWallet(t *testing.T) {
-	_, _, err := tw.CreateNewWallet("ZBG", "1234qwer")
+	_, _, err := tw.CreateNewWallet("OKCoin", "1234qwer")
 	if err != nil {
 		t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
 		return
@@ -225,7 +225,7 @@ func TestGetWalletBalance(t *testing.T) {
 		tag  string
 	}{
 		{
-			name: "W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ",
+			name: "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek",
 			tag:  "first",
 		},
 		{
@@ -257,7 +257,7 @@ func TestCreateNewPrivateKey(t *testing.T) {
 		tag      string
 	}{
 		{
-			name:     "Chance",
+			name:     "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek",
 			password: "1234qwer",
 			tag:      "wallet not exist",
 		},
@@ -422,7 +422,7 @@ func TestListUnspent(t *testing.T) {
 }
 
 func TestGetAddressesFromLocalDB(t *testing.T) {
-	addresses, err := tw.GetAddressesFromLocalDB("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", 0, -1)
+	addresses, err := tw.GetAddressesFromLocalDB("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek", 0, -1)
 	if err != nil {
 		t.Errorf("GetAddressesFromLocalDB failed unexpected error: %v\n", err)
 		return
@@ -495,14 +495,14 @@ func TestEstimateFee(t *testing.T) {
 func TestSendTransaction(t *testing.T) {
 
 	sends := []string{
-		"mpkUFiXonEZriywHUhig6PTDQXKzT6S5in",
+		"miphUAzHHeM1VXGSFnw6owopsQW3jAQZAk",
 	}
 
-	tw.RebuildWalletUnspent("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ")
+	tw.RebuildWalletUnspent("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek")
 
 	for _, to := range sends {
 
-		txIDs, err := tw.SendTransaction("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", to, decimal.NewFromFloat(0.02), "1234qwer", false)
+		txIDs, err := tw.SendTransaction("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek", to, decimal.NewFromFloat(0.12), "1234qwer", false)
 
 		if err != nil {
 			t.Errorf("SendTransaction failed unexpected error: %v\n", err)
@@ -518,21 +518,22 @@ func TestSendTransaction(t *testing.T) {
 func TestSendBatchTransaction(t *testing.T) {
 
 	sends := []string{
-		"mfYksPvrRS9Xb28uVUiQPJTnc92TBEP1P6",
-		//"mfXVvSn76et4GcNsyphRKxbVwZ6BaexYLG",
-		//"miqpBeCQnYraAV73TeTrCtDsFK5ebKU7P9",
-		//"n1t8xJxkHuXsnaCD4hxPZrJRGYi6yQ83uC",
+		"mqwis1h9GqmMkMjmkQEeYbz68RTC1QPvb9",
+		"mq8y3EHLTmBPuR1Wr7i2cfbwARBrWjuJYq",
+		"mpM8TRA6VPgGEVyg9zGbqiNZ1PdRTbTikK",
+		"moEME5b7cNmJ8oghNx5kg9bUGJu7f3WdFu",
 	}
 
 	amounts := []decimal.Decimal{
-		decimal.NewFromFloat(0.3),
-		//decimal.NewFromFloat(0.03),
-		//decimal.NewFromFloat(0.04),
+		decimal.NewFromFloat(0.07),
+		decimal.NewFromFloat(0.03),
+		decimal.NewFromFloat(0.08),
+		decimal.NewFromFloat(0.02),
 	}
 
-	tw.RebuildWalletUnspent("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ")
+	tw.RebuildWalletUnspent("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek")
 
-	txID, err := tw.SendBatchTransaction("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", sends, amounts, "1234qwer")
+	txID, err := tw.SendBatchTransaction("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek", sends, amounts, "1234qwer")
 
 	if err != nil {
 		t.Errorf("TestSendBatchTransaction failed unexpected error: %v\n", err)

@@ -28,14 +28,13 @@ import (
 func (m *MerchantNode) GetChargeAddressVersion() error {
 
 	var (
-		err  error
+		//err  error
 		subs = make([]*Subscription, 0)
 	)
 
 	//检查是否连接
-	err = m.IsConnected()
-	if err != nil {
-		return err
+	if m.Node == nil {
+		return ErrMerchantNodeDisconnected
 	}
 
 	//db, err := m.OpenDB()
@@ -87,8 +86,8 @@ func (m *MerchantNode) GetChargeAddressVersion() error {
 					if addressVer.Version > oldVersion.Version || err != nil {
 						m.getAddressesCh <- *addressVer
 
-						log.Info("get new address version: %d \n", addressVer.Version)
-						log.Info("get new address total: %d \n", addressVer.Total)
+						log.Info("get new address version:", addressVer.Version)
+						log.Info("get new address total:", addressVer.Total)
 
 						//更新记录
 						innerdb.Save(addressVer)
@@ -111,10 +110,9 @@ func (m *MerchantNode) getChargeAddress() error {
 	)
 
 	////检查是否连接
-	//err = m.IsConnected()
-	//if err != nil {
-	//	return err
-	//}
+	if m.Node == nil {
+		return ErrMerchantNodeDisconnected
+	}
 
 	//log.Printf("getChargeAddress running...\n")
 
@@ -253,14 +251,13 @@ func (m *MerchantNode) updateSubscribeAddress() {
 func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 
 	var (
-		err      error
+		//err      error
 		pageSize = 10
 	)
 
 	//检查是否连接
-	err = m.IsConnected()
-	if err != nil {
-		return err
+	if m.Node == nil {
+		return ErrMerchantNodeDisconnected
 	}
 
 	for _, s := range m.subscriptions {
