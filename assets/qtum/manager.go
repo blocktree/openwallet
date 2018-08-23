@@ -21,7 +21,7 @@ import (
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/blocktree/OpenWallet/keystore"
+	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/bndr/gotabulate"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -39,7 +39,6 @@ import (
 	"github.com/asdine/storm/q"
 	"github.com/blocktree/go-OWCrypt"
 	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
-	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/btcsuite/btcd/btcec"
 )
 
@@ -48,7 +47,7 @@ const (
 )
 
 type WalletManager struct {
-	storage      *keystore.HDKeystore          //秘钥存取
+	storage      *hdkeystore.HDKeystore          //秘钥存取
 	walletClient *Client                       // 节点客户端
 	config       *WalletConfig                 //钱包管理配置
 	walletsInSum map[string]*openwallet.Wallet //参与汇总的钱包
@@ -58,7 +57,7 @@ type WalletManager struct {
 func NewWalletManager() *WalletManager {
 	wm := WalletManager{}
 	wm.config = NewConfig()
-	storage := keystore.NewHDKeystore(wm.config.keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	storage := hdkeystore.NewHDKeystore(wm.config.keyDir, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
 	wm.storage = storage
 	//参与汇总的钱包
 	wm.walletsInSum = make(map[string]*openwallet.Wallet)
@@ -469,19 +468,19 @@ func (wm *WalletManager) CreateNewWallet(name, password string) (*openwallet.Wal
 		wm.startNode()
 	}
 
-	fmt.Printf("Create new wallet keystore...\n")
+	fmt.Printf("Create new wallet hdkeystore...\n")
 
 	seed, err := hdkeychain.GenerateSeed(32)
 	if err != nil {
 		return nil, "", err
 	}
 
-	extSeed, err := keystore.GetExtendSeed(seed, wm.config.masterKey)
+	extSeed, err := hdkeystore.GetExtendSeed(seed, wm.config.masterKey)
 	if err != nil {
 		return nil, "", err
 	}
 
-	key, keyFile, err := keystore.StoreHDKeyWithSeed(wm.config.keyDir, name, password, extSeed, keystore.StandardScryptN, keystore.StandardScryptP)
+	key, keyFile, err := hdkeystore.StoreHDKeyWithSeed(wm.config.keyDir, name, password, extSeed, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
 	if err != nil {
 		return nil, "", err
 	}
@@ -490,10 +489,10 @@ func (wm *WalletManager) CreateNewWallet(name, password string) (*openwallet.Wal
 	file.MkdirAll(wm.config.keyDir)
 
 	w := &openwallet.Wallet{
-		WalletID: key.RootId,
+		WalletID: key.KeyID,
 		Alias:    key.Alias,
 		KeyFile:  keyFile,
-		DBFile:   filepath.Join(wm.config.dbPath, key.Alias+"-"+key.RootId+".db"),
+		DBFile:   filepath.Join(wm.config.dbPath, key.FileName() +".db"),
 	}
 
 	w.SaveToDB()
@@ -633,7 +632,12 @@ func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index
 
 	derivedPath := fmt.Sprintf("%s/%d/%d", key.RootPath, start, index)
 	//fmt.Printf("derivedPath = %s\n", derivedPath)
+	wm.config.CurveType = owcrypt.ECC_CURVE_SECP256K1
+
 	childKey, err := key.DerivedKeyWithPath(derivedPath, wm.config.CurveType)
+	if err != nil {
+		return "", nil, err
+	}
 
 	keyBytes, err := childKey.GetPrivateKeyBytes()
 	if err != nil {
@@ -692,7 +696,7 @@ func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index
 }
 
 //CreateBatchPrivateKey
-//func (wm *WalletManager) CreateBatchPrivateKey(key *keystore.HDKey, count uint64) ([]string, error) {
+//func (wm *WalletManager) CreateBatchPrivateKey(key *hdkeystore.HDKey, count uint64) ([]string, error) {
 //
 //	var (
 //		wifs = make([]string, 0)
@@ -780,7 +784,7 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 	var (
 		restoreSuccess = false
 		err            error
-		key            *keystore.HDKey
+		key            *hdkeystore.HDKey
 		sleepTime      = 30 * time.Second
 	)
 
