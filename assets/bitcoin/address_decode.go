@@ -47,12 +47,9 @@ func PrivateKeyToWIF(priv []byte, isTestnet bool) (string, error) {
 	//	return "", err
 	//}
 
-	wif, err := addressEncoder.AddressEncode(priv, cfg)
-	if err != nil {
-		return "", err
-	}
+	wif := addressEncoder.AddressEncode(priv, cfg)
 
-	return wif, err
+	return wif, nil
 
 }
 
@@ -72,12 +69,9 @@ func PublicKeyToAddress(pub []byte, isTestnet bool) (string, error) {
 
 	pkHash := owcrypt.Hash(pub, 0, owcrypt.HASH_ALG_HASH160)
 
-	address, err := addressEncoder.AddressEncode(pkHash, cfg)
-	if err != nil {
-		return "", err
-	}
+	address := addressEncoder.AddressEncode(pkHash, cfg)
 
-	return address, err
+	return address, nil
 
 }
 
