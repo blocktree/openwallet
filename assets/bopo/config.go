@@ -92,7 +92,7 @@ type WalletConfig struct {
 	defaultConfig string
 }
 
-func NewConfig() *WalletConfig {
+func NewWalletConfig() *WalletConfig {
 	c := WalletConfig{}
 
 	//币种

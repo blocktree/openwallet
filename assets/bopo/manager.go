@@ -52,7 +52,7 @@ func (wm *WalletManager) loadConfig() error {
 		err error
 	)
 
-	wm.config = NewConfig()
+	wm.config = NewWalletConfig()
 	wm.storage = hdkeystore.NewHDKeystore(wm.config.keyDir, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
 	wm.blockscanner = NewFabricBlockScanner(wm)
 
