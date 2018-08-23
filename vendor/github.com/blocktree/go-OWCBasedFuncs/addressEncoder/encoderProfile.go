@@ -88,4 +88,5 @@ var (
 	QTUM_testnetPrivateWIFCompressed = AddressType{"base58", qtumAlphabet, "doubleSHA256", "", 32, []byte{0xEF}, []byte{0x01}}
 	QTUM_testnetPublicBIP32          = AddressType{"base58", qtumAlphabet, "doubleSHA256", "", 74, []byte{0x04, 0x35, 0x87, 0xCF}, nil}
 	QTUM_testnetPrivateBIP32         = AddressType{"base58", qtumAlphabet, "doubleSHA256", "", 74, []byte{0x04, 0x35, 0x83, 0x94}, nil}
+
 )
