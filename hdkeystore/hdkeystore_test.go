@@ -13,31 +13,35 @@
  * GNU Lesser General Public License for more details.
  */
 
-package bopo
+package hdkeystore
 
 import (
-	"fmt"
 	"testing"
+	"path/filepath"
 )
 
-var ()
 
-func init() {
-	serverAPI = "http://192.168.2.194:10061"
-	isTestNet = false
-	client = &Client{
-		BaseURL: serverAPI,
-		Debug:   true,
+func TestStoreHDKey(t *testing.T) {
+	path := filepath.Join(".", "keys")
+	_, rootId, err := StoreHDKey(path, "sogosdfo", "", StandardScryptN, StandardScryptP)
+	if err != nil {
+		t.Errorf("StoreHDKey failed unexpected error: %v", err)
+	} else {
+		t.Logf("StoreHDKey root id = %s", rootId)
 	}
 }
 
-func TestGetBlockChainInfo(t *testing.T) {
-	b, err := GetBlockChainInfo()
-	if err != nil {
-		t.Errorf("GetBlockChainInfo failed unexpected error: %v\n", err)
-	} else {
-		t.Logf("GetBlockChainInfo info: %v\n", b)
-	}
+func TestGetKey(t *testing.T) {
+	path := filepath.Join(".", "keys")
+	ks := &HDKeystore{path, StandardScryptN, StandardScryptP}
 
-	fmt.Printf("TestGetBlockChainInfo: \n\t%+v\n", b)
+	key, err := ks.GetKey("WAeAP5ggYYZ1euSJqURNEoGBRP6ucfPq2g",
+		"sogosdfo-WAeAP5ggYYZ1euSJqURNEoGBRP6ucfPq2g.key",
+		"")
+
+	if err != nil {
+		t.Errorf("GetKey failed unexpected error: %v\n", err)
+	} else {
+		t.Logf("GetKey root id = %s", key.KeyID)
+	}
 }

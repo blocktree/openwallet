@@ -17,23 +17,27 @@ package bopo
 
 import (
 	// "fmt"
-	"github.com/tidwall/gjson"
-	// "github.com/pkg/errors"
-	// "log"
+	"testing"
 )
 
-//GetBlockChainInfo 获取钱包区块链信息
-func GetBlockChainInfo() (*BlockchainInfo, error) {
-	var blockchain *BlockchainInfo
+var ()
 
-	if r, err := client.Call("synclog", "GET", nil); err != nil {
-		return nil, err
-	} else {
-		// Bopo Return: data={"syncLog":{"timestamp":"2018-08-03T06:02:34.533332344Z","currentBlocksHeight":262311}}
-		syncLog := gjson.GetBytes(r, "syncLog").Map()
-
-		blockchain = &BlockchainInfo{Blocks: syncLog["currentBlocksHeight"].Uint()}
+func init() {
+	serverAPI = "http://192.168.2.194:17280"
+	isTestNet = false
+	client = &Client{
+		BaseURL: serverAPI,
+		Debug:   true,
 	}
+}
 
-	return blockchain, nil
+func TestVerifyAddr(t *testing.T) {
+	// Invalid addr, return err
+	if err := verifyAddr("failureaddr"); err == nil {
+		t.Errorf("TestVerifyAddr: %v\n", err)
+	}
+	// Verified addr, return nil
+	if err := verifyAddr("5SJrzpTvUjMoTi2KvjM9pKvrh04_LoTYwg"); err != nil {
+		t.Errorf("TestVerifyAddr: %v\n", err)
+	}
 }

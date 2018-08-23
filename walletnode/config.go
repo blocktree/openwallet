@@ -160,12 +160,12 @@ func init() {
 			APIPORT: string("8545/tcp"),
 			IMAGE:   string("openwallet/eth:geth-1.7.3"),
 		},
-		"eos": &FullnodeContainerConfig{
-			CMD:     [2][]string{{"/bin/bash", "-c", "while sleep 1; do date; done"}, {}},
-			PORT:    [][3]string{{"3000/tcp", "10031", "20031"}, {"8888/tcp", "10032", "20032"}},
-			APIPORT: string("3000/tcp"),
-			IMAGE:   string("openwallet/eos:latest"),
-		},
+		// "eos": &FullnodeContainerConfig{ // Writing
+		// 	CMD:     [2][]string{{"/bin/bash", "-c", "while sleep 1; do date; done"}, {}},
+		// 	PORT:    [][3]string{{"3000/tcp", "10031", "20031"}, {"8888/tcp", "10032", "20032"}},
+		// 	APIPORT: string("3000/tcp"),
+		// 	IMAGE:   string("openwallet/eos:latest"),
+		// },
 		"sc": &FullnodeContainerConfig{
 			CMD: [2][]string{{"/usr/bin/siad", "-M gctwrh", "--api-addr=0.0.0.0:9980", "--authenticate-api", "--disable-api-security"},
 				{"/usr/bin/siad", "-M gctwrh", "--api-addr=0.0.0.0:9980", "--authenticate-api", "--disable-api-security"}},
@@ -173,12 +173,12 @@ func init() {
 			APIPORT: string("9980/tcp"),
 			IMAGE:   string("openwallet/sc:1.3.3"),
 		},
-		"iota": &FullnodeContainerConfig{
-			CMD:     [2][]string{{"/bin/bash", "-c", "while sleep 1; do date; done"}, {}},
-			PORT:    [][3]string{{"18265/tcp", "10051", "20051"}},
-			APIPORT: string("18265/tcp"),
-			IMAGE:   string("openwallet/iota:latest"),
-		},
+		// "iota": &FullnodeContainerConfig{
+		// 	CMD:     [2][]string{{"/bin/bash", "-c", "while sleep 1; do date; done"}, {}},
+		// 	PORT:    [][3]string{{"18265/tcp", "10051", "20051"}},
+		// 	APIPORT: string("18265/tcp"),
+		// 	IMAGE:   string("openwallet/iota:latest"),
+		// },
 		"bopo": &FullnodeContainerConfig{
 			WORKPATH: "/usr/local/paicode",
 			CMD:      [2][]string{{"/bin/bash", "-c", "cd /usr/local/paicode; ./gamepaicore --listen 0.0.0.0:7280 >> /openwallet/data/run.log 2>&1"}, {}},

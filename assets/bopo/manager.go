@@ -15,29 +15,4 @@
 
 package bopo
 
-import (
-	// "fmt"
-	"testing"
-)
-
-var ()
-
-func init() {
-	serverAPI = "http://192.168.2.194:10061"
-	isTestNet = false
-	client = &Client{
-		BaseURL: serverAPI,
-		Debug:   true,
-	}
-}
-
-func TestVerifyAddr(t *testing.T) {
-	// Invalid addr, return err
-	if err := verifyAddr("failureaddr"); err == nil {
-		t.Errorf("TestVerifyAddr: %v\n", err)
-	}
-	// Verified addr, return nil
-	if err := verifyAddr("5SJrzpTvUjMoTi2KvjM9pKvrh04_LoTYwg"); err != nil {
-		t.Errorf("TestVerifyAddr: %v\n", err)
-	}
-}
+type WalletManager struct{}

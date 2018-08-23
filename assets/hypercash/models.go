@@ -208,12 +208,16 @@ func (b *Block) BlockHeader() *openwallet.BlockHeader {
 	return &obj
 }
 
+//maxRescanCount 记录最大重扫次数
+const maxRescanCount = 1000
+
 //UnscanRecords 扫描失败的区块及交易
 type UnscanRecord struct {
 	ID          string `storm:"id"` // primary key
 	BlockHeight uint64
 	TxID        string
 	Reason      string
+	RescanCount int
 }
 
 func NewUnscanRecord(height uint64, txID, reason string) *UnscanRecord {

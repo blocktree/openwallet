@@ -24,7 +24,7 @@ import (
 	"github.com/blocktree/OpenWallet/walletnode"
 )
 
-func backupWalletData() error {
+func (wm *WalletManager) backupWalletData() error {
 
 	newBackupDir := filepath.Join(backupDir,
 		strings.ToLower(Symbol)+"-"+common.TimeFormat("20060102150405"))
@@ -40,7 +40,7 @@ func backupWalletData() error {
 	return nil
 }
 
-func restoreWalletData(datFile string) error {
+func (wm *WalletManager) restoreWalletData(datFile string) error {
 	src := datFile
 	dst := walletDataPath
 
