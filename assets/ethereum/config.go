@@ -1,3 +1,17 @@
+/*
+ * Copyright 2018 The OpenWallet Authors
+ * This file is part of the OpenWallet library.
+ *
+ * The OpenWallet library is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The OpenWallet library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ */
 package ethereum
 
 import (
@@ -42,7 +56,7 @@ var (
 	//参与汇总的钱包
 	walletsInSum = make(map[string]*Wallet)
 	//钱包服务API
-	serverAPI = "http://127.0.0.1:8545"
+	serverAPI = "http://192.168.17.137:8545" //"http://127.0.0.1:8545"
 	//汇总阀值 ???--这个要设置成什么
 	threshold = big.NewInt(0) //decimal.Decimal = decimal.NewFromFloat(5)
 	//汇总地址
