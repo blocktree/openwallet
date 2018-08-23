@@ -16,40 +16,42 @@
 package bitcoin
 
 import (
+	"errors"
 	"fmt"
 	"github.com/asdine/storm"
+	"github.com/asdine/storm/q"
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/hdkeystore"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/bndr/gotabulate"
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/codeskyblue/go-sh"
-	"errors"
 	"github.com/shopspring/decimal"
-	"github.com/blocktree/OpenWallet/log"
 	"math"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
-	"github.com/asdine/storm/q"
-	"github.com/btcsuite/btcd/btcec"
 )
 
 const (
 	maxAddresNum = 10000
 )
 
+
 type WalletManager struct {
-	Storage      *hdkeystore.HDKeystore          //秘钥存取
+	Storage      *hdkeystore.HDKeystore        //秘钥存取
 	WalletClient *Client                       // 节点客户端
 	Config       *WalletConfig                 //钱包管理配置
 	WalletsInSum map[string]*openwallet.Wallet //参与汇总的钱包
 	Blockscanner *BTCBlockScanner              //区块扫描器
+	Decoder      *openwallet.AddressDecoder    //地址编码器
 }
 
 func NewWalletManager() *WalletManager {
@@ -61,6 +63,7 @@ func NewWalletManager() *WalletManager {
 	wm.WalletsInSum = make(map[string]*openwallet.Wallet)
 	//区块扫描器
 	wm.Blockscanner = NewBTCBlockScanner(&wm)
+	wm.Decoder = AddressDecoder
 	return &wm
 }
 
@@ -490,7 +493,7 @@ func (wm *WalletManager) CreateNewWallet(name, password string) (*openwallet.Wal
 		WalletID: key.KeyID,
 		Alias:    key.Alias,
 		KeyFile:  keyFile,
-		DBFile:   filepath.Join(wm.Config.dbPath, key.FileName() +".db"),
+		DBFile:   filepath.Join(wm.Config.dbPath, key.FileName()+".db"),
 	}
 
 	w.SaveToDB()
@@ -587,7 +590,6 @@ func (wm *WalletManager) GetWalletBalance(accountID string) string {
 	return balance.StringFixed(8)
 }
 
-
 //GetAddressBalance 获取地址余额
 func (wm *WalletManager) GetAddressBalance(walletID, address string) string {
 
@@ -609,7 +611,7 @@ func (wm *WalletManager) GetAddressBalance(walletID, address string) string {
 	err = db.Select(q.And(
 		q.Eq("AccountID", walletID),
 		q.Eq("Address", address),
-	)).Find( &utxos)
+	)).Find(&utxos)
 	if err != nil {
 		return "0"
 	}
@@ -623,7 +625,6 @@ func (wm *WalletManager) GetAddressBalance(walletID, address string) string {
 
 	return balance.StringFixed(8)
 }
-
 
 //CreateNewPrivateKey 创建私钥，返回私钥wif格式字符串
 func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index uint64) (string, *openwallet.Address, error) {
@@ -640,31 +641,36 @@ func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index
 		return "", nil, err
 	}
 
-	privateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
+	//privateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
 	//if err != nil {
 	//	return "", nil, err
 	//}
 
-	cfg := chaincfg.MainNetParams
-	if wm.Config.IsTestNet {
-		cfg = chaincfg.TestNet3Params
-	}
+	wif, err := wm.Decoder.PrivateKeyToWIF(keyBytes, wm.Config.IsTestNet)
 
-	wif, err := btcutil.NewWIF(privateKey, &cfg, true)
+	//cfg := chaincfg.MainNetParams
+	//if wm.Config.IsTestNet {
+	//	cfg = chaincfg.TestNet3Params
+	//}
+	//
+	//wif, err := btcutil.NewWIF(privateKey, &cfg, true)
 	if err != nil {
 		return "", nil, err
 	}
 
 	publicKey := childKey.GetPublicKeyBytes()
-	pkHash := btcutil.Hash160(publicKey)
-	address, err :=  btcutil.NewAddressPubKeyHash(pkHash, &cfg)
+
+	address, err := wm.Decoder.PublicKeyToAddress(publicKey, wm.Config.IsTestNet)
+
+	//pkHash := btcutil.Hash160(publicKey)
+	//address, err :=  btcutil.NewAddressPubKeyHash(pkHash, &cfg)
 	//address, err := childKey.Address(&cfg)
 	if err != nil {
 		return "", nil, err
 	}
 
 	addr := openwallet.Address{
-		Address:   address.String(),
+		Address:   address,
 		AccountID: key.KeyID,
 		HDPath:    derivedPath,
 		CreatedAt: time.Now(),
@@ -680,41 +686,7 @@ func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index
 	//	CreatedAt: time.Now(),
 	//}
 
-	return wif.String(), &addr, err
-}
-
-//PrivateKeyToWIF 私钥转WIF格式
-func (wm *WalletManager) PrivateKeyToWIF(priv []byte) (string, error) {
-
-	cfg := chaincfg.MainNetParams
-	if wm.Config.IsTestNet {
-		cfg = chaincfg.TestNet3Params
-	}
-
-	privateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), priv)
-	wif, err := btcutil.NewWIF(privateKey, &cfg, true)
-	if err != nil {
-		return "", err
-	}
-
-	return wif.String(), err
-}
-
-//PublicKeyToAddress 公钥转地址
-func (wm *WalletManager) PublicKeyToAddress(pub []byte) (string, error) {
-
-	cfg := chaincfg.MainNetParams
-	if wm.Config.IsTestNet {
-		cfg = chaincfg.TestNet3Params
-	}
-
-	pkHash := btcutil.Hash160(pub)
-	address, err :=  btcutil.NewAddressPubKeyHash(pkHash, &cfg)
-	if err != nil {
-		return "", err
-	}
-
-	return address.String(), err
+	return wif, &addr, err
 }
 
 //CreateBatchPrivateKey
@@ -1470,7 +1442,7 @@ func (wm *WalletManager) SendBatchTransaction(walletID string, to []string, amou
 	}
 
 	//获取utxo，按小到大排序
-	sort.Sort(UnspentSort{utxos, func (a, b *Unspent) int {
+	sort.Sort(UnspentSort{utxos, func(a, b *Unspent) int {
 
 		if a.Amount > b.Amount {
 			return 1
@@ -1878,7 +1850,6 @@ func (wm *WalletManager) LoadConfig() error {
 
 	return nil
 }
-
 
 //打印钱包列表
 func (wm *WalletManager) printWalletList(list []*openwallet.Wallet) {

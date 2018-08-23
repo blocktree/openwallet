@@ -13,18 +13,14 @@
  * GNU Lesser General Public License for more details.
  */
 
-#ifndef ECDSA_h
-#define ECDSA_h
+package openwallet
 
-#include <stdio.h>
-#include "ecc_drv.h"
-#include "ecc_set.h"
-#include "bigrand.h"
-#include "sha256.h"
-#include "type.h"
+type AddressDecoder struct {
 
-uint16_t ECDSA_genPubkey(ECC_CURVE_PARAM *curveParam, uint8_t *prikey, ECC_POINT *pubkey);
-uint16_t ECDSA_sign(ECC_CURVE_PARAM *curveParam, uint8_t *prikey, uint8_t *message, uint16_t message_len, uint8_t *sig);
-uint16_t ECDSA_verify(ECC_CURVE_PARAM *curveParam, ECC_POINT *pubkey, uint8_t *message, uint16_t message_len, uint8_t *sig);
-
-#endif /* ECDSA_h */
+	//PrivateKeyToWIF 私钥转WIF
+	PrivateKeyToWIF func(priv []byte, isTestnet bool) (string, error)
+	//PublicKeyToAddress 公钥转地址
+	PublicKeyToAddress func(pub []byte, isTestnet bool) (string, error)
+	//WIFToPrivateKey WIF转私钥
+	WIFToPrivateKey func(wif string, isTestnet bool) ([]byte, error)
+}

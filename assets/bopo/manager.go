@@ -12,15 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
  */
-#ifndef bigrand_h
-#define bigrand_h
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include "type.h"
+package bopo
 
-void bigrand_get_rand_range(uint8_t *rand, uint8_t *range, uint16_t len);
-
-#endif /* bigrand_h */
+type WalletManager struct{}

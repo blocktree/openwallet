@@ -38,7 +38,7 @@ func init() {
 
 	tw = NewWalletManager()
 
-	tw.Config.ServerAPI = "http://192.168.2.192:10000"
+	tw.Config.ServerAPI = "http://192.168.2.192:10004"
 	tw.Config.RpcUser = "walletUser"
 	tw.Config.RpcPassword = "walletPassword2017"
 	tw.Config.IsTestNet = false
@@ -183,7 +183,7 @@ func TestGetAddressesByAccount(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	_, _, err := tw.CreateBatchAddress("VyXf14q31HBfDKPXBAZdTwDD8EoQ5QL85i", "1234qwer", 100)
+	_, _, err := tw.CreateBatchAddress("WNafusXqpykohfnSKqcsR1y5xgDCdqHYxh", "1234qwer", 2)
 	if err != nil {
 		t.Errorf("CreateBatchAddress failed unexpected error: %v\n", err)
 		return

@@ -41,7 +41,10 @@ func main() {
 	//tech.TestTransferFlow()
 	//tech.TestSummaryFlow()
 	//tech.TestBackupWallet()
-	tech.TestRestoreWallet()
+	//tech.TestRestoreWallet()
+	//tech.TestConfigErcToken()
+	//tech.TestERC20TokenTransfer()
+	tech.TestERC20TokenSummary()
 
 	fmt.Println("done ... ")
 }

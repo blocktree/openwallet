@@ -27,7 +27,7 @@ import (
 )
 
 //getWalletList 获取钱包列表
-func getWalletList() ([]*Wallet, error) {
+func (wm *WalletManager) getWalletList() ([]*Wallet, error) {
 	var wallets = make([]*Wallet, 0)
 
 	r, err := client.Call("account", "GET", nil)
@@ -46,13 +46,13 @@ func getWalletList() ([]*Wallet, error) {
 }
 
 //CreateNewWallet 创建钱包
-func createWallet(wid string) (*Wallet, error) {
+func (wm *WalletManager) createWallet(wid string) (*Wallet, error) {
 	var wallet *Wallet
 
 	if _, err := client.Call("account", "POST", req.Param{"id": wid}); err != nil {
 		return nil, err
 	} else {
-		if w, err := getWalletInfo(wid); err != nil {
+		if w, err := wm.getWalletInfo(wid); err != nil {
 			wallet = &Wallet{}
 		} else {
 			wallet = w
@@ -64,7 +64,7 @@ func createWallet(wid string) (*Wallet, error) {
 
 // -----------------------------------------------------------------------------
 // Get one wallet info
-func getWalletInfo(wid string) (*Wallet, error) {
+func (wm *WalletManager) getWalletInfo(wid string) (*Wallet, error) {
 
 	if r, err := client.Call(fmt.Sprintf("account/%s", wid), "GET", nil); err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func getWalletInfo(wid string) (*Wallet, error) {
 }
 
 // 获取钱包信息
-func getWalletB(addr string) (wallet *Wallet, err error) {
+func (wm *WalletManager) getWalletB(addr string) (wallet *Wallet, err error) {
 
 	// Get balance
 	if d, err := client.Call(fmt.Sprintf("chain/%s", addr), "GET", nil); err != nil {
@@ -104,13 +104,13 @@ func getWalletB(addr string) (wallet *Wallet, err error) {
 }
 
 // 打印钱包列表
-func printWalletList(list []*Wallet) {
+func (wm *WalletManager) printWalletList(list []*Wallet) {
 
 	tableInfo := make([][]interface{}, 0)
 
 	for i, w := range list {
 
-		if ww, err := getWalletB(w.Addr); err == nil {
+		if ww, err := wm.getWalletB(w.Addr); err == nil {
 			bal := ww.Balance
 			if bal != "" {
 				cc, _ := decimal.NewFromString(bal)
