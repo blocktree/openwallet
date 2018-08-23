@@ -486,6 +486,36 @@
 			"revisionTime": "2018-08-19T08:51:47Z"
 		},
 		{
+			"checksumSHA1": "gGnVknMLQU661GQkEaRjcnV8wdg=",
+			"path": "github.com/blocktree/go-OWCBasedFuncs/addressEncoder",
+			"revision": "e76a732f1108b574d2a25b60a612b66c00d47790",
+			"revisionTime": "2018-08-22T08:25:59Z"
+		},
+		{
+			"checksumSHA1": "+feiQu0zGRLaflHCZBi9DKz1qcU=",
+			"path": "github.com/blocktree/go-OWCBasedFuncs/addressEncoder/base32PolyMod",
+			"revision": "e76a732f1108b574d2a25b60a612b66c00d47790",
+			"revisionTime": "2018-08-22T08:25:59Z"
+		},
+		{
+			"checksumSHA1": "216e8SQkZ6kuNUHKQ6VyZbROcj4=",
+			"path": "github.com/blocktree/go-OWCBasedFuncs/addressEncoder/bech32",
+			"revision": "e76a732f1108b574d2a25b60a612b66c00d47790",
+			"revisionTime": "2018-08-22T08:25:59Z"
+		},
+		{
+			"checksumSHA1": "9zniWFG5U5gyTh4zeBegHeczAlA=",
+			"path": "github.com/blocktree/go-OWCBasedFuncs/addressEncoder/blake256",
+			"revision": "e76a732f1108b574d2a25b60a612b66c00d47790",
+			"revisionTime": "2018-08-22T08:25:59Z"
+		},
+		{
+			"checksumSHA1": "MD7UcC+/JLjMZAeyU5p+ZTDYpQw=",
+			"path": "github.com/blocktree/go-OWCBasedFuncs/addressEncoder/eip55",
+			"revision": "e76a732f1108b574d2a25b60a612b66c00d47790",
+			"revisionTime": "2018-08-22T08:25:59Z"
+		},
+		{
 			"checksumSHA1": "AKpkpyNrw3MTrfaHnvM4JCzrLKg=",
 			"path": "github.com/blocktree/go-OWCBasedFuncs/owcrypt",
 			"revision": "b7cb2a471fdc0b7eb673a08841242b4752acb1cf",
@@ -498,10 +528,10 @@
 			"revisionTime": "2018-08-17T10:39:47Z"
 		},
 		{
-			"checksumSHA1": "yzFQtwng1gAJZQEzXMRUT44uqqU=",
+			"checksumSHA1": "eyok/wPwgcUm8i2xDn62al1OPoc=",
 			"path": "github.com/blocktree/go-OWCrypt",
-			"revision": "8890773efc426c23e07321db0c2c16332378e93b",
-			"revisionTime": "2018-08-07T12:27:32Z"
+			"revision": "e21dab09ec1487e7dec2343d94ff1dd19083f09c",
+			"revisionTime": "2018-08-22T09:09:04Z"
 		},
 		{
 			"checksumSHA1": "APzA8rkuz7X5P2yh2uy22DG+rA8=",
