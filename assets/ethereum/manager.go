@@ -32,6 +32,10 @@ const (
 )
 
 const (
+	ERC20TOKEN_DB = "erc20Token.db"
+)
+
+const (
 	WALLET_NOT_EXIST_ERR        = "The wallet whose name is given not exist!"
 	BACKUP_FILE_TYPE_ADDRESS    = 0
 	BACKUP_FILE_TYPE_WALLET_KEY = 1
@@ -198,29 +202,29 @@ func skipKeyFile(fi os.FileInfo) bool {
 }
 
 func SaveERC20TokenConfig(config *ERC20Token) error {
-	path := dbPath + "/erc20token.db"
-	db, err := OpenDB(path)
+	db, err := OpenDB(dbPath, ERC20TOKEN_DB)
+	defer db.Close()
 	if err != nil {
-		openwLogger.Log.Errorf("open db for path [%v] failed, err = %v", path, err)
+		openwLogger.Log.Errorf("open db for path [%v] failed, err = %v", dbPath+"/"+ERC20TOKEN_DB, err)
 		return err
 	}
 	err = db.Save(config)
 	if err != nil {
-		openwLogger.Log.Errorf("save db for path [%v] failed, err = %v", path, err)
+		openwLogger.Log.Errorf("save db for path [%v] failed, err = %v", dbPath+"/"+ERC20TOKEN_DB, err)
 		return err
 	}
 	return nil
 }
 
 func GetERC20TokenList() ([]ERC20Token, error) {
-	path := dbPath + "/erc20token.db"
-	db, err := OpenDB(path)
+	db, err := OpenDB(dbPath, ERC20TOKEN_DB)
+	defer db.Close()
 	if err != nil {
-		openwLogger.Log.Errorf("open db for path [%v] failed, err = %v", path, err)
+		openwLogger.Log.Errorf("open db for path [%v] failed, err = %v", dbPath+"/"+ERC20TOKEN_DB, err)
 		return nil, err
 	}
 	tokens := make([]ERC20Token, 0)
-	err = db.All(tokens)
+	err = db.All(&tokens)
 	if err != nil {
 		openwLogger.Log.Errorf("query token list in db failed, err= %v", err)
 		return nil, err
@@ -553,6 +557,25 @@ func (this *AddrVec) Less(i, j int) bool {
 	return false
 }
 
+type TokenAddrVec struct {
+	addrs []*Address
+}
+
+func (this *TokenAddrVec) Len() int {
+	return len(this.addrs)
+}
+
+func (this *TokenAddrVec) Swap(i, j int) {
+	this.addrs[i], this.addrs[j] = this.addrs[j], this.addrs[i]
+}
+
+func (this *TokenAddrVec) Less(i, j int) bool {
+	if this.addrs[i].tokenBalance.Cmp(this.addrs[j].tokenBalance) < 0 {
+		return true
+	}
+	return false
+}
+
 type txFeeInfo struct {
 	GasLimit *big.Int
 	GasPrice *big.Int
@@ -622,10 +645,10 @@ func ERC20SendTransaction(wallet *Wallet, to string, amount *big.Int, password s
 		return nil, err
 	}
 
-	sort.Sort(&AddrVec{addrs: addrs})
+	sort.Sort(&TokenAddrVec{addrs: addrs})
 	//检查下地址排序是否正确, 仅用于测试
 	for _, theAddr := range addrs {
-		fmt.Println("theAddr[", theAddr.Address, "]:", theAddr.balance)
+		fmt.Println("theAddr[", theAddr.Address, "]:", theAddr.tokenBalance)
 	}
 
 	for i := len(addrs) - 1; i >= 0 && amount.Cmp(big.NewInt(0)) > 0; i-- {
@@ -642,7 +665,7 @@ func ERC20SendTransaction(wallet *Wallet, to string, amount *big.Int, password s
 			amountToSend = *amount
 
 		} else {
-			amountToSend = *addrs[i].balance
+			amountToSend = *addrs[i].tokenBalance
 		}
 
 		dataPara, err := makeERC20TokenTransData(wallet.erc20Token.Address, to, &amountToSend)
@@ -661,7 +684,7 @@ func ERC20SendTransaction(wallet *Wallet, to string, amount *big.Int, password s
 			continue
 		}
 
-		txid, err := ethSendTransaction(makeERC20TokenTransactionPara(addrs[i], wallet.erc20Token.Address, dataPara, password, fee))
+		txid, err := SendTransactionToAddr(makeERC20TokenTransactionPara(addrs[i], wallet.erc20Token.Address, dataPara, password, fee))
 		if err != nil {
 			openwLogger.Log.Errorf("SendTransactionToAddr failed, err=%v", err)
 			if txid == "" {
@@ -721,7 +744,7 @@ func SendTransaction(wallet *Wallet, to string, amount *big.Int, password string
 			balanceLeft.Sub(&balanceLeft, fee.Fee)
 
 			//灰尘账户, 余额不足以发起一次transaction
-			fmt.Println("amount to send ignore fee:", amountToSend.String())
+			//fmt.Println("amount to send ignore fee:", amountToSend.String())
 			if balanceLeft.Cmp(big.NewInt(0)) < 0 {
 				errinfo := fmt.Sprintf("[%v] is a dust address, will skip. ", addrs[i].Address)
 				openwLogger.Log.Errorf(errinfo)
@@ -731,7 +754,7 @@ func SendTransaction(wallet *Wallet, to string, amount *big.Int, password string
 			//如果改地址的余额除去手续费后, 不足以支付转账, set 转账金额 = 账户余额 - 手续费
 			if balanceLeft.Cmp(&amountToSend) < 0 {
 				amountToSend = balanceLeft
-				fmt.Println("amount to send plus fee:", amountToSend.String())
+				//fmt.Println("amount to send plus fee:", amountToSend.String())
 			}
 
 		} else {
@@ -749,9 +772,9 @@ func SendTransaction(wallet *Wallet, to string, amount *big.Int, password string
 				continue
 			}
 
-			fmt.Println("amount to send without fee, ", amountToSend.String(), " , fee:", fee.Fee.String())
+			//fmt.Println("amount to send without fee, ", amountToSend.String(), " , fee:", fee.Fee.String())
 			amountToSend.Sub(&amountToSend, fee.Fee)
-			fmt.Println("amount to send applied fee, ", amountToSend.String())
+			//fmt.Println("amount to send applied fee, ", amountToSend.String())
 		}
 
 		txid, err := SendTransactionToAddr(makeSimpleTransactionPara(addrs[i], to, &amountToSend, password, fee))

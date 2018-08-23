@@ -334,9 +334,9 @@ func (this *WalletManager) ERC20TokenSummaryFollow() error {
 	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", cycleSeconds.Seconds())
 
 	//启动钱包汇总程序
-	sumTimer := timer.NewTask(cycleSeconds, ERC20SummaryWallets)
-	sumTimer.Start()
-	//go SummaryWallets()
+	//sumTimer := timer.NewTask(cycleSeconds, ERC20SummaryWallets)
+	//sumTimer.Start()
+	go ERC20SummaryWallets()
 
 	<-endRunning
 	return nil
@@ -456,7 +456,6 @@ func (this *WalletManager) ConfigERC20Token() error {
 
 	if len(ercTokens) == 0 {
 		openwLogger.Log.Errorf("no token available, config the tokens first.")
-		return err
 	}
 
 	printTokenAvailable(ercTokens)

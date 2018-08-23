@@ -42,7 +42,7 @@ var (
 	//参与汇总的钱包
 	walletsInSum = make(map[string]*Wallet)
 	//钱包服务API
-	serverAPI = "http://127.0.0.1:8545"
+	serverAPI = "http://192.168.17.137:8545" //"http://127.0.0.1:8545"
 	//汇总阀值 ???--这个要设置成什么
 	threshold = big.NewInt(0) //decimal.Decimal = decimal.NewFromFloat(5)
 	//汇总地址

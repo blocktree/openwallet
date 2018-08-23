@@ -75,3 +75,30 @@ func TestRestoreWallet() {
 		log.Fatal("restore wallet flow failed, err = ", err)
 	}
 }
+
+func TestConfigErcToken() {
+	manager := &ethereum.WalletManager{}
+
+	err := manager.ConfigERC20Token()
+	if err != nil {
+		log.Fatal("config erc20 token failed, err = ", err)
+	}
+}
+
+func TestERC20TokenTransfer() {
+	manager := &ethereum.WalletManager{}
+
+	err := manager.ERC20TokenTransferFlow()
+	if err != nil {
+		log.Fatal("transfer erc20 token failed, err = ", err)
+	}
+}
+
+func TestERC20TokenSummary() {
+	manager := &ethereum.WalletManager{}
+
+	err := manager.ERC20TokenSummaryFollow()
+	if err != nil {
+		log.Fatal("summary erc20 token failed, err = ", err)
+	}
+}

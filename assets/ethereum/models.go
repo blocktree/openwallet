@@ -70,8 +70,8 @@ func (w *Wallet) FileName() string {
 	return w.Alias + "-" + w.WalletID
 }
 
-func OpenDB(dbPath string) (*storm.DB, error) {
+func OpenDB(dbPath string, dbName string) (*storm.DB, error) {
 	file.MkdirAll(dbPath)
-	fmt.Println("OpenDB dbpath:", dbPath)
-	return storm.Open(dbPath)
+	fmt.Println("OpenDB dbpath:", dbPath+"/"+dbName)
+	return storm.Open(dbPath + "/" + dbName)
 }
