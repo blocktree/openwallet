@@ -104,18 +104,9 @@ func (wm *WalletManager) GetBlockPayload(payload string) (payloadSpec *PayloadSp
 }
 
 //GetBlockHash 根据区块高度获得区块hash
-func (wm *WalletManager) GetBlockHash(height uint64) ([]byte, error) {
+func (wm *WalletManager) GetBlockHash(height uint64) (string, error) {
 
-	request := []interface{}{
-		height,
-	}
-
-	result, err := wm.fullnodeClient.Call("getblockhash", "POST", request)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	return result, nil
+	return "BlockHash1", nil
 }
 
 /*

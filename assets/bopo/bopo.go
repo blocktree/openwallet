@@ -240,7 +240,6 @@ func (w *WalletManager) RestoreWalletFlow() error {
 		}
 
 	}
-	fmt.Println("EMD")
 
 	// To restore
 	if err := w.restoreWalletData(datFile); err != nil {
@@ -251,7 +250,7 @@ func (w *WalletManager) RestoreWalletFlow() error {
 }
 
 func (w *WalletManager) CreateAddressFlow() error {
-	return errors.New("Writing!")
+	return errors.New("A wallet only have one address, it's same thing in BOPO!")
 }
 
 func (w *WalletManager) SummaryFollow() error {

@@ -112,6 +112,15 @@ type User struct {
 
 // ------------------------------------------------------------------
 
+//UnscanRecords 扫描失败的区块及交易
+type UnscanRecord struct {
+	ID          string `storm:"id"` // primary key
+	BlockHeight uint64
+	TxID        string
+	Reason      string
+	RescanCount int
+}
+
 /*
 func NewBlock(json *gjson.Result) (block *Block, err error) {
 
