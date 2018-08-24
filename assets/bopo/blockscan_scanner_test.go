@@ -15,18 +15,14 @@
 
 package bopo
 
-import (
-	"testing"
-)
+import "testing"
 
-func TestVerifyAddr(t *testing.T) {
+func TestscanBolock(t *testing.T) {
+	bs := NewFabricBlockScanner(tw)
+	bs.scanBlock()
+}
 
-	// Invalid addr, return err
-	if err := tw.verifyAddr("failureaddr"); err == nil {
-		t.Errorf("TestVerifyAddr: %v\n", err)
-	}
-	// Verified addr, return nil
-	if err := tw.verifyAddr("5SJrzpTvUjMoTi2KvjM9pKvrh04_LoTYwg"); err != nil {
-		t.Errorf("TestVerifyAddr: %v\n", err)
-	}
+func TestScanBolock(t *testing.T) {
+	bs := NewFabricBlockScanner(tw)
+	bs.ScanBlock(uint64(231234))
 }

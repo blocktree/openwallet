@@ -30,7 +30,7 @@ import (
 func (wm *WalletManager) getWalletList() ([]*Wallet, error) {
 	var wallets = make([]*Wallet, 0)
 
-	r, err := client.Call("account", "GET", nil)
+	r, err := wm.fullnodeClient.Call("account", "GET", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (wm *WalletManager) getWalletList() ([]*Wallet, error) {
 func (wm *WalletManager) createWallet(wid string) (*Wallet, error) {
 	var wallet *Wallet
 
-	if _, err := client.Call("account", "POST", req.Param{"id": wid}); err != nil {
+	if _, err := wm.fullnodeClient.Call("account", "POST", req.Param{"id": wid}); err != nil {
 		return nil, err
 	} else {
 		if w, err := wm.getWalletInfo(wid); err != nil {
@@ -66,7 +66,7 @@ func (wm *WalletManager) createWallet(wid string) (*Wallet, error) {
 // Get one wallet info
 func (wm *WalletManager) getWalletInfo(wid string) (*Wallet, error) {
 
-	if r, err := client.Call(fmt.Sprintf("account/%s", wid), "GET", nil); err != nil {
+	if r, err := wm.fullnodeClient.Call(fmt.Sprintf("account/%s", wid), "GET", nil); err != nil {
 		return nil, err
 	} else {
 		data := gjson.ParseBytes(r).Map()
@@ -78,7 +78,7 @@ func (wm *WalletManager) getWalletInfo(wid string) (*Wallet, error) {
 func (wm *WalletManager) getWalletB(addr string) (wallet *Wallet, err error) {
 
 	// Get balance
-	if d, err := client.Call(fmt.Sprintf("chain/%s", addr), "GET", nil); err != nil {
+	if d, err := wm.fullnodeClient.Call(fmt.Sprintf("chain/%s", addr), "GET", nil); err != nil {
 		// panic(err)
 		return nil, err
 	} else {
@@ -114,7 +114,7 @@ func (wm *WalletManager) printWalletList(list []*Wallet) {
 			bal := ww.Balance
 			if bal != "" {
 				cc, _ := decimal.NewFromString(bal)
-				bal = cc.Div(coinDecimal).String()
+				bal = cc.Div(wm.config.coinDecimal).String()
 				w.Balance = fmt.Sprintf("%s (%s coins)", ww.Balance, bal)
 			}
 		}
