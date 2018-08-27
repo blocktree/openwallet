@@ -18,6 +18,8 @@ package bopo
 import (
 	"fmt"
 	"testing"
+
+	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 var (
@@ -26,7 +28,9 @@ var (
 )
 
 func TestSaveLocalNewBlock(t *testing.T) {
-	if err := tw.SaveLocalNewBlock(blockHeight, blockHash); err != nil {
+	bst = NewFabricBlockScanner(tw)
+
+	if err := bst.SaveLocalNewBlock(blockHeight, blockHash); err != nil {
 		t.Errorf("TestSaveLocalNewBlock Failed: %v\n", err)
 	} else {
 		fmt.Printf("TestSaveLocalNewBlock: \n\t%+v, %+v\n", blockHeight, blockHash)
@@ -34,7 +38,9 @@ func TestSaveLocalNewBlock(t *testing.T) {
 }
 
 func TestGetLocalNewBlock(t *testing.T) {
-	height, hash := tw.GetLocalNewBlock()
+	bst = NewFabricBlockScanner(tw)
+
+	height, hash := bst.GetLocalNewBlock()
 	if height <= 0 {
 		t.Errorf("TestGetLocalBlock Failed: %v\n", "height == 0")
 	} else {
@@ -44,8 +50,10 @@ func TestGetLocalNewBlock(t *testing.T) {
 }
 
 func TestSaveLocalBlock(t *testing.T) {
+	bst = NewFabricBlockScanner(tw)
+
 	block := &Block{Height: blockHeight}
-	if err := tw.SaveLocalBlock(block); err != nil {
+	if err := bst.SaveLocalBlock(block); err != nil {
 		t.Errorf("TestGetLocalBlock Failed: %v\n", err)
 	} else {
 		fmt.Printf("TestGetLocalBlock: \n\t%+v\n", block)
@@ -53,7 +61,9 @@ func TestSaveLocalBlock(t *testing.T) {
 }
 
 func TestGetLocalBlock(t *testing.T) {
-	block, err := tw.GetLocalBlock(blockHeight)
+	bst = NewFabricBlockScanner(tw)
+
+	block, err := bst.GetLocalBlock(blockHeight)
 	if err != nil {
 		t.Errorf("TestGetLocalBlock Failed: %v\n", err)
 	} else {
@@ -62,7 +72,9 @@ func TestGetLocalBlock(t *testing.T) {
 }
 
 func TestSaveTransaction(t *testing.T) {
-	if err := tw.SaveTransaction(blockHeight); err != nil {
+	bst = NewFabricBlockScanner(tw)
+
+	if err := bst.SaveTransaction(blockHeight); err != nil {
 		t.Errorf("TestSaveTransaction Failed: %v\n", err)
 	} else {
 		fmt.Printf("TestSaveTransaction: \n\t%+v\n", blockHeight)
@@ -70,8 +82,10 @@ func TestSaveTransaction(t *testing.T) {
 }
 
 func TestSaveUnscanRecord(t *testing.T) {
+	bst = NewFabricBlockScanner(tw)
+
 	record := &UnscanRecord{ID: string(blockHeight)}
-	if err := tw.SaveUnscanRecord(record); err != nil {
+	if err := bst.SaveUnscanRecord(record); err != nil {
 		t.Errorf("TestSaveUnscanRecord Failed: %v\n", err)
 	} else {
 		fmt.Printf("TestSaveUnscanRecord: \n\t%+v\n", record)
@@ -79,7 +93,9 @@ func TestSaveUnscanRecord(t *testing.T) {
 }
 
 func TestGetUnscanRecords(t *testing.T) {
-	if unscanRecords, err := tw.GetUnscanRecords(); err != nil {
+	bst = NewFabricBlockScanner(tw)
+
+	if unscanRecords, err := bst.GetUnscanRecords(); err != nil {
 		t.Errorf("TestGetUnscanRecords Failed: %v\n", err)
 	} else {
 		fmt.Printf("TestGetUnscanRecords: \n\t%+v\n", unscanRecords)
@@ -88,9 +104,11 @@ func TestGetUnscanRecords(t *testing.T) {
 }
 
 func TestDeleteUnscanRecord(t *testing.T) {
+	bst = NewFabricBlockScanner(tw)
+
 	TestSaveUnscanRecord(t)
 
-	if err := tw.DeleteUnscanRecord(blockHeight); err != nil {
+	if err := bst.DeleteUnscanRecord(blockHeight); err != nil {
 		t.Errorf("DeleteUnscanRecord Failed: %v\n", err)
 	} else {
 		fmt.Printf("DeleteUnscanRecord: \n\t%+v\n", blockHeight)
@@ -100,7 +118,9 @@ func TestDeleteUnscanRecord(t *testing.T) {
 
 //DeleteUnscanRecordNotFindTX 删除未没有找到交易记录的重扫记录
 func TestDeleteUnscanRecordNotFindTX(t *testing.T) {
-	if err := tw.DeleteUnscanRecordNotFindTX(); err != nil {
+	bst = NewFabricBlockScanner(tw)
+
+	if err := bst.DeleteUnscanRecordNotFindTX(); err != nil {
 		t.Errorf("TestGetLocalBlock Failed: %v\n", err)
 	} else {
 		fmt.Printf("TestGetLocalBlock: \n\t%+v\n", "done")
@@ -109,7 +129,20 @@ func TestDeleteUnscanRecordNotFindTX(t *testing.T) {
 
 //DeleteUnscanRecordByTxID 删除未扫记录
 func TestDeleteUnscanRecordByTxID(t *testing.T) {
-	if err := tw.DeleteUnscanRecordByTxID(blockHeight, blockHash); err != nil {
+	bst = NewFabricBlockScanner(tw)
+
+	if err := bst.DeleteUnscanRecordByTxID(blockHeight, blockHash); err != nil {
+		t.Errorf("TestGetLocalBlock Failed: %v\n", err)
+	} else {
+		fmt.Printf("TestGetLocalBlock: \n\t%+v\n", blockHeight)
+	}
+}
+
+func TestSaveRechargeToWalletDB(t *testing.T) {
+	bst = NewFabricBlockScanner(tw)
+
+	list := []*openwallet.Recharge{}
+	if err := bst.SaveRechargeToWalletDB(blockHeight, list); err != nil {
 		t.Errorf("TestGetLocalBlock Failed: %v\n", err)
 	} else {
 		fmt.Printf("TestGetLocalBlock: \n\t%+v\n", blockHeight)

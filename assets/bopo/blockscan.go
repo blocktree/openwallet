@@ -254,7 +254,7 @@ func (bs *FabricBlockScanner) SetRescanBlockHeight(height uint64) error {
 	// }
 	hash := "" // Fabric can get Block by Height without Hash
 
-	bs.wm.SaveLocalNewBlock(height, hash)
+	bs.SaveLocalNewBlock(height, hash)
 
 	return nil
 }
@@ -268,7 +268,7 @@ func (bs *FabricBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, 
 		err         error
 	)
 
-	blockHeight, hash = bs.wm.GetLocalNewBlock()
+	blockHeight, hash = bs.GetLocalNewBlock()
 
 	//如果本地没有记录，查询接口的高度
 	if blockHeight <= 0 {

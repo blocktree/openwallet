@@ -198,7 +198,7 @@ func (bs *FabricBlockScanner) ScanBlock(height uint64) error {
 	// }
 
 	//保存区块
-	bs.wm.SaveLocalBlock(block)
+	bs.SaveLocalBlock(block)
 
 	//通知新区块给观测者，异步处理
 	go bs.newBlockNotify(block)
