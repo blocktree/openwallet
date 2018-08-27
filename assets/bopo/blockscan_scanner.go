@@ -25,6 +25,7 @@ import (
 	//"time"
 	// "github.com/asdine/storm"
 	// "github.com/blocktree/OpenWallet/crypto"
+	//"github.com/blocktree/OpenWallet/log"
 	//"github.com/blocktree/OpenWallet/timer"
 	// "github.com/tidwall/gjson"
 )
@@ -35,7 +36,7 @@ func (bs *FabricBlockScanner) scanBlock() {
 	//currentHeight, err := GetBlockHeight()
 	blockinfo, err := bs.wm.GetBlockChainInfo()
 	if err != nil {
-		log.Printf("block scanner can not get new block height; unexpected error: %v\n", err)
+		// log.Printf("block scanner can not get new block height; unexpected error: %v\n", err)
 		return
 	}
 	currentHeight := blockinfo.Blocks
@@ -213,3 +214,97 @@ func (bs *FabricBlockScanner) newBlockNotify(block *Block) {
 		// o.BlockScanNotify(block.Block{})
 	}
 }
+
+// //BatchExtractTransaction 批量提取交易单
+// //bitcoin 1M的区块链可以容纳3000笔交易，批量多线程处理，速度更快
+// func (bs *FabricBlockScanner) BatchExtractTransaction(blockHeight uint64, blockHash string, txs []string) error {
+
+// 	var (
+// 		quit       = make(chan struct{})
+// 		done       = 0 //完成标记
+// 		failed     = 0
+// 		shouldDone = len(txs) //需要完成的总数
+// 	)
+
+// 	if len(txs) == 0 {
+// 		return errors.New("BatchExtractTransaction block is nil.")
+// 	}
+
+// 	//生产通道
+// 	producer := make(chan ExtractResult)
+// 	defer close(producer)
+
+// 	//消费通道
+// 	worker := make(chan ExtractResult)
+// 	defer close(worker)
+
+// 	//保存工作
+// 	saveWork := func(height uint64, result chan ExtractResult) {
+// 		//回收创建的地址
+// 		for gets := range result {
+
+// 			//saveResult := SaveResult{}
+// 			//saveResult.TxID = gets.TxID
+// 			//saveResult.BlockHeight = height
+
+// 			if gets.Success {
+// 				saveErr := bs.SaveRechargeToWalletDB(height, gets.Recharges)
+// 				if saveErr != nil {
+// 					//log.Std.Error("SaveTxToWalletDB unexpected error: %v", saveErr)
+// 					//saveResult.Success = false
+// 					failed++ //标记保存失败数
+// 				} else {
+// 					//saveResult.Success = true
+// 				}
+// 			} else {
+// 				//记录未扫区块
+// 				unscanRecord := NewUnscanRecord(height, gets.TxID, gets.Reason)
+// 				bs.SaveUnscanRecord(unscanRecord)
+// 				log.Std.Info("block height: %d extract failed.", height)
+// 				//saveResult.Success = false
+// 				failed++ //标记保存失败数
+// 			}
+
+// 			//累计完成的线程数
+// 			done++
+// 			if done == shouldDone {
+// 				//log.Std.Info("done = %d, shouldDone = %d ", done, len(txs))
+// 				close(quit) //关闭通道，等于给通道传入nil
+// 			}
+// 		}
+// 	}
+
+// 	//提取工作
+// 	extractWork := func(eblockHeight uint64, eBlockHash string, mTxs []string, eProducer chan ExtractResult) {
+// 		for _, txid := range mTxs {
+// 			bs.extractingCH <- struct{}{}
+// 			//shouldDone++
+// 			go func(mBlockHeight uint64, mTxid string, end chan struct{}, mProducer chan<- ExtractResult) {
+
+// 				//导出提出的交易
+// 				mProducer <- bs.ExtractTransaction(mBlockHeight, eBlockHash, mTxid)
+// 				//释放
+// 				<-end
+
+// 			}(eblockHeight, txid, bs.extractingCH, eProducer)
+// 		}
+// 	}
+
+// 	/*	开启导出的线程	*/
+
+// 	//独立线程运行消费
+// 	go saveWork(blockHeight, worker)
+
+// 	//独立线程运行生产
+// 	go extractWork(blockHeight, blockHash, txs, producer)
+
+// 	//以下使用生产消费模式
+// 	bs.extractRuntime(producer, worker, quit)
+
+// 	if failed > 0 {
+// 		return fmt.Errorf("SaveTxToWalletDB failed")
+// 	} else {
+// 		return nil
+// 	}
+// 	//return nil
+// }

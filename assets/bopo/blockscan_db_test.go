@@ -22,7 +22,7 @@ import (
 
 var (
 	blockHeight uint64 = uint64(241234)
-	blockHash   string = "fweqfojoi23fjijojfafwqefqwefq="
+	blockHash   string = ""
 )
 
 func TestSaveLocalNewBlock(t *testing.T) {
@@ -63,36 +63,37 @@ func TestGetLocalBlock(t *testing.T) {
 
 func TestSaveTransaction(t *testing.T) {
 	if err := tw.SaveTransaction(blockHeight); err != nil {
-		t.Errorf("TestGetLocalBlock Failed: %v\n", err)
+		t.Errorf("TestSaveTransaction Failed: %v\n", err)
 	} else {
-		fmt.Printf("TestGetLocalBlock: \n\t%+v\n", blockHeight)
+		fmt.Printf("TestSaveTransaction: \n\t%+v\n", blockHeight)
 	}
 }
 
 func TestSaveUnscanRecord(t *testing.T) {
 	record := &UnscanRecord{ID: string(blockHeight)}
 	if err := tw.SaveUnscanRecord(record); err != nil {
-		t.Errorf("TestGetLocalBlock Failed: %v\n", err)
+		t.Errorf("TestSaveUnscanRecord Failed: %v\n", err)
 	} else {
-		fmt.Printf("TestGetLocalBlock: \n\t%+v\n", record)
+		fmt.Printf("TestSaveUnscanRecord: \n\t%+v\n", record)
 	}
 }
 
 func TestGetUnscanRecords(t *testing.T) {
-
 	if unscanRecords, err := tw.GetUnscanRecords(); err != nil {
-		t.Errorf("TestGetLocalBlock Failed: %v\n", err)
+		t.Errorf("TestGetUnscanRecords Failed: %v\n", err)
 	} else {
-		fmt.Printf("TestGetLocalBlock: \n\t%+v\n", unscanRecords)
+		fmt.Printf("TestGetUnscanRecords: \n\t%+v\n", unscanRecords)
 	}
 
 }
 
 func TestDeleteUnscanRecord(t *testing.T) {
+	TestSaveUnscanRecord(t)
+
 	if err := tw.DeleteUnscanRecord(blockHeight); err != nil {
-		t.Errorf("TestGetLocalBlock Failed: %v\n", err)
+		t.Errorf("DeleteUnscanRecord Failed: %v\n", err)
 	} else {
-		fmt.Printf("TestGetLocalBlock: \n\t%+v\n", blockHeight)
+		fmt.Printf("DeleteUnscanRecord: \n\t%+v\n", blockHeight)
 	}
 
 }

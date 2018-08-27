@@ -18,14 +18,15 @@ package bopo
 import (
 	"path/filepath"
 	"strings"
+
 	//"strings"
 
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
+	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/pkg/errors"
-
 	//"github.com/asdine/storm/q"
-	"fmt"
 	//"github.com/blocktree/OpenWallet/openwallet"
 	//"github.com/tidwall/gjson"
 )
@@ -33,7 +34,6 @@ import (
 //SaveLocalNewBlock 写入本地区块高度和hash
 func (wm *WalletManager) SaveLocalNewBlock(blockHeight uint64, blockHash string) error {
 
-	fmt.Println("EEE = ", filepath.Join(wm.config.dbPath, wm.config.blockchainFile))
 	//获取本地区块高度
 	db, err := storm.Open(filepath.Join(wm.config.dbPath, wm.config.blockchainFile))
 	if err != nil {
@@ -161,18 +161,22 @@ func (wm *WalletManager) DeleteUnscanRecord(height uint64) error {
 	//获取本地区块高度
 	db, err := storm.Open(filepath.Join(wm.config.dbPath, wm.config.blockchainFile))
 	if err != nil {
+		log.Error("Open Failed: ", err)
 		return err
 	}
 	defer db.Close()
 
 	var list []*UnscanRecord
-	err = db.Find("BlockHeight", height, &list)
+	// err = db.Find("BlockHeight", height, &list)
+	err = db.Find("ID", string(height), &list)
 	if err != nil {
+		log.Error("Find Faild: ", err)
 		return err
 	}
 
 	tx, err := db.Begin(true)
 	if err != nil {
+		log.Error("Begin Failed: ", err)
 		return err
 	}
 
@@ -239,3 +243,86 @@ func (wm *WalletManager) DeleteUnscanRecordByTxID(height uint64, txid string) er
 
 	return nil
 }
+
+//GetWalletByAddress 获取地址对应的钱包
+func (bs *FabricBlockScanner) GetWalletByAddress(address string) (*openwallet.Wallet, bool) {
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
+
+	account, ok := bs.addressInScanning[address]
+	if ok {
+		wallet, ok := bs.walletInScanning[account]
+		return wallet, ok
+
+	} else {
+		return nil, false
+	}
+}
+
+// //SaveRechargeToWalletDB 保存交易单内的充值记录到钱包数据库
+// func (bs *FabricBlockScanner) SaveRechargeToWalletDB(height uint64, list []*openwallet.Recharge) error {
+
+// 	var (
+// 		saveSuccess = true
+// 	)
+
+// 	for _, r := range list {
+
+// 		//accountID := "W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ"
+// 		wallet, ok := bs.GetWalletByAddress(r.Address)
+// 		if ok {
+
+// 			// //a := wallet.GetAddress(r.Address)
+// 			// //if a == nil {
+// 			// //	continue
+// 			// //}
+// 			// //
+// 			// //r.AccountID = a.AccountID
+// 			// reason := ""
+// 			// err := wallet.SaveUnreceivedRecharge(r)
+// 			// //如果blockHash没有值，添加到重扫，避免遗留
+// 			// if err != nil {
+// 			// 	saveSuccess = false
+// 			// 	//记录未扫区块
+// 			// 	reason = err.Error()
+// 			// 	log.Std.Error("block height: %d, txID: %s save unscan record failed. unexpected error: %v", height, r.TxID, err.Error())
+// 			// 	unscanRecord := NewUnscanRecord(height, r.TxID, reason)
+
+// 			// 	err = bs.SaveUnscanRecord(unscanRecord)
+// 			// 	if err != nil {
+// 			// 		log.Std.Error("block height: %d, txID: %s save unscan record failed. unexpected error: %v", height, r.TxID, err.Error())
+// 			// 	}
+
+// 			// } else {
+// 			// 	log.Info("block scanner save blockHeight:", height, "txid:", r.TxID, "address:", r.Address, "successfully.")
+// 			// }
+
+// 			// //if err != nil || len(r.BlockHash) == 0 {
+// 			// //	saveSuccess = false
+// 			// //	//记录未扫区块
+// 			// //	if err != nil {
+// 			// //		reason = err.Error()
+// 			// //		log.Std.Error("block height: %d, txID: %s save unscan record failed. unexpected error: %v", height, r.TxID, err.Error())
+// 			// //	}
+// 			// //	unscanRecord := NewUnscanRecord(height, r.TxID, reason)
+// 			// //	err = bs.SaveUnscanRecord(unscanRecord)
+// 			// //	if err != nil {
+// 			// //		log.Std.Error("block height: %d, txID: %s save unscan record failed. unexpected error: %v", height, r.TxID, err.Error())
+// 			// //	}
+// 			// //
+// 			// //} else {
+// 			// //	log.Info("block scanner save blockHeight:", height, "txid:", r.TxID, "address:", r.Address, "successfully.")
+// 			// //}
+// 		} else {
+// 			log.Error("address:", r.Address, "in wallet is not found, txid:", r.TxID)
+// 			return errors.New("address in wallet is not found")
+// 		}
+
+// 	}
+
+// 	if !saveSuccess {
+// 		return errors.New("have unscan record")
+// 	}
+
+// 	return nil
+// }

@@ -19,6 +19,7 @@ import (
 	// "encoding/base64"
 	// "errors"
 	// "path/filepath"
+
 	"sync"
 	"time"
 
@@ -27,6 +28,7 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/timer"
+	"github.com/pkg/errors"
 	// "github.com/tidwall/gjson"
 )
 
@@ -39,7 +41,7 @@ const (
 //NewFabricBlockScanner 创建区块链扫描器
 func NewFabricBlockScanner(wm *WalletManager) *FabricBlockScanner {
 	bs := FabricBlockScanner{}
-	//bs.walletInScanning = make(map[string]*openwallet.Wallet)
+	bs.walletInScanning = make(map[string]*openwallet.Wallet)
 	bs.addressInScanning = make(map[string]string)
 	bs.observers = make(map[openwallet.BlockScanNotificationObject]bool)
 	bs.extractingCH = make(chan struct{}, maxExtractingSize)
@@ -58,6 +60,22 @@ type FabricBlockScanner struct {
 	mu                 sync.RWMutex                                    //读写锁
 	scanning           bool                                            //是否扫描中
 	wm                 *WalletManager                                  //钱包管理者
+}
+
+//ExtractResult 扫描完成的提取结果
+type ExtractResult struct {
+	Recharges   []*openwallet.Recharge
+	TxID        string
+	BlockHeight uint64
+	Success     bool
+	Reason      string
+}
+
+//SaveResult 保存结果
+type SaveResult struct {
+	TxID        string
+	BlockHeight uint64
+	Success     bool
 }
 
 /*
@@ -225,17 +243,18 @@ func (bs *FabricBlockScanner) Restart() {
 */
 //SetRescanBlockHeight 重置区块链扫描高度
 func (bs *FabricBlockScanner) SetRescanBlockHeight(height uint64) error {
-	// height = height - 1
-	// if height < 0 {
-	// 	return errors.New("block height to rescan must greater than 0.")
-	// }
+	height = height - 1
+	if height < 0 {
+		return errors.New("block height to rescan must greater than 0.")
+	}
 
 	// hash, err := bs.wm.GetBlockHash(height)
 	// if err != nil {
 	// 	return err
 	// }
+	hash := "" // Fabric can get Block by Height without Hash
 
-	// bs.wm.SaveLocalNewBlock(height, hash)
+	bs.wm.SaveLocalNewBlock(height, hash)
 
 	return nil
 }
