@@ -148,3 +148,13 @@ func TestSaveRechargeToWalletDB(t *testing.T) {
 		fmt.Printf("TestGetLocalBlock: \n\t%+v\n", blockHeight)
 	}
 }
+
+func TestDeleteRechargesByHeight(t *testing.T) {
+	bst = NewFabricBlockScanner(tw)
+
+	if err := bst.DeleteRechargesByHeight(blockHeight); err != nil {
+		t.Errorf("TestGetLocalBlock Failed: %v\n", err)
+	} else {
+		fmt.Printf("TestGetLocalBlock: \n\t%+v\n", blockHeight)
+	}
+}

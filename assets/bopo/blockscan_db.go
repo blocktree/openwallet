@@ -318,3 +318,41 @@ func (bs *FabricBlockScanner) SaveRechargeToWalletDB(height uint64, list []*open
 
 	return nil
 }
+
+//DeleteRechargesByHeight 删除某区块高度的充值记录
+func (bs *FabricBlockScanner) DeleteRechargesByHeight(height uint64) error {
+
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
+
+	for _, wallet := range bs.walletInScanning {
+
+		list, err := wallet.GetRecharges(false, height)
+		if err != nil {
+			return err
+		}
+
+		db, err := wallet.OpenDB()
+		if err != nil {
+			return err
+		}
+
+		tx, err := db.Begin(true)
+		if err != nil {
+			return err
+		}
+
+		for _, r := range list {
+			err = db.DeleteStruct(&r)
+			if err != nil {
+				return err
+			}
+		}
+
+		tx.Commit()
+
+		db.Close()
+	}
+
+	return nil
+}

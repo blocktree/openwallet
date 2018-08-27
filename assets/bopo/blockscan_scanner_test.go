@@ -15,14 +15,32 @@
 
 package bopo
 
-import "testing"
+import (
+	"testing"
 
-func TestscanBolock(t *testing.T) {
+	"github.com/blocktree/OpenWallet/openwallet"
+)
+
+func TestScanBlock(t *testing.T) {
 	bs := NewFabricBlockScanner(tw)
+
 	bs.scanBlock()
 }
 
-func TestScanBolock(t *testing.T) {
+func TestScanBlock2(t *testing.T) {
+
 	bs := NewFabricBlockScanner(tw)
+
+	accountID := "simonluo"
+	// wallet, err := tw.GetWalletInfo(accountID)
+	// if err != nil {
+	// 	t.Errorf("BTCBlockScanner_Run failed unexpected error: %v\n", err)
+	// 	return
+	// }
+	wallet := &openwallet.Wallet{}
+
+	bs.AddWallet(accountID, wallet)
+
 	bs.ScanBlock(uint64(231234))
+
 }
