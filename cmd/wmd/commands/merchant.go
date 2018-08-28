@@ -18,8 +18,8 @@ package commands
 import (
 	"gopkg.in/urfave/cli.v1"
 	"github.com/blocktree/OpenWallet/cmd/utils"
-	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/merchant"
+	"github.com/blocktree/OpenWallet/log"
 )
 
 var (
@@ -99,7 +99,7 @@ func getMerchantKeychain(c *cli.Context) error {
 	}
 
 	if err != nil {
-		openwLogger.Log.Errorf("%v", err)
+		log.Error("unexpected error: ", err)
 	}
 
 	return err
@@ -109,9 +109,15 @@ func joinMerchantNode(c *cli.Context) error {
 	var (
 		err error
 	)
+
+
+	logDir := c.GlobalString("logdir")
+	debug := c.GlobalBool("debug")
+	utils.SetupLog(logDir, "merchant.log", debug)
+
 	err = merchant.JoinMerchantNodeFlow()
 	if err != nil {
-		openwLogger.Log.Errorf("%v", err)
+		log.Error("unexpected error: ", err)
 	}
 	return err
 }
@@ -130,7 +136,9 @@ func configMerchantNode(c *cli.Context) error {
 	}
 
 	if err != nil {
-		openwLogger.Log.Errorf("%v", err)
+		log.Error("unexpected error: ", err)
 	}
 	return err
 }
+
+

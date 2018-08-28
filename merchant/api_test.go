@@ -27,7 +27,7 @@ var (
 
 func init() {
 	nodeConfig = NodeConfig{
-		NodeKey:         "",
+		MerchantNodeID:         "merchant",
 		PublicKey:       "dajosidjaiosjdioajsdioajsdiowhefi",
 		PrivateKey:      "",
 		MerchantNodeURL: "ws://192.168.30.4:8084/websocket",

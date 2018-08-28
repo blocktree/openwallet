@@ -42,7 +42,7 @@ type MerchantAssets interface {
 	CreateMerchantAddress(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, count uint64) ([]*openwallet.Address, error)
 
 	//GetMerchantAddressList 获取钱包地址
-	GetMerchantAddressList(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, offset uint64, limit uint64) ([]*openwallet.Address, error)
+	GetMerchantAddressList(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, watchOnly bool, offset uint64, limit uint64) ([]*openwallet.Address, error)
 
 	//AddMerchantObserverForBlockScan 添加区块链观察者，当扫描出新区块时进行通知
 	AddMerchantObserverForBlockScan(obj openwallet.BlockScanNotificationObject, wallets *openwallet.Wallet) error
@@ -51,10 +51,22 @@ type MerchantAssets interface {
 	RemoveMerchantObserverForBlockScan(obj openwallet.BlockScanNotificationObject)
 
 	//SubmitTransaction 提交转账申请
-	SubmitTransactions(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, withdraws []*openwallet.Withdraw) (*openwallet.Transaction, error)
+	SubmitTransactions(wallet *openwallet.Wallet, account *openwallet.AssetsAccount, withdraws []*openwallet.Withdraw, surplus string) (*openwallet.Transaction, error)
 
 	//GetBlockchainInfo 获取区块链信息
 	GetBlockchainInfo() (*openwallet.Blockchain, error)
+
+	//GetMerchantAssetsAccount 获取账户资产
+	GetMerchantWalletBalance(walletID string) (string, error)
+
+	//GetMerchantAssetsAccount 获取地址资产
+	GetMerchantAddressBalance(walletID, address string) (string, error)
+
+	//SetMerchantRescanBlockHeight 商户重置区块链扫描高度
+	SetMerchantRescanBlockHeight(height uint64) error
+
+	//MerchantRescanBlockHeight 商户重置区块链扫描高度范围
+	MerchantRescanBlockHeight(startHeight uint64, endHeight uint64) error
 }
 
 // GetMerchantAssets 根据币种类型获取已注册的管理者

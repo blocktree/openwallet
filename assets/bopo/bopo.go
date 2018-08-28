@@ -18,6 +18,7 @@ package bopo
 import (
 	"errors"
 	"fmt"
+
 	// "io/ioutil"
 	"os"
 	"path/filepath"
@@ -26,8 +27,6 @@ import (
 	"github.com/blocktree/OpenWallet/console"
 	"github.com/shopspring/decimal"
 )
-
-type WalletManager struct{}
 
 func (w *WalletManager) InitConfigFlow() error {
 	return errors.New("Writing1!")
@@ -39,22 +38,22 @@ func (w *WalletManager) ShowConfig() error {
 
 func (w *WalletManager) GetWalletList() error {
 	// Load config
-	if err := loadConfig(); err != nil {
+	if err := w.loadConfig(); err != nil {
 		return err
 	}
 
-	wallets, err := getWalletList()
+	wallets, err := w.getWalletList()
 	if err != nil {
 		return err
 	}
 
-	printWalletList(wallets)
+	w.printWalletList(wallets)
 	return nil
 }
 
 func (w *WalletManager) CreateWalletFlow() error {
 	// Load config
-	if err := loadConfig(); err != nil {
+	if err := w.loadConfig(); err != nil {
 		return err
 	}
 
@@ -63,10 +62,10 @@ func (w *WalletManager) CreateWalletFlow() error {
 		return err
 	}
 
-	if wallet, err := createWallet(name); err != nil {
+	if wallet, err := w.createWallet(name); err != nil {
 		return err
 	} else {
-		printWalletList([]*Wallet{wallet})
+		w.printWalletList([]*Wallet{wallet})
 	}
 
 	return nil
@@ -82,7 +81,7 @@ func (w *WalletManager) TransferFlow() error {
 	)
 
 	// Load config
-	if err := loadConfig(); err != nil {
+	if err := w.loadConfig(); err != nil {
 		return err
 	}
 
@@ -99,7 +98,7 @@ func (w *WalletManager) TransferFlow() error {
 		}
 
 		// Check wid
-		if _, err := getWalletInfo(wid); err != nil {
+		if _, err := w.getWalletInfo(wid); err != nil {
 			fmt.Println(err)
 		} else {
 			break
@@ -119,7 +118,7 @@ func (w *WalletManager) TransferFlow() error {
 		}
 
 		// Check addr
-		if err := verifyAddr(toaddr); err != nil {
+		if err := w.verifyAddr(toaddr); err != nil {
 			fmt.Println(err)
 		} else {
 			break
@@ -142,7 +141,7 @@ func (w *WalletManager) TransferFlow() error {
 			fmt.Println(err)
 			// return err
 		} else {
-			amount = cc.Mul(coinDecimal).String()
+			amount = cc.Mul(w.config.coinDecimal).String()
 			break
 		}
 
@@ -160,12 +159,12 @@ func (w *WalletManager) TransferFlow() error {
 	}
 
 	fmt.Println("Transfer......")
-	if wallet, err := toTransfer(wid, toaddr, amount, message); err != nil {
+	if wallet, err := w.toTransfer(wid, toaddr, amount, message); err != nil {
 		return err
 	} else {
 		time.Sleep(12 * time.Second)
 		// printWalletList([]*Wallet{wallet, &Wallet{Addr: toaddr}})
-		printWalletList([]*Wallet{wallet})
+		w.printWalletList([]*Wallet{wallet})
 	}
 
 	return nil
@@ -174,11 +173,11 @@ func (w *WalletManager) TransferFlow() error {
 func (w *WalletManager) BackupWalletFlow() error {
 
 	// Load config
-	if err := loadConfig(); err != nil {
+	if err := w.loadConfig(); err != nil {
 		return err
 	}
 
-	if err := backupWalletData(); err != nil {
+	if err := w.backupWalletData(); err != nil {
 		return err
 	}
 
@@ -205,7 +204,7 @@ func (w *WalletManager) RestoreWalletFlow() error {
 	)
 
 	// Load config
-	if err := loadConfig(); err != nil {
+	if err := w.loadConfig(); err != nil {
 		return err
 	}
 
@@ -241,10 +240,9 @@ func (w *WalletManager) RestoreWalletFlow() error {
 		}
 
 	}
-	fmt.Println("EMD")
 
 	// To restore
-	if err := restoreWalletData(datFile); err != nil {
+	if err := w.restoreWalletData(datFile); err != nil {
 		return err
 	}
 
@@ -252,7 +250,7 @@ func (w *WalletManager) RestoreWalletFlow() error {
 }
 
 func (w *WalletManager) CreateAddressFlow() error {
-	return errors.New("Writing!")
+	return errors.New("A wallet only have one address, it's same thing in BOPO!")
 }
 
 func (w *WalletManager) SummaryFollow() error {

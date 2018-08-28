@@ -18,22 +18,23 @@ package hypercash
 import (
 	"errors"
 	"fmt"
-	"github.com/asdine/storm"
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/blocktree/OpenWallet/keystore"
+	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/OpenWallet/walletnode"
 	"github.com/bndr/gotabulate"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/codeskyblue/go-sh"
 	"github.com/shopspring/decimal"
-	"log"
+	"github.com/blocktree/OpenWallet/log"
 	"math"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
+	"github.com/asdine/storm/q"
 )
 
 const (
@@ -41,7 +42,7 @@ const (
 )
 
 type WalletManager struct {
-	storage      *keystore.HDKeystore          //秘钥存取
+	storage      *hdkeystore.HDKeystore          //秘钥存取
 	hcdClient    *Client                       // 全节点客户端
 	walletClient *Client                       // 节点客户端
 	config       *WalletConfig                 //钱包管理配置
@@ -52,7 +53,7 @@ type WalletManager struct {
 func NewWalletManager() *WalletManager {
 	wm := WalletManager{}
 	wm.config = NewConfig()
-	storage := keystore.NewHDKeystore(wm.config.keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	storage := hdkeystore.NewHDKeystore(wm.config.keyDir, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
 	wm.storage = storage
 	//参与汇总的钱包
 	wm.walletsInSum = make(map[string]*openwallet.Wallet)
@@ -65,18 +66,18 @@ func (wm *WalletManager) GetAddressesByAccount(walletID string) ([]string, error
 
 	var (
 		addresses = make([]string, 0)
-		//request []interface{}
+		request   []interface{}
 	)
 
-	//if walletID == "" {
-	//	request = nil
-	//} else {
-	//	request = []interface{}{
-	//		walletID,
-	//	}
-	//}
+	if walletID == "" {
+		request = nil
+	} else {
+		request = []interface{}{
+			walletID,
+		}
+	}
 
-	result, err := wm.walletClient.Call("getaddressesbyaccount", nil)
+	result, err := wm.walletClient.Call("getaddressesbyaccount", request)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +92,7 @@ func (wm *WalletManager) GetAddressesByAccount(walletID string) ([]string, error
 }
 
 //GetAddressesFromLocalDB 从本地数据库
-func (wm *WalletManager) GetAddressesFromLocalDB(walletID string, offset, limit int) ([]*openwallet.Address, error) {
+func (wm *WalletManager) GetAddressesFromLocalDB(walletID string, watchOnly bool, offset, limit int) ([]*openwallet.Address, error) {
 
 	wallet, err := wm.GetWalletInfo(walletID)
 	if err != nil {
@@ -107,9 +108,20 @@ func (wm *WalletManager) GetAddressesFromLocalDB(walletID string, offset, limit 
 	var addresses []*openwallet.Address
 	//err = db.Find("WalletID", walletID, &addresses)
 	if limit > 0 {
-		err = db.Find("AccountID", walletID, &addresses, storm.Limit(limit), storm.Skip(offset))
+
+		err = db.Select(q.And(
+			q.Eq("AccountID", walletID),
+			q.Eq("WatchOnly", watchOnly),
+		)).Limit(limit).Skip(offset).Find(&addresses)
+
+		//err = db.Find("AccountID", walletID, &addresses, storm.Limit(limit), storm.Skip(offset))
 	} else {
-		err = db.Find("AccountID", walletID, &addresses, storm.Skip(offset))
+
+		err = db.Select(q.And(
+			q.Eq("AccountID", walletID),
+			q.Eq("WatchOnly", watchOnly),
+		)).Skip(offset).Find(&addresses)
+
 	}
 
 	if err != nil {
@@ -121,7 +133,7 @@ func (wm *WalletManager) GetAddressesFromLocalDB(walletID string, offset, limit 
 }
 
 //CreateNewAddress 给指定账户创建地址
-func (wm *WalletManager) CreateNewAddress(key *keystore.HDKey) (*openwallet.Address, error) {
+func (wm *WalletManager) CreateNewAddress(key *hdkeystore.HDKey) (*openwallet.Address, error) {
 
 	request := []interface{}{
 		"default",
@@ -135,12 +147,50 @@ func (wm *WalletManager) CreateNewAddress(key *keystore.HDKey) (*openwallet.Addr
 
 	addr := openwallet.Address{
 		Address:   result.String(),
-		AccountID: key.RootId,
+		AccountID: key.KeyID,
 		HDPath:    "",
 		CreatedAt: time.Now(),
 		Symbol:    wm.config.symbol,
 		Index:     0,
-		WatchOnly: true,
+		WatchOnly: false,
+	}
+
+	return &addr, err
+
+}
+
+
+//CreateNewAddress 给指定账户创建地址
+func (wm *WalletManager) CreateNewChangeAddress(walletID string) (*openwallet.Address, error) {
+
+	request := []interface{}{
+		"default",
+	}
+
+	result, err := wm.walletClient.Call("getrawchangeaddress", request)
+	if err != nil {
+		return nil, err
+	}
+
+	addr := openwallet.Address{
+		Address:   result.String(),
+		AccountID: walletID,
+		HDPath:    "",
+		CreatedAt: time.Now(),
+		Symbol:    wm.config.symbol,
+		Index:     0,
+		WatchOnly: false,
+	}
+
+	wallet, err := wm.GetWalletInfo(walletID)
+	if err != nil {
+		return nil, err
+	}
+
+	//写入数据库
+	err = wm.saveAddressToDB([]*openwallet.Address{&addr}, wallet)
+	if err != nil {
+		return nil, err
 	}
 
 	return &addr, err
@@ -314,7 +364,7 @@ func (wm *WalletManager) CreateBatchAddress(name, password string, count uint64)
 				//导出一批地址
 				wm.exportAddressToFile(getAddrs, filename)
 			} else {
-				log.Printf("saveAddressToDB unexpected error: %v\n", saveErr)
+				log.Std.Info("saveAddressToDB unexpected error: %v", saveErr)
 			}
 
 			//累计完成的线程数
@@ -346,7 +396,7 @@ func (wm *WalletManager) CreateBatchAddress(name, password string, count uint64)
 		for i := uint64(0); i < synCount; i++ {
 
 			//开始创建地址
-			log.Printf("Start create address thread[%d]\n", i)
+			log.Std.Info("Start create address thread[%d]", i)
 			s := i * runCount
 			e := (i + 1) * runCount
 			go wm.createAddressWork(key, producer, name, uint64(timestamp.Unix()), s, e)
@@ -358,7 +408,7 @@ func (wm *WalletManager) CreateBatchAddress(name, password string, count uint64)
 	if otherCount > 0 {
 
 		//开始创建地址
-		log.Printf("Start create address thread[REST]\n")
+		log.Std.Info("Start create address thread[REST]")
 		s := count - otherCount
 		e := count
 		go wm.createAddressWork(key, producer, name, uint64(timestamp.Unix()), s, e)
@@ -389,16 +439,16 @@ func (wm *WalletManager) CreateBatchAddress(name, password string, count uint64)
 		case pa := <-producer:
 			values = append(values, pa)
 			outputAddress = append(outputAddress, pa...)
-			//log.Printf("completed %d", len(pa))
+			//log.Std.Info("completed %d", len(pa))
 			//当激活消费者后，传输数据给消费者，并把顶部数据出队
 		case activeWorker <- activeValue:
-			//log.Printf("Get %d", len(activeValue))
+			//log.Std.Info("Get %d", len(activeValue))
 			values = values[1:]
 
 		case <-quit:
 			//退出
 			wm.LockWallet()
-			log.Printf("All addresses have been created!")
+			log.Std.Info("All addresses have been created!")
 			return filePath, outputAddress, nil
 		}
 	}
@@ -430,22 +480,22 @@ func (wm *WalletManager) CreateNewWallet(name, password string) (*openwallet.Wal
 	err = wm.UnlockWallet(password, 1)
 	if err != nil {
 		fmt.Printf("%v\n", err)
-		return nil, "", errors.New("The wallet's password is not equal hcwallet wallet!\n")
+		return nil, "", errors.New("The wallet's password is not equal hcwallet wallet!")
 	}
 
-	fmt.Printf("Create new wallet keystore...\n")
+	fmt.Printf("Create new wallet hdkeystore...\n")
 
 	seed, err := hdkeychain.GenerateSeed(32)
 	if err != nil {
 		return nil, "", err
 	}
 
-	extSeed, err := keystore.GetExtendSeed(seed, wm.config.masterKey)
+	extSeed, err := hdkeystore.GetExtendSeed(seed, wm.config.masterKey)
 	if err != nil {
 		return nil, "", err
 	}
 
-	key, keyFile, err := keystore.StoreHDKeyWithSeed(wm.config.keyDir, name, password, extSeed, keystore.StandardScryptN, keystore.StandardScryptP)
+	key, keyFile, err := hdkeystore.StoreHDKeyWithSeed(wm.config.keyDir, name, password, extSeed, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
 	if err != nil {
 		return nil, "", err
 	}
@@ -454,10 +504,10 @@ func (wm *WalletManager) CreateNewWallet(name, password string) (*openwallet.Wal
 	file.MkdirAll(wm.config.keyDir)
 
 	w := &openwallet.Wallet{
-		WalletID: key.RootId,
+		WalletID: key.KeyID,
 		Alias:    key.Alias,
 		KeyFile:  keyFile,
-		DBFile:   filepath.Join(wm.config.dbPath, key.Alias+"-"+key.RootId+".db"),
+		DBFile:   filepath.Join(wm.config.dbPath, key.Alias+"-"+key.KeyID+".db"),
 	}
 
 	w.SaveToDB()
@@ -490,7 +540,7 @@ func (wm *WalletManager) GetWallets() ([]*openwallet.Wallet, error) {
 	}
 
 	for _, w := range wallets {
-		w.DBFile = filepath.Join(wm.config.dbPath, wm.WalletFileName(w)+".db")
+		w.DBFile = filepath.Join(wm.config.dbPath, w.FileName()+".db")
 	}
 
 	return wallets, nil
@@ -553,8 +603,44 @@ func (wm *WalletManager) GetWalletBalance(accountID string) string {
 	return balance.StringFixed(8)
 }
 
+//GetAddressBalance 获取地址余额
+func (wm *WalletManager) GetAddressBalance(walletID, address string) string {
+
+	wm.RebuildWalletUnspent(walletID)
+
+	wallet, err := wm.GetWalletInfo(walletID)
+	if err != nil {
+		return "0"
+	}
+
+	db, err := wallet.OpenDB()
+	if err != nil {
+		return "0"
+	}
+	defer db.Close()
+
+	var utxos []*Unspent
+
+	err = db.Select(q.And(
+		q.Eq("AccountID", walletID),
+		q.Eq("Address", address),
+	)).Find( &utxos)
+	if err != nil {
+		return "0"
+	}
+
+	balance := decimal.New(0, 0)
+
+	for _, utxo := range utxos {
+		amount, _ := decimal.NewFromString(utxo.Amount)
+		balance = balance.Add(amount)
+	}
+
+	return balance.StringFixed(8)
+}
+
 //CreateNewPrivateKey 创建私钥，返回私钥wif格式字符串
-//func (wm *WalletManager) CreateNewPrivateKey(key *keystore.HDKey, start, index uint64) (string, *openwallet.Address, error) {
+//func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index uint64) (string, *openwallet.Address, error) {
 //
 //	derivedPath := fmt.Sprintf("%s/%d/%d", key.RootPath, start, index)
 //	//fmt.Printf("derivedPath = %s\n", derivedPath)
@@ -604,7 +690,7 @@ func (wm *WalletManager) GetWalletBalance(accountID string) string {
 //}
 
 //CreateBatchPrivateKey
-//func (wm *WalletManager) CreateBatchPrivateKey(key *keystore.HDKey, count uint64) ([]string, error) {
+//func (wm *WalletManager) CreateBatchPrivateKey(key *hdkeystore.HDKey, count uint64) ([]string, error) {
 //
 //	var (
 //		wifs = make([]string, 0)
@@ -624,20 +710,20 @@ func (wm *WalletManager) GetWalletBalance(accountID string) string {
 //}
 
 //BackupWalletData 备份钱包
-func (wm *WalletManager) BackupWalletData(dest string) error {
-
-	request := []interface{}{
-		dest,
-	}
-
-	_, err := wm.walletClient.Call("backupwallet", request)
-	if err != nil {
-		return err
-	}
-
-	return nil
-
-}
+//func (wm *WalletManager) BackupWalletData(dest string) error {
+//
+//	request := []interface{}{
+//		dest,
+//	}
+//
+//	_, err := wm.walletClient.Call("backupwallet", request)
+//	if err != nil {
+//		return err
+//	}
+//
+//	return nil
+//
+//}
 
 //FileName 该钱包定义的文件名规则
 func (wm *WalletManager) WalletFileName(w *openwallet.Wallet) string {
@@ -655,11 +741,11 @@ func (wm *WalletManager) BackupWallet(walletID string) (string, error) {
 	newBackupDir := filepath.Join(wm.config.backupDir, wm.WalletFileName(w)+"-"+common.TimeFormat("20060102150405"))
 	file.MkdirAll(newBackupDir)
 
-	//创建临时备份文件wallet.dat
+	//创建临时备份文件wallet.db
 	//tmpWalletDat := fmt.Sprintf("tmp-walllet-%d.dat", time.Now().Unix())
 	coreWalletDat := filepath.Join(wm.config.walletDataPath, "wallet.db")
 
-	//1. 备份核心钱包的wallet.dat
+	//1. 备份核心钱包的wallet.db
 	//err = wm.BackupWalletData(tmpWalletDat)
 	//if err != nil {
 	//	return "", err
@@ -683,13 +769,13 @@ func (wm *WalletManager) BackupWallet(walletID string) (string, error) {
 //RestoreWallet 恢复钱包
 func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string) error {
 
-	//根据流程，提供种子文件路径，wallet.dat文件的路径，钱包数据库文件的路径。
+	//根据流程，提供种子文件路径，wallet.db文件的路径，钱包数据库文件的路径。
 	//输入钱包密码。
-	//先备份核心钱包原来的wallet.dat到临时文件夹。
-	//关闭钱包节点，复制wallet.dat到钱包的data目录下。
+	//先备份核心钱包原来的wallet.db到临时文件夹。
+	//关闭钱包节点，复制wallet.db到钱包的data目录下。
 	//启动钱包，通过GetCoreWalletinfo检查钱包是否启动了。
 	//检查密码是否可以解析种子文件，是否可以解锁钱包。
-	//如果密码错误，关闭钱包节点，恢复原钱包的wallet.dat。
+	//如果密码错误，关闭钱包节点，恢复原钱包的wallet.db。
 	//重新启动钱包。
 	//复制种子文件到data/btc/key/。
 	//复制钱包数据库文件到data/btc/db/。
@@ -697,8 +783,8 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 	var (
 		restoreSuccess = false
 		err            error
-		key            *keystore.HDKey
-		sleepTime      = 30 * time.Second
+		key            *hdkeystore.HDKey
+		//sleepTime      = 30 * time.Second
 	)
 
 	fmt.Printf("Validating key file... \n")
@@ -706,33 +792,36 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 	//检查密码是否可以解析种子文件，是否可以解锁钱包。
 	key, err = wm.storage.GetKey("", keyFile, password)
 	if err != nil {
-		return errors.New("Passowrd is incorrect!")
+		return errors.New("Passowrd is incorrect! ")
 	}
 
 	//钱包当前的dat文件
-	curretWDFile := filepath.Join(wm.config.walletDataPath, "wallet.dat")
+	curretWDFile := filepath.Join(wm.config.walletDataPath, "wallet.db")
 
-	//创建临时备份文件wallet.dat，备份
+	//创建临时备份文件wallet.db，备份
 	tmpWalletDat := fmt.Sprintf("restore-walllet-%d.dat", time.Now().Unix())
 	tmpWalletDat = filepath.Join(wm.config.walletDataPath, tmpWalletDat)
 
-	fmt.Printf("Backup current wallet.dat file... \n")
+	fmt.Printf("Backup current wallet.db file... \n")
 
-	err = wm.BackupWalletData(tmpWalletDat)
-	if err != nil {
-		return err
-	}
+	//复制临时文件到备份文件夹
+	file.Copy(curretWDFile, tmpWalletDat)
+
+	//err = wm.BackupWalletData(tmpWalletDat)
+	//if err != nil {
+	//	return err
+	//}
 
 	//调试使用
 	//file.Copy(curretWDFile, tmpWalletDat)
 
-	fmt.Printf("Stop node server... \n")
+	//fmt.Printf("Stop node server... \n")
 
 	//关闭钱包节点
-	wm.stopNode()
-	time.Sleep(sleepTime)
+	//wm.stopNode()
+	//time.Sleep(sleepTime)
 
-	fmt.Printf("Restore wallet.dat file... \n")
+	fmt.Printf("Restore wallet.db file... \n")
 
 	//删除当前钱包文件
 	file.Delete(curretWDFile)
@@ -743,15 +832,15 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 		return err
 	}
 
-	fmt.Printf("Start node server... \n")
+	//fmt.Printf("Start node server... \n")
 
 	//重新启动钱包
-	wm.startNode()
-	time.Sleep(sleepTime)
+	//wm.startNode()
+	//time.Sleep(sleepTime)
 
 	fmt.Printf("Validating wallet password... \n")
 
-	//检查wallet.dat是否可以解锁钱包
+	//检查wallet.db是否可以解锁钱包
 	err = wm.UnlockWallet(password, 1)
 	if err != nil {
 		restoreSuccess = false
@@ -775,30 +864,32 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 
 		fmt.Printf("Backup wallet has been restored. \n")
 
+		fmt.Printf("Finally, you should restart the hcwallet to ensure. \n")
+
 		err = nil
 	} else {
 		/* 恢复失败还远原来的文件 */
 
 		fmt.Printf("Wallet unlock password is incorrect. \n")
 
-		fmt.Printf("Stop node server... \n")
+		//fmt.Printf("Stop node server... \n")
 
 		//关闭钱包节点
-		wm.stopNode()
-		time.Sleep(sleepTime)
+		//wm.stopNode()
+		//time.Sleep(sleepTime)
 
-		fmt.Printf("Restore original wallet.data... \n")
+		fmt.Printf("Restore original wallet.db... \n")
 
 		//删除当前钱包文件
 		file.Delete(curretWDFile)
 
 		file.Copy(tmpWalletDat, curretWDFile)
 
-		fmt.Printf("Start node server... \n")
+		//fmt.Printf("Start node server... \n")
 
 		//重新启动钱包
-		wm.startNode()
-		time.Sleep(sleepTime)
+		//wm.startNode()
+		//time.Sleep(sleepTime)
 
 		fmt.Printf("Original wallet has been restored. \n")
 
@@ -840,6 +931,10 @@ func (wm *WalletManager) ListUnspent(min uint64) ([]*Unspent, error) {
 		return nil, err
 	}
 
+	if !result.IsArray() {
+		return nil, nil
+	}
+
 	array := result.Array()
 	for _, a := range array {
 		utxos = append(utxos, NewUnspent(&a))
@@ -874,7 +969,7 @@ func (wm *WalletManager) RebuildWalletUnspent(walletID string) error {
 	}
 
 	//查找核心钱包确认数大于1的
-	utxos, err := wm.ListUnspent(0)
+	utxos, err := wm.ListUnspent(1)
 	if err != nil {
 		return err
 	}
@@ -900,6 +995,11 @@ func (wm *WalletManager) RebuildWalletUnspent(walletID string) error {
 	for _, utxo := range utxos {
 		var addr openwallet.Address
 		err = db.One("Address", utxo.Address, &addr)
+		//找不到或观测的地址不计入utxo
+		if err != nil || addr.WatchOnly == true {
+			continue
+		}
+		//log.Std.Info("utxo.addr watchonly: %v", addr.WatchOnly)
 		utxo.AccountID = addr.AccountID
 		utxo.HDAddress = addr
 		key := common.NewString(fmt.Sprintf("%s_%d_%s", utxo.TxID, utxo.Vout, utxo.Address)).SHA256()
@@ -986,7 +1086,7 @@ func (wm *WalletManager) BuildTransaction(utxos []*Unspent, to []string, change 
 		return "", decimal.New(0, 0), errors.New("The balance is not enough!")
 	}
 
-	//log.Printf("fees: %s\n", fees.StringFixed(8))
+	//log.Std.Info("fees: %s\n", fees.StringFixed(8))
 
 	changeAmount := totalAmount.Sub(totalSend).Sub(fees)
 	if changeAmount.GreaterThan(decimal.New(0, 0)) {
@@ -1009,6 +1109,8 @@ func (wm *WalletManager) BuildTransaction(utxos []*Unspent, to []string, change 
 		outputs,
 	}
 
+	//log.Debug("createrawtransaction:", request)
+
 	rawTx, err := wm.hcdClient.Call("createrawtransaction", request)
 	if err != nil {
 		return "", decimal.New(0, 0), err
@@ -1018,7 +1120,7 @@ func (wm *WalletManager) BuildTransaction(utxos []*Unspent, to []string, change 
 }
 
 //SignRawTransaction 钱包交易单
-func (wm *WalletManager) SignRawTransaction(txHex, walletID string, key *keystore.HDKey, utxos []*Unspent) (string, error) {
+func (wm *WalletManager) SignRawTransaction(txHex, walletID string, key *hdkeystore.HDKey, utxos []*Unspent) (string, error) {
 
 	//var (
 	//	wifs = make([]string, 0)
@@ -1134,7 +1236,7 @@ func (wm *WalletManager) SendTransaction(walletID, to string, amount decimal.Dec
 	}
 
 	//创建找零地址
-	changeAddr, err := wm.CreateChangeAddress(walletID, key)
+	changeAddr, err := wm.CreateNewChangeAddress(walletID)
 	if err != nil {
 		return nil, err
 	}
@@ -1144,7 +1246,7 @@ func (wm *WalletManager) SendTransaction(walletID, to string, amount decimal.Dec
 		return nil, err
 	}
 
-	fmt.Printf("Calculating wallet unspent record to build transaction...\n")
+	log.Std.Info("Calculating wallet unspent record to build transaction...")
 
 	//循环的计算余额是否足够支付发送数额+手续费
 	for {
@@ -1251,9 +1353,9 @@ func (wm *WalletManager) SendTransaction(walletID, to string, amount decimal.Dec
 			return nil, err
 		}
 
-		//log.Printf("pieceOfSend = %s \n", pieceOfSend.StringFixed(8))
-		//log.Printf("piecefees = %s \n", piecefees.StringFixed(8))
-		//log.Printf("feesRate = %s \n", feesRate.StringFixed(8))
+		//log.Std.Info("pieceOfSend = %s \n", pieceOfSend.StringFixed(8))
+		//log.Std.Info("piecefees = %s \n", piecefees.StringFixed(8))
+		//log.Std.Info("feesRate = %s \n", feesRate.StringFixed(8))
 
 		//创建交易
 		txRaw, _, err := wm.BuildTransaction(sendUxto, []string{to}, changeAddr.Address, []decimal.Decimal{pieceOfSend}, piecefees)
@@ -1359,7 +1461,7 @@ func (wm *WalletManager) SendBatchTransaction(walletID string, to []string, amou
 	}
 
 	//创建找零地址
-	changeAddr, err := wm.CreateChangeAddress(walletID, key)
+	changeAddr, err := wm.CreateNewChangeAddress(walletID)
 	if err != nil {
 		return "", err
 	}
@@ -1437,9 +1539,9 @@ func (wm *WalletManager) SendBatchTransaction(walletID string, to []string, amou
 		return "", err
 	}
 
-	//log.Printf("pieceOfSend = %s \n", pieceOfSend.StringFixed(8))
-	//log.Printf("piecefees = %s \n", piecefees.StringFixed(8))
-	//log.Printf("feesRate = %s \n", feesRate.StringFixed(8))
+	//log.Std.Info("pieceOfSend = %s \n", pieceOfSend.StringFixed(8))
+	//log.Std.Info("piecefees = %s \n", piecefees.StringFixed(8))
+	//log.Std.Info("feesRate = %s \n", feesRate.StringFixed(8))
 
 	//创建交易
 	txRaw, _, err := wm.BuildTransaction(usedUTXO, to, changeAddr.Address, amounts, actualFees)
@@ -1448,6 +1550,8 @@ func (wm *WalletManager) SendBatchTransaction(walletID string, to []string, amou
 	}
 
 	fmt.Printf("Build Transaction Successfully\n")
+
+	//log.Debug("TXRaw:", txRaw)
 
 	//签名交易
 	signedHex, err := wm.SignRawTransaction(txRaw, walletID, key, usedUTXO)
@@ -1473,34 +1577,34 @@ func (wm *WalletManager) SendBatchTransaction(walletID string, to []string, amou
 }
 
 //CreateChangeAddress 创建找零地址
-func (wm *WalletManager) CreateChangeAddress(walletID string, key *keystore.HDKey) (*openwallet.Address, error) {
-
-	//生产通道
-	producer := make(chan []*openwallet.Address)
-	defer close(producer)
-
-	go wm.createAddressWork(key, producer, walletID, uint64(time.Now().Unix()), 0, 1)
-
-	//回收创建的地址
-	getAddrs := <-producer
-
-	if len(getAddrs) == 0 {
-		return nil, errors.New("Change address creation failed!")
-	}
-
-	wallet, err := wm.GetWalletInfo(walletID)
-	if err != nil {
-		return nil, err
-	}
-
-	//批量写入数据库
-	err = wm.saveAddressToDB(getAddrs, wallet)
-	if err != nil {
-		return nil, err
-	}
-
-	return getAddrs[0], nil
-}
+//func (wm *WalletManager) CreateChangeAddress(walletID string, key *hdkeystore.HDKey) (*openwallet.Address, error) {
+//
+//	//生产通道
+//	producer := make(chan []*openwallet.Address)
+//	defer close(producer)
+//
+//	go wm.createAddressWork(key, producer, walletID, uint64(time.Now().Unix()), 0, 1)
+//
+//	//回收创建的地址
+//	getAddrs := <-producer
+//
+//	if len(getAddrs) == 0 {
+//		return nil, errors.New("Change address creation failed!")
+//	}
+//
+//	wallet, err := wm.GetWalletInfo(walletID)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	//批量写入数据库
+//	err = wm.saveAddressToDB(getAddrs, wallet)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	return getAddrs[0], nil
+//}
 
 //EstimateFee 预估手续费
 func (wm *WalletManager) EstimateFee(inputs, outputs int64, feeRate decimal.Decimal) (decimal.Decimal, error) {
@@ -1516,7 +1620,7 @@ func (wm *WalletManager) EstimateFee(inputs, outputs int64, feeRate decimal.Deci
 	trx_bytes := decimal.New(inputs*148+outputs*34+piece*10, 0)
 	trx_fee := trx_bytes.Div(decimal.New(1000, 0)).Mul(feeRate)
 
-	log.Printf("inputs: %d, outpusts: %d, fees: %s \n", inputs, outputs, trx_fee.StringFixed(8))
+	//log.Std.Info("inputs: %d, outpusts: %d, fees: %s \n", inputs, outputs, trx_fee.StringFixed(8))
 
 	return trx_fee, nil
 }
@@ -1541,6 +1645,8 @@ func (wm *WalletManager) EstimateFeeRate() (decimal.Decimal, error) {
 	if feeRate.LessThan(defaultRate) {
 		feeRate = defaultRate
 	}
+	// 2倍矿工费
+	feeRate = feeRate.Mul(decimal.NewFromFloat(1.5))
 
 	return feeRate, nil
 }
@@ -1548,7 +1654,7 @@ func (wm *WalletManager) EstimateFeeRate() (decimal.Decimal, error) {
 //SummaryWallets 执行汇总流程
 func (wm *WalletManager) SummaryWallets() {
 
-	log.Printf("[Summary Wallet Start]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+	log.Std.Info("[Summary Wallet Start]------%s", common.TimeFormat("2006-01-02 15:04:05"))
 
 	//读取参与汇总的钱包
 	for wid, wallet := range wm.walletsInSum {
@@ -1563,27 +1669,43 @@ func (wm *WalletManager) SummaryWallets() {
 		//如果余额大于阀值，汇总的地址
 		if balance.GreaterThan(wm.config.threshold) {
 
-			log.Printf("Summary account[%s]balance = %v \n", wallet.WalletID, balance)
-			log.Printf("Summary account[%s]Start Send Transaction\n", wallet.WalletID)
+			log.Std.Info("Summary account[%s]balance = %v ", wallet.WalletID, balance)
+			log.Std.Info("Summary account[%s]Start Send Transaction", wallet.WalletID)
 
 			txID, err := wm.SendTransaction(wallet.WalletID, wm.config.sumAddress, balance, wallet.Password, false)
 			if err != nil {
-				log.Printf("Summary account[%s]unexpected error: %v\n", wallet.WalletID, err)
+				log.Std.Info("Summary account[%s]unexpected error: %v", wallet.WalletID, err)
 				continue
 			} else {
-				log.Printf("Summary account[%s]successfully，Received Address[%s], TXID：%s\n", wallet.WalletID, wm.config.sumAddress, txID)
+				log.Std.Info("Summary account[%s]successfully，Received Address[%s], TXID：%s", wallet.WalletID, wm.config.sumAddress, txID)
 			}
 		} else {
-			log.Printf("Wallet Account[%s]-[%s]Current Balance: %v，below threshold: %v\n", wallet.Alias, wallet.WalletID, balance, wm.config.threshold)
+			log.Std.Info("Wallet Account[%s]-[%s]Current Balance: %v，below threshold: %v", wallet.Alias, wallet.WalletID, balance, wm.config.threshold)
 		}
 	}
 
-	log.Printf("[Summary Wallet end]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+	log.Std.Info("[Summary Wallet end]------%s", common.TimeFormat("2006-01-02 15:04:05"))
 }
 
 //AddWalletInSummary 添加汇总钱包账户
 func (wm *WalletManager) AddWalletInSummary(wid string, wallet *openwallet.Wallet) {
 	wm.walletsInSum[wid] = wallet
+}
+
+//RescanCorewallet 重扫钱包
+func (wm *WalletManager) RescanCorewallet(beginheight uint64) error {
+
+	request := []interface{}{
+		beginheight,
+	}
+
+	_, err := wm.walletClient.Call("rescanwallet", request)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
 }
 
 //clearUnspends 清楚已使用的UTXO
@@ -1609,7 +1731,7 @@ func (wm *WalletManager) clearUnspends(utxos []*Unspent, wallet *openwallet.Wall
 }
 
 //createAddressWork 创建地址过程
-func (wm *WalletManager) createAddressWork(key *keystore.HDKey, producer chan<- []*openwallet.Address, walletID string, index, start, end uint64) {
+func (wm *WalletManager) createAddressWork(key *hdkeystore.HDKey, producer chan<- []*openwallet.Address, walletID string, index, start, end uint64) {
 
 	runAddress := make([]*openwallet.Address, 0)
 	//runWIFs := make([]string, 0)
@@ -1621,14 +1743,14 @@ func (wm *WalletManager) createAddressWork(key *keystore.HDKey, producer chan<- 
 
 		//wif, address, errRun := wm.CreateNewPrivateKey(k, index, i)
 		if errRun != nil {
-			log.Printf("Create new address failed unexpected error: %v\n", errRun)
+			log.Std.Info("Create new address failed unexpected error: %v", errRun)
 			continue
 		}
 
 		////导入私钥
 		//errRun = ImportPrivKey(wif, alias)
 		//if errRun != nil {
-		//	log.Printf("Import privKey failed unexpected error: %v\n", errRun)
+		//	log.Std.Info("Import privKey failed unexpected error: %v", errRun)
 		//	continue
 		//}
 
@@ -1671,7 +1793,7 @@ func (wm *WalletManager) exportAddressToFile(addrs []*openwallet.Address, filePa
 
 	for _, a := range addrs {
 
-		log.Printf("Export: %s \n", a.Address)
+		log.Std.Info("Export: %s ", a.Address)
 
 		content = content + a.Address + "\n"
 	}
@@ -1736,17 +1858,8 @@ func (wm *WalletManager) loadConfig() error {
 
 	token := basicAuth(wm.config.rpcUser, wm.config.rpcPassword)
 
-	wm.walletClient = &Client{
-		BaseURL:     wm.config.walletAPI,
-		Debug:       false,
-		AccessToken: token,
-	}
-
-	wm.hcdClient = &Client{
-		BaseURL:     wm.config.chainAPI,
-		Debug:       false,
-		AccessToken: token,
-	}
+	wm.walletClient = NewClient(wm.config.walletAPI, token, false)
+	wm.hcdClient = NewClient(wm.config.chainAPI, token, false)
 
 	return nil
 }
@@ -1776,33 +1889,15 @@ func (wm *WalletManager) printWalletList(list []*openwallet.Wallet) {
 //startNode 开启节点
 func (wm *WalletManager) startNode() error {
 
-	//读取配置
-	//absFile := filepath.Join(configFilePath, configFileName)
-	//c, err := config.NewConfig("ini", absFile)
-	//if err != nil {
-	//	return errors.New("Config is not setup! ")
-	//}
-	//
-	//startNodeCMD := c.String("startNodeCMD")
-	//return cmdCall(startNodeCMD, false)
-	return nil
+	wn := walletnode.NodeManagerStruct{}
+	return wn.StartNodeFlow(wm.config.symbol)
 }
 
 //stopNode 关闭节点
 func (wm *WalletManager) stopNode() error {
 
-
-
-	//读取配置
-	//absFile := filepath.Join(configFilePath, configFileName)
-	//c, err := config.NewConfig("ini", absFile)
-	//if err != nil {
-	//	return errors.New("Config is not setup! ")
-	//}
-	//
-	//stopNodeCMD := c.String("stopNodeCMD")
-	//return cmdCall(stopNodeCMD, true)
-	return nil
+	wn := walletnode.NodeManagerStruct{}
+	return wn.StopNodeFlow(wm.config.symbol)
 }
 
 //cmdCall 执行命令

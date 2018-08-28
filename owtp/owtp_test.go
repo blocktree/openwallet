@@ -15,10 +15,69 @@
 
 package owtp
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+	"time"
+)
+
+var (
+	hostURL = "127.0.0.1:9432"
+)
+
+func init() {
+	Debug = true
+}
+
+func getInfo(ctx *Context) {
+	ctx.Resp = Response{
+		Status: 0,
+		Msg:    "success",
+		Result: map[string]interface{}{
+			"symbols": []interface{}{
+				map[string]interface{}{
+					"coin":     "btc",
+					"walletID": "mywll",
+				},
+				map[string]interface{}{
+					"coin":     "btm",
+					"walletID": "mkk",
+				},
+			},
+		},
+	}
+}
+
+func hello(ctx *Context) {
+	ctx.Resp = Response{
+		Status: 0,
+		Msg:    "success",
+		Result: map[string]interface{}{
+			"hello": "hello world",
+		},
+	}
+}
+
+func createHost() *OWTPNode {
+
+	//主机
+	host := RandomOWTPNode()
+	host.Listen(":9432")
+
+	host.HandleFunc("hello", hello)
+
+	return host
+}
+
+func createClient() *OWTPNode {
+	//客户端
+	node := RandomOWTPNode()
+	node.HandleFunc("getInfo", getInfo)
+	return node
+}
 
 func TestGenerateRangeNum(t *testing.T) {
-	for i := 0;i<1000 ;i++  {
+	for i := 0; i < 1000; i++ {
 		num := GenerateRangeNum(0, 1023)
 		t.Logf("num [%d]= %d", i, num)
 	}
@@ -26,65 +85,97 @@ func TestGenerateRangeNum(t *testing.T) {
 
 func TestConnectNode(t *testing.T) {
 
-	var (
-		endRunning = make(chan bool, 1)
-	)
+	host := createHost()
 
-	auth, _ := NewOWTPAuth("", "", "", true)
+	time.Sleep(5 * time.Second)
 
-	testUrl := "ws://192.168.30.4:8083/websocket?a=dajosidjaiosjdioajsdioajsdiowhefi&t=1529669837&n=4&s=adisjdiasjdioajsdiojasidjioasjdojasd"
-	node := NewOWTPNode(1, testUrl, auth)
-	err := node.Connect()
+	//客户端
+	nodeA := RandomOWTPNode()
+	nodeA.HandleFunc("getInfo", getInfo)
+	err := nodeA.Connect(hostURL, host.NodeID())
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
 	}
 
-	//{
-	//	"r": 2,
-	//	"m": "subscribe",
-	//	"n": 1,
-	//	"t": 1528520843,
-	//	"d": {
-	//"status": 1000,
-	//"msg": "success",
-	//"result": null
-	//},
-	//	"s": "Qwse=="
-	//}
-	//
+	time.Sleep(1 * time.Second)
 
-	node.HandleFunc("getWalletInfo", getWalletInfo)
-
-	err = node.Call("subscribe", nil, false, func(resp Response) {
-
-	})
-
+	nodeB := RandomOWTPNode()
+	nodeB.HandleFunc("getInfo", getInfo)
+	err = nodeB.Connect(hostURL, host.NodeID())
 	if err != nil {
-		t.Errorf("Call failed unexpected error: %v", err)
+		t.Errorf("Connect failed unexpected error: %v", err)
 		return
 	}
 
-	<- endRunning
-	t.Logf("end connect \n")
+	time.Sleep(1 * time.Second)
+
+	nodeC := RandomOWTPNode()
+	nodeC.HandleFunc("getWallegetInfotInfo", getInfo)
+	err = nodeC.Connect(hostURL, host.NodeID())
+	if err != nil {
+		t.Errorf("Connect failed unexpected error: %v", err)
+		return
+	}
+
+	time.Sleep(3 * time.Second)
+
+	//调用方法
+	nodeA.Call(host.NodeID(), "hello", nil, true, func(resp Response) {
+		hello := resp.JsonData().Get("hello").String()
+		fmt.Printf("nodeA call hello, result: %s\n", hello)
+	})
+
+	time.Sleep(3 * time.Second)
+
+	host.Call(nodeA.NodeID(), "getInfo", nil, true, func(resp Response) {
+		result := resp.JsonData()
+		fmt.Printf("host call nodeA, result: %s\n", result)
+	})
+
+	t.Logf("node close \n")
+
+	time.Sleep(3 * time.Second)
+
+	nodeA.ClosePeer(host.NodeID())
+
+	time.Sleep(5 * time.Second)
+
+	host.Close()
+
+	t.Logf("stop running \n")
+
+	time.Sleep(5 * time.Second)
+
+	t.Logf("end testing \n")
 
 }
 
-func getWalletInfo(ctx *Context) {
-	ctx.Resp = Response{
-		Status: 0,
-		Msg: "success",
-		Result: map[string]interface{} {
-			"symbols": []interface{} {
-				map[string]interface{} {
-					"coin": "btc",
-					"walletID": "mywll",
-				},
-				map[string]interface{} {
-					"coin": "btm",
-					"walletID": "mkk",
-				},
-			},
-		},
+func TestConcurrentConnect(t *testing.T) {
+
+	host := createHost()
+
+	time.Sleep(5 * time.Second)
+
+	for i := 0; i < 100; i++ {
+		go func(h *OWTPNode) {
+
+			//客户端
+			node := createClient()
+			err := node.Connect(hostURL, host.NodeID())
+			if err != nil {
+				t.Errorf("Connect failed unexpected error: %v", err)
+				return
+			}
+
+			time.Sleep(3 * time.Second)
+
+			node.ClosePeer(host.NodeID())
+
+		}(host)
 	}
+
+	time.Sleep(30 * time.Second)
+
+	host.Close()
 }

@@ -31,18 +31,14 @@ func init() {
 
 func TestDial(t *testing.T) {
 
-	client, err := Dial(testUrl, nil, nil)
+	client, err := Dial("hello", testUrl, nil, nil, 1024, 1024)
 	if err != nil {
 		t.Errorf("Dial failed unexpected error: %v", err)
 		return
 	}
 	defer client.Close()
 
-	//发送通道
-	go client.writePump()
-
-	//监听消息
-	client.readPump()
+	client.OpenPipe()
 }
 
 func TestEncodeDataPacket(t *testing.T) {

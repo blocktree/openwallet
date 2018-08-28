@@ -16,7 +16,7 @@
 package assets
 
 import (
-	"log"
+	"github.com/blocktree/OpenWallet/log"
 	"strings"
 
 	"github.com/blocktree/OpenWallet/assets/bitcoin"
@@ -24,9 +24,13 @@ import (
 	"github.com/blocktree/OpenWallet/assets/bopo"
 	"github.com/blocktree/OpenWallet/assets/bytom"
 	"github.com/blocktree/OpenWallet/assets/cardano"
+	"github.com/blocktree/OpenWallet/assets/ethereum"
 	"github.com/blocktree/OpenWallet/assets/hypercash"
+	"github.com/blocktree/OpenWallet/assets/iota"
 	"github.com/blocktree/OpenWallet/assets/sia"
 	"github.com/blocktree/OpenWallet/assets/tezos"
+	"github.com/blocktree/OpenWallet/assets/litecoin"
+	"github.com/blocktree/OpenWallet/assets/qtum"
 )
 
 //WalletManager 钱包管理器
@@ -91,7 +95,7 @@ func RegWMD(name string, manager interface{}) {
 		panic("WalletManager: Register adapter is nil")
 	}
 	if _, ok := managers[name]; ok {
-		log.Printf("WalletManager: Register called twice for adapter \n" + name)
+		log.Error("WalletManager: Register called twice for adapter ", name)
 		return
 	}
 	managers[name] = manager
@@ -109,13 +113,17 @@ func GetWMD(symbol string) interface{} {
 //注册钱包管理工具
 func init() {
 	//注册钱包管理工具
-	log.Printf("Register wallet manager ......")
+	log.Notice("Wallet Manager Load Successfully.")
 	RegWMD(strings.ToLower(cardano.Symbol), &cardano.WalletManager{})
 	RegWMD(strings.ToLower(bytom.Symbol), &bytom.WalletManager{})
 	RegWMD(strings.ToLower(bopo.Symbol), &bopo.WalletManager{})
 	RegWMD(strings.ToLower(bitcoincash.Symbol), &bitcoincash.WalletManager{})
 	RegWMD(strings.ToLower(sia.Symbol), &sia.WalletManager{})
+	RegWMD(strings.ToLower(ethereum.Symbol), &ethereum.WalletManager{})
 	RegWMD(strings.ToLower(bitcoin.Symbol), bitcoin.NewWalletManager())
 	RegWMD(strings.ToLower(hypercash.Symbol), hypercash.NewWalletManager())
+	RegWMD(strings.ToLower(iota.Symbol), &iota.WalletManager{})
 	RegWMD(strings.ToLower(tezos.Symbol), &tezos.WalletManager{})
+	RegWMD(strings.ToLower(litecoin.Symbol), litecoin.NewWalletManager())
+	RegWMD(strings.ToLower(qtum.Symbol), qtum.NewWalletManager())
 }

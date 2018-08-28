@@ -16,12 +16,11 @@
 package merchant
 
 import (
-	"path/filepath"
-	"encoding/json"
-	"github.com/blocktree/OpenWallet/common/file"
+	"errors"
 	"fmt"
 	"github.com/astaxie/beego/config"
-	"errors"
+	"github.com/blocktree/OpenWallet/common/file"
+	"path/filepath"
 )
 
 var (
@@ -31,59 +30,19 @@ var (
 	//商户资料缓存
 	cacheFile = "merchant.db"
 	//配置文件名
-	configFileName =  "merchant.ini"
+	configFileName = "merchant.ini"
 	//默认配置内容
 	defaultConfig = `
-# merchant node publicKey
-nodeKey = ""
+# merchant node ID
+merchant_node_id = ""
 # local node publicKey 
-publicKey = ""
+publickey = ""
 # local node privateKey 
-privateKey = ""
+privatekey = ""
 # merchant node api url
-merchantNodeURL = ""
-# local node id
-nodeID = 1
+merchant_node_url = ""
 `
 )
-
-//newConfigFile 创建配置文件
-func newConfigFile(
-	nodeKey, publicKey, privateKey string,
-	merchantNodeURL string, nodeID int64) (config.Configer, string, error) {
-
-	//	生成配置
-	configMap := map[string]interface{}{
-		"nodeKey":        nodeKey,
-		"publicKey":    publicKey,
-		"privateKey":    privateKey,
-		"merchantNodeURL":     merchantNodeURL,
-		"nodeID":     nodeID,
-	}
-
-	filepath.Join()
-
-	bytes, err := json.Marshal(configMap)
-	if err != nil {
-		return nil, "", err
-	}
-
-	//实例化配置
-	c, err := config.NewConfigData("json", bytes)
-	if err != nil {
-		return nil, "", err
-	}
-
-	//写入配置到文件
-	file.MkdirAll(merchantDir)
-	absFile := filepath.Join(merchantDir, configFileName)
-	err = c.SaveConfigFile(absFile)
-	if err != nil {
-		return nil, "", err
-	}
-
-	return c, absFile, nil
-}
 
 //printConfig Print config information
 func printConfig() error {
@@ -111,29 +70,27 @@ func initConfig() {
 
 }
 
-
 //loadConfig 读取配置
 func loadConfig() (NodeConfig, error) {
 
 	var (
-		c   config.Configer
-		err error
+		c       config.Configer
+		err     error
 		configs = NodeConfig{}
 	)
 
 	//读取配置
-	file.MkdirAll(merchantDir)
+	initConfig()
 	absFile := filepath.Join(merchantDir, configFileName)
 	c, err = config.NewConfig("ini", absFile)
 	if err != nil {
 		return configs, errors.New("Config is not setup. Please run 'wmd merchant config -i ' ")
 	}
 
-	configs.MerchantNodeURL = c.String("merchantNodeURL")
-	configs.PublicKey = c.String("publicKey")
-	configs.NodeKey = c.String("nodeKey")
-	configs.PrivateKey = c.String("privateKey")
-	configs.NodeID, _ = c.Int64("nodeID")
+	configs.MerchantNodeID = c.String("merchant_node_id")
+	configs.LocalPrivateKey = c.String("publickey")
+	configs.MerchantNodeURL = c.String("merchant_node_url")
+	configs.LocalPrivateKey = c.String("privatekey")
 	configs.CacheFile = filepath.Join(merchantDir, cacheFile)
 
 	return configs, nil

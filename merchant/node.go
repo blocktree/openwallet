@@ -20,7 +20,7 @@ import (
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/owtp"
 	"github.com/blocktree/OpenWallet/timer"
-	"log"
+	"github.com/blocktree/OpenWallet/log"
 	"sync"
 	"time"
 	"github.com/blocktree/OpenWallet/openwallet"
@@ -29,6 +29,9 @@ import (
 
 var (
 	PeriodOfTask = 5 * time.Second
+	//通道的读写缓存大小
+	ReadBufferSize = 1024 * 1024
+	WriteBufferSize = 1024 * 1024
 )
 
 //商户节点
@@ -66,27 +69,33 @@ func NewMerchantNode(config NodeConfig) (*MerchantNode, error) {
 	}
 
 	//授权配置
-	auth, err := owtp.NewOWTPAuth(
-		config.NodeKey,
-		config.PublicKey,
-		config.PrivateKey,
-		true,
-		config.CacheFile,
-	)
+	//auth, err := owtp.NewOWTPAuth(
+	//	config.NodeKey,
+	//	config.PublicKey,
+	//	config.PrivateKey,
+	//	true,
+	//	config.CacheFile,
+	//)
+
+	cert, err := owtp.NewCertificate(config.LocalPrivateKey, "")
 
 	if err != nil {
 		return nil, err
 	}
 
 	//创建节点，连接商户
-	node := owtp.NewOWTPNode(config.NodeID, config.MerchantNodeURL, auth)
+	node := owtp.NewOWTPNode(cert, ReadBufferSize, WriteBufferSize)
 	m.Node = node
 	m.Config = config
 
 	//断开连接后，重新连接
-	m.Node.SetCloseHandler(func(n *owtp.OWTPNode) {
-		log.Printf("merchantNode disconnect. \n")
+	m.Node.SetCloseHandler(func(n *owtp.OWTPNode, peer owtp.PeerInfo) {
+		log.Info("merchantNode disconnect.")
 		m.disconnected <- struct{}{}
+	})
+
+	m.Node.SetOpenHandler(func(n *owtp.OWTPNode, peer owtp.PeerInfo) {
+		log.Info("merchantNode connected.")
 	})
 
 	m.isReconnect = true
@@ -265,20 +274,20 @@ func (m *MerchantNode) Run() error {
 	//启动连接
 	m.reconnect <- true
 
-	log.Printf("Merchant node running now... \n")
+	log.Info("Merchant node running now...")
 
 	//节点运行时
 	for {
 		select {
 		case <-m.reconnect:
 			//重新连接
-			log.Printf("Connecting to %s\n", m.Node.URL)
-			err = m.Node.Connect()
+			log.Info("Connecting to", m.Config.MerchantNodeURL)
+			err = m.Node.Connect(m.Config.MerchantNodeURL, m.Config.MerchantNodeID)
 			if err != nil {
-				log.Printf("Connect merchant node faild unexpected error: %v. \n", err)
+				log.Error("Connect merchant node faild unexpected error:", err)
 				m.disconnected <- struct{}{}
 			} else {
-				log.Printf("Connect merchant node successfully. \n")
+				log.Info("Connect merchant node successfully. \n")
 			}
 
 			//启动定时任务
@@ -291,7 +300,7 @@ func (m *MerchantNode) Run() error {
 
 			if m.isReconnect {
 				//重新连接，前等待
-				log.Printf("Reconnect after %d seconds... \n", m.ReconnectWait)
+				log.Info("Reconnect after", m.ReconnectWait, "seconds...")
 				time.Sleep(m.ReconnectWait * time.Second)
 				m.reconnect <- true
 			} else {
@@ -311,7 +320,7 @@ func (m *MerchantNode) IsConnected() error {
 		return ErrMerchantNodeDisconnected
 	}
 
-	if !m.Node.IsConnected() {
+	if !m.Node.IsConnectPeer(m.Config.MerchantNodeID) {
 		return ErrMerchantNodeDisconnected
 	}
 	return nil
@@ -326,7 +335,7 @@ func (m *MerchantNode) Stop() {
 //StartTimerTask 启动定时任务
 func (m *MerchantNode) StartTimerTask() {
 
-	log.Printf("Merchant timer task start...\n")
+	log.Info("Merchant timer task start...")
 
 	//启动订阅地址任务
 	m.runSubscribeAddressTask()
@@ -335,7 +344,7 @@ func (m *MerchantNode) StartTimerTask() {
 //StopTimerTask 停止定时任务
 func (m *MerchantNode) StopTimerTask() {
 
-	log.Printf("Merchant timer task stop...\n")
+	log.Info("Merchant timer task stop...")
 
 	//停止地址订阅任务
 	m.subscribeAddressTask.Pause()

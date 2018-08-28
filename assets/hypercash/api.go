@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
-	"log"
+	"github.com/blocktree/OpenWallet/log"
 	"net/http"
 )
 
@@ -67,6 +67,10 @@ func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error)
 		body = make(map[string]interface{}, 0)
 	)
 
+	if c.client == nil {
+		return nil, errors.New("API url is not setup. ")
+	}
+
 	authHeader := req.Header{
 		"Accept":        "application/json",
 		"Authorization": "Basic " + c.AccessToken,
@@ -79,17 +83,17 @@ func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error)
 	body["params"] = request
 
 	if c.Debug {
-		log.Println("Start Request API...")
+		log.Info("Start Request API...")
 	}
 
 	r, err := c.client.Post(c.BaseURL, req.BodyJSON(&body), authHeader)
 
 	if c.Debug {
-		log.Println("Request API Completed")
+		log.Info("Request API Completed")
 	}
 
 	if c.Debug {
-		log.Printf("%+v\n", r)
+		log.Std.Info("%+v", r)
 	}
 
 	if err != nil {

@@ -15,14 +15,12 @@
 
 package bopo
 
-import (
-	// "github.com/asdine/storm"
-	// "github.com/blocktree/OpenWallet/common/file"
-	// "github.com/blocktree/OpenWallet/keystore"
-	// "github.com/tidwall/gjson"
-	// "path/filepath"
-	"time"
-)
+// "github.com/asdine/storm"
+// "github.com/blocktree/OpenWallet/common/file"
+// "github.com/blocktree/OpenWallet/keystore"
+
+// "path/filepath"
+//"time"
 
 //Wallet 钱包模型
 type Wallet struct {
@@ -35,6 +33,7 @@ type Wallet struct {
 	KeyFile  string
 }
 
+//BlockchainInfo 本地节点区块链信息
 type BlockchainInfo struct {
 	Chain                string `json:"chain"`
 	Blocks               uint64 `json:"blocks"`
@@ -47,12 +46,61 @@ type BlockchainInfo struct {
 	Pruned               bool   `json:"pruned"`
 }
 
-type Address struct {
-	Address   string `json:"address" storm:"id"`
-	Account   string `json:"account" storm:"index"`
-	HDPath    string `json:"hdpath"`
-	CreatedAt time.Time
+// Block Fabric区块结构
+type Block struct {
+	/*
+		{
+		'consensusMetadata': 'CAI=',
+		'nonHashData': {'chaincodeEvents': [{}],
+		                'localLedgerCommitTimestamp': {'nanos': 94090909,
+		                                               'seconds': 1518419369}},
+		'previousBlockHash': '+SuQi13GO8bGYik2SQOIeRcRCiH21NUVH7uSRtMTtq/td0EaKTw/jTQdPvICWq2Gn+klrJ2Hs0DqRYukPVUyow==',
+		'stateHash': 'ZUVvUvCScFUAWRk3E3gwIWnsOaFNDUXT2C4x6Wl3GTMsnWTk1gaFny4G582NTpzqWGR755zCQ5kDA8YyMl3R2w==',
+		'transactions': [{'cert': 'MIICtDCCAlugAwIBAgIRAPn/PTSQLUT/gj6C34hBopQwCgYIKoZIzj0EAwMwMzELMAkGA1UEBhMCQ04xFjAUBgNVBAoTDUdhbWVwYWkgRnVuZC4xDDAKBgNVBAMTA3RjYTAeFw0xODAyMTIwNzA2MDhaFw0xODA1MTMwNzA2MDhaMEcxCzAJBgNVBAYTAkNOMRYwFAYDVQQKEw1HYW1lcGFpIEZ1bmQuMSAwHgYDVQQDExdUcmFuc2FjdGlvbiBDZXJ0aWZpY2F0ZTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABPTKMJHudYvdS4B08CEwWTEF8Ll4SUjq93mq4x+8R2bMrdXGHwC6h85r4cwwcyNLJjEYYgqa9VanrQ/Kn9usCpijggE6MIIBNjAOBgNVHQ8BAf8EBAMCB4AwDAYDVR0TAQH/BAIwADANBgNVHQ4EBgQEAQIDBDAPBgNVHSMECDAGgAQBAgMEMBIGBioDBAUGCgQIRGVsZWdhdGUwEwYGKgMEBQYLBAlBbGlFQ1NIQjEwTQYGKgMEBQYHAQH/BEBduQTYRCWuHIAIZoMgUMl90wPUkGP5bSF4MQTz/XNxsaYZ/Gsi5b1P2zOHJJNA8IQzw/TKwF11yXToaKm/oOImMEoGBioDBAUGCARA4nZ1FCdDLT8w2vnhPClfkIk13XCFBir60qDE3Ic//AMoHt8IFwmndtOaDIzPrPCKajDlt7OsTertkTO9dLQPBjAyBgYqAwQFBgkEKDAwSEVBRFBhaUFkbWluUm9sZS0+MSNQYWlBZG1pblJlZ2lvbi0+MiMwCgYIKoZIzj0EAwMDRwAwRAIgCkc8m2RBcl9dYbmyrdyceb5g51yGuRySD9cM+4Cc5s0CIEdR6HhgnM8RODTFUo4GGjY6/xk285MihBgL83Mtv1Lx',
+		                  'chaincodeID': 'Eg9nYW1lcGFpY29yZV92MDE=',
+		                  'nonce': '67ba1CKLYHSfQQ0KASPt4GV5j6YtmRQJ',
+		                  'payload': 'CtsCCAESERIPZ2FtZXBhaWNvcmVfdjAxGqUCChFVU0VSX1JFR1BVQkxJQ0tFWQpIQ2lJMVdFWlZOVjlHZWtSVGFFRnplR0Z6TVZSNlVXMW5NV3hvVVROeVJUUlFXVnBuRWhEUkEwL3VWaUE2K0gxdXErZDZOblQ5CmRDa2dJQVJKRUNpQlZnR3o3d2NqTHNIbHpSdGhRREVOcWo0NUtsQUJBTTJSTHA4bm4raHUrN2hJZzB5U0pYVDdtdTJ4elFQa0wrQkwwN3pjTDdEQ2VQWDlpUjFVVDR0eStLZnc9CmBDa1FLSUJobGF3bzlnSWlFUXpzYXVjcXNYK3ZyM2ptdUl2VkpPcVgzcEg4TE5tUDVFaUNnUVBDaVNDeHpRdVRKNnJod3dqazRYNlFqWHFXQ1F6YWdydktzTk96bFJnPT1CDFBhaUFkbWluUm9sZUIOUGFpQWRtaW5SZWdpb24=',
+		                  'signature': 'MEQCIHvGzTPfWbNLL0Ad+AbNY9/WTsgDNxzHeaUWw0BPFx8NAiB+QBfB6HXOQ+pJyX1bDpbJXX+qV2KZ1c1cIuYl+W99Ug==',
+		                  'timestamp': {'nanos': 67157084,
+		                                'seconds': 1518419357},
+		                  'txid': 'effe5d08-346b-4689-b105-dfdcbdfe790f',
+		                  'type': 2}]
+		}
+	*/
+	Hash              string
+	Previousblockhash string     `json:"previousBlockHash,omitempty"`
+	Statehash         string     `json:"stateHash,omitempty"`
+	Transactions      []*BlockTX `json:"transactions,omitempty"`
+	Height            uint64     `storm:"id"`
 }
+
+type BlockTX struct {
+	Cert        string `json:"cert,omitempty"`
+	ChaincodeID string `json:"chaincodeID,omitempty"`
+	Nonce       string `json:"nonce,omitempty"`
+	Payload     []byte `json:"payload"`
+	Signature   string `json:"signature,omitempty"`
+	Timestrap   struct {
+		nanos   uint64
+		seconds uint64
+	}
+	Txid string `json:"txid,omitempty"`
+	Type string `json:"type,omitempty"`
+}
+
+type PayloadSpec struct {
+	From    string `json:"from,omitempty"`
+	To      string `json:"to,omitempty"`
+	Comment string `json:"comment,omitempty"`
+	Amount  uint64 `json:"amount,omitempty"`
+}
+
+// type Address struct {
+// 	Address   string `json:"address" storm:"id"`
+// 	Account   string `json:"account" storm:"index"`
+// 	HDPath    string `json:"hdpath"`
+// 	CreatedAt time.Time
+// }
 
 type User struct {
 	UserKey string `storm:"id"`     // primary key
@@ -61,3 +109,94 @@ type User struct {
 	Name    string // this field will not be indexed
 	Age     int    `storm:"index"`
 }
+
+// ------------------------------------------------------------------
+
+//UnscanRecords 扫描失败的区块及交易
+type UnscanRecord struct {
+	ID          string `storm:"id"` // primary key
+	BlockHeight uint64
+	TxID        string
+	Reason      string
+	RescanCount int
+}
+
+/*
+func NewBlock(json *gjson.Result) (block *Block, err error) {
+
+	obj := &Block{}
+	obj.Previousblockhash = gjson.Get(json.Raw, "previousBlockHash").String()
+	obj.Statehash = gjson.Get(json.Raw, "stateHash").String()
+	obj.Transactions = NewBlockTxs(json)
+
+	return obj, nil
+}
+
+func NewBlockTxs(json *gjson.Result) (txs []*BlockTX) {
+
+	txs = []*BlockTX{}
+
+	for _, v := range gjson.Get(json.Raw, "transactions").Array() {
+		tran := v.Map()
+		timestamp := tran["timestamp"].Map()
+		fmt.Println("EEE = ", tran["payload"].Type)
+
+		tx := &BlockTX{
+			Cert:        tran["cert"].String(),
+			ChaincodeID: tran["chaincodeID"].String(),
+			Nonce:       tran["nonce"].String(),
+			//Payload:     []byte(tran["payload"].String()),
+			//Payload:   tran["payload"].Type,
+			Signature: tran["signature"].String(),
+			Timestrap: struct{ nanos, seconds uint64 }{
+				nanos:   timestamp["nanos"].Uint(),
+				seconds: timestamp["seconds"].Uint(),
+			},
+			Txid: tran["txid"].String(),
+			Type: tran["type"].String(),
+		}
+		txs = append(txs, tx)
+	}
+
+	return txs
+}
+*/
+
+// ------------------------------------------------------------------------------------
+//	type BlockTXPayload struct {
+//		/*
+//		   chaincodeSpec:< type:GOLANG
+//		                   chaincodeID:<name:"gamepaicore_v01" >
+//		                   ctorMsg:<args:"USER_FUND"
+//		                            args:"CiI1WmFQWGZKYUxOckduWHV5WHVuRkU0eEt4YWtFemdUSVpREhxGcmkgQXVnIDE3IDExOjA5OjI1IENTVCAyMDE4IkgIARJECiDii7hQ6FHfEscWWJxkV3gcKZphiXnt3+2vbJ3hUqkL5hIg7t8wD3SjhMoFOiIb54UUP0aLpNwrEXiflLDgxdWjS9s="
+//		                            args:"CiYIARIiNVpGVlZQNDdSZjVqLWs3TG9pUmNOb3psYzhkeW5iUFluZw=="
+//		                            args:"CkQKIGnwE1MpqraCAvg2mxnxsnX5T+iNbC0THejYY1QXB/eXEiAD4FZQ25G3OjxRCPPJDDdcLQXA/180ykUHW4TB0Fs+Vg==" > // Signature
+//		                   attributes:"PaiAdminRole"
+//		                   attributes:"PaiAdminRegion" >
+//
+//		   ctorMsg_args := []slice{
+//		       Fund_Type
+//		       &pb.UserTxHeader{FundId: userid, Nounce: m.Nounce}
+//		       &pb.Fund{InvokeChaincode: uint32, D: {Pai: uint32, ToUserId: string}}
+//		       &pb.Signature{P: &pb.ECPoint{rx.Bytes(), ry.Bytes()}}
+//		   }
+//		*/
+//		/*
+//			Type        string
+//			ChaincodeID string
+//			Funddata    struct {
+//				TxHeader struct {
+//					FundID string
+//					Nounce string
+//				}
+//				Fund struct {
+//					InvokeChaincode uint32
+//					D_Pai           uint32
+//					D_ToUserId      string
+//				}
+//				Signature struct {
+//				}
+//			}
+//			attributes []string
+//		*/
+//	}
