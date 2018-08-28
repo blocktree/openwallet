@@ -26,9 +26,11 @@ import (
 var (
 	bst *FabricBlockScanner
 
-	height    uint64 = 363121
-	address   string = "5ZaPXfJaLNrGnXuyXunFE4xKxakEzgTIZQ"
-	accountID string = "simonluo"
+	testAddress   string = "5ZaPXfJaLNrGnXuyXunFE4xKxakEzgTIZQ"
+	testAccountID string = "simonluo"
+
+	testBlockHeight uint64 = uint64(241234)
+	testBlockHash   string = ""
 )
 
 func TestNewFabricBlockScanner(t *testing.T) {
@@ -39,15 +41,15 @@ func TestNewFabricBlockScanner(t *testing.T) {
 func TestAddAddress(t *testing.T) {
 	bst = NewFabricBlockScanner(tw)
 
-	wallet := &openwallet.Wallet{WalletID: accountID, DBFile: filepath.Join(tw.config.dbPath, accountID+".db")}
-	bst.AddAddress(address, accountID, wallet)
+	wallet := &openwallet.Wallet{WalletID: testAccountID, DBFile: filepath.Join(tw.config.dbPath, testAccountID+".db")}
+	bst.AddAddress(testAddress, testAccountID, wallet)
 }
 
 func TestAddWallet(t *testing.T) {
 	bst = NewFabricBlockScanner(tw)
 
-	wallet := &openwallet.Wallet{WalletID: accountID, DBFile: filepath.Join(tw.config.dbPath, accountID+".db")}
-	bst.AddWallet(accountID, wallet)
+	wallet := &openwallet.Wallet{WalletID: testAccountID, DBFile: filepath.Join(tw.config.dbPath, testAccountID+".db")}
+	bst.AddWallet(testAccountID, wallet)
 }
 
 // func TestAddObserver(t *testing.T) {
@@ -80,7 +82,7 @@ func TestClear(t *testing.T) {
 
 func TestSetRescanBlockHeight(t *testing.T) {
 	bst = NewFabricBlockScanner(tw)
-	if err := bst.SetRescanBlockHeight(height); err != nil {
+	if err := bst.SetRescanBlockHeight(testBlockHeight); err != nil {
 		t.Errorf("TestSetRescanBlockHeight Failed: %v\n", err)
 	}
 }
@@ -97,7 +99,7 @@ func TestIsExistAddress(t *testing.T) {
 
 	TestAddAddress(t)
 
-	if bst.IsExistAddress(address) != true {
+	if bst.IsExistAddress(testAddress) != true {
 		t.Errorf("TestIsExistAddress Failed: %v\n", "none")
 	} else {
 		fmt.Printf("TestIsExistAddress Results: %+v \n", "exist")
@@ -107,7 +109,7 @@ func TestIsExistWallet(t *testing.T) {
 	bst = NewFabricBlockScanner(tw)
 
 	TestAddWallet(t)
-	if bst.IsExistWallet(accountID) != true {
+	if bst.IsExistWallet(testAccountID) != true {
 		t.Errorf("TestIsExistWallet Failed: %v\n", "none")
 	} else {
 		fmt.Printf("TestIsExistWallet Results: %+v \n", "exist")

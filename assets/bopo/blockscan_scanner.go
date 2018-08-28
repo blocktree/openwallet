@@ -28,21 +28,13 @@ import (
 //scanning 扫描
 func (bs *FabricBlockScanner) scanBlock() {
 
-	// //currentHeight, err := GetBlockHeight()
-	// blockinfo, err := bs.wm.GetBlockChainInfo()
-	// if err != nil {
-	// 	log.Std.Info("block scanner can not get new block height; unexpected error: %v\n", err)
-	// 	return
-	// }
-	// currentHeight, currentHash := blockinfo.Blocks, ""
 	blockHeader, err := bs.GetCurrentBlockHeader()
 	if err != nil {
 		log.Std.Error("block scanner can not get new block height; unexpected error: %v", err)
 	}
 	currentHeight, currentHash := blockHeader.Height, blockHeader.Hash
-	// log.Std.Info("Scan Block from [height=%d] [hash=%s]", currentHeight, currentHash)
+	log.Std.Info("Scan Block from [height=%d] [hash=%s]", currentHeight, currentHash)
 
-	//currentHeight = currentHeight - 1
 	for {
 
 		//获取最大高度
@@ -64,13 +56,13 @@ func (bs *FabricBlockScanner) scanBlock() {
 
 		log.Std.Info("Block scanner scanning height: %d ...", currentHeight)
 
-		hash := "" //Fabric can load Block without hash
-		// hash, err := bs.wm.GetBlockHash(currentHeight)
-		// if err != nil {
-		// 	//下一个高度找不到会报异常
-		// 	log.Std.Info("block scanner can not get new block hash; unexpected error: %v\n", err)
-		// 	break
-		// }
+		//hash := "" //Fabric can load Block without hash
+		hash, err := bs.wm.GetBlockHash(currentHeight)
+		if err != nil {
+			//下一个高度找不到会报异常
+			log.Std.Info("block scanner can not get new block hash; unexpected error: %v\n", err)
+			break
+		}
 
 		block, err := bs.wm.GetBlockContent(currentHeight)
 		if err != nil {

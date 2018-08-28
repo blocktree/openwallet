@@ -17,11 +17,17 @@ package bopo
 
 import (
 	//"errors"
+	"encoding/base64"
 	"fmt"
 	"log"
 
 	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
+
+	//"github.com/hyperledger/fabric/core/util"
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/protos"
+	"golang.org/x/crypto/sha3"
 )
 
 //var _ base64.StdEncoding
@@ -104,9 +110,41 @@ func (wm *WalletManager) GetBlockPayload(payload string) (payloadSpec *PayloadSp
 }
 
 //GetBlockHash 根据区块高度获得区块hash
-func (wm *WalletManager) GetBlockHash(height uint64) (string, error) {
+func (wm *WalletManager) GetBlockHash(height uint64) (hash string, err error) {
 
-	return "BlockHash1", nil
+	d, err := wm.fullnodeClient.Call(fmt.Sprintf("blocks/%d", height), "GET", nil)
+	if err != nil {
+		return "", err
+	}
+
+	block := &protos.Block{}
+	if err := gjson.Unmarshal(d, block); err != nil {
+		return "", err
+	}
+
+	blockBytes, err := block.Bytes()
+	if err != nil {
+		return "", err
+	}
+
+	blockCopy, err := protos.UnmarshallBlock(blockBytes)
+	if err != nil {
+		return "", err
+	}
+	blockCopy.NonHashData = nil
+
+	// Hash the block
+	data, err := proto.Marshal(blockCopy)
+	if err != nil {
+		return "", err
+	}
+
+	hashBytes := make([]byte, 64)
+	sha3.ShakeSum256(hashBytes, data)
+
+	hash = base64.StdEncoding.EncodeToString(hashBytes)
+
+	return hash, nil
 }
 
 /*

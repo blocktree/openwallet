@@ -22,18 +22,13 @@ import (
 	"github.com/blocktree/OpenWallet/openwallet"
 )
 
-var (
-	blockHeight uint64 = uint64(241234)
-	blockHash   string = ""
-)
-
 func TestSaveLocalNewBlock(t *testing.T) {
 	bst = NewFabricBlockScanner(tw)
 
-	if err := bst.SaveLocalNewBlock(blockHeight, blockHash); err != nil {
+	if err := bst.SaveLocalNewBlock(testBlockHeight, testBlockHash); err != nil {
 		t.Errorf("TestSaveLocalNewBlock Failed: %v\n", err)
 	} else {
-		fmt.Printf("TestSaveLocalNewBlock: \n\t%+v, %+v\n", blockHeight, blockHash)
+		fmt.Printf("TestSaveLocalNewBlock: \n\t%+v, %+v\n", testBlockHeight, testBlockHash)
 	}
 }
 
@@ -52,7 +47,7 @@ func TestGetLocalNewBlock(t *testing.T) {
 func TestSaveLocalBlock(t *testing.T) {
 	bst = NewFabricBlockScanner(tw)
 
-	block := &Block{Height: blockHeight}
+	block := &Block{Height: testBlockHeight}
 	if err := bst.SaveLocalBlock(block); err != nil {
 		t.Errorf("TestGetLocalBlock Failed: %v\n", err)
 	} else {
@@ -63,7 +58,7 @@ func TestSaveLocalBlock(t *testing.T) {
 func TestGetLocalBlock(t *testing.T) {
 	bst = NewFabricBlockScanner(tw)
 
-	block, err := bst.GetLocalBlock(blockHeight)
+	block, err := bst.GetLocalBlock(testBlockHeight)
 	if err != nil {
 		t.Errorf("TestGetLocalBlock Failed: %v\n", err)
 	} else {
@@ -74,17 +69,17 @@ func TestGetLocalBlock(t *testing.T) {
 func TestSaveTransaction(t *testing.T) {
 	bst = NewFabricBlockScanner(tw)
 
-	if err := bst.SaveTransaction(blockHeight); err != nil {
+	if err := bst.SaveTransaction(testBlockHeight); err != nil {
 		t.Errorf("TestSaveTransaction Failed: %v\n", err)
 	} else {
-		fmt.Printf("TestSaveTransaction: \n\t%+v\n", blockHeight)
+		fmt.Printf("TestSaveTransaction: \n\t%+v\n", testBlockHeight)
 	}
 }
 
 func TestSaveUnscanRecord(t *testing.T) {
 	bst = NewFabricBlockScanner(tw)
 
-	record := &UnscanRecord{ID: string(blockHeight)}
+	record := &UnscanRecord{ID: string(testBlockHeight)}
 	if err := bst.SaveUnscanRecord(record); err != nil {
 		t.Errorf("TestSaveUnscanRecord Failed: %v\n", err)
 	} else {
@@ -108,10 +103,10 @@ func TestDeleteUnscanRecord(t *testing.T) {
 
 	TestSaveUnscanRecord(t)
 
-	if err := bst.DeleteUnscanRecord(blockHeight); err != nil {
+	if err := bst.DeleteUnscanRecord(testBlockHeight); err != nil {
 		t.Errorf("DeleteUnscanRecord Failed: %v\n", err)
 	} else {
-		fmt.Printf("DeleteUnscanRecord: \n\t%+v\n", blockHeight)
+		fmt.Printf("DeleteUnscanRecord: \n\t%+v\n", testBlockHeight)
 	}
 
 }
@@ -131,10 +126,20 @@ func TestDeleteUnscanRecordNotFindTX(t *testing.T) {
 func TestDeleteUnscanRecordByTxID(t *testing.T) {
 	bst = NewFabricBlockScanner(tw)
 
-	if err := bst.DeleteUnscanRecordByTxID(blockHeight, blockHash); err != nil {
+	if err := bst.DeleteUnscanRecordByTxID(testBlockHeight, testBlockHash); err != nil {
 		t.Errorf("TestGetLocalBlock Failed: %v\n", err)
 	} else {
-		fmt.Printf("TestGetLocalBlock: \n\t%+v\n", blockHeight)
+		fmt.Printf("TestGetLocalBlock: \n\t%+v\n", testBlockHeight)
+	}
+}
+
+func TestGetWalletByAddress(t *testing.T) {
+	bst = NewFabricBlockScanner(tw)
+
+	if wallet, exist := bst.GetWalletByAddress(testAddress); exist != true {
+		t.Errorf("TestGetWalletByAddress Failed: %v\n", "none")
+	} else {
+		fmt.Printf("TestGetWalletByAddress: \n\t%+v\n", wallet)
 	}
 }
 
@@ -142,19 +147,19 @@ func TestSaveRechargeToWalletDB(t *testing.T) {
 	bst = NewFabricBlockScanner(tw)
 
 	list := []*openwallet.Recharge{}
-	if err := bst.SaveRechargeToWalletDB(blockHeight, list); err != nil {
+	if err := bst.SaveRechargeToWalletDB(testBlockHeight, list); err != nil {
 		t.Errorf("TestGetLocalBlock Failed: %v\n", err)
 	} else {
-		fmt.Printf("TestGetLocalBlock: \n\t%+v\n", blockHeight)
+		fmt.Printf("TestGetLocalBlock: \n\t%+v\n", testBlockHeight)
 	}
 }
 
 func TestDeleteRechargesByHeight(t *testing.T) {
 	bst = NewFabricBlockScanner(tw)
 
-	if err := bst.DeleteRechargesByHeight(blockHeight); err != nil {
+	if err := bst.DeleteRechargesByHeight(testBlockHeight); err != nil {
 		t.Errorf("TestGetLocalBlock Failed: %v\n", err)
 	} else {
-		fmt.Printf("TestGetLocalBlock: \n\t%+v\n", blockHeight)
+		fmt.Printf("TestGetLocalBlock: \n\t%+v\n", testBlockHeight)
 	}
 }

@@ -19,16 +19,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	//"strings"
-
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/pkg/errors"
-	//"github.com/asdine/storm/q"
-	//"github.com/blocktree/OpenWallet/openwallet"
-	//"github.com/tidwall/gjson"
 )
 
 //SaveLocalNewBlock 写入本地区块高度和hash
