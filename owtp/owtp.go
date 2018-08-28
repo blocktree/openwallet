@@ -61,8 +61,6 @@ const (
 
 //OWTPNode 实现OWTP协议的节点
 type OWTPNode struct {
-	//客户端
-	client *Client
 	//nonce生成器
 	nonceGen *snowflake.Node
 	//缓存文件
