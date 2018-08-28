@@ -16,8 +16,9 @@
 package log
 
 import (
-	"github.com/astaxie/beego/logs"
 	"strings"
+
+	"github.com/astaxie/beego/logs"
 )
 
 // Log levels to control the logging output.
@@ -63,11 +64,15 @@ func Alert(v ...interface{}) {
 
 // Critical logs a message at critical level.
 func Critical(v ...interface{}) {
+	logs.EnableFuncCallDepth(true)
+	logs.SetLogFuncCallDepth(4)
 	Std.Critical(generateFmtStr(len(v)), v...)
 }
 
 // Error logs a message at error level.
 func Error(v ...interface{}) {
+	logs.EnableFuncCallDepth(true)
+	logs.SetLogFuncCallDepth(4)
 	Std.Error(generateFmtStr(len(v)), v...)
 }
 
@@ -98,6 +103,8 @@ func Info(v ...interface{}) {
 
 // Debug logs a message at debug level.
 func Debug(v ...interface{}) {
+	logs.EnableFuncCallDepth(true)
+	logs.SetLogFuncCallDepth(4)
 	Std.Debug(generateFmtStr(len(v)), v...)
 }
 
