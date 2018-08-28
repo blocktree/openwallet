@@ -16,8 +16,11 @@
 package bopo
 
 import (
+	"encoding/base64"
+	"fmt"
 	"testing"
 
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 )
 
@@ -27,7 +30,7 @@ func TestScanBlock(t *testing.T) {
 	bs.scanBlock()
 }
 
-func TestScanBlock2(t *testing.T) {
+func TestAssignedScanBlock(t *testing.T) {
 
 	bs := NewFabricBlockScanner(tw)
 
@@ -43,4 +46,44 @@ func TestScanBlock2(t *testing.T) {
 
 	bs.ScanBlock(uint64(231234))
 
+}
+
+func TestBlockScannerData(t *testing.T) {
+	bs := NewFabricBlockScanner(tw)
+
+	var currentHeight uint64
+	currentHeight = 375350
+	currentHeight = 377125
+	currentHeight = 378820
+	currentHeight = 330000
+	for height := currentHeight; height <= currentHeight+1500; height++ { //Foreach Blocks
+		// Load Block Info
+		block, err := bs.wm.GetBlockContent(height)
+		if err != nil {
+			log.Std.Info("Get block [%d] faild: %v\n", height, err)
+		}
+
+		fmt.Printf("Height=[%d/%d]Len(TXs)=[%d]\tPreHash[%s]\n", height, currentHeight, len(block.Transactions), block.Previousblockhash)
+
+		for i, v := range block.Transactions { // Foreach all transactions
+
+			fmt.Printf("\tNo.[%2d]\tType=[%s]\tChaincodeID[%s]", i, v.Type, v.ChaincodeID)
+
+			if payloadSpec, err := bs.wm.GetBlockPayload(base64.StdEncoding.EncodeToString(v.Payload)); err != nil {
+				log.Std.Info("Decode TX [%d] Payload faild: %v\n", height, err)
+			} else {
+				//fmt.Println(payloadSpec)
+				fmt.Printf("\tFrom[%s]to[%s]with[%d Pai]", payloadSpec.From, payloadSpec.To, payloadSpec.Amount)
+				if payloadSpec.From == "5ZaPXfJaLNrGnXuyXunFE4xKxakEzgTIZQ" {
+					fmt.Println("simonluo2")
+					if payloadSpec.To == "5ZFVVP47Rf5j-k7LoiRcNozlc8dynbPYng" {
+						fmt.Println("xcluo2")
+						return
+					}
+				}
+			}
+			fmt.Printf("\n")
+		}
+		// time.Sleep(time.Second * 1 / 100)
+	}
 }

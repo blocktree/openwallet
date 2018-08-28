@@ -19,13 +19,6 @@ import (
 	"errors"
 	"fmt"
 
-	//"log"
-	// "path/filepath"
-	// "sync"
-
-	// "github.com/asdine/storm"
-	// "github.com/blocktree/OpenWallet/crypto"
-
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	//"github.com/blocktree/OpenWallet/timer"
@@ -35,48 +28,21 @@ import (
 //scanning 扫描
 func (bs *FabricBlockScanner) scanBlock() {
 
-	//currentHeight, err := GetBlockHeight()
-	blockinfo, err := bs.wm.GetBlockChainInfo()
-	if err != nil {
-		log.Std.Info("block scanner can not get new block height; unexpected error: %v\n", err)
-		return
-	}
-	currentHeight := blockinfo.Blocks
-
-	currentHash := ""
-	currentHeight = 371234
-
-	// //for height := uint64(330000); height <= currentHeight; height++ { //Foreach Blocks
-	// for height := uint64(372321); height <= currentHeight; height++ { //Foreach Blocks
-
-	// 	// Load Block Info
-	// 	block, err := bs.wm.GetBlockContent(height)
-	// 	if err != nil {
-	// 		log.Std.Info("Get block [%d] faild: %v\n", height, err)
-	// 	}
-
-	// 	fmt.Printf("Height=[%d/%d]Len(TXs)=[%d]\tStateHash[%s]PreHash[%s]\n", height, currentHeight, len(block.Transactions), block.Statehash, block.Previousblockhash)
-
-	// 	for i, v := range block.Transactions { // Foreach all transactions
-
-	// 		fmt.Printf("\tNo.[%2d]\tType=[%s]\tChaincodeID[%s]", i, v.Type, v.ChaincodeID)
-
-	// 		if payloadSpec, err := bs.wm.GetBlockPayload(base64.StdEncoding.EncodeToString(v.Payload)); err != nil {
-	// 			log.Std.Info("Decode TX [%d] Payload faild: %v\n", height, err)
-	// 		} else {
-	// 			//fmt.Println(payloadSpec)
-	// 			fmt.Printf("\tFrom[%s]to[%s]with[%d Pai]", payloadSpec.From, payloadSpec.To, payloadSpec.Amount)
-	// 			if payloadSpec.From == "5ZaPXfJaLNrGnXuyXunFE4xKxakEzgTIZQ" {
-	// 				fmt.Println("simonluo")
-	// 				if payloadSpec.To == "5ZFVVP47Rf5j-k7LoiRcNozlc8dynbPYng" {
-	// 					fmt.Println("xcluo")
-	// 				}
-	// 			}
-	// 		}
-	// 		fmt.Printf("\n")
-	// 	}
+	// //currentHeight, err := GetBlockHeight()
+	// blockinfo, err := bs.wm.GetBlockChainInfo()
+	// if err != nil {
+	// 	log.Std.Info("block scanner can not get new block height; unexpected error: %v\n", err)
+	// 	return
 	// }
+	// currentHeight, currentHash := blockinfo.Blocks, ""
+	blockHeader, err := bs.GetCurrentBlockHeader()
+	if err != nil {
+		log.Std.Error("block scanner can not get new block height; unexpected error: %v", err)
+	}
+	currentHeight, currentHash := blockHeader.Height, blockHeader.Hash
+	// log.Std.Info("Scan Block from [height=%d] [hash=%s]", currentHeight, currentHash)
 
+	//currentHeight = currentHeight - 1
 	for {
 
 		//获取最大高度
@@ -96,21 +62,22 @@ func (bs *FabricBlockScanner) scanBlock() {
 		//继续扫描下一个区块
 		currentHeight = currentHeight + 1
 
-		log.Std.Info("block scanner scanning height: %d ...\n", currentHeight)
+		log.Std.Info("Block scanner scanning height: %d ...", currentHeight)
 
-		hash, err := bs.wm.GetBlockHash(currentHeight)
-		if err != nil {
-			//下一个高度找不到会报异常
-			log.Std.Info("block scanner can not get new block hash; unexpected error: %v\n", err)
-			break
-		}
+		hash := "" //Fabric can load Block without hash
+		// hash, err := bs.wm.GetBlockHash(currentHeight)
+		// if err != nil {
+		// 	//下一个高度找不到会报异常
+		// 	log.Std.Info("block scanner can not get new block hash; unexpected error: %v\n", err)
+		// 	break
+		// }
 
 		block, err := bs.wm.GetBlockContent(currentHeight)
 		if err != nil {
 			log.Std.Info("block scanner can not get new block data; unexpected error: %v\n", err)
 
 			//记录未扫区块
-			unscanRecord := NewUnscanRecord(currentHeight, "", err.Error())
+			unscanRecord := NewUnscanRecord(currentHeight, currentHash, err.Error())
 			bs.SaveUnscanRecord(unscanRecord)
 			log.Std.Info("block height: %d extract failed.\n", currentHeight)
 			continue
@@ -166,11 +133,11 @@ func (bs *FabricBlockScanner) scanBlock() {
 		}
 	}
 
-	//扫描交易内存池
-	bs.ScanTxMemPool()
+	// //扫描交易内存池
+	// bs.ScanTxMemPool()
 
-	//重扫失败区块
-	bs.RescanFailedRecord()
+	// //重扫失败区块
+	// bs.RescanFailedRecord()
 
 }
 

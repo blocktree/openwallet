@@ -26,7 +26,7 @@ import (
 var (
 	bst *FabricBlockScanner
 
-	height    uint64 = 123121
+	height    uint64 = 363121
 	address   string = "5ZaPXfJaLNrGnXuyXunFE4xKxakEzgTIZQ"
 	accountID string = "simonluo"
 )
@@ -77,6 +77,7 @@ func TestClear(t *testing.T) {
 // func TestRestart(t *testing.T) {
 // 	bst.Restart()
 // }
+
 func TestSetRescanBlockHeight(t *testing.T) {
 	bst = NewFabricBlockScanner(tw)
 	if err := bst.SetRescanBlockHeight(height); err != nil {
