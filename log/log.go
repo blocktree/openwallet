@@ -44,7 +44,7 @@ func SetLevel(l int) {
 // SetLogFuncCall set the CallDepth, default is 3
 func SetLogFuncCall(b bool) {
 	Std.EnableFuncCallDepth(b)
-	Std.SetLogFuncCallDepth(4)
+	Std.SetLogFuncCallDepth(3)
 }
 
 // SetLogger sets a new logger.
@@ -65,14 +65,14 @@ func Alert(v ...interface{}) {
 // Critical logs a message at critical level.
 func Critical(v ...interface{}) {
 	logs.EnableFuncCallDepth(true)
-	logs.SetLogFuncCallDepth(4)
+	logs.SetLogFuncCallDepth(3)
 	Std.Critical(generateFmtStr(len(v)), v...)
 }
 
 // Error logs a message at error level.
 func Error(v ...interface{}) {
 	logs.EnableFuncCallDepth(true)
-	logs.SetLogFuncCallDepth(4)
+	logs.SetLogFuncCallDepth(3)
 	Std.Error(generateFmtStr(len(v)), v...)
 }
 
@@ -104,7 +104,7 @@ func Info(v ...interface{}) {
 // Debug logs a message at debug level.
 func Debug(v ...interface{}) {
 	logs.EnableFuncCallDepth(true)
-	logs.SetLogFuncCallDepth(4)
+	logs.SetLogFuncCallDepth(3)
 	Std.Debug(generateFmtStr(len(v)), v...)
 }
 
