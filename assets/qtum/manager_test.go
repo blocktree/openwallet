@@ -138,13 +138,13 @@ func TestCreateReceiverAddress(t *testing.T) {
 		tag     string
 	}{
 		{
-			account: "john",
+			account: "kevin",
 			tag:     "normal",
 		},
-		{
-			account: "Chance",
-			tag:     "normal",
-		},
+		//{
+		//	account: "Chance",
+		//	tag:     "normal",
+		//},
 	}
 
 	for i, test := range tests {
@@ -161,7 +161,7 @@ func TestCreateReceiverAddress(t *testing.T) {
 }
 
 func TestGetAddressesByAccount(t *testing.T) {
-	addresses, err := tw.GetAddressesByAccount("WJjFgnZucp86LR3s18AbjxT3ju9csXduff")
+	addresses, err := tw.GetAddressesByAccount("W9rfcpz4jrHUUXZ56xuuXZaJrF23rnYCAV")
 	if err != nil {
 		t.Errorf("GetAddressesByAccount failed unexpected error: %v\n", err)
 		return
@@ -173,7 +173,7 @@ func TestGetAddressesByAccount(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	_, _, err := tw.CreateBatchAddress("WJjFgnZucp86LR3s18AbjxT3ju9csXduff", "1234qwer", 10)
+	_, _, err := tw.CreateBatchAddress("W9rfcpz4jrHUUXZ56xuuXZaJrF23rnYCAV", "1234qwer", 100)
 	if err != nil {
 		t.Errorf("CreateBatchAddress failed unexpected error: %v\n", err)
 		return
@@ -207,7 +207,7 @@ func TestUnlockWallet(t *testing.T) {
 }
 
 func TestCreateNewWallet(t *testing.T) {
-	_, _, err := tw.CreateNewWallet("sam2", "1234qwer")
+	_, _, err := tw.CreateNewWallet("kevin", "1234qwer")
 	if err != nil {
 		t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
 		return
@@ -237,15 +237,15 @@ func TestGetWalletBalance(t *testing.T) {
 			tag:  "first",
 		},
 		{
-			name: "QTUM02",
+			name: "W9rfcpz4jrHUUXZ56xuuXZaJrF23rnYCAV",
 			tag:  "second",
 		},
 		{
-			name: "W2JgPVMS2jEQZ7yUkfHEa4D1ST4NccLCAW",
+			name: "john",
 			tag:  "all",
 		},
 		{
-			name: "ZB",
+			name: "sam",
 			tag:  "account not exist",
 		},
 	}
@@ -366,7 +366,7 @@ func TestGetWalleInfo(t *testing.T) {
 
 func TestBackupWallet(t *testing.T) {
 
-	backupFile, err := tw.BackupWallet("W2JgPVMS2jEQZ7yUkfHEa4D1ST4NccLCAW")
+	backupFile, err := tw.BackupWallet("W9rfcpz4jrHUUXZ56xuuXZaJrF23rnYCAV")
 	if err != nil {
 		t.Errorf("BackupWallet failed unexpected error: %v\n", err)
 	} else {
@@ -417,8 +417,6 @@ func TestGetBlockChainInfo(t *testing.T) {
 	}
 }
 
-//以上都通过了
-//还未有币，不能测试
 func TestListUnspent(t *testing.T) {
 	utxos, err := tw.ListUnspent(0)
 	if err != nil {
@@ -432,7 +430,7 @@ func TestListUnspent(t *testing.T) {
 }
 
 func TestGetAddressesFromLocalDB(t *testing.T) {
-	addresses, err := tw.GetAddressesFromLocalDB("WJjFgnZucp86LR3s18AbjxT3ju9csXduff", 0, -1)
+	addresses, err := tw.GetAddressesFromLocalDB("W9rfcpz4jrHUUXZ56xuuXZaJrF23rnYCAV", 0, -1)
 	if err != nil {
 		t.Errorf("GetAddressesFromLocalDB failed unexpected error: %v\n", err)
 		return
@@ -443,7 +441,6 @@ func TestGetAddressesFromLocalDB(t *testing.T) {
 	}
 }
 
-//还未有币，不能测试
 func TestRebuildWalletUnspent(t *testing.T) {
 
 	err := tw.RebuildWalletUnspent("WJjFgnZucp86LR3s18AbjxT3ju9csXduff")
@@ -455,9 +452,8 @@ func TestRebuildWalletUnspent(t *testing.T) {
 	t.Logf("RebuildWalletUnspent successfully.\n")
 }
 
-//还未有币，不能测试
 func TestListUnspentFromLocalDB(t *testing.T) {
-	utxos, err := tw.ListUnspentFromLocalDB("WJjFgnZucp86LR3s18AbjxT3ju9csXduff")
+	utxos, err := tw.ListUnspentFromLocalDB("W9rfcpz4jrHUUXZ56xuuXZaJrF23rnYCAV")
 	if err != nil {
 		t.Errorf("ListUnspentFromLocalDB failed unexpected error: %v\n", err)
 		return
@@ -472,16 +468,16 @@ func TestListUnspentFromLocalDB(t *testing.T) {
 	t.Logf("ListUnspentFromLocalDB total = %s\n", total.StringFixed(8))
 }
 
-//还未有币，不能测试
+
 func TestBuildTransaction(t *testing.T) {
-	walletID := "WJjFgnZucp86LR3s18AbjxT3ju9csXduff"
+	walletID := "W9rfcpz4jrHUUXZ56xuuXZaJrF23rnYCAV"
 	utxos, err := tw.ListUnspentFromLocalDB(walletID)
 	if err != nil {
 		t.Errorf("BuildTransaction failed unexpected error: %v\n", err)
 		return
 	}
 
-	txRaw, _, err := tw.BuildTransaction(utxos, []string{"mrThNMQ6bMf1YNPjBj9jYXmYYzw1Rt8GFU"}, "n33cHpEc9qAvECM9pFgabZ6ktJimLSeWdy", []decimal.Decimal{decimal.NewFromFloat(0.2)}, decimal.NewFromFloat(0.00002))
+	txRaw, _, err := tw.BuildTransaction(utxos, []string{"QichgSGJyWwaXvUUci25jhECJpdeCYv1k3"}, "QjZ6MvQj214TFfZvZ1bGauWn7EFBqmhsYN", []decimal.Decimal{decimal.NewFromFloat(0.1)}, decimal.NewFromFloat(0.0001))
 	if err != nil {
 		t.Errorf("BuildTransaction failed unexpected error: %v\n", err)
 		return
@@ -505,18 +501,18 @@ func TestEstimateFee(t *testing.T) {
 	t.Logf("EstimateFee fees = %s\n", fees.StringFixed(8))
 }
 
-//还未有币，不能测试
+//SendTransaction failed unexpected error: open : The system cannot find the file specified.
 func TestSendTransaction(t *testing.T) {
 
 	sends := []string{
-		"mpkUFiXonEZriywHUhig6PTDQXKzT6S5in",
+		"QifsnQQWXMVqdkvoqpZvJ6Sxy9kdjsHJCw",
 	}
 
-	tw.RebuildWalletUnspent("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ")
+	tw.RebuildWalletUnspent("W9rfcpz4jrHUUXZ56xuuXZaJrF23rnYCAV")
 
 	for _, to := range sends {
 
-		txIDs, err := tw.SendTransaction("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ", to, decimal.NewFromFloat(0.02), "1234qwer", false)
+		txIDs, err := tw.SendTransaction("W9rfcpz4jrHUUXZ56xuuXZaJrF23rnYCAV", to, decimal.NewFromFloat(0.1), "1234qwer", false)
 
 		if err != nil {
 			t.Errorf("SendTransaction failed unexpected error: %v\n", err)

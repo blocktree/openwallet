@@ -124,7 +124,7 @@ func NewConfig() *WalletConfig {
 	//区块链数据文件
 	c.blockchainFile = "blockchain.db"
 	//是否测试网络
-	c.isTestNet = true
+	c.isTestNet = false
 	// 核心钱包是否只做监听
 	c.CoreWalletWatchOnly = true
 	//最大的输入数量
@@ -134,7 +134,7 @@ func NewConfig() *WalletConfig {
 	//备份路径
 	c.backupDir = filepath.Join("data", strings.ToLower(c.symbol), "backup")
 	//钱包服务API
-	c.serverAPI = "http://120.78.220.105:3889"
+	c.serverAPI = ""
 	//钱包安装的路径
 	c.nodeInstallPath = ""
 	//钱包数据文件目录
@@ -145,6 +145,7 @@ func NewConfig() *WalletConfig {
 	c.sumAddress = ""
 	//汇总执行间隔时间
 	c.cycleSeconds = time.Second * 10
+
 
 	//默认配置内容
 	c.defaultConfig = `
@@ -158,9 +159,9 @@ nodeInstallPath = ""
 mainNetDataPath = ""
 # testnet data path
 testNetDataPath = ""
-# hcd api url
+# Qtum api url
 chainAPI = ""
-# hcwallet api url
+# Qtum wallet api url
 walletAPI = ""
 # RPC Authentication Username
 rpcUser = ""

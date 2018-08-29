@@ -1140,10 +1140,16 @@ func (wm *WalletManager) SignRawTransaction(txHex, walletID string, key *hdkeyst
 		wifs = make([]string, 0)
 	)
 
+	////曲线类型
+	//wm.config.CurveType= owcrypt.ECC_CURVE_SECP256K1
+
 	//查找未花签名需要的私钥
 	for _, u := range utxos {
 
 		childKey, err := key.DerivedKeyWithPath(u.HDAddress.HDPath, wm.config.CurveType)
+		if err != nil {
+			return "", err
+		}
 
 		keyBytes, err := childKey.GetPrivateKeyBytes()
 		if err != nil {
@@ -1605,11 +1611,12 @@ func (wm *WalletManager) CreateChangeAddress(walletID string, key *hdkeystore.HD
 		return nil, errors.New("Change address creation failed!")
 	}
 
+	//有问题，先注释掉
 	//批量写入数据库
-	err := wm.saveAddressToDB(getAddrs, &openwallet.Wallet{Alias: key.Alias, WalletID: key.KeyID})
-	if err != nil {
-		return nil, err
-	}
+	//err := wm.saveAddressToDB(getAddrs, &openwallet.Wallet{Alias: key.Alias, WalletID: key.KeyID})
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	return getAddrs[0], nil
 }
