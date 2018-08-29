@@ -16,7 +16,14 @@
 package openwallet
 
 import (
+	"github.com/blocktree/OpenWallet/crypto"
+	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
 	"github.com/btcsuite/btcutil/hdkeychain"
+)
+
+var (
+	//ID首字节的标识
+	AccountIDVer = []byte{0x09}
 )
 
 //解锁的密钥
@@ -31,17 +38,18 @@ type AccountOwner interface {
 
 //AssetsAccount 千张包资产账户
 type AssetsAccount struct {
-	WalletID   string   `json:"walletID"`              //钱包ID
-	Alias      string   `json:"alias"`                 //别名
-	AccountID  string   `json:"accountID"  storm:"id"` //账户ID，合成地址
-	Index      uint64   `json:"index"`                 //账户ID，索引位
-	HDPath     string   `json:"hdPath"`                //衍生路径
-	PublicKeys []string `json:"publicKeys"`            //公钥数组，大于1为多签
+	WalletID  string   `json:"walletID"`             //钱包ID
+	Alias     string   `json:"alias"`                //别名
+	AccountID string   `json:"accountID" storm:"id"` //账户ID，合成地址
+	Index     uint64   `json:"index"`                //账户ID，索引位
+	HDPath    string   `json:"hdPath"`               //衍生路径
+	PublicKey string   `json:"publicKey"`            //主公钥
+	OwnerKeys []string `json:"ownerKeys"`            //公钥数组，大于1为多签
 	//Owners          map[string]AccountOwner //拥有者列表, 账户公钥: 拥有者
 	ContractAddress string      `json:"contractAddress"` //多签合约地址
 	Required        uint64      `json:"required"`        //必要签名数
 	Symbol          string      `json:"coin"`            //资产币种类别
-	AddressCount    uint64      `json:"addressCount"`
+	AddressIndex    int         `json:"addressCount"`
 	Balance         string      `json:"balance"`
 	core            interface{} //核心账户指针
 }
@@ -76,16 +84,27 @@ func NewUserAccount(user User) *AssetsAccount {
 	return account
 }
 
-// init 初始化用户账户
-func (a *AssetsAccount) init() {
-	//1.加载用户所有钱包
-
-}
-
-func (a *AssetsAccount) loadKeystore() {
-
-}
-
 func (a *AssetsAccount) GetOwners() []AccountOwner {
 	return nil
+}
+
+//computeKeyID 计算HDKey的KeyID
+func (a *AssetsAccount) GetAccountID() string {
+
+	if len(a.AccountID) > 0 {
+		return a.AccountID
+	}
+
+	pub, err := owkeychain.OWDecode(a.PublicKey)
+	if err != nil {
+		return ""
+	}
+
+	//seed 通过hmac-sha256 两次 RIPEMD160 一次 得到keyID
+	hash := crypto.Keccak256(pub.GetPublicKeyBytes())
+	hash = crypto.Keccak256(hash)
+
+	a.AccountID = owkeychain.Base58checkEncode(hash, AccountIDVer)
+
+	return a.AccountID
 }

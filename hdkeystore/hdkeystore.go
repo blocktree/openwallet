@@ -21,9 +21,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
-
-	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/blocktree/OpenWallet/crypto/sha3"
+	"github.com/btcsuite/btcutil/hdkeychain"
 )
 
 const (
@@ -77,7 +76,7 @@ func NewHDKeystore(keydir string, scryptN, scryptP int) *HDKeystore {
 // StoreHDKey 创建HDKey
 func StoreHDKey(dir, alias, auth string, scryptN, scryptP int) (*HDKey, string, error) {
 
-	seed, err := hdkeychain.GenerateSeed(SeedLen)
+	seed, err := GenerateSeed(SeedLen)
 	if err != nil {
 		return nil, "", err
 	}
