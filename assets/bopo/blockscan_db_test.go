@@ -136,6 +136,8 @@ func TestDeleteUnscanRecordByTxID(t *testing.T) {
 func TestGetWalletByAddress(t *testing.T) {
 	bst = NewFabricBlockScanner(tw)
 
+	TestAddAddress(t)
+
 	if wallet, exist := bst.GetWalletByAddress(testAddress); exist != true {
 		t.Errorf("TestGetWalletByAddress Failed: %v\n", "none")
 	} else {

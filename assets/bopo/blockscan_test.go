@@ -30,7 +30,7 @@ var (
 	testAccountID string = "simonluo"
 
 	testBlockHeight uint64 = uint64(241234)
-	testBlockHash   string = ""
+	testBlockHash   string = "gWGQ5CsqNvv3zsn1ED20pFk2z1i/xmW0EmZVJ3IoGYmTiaOILCscsCsPTpCi6bqnzDTK2yIaqNecA7jvxfLreA=="
 )
 
 func TestNewFabricBlockScanner(t *testing.T) {
@@ -82,7 +82,7 @@ func TestClear(t *testing.T) {
 
 func TestSetRescanBlockHeight(t *testing.T) {
 	bst = NewFabricBlockScanner(tw)
-	if err := bst.SetRescanBlockHeight(testBlockHeight); err != nil {
+	if err := bst.SetRescanBlockHeight(testBlockHeight - 10); err != nil {
 		t.Errorf("TestSetRescanBlockHeight Failed: %v\n", err)
 	}
 }

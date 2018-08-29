@@ -27,6 +27,9 @@ import (
 func TestScanBlock(t *testing.T) {
 	bs := NewFabricBlockScanner(tw)
 
+	TestAddAddress(t)
+	TestAddWallet(t)
+
 	bs.scanBlock()
 }
 
