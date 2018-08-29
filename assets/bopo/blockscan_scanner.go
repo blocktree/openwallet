@@ -389,8 +389,7 @@ func (bs *FabricBlockScanner) extractRuntime(producer chan ExtractResult, worker
 		}
 	}
 
-	return nil
-
+	// return nil
 }
 
 //ScanTxMemPool 扫描交易内存池

@@ -38,6 +38,20 @@ const (
 	maxExtractingSize = 20              //并发的扫描线程数
 )
 
+//FabricBlockScanner bitcoin的区块链扫描器
+type FabricBlockScanner struct {
+	walletInScanning  map[string]*openwallet.Wallet                   //加入扫描的钱包
+	addressInScanning map[string]string                               //加入扫描的地址
+	observers         map[openwallet.BlockScanNotificationObject]bool //观察者
+
+	scanning           bool             //是否扫描中
+	CurrentBlockHeight uint64           //当前区块高度
+	extractingCH       chan struct{}    //扫描工作令牌
+	scanTask           *timer.TaskTimer //扫描定时器
+	mu                 sync.RWMutex     //读写锁
+	wm                 *WalletManager   //钱包管理者
+}
+
 //NewFabricBlockScanner 创建区块链扫描器
 func NewFabricBlockScanner(wm *WalletManager) *FabricBlockScanner {
 	bs := FabricBlockScanner{}
@@ -47,19 +61,6 @@ func NewFabricBlockScanner(wm *WalletManager) *FabricBlockScanner {
 	bs.extractingCH = make(chan struct{}, maxExtractingSize)
 	bs.wm = wm
 	return &bs
-}
-
-//FabricBlockScanner bitcoin的区块链扫描器
-type FabricBlockScanner struct {
-	walletInScanning   map[string]*openwallet.Wallet                   //加入扫描的钱包
-	CurrentBlockHeight uint64                                          //当前区块高度
-	addressInScanning  map[string]string                               //加入扫描的地址
-	observers          map[openwallet.BlockScanNotificationObject]bool //观察者
-	extractingCH       chan struct{}                                   //扫描工作令牌
-	scanTask           *timer.TaskTimer                                //扫描定时器
-	mu                 sync.RWMutex                                    //读写锁
-	scanning           bool                                            //是否扫描中
-	wm                 *WalletManager                                  //钱包管理者
 }
 
 //ExtractResult 扫描完成的提取结果
@@ -130,6 +131,7 @@ func (bs *FabricBlockScanner) AddWallet(accountID string, wallet *openwallet.Wal
 	//导入钱包该账户的所有地址
 	addrs := wallet.GetAddressesByAccount(accountID)
 	if addrs == nil {
+		log.Std.Debug("Not found any address by account!")
 		return
 	}
 
