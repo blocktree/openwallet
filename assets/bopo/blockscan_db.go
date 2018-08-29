@@ -16,6 +16,7 @@
 package bopo
 
 import (
+	"errors"
 	"path/filepath"
 	"strings"
 
@@ -23,7 +24,6 @@ import (
 	"github.com/asdine/storm/q"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
-	"github.com/pkg/errors"
 )
 
 //SaveLocalNewBlock 写入本地区块高度和hash
