@@ -27,140 +27,37 @@ import (
 	"errors"
 	"github.com/shopspring/decimal"
 	"strconv"
+	"github.com/blocktree/OpenWallet/openwallet"
 )
 
-
-type WalletManager struct{}
-
-//初始化配置流程
-func (w *WalletManager) InitConfigFlow() error {
-
-	var (
-		err        error
-		apiURL     string
-		//汇总阀值
-		threshold string
-		//最小转账额度
-		minSendAmount string
-		//最小矿工费
-		minFees string
-		//gas 费用上限
-		gasLimit string
-		//存储费用上限，一般为0.预留这个
-		storageLimit string
-		//汇总地址
-		sumAddress string
-		filePath   string
+var (
+	coinDecimal decimal.Decimal = decimal.NewFromFloat(1000000)
 	)
 
-	for {
-
-		fmt.Printf("[Start setup wallet config]\n")
-
-		apiURL, err = console.InputText("Set node API url: ", true)
-		if err != nil {
-			return err
-		}
-
-
-		sumAddress, err = console.InputText("Set summary address: ", false)
-		if err != nil {
-			return err
-		}
-
-
-		threshold, err = console.InputRealNumber("Set summary threshold: ", true)
-		if err != nil {
-			return err
-		}
-
-		minSendAmount, err = console.InputRealNumber("Set minimum transfer amount: ", true)
-		if err != nil {
-			return err
-		}
-
-		fmt.Printf("[Suggest the transfer fees no less than %f]\n", 0.0001)
-		minFees, err = console.InputRealNumber("Set transfer fees: ", true)
-		if err != nil {
-			return err
-		}
-
-		fmt.Printf("[Suggest the gas limit no less than %f]\n", 0.0001)
-		gasLimit, err = console.InputRealNumber("Set gas limit: ", true)
-		if err != nil {
-			return err
-		}
-
-		fmt.Printf("[Suggest the storage limit %f]\n", 0)
-		storageLimit, err = console.InputRealNumber("Set storage limit: ", true)
-		if err != nil {
-			return err
-		}
-
-		//最小发送数量不能超过汇总阀值
-		if minFees > minSendAmount {
-			if minSendAmount > threshold {
-				return errors.New("The summary threshold must be greater than the minimum transfer amount! ")
-			}
-
-			return errors.New("The minimum transfer amount must be greater than the transfer fees! ")
-		}
-
-		//换两行
-		fmt.Println()
-		fmt.Println()
-
-		//打印输入内容
-		fmt.Printf("Please check the following setups is correct?\n")
-		fmt.Printf("-----------------------------------------------------------\n")
-		fmt.Printf("Node API url: %s\n", apiURL)
-		fmt.Printf("Summary address: %s\n", sumAddress)
-		fmt.Printf("Summary threshold: %s\n", threshold)
-		fmt.Printf("Minimum transfer amount: %s\n", minSendAmount)
-		fmt.Printf("Transfer fees: %s\n", minFees)
-		fmt.Printf("Gas limit: %s\n", gasLimit)
-		fmt.Printf("Storage limit fees: %s\n", storageLimit)
-		fmt.Printf("-----------------------------------------------------------\n")
-
-		flag, err := console.Stdin.PromptConfirm("Confirm to save the setups?")
-		if err != nil {
-			return err
-		}
-
-		if !flag {
-			continue
-		} else {
-			break
-		}
-
-	}
-
-	//换两行
-	fmt.Println()
-	fmt.Println()
-
-	_, filePath, err = newConfigFile(apiURL, sumAddress, threshold, minSendAmount, minFees, gasLimit, storageLimit)
-
-	fmt.Printf("Config file create, file path: %s\n", filePath)
-
+//初始化配置流程
+func (wm *WalletManager) InitConfigFlow() error {
+	wm.Config.InitConfig()
+	file := filepath.Join(wm.Config.configFilePath, wm.Config.configFileName)
+	fmt.Printf("You can run 'vim %s' to edit wallet's Config.\n", file)
 	return nil
-
 }
 
 //查看配置信息
-func (w *WalletManager) ShowConfig() error {
-	return printConfig()
+func (wm *WalletManager) ShowConfig() error {
+	return wm.Config.PrintConfig()
 }
 
 //创建钱包流程
-func (w *WalletManager) CreateWalletFlow() error {
+func (wm *WalletManager) CreateWalletFlow() error {
 	var (
+		password string
 		name     string
 		err      error
+		keyFile  string
 	)
 
 	//先加载是否有配置文件
-	err = loadConfig()
+	err = wm.LoadConfig()
 	if err != nil {
 		return err
 	}
@@ -168,27 +65,37 @@ func (w *WalletManager) CreateWalletFlow() error {
 	// 等待用户输入钱包名字
 	name, err = console.InputText("Enter wallet's name: ", true)
 
-	// 随机生成密钥
-	return CreateNewWallet(name)
+	// 等待用户输入密码
+	password, err = console.InputPassword(false, 3)
+
+	_, keyFile, err = wm.CreateNewWallet(name, password)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("\n")
+	fmt.Printf("Wallet create successfully, key path: %s\n", keyFile)
+
+	return nil
 }
 
 //创建地址流程
-func (w *WalletManager) CreateAddressFlow() error {
+func (wm *WalletManager) CreateAddressFlow() error {
 	//先加载是否有配置文件
-	err := loadConfig()
+	err := wm.LoadConfig()
 	if err != nil {
 		return err
 	}
 
 	//查询所有钱包信息
-	wallets, err := GetWallets()
+	wallets, err := wm.GetWallets()
 	if err != nil {
 		fmt.Printf("The node did not create any wallet!\n")
 		return err
 	}
 
 	//打印钱包
-	printWalletList(wallets)
+	wm.printWalletList(wallets)
 
 	fmt.Printf("[Please select a wallet account to create address] \n")
 
@@ -220,7 +127,7 @@ func (w *WalletManager) CreateAddressFlow() error {
 	log.Printf("Start batch creation\n")
 	log.Printf("-------------------------------------------------\n")
 
-	filePath, _, err := CreateBatchAddress(wallet.WalletID, password, count)
+	filePath, _, err := wm.CreateBatchAddress(wallet.WalletID, password, count)
 	if err != nil {
 		return err
 	}
@@ -246,33 +153,31 @@ func (w *WalletManager) CreateAddressFlow() error {
 */
 
 // SummaryFollow 汇总流程
-func (w *WalletManager) SummaryFollow() error {
-
+func (wm *WalletManager) SummaryFollow() error {
 	var (
 		endRunning = make(chan bool, 1)
 	)
 
 	//先加载是否有配置文件
-	err := loadConfig()
+	err := wm.LoadConfig()
 	if err != nil {
 		return err
 	}
 
 	//判断汇总地址是否存在
-	if len(sumAddress) == 0 {
-
+	if len(wm.Config.SumAddress) == 0 {
 		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
 	}
 
 	//查询所有钱包信息
-	wallets, err := GetWallets()
+	wallets, err := wm.GetWallets()
 	if err != nil {
 		fmt.Printf("The node did not create any wallet!\n")
 		return err
 	}
 
 	//打印钱包
-	printWalletList(wallets)
+	wm.printWalletList(wallets)
 
 	fmt.Printf("[Please select the wallet to summary, and enter the numbers split by ','." +
 		" For example: 0,1,2,3] \n")
@@ -301,7 +206,7 @@ func (w *WalletManager) SummaryFollow() error {
 
 				w.Password = password
 
-				AddWalletInSummary(w.WalletID, w)
+				wm.AddWalletInSummary(w.WalletID, w)
 			} else {
 				return errors.New("The input No. out of index! ")
 			}
@@ -310,14 +215,14 @@ func (w *WalletManager) SummaryFollow() error {
 		}
 	}
 
-	if len(walletsInSum) == 0 {
+	if len(wm.WalletsInSum) == 0 {
 		return errors.New("Not summary wallets to register! ")
 	}
 
-	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", cycleSeconds.Seconds())
+	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", wm.Config.CycleSeconds.Seconds())
 
 	//启动钱包汇总程序
-	sumTimer := timer.NewTask(cycleSeconds, SummaryWallets)
+	sumTimer := timer.NewTask(wm.Config.CycleSeconds, wm.SummaryWallets)
 	sumTimer.Start()
 
 	<-endRunning
@@ -326,21 +231,20 @@ func (w *WalletManager) SummaryFollow() error {
 }
 
 //备份钱包流程
-func (w *WalletManager) BackupWalletFlow() error {
+func (wm *WalletManager) BackupWalletFlow() error {
 	var err error
 
-
 	//先加载是否有配置文件
-	err = loadConfig()
+	err = wm.LoadConfig()
 	if err != nil {
 		return err
 	}
 
 	//建立备份路径
-	backupPath := filepath.Join(keyDir, "backup")
+	backupPath := filepath.Join(wm.Config.keyDir, "backup")
 	file.MkdirAll(backupPath)
 
-	err = file.Copy(dbPath, filepath.Join(backupPath))
+	err = file.Copy(wm.Config.dbPath, filepath.Join(backupPath))
 	if err != nil {
 		return err
 	}
@@ -351,20 +255,20 @@ func (w *WalletManager) BackupWalletFlow() error {
 }
 
 //SendTXFlow 发送交易
-func (w *WalletManager) TransferFlow() error {
+func (wm *WalletManager) TransferFlow() error {
 	//先加载是否有配置文件
-	err := loadConfig()
+	err := wm.LoadConfig()
 	if err != nil {
 		return err
 	}
 
-	wallets, err := GetWallets()
+	wallets, err := wm.GetWallets()
 	if err != nil {
 		return err
 	}
 
 	//打印钱包列表
-	printWalletList(wallets)
+	wm.printWalletList(wallets)
 
 	fmt.Printf("[Please select a wallet to send transaction] \n")
 
@@ -407,11 +311,16 @@ func (w *WalletManager) TransferFlow() error {
 	}
 	defer db.Close()
 
-	var keys []*Key
-	db.All(&keys)
+	var addrs []*openwallet.Address
+	db.All(&addrs)
 
 	haveEnoughBalance := false
 
+	//加载钱包
+	key, err := wallet.HDKey(password)
+	if err != nil {
+		return err
+	}
 
 	type sendStruct struct {
 		sednKeys *Key
@@ -422,16 +331,18 @@ func (w *WalletManager) TransferFlow() error {
 	var sends []sendStruct
 	var resultSub decimal.Decimal = atculAmount
 	//新建发送地址列表以及验证余额是否足够
-	for _, k := range keys {
+	for _, a := range addrs {
+		k, _ := wm.getKeys(key, a)
+
 		//get balance
-		decimal_balance, _ := decimal.NewFromString(string(callGetbalance(k.Address)))
+		decimal_balance, _ := decimal.NewFromString(string(wm.WalletClient.callGetbalance(k.Address)))
 
 		//判断是否是reveal交易
-		fee := minFees
-		isReverl := isReverlKey(k.Address)
+		fee := wm.Config.MinFee
+		isReverl := wm.isReverlKey(a.Address)
 		if isReverl {
 			//多了reveal操作后，fee * 2
-			fee = minFees.Mul(decimal.RequireFromString("2"))
+			fee = wm.Config.MinFee.Mul(decimal.RequireFromString("2"))
 		}
 		// 将该地址多余额减去矿工费
 		amount := decimal_balance.Sub(fee)
@@ -457,12 +368,9 @@ func (w *WalletManager) TransferFlow() error {
 
 	if haveEnoughBalance {
 		for _, send := range sends {
-			sk, _ := Decrypt(password, send.sednKeys.PrivateKey)
-			send.sednKeys.PrivateKey = sk
-
-			txid, _ := transfer(*send.sednKeys, receiver, strconv.FormatInt(minFees.IntPart(), 10), strconv.FormatInt(gasLimit.IntPart(), 10),
-				strconv.FormatInt(storageLimit.IntPart(), 10),strconv.FormatInt(send.amount.IntPart(), 10))
-			log.Printf("transfer address:%s, to address:%s, amount:%d, txid:%s\n", send.sednKeys.Address, sumAddress, send.amount.IntPart(), txid)
+			txid, _ := wm.Transfer(*send.sednKeys, receiver, strconv.FormatInt(wm.Config.MinFee.IntPart(), 10), strconv.FormatInt(wm.Config.GasLimit.IntPart(), 10),
+				strconv.FormatInt(wm.Config.StorageLimit.IntPart(), 10),strconv.FormatInt(send.amount.IntPart(), 10))
+			log.Printf("transfer address:%s, to address:%s, amount:%d, txid:%s\n", send.sednKeys.Address, wm.Config.SumAddress, send.amount.IntPart(), txid)
 		}
 	} else {
 		log.Printf("not enough balance\n")
@@ -473,25 +381,26 @@ func (w *WalletManager) TransferFlow() error {
 }
 
 //GetWalletList 获取钱包列表
-func (w *WalletManager) GetWalletList() error {
+func (wm *WalletManager) GetWalletList() error {
 	var err error
 
 	//先加载是否有配置文件
-	err = loadConfig()
+	err = wm.LoadConfig()
 	if err != nil {
 		return err
 	}
 
-	list, err := GetWallets()
+	list, err := wm.GetWallets()
 	if err != nil {
 		return err
 	}
 
 	//打印钱包列表
-	printWalletList(list)
+	wm.printWalletList(list)
 
 	return nil
 }
+
 
 //RestoreWalletFlow 恢复钱包
 func (w *WalletManager) RestoreWalletFlow() error {
@@ -501,15 +410,15 @@ func (w *WalletManager) RestoreWalletFlow() error {
 
 
 //SetConfigFlow 初始化配置流程
-func (w *WalletManager) SetConfigFlow(subCmd string) error {
-	file := configFilePath + configFileName
+func (wm *WalletManager) SetConfigFlow(subCmd string) error {
+	file := wm.Config.configFilePath + wm.Config.configFileName
 	fmt.Printf("You can run 'vim %s' to edit %s config.\n", file, subCmd)
 	return nil
 }
 
 //ShowConfigInfo 查看配置信息
-func (w *WalletManager) ShowConfigInfo(subCmd string) error {
-	printConfig()
+func (wm *WalletManager) ShowConfigInfo(subCmd string) error {
+	//wm.printConfig()
 	return nil
 }
 
