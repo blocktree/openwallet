@@ -15,6 +15,13 @@
 
 package bopo
 
+import (
+	"fmt"
+
+	"github.com/blocktree/OpenWallet/crypto"
+	"github.com/bytom/common"
+)
+
 // "github.com/asdine/storm"
 // "github.com/blocktree/OpenWallet/common/file"
 // "github.com/blocktree/OpenWallet/keystore"
@@ -119,6 +126,15 @@ type UnscanRecord struct {
 	TxID        string
 	Reason      string
 	RescanCount int
+}
+
+func NewUnscanRecord(height uint64, txID, reason string) *UnscanRecord {
+	obj := UnscanRecord{}
+	obj.BlockHeight = height
+	obj.TxID = txID
+	obj.Reason = reason
+	obj.ID = common.Bytes2Hex(crypto.SHA256([]byte(fmt.Sprintf("%d_%s", height, txID))))
+	return &obj
 }
 
 /*

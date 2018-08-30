@@ -19,6 +19,7 @@ import (
 	// "encoding/base64"
 	// "errors"
 	// "path/filepath"
+
 	"sync"
 	"time"
 
@@ -27,6 +28,7 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/timer"
+	"github.com/pkg/errors"
 	// "github.com/tidwall/gjson"
 )
 
@@ -36,10 +38,24 @@ const (
 	maxExtractingSize = 20              //并发的扫描线程数
 )
 
+//FabricBlockScanner bitcoin的区块链扫描器
+type FabricBlockScanner struct {
+	walletInScanning  map[string]*openwallet.Wallet                   //加入扫描的钱包
+	addressInScanning map[string]string                               //加入扫描的地址
+	observers         map[openwallet.BlockScanNotificationObject]bool //观察者
+
+	scanning           bool             //是否扫描中
+	CurrentBlockHeight uint64           //当前区块高度
+	extractingCH       chan struct{}    //扫描工作令牌
+	scanTask           *timer.TaskTimer //扫描定时器
+	mu                 sync.RWMutex     //读写锁
+	wm                 *WalletManager   //钱包管理者
+}
+
 //NewFabricBlockScanner 创建区块链扫描器
 func NewFabricBlockScanner(wm *WalletManager) *FabricBlockScanner {
 	bs := FabricBlockScanner{}
-	//bs.walletInScanning = make(map[string]*openwallet.Wallet)
+	bs.walletInScanning = make(map[string]*openwallet.Wallet)
 	bs.addressInScanning = make(map[string]string)
 	bs.observers = make(map[openwallet.BlockScanNotificationObject]bool)
 	bs.extractingCH = make(chan struct{}, maxExtractingSize)
@@ -47,17 +63,20 @@ func NewFabricBlockScanner(wm *WalletManager) *FabricBlockScanner {
 	return &bs
 }
 
-//FabricBlockScanner bitcoin的区块链扫描器
-type FabricBlockScanner struct {
-	walletInScanning   map[string]*openwallet.Wallet                   //加入扫描的钱包
-	CurrentBlockHeight uint64                                          //当前区块高度
-	addressInScanning  map[string]string                               //加入扫描的地址
-	observers          map[openwallet.BlockScanNotificationObject]bool //观察者
-	extractingCH       chan struct{}                                   //扫描工作令牌
-	scanTask           *timer.TaskTimer                                //扫描定时器
-	mu                 sync.RWMutex                                    //读写锁
-	scanning           bool                                            //是否扫描中
-	wm                 *WalletManager                                  //钱包管理者
+//ExtractResult 扫描完成的提取结果
+type ExtractResult struct {
+	Recharges   []*openwallet.Recharge
+	TxID        string
+	BlockHeight uint64
+	Success     bool
+	Reason      string
+}
+
+//SaveResult 保存结果
+type SaveResult struct {
+	TxID        string
+	BlockHeight uint64
+	Success     bool
 }
 
 /*
@@ -112,6 +131,7 @@ func (bs *FabricBlockScanner) AddWallet(accountID string, wallet *openwallet.Wal
 	//导入钱包该账户的所有地址
 	addrs := wallet.GetAddressesByAccount(accountID)
 	if addrs == nil {
+		log.Std.Debug("Not found any address by account!")
 		return
 	}
 
@@ -225,17 +245,18 @@ func (bs *FabricBlockScanner) Restart() {
 */
 //SetRescanBlockHeight 重置区块链扫描高度
 func (bs *FabricBlockScanner) SetRescanBlockHeight(height uint64) error {
-	// height = height - 1
-	// if height < 0 {
-	// 	return errors.New("block height to rescan must greater than 0.")
-	// }
+	height = height - 1
+	if height < 0 {
+		return errors.New("block height to rescan must greater than 0.")
+	}
 
 	// hash, err := bs.wm.GetBlockHash(height)
 	// if err != nil {
 	// 	return err
 	// }
+	hash := "" // Fabric can get Block by Height without Hash
 
-	// bs.wm.SaveLocalNewBlock(height, hash)
+	bs.SaveLocalNewBlock(height, hash)
 
 	return nil
 }
@@ -249,7 +270,7 @@ func (bs *FabricBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, 
 		err         error
 	)
 
-	blockHeight, hash = bs.wm.GetLocalNewBlock()
+	blockHeight, hash = bs.GetLocalNewBlock()
 
 	//如果本地没有记录，查询接口的高度
 	if blockHeight <= 0 {
