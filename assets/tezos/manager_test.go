@@ -29,11 +29,15 @@ func init() {
 	wm.WalletClient = NewClient(wm.Config.ServerAPI, false)
 }
 
+func TestWalletManager_InitConfigFlow(t *testing.T) {
+	wm.InitConfigFlow()
+}
+
 func TestApi(t *testing.T) {
-	ret := wm.WalletClient.callGetHeader()
+	ret := wm.WalletClient.CallGetHeader()
 	t.Logf(string(ret))
 
-	ret = wm.WalletClient.callGetbalance("tz1Neor2KRu3zp5FdMox98sxYLvFqtUs4fCJ")
+	ret = wm.WalletClient.CallGetbalance("tz1Neor2KRu3zp5FdMox98sxYLvFqtUs4fCJ")
 	t.Logf(string(ret))
 }
 
@@ -96,6 +100,28 @@ func TestWalletManager_CreateBatchAddress(t *testing.T) {
 	}
 }
 
+func TestGetAddreses(t *testing.T) {
+	w, err := wm.GetWalletByID("WEY5DDuXbvHrBUa5UBKmVpwLCwP69bieeB")
+	if err != nil {
+		t.Error("get wallet by id error")
+		return
+	}
+
+	db, err := w.OpenDB()
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	defer db.Close()
+
+	var addrs []*openwallet.Address
+	db.All(&addrs)
+
+	for _, a := range addrs {
+		t.Logf(a.Address)
+	}
+}
+
 func TestWalletManager_TransferFlow(t *testing.T) {
 	w, err := wm.GetWalletByID("WEY5DDuXbvHrBUa5UBKmVpwLCwP69bieeB")
 	if err != nil {
@@ -120,7 +146,6 @@ func TestWalletManager_TransferFlow(t *testing.T) {
 	for _, a := range addrs {
 		if a.Address == "tz1XSuiDu5Fevzwv3CG26dxmsinejRsUviC2" {
 			sender = a
-			t.Logf(a.Address)
 			break
 		}
 	}
@@ -130,9 +155,22 @@ func TestWalletManager_TransferFlow(t *testing.T) {
 		t.Error("get key error")
 	}
 
-	t.Logf("len:%d", len(key.PrivateKey))
 	dst := "tz1Neor2KRu3zp5FdMox98sxYLvFqtUs4fCJ"
 
 	inj, pre := wm.Transfer(*key, dst, "100", "100", "100", "1001")
-	t.Logf("inj: %s, pre: %s", inj, pre)
+	t.Logf("inj: %s\n, pre: %s\n", inj, pre)
 }
+
+
+/*
+	manager_test.go:121: tz1NGveHiqsNEjUUGqkUHRfp69PkGyNaq8Ax
+	manager_test.go:121: tz1QtdKMHA8vq6EfeU9YMvsNiyNomErX4Hv7
+	manager_test.go:121: tz1RFB11LxGgJj6QxS7wjk1zPrqE4krTbjx1
+	manager_test.go:121: tz1UUH6ixu3AdzjMMjEPSrC9ErsH4VMEvDTB
+	manager_test.go:121: tz1UjEGWubFhpBm4kHGqKNAmf9tfq4nKri64
+	manager_test.go:121: tz1XSuiDu5Fevzwv3CG26dxmsinejRsUviC2
+	manager_test.go:121: tz1XgSKaXyhx1tB3HrhScJP3cJcZA2LXC9fF
+	manager_test.go:121: tz1Y2yZvK2iMMxVcaNm9h5AhdC6uKvRc2JQf
+	manager_test.go:121: tz1YtYZS6KKWJeRjZCCCY4FYu7qyS8hEEz4Z
+	manager_test.go:121: tz1hKLUu55xmfKCizGj5X5w8akxKJrUwnVU3
+*/

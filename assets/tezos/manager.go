@@ -19,7 +19,6 @@ import (
 	"github.com/shopspring/decimal"
 	"time"
 	"encoding/hex"
-	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/blake2b"
 	"strconv"
 	"github.com/tidwall/gjson"
@@ -91,13 +90,8 @@ func (wm *WalletManager) signTransaction(hash string, sk []byte, watermark []byt
 	}
 	ctx.Write(merbuf[:])
 	bb := ctx.Sum(nil)
-/*
-	sks, err:= base58checkDecodeNormal(s, prefix["edsk"])
-	if err != nil {
-		return "", "", err
-	}
-*/
-	sig := ed25519.Sign(sk[:], bb[:])
+
+	sig, _ := owcrypt.Signature(sk[:], nil, 0, bb[:], uint16(len(bb)), owcrypt.ECC_CURVE_ED25519_EXTEND)
 	edsig := base58checkEncode(sig, prefix["edsig"])
 
 	sbyte := hash + hex.EncodeToString(sig[:])
@@ -107,7 +101,7 @@ func (wm *WalletManager) signTransaction(hash string, sk []byte, watermark []byt
 
 //判断该key是否需要reverl
 func (wm *WalletManager) isReverlKey(pubkey string) bool {
-	manager_key := wm.WalletClient.callGetManagerKey(pubkey)
+	manager_key := wm.WalletClient.CallGetManagerKey(pubkey)
 	//manager := gjson.GetBytes(ret, "manager")
 	key := gjson.GetBytes(manager_key, "key")
 
@@ -120,12 +114,12 @@ func (wm *WalletManager) isReverlKey(pubkey string) bool {
 
 //转账
 func (wm *WalletManager) Transfer(keys Key, dst string, fee, gas_limit, storage_limit, amount string) (string, string){
-	header := wm.WalletClient.callGetHeader()
+	header := wm.WalletClient.CallGetHeader()
 	blk_hash := gjson.GetBytes(header, "hash").Str
 	chain_id := gjson.GetBytes(header, "chain_id").Str
 	protocol := gjson.GetBytes(header, "protocol").Str
 
-	counter := wm.WalletClient.callGetCounter(keys.Address)
+	counter := wm.WalletClient.CallGetCounter(keys.Address)
 	icounter,_ := strconv.Atoi(string(counter))
 	icounter = icounter + 1
 
@@ -161,7 +155,7 @@ func (wm *WalletManager) Transfer(keys Key, dst string, fee, gas_limit, storage_
 	opOb := make(map[string]interface{})
 	opOb["branch"] = blk_hash
 	opOb["contents"] = ops
-	hash := wm.WalletClient.callForgeOps(chain_id, blk_hash, opOb)
+	hash := wm.WalletClient.CallForgeOps(chain_id, blk_hash, opOb)
 
 	//sign
 	edsig, sbyte, _ := wm.signTransaction(hash, keys.PrivateKey, watermark["generic"])
@@ -171,10 +165,10 @@ func (wm *WalletManager) Transfer(keys Key, dst string, fee, gas_limit, storage_
 	opOb["signature"] = edsig
 	opOb["protocol"] = protocol
 	opObs = append(opObs, opOb)
-	pre := wm.WalletClient.callPreapplyOps(opObs)
+	pre := wm.WalletClient.CallPreapplyOps(opObs)
 
 	//jnject aperations
-	inj := wm.WalletClient.callInjectOps(sbyte)
+	inj := wm.WalletClient.CallInjectOps(sbyte)
 	return string(inj), string(pre)
 }
 
@@ -372,11 +366,9 @@ func (wm *WalletManager) CreateBatchAddress(walletId, password string, count uin
 	}
 
 	/*	开启导出的线程，监听新地址，批量导出	*/
-
 	go saveAddressWork(worker, filePath, w)
 
 	/*	计算synCount个线程，内部运行的次数	*/
-
 	//每个线程内循环的数量，以synCount个线程并行处理
 	runCount := count / synCount
 	otherCount := count % synCount
@@ -458,7 +450,7 @@ func (wm *WalletManager) summaryWallet(wallet *openwallet.Wallet, password strin
 		k, _ := wm.getKeys(key, a)
 
 		//get balance
-		decimal_balance, _ := decimal.NewFromString(string(wm.WalletClient.callGetbalance(a.Address)))
+		decimal_balance, _ := decimal.NewFromString(string(wm.WalletClient.CallGetbalance(a.Address)))
 
 		//判断是否是reveal交易
 		fee := wm.Config.MinFee
@@ -503,9 +495,7 @@ func (wm *WalletManager) exportAddressToFile(addrs []*openwallet.Address, filePa
 	)
 
 	for _, a := range addrs {
-
 		log.Std.Info("Export: %s ", a.Address)
-
 		content = content + a.Address + "\n"
 	}
 
@@ -549,7 +539,6 @@ func (wm *WalletManager) GetWalletByID(walletID string) (*openwallet.Wallet, err
 		if w.WalletID == walletID {
 			return w, nil
 		}
-
 	}
 
 	return nil, errors.New("The wallet that your given name is not exist!")
@@ -569,7 +558,7 @@ func (wm *WalletManager) LoadConfig() error {
 		return errors.New("Config is not setup. Please run 'wmd Config -s <symbol>' ")
 	}
 
-	wm.Config.ServerAPI = c.String("apiURL")
+	wm.Config.ServerAPI = c.String("apiUrl")
 	wm.Config.Threshold, _ = decimal.NewFromString(c.String("threshold"))
 	wm.Config.SumAddress = c.String("sumAddress")
 	wm.Config.MinFee = decimal.RequireFromString(c.String("minFee"))
@@ -592,8 +581,11 @@ func (wm *WalletManager) getKeys(key *hdkeystore.HDKey, a *openwallet.Address) (
 	if err != nil {
 		return  nil, err
 	}
+
 	pubkey := childKey.GetPublicKeyBytes()
-	k := &Key{a.Address, string(pubkey), prikey}
+	//转换成带前缀公钥，交易结构中需要填充此类型公钥
+	pk := base58checkEncode(pubkey, prefix["edpk"])
+	k := &Key{a.Address,pk,prikey}
 
 	return k, nil
 }

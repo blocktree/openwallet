@@ -22,7 +22,6 @@ import (
 
 type Client struct {
 	BaseURL     string
-	//AccessToken string
 	Debug       bool
 	Client      *req.Req
 	Header      req.Header
@@ -31,7 +30,6 @@ type Client struct {
 func NewClient(url string, debug bool) *Client {
 	c := Client{
 		BaseURL:     url,
-		//AccessToken: token,
 		Debug:       debug,
 	}
 
@@ -43,7 +41,7 @@ func NewClient(url string, debug bool) *Client {
 	return &c
 }
 
-func (c *Client) callGetHeader() []byte {
+func (c *Client) CallGetHeader() []byte {
 	url := c.BaseURL + "/chains/main/blocks/head/header"
 	param := make(req.QueryParam, 0)
 
@@ -56,7 +54,7 @@ func (c *Client) callGetHeader() []byte {
 	return r.Bytes()
 }
 
-func (c *Client) callGetCounter(pkh string) []byte {
+func (c *Client) CallGetCounter(pkh string) []byte {
 	url := c.BaseURL + "/chains/main/blocks/head/context/contracts/" + pkh + "/counter"
 
 	r, err := c.Client.Get(url)
@@ -70,7 +68,7 @@ func (c *Client) callGetCounter(pkh string) []byte {
 	return r.Bytes()[1:lenght-2]
 }
 
-func (c *Client) callGetManagerKey(pkh string) []byte {
+func (c *Client) CallGetManagerKey(pkh string) []byte {
 	url := c.BaseURL + "/chains/main/blocks/head/context/contracts/" + pkh + "/manager_key"
 
 	r, err := c.Client.Get(url)
@@ -82,7 +80,7 @@ func (c *Client) callGetManagerKey(pkh string) []byte {
 	return r.Bytes()
 }
 
-func (c *Client) callForgeOps(chain_id string, head_hash string, body interface{}) string {
+func (c *Client) CallForgeOps(chain_id string, head_hash string, body interface{}) string {
 	url := c.BaseURL + "/chains/" + chain_id + "/blocks/" + head_hash + "/helpers/forge/operations"
 	param := make(req.Param, 0)
 
@@ -97,7 +95,7 @@ func (c *Client) callForgeOps(chain_id string, head_hash string, body interface{
 	return string(r.Bytes()[1:lenght-2])
 }
 
-func (c *Client) callPreapplyOps(body interface{}) []byte{
+func (c *Client) CallPreapplyOps(body interface{}) []byte{
 	url := c.BaseURL + "/chains/main/blocks/head/helpers/preapply/operations"
 	param := make(req.Param, 0)
 
@@ -110,7 +108,7 @@ func (c *Client) callPreapplyOps(body interface{}) []byte{
 	return r.Bytes()
 }
 
-func (c *Client) callInjectOps(body string) []byte {
+func (c *Client) CallInjectOps(body string) []byte {
 	url := c.BaseURL + "/injection/operation"
 	param := make(req.Param, 0)
 
@@ -124,7 +122,7 @@ func (c *Client) callInjectOps(body string) []byte {
 	return r.Bytes()
 }
 
-func (c *Client) callGetbalance(addr string) []byte {
+func (c *Client) CallGetbalance(addr string) []byte {
 	url := c.BaseURL + "/chains/main/blocks/head/context/contracts/" + addr + "/balance"
 	param := make(req.QueryParam, 0)
 

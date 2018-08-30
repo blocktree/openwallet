@@ -43,106 +43,7 @@ const (
 	CurveType = owcrypt.ECC_CURVE_ED25519
 )
 
-/*
-var (
-	dataDir = filepath.Join("data", strings.ToLower(Symbol))
-	//钥匙备份路径
-	keyDir = filepath.Join(dataDir, "key")
-	//地址导出路径
-	addressDir = filepath.Join(dataDir, "address")
-	//配置文件路径
-	configFilePath = filepath.Join("conf")
-	//配置文件名
-	configFileName = Symbol + ".json"
-	//备份路径
-	backupDir = filepath.Join(dataDir, "backup")
-	//本地数据库文件路径
-	dbPath = filepath.Join(dataDir, "db")
-	walletsInSum = make(map[string]*openwallet.Wallet)
-)
-
-//isExistConfigFile 检查配置文件是否存在
-func isExistConfigFile() bool {
-	_, err := config.NewConfig("json",
-		filepath.Join(configFilePath, configFileName))
-	if err != nil {
-		return false
-	}
-	return true
-}
-
-//newConfigFile 创建配置文件
-func newConfigFile(
-	apiURL, sumAddress,
-	threshold, minSendAmount, minFees, gasLimit, storageLimit string) (config.Configer, string, error) {
-
-	//	生成配置
-	configMap := map[string]interface{}{
-		"apiURL":         apiURL,
-		"sumAddress":     sumAddress,
-		"threshold":      threshold,
-		"minSendAmount":  minSendAmount,
-		"minFees":        minFees,
-		"gasLimit":       gasLimit,
-		"storageLimit":   storageLimit,
-	}
-
-	filepath.Join()
-
-	bytes, err := json.Marshal(configMap)
-	if err != nil {
-		return nil, "", err
-	}
-
-	//实例化配置
-	c, err := config.NewConfigData("json", bytes)
-	if err != nil {
-		return nil, "", err
-	}
-
-	//写入配置到文件
-	file.MkdirAll(configFilePath)
-	absFile := filepath.Join(configFilePath, configFileName)
-	err = c.SaveConfigFile(absFile)
-	if err != nil {
-		return nil, "", err
-	}
-
-	return c, absFile, nil
-}
-
-func printConfig() error {
-	//读取配置
-	absFile := filepath.Join(configFilePath, configFileName)
-	c, err := config.NewConfig("json", absFile)
-	if err != nil {
-		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
-	}
-
-	apiURL := c.String("apiURL")
-	threshold := c.String("threshold")
-	minSendAmount := c.String("minSendAmount")
-	minFees := c.String("minFees")
-	sumAddress := c.String("sumAddress")
-	gasLimit := c.String("gasLimit")
-	storageLimit := c.String("storageLimit")
-
-	fmt.Printf("-----------------------------------------------------------\n")
-	fmt.Printf("Node API url: %s\n", apiURL)
-	fmt.Printf("Summary address: %s\n", sumAddress)
-	fmt.Printf("Summary threshold: %s\n", threshold)
-	fmt.Printf("Minimum transfer amount: %s\n", minSendAmount)
-	fmt.Printf("Transfer fees: %s\n", minFees)
-	fmt.Printf("Gas limit: %s\n", gasLimit)
-	fmt.Printf("Storage limit: %s\n", storageLimit)
-	fmt.Printf("-----------------------------------------------------------\n")
-
-	return nil
-
-}
-*/
 type WalletConfig struct {
-
 	//币种
 	Symbol    string
 	MasterKey string
@@ -184,7 +85,6 @@ type WalletConfig struct {
 }
 
 func NewConfig(symbol string, masterKey string) *WalletConfig {
-
 	c := WalletConfig{}
 
 	//币种
@@ -252,7 +152,6 @@ threshold = "1000000"
 
 //printConfig Print config information
 func (wc *WalletConfig) PrintConfig() error {
-
 	wc.InitConfig()
 	//读取配置
 	absFile := filepath.Join(wc.configFilePath, wc.configFileName)
@@ -267,7 +166,6 @@ func (wc *WalletConfig) PrintConfig() error {
 
 //initConfig 初始化配置文件
 func (wc *WalletConfig) InitConfig() {
-
 	//读取配置
 	absFile := filepath.Join(wc.configFilePath, wc.configFileName)
 	if !file.Exists(absFile) {
