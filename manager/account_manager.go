@@ -22,8 +22,11 @@ import (
 	"github.com/asdine/storm"
 	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
 	"time"
+	"github.com/blocktree/OpenWallet/log"
+	"strings"
 )
 
+// CreateAssetsAccount
 func (wm *WalletManager) CreateAssetsAccount(appID, walletID string, account *openwallet.AssetsAccount, otherOwnerKeys []string) (*openwallet.AssetsAccount, error) {
 
 	wallet, err := wm.GetWalletInfo(appID, walletID)
@@ -114,15 +117,17 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID string, account *op
 		return nil, err
 	}
 
-	//TODO:创建新地址
+	log.Debug("new account create success:", account.AccountID)
+
 	_, err = wm.CreateAddress(appID, walletID, account.GetAccountID(), 1)
 	if err != nil {
-		return nil, err
+		log.Debug("new address create failed, unexpected error:", err)
 	}
 
 	return account, nil
 }
 
+// GetAssetsAccountInfo
 func (wm *WalletManager) GetAssetsAccountInfo(appID, walletID, accountID string) (*openwallet.AssetsAccount, error) {
 
 	//打开数据库
@@ -140,6 +145,7 @@ func (wm *WalletManager) GetAssetsAccountInfo(appID, walletID, accountID string)
 	return &account, nil
 }
 
+// GetAssetsAccountList
 func (wm *WalletManager) GetAssetsAccountList(appID, walletID string, offset, limit int) ([]*openwallet.AssetsAccount, error) {
 
 	//打开数据库
@@ -158,7 +164,7 @@ func (wm *WalletManager) GetAssetsAccountList(appID, walletID string, offset, li
 
 }
 
-
+// CreateAddress
 func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string, count uint64) ([]*openwallet.Address, error) {
 
 	var (
@@ -176,7 +182,7 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 		return nil, fmt.Errorf("create address count is zero")
 	}
 
-	symbolInfo, err := assets.GetSymbolInfo(account.Symbol)
+	assetsMgr, err := GetAssetsManager(account.Symbol)
 	if err != nil {
 		return nil, err
 	}
@@ -216,12 +222,12 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 
 
 		if len(account.OwnerKeys) > 1 {
-			address, err = symbolInfo.AddressDecode().RedeemScriptToAddress(newKeys, account.Required, wm.cfg.isTestnet)
+			address, err = assetsMgr.AddressDecode().RedeemScriptToAddress(newKeys, account.Required, wm.cfg.isTestnet)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			address, err = symbolInfo.AddressDecode().PublicKeyToAddress(newKeys[0], wm.cfg.isTestnet)
+			address, err = assetsMgr.AddressDecode().PublicKeyToAddress(newKeys[0], wm.cfg.isTestnet)
 			if err != nil {
 				return nil, err
 			}
@@ -260,17 +266,69 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 		return nil, err
 	}
 
+	log.Debug("new addresses create success:", addrs)
+
 	return addrs, nil
 }
 
+// GetAddressList
 func (wm *WalletManager) GetAddressList(appID, walletID, accountID string, offset, limit int, watchOnly bool) ([]*openwallet.Address, error) {
-	//TODO:待实现
-	return nil, nil
+	//打开数据库
+	db, err := wm.OpenDB(appID)
+	if err != nil {
+		return nil, err
+	}
+
+	var addrs []*openwallet.Address
+	err = db.Find("AccountID", accountID, &addrs, storm.Limit(limit), storm.Skip(offset))
+	if err != nil {
+		return nil, err
+	}
+
+	return addrs, nil
 }
 
 
 func (wm *WalletManager) ImportWatchOnlyAddress(appID, walletID, accountID string, addresses []*openwallet.Address) error {
-	//TODO:待实现
+
+	account, err := wm.GetAssetsAccountInfo(appID, walletID, accountID)
+	if err != nil {
+		return err
+	}
+
+	createdAt := time.Now()
+
+	//保存钱包到本地应用数据库
+	db, err := wm.OpenDB(appID)
+	if err != nil {
+		return err
+	}
+
+	tx, err := db.Begin(true)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback()
+
+	for _, a := range addresses {
+		a.WatchOnly = true //观察地址
+		a.Symbol = strings.ToLower(account.Symbol)
+		a.AccountID = account.AccountID
+		a.CreatedAt = createdAt
+		err = tx.Save(a)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	log.Debug("import addresses success count:", len(addresses))
+
 	return nil
 }
 

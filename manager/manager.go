@@ -26,8 +26,8 @@ import (
 	"github.com/blocktree/OpenWallet/openwallet"
 )
 
+//WalletManager OpenWallet钱包管理器
 type WalletManager struct {
-	//	TODO:自定义持久化数据源
 	appDB       map[string]*openwallet.StormDB
 	cfg         *Config
 	initialized bool

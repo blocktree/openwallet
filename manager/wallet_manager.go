@@ -20,8 +20,10 @@ import (
 	"github.com/blocktree/OpenWallet/hdkeystore"
 	"fmt"
 	"github.com/asdine/storm"
+	"github.com/blocktree/OpenWallet/log"
 )
 
+// CreateWallet 创建钱包
 func (wm *WalletManager) CreateWallet(appID string, wallet *openwallet.Wallet) (*openwallet.Wallet, *hdkeystore.HDKey, error) {
 
 	var (
@@ -65,9 +67,12 @@ func (wm *WalletManager) CreateWallet(appID string, wallet *openwallet.Wallet) (
 		return nil, nil, err
 	}
 
+	log.Debug("new wallet create success:", wallet.WalletID)
+
 	return wallet, key, nil
 }
 
+// GetWalletInfo
 func (wm *WalletManager) GetWalletInfo(appID string, walletID string) (*openwallet.Wallet, error) {
 
 	//打开数据库
@@ -85,7 +90,7 @@ func (wm *WalletManager) GetWalletInfo(appID string, walletID string) (*openwall
 	return &wallet, nil
 }
 
-
+// GetWalletList
 func (wm *WalletManager) GetWalletList(appID string, offset, limit int) ([]*openwallet.Wallet, error) {
 
 	//打开数据库

@@ -13,16 +13,30 @@
  * GNU Lesser General Public License for more details.
  */
 
-package openwallet
+package manager
 
-type AddressDecoder struct {
+import (
+	"github.com/blocktree/OpenWallet/assets"
+	"github.com/blocktree/OpenWallet/openwallet"
+	"strings"
+	"fmt"
+)
 
-	//PrivateKeyToWIF 私钥转WIF
-	PrivateKeyToWIF func(priv []byte, isTestnet bool) (string, error)
-	//PublicKeyToAddress 公钥转地址
-	PublicKeyToAddress func(pub []byte, isTestnet bool) (string, error)
-	//WIFToPrivateKey WIF转私钥
-	WIFToPrivateKey func(wif string, isTestnet bool) ([]byte, error)
-	//RedeemScriptToAddress 多重签名赎回脚本转地址
-	RedeemScriptToAddress func(pubs [][]byte, required uint64, isTestnet bool) (string, error)
+type AssetsManager interface {
+
+	assets.SymbolInfo
+
+	//AddressDecode 地址解析器
+	AddressDecode() openwallet.AddressDecoder
+}
+
+
+
+// GetAssetsController 获取资产控制器
+func GetAssetsManager(symbol string) (AssetsManager, error) {
+	manager, ok := assets.Managers[strings.ToLower(symbol)].(AssetsManager)
+	if !ok {
+		return nil, fmt.Errorf("assets: %s is not support", symbol)
+	}
+	return manager, nil
 }

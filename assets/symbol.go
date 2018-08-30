@@ -18,7 +18,6 @@ package assets
 import (
 	"fmt"
 	"strings"
-	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 type SymbolInfo interface {
@@ -32,13 +31,11 @@ type SymbolInfo interface {
 	//Symbol 币种标识
 	Symbol() string
 
-	//AddressDecode 地址解析器
-	AddressDecode() openwallet.AddressDecoder
 }
 
 // GetSymbolInfo 获取资产的币种信息
 func GetSymbolInfo(symbol string) (SymbolInfo, error) {
-	manager, ok := managers[strings.ToLower(symbol)].(SymbolInfo)
+	manager, ok := Managers[strings.ToLower(symbol)].(SymbolInfo)
 	if !ok {
 		return nil, fmt.Errorf("assets: %s is not support", symbol)
 	}
