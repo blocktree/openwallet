@@ -16,9 +16,12 @@
 package bopo
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"time"
 
+	"github.com/blocktree/OpenWallet/crypto"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	//"github.com/blocktree/OpenWallet/timer"
@@ -33,7 +36,7 @@ func (bs *FabricBlockScanner) scanBlock() {
 		log.Std.Error("block scanner can not get new block height; unexpected error: %v", err)
 	}
 	currentHeight, currentHash := blockHeader.Height, blockHeader.Hash
-	log.Std.Info("Scan Block from [height=%d] [hash=%s]", currentHeight, currentHash)
+	log.Std.Info("Start -> [height=%d] [hash=%s]\n", currentHeight, currentHash)
 
 	for {
 
@@ -54,7 +57,7 @@ func (bs *FabricBlockScanner) scanBlock() {
 		//继续扫描下一个区块
 		currentHeight = currentHeight + 1
 
-		log.Std.Info("Block scanner scanning height: %d ...", currentHeight)
+		log.Std.Info("Block scanner scanning height: %d ...\n", currentHeight)
 
 		//hash := "" //Fabric can load Block without hash
 		hash, err := bs.wm.GetBlockHash(currentHeight)
@@ -78,9 +81,9 @@ func (bs *FabricBlockScanner) scanBlock() {
 		//判断hash是否上一区块的hash
 		if currentHash != block.Previousblockhash {
 
-			log.Std.Info("block has been fork on height: %d.\n", currentHeight)
-			log.Std.Info("block height: %d local hash = %s \n", currentHeight-1, currentHash)
-			log.Std.Info("block height: %d mainnet hash = %s \n", currentHeight-1, block.Previousblockhash)
+			log.Std.Info("block has been fork on height: %d.", currentHeight)
+			log.Std.Info("block height: %d local hash = %s", currentHeight-1, currentHash)
+			log.Std.Info("block height: %d mainnet hash = %s", currentHeight-1, block.Previousblockhash)
 
 			log.Std.Info("delete recharge records on block height: %d.\n", currentHeight-1)
 
@@ -126,17 +129,24 @@ func (bs *FabricBlockScanner) scanBlock() {
 	}
 
 	// //扫描交易内存池
-	// bs.ScanTxMemPool()
+	// bs.ScanTxMemPool()		// Fabric not support
 
-	// //重扫失败区块
-	// bs.RescanFailedRecord()
+	//重扫失败区块
+	bs.RescanFailedRecord()
 
 }
 
 //ScanBlock 扫描指定高度区块
 func (bs *FabricBlockScanner) ScanBlock(height uint64) error {
 
-	log.Std.Info("block scanner scanning height: %d ...\n", height)
+	log.Std.Info("[Start] block scanner scanning height: %d ...", height)
+
+	// hash, err := bs.wm.GetBlockHash(height)
+	// if err != nil {
+	// 	//下一个高度找不到会报异常
+	// 	log.Std.Error("block scanner can not get new block hash; unexpected error: %v", err)
+	// 	return err
+	// }
 
 	block, err := bs.wm.GetBlockContent(height)
 	if err != nil {
@@ -149,13 +159,13 @@ func (bs *FabricBlockScanner) ScanBlock(height uint64) error {
 		return err
 	}
 
-	err = bs.BatchExtractTransaction(block.Height, "", block.Transactions)
+	err = bs.BatchExtractTransaction(block.Height, block.Hash, block.Transactions)
 	if err != nil {
 		log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v\n", err)
 	}
 
 	//保存区块
-	bs.SaveLocalBlock(block)
+	// bs.SaveLocalBlock(block)
 
 	//通知新区块给观测者，异步处理
 	go bs.newBlockNotify(block)
@@ -174,7 +184,6 @@ func (bs *FabricBlockScanner) newBlockNotify(block *Block) {
 
 //BatchExtractTransaction 批量提取交易单
 //bitcoin 1M的区块链可以容纳3000笔交易，批量多线程处理，速度更快
-//func (bs *FabricBlockScanner) BatchExtractTransaction(blockHeight uint64, blockHash string, txs []string) error {
 func (bs *FabricBlockScanner) BatchExtractTransaction(blockHeight uint64, blockHash string, txs []*BlockTX) error {
 
 	var (
@@ -206,9 +215,10 @@ func (bs *FabricBlockScanner) BatchExtractTransaction(blockHeight uint64, blockH
 			//saveResult.BlockHeight = height
 
 			if gets.Success {
+				// log.Std.Info("chan -> height:", height, " rechanges:", gets.Recharges)
 				saveErr := bs.SaveRechargeToWalletDB(height, gets.Recharges)
 				if saveErr != nil {
-					log.Std.Error("SaveTxToWalletDB unexpected error: %v", saveErr)
+					log.Std.Error("SaveRechargeToWalletDB unexpected error: %v", saveErr)
 					//saveResult.Success = false
 					failed++ //标记保存失败数
 				} else {
@@ -218,7 +228,7 @@ func (bs *FabricBlockScanner) BatchExtractTransaction(blockHeight uint64, blockH
 				//记录未扫区块
 				unscanRecord := NewUnscanRecord(height, gets.TxID, gets.Reason)
 				bs.SaveUnscanRecord(unscanRecord)
-				log.Std.Info("block height: %d extract failed.", height)
+				log.Std.Info("\t Failed! block height: %d extract failed.", height)
 				//saveResult.Success = false
 				failed++ //标记保存失败数
 			}
@@ -226,7 +236,7 @@ func (bs *FabricBlockScanner) BatchExtractTransaction(blockHeight uint64, blockH
 			//累计完成的线程数
 			done++
 			if done == shouldDone {
-				log.Std.Info("done = %d, shouldDone = %d ", done, len(txs))
+				log.Std.Info("\tdone = %d, shouldDone = %d ", done, len(txs))
 				close(quit) //关闭通道，等于给通道传入nil
 			}
 		}
@@ -234,17 +244,17 @@ func (bs *FabricBlockScanner) BatchExtractTransaction(blockHeight uint64, blockH
 
 	//提取工作
 	extractWork := func(eblockHeight uint64, eBlockHash string, mTxs []*BlockTX, eProducer chan ExtractResult) {
-		for _, tx := range mTxs {
+		for _, mTx := range mTxs {
 			bs.extractingCH <- struct{}{}
 			//shouldDone++
-			go func(mBlockHeight uint64, mTxid string, end chan struct{}, mProducer chan<- ExtractResult) {
+			go func(mBlockHeight uint64, mTx *BlockTX, end chan struct{}, mProducer chan<- ExtractResult) {
 
 				//导出提出的交易
-				mProducer <- bs.ExtractTransaction(mBlockHeight, eBlockHash, mTxid)
+				mProducer <- bs.ExtractTransaction(mBlockHeight, eBlockHash, mTx)
 				//释放
 				<-end
 
-			}(eblockHeight, tx.Txid, bs.extractingCH, eProducer)
+			}(eblockHeight, mTx, bs.extractingCH, eProducer)
 		}
 	}
 
@@ -261,22 +271,22 @@ func (bs *FabricBlockScanner) BatchExtractTransaction(blockHeight uint64, blockH
 
 	if failed > 0 {
 		return fmt.Errorf("SaveTxToWalletDB failed")
-	} else {
-		return nil
 	}
-	//return nil
+
+	return nil
 }
 
 //ExtractTransaction 提取交易单
-func (bs *FabricBlockScanner) ExtractTransaction(blockHeight uint64, blockHash string, txid string) ExtractResult {
+func (bs *FabricBlockScanner) ExtractTransaction(blockHeight uint64, blockHash string, mTx *BlockTX) ExtractResult {
 
 	var (
-		transactions = make([]*openwallet.Recharge, 0)
-		success      = false
-		resaon       = ""
+		recharges = make([]*openwallet.Recharge, 0)
+		success   = false
+		resaon    = ""
+		accountID = ""
 	)
 
-	trx, err := bs.wm.GetTransaction(txid)
+	payloadSpec, err := bs.wm.GetBlockPayload(base64.StdEncoding.EncodeToString(mTx.Payload))
 	if err != nil {
 		log.Std.Error("block scanner can not extract transaction data; unexpected error: %v", err)
 		//记录哪个区块哪个交易单没有完成扫描
@@ -284,76 +294,35 @@ func (bs *FabricBlockScanner) ExtractTransaction(blockHeight uint64, blockHash s
 		resaon = err.Error()
 		//return nil, failedTx, nil
 	} else {
-		fmt.Println("XXX= ", trx)
-		transactions = []*openwallet.Recharge{&openwallet.Recharge{
-			TxID:      txid,
-			Address:   "",
-			AccountID: "",
+		addr := payloadSpec.From //payloadSpec.From, payloadSpec.To,
+		// log.Info("Find TX addr:", addr, "txid:", mTx.Txid, "blockheight:", blockHeight, "blockhash:", blockHash)
+
+		if wallet, ok := bs.GetWalletByAddress(addr); ok {
+			a := wallet.GetAddress(addr)
+			if a == nil {
+				// ?500
+				accountID = a.AccountID
+			}
+		}
+
+		recharge := openwallet.Recharge{
+			TxID:      mTx.Txid,
+			Address:   addr,
+			AccountID: accountID,
 			Symbol:    Symbol,
 			Index:     0,
-			Amount:    "1.2",
-			Sid:       "",
-			//CreateAt:  int64(time.Now()),
-		}}
-		// realblockHash := trx.Get("blockhash").String()
-		// realBlockHeight := trx.Get("blockheight").Uint()
-		// confirmations := trx.Get("confirmations").Int()
-		// vout := trx.Get("vout")
-		// createAt := time.Now()
-		// for _, output := range vout.Array() {
-
-		// 	amount := output.Get("value").String()
-		// 	n := output.Get("n").Uint()
-		// 	addresses := output.Get("scriptPubKey.addresses").Array()
-		// 	if len(addresses) == 1 {
-		// 		addr := addresses[0].String()
-		// 		wallet, ok := bs.GetWalletByAddress(addr)
-		// 		if ok {
-
-		// 			a := wallet.GetAddress(addr)
-		// 			if a == nil {
-		// 				continue
-		// 			}
-
-		// 			log.Info("find tx for address:", a.Address, "txid:", txid, "block height:", realBlockHeight, "blockhash:", realblockHash)
-		// 			transaction := openwallet.Recharge{}
-		// 			transaction.TxID = txid
-		// 			transaction.Address = addr
-		// 			transaction.AccountID = a.AccountID
-		// 			transaction.Symbol = Symbol
-		// 			transaction.Index = n
-		// 			transaction.Amount = amount
-		// 			transaction.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("%s_%d_%s", txid, n, addr))))
-		// 			transaction.CreateAt = createAt.Unix()
-
-		// 			if realBlockHeight > 0 && len(realblockHash) > 0 {
-		// 				transaction.BlockHeight = realBlockHeight
-		// 				transaction.BlockHash = realblockHash
-		// 				transaction.Confirm = confirmations
-		// 			}
-
-		// 			//有高度记录高度信息
-		// 			if blockHeight > 0 && len(blockHash) > 0 {
-		// 				transaction.BlockHeight = blockHeight
-		// 				transaction.BlockHash = blockHash
-		// 				transaction.Confirm = confirmations
-		// 			}
-
-		// 			transactions = append(transactions, &transaction)
-
-		// 		}
-		// 	}
-
-		// }
-
+			Amount:    string(payloadSpec.Amount),
+			Sid:       base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("%s_%d_%s", mTx.Txid, 0, addr)))),
+			CreateAt:  time.Now().Unix(),
+		}
+		recharges = append(recharges, &recharge)
 		success = true
-
 	}
 
 	result := ExtractResult{
 		BlockHeight: blockHeight,
-		TxID:        txid,
-		Recharges:   transactions,
+		TxID:        mTx.Txid,
+		Recharges:   recharges,
 		Success:     success,
 		Reason:      resaon,
 	}
@@ -392,136 +361,137 @@ func (bs *FabricBlockScanner) extractRuntime(producer chan ExtractResult, worker
 	// return nil
 }
 
-//ScanTxMemPool 扫描交易内存池
-func (bs *FabricBlockScanner) ScanTxMemPool() {
-
-	// Not included in Fabric
-
-	// log.Std.Info("block scanner scanning mempool ...")
-
-	// //提取未确认的交易单
-	// txIDsInMemPool, err := bs.GetTxIDsInMemPool()
-	// if err != nil {
-	// 	log.Std.Error("block scanner can not get mempool data; unexpected error: %v", err)
-	// }
-
-	// err = bs.BatchExtractTransaction(0, "", txIDsInMemPool)
-	// if err != nil {
-	// 	log.Std.Error("block scanner can not extractRechargeRecords; unexpected error: %v", err)
-	// }
-
-}
-
 //rescanFailedRecord 重扫失败记录
 func (bs *FabricBlockScanner) RescanFailedRecord() {
 
-	// var (
-	// 	blockMap = make(map[uint64][]string)
-	// )
+	var (
+		blockMap = make(map[uint64][]string)
+	)
 
-	// list, err := bs.GetUnscanRecords()
-	// if err != nil {
-	// 	log.Std.Error("block scanner can not get rescan data; unexpected error: %v", err)
-	// }
+	list, err := bs.GetUnscanRecords()
+	if err != nil {
+		log.Std.Error("block scanner can not get rescan data; unexpected error: %v", err)
+	}
 
-	// //组合成批处理
-	// for _, r := range list {
+	//组合成批处理
+	for _, r := range list {
 
-	// 	//先删除重扫次数超过最大数的记录，一般这种记录可能已经不存在交易池了
+		//先删除重扫次数超过最大数的记录，一般这种记录可能已经不存在交易池了
 
-	// 	if _, exist := blockMap[r.BlockHeight]; !exist {
-	// 		blockMap[r.BlockHeight] = make([]string, 0)
-	// 	}
+		if _, exist := blockMap[r.BlockHeight]; !exist {
+			blockMap[r.BlockHeight] = make([]string, 0)
+		}
 
-	// 	if len(r.TxID) > 0 {
-	// 		arr := blockMap[r.BlockHeight]
-	// 		arr = append(arr, r.TxID)
+		if len(r.TxID) > 0 {
+			arr := blockMap[r.BlockHeight]
+			arr = append(arr, r.TxID)
 
-	// 		blockMap[r.BlockHeight] = arr
-	// 	}
-	// }
+			blockMap[r.BlockHeight] = arr
+		}
+	}
 
-	// for height, txs := range blockMap {
+	for height, txs := range blockMap {
 
-	// 	var hash string
+		var hash string
+		var txss []*BlockTX
 
-	// 	log.Std.Info("block scanner rescanning height: %d ...", height)
+		log.Std.Info("block scanner rescanning height: %d ...", height)
 
-	// 	if len(txs) == 0 {
+		if len(txs) == 0 {
 
-	// 		hash, err := bs.wm.GetBlockHash(height)
-	// 		if err != nil {
-	// 			//下一个高度找不到会报异常
-	// 			log.Std.Error("block scanner can not get new block hash; unexpected error: %v", err)
-	// 			continue
-	// 		}
+			// hash, err := bs.wm.GetBlockHash(height)
+			// if err != nil {
+			// 	//下一个高度找不到会报异常
+			// 	log.Std.Error("block scanner can not get new block hash; unexpected error: %v", err)
+			// 	continue
+			// }
 
-	// 		block, err := bs.wm.GetBlockContent(height)
-	// 		if err != nil {
-	// 			log.Std.Error("block scanner can not get new block data; unexpected error: %v", err)
-	// 			continue
-	// 		}
+			block, err := bs.wm.GetBlockContent(height)
+			if err != nil {
+				log.Std.Error("block scanner can not get new block data; unexpected error: %v", err)
+				continue
+			}
+			hash = block.Hash
 
-	// 		txs = block.tx
-	// 	}
+			txss = block.Transactions
+		}
 
-	// 	err = bs.BatchExtractTransaction(height, hash, txs)
-	// 	if err != nil {
-	// 		log.Std.Error("block scanner can not extractRechargeRecords; unexpected error: %v", err)
-	// 		continue
-	// 	}
+		err = bs.BatchExtractTransaction(height, hash, txss)
+		if err != nil {
+			log.Std.Error("block scanner can not extractRechargeRecords; unexpected error: %v", err)
+			continue
+		}
 
-	// 	//删除未扫记录
-	// 	bs.DeleteUnscanRecord(height)
-	// }
+		//删除未扫记录
+		bs.DeleteUnscanRecord(height)
+	}
 
-	// //删除未没有找到交易记录的重扫记录
-	// bs.DeleteUnscanRecordNotFindTX()
+	//删除未没有找到交易记录的重扫记录
+	bs.DeleteUnscanRecordNotFindTX()
 }
 
-//RescanUnconfirmRechargeRecord
-func (bs *FabricBlockScanner) RescanUnconfirmRechargeRecord() {
+// // Not included in Fabric
+// //ScanTxMemPool 扫描交易内存池
+// func (bs *FabricBlockScanner) ScanTxMemPool() {
 
-	bs.mu.RLock()
-	defer bs.mu.RUnlock()
+// 	log.Std.Info("block scanner scanning mempool ...")
 
-	// var (
-	// 	txs = make([]string, 0)
-	// )
+// 	//提取未确认的交易单
+// 	txIDsInMemPool, err := bs.GetTxIDsInMemPool()
+// 	if err != nil {
+// 		log.Std.Error("block scanner can not get mempool data; unexpected error: %v", err)
+// 	}
 
-	// currentTime := time.Now()
-	// //30分钟过期
-	// m30, _ := time.ParseDuration("-30m")
+// 	err = bs.BatchExtractTransaction(0, "", txIDsInMemPool)
+// 	if err != nil {
+// 		log.Std.Error("block scanner can not extractRechargeRecords; unexpected error: %v", err)
+// 	}
 
-	// d3, _ := time.ParseDuration("-24h")
+// }
+// //Fabric not support
+// //RescanUnconfirmRechargeRecord
+// func (bs *FabricBlockScanner) RescanUnconfirmRechargeRecord() {
 
-	// //计算过期时间
-	// expiredTime := currentTime.Add(m30)
+// 	bs.mu.RLock()
+// 	defer bs.mu.RUnlock()
 
-	// //计算清理时间
-	// clearTime := currentTime.Add(d3)
+// 	var (
+// 		txs = make([]string, 0)
+// 	)
 
-	// for _, wallet := range bs.walletInScanning {
+// 	currentTime := time.Now()
+// 	//30分钟过期
+// 	m30, _ := time.ParseDuration("-30m")
 
-	// 	records, err := wallet.GetUnconfrimRecharges(expiredTime.Unix())
-	// 	if err != nil {
-	// 		return
-	// 	}
-	// 	//重扫未确认记录
-	// 	for _, r := range records {
-	// 		//删除过期的
-	// 		if r.CreateAt <= clearTime.Unix() {
-	// 			r.Delete = true
-	// 			wallet.SaveUnreceivedRecharge(r)
-	// 		} else {
-	// 			txs = append(txs, r.TxID)
-	// 		}
-	// 	}
+// 	d3, _ := time.ParseDuration("-24h")
 
-	// 	err = bs.BatchExtractTransaction(0, "", txs)
-	// 	if err != nil {
-	// 		log.Std.Error("block scanner can not extractRechargeRecords; unexpected error: %v", err)
-	// 		continue
-	// 	}
-	// }
-}
+// 	//计算过期时间
+// 	expiredTime := currentTime.Add(m30)
+
+// 	//计算清理时间
+// 	clearTime := currentTime.Add(d3)
+
+// 	for _, wallet := range bs.walletInScanning {
+
+// 		records, err := wallet.GetUnconfrimRecharges(expiredTime.Unix())
+// 		if err != nil {
+// 			return
+// 		}
+// 		//重扫未确认记录
+// 		for _, r := range records {
+// 			//删除过期的
+// 			if r.CreateAt <= clearTime.Unix() {
+// 				r.Delete = true
+// 				wallet.SaveUnreceivedRecharge(r)
+// 			} else {
+// 				txs = append(txs, r.TxID)
+// 			}
+// 		}
+
+// 		err = bs.BatchExtractTransaction(0, "", txs)
+// 		if err != nil {
+// 			log.Std.Error("block scanner can not extractRechargeRecords; unexpected error: %v", err)
+// 			continue
+// 		}
+// 	}
+// }

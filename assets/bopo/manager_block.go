@@ -30,8 +30,6 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-//var _ base64.StdEncoding
-
 //GetBlockHeight 获取区块链高度
 func (wm *WalletManager) GetBlockHeight() (uint64, error) {
 
@@ -86,6 +84,12 @@ func (wm *WalletManager) GetBlockContent(height uint64) (block *Block, err error
 		return nil, err
 	}
 
+	hash, err := GenBlockHash(d)
+	if err != nil {
+		return nil, err
+	}
+	block.Hash = hash
+
 	return block, nil
 }
 
@@ -117,8 +121,17 @@ func (wm *WalletManager) GetBlockHash(height uint64) (hash string, err error) {
 		return "", err
 	}
 
+	hash, err = GenBlockHash(d)
+	if err != nil {
+		return "", err
+	}
+	return hash, nil
+}
+
+func GenBlockHash(blockData []byte) (hash string, err error) {
+
 	block := &protos.Block{}
-	if err := gjson.Unmarshal(d, block); err != nil {
+	if err := gjson.Unmarshal(blockData, block); err != nil {
 		return "", err
 	}
 
@@ -143,7 +156,6 @@ func (wm *WalletManager) GetBlockHash(height uint64) (hash string, err error) {
 	sha3.ShakeSum256(hashBytes, data)
 
 	hash = base64.StdEncoding.EncodeToString(hashBytes)
-
 	return hash, nil
 }
 

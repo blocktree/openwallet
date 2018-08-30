@@ -165,13 +165,13 @@ func (bs *FabricBlockScanner) DeleteUnscanRecord(height uint64) error {
 	// err = db.Find("BlockHeight", height, &list)
 	err = db.Find("ID", string(height), &list)
 	if err != nil {
-		log.Error("Find Faild: ", err)
+		log.Error("Storm Find Faild: ", err)
 		return err
 	}
 
 	tx, err := db.Begin(true)
 	if err != nil {
-		log.Error("Begin Failed: ", err)
+		log.Error("Storm Begin Failed: ", err)
 		return err
 	}
 
@@ -248,7 +248,6 @@ func (bs *FabricBlockScanner) GetWalletByAddress(address string) (*openwallet.Wa
 	if ok {
 		wallet, ok := bs.walletInScanning[account]
 		return wallet, ok
-
 	} else {
 		return nil, false
 	}
@@ -262,7 +261,6 @@ func (bs *FabricBlockScanner) SaveRechargeToWalletDB(height uint64, list []*open
 	)
 
 	for _, r := range list {
-
 		wallet, ok := bs.GetWalletByAddress(r.Address)
 		if ok {
 			reason := ""
@@ -301,8 +299,9 @@ func (bs *FabricBlockScanner) SaveRechargeToWalletDB(height uint64, list []*open
 			//	log.Info("block scanner save blockHeight:", height, "txid:", r.TxID, "address:", r.Address, "successfully.")
 			//}
 		} else {
-			log.Error("address:", r.Address, "in wallet is not found, txid:", r.TxID)
-			return errors.New("address in wallet is not found")
+			// log.Error("address:", r.Address, "in wallet is not found, txid:", r.TxID)
+			// return errors.New("address in wallet is not found")
+			return nil
 		}
 
 	}

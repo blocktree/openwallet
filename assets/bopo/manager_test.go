@@ -17,15 +17,6 @@ package bopo
 
 import "testing"
 
-var tw *WalletManager
-
-func init() {
-	tw = &WalletManager{}
-	tw.config = NewWalletConfig()
-	tw.config.walletAPI = "http://192.168.2.194:17280"
-	tw.fullnodeClient = NewClient(tw.config.walletAPI, true)
-}
-
 func TestLoadConfig(t *testing.T) {
 	tw.loadConfig()
 }
