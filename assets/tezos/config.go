@@ -124,7 +124,6 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	c.SumAddress = ""
 	//汇总执行间隔时间
 	c.CycleSeconds = time.Second * 10
-
 	//默认配置内容
 	c.DefaultConfig = `
 # start node command
@@ -135,15 +134,16 @@ stopNodeCMD = ""
 nodeInstallPath = ""
 # node api url
 apiUrl = "https://rpc.tezrpc.me"
-# min fees 0.0001 XTZ
+# min fees, unit is μXTZ ，100 μXTZ = 0.0001 XTZ 
 minFee = "100"
-# gas limit 0.0001 XTZ
+# gas limit, unit is μXTZ ，100 μXTZ = 0.0001 XTZ
 gasLimit = "100"
-# storage limit 0.0001 XTZ
+# storage limit, unit is μXTZ ，100 μXTZ = 0.0001 XTZ
 storageLimit = "100"
 # the safe address that wallet send money to.
 sumAddress = "tz1WwFXj4QLxZVRgPTZYy67GKT1u7tMmoTyK"
-# when wallet's balance is over this value, the wallet willl send money to [sumAddress]  1XTZ
+# when wallet's balance is over this value, the wallet willl send money to [sumAddress]
+#unit is μXTZ  1000000 μXTZ = 1 XTZ
 threshold = "1000000"
 `
 
