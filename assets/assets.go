@@ -123,7 +123,7 @@ func init() {
 	RegWMD(strings.ToLower(bitcoin.Symbol), bitcoin.NewWalletManager())
 	RegWMD(strings.ToLower(hypercash.Symbol), hypercash.NewWalletManager())
 	RegWMD(strings.ToLower(iota.Symbol), &iota.WalletManager{})
-	RegWMD(strings.ToLower(tezos.Symbol), &tezos.WalletManager{})
+	RegWMD(strings.ToLower(tezos.Symbol), tezos.NewWalletManager())
 	RegWMD(strings.ToLower(litecoin.Symbol), litecoin.NewWalletManager())
 	RegWMD(strings.ToLower(qtum.Symbol), qtum.NewWalletManager())
 }
