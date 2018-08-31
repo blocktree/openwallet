@@ -98,6 +98,7 @@ type SaveResult struct {
 		//Clear 清理订阅扫描的内容
 		Clear()
 */
+//AddAddress 增加预期扫描的地址
 func (bs *FabricBlockScanner) AddAddress(address, accountID string, wallet *openwallet.Wallet) {
 
 	bs.mu.Lock()

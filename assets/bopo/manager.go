@@ -20,17 +20,18 @@ import (
 
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/hdkeystore"
+	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 )
 
 type WalletManager struct {
-	config         *WalletConfig          //钱包管理配置
-	storage        *hdkeystore.HDKeystore //秘钥存取
-	blockscanner   *FabricBlockScanner    //区块扫描器
-	fullnodeClient *Client                // 全节点客户端
-	walletClient   *Client                // 节点客户端
-	// walletsInSum   map[string]*openwallet.Wallet //参与汇总的钱包
+	config         *WalletConfig                 //钱包管理配置
+	storage        *hdkeystore.HDKeystore        //秘钥存取
+	blockscanner   *FabricBlockScanner           //区块扫描器
+	fullnodeClient *Client                       // 全节点客户端
+	walletClient   *Client                       // 节点客户端
+	walletsInSum   map[string]*openwallet.Wallet //参与汇总的钱包
 }
 
 // func NewWalletManager() *WalletManager {
@@ -40,7 +41,6 @@ type WalletManager struct {
 // 	wm.storage = hdkeystore.NewHDKeystore(wm.config.keyDir, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
 // 	wm.blockscanner = NewFabricBlockScanner(&wm)
 
-// 	fmt.Println("OKKOOK=", wm)
 // 	return &wm
 // }
 

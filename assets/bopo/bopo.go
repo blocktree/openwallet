@@ -18,8 +18,6 @@ package bopo
 import (
 	"errors"
 	"fmt"
-
-	// "io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
