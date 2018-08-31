@@ -33,6 +33,6 @@ func (wm *WalletManager) VerifyTransaction(appID, accountID string, txHex string
 }
 
 // SubmitTransaction
-func (wm *WalletManager) SubmitTransaction(appID, accountID string, rawTx openwallet.RawTransaction) (string, error) {
-	return "", nil
+func (wm *WalletManager) SubmitTransaction(appID, accountID string, rawTx openwallet.RawTransaction) (*openwallet.Transaction, error) {
+	return nil, nil
 }

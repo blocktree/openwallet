@@ -35,27 +35,28 @@ type TransactionDecoder struct {
 
 //RawTransaction 原始交易单
 type RawTransaction struct {
-	Symbol      string         //区块链类型标识
-	TxID        string         //交易单ID，广播后会生成
-	RawHex      string         //区块链协议构造的交易原生数据
-	Amount      string         //转账数量
-	FeeRate     string         //自定义费率
-	To          []string       //目的地址
-	Wallet      *Wallet        //创建交易单的钱包
-	Account     *AssetsAccount //创建交易单的账户
-	Signatures  []KeySignature //拥有者公钥: []未花签名
-	Required    uint64         //必要签名
-	IsBuilt     bool           //是否完成构建建议单
-	IsCompleted bool           //是否完成所有签名
-	IsSubmit    bool           //是否已广播
+	Symbol      string                    //区块链类型标识
+	TxID        string                    //交易单ID，广播后会生成
+	RawHex      string                    //区块链协议构造的交易原生数据
+	Amount      string                    //转账数量
+	FeeRate     string                    //自定义费率
+	To          []string                  //目的地址
+	Wallet      *Wallet                   //创建交易单的钱包
+	Account     *AssetsAccount            //创建交易单的账户
+	Signatures  map[string][]KeySignature //拥有者公钥: []未花签名
+	Required    uint64                    //必要签名
+	IsBuilt     bool                      //是否完成构建建议单
+	IsCompleted bool                      //是否完成所有签名
+	IsSubmit    bool                      //是否已广播
 }
 
 //KeySignature 签名信息
 type KeySignature struct {
-	EccType    uint32   //曲线类型
-	PublicKey  string   //拥有者公钥
-	Signatures []string //[]未花签名
-	Msg        []string //[]被签消息
+	EccType     uint32 //曲线类型
+	WalletID    string //需要签名的钱包
+	DerivedPath string //子私钥衍生路径
+	Signatures  string //未花签名
+	Message     string //被签消息
 }
 
 type Transaction struct {
