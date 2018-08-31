@@ -108,7 +108,7 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	//备份路径
 	c.backupDir = filepath.Join("data", strings.ToLower(c.Symbol), "backup")
 	//钱包服务API
-	c.ServerAPI = "http://192.168.2.192:10053"
+	c.ServerAPI = "http://192.168.2.193:10050"
 	//gas limit & storage limit
 	c.GasLimit = decimal.NewFromFloat(100)        //0.0001 XTZ
 	c.StorageLimit = decimal.NewFromFloat(100)    //0.0001 XTZ
@@ -133,18 +133,18 @@ stopNodeCMD = ""
 # node install path
 nodeInstallPath = ""
 # node api url
-apiUrl = "https://rpc.tezrpc.me"
-# min fees, unit is μXTZ ，100 μXTZ = 0.0001 XTZ 
-minFee = "100"
-# gas limit, unit is μXTZ ，100 μXTZ = 0.0001 XTZ
-gasLimit = "100"
-# storage limit, unit is μXTZ ，100 μXTZ = 0.0001 XTZ
-storageLimit = "100"
+apiUrl = ""
+# min fees, unit is μXTZ ，recommend 100， 100 μXTZ = 0.0001 XTZ 
+minFee = ""
+# gas limit, unit is μXTZ ，recommend 100， 100 μXTZ = 0.0001 XTZ
+gasLimit = ""
+# storage limit, unit is μXTZ ，recommend 100， 100 μXTZ = 0.0001 XTZ
+storageLimit = ""
 # the safe address that wallet send money to.
-sumAddress = "tz1WwFXj4QLxZVRgPTZYy67GKT1u7tMmoTyK"
+sumAddress = ""
 # when wallet's balance is over this value, the wallet willl send money to [sumAddress]
-#unit is μXTZ  1000000 μXTZ = 1 XTZ
-threshold = "1000000"
+#unit is μXTZ， recommend 1000000， 1000000 μXTZ = 1 XTZ
+threshold = ""
 `
 
 	return &c
