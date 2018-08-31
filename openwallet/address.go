@@ -43,7 +43,7 @@ type Address struct {
 	Index     uint64    `json:"index"`                  //账户ID，索引位
 	HDPath    string    `json:"hdPath"`                 //地址公钥根路径
 	WatchOnly bool      `json:"watchOnly"`              //是否观察地址，true的时候，Index，RootPath，Alias都没有。
-	Symbol    string    `json:"coin"`                   //币种类别
+	Symbol    string    `json:"symbol"`                   //币种类别
 	Balance   string    `json:"balance"`                //余额
 	IsMemo    bool      `json:"isMemo"`                 //是否备注
 	Memo      string    `json:"memo"`                   //备注

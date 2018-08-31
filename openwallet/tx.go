@@ -35,7 +35,7 @@ type TransactionDecoder struct {
 
 //RawTransaction 原始交易单
 type RawTransaction struct {
-	Symbol      string                    //区块链类型标识
+	Coin        Coin                      //区块链类型标识
 	TxID        string                    //交易单ID，广播后会生成
 	RawHex      string                    //区块链协议构造的交易原生数据
 	Amount      string                    //转账数量
@@ -43,7 +43,7 @@ type RawTransaction struct {
 	To          []string                  //目的地址
 	Wallet      *Wallet                   //创建交易单的钱包
 	Account     *AssetsAccount            //创建交易单的账户
-	Signatures  map[string][]KeySignature //拥有者公钥: []未花签名
+	Signatures  map[string][]KeySignature //拥有者accountID: []未花签名
 	Required    uint64                    //必要签名
 	IsBuilt     bool                      //是否完成构建建议单
 	IsCompleted bool                      //是否完成所有签名
@@ -52,48 +52,26 @@ type RawTransaction struct {
 
 //KeySignature 签名信息
 type KeySignature struct {
-	EccType     uint32 //曲线类型
-	WalletID    string //需要签名的钱包
-	DerivedPath string //子私钥衍生路径
-	Signatures  string //未花签名
-	Message     string //被签消息
+	EccType    uint32   //曲线类型
+	Address    *Address //提供签名的地址
+	Signatures string   //未花签名
+	Message    string   //被签消息
 }
 
 type Transaction struct {
-
-	/*
-
-		| -> coin     | string    | 否       | 币名                              |
-		| -> walletID | string    | 否       | 每次返回的代提币条目数（1-50       |
-		| -> sid      | string    | 否       | 安全id（防止重复提交）              |
-		| -> isMemo   | int       | 否       | 1为memo，0为address                |
-		| -> address  | string    | 否       | 地址（账号）                        |
-		| -> amount   | string    | 否       | 提笔金额                          |
-		| -> memo     | string    | 是       | 备注                              |
-
-		| 参数名称    | 类型   | 是否可空 | 描述                                                 |
-		|-------------|--------|----------|------------------------------------------------------|
-		| txid        | string | 否       | 唯一交易单号                                         |
-		| from        | string | 否       | 发送地址                                             |
-		| to          | string | 否       | 接收地址                                             |
-		| amount      | string | 否       | 充值金额                                             |
-		| confirm     | int    | 否       | 确认数                                               |
-		| blockHash   | string | 否       | 区块哈希                                             |
-		| blockHeight | string | 否       | 区块链高度（可以是组合高度例如ada 53_11323，poch_slot） |
-		| isMemo      | int    | 否       | 1为memo，0为address                                   |
-		| memo        | string | 否       | 备注                                                 |
-
-	*/
-
-	TxID        string `json:"txid"`
-	From        string `json:"from"`
-	To          string `json:"to"`
-	Amount      string `json:"amount"`
+	TxID        string   `json:"txid"`
+	Coin        Coin     //区块链类型标识
+	From        []string `json:"from"`
+	To          []string `json:"to"`
+	Amount      string   `json:"amount"`
+	TxType      uint64
 	Confirm     int64  `json:"confirm"`
 	BlockHash   string `json:"blockHash"`
 	BlockHeight uint64 `json:"blockHeight"`
 	IsMemo      bool   `json:"isMemo"`
 	Memo        string `json:"memo"`
+	SubmitTime  int64
+	ConfirmTime int64
 }
 
 type Recharge struct {
