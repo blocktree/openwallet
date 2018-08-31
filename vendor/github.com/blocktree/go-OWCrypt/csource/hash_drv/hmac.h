@@ -18,46 +18,15 @@
 #include "stdio.h"
 #include "string.h"
 #include "stdlib.h"
-#include "sha1.h"
 #include "sha256.h"
 #include "sha512.h"
 #include "sm3.h"
-#include "md5.h"
-#include "ripemd160.h"
-#include "blake2b.h"
-#include "blake2s.h"
 #include "type.h"
-#ifndef MD5_ALG
-#define MD5_ALG    0
-#endif
 
-#ifndef SHA1_ALG
-#define SHA1_ALG   1
-#endif
+#define  HMAC_SHA256_ALG        0x50505050
+#define  HMAC_SHA512_ALG        0x50505051
+#define  HMAC_SM3_ALG           0x50505052
 
-#ifndef SHA256_ALG
-#define SHA256_ALG 2
-#endif
-
-#ifndef SHA512_ALG
-#define SHA512_ALG 3
-#endif
-
-#ifndef SM3_ALG
-#define SM3_ALG    4
-#endif
-
-#ifndef RIPEMD160
-#define RIPEMD160 5
-#endif
-
-#ifndef BLAKE2B
-#define BLAKE2B   6
-#endif
-
-#ifndef BLAKE2S
-#define BLAKE2S   7
-#endif
 
 /*
  @function:compute massage authentication code
@@ -66,10 +35,13 @@
  @paramter[in]:M pointer to message to be authenticated
  @paramter[in]:Mlen,the byte length of M
  @paramter[out]:out pointer to HMAC result
- @paramter[in]:Hash_Alg,hash algorithm flag.if Hash_Alg = MD5_ALG,Choose MD5 algorithm;if Hash_Alg = SHA1_ALG,choose SHA1 algorithm;
- Hash_Alg=SHA256_ALG,Choose SHA256 algorithm;if Hash_Alg=SHA512_ALG, Choose SHA512 algorithm;if Hash_Alg=SM3_ALG, Choose SM3 algorithm;if HAsh_Alg=BLAKE2B_ALG, choose BLAKE2B algorithm;if HAsh_Alg=BLAKE2S,choose BLAKE2S algorithm;default:not support.
+ @paramter[in]:Hmac_Hash_Alg,hash algorithm flag.
+ HAMC_SHA256_ALG: SHA256
+ HMAC_SHA512_ALG: SHA512
+ HMAC_SM3_ALG:SM3
+ default:not support.
  @return:NULL
- @notice:if Hash_Alg=MD5_ALG,the space size of out is 16 byte; if Hash_Alg=SHA1_ALG,the space size of out is 20 byte; if Hash_Alg=SHA256_ALG,the space size of out is 32 byte;if Hash_Alg=SHA512_ALG,the space size of out is 64 byte; if Hash_Alg=SM3_ALG,the space size of out is 32 byte;
+ @notice:if HAMC_SHA256_ALG,out space is 32 byte,if HMAC_SHA512_ALG,out space is 64 byte; if HMAC_SM3_ALG,out space is 32 byte
  */
-void HMAC(uint8_t *K,uint16_t Klen,uint8_t *M,uint16_t Mlen,uint8_t *out,uint8_t Hash_Alg);
+void HMAC(uint8_t *K,uint16_t Klen,uint8_t *M,uint16_t Mlen,uint8_t *out,uint32_t Hmac_Hash_Alg);
 #endif /* end */

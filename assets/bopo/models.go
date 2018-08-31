@@ -15,6 +15,13 @@
 
 package bopo
 
+import (
+	"fmt"
+
+	"github.com/blocktree/OpenWallet/crypto"
+	"github.com/bytom/common"
+)
+
 // "github.com/asdine/storm"
 // "github.com/blocktree/OpenWallet/common/file"
 // "github.com/blocktree/OpenWallet/keystore"
@@ -111,6 +118,24 @@ type User struct {
 }
 
 // ------------------------------------------------------------------
+
+//UnscanRecords 扫描失败的区块及交易
+type UnscanRecord struct {
+	ID          string `storm:"id"` // primary key
+	BlockHeight uint64
+	TxID        string
+	Reason      string
+	RescanCount int
+}
+
+func NewUnscanRecord(height uint64, txID, reason string) *UnscanRecord {
+	obj := UnscanRecord{}
+	obj.BlockHeight = height
+	obj.TxID = txID
+	obj.Reason = reason
+	obj.ID = common.Bytes2Hex(crypto.SHA256([]byte(fmt.Sprintf("%d_%s", height, txID))))
+	return &obj
+}
 
 /*
 func NewBlock(json *gjson.Result) (block *Block, err error) {

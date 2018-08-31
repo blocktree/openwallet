@@ -97,7 +97,7 @@ type Transaction struct {
 }
 
 type Recharge struct {
-	Sid         string `json:"sid"  storm:"id"`
+	Sid         string `json:"sid"  storm:"id"` // base64(sha1(txid+n+addr))
 	TxID        string `json:"txid"`
 	AccountID   string `json:"accountID"`
 	Address     string `json:"address"`

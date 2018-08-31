@@ -74,6 +74,8 @@ const (
 	ECC_CURVE_NIST_P256    = ECC_CURVE_SECP256R1
 	ECC_CURVE_SM2_STANDARD = uint32(0xECC00002)
 	ECC_CURVE_ED25519      = uint32(0xECC00003)
+	ECC_CURVE_ED25519_EXTEND=uint32(0xECC00004)
+
 
 	SUCCESS            = uint16(0x0001)
 	FAILURE            = uint16(0x0000)
@@ -100,9 +102,12 @@ func GenPubkey(prikey []byte, typeChoose uint32) (pubkey []byte, ret uint16) {
 }
 
 func Signature(prikey []byte, ID []byte, IDlen uint16, message []byte, message_len uint16, typeChoose uint32) (signature []byte, ret uint16) {
+	var id *C.uchar = nil
 	signature = make([]byte, 64)
 	pri := (*C.uchar)(unsafe.Pointer(&prikey[0]))
-	id := (*C.uchar)(unsafe.Pointer(&ID[0]))
+	if typeChoose == ECC_CURVE_SM2_STANDARD {
+		id = (*C.uchar)(unsafe.Pointer(&ID[0]))
+	}
 	msg := (*C.uchar)(unsafe.Pointer(&message[0]))
 	sig := (*C.uchar)(unsafe.Pointer(&signature[0]))
 

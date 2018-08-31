@@ -17,11 +17,17 @@ package bopo
 
 import (
 	//"errors"
+	"encoding/base64"
 	"fmt"
 	"log"
 
 	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
+
+	//"github.com/hyperledger/fabric/core/util"
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/protos"
+	"golang.org/x/crypto/sha3"
 )
 
 //var _ base64.StdEncoding
@@ -29,7 +35,7 @@ import (
 //GetBlockHeight 获取区块链高度
 func (wm *WalletManager) GetBlockHeight() (uint64, error) {
 
-	if d, err := client.Call("synclog", "GET", nil); err != nil {
+	if d, err := wm.fullnodeClient.Call("synclog", "GET", nil); err != nil {
 		return 0, err
 	} else {
 		/*
@@ -53,7 +59,7 @@ func (wm *WalletManager) GetBlockChainInfo() (*BlockchainInfo, error) {
 
 	var blockchain *BlockchainInfo
 
-	if d, err := client.Call("synclog", "GET", nil); err != nil {
+	if d, err := wm.fullnodeClient.Call("synclog", "GET", nil); err != nil {
 		return nil, err
 	} else {
 		/*
@@ -70,7 +76,7 @@ func (wm *WalletManager) GetBlockChainInfo() (*BlockchainInfo, error) {
 //GetBlockContent 获取钱包区块链内容
 func (wm *WalletManager) GetBlockContent(height uint64) (block *Block, err error) {
 
-	d, err := client.Call(fmt.Sprintf("blocks/%d", height), "GET", nil)
+	d, err := wm.fullnodeClient.Call(fmt.Sprintf("blocks/%d", height), "GET", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +92,7 @@ func (wm *WalletManager) GetBlockContent(height uint64) (block *Block, err error
 //GetBlockTxPayload 获取区块中交易详情
 func (wm *WalletManager) GetBlockPayload(payload string) (payloadSpec *PayloadSpec, err error) {
 
-	d, err := client.Call("blocks/parsetxpayload", "POST", req.Param{"payload": string(payload)})
+	d, err := wm.fullnodeClient.Call("blocks/parsetxpayload", "POST", req.Param{"payload": string(payload)})
 	if err != nil {
 		if err.Error() != "Invalid payload" {
 			log.Println(err)
@@ -101,6 +107,44 @@ func (wm *WalletManager) GetBlockPayload(payload string) (payloadSpec *PayloadSp
 	}
 
 	return payloadSpec, err
+}
+
+//GetBlockHash 根据区块高度获得区块hash
+func (wm *WalletManager) GetBlockHash(height uint64) (hash string, err error) {
+
+	d, err := wm.fullnodeClient.Call(fmt.Sprintf("blocks/%d", height), "GET", nil)
+	if err != nil {
+		return "", err
+	}
+
+	block := &protos.Block{}
+	if err := gjson.Unmarshal(d, block); err != nil {
+		return "", err
+	}
+
+	blockBytes, err := block.Bytes()
+	if err != nil {
+		return "", err
+	}
+
+	blockCopy, err := protos.UnmarshallBlock(blockBytes)
+	if err != nil {
+		return "", err
+	}
+	blockCopy.NonHashData = nil
+
+	// Hash the block
+	data, err := proto.Marshal(blockCopy)
+	if err != nil {
+		return "", err
+	}
+
+	hashBytes := make([]byte, 64)
+	sha3.ShakeSum256(hashBytes, data)
+
+	hash = base64.StdEncoding.EncodeToString(hashBytes)
+
+	return hash, nil
 }
 
 /*

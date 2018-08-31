@@ -17,13 +17,14 @@ package bopo
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+	"strings"
+
 	"github.com/codeskyblue/go-sh"
 	"github.com/imroc/req"
 	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
-	"log"
-	"net/http"
-	"strings"
 )
 
 // A Client is a Bitcoin RPC client. It performs RPCs over HTTP using JSON
@@ -31,8 +32,9 @@ import (
 // to authenticate with other Cores on the network.
 type Client struct {
 	BaseURL string
-	Auth    string
-	Debug   bool
+	//AccessToken string
+	Debug  bool
+	client *req.Req
 }
 
 // A struct of Response for BOPO RESTful response
@@ -44,23 +46,35 @@ type Response struct {
 	Id      string      `json:"id,omitempty"`
 }
 
+func NewClient(url string, debug bool) *Client {
+
+	c := &Client{
+		BaseURL: url,
+		// AccessToken: token,
+		Debug: debug,
+	}
+
+	reqC := req.New()
+	// trans, _ := reqC.Client().Transport.(*http.Transport)
+	// trans.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	c.client = reqC
+
+	return c
+}
+
 func (c *Client) Call(path, method string, request interface{}) ([]byte, error) {
+
+	if c == nil || c.client == nil {
+		return nil, errors.New("API url is not setup. ")
+	}
 
 	url := c.BaseURL + "/" + path
 	authHeader := req.Header{"Accept": "application/json"}
 
-	if c.Debug {
-		log.Println("Start Request API...")
-	}
-
-	r, err := req.Do(method, url, request, authHeader)
+	r, err := c.client.Do(method, url, request, authHeader)
 	if err != nil {
-		log.Printf("%+v\n", r)
+		log.Printf("Failed: %+v >\n", err)
 		return nil, err
-	}
-
-	if c.Debug {
-		log.Println("Request API Completed")
 	}
 
 	if r.Response().StatusCode != http.StatusOK {
