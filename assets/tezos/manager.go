@@ -241,14 +241,36 @@ func (wm *WalletManager) AddWalletInSummary(wid string, wallet *openwallet.Walle
 	wm.WalletsInSum[wid] = wallet
 }
 
+//获取钱包余额
+func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.Decimal, error) {
+	db, err := wallet.OpenDB()
+	if err != nil {
+		return decimal.NewFromFloat(0), err
+	}
+	defer db.Close()
+
+	var addrs []*openwallet.Address
+	db.All(&addrs)
+
+	var balance decimal.Decimal = decimal.NewFromFloat(0)
+
+	for _, a := range addrs {
+		//get balance
+		decimal_balance, _ := decimal.NewFromString(string(wm.WalletClient.CallGetbalance(a.Address)))
+		balance = balance.Add(decimal_balance)
+	}
+
+	return balance.Div(coinDecimal), nil
+}
+
 //打印钱包列表
 func (wm *WalletManager) printWalletList(list []*openwallet.Wallet) {
 	tableInfo := make([][]interface{}, 0)
 
 	for i, w := range list {
-
+		balance, _ := wm.getWalletBalance(w)
 		tableInfo = append(tableInfo, []interface{}{
-			i, w.WalletID, w.Alias, w.DBFile,
+			i, w.WalletID, w.Alias, w.DBFile, balance,
 		})
 	}
 
