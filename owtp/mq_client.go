@@ -23,35 +23,25 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/tidwall/gjson"
 	"net"
-	"net/http"
 	"sync"
 	"time"
+	"github.com/streadway/amqp"
 )
 
-//局部常量
-const (
-	WriteWait      = 60 * time.Second //超时为6秒
-	PongWait       = 30 * time.Second
-	PingPeriod     = (PongWait * 9) / 10
-	MaxMessageSize = 1 * 1024
-)
 
-var (
-	Debug = false
-)
-
-/**
-WebScoket配置格式
- */
-type WebSocketConfig struct {
+type MQConfig struct {
 	Address     string
 	ConnectType int
+	Exchange    string //交互
+	QueueName   string //发送通道
+	ReceiveQueueName string //接收监听通道
 }
 
-//WebSocketClient 基于websocket的通信客户端
-type WebSocketClient struct {
+//MQClient 基于mq的通信客户端
+type MQClient struct {
 	auth            Authorization
-	ws              *websocket.Conn
+	conn            *amqp.Connection
+	channel         *amqp.Channel
 	handler         PeerHandler
 	send            chan []byte
 	isHost          bool
@@ -62,19 +52,11 @@ type WebSocketClient struct {
 	mu              sync.RWMutex //读写锁
 	closeOnce       sync.Once
 	done            func()
-	config          WebSocketConfig //节点配置
+	config          MQConfig //节点配置
 }
 
 // Dial connects a client to the given URL.
-func Dial(
-	pid, url string,
-	handler PeerHandler,
-	header map[string]string,
-	ReadBufferSize, WriteBufferSize int) (*WebSocketClient, error) {
-
-	var (
-		httpHeader http.Header
-	)
+func MQDial(pid, url string, handler PeerHandler) (*MQClient, error) {
 
 	if handler == nil {
 		return nil, errors.New("hander should not be nil! ")
@@ -87,26 +69,16 @@ func Dial(
 	//}
 	log.Debug("Connecting URL:", url)
 
-	dialer := websocket.Dialer{
-		Proxy:            http.ProxyFromEnvironment,
-		HandshakeTimeout: 60 * time.Second,
-		ReadBufferSize:   ReadBufferSize,
-		WriteBufferSize:  WriteBufferSize,
-	}
-
-	if header != nil {
-		httpHeader = make(http.Header)
-		for key, value := range header {
-			httpHeader.Add(key, value)
-		}
-	}
-
-	ws, _, err := dialer.Dial(url, httpHeader)
+	conn, err := amqp.Dial(url)
 	if err != nil {
 		return nil, err
 	}
 
-	client, err := NewClient(pid, ws, handler, nil, nil)
+	channel, err := conn.Channel()
+	if err != nil {
+		return nil, err
+	}
+	client, err := NewMQClient(pid, conn, channel, handler, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -118,15 +90,16 @@ func Dial(
 	return client, nil
 }
 
-func NewClient(pid string, conn *websocket.Conn, hander PeerHandler, auth Authorization, done func()) (*WebSocketClient, error) {
+func NewMQClient(pid string, conn *amqp.Connection, channel *amqp.Channel, hander PeerHandler, auth Authorization, done func()) (*MQClient, error) {
 
 	if hander == nil {
 		return nil, errors.New("hander should not be nil! ")
 	}
 
-	client := &WebSocketClient{
+	client := &MQClient{
 		pid:  pid,
-		ws:   conn,
+		conn: conn,
+		channel:channel,
 		send: make(chan []byte, MaxMessageSize),
 		auth: auth,
 		done: done,
@@ -138,34 +111,35 @@ func NewClient(pid string, conn *websocket.Conn, hander PeerHandler, auth Author
 	return client, nil
 }
 
-func (c *WebSocketClient) PID() string {
+func (c *MQClient) PID() string {
 	return c.pid
 }
 
-func (c *WebSocketClient) Auth() Authorization {
+func (c *MQClient) Auth() Authorization {
 
 	return c.auth
 }
 
-func (c *WebSocketClient) SetHandler(handler PeerHandler) error {
+func (c *MQClient) SetHandler(handler PeerHandler) error {
 	c.handler = handler
 	return nil
 }
 
-func (c *WebSocketClient) IsHost() bool {
+func (c *MQClient) IsHost() bool {
 	return c.isHost
 }
 
-func (c *WebSocketClient) IsConnected() bool {
+func (c *MQClient) IsConnected() bool {
 	return c.isConnect
 }
 
-func (c *WebSocketClient) GetConfig() interface{} {
+func (c *MQClient) GetConfig() interface{} {
 	return c.config
 }
 
+
 //Close 关闭连接
-func (c *WebSocketClient) Close() error {
+func (c *MQClient) Close() error {
 	var err error
 
 	//保证节点只关闭一次
@@ -183,7 +157,7 @@ func (c *WebSocketClient) Close() error {
 			c.done = nil
 		}
 
-		err = c.ws.Close()
+		err = c.conn.Close()
 		c.isConnect = false
 		c.handler.OnPeerClose(c, "client close")
 	})
@@ -191,30 +165,31 @@ func (c *WebSocketClient) Close() error {
 }
 
 //LocalAddr 本地节点地址
-func (c *WebSocketClient) LocalAddr() net.Addr {
-	if c.ws == nil {
+func (c *MQClient) LocalAddr() net.Addr {
+	if c.conn == nil {
 		return nil
 	}
-	return c.ws.LocalAddr()
+	return c.conn.LocalAddr()
 }
 
 //RemoteAddr 远程节点地址
-func (c *WebSocketClient) RemoteAddr() net.Addr {
-	if c.ws == nil {
+func (c *MQClient) RemoteAddr() net.Addr {
+	if c.conn == nil {
 		return nil
 	}
-	return c.ws.RemoteAddr()
+	addr := new(MqAddr)
+	return addr
 }
 
 //Send 发送消息
-func (c *WebSocketClient) Send(data DataPacket) error {
+func (c *MQClient) Send(data DataPacket) error {
 
-	//添加授权
-	if c.auth != nil && c.auth.EnableAuth() {
-		if !c.auth.GenerateSignature(&data) {
-			return errors.New("OWTP: authorization failed")
-		}
-	}
+	////添加授权
+	//if c.auth != nil && c.auth.EnableAuth() {
+	//	if !c.auth.GenerateSignature(&data) {
+	//		return errors.New("OWTP: authorization failed")
+	//	}
+	//}
 	//log.Emergency("Send DataPacket:", data)
 	respBytes, err := json.Marshal(data)
 	if err != nil {
@@ -234,7 +209,7 @@ func (c *WebSocketClient) Send(data DataPacket) error {
 }
 
 //OpenPipe 打开通道
-func (c *WebSocketClient) OpenPipe() error {
+func (c *MQClient) OpenPipe() error {
 
 	if !c.IsConnected() {
 		return fmt.Errorf("client is not connect")
@@ -250,7 +225,7 @@ func (c *WebSocketClient) OpenPipe() error {
 }
 
 // WritePump 发送消息通道
-func (c *WebSocketClient) writePump() {
+func (c *MQClient) writePump() {
 
 	ticker := time.NewTicker(PingPeriod) //发送心跳间隔事件要<等待时间
 	defer func() {
@@ -285,48 +260,45 @@ func (c *WebSocketClient) writePump() {
 }
 
 // write 输出数据
-func (c *WebSocketClient) write(mt int, message []byte) error {
-	c.ws.SetWriteDeadline(time.Now().Add(WriteWait)) //设置发送的超时时间点
-	return c.ws.WriteMessage(mt, message)
+func (c *MQClient) write(mt int, message []byte) error {
+	if c.channel == nil {
+		return new(amqp.Error)
+	}
+	exchange := c.config.Exchange
+	queueName := c.config.QueueName
+	fmt.Println("queueName:",queueName,",exchange",exchange)
+	err := c.channel.Publish(exchange, queueName, false, false, amqp.Publishing{
+		ContentType: "text/plain",
+		Body:        []byte(message),
+	})
+	return err
 }
 
 // ReadPump 监听消息
-func (c *WebSocketClient) readPump() {
+func (c *MQClient) readPump() {
+	if c.channel == nil {
+		return
+	}
+	queueName := c.config.ReceiveQueueName
 
-	c.ws.SetReadDeadline(time.Now().Add(PongWait)) //设置客户端心跳响应的最后限期
-	c.ws.SetPongHandler(func(string) error {
-		c.ws.SetReadDeadline(time.Now().Add(PongWait)) //设置下一次心跳响应的最后限期
-		return nil
-	})
-	defer func() {
-		c.Close()
-		log.Debug("readPump end")
-	}()
+	fmt.Println("queueName:",queueName)
+	msgs, err := c.channel.Consume(queueName, "", true, false, false, false, nil)
 
-	for {
-		_, message, err := c.ws.ReadMessage()
-		if err != nil {
-			log.Error("peer:", c.PID(), "Read unexpected error: ", err)
-			//close(c.send) //读取通道异常，关闭读通道
-			return
-		}
-
-		if c.auth != nil && c.auth.EnableAuth() {
-			message, err = c.auth.DecryptData(message)
-			if err != nil {
-				log.Critical("OWTP: DecryptData failed")
-				continue
-			}
-		}
-
-		if Debug {
-			log.Debug("Read: ", string(message))
-		}
-
-		packet := NewDataPacket(gjson.ParseBytes(message))
-
-		//开一个goroutine处理消息
-		go c.handler.OnPeerNewDataPacketReceived(c, packet)
+	if err!=nil{
 
 	}
+
+	forever := make(chan bool)
+
+	go func() {
+		//fmt.Println(*msgs)
+		for d := range msgs {
+			packet := NewDataPacket(gjson.ParseBytes(d.Body))
+
+			//开一个goroutine处理消息
+			go c.handler.OnPeerNewDataPacketReceived(c, packet)
+		}
+	}()
+	<-forever
+
 }

@@ -19,11 +19,49 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"github.com/tidwall/gjson"
 )
 
+//DataPacket 数据包
+type DataPacket struct {
+	/*
+
+		本协议传输数据，格式编码采用json。消息接收与发送，都遵循数据包规范定义字段内容。
+
+		| 参数名 | 类型   | 示例             | 描述                                                                              |
+		|--------|--------|------------------|-----------------------------------------------------------------------------------|
+		| r      | uint8  | 1                | 传输类型，1：请求，2：响应                                                            |
+		| m      | string | subscribe        | 方法名，对应接口方法定义                                                           |
+		| n      | uint32 | 123              | 请求序号。为了保证请求对应响应按序执行，并防御重放攻击，序号可以为随机数，但不可重复。 |
+		| t      | uint32 | 1528520843       | 时间戳。限制请求在特定时间范围内有效，如10分钟。                                     |
+		| d      | Object | {"foo": "hello"} | 数据主体，请求内容或响应内容。接口方法说明中，主要说明这部分。                        |
+		| s      | string | Qwse==           | 合并[r+m+n+t+d]进行sha256两次签名并base64编码，用于校验数据的一致性和合法性       |
+
+	*/
+
+	Req       uint64      `json:"r"`
+	Method    string      `json:"m"`
+	Nonce     uint64      `json:"n" storm:"id"`
+	Timestamp int64       `json:"t"`
+	Data      interface{} `json:"d"`
+	Signature string      `json:"s"`
+}
+
+//NewDataPacket 通过 gjson转为DataPacket
+func NewDataPacket(json gjson.Result) *DataPacket {
+	dp := &DataPacket{}
+	dp.Req = json.Get("r").Uint()
+	dp.Method = json.Get("m").String()
+	dp.Nonce = json.Get("n").Uint()
+	dp.Timestamp = json.Get("t").Int()
+	dp.Data = json.Get("d").Value()
+	dp.Signature = json.Get("s").String()
+	return dp
+}
+
 type PeerInfo struct {
-	ID    string
-	Addrs string
+	ID     string
+	Config interface{}
 }
 
 type PeerAttribute map[string]interface{}
@@ -41,6 +79,8 @@ type Peer interface {
 
 	LocalAddr() net.Addr  //本地节点地址
 	RemoteAddr() net.Addr //远程节点地址
+
+	GetConfig() interface{} // 返回配置信息
 }
 
 // PeerHandler 节点监听器
@@ -52,15 +92,14 @@ type PeerHandler interface {
 
 // Peerstore 节点存储器
 type Peerstore interface {
-
 	// SaveAddr 保存节点地址
-	SaveAddr(id string, addr string)
+	SavePeer(id string, peer Peer)
 
 	// GetAddr 获取节点地址
-	GetAddr(id string) string
+	GetPeer(id string) Peer
 
 	// DeleteAddr 删除节点的地址
-	DeleteAddr(id string)
+	DeletePeer(id string)
 
 	//PeerInfo 节点信息
 	PeerInfo(id string) PeerInfo
@@ -86,7 +125,7 @@ type Peerstore interface {
 
 type owtpPeerstore struct {
 	onlinePeers map[string]Peer
-	peerAddrs   map[string]string
+	peers       map[string]Peer
 	peerInfos   map[string]PeerAttribute
 	mu          sync.RWMutex
 }
@@ -95,52 +134,52 @@ type owtpPeerstore struct {
 func NewPeerstore() *owtpPeerstore {
 	store := owtpPeerstore{
 		onlinePeers: make(map[string]Peer),
-		peerAddrs:   make(map[string]string),
+		peers:       make(map[string]Peer),
 		peerInfos:   make(map[string]PeerAttribute),
 	}
 	return &store
 }
 
-// SaveAddr 保存节点地址
-func (store *owtpPeerstore) SaveAddr(id string, addr string) {
+// SaveAddr 保存节点
+func (store *owtpPeerstore) SavePeer(id string, peer Peer) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
-	if store.peerAddrs == nil {
-		store.peerAddrs = make(map[string]string)
+	if store.peers == nil {
+		store.peers = make(map[string]Peer)
 	}
-	store.peerAddrs[id] = addr
+	store.peers[id] = peer
 }
 
-// GetAddr 获取节点地址
-func (store *owtpPeerstore) GetAddr(id string) string {
+// GetAddr 获取节点
+func (store *owtpPeerstore) GetPeer(id string) Peer {
 	store.mu.RLock()
 	defer store.mu.RUnlock()
-	if store.peerAddrs == nil {
-		return ""
+	if store.peers == nil {
+		return nil
 	}
-	return store.peerAddrs[id]
+	return store.peers[id]
 }
 
-// DeleteAddr 删除节点的地址
-func (store *owtpPeerstore) DeleteAddr(id string) {
+// DeletePeer 删除节点的地址
+func (store *owtpPeerstore) DeletePeer(id string) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
-	if store.peerAddrs == nil {
+	if store.peers == nil {
 		return
 	}
-	delete(store.peerAddrs, id)
+	delete(store.peers, id)
 }
 
 //PeerInfo 节点信息
 func (store *owtpPeerstore) PeerInfo(id string) PeerInfo {
-	if store.peerAddrs == nil {
+	if store.peers == nil {
 		return PeerInfo{}
 	}
-	addr := store.peerAddrs[id]
+	peer := store.peers[id]
 	return PeerInfo{
-		ID:    id,
-		Addrs: addr,
+		ID:     id,
+		Config: peer.GetConfig(),
 	}
 }
 
