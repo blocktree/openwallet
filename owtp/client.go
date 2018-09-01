@@ -40,14 +40,6 @@ var (
 	Debug = false
 )
 
-/**
-WebScoket配置格式
- */
-type WebSocketConfig struct {
-	Address     string
-	ConnectType int
-}
-
 //WebSocketClient 基于websocket的通信客户端
 type WebSocketClient struct {
 	auth            Authorization
@@ -62,7 +54,7 @@ type WebSocketClient struct {
 	mu              sync.RWMutex //读写锁
 	closeOnce       sync.Once
 	done            func()
-	config          WebSocketConfig //节点配置
+	config          map[string]string //节点配置
 }
 
 // Dial connects a client to the given URL.
@@ -160,7 +152,7 @@ func (c *WebSocketClient) IsConnected() bool {
 	return c.isConnect
 }
 
-func (c *WebSocketClient) GetConfig() interface{} {
+func (c *WebSocketClient) GetConfig() map[string]string {
 	return c.config
 }
 

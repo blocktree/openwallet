@@ -29,14 +29,6 @@ import (
 )
 
 
-type MQConfig struct {
-	Address     string
-	ConnectType int
-	Exchange    string //交互
-	QueueName   string //发送通道
-	ReceiveQueueName string //接收监听通道
-}
-
 //MQClient 基于mq的通信客户端
 type MQClient struct {
 	auth            Authorization
@@ -52,7 +44,7 @@ type MQClient struct {
 	mu              sync.RWMutex //读写锁
 	closeOnce       sync.Once
 	done            func()
-	config          MQConfig //节点配置
+	config          map[string]string //节点配置
 }
 
 // Dial connects a client to the given URL.
@@ -133,7 +125,7 @@ func (c *MQClient) IsConnected() bool {
 	return c.isConnect
 }
 
-func (c *MQClient) GetConfig() interface{} {
+func (c *MQClient) GetConfig() map[string]string {
 	return c.config
 }
 
@@ -177,7 +169,9 @@ func (c *MQClient) RemoteAddr() net.Addr {
 	if c.conn == nil {
 		return nil
 	}
-	addr := new(MqAddr)
+	addr := &MqAddr{
+		NetWork:c.config["address"],
+	}
 	return addr
 }
 
@@ -264,8 +258,8 @@ func (c *MQClient) write(mt int, message []byte) error {
 	if c.channel == nil {
 		return new(amqp.Error)
 	}
-	exchange := c.config.Exchange
-	queueName := c.config.QueueName
+	exchange := c.config["exchange"]
+	queueName := c.config["queueName"]
 	fmt.Println("queueName:",queueName,",exchange",exchange)
 	err := c.channel.Publish(exchange, queueName, false, false, amqp.Publishing{
 		ContentType: "text/plain",
@@ -279,7 +273,7 @@ func (c *MQClient) readPump() {
 	if c.channel == nil {
 		return
 	}
-	queueName := c.config.ReceiveQueueName
+	queueName := c.config["receiveQueueName"]
 
 	fmt.Println("queueName:",queueName)
 	msgs, err := c.channel.Consume(queueName, "", true, false, false, false, nil)

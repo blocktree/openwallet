@@ -61,7 +61,7 @@ func NewDataPacket(json gjson.Result) *DataPacket {
 
 type PeerInfo struct {
 	ID     string
-	Config interface{}
+	Config map[string]string
 }
 
 type PeerAttribute map[string]interface{}
@@ -80,7 +80,7 @@ type Peer interface {
 	LocalAddr() net.Addr  //本地节点地址
 	RemoteAddr() net.Addr //远程节点地址
 
-	GetConfig() interface{} // 返回配置信息
+	GetConfig() map[string]string // 返回配置信息
 }
 
 // PeerHandler 节点监听器

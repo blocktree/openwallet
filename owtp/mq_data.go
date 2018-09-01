@@ -17,13 +17,13 @@ package owtp
 
 
 type MqAddr struct {
-
+	NetWork string
 }
 
-func (*MqAddr)Network() string {
-	return ""
+func (m *MqAddr)Network() string {
+	return m.NetWork
 }
 
-func (*MqAddr)String() string {
-	return ""
+func (m *MqAddr)String() string {
+	return m.NetWork
 }

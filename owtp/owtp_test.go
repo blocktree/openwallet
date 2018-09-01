@@ -86,13 +86,21 @@ func TestGenerateRangeNum(t *testing.T) {
 
 
 func TestOtherMQConnectNode(t *testing.T){
+	config := make(map[string]string)
+	config["address"] = mqURL
+	config["connectType"] = MQ
+	config["exchange"] = "DEFAULT_EXCHANGE"
+	config["queueName"] = "DEFAULT_QUEUE"
+	config["receiveQueueName"] = "DEFAULT_QUEUE"
+
 	nodeA := RandomOWTPNode()
 	nodeA.HandleFunc("getInfo", getInfo)
-	err := nodeA.Connect(mqURL, "dasda",MQ)
+	err := nodeA.Connect("dasda",config)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
 	}
+	//time.Sleep(3*time.Second)
 	nodeA.Call("dasda", "hello", nil, true, func(resp Response) {
 		hello := resp.JsonData().Get("hello").String()
 		fmt.Printf("nodeA call hello, result: %s\n", hello)
@@ -105,10 +113,14 @@ func TestMQConnectNode(t *testing.T) {
 
 	time.Sleep(5 * time.Second)
 
+	config := make(map[string]string)
+	config["address"] = hostURL
+	config["connectType"] = MQ
+
 	//客户端
 	nodeA := RandomOWTPNode()
 	nodeA.HandleFunc("getInfo", getInfo)
-	err := nodeA.Connect(mqURL, "dasda",MQ)
+	err := nodeA.Connect("dasda",config)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
@@ -118,7 +130,7 @@ func TestMQConnectNode(t *testing.T) {
 
 	nodeB := RandomOWTPNode()
 	nodeB.HandleFunc("getInfo", getInfo)
-	err = nodeB.Connect(mqURL, host.NodeID(),MQ)
+	err = nodeB.Connect("dasda",config)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
@@ -128,7 +140,7 @@ func TestMQConnectNode(t *testing.T) {
 
 	nodeC := RandomOWTPNode()
 	nodeC.HandleFunc("getWallegetInfotInfo", getInfo)
-	err = nodeC.Connect(mqURL, host.NodeID(),MQ)
+	err = nodeC.Connect("dasda",config)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
@@ -177,11 +189,13 @@ func TestConnectNode(t *testing.T) {
 	host := createHost()
 	//
 	//time.Sleep(5 * time.Second)
-
+	config := make(map[string]string)
+	config["address"] = hostURL
+	config["connectType"] = Websocket
 	//客户端
 	nodeA := RandomOWTPNode()
 	nodeA.HandleFunc("getInfo", getInfo)
-	err := nodeA.Connect(hostURL, host.NodeID(),Websocket)
+	err := nodeA.Connect(host.NodeID(),config)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
@@ -191,7 +205,8 @@ func TestConnectNode(t *testing.T) {
 
 	nodeB := RandomOWTPNode()
 	nodeB.HandleFunc("getInfo", getInfo)
-	err = nodeB.Connect(hostURL, host.NodeID(),Websocket)
+
+	err = nodeB.Connect(host.NodeID(),config)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
@@ -201,7 +216,7 @@ func TestConnectNode(t *testing.T) {
 
 	nodeC := RandomOWTPNode()
 	nodeC.HandleFunc("getWallegetInfotInfo", getInfo)
-	err = nodeC.Connect(hostURL, host.NodeID(),Websocket)
+	err = nodeC.Connect( host.NodeID(),config)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
@@ -246,12 +261,16 @@ func TestConcurrentConnect(t *testing.T) {
 
 	time.Sleep(5 * time.Second)
 
+	config := make(map[string]string)
+	config["address"] = hostURL
+	config["connectType"] = Websocket
+
 	for i := 0; i < 100; i++ {
 		go func(h *OWTPNode) {
 
 			//客户端
 			node := createClient()
-			err := node.Connect(hostURL, host.NodeID(),Websocket)
+			err := node.Connect(host.NodeID(),config)
 			if err != nil {
 				t.Errorf("Connect failed unexpected error: %v", err)
 				return

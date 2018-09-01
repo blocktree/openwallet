@@ -26,7 +26,6 @@ import (
 	"time"
 	"strings"
 	"errors"
-	"encoding/json"
 )
 
 type ConnectType int
@@ -56,9 +55,9 @@ const (
 	//60X: 自定义错误
 	ErrCustomError uint64 = 600
 
-	Websocket int = 0
+	Websocket string = "ws"
 
-	MQ int = 1
+	MQ string = "mq"
 
 	KeyAgreementMethod = "internal_keyAgreement"
 )
@@ -185,7 +184,7 @@ func (node *OWTPNode) Listening() bool {
 
 
 //Connect 建立长连接
-func (node *OWTPNode) Connect( pid string,config interface{}) error {
+func (node *OWTPNode) Connect( pid string,config map[string]string) error {
 
 	_, err := node.connect( pid,config)
 
@@ -193,19 +192,17 @@ func (node *OWTPNode) Connect( pid string,config interface{}) error {
 }
 
 //connect 建立长连接，内部调用
-func (node *OWTPNode) connect( pid string,config string) (Peer, error) {
+func (node *OWTPNode) connect( pid string,config map[string]string) (Peer, error) {
 
-	var mainConfig MainConfig
 
-	err := json.Unmarshal([]byte(config), &mainConfig)
-	if err != nil{
-		      	return nil, fmt.Errorf("MainConfig  is empty")
+	if config == nil{
+		return nil, fmt.Errorf("config  is nil")
 	}
 
-	addr := mainConfig.Address
+	addr := config["address"]
 
 	if len(addr) == 0 {
-		return nil, fmt.Errorf("the peer address is empty")
+		return nil, fmt.Errorf("address must contain by config")
 	}
 
 	auth, err := NewOWTPAuthWithCertificate(node.cert)
@@ -216,16 +213,15 @@ func (node *OWTPNode) connect( pid string,config string) (Peer, error) {
 		return nil, err
 	}
 
-	connectType := mainConfig.ConnectType
+	//链接类型
+	connectType := config["connectType"]
+
+	if len(connectType) == 0 {
+		return nil, fmt.Errorf("connectType must contain by config")
+	}
 
 	//websocket类型
 	if connectType == Websocket{
-
-		var wsc WebSocketConfig
-		err := json.Unmarshal([]byte(config), &wsc)
-		if err != nil{
-			return nil, fmt.Errorf("WebSocketConfig is empty")
-		}
 
 		url := "ws://" + strings.TrimSuffix(addr,"/") + "/" + pid
 
@@ -237,18 +233,13 @@ func (node *OWTPNode) connect( pid string,config string) (Peer, error) {
 		//设置授权规则
 		client.auth = auth
 		//设置配置
-		client.config = wsc
+		client.config = config
 		return client, nil
 	}
 
 	//MQ类型
 	if connectType == MQ{
 
-		var mqc MQConfig
-		err := json.Unmarshal([]byte(config), &mqc)
-		if err != nil{
-			return nil, fmt.Errorf("MQConfig is empty")
-		}
 
 		url := "amqp://admin:admin@" + strings.TrimSuffix(addr,"/") + "/"
 
@@ -260,7 +251,7 @@ func (node *OWTPNode) connect( pid string,config string) (Peer, error) {
 		//设置授权规则
 		client.auth = auth
 		//设置配置
-		client.config = mqc
+		client.config = config
 		return client, nil
 	}
 
@@ -399,6 +390,9 @@ func (node *OWTPNode) Call(
 	peer := node.peerstore.GetOnlinePeer(pid)
 	if peer == nil {
 		newPeer := node.peerstore.GetPeer(pid)
+		if newPeer == nil{
+			return fmt.Errorf("the peer: %s is not in peer book", pid)
+		}
 		peerAddr := newPeer.RemoteAddr().String()
 		if peerAddr == "" {
 			return fmt.Errorf("the peer: %s is not in address book", pid)
