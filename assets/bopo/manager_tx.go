@@ -16,11 +16,7 @@
 package bopo
 
 import (
-	// "fmt"
 	"github.com/imroc/req"
-	// "github.com/tidwall/gjson"
-	// "github.com/pkg/errors"
-	// "log"
 )
 
 // Transfer

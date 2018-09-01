@@ -26,17 +26,9 @@ import (
 )
 
 const (
-	//币种
-	Symbol    = "BOPO"
+	Symbol    = "BOPO" //币种
 	MasterKey = "BopoPlat"
 )
-
-//var (
-//	//秘钥存取
-//	// storage *keystore.HDKeystore
-//	// 节点客户端
-//	client *Client
-//)
 
 // Node setup 节点配置
 type WalletConfig struct {
@@ -165,44 +157,6 @@ threshold = ""
 	return &c
 }
 
-// //newConfigFile 创建配置文件
-// func newConfigFile(
-// 	apiURL, walletPath, sumAddress string,
-// 	threshold string, isTestNet bool) (config.Configer, string, error) {
-
-// 	//	生成配置
-// 	configMap := map[string]interface{}{
-// 		"apiURL":     apiURL,
-// 		"walletPath": walletPath,
-// 		"sumAddress": sumAddress,
-// 		"threshold":  threshold,
-// 		"isTestNet":  isTestNet,
-// 	}
-
-// 	filepath.Join()
-
-// 	bytes, err := json.Marshal(configMap)
-// 	if err != nil {
-// 		return nil, "", err
-// 	}
-
-// 	//实例化配置
-// 	c, err := config.NewConfigData("json", bytes)
-// 	if err != nil {
-// 		return nil, "", err
-// 	}
-
-// 	//写入配置到文件
-// 	file.MkdirAll(c.configFilePath)
-// 	absFile := filepath.Join(configFilePath, configFileName)
-// 	err = c.SaveConfigFile(absFile)
-// 	if err != nil {
-// 		return nil, "", err
-// 	}
-
-// 	return c, absFile, nil
-// }
-
 //initConfig 初始化配置文件
 func (wc *WalletConfig) initConfig() {
 
@@ -230,38 +184,3 @@ func (wc *WalletConfig) printConfig() error {
 
 	return nil
 }
-
-// // loadConfig 读取配置
-// func loadConfig() error {
-
-// 	var c config.Configer
-
-// 	//读取配置
-// 	absFile := filepath.Join(configFilePath, configFileName)
-// 	c, err := config.NewConfig("ini", absFile)
-// 	if err != nil {
-// 		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
-// 	}
-
-// 	serverAPI = c.String("apiURL")
-// 	threshold, _ = decimal.NewFromString(c.String("threshold"))
-// 	sumAddress = c.String("sumAddress")
-// 	rpcUser = c.String("rpcUser")
-// 	rpcPassword = c.String("rpcPassword")
-// 	nodeInstallPath = c.String("nodeInstallPath")
-// 	isTestNet, _ = c.Bool("isTestNet")
-// 	if isTestNet {
-// 		walletDataPath = c.String("testNetDataPath")
-// 	} else {
-// 		walletDataPath = c.String("mainNetDataPath")
-// 	}
-
-// 	// token := basicAuth(rpcUser, rpcPassword)
-
-// 	client = &Client{
-// 		BaseURL: serverAPI,
-// 		Debug:   false,
-// 		// AccessToken: token,
-// 	}
-// 	return nil
-// }
