@@ -161,10 +161,8 @@ nodeInstallPath = ""
 mainNetDataPath = ""
 # testnet data path
 testNetDataPath = ""
-# hcd api url
-chainAPI = ""
-# hcwallet api url
-walletAPI = ""
+# RPC api url
+serverAPI = ""
 # RPC Authentication Username
 rpcUser = ""
 # RPC Authentication Password

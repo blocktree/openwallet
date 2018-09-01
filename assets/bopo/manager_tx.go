@@ -48,5 +48,7 @@ func (wm *WalletManager) toTransfer(wid, toaddr, amount, message string) (*Walle
 }
 
 // Get detail of a transzation
-func (wm *WalletManager) GetTransaction(txid string) {
+func (wm *WalletManager) GetTransaction(txid string) (txr *BlockTX, err error) {
+
+	return &BlockTX{}, nil
 }

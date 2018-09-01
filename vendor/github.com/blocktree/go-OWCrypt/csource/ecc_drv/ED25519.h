@@ -20,7 +20,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "sha512.h"
-#include "sha512.h"
+#include "sha256.h"
+
 #include "ecc_set.h"
 #include "type.h"
 
@@ -33,9 +34,7 @@ void ED25519_point_mul_base(uint8_t *scalar, uint8_t *point);
 uint8_t ED25519_point_add_mul_base(uint8_t *point1, uint8_t *scalar, uint8_t *point2);
 
 void ED25519_genPubkey(uint8_t *prikey, uint8_t *pubkey);
-void ED25519_Sign(uint8_t *prikey, uint8_t *message, uint16_t message_len, uint8_t *sig);
+void ED25519_Sign(uint8_t *prikey, uint8_t *message, uint16_t message_len, uint8_t *sig, uint32_t type);
 uint16_t ED25519_Verify(uint8_t *pubkey, uint8_t *message, uint16_t message_len, uint8_t *sig);
-
 void ED25519_get_order(uint8_t *order);
-
 #endif /* ED25519_h */

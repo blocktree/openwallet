@@ -32,6 +32,28 @@ func TestGetBlockContent(t *testing.T) {
 	}
 }
 
+func TestGetBlockHash(t *testing.T) {
+	var currentHash string
+
+	if block, err := tw.GetBlockContent(332431); err != nil {
+		t.Errorf("TestGetBlockHash Failed: %v\n", err)
+	} else {
+		currentHash = block.Previousblockhash
+		t.Logf("TestGetBlockHash: RealHash[%+v] \n", currentHash)
+	}
+
+	if hash, err := tw.GetBlockHash(332430); err != nil {
+		t.Errorf("TestGetBlockHash Failed: %v\n", err)
+	} else {
+		if hash != currentHash {
+			t.Errorf("TestGetBlockHash Failed: '!=' \n\tGetHash[%s]\n\tReaHash[%s] \n",
+				hash, currentHash)
+		} else {
+			t.Logf("TestGetBlockHash Success: \n\t%+v \n", hash)
+		}
+	}
+}
+
 func TestGetBlockPayload(t *testing.T) {
 	payload := "CpwDCAESERIPZ2FtZXBhaWNvcmVfdjAxGuYCCglVU0VSX0ZVTkQKvAFDaUkxV21GUVdHWktZVXhPY2tkdVdIVjVXSFZ1UmtVMGVFdDRZV3RGZW1kVVNWcFJFaHhHY21rZ1FYVm5JREUzSURFeE9qQTVPakkxSUVOVFZDQXlNREU0SWtnSUFSSkVDaURpaTdoUTZGSGZFc2NXV0p4a1YzZ2NLWnBoaVhudDMrMnZiSjNoVXFrTDVoSWc3dDh3RDNTamhNb0ZPaUliNTRVVVAwYUxwTndyRVhpZmxMRGd4ZFdqUzlzPQo4Q2lZSUFSSWlOVnBHVmxaUU5EZFNaalZxTFdzM1RHOXBVbU5PYjNwc1l6aGtlVzVpVUZsdVp3PT0KYENrUUtJR253RTFNcHFyYUNBdmcybXhueHNuWDVUK2lOYkMwVEhlallZMVFYQi9lWEVpQUQ0RlpRMjVHM09qeFJDUFBKRERkY0xRWEEvMTgweWtVSFc0VEIwRnMrVmc9PUIMUGFpQWRtaW5Sb2xlQg5QYWlBZG1pblJlZ2lvbg=="
 	if payloadSpec, err := tw.GetBlockPayload(payload); err != nil {

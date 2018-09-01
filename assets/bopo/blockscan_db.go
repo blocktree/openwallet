@@ -16,26 +16,21 @@
 package bopo
 
 import (
+	"errors"
 	"path/filepath"
 	"strings"
-	//"strings"
 
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
-	"github.com/pkg/errors"
-
-	//"github.com/asdine/storm/q"
-	"fmt"
-	//"github.com/blocktree/OpenWallet/openwallet"
-	//"github.com/tidwall/gjson"
+	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 //SaveLocalNewBlock 写入本地区块高度和hash
-func (wm *WalletManager) SaveLocalNewBlock(blockHeight uint64, blockHash string) error {
+func (bs *FabricBlockScanner) SaveLocalNewBlock(blockHeight uint64, blockHash string) error {
 
-	fmt.Println("EEE = ", filepath.Join(wm.config.dbPath, wm.config.blockchainFile))
 	//获取本地区块高度
-	db, err := storm.Open(filepath.Join(wm.config.dbPath, wm.config.blockchainFile))
+	db, err := storm.Open(filepath.Join(bs.wm.config.dbPath, bs.wm.config.blockchainFile))
 	if err != nil {
 		return err
 	}
@@ -51,7 +46,7 @@ func (wm *WalletManager) SaveLocalNewBlock(blockHeight uint64, blockHash string)
 }
 
 //GetLocalNewBlock 获取本地区块高度和hash
-func (wm *WalletManager) GetLocalNewBlock() (uint64, string) {
+func (bs *FabricBlockScanner) GetLocalNewBlock() (uint64, string) {
 
 	var (
 		blockHeight uint64 = 0
@@ -59,7 +54,7 @@ func (wm *WalletManager) GetLocalNewBlock() (uint64, string) {
 	)
 
 	//获取本地区块高度
-	db, err := storm.Open(filepath.Join(wm.config.dbPath, wm.config.blockchainFile))
+	db, err := storm.Open(filepath.Join(bs.wm.config.dbPath, bs.wm.config.blockchainFile))
 	if err != nil {
 		return 0, ""
 	}
@@ -72,9 +67,9 @@ func (wm *WalletManager) GetLocalNewBlock() (uint64, string) {
 }
 
 //SaveLocalBlock 记录本地新区块
-func (wm *WalletManager) SaveLocalBlock(block *Block) error {
+func (bs *FabricBlockScanner) SaveLocalBlock(block *Block) error {
 
-	db, err := storm.Open(filepath.Join(wm.config.dbPath, wm.config.blockchainFile))
+	db, err := storm.Open(filepath.Join(bs.wm.config.dbPath, bs.wm.config.blockchainFile))
 	if err != nil {
 		return err
 	}
@@ -84,13 +79,13 @@ func (wm *WalletManager) SaveLocalBlock(block *Block) error {
 }
 
 //GetLocalBlock 获取本地区块数据
-func (wm *WalletManager) GetLocalBlock(height uint64) (*Block, error) {
+func (bs *FabricBlockScanner) GetLocalBlock(height uint64) (*Block, error) {
 
 	var (
 		block Block
 	)
 
-	db, err := storm.Open(filepath.Join(wm.config.dbPath, wm.config.blockchainFile))
+	db, err := storm.Open(filepath.Join(bs.wm.config.dbPath, bs.wm.config.blockchainFile))
 	if err != nil {
 		return nil, err
 	}
@@ -105,10 +100,10 @@ func (wm *WalletManager) GetLocalBlock(height uint64) (*Block, error) {
 }
 
 //SaveTransaction 记录高度到本地
-func (wm *WalletManager) SaveTransaction(blockHeight uint64) error {
+func (bs *FabricBlockScanner) SaveTransaction(blockHeight uint64) error {
 
 	//获取本地区块高度
-	db, err := storm.Open(filepath.Join(wm.config.dbPath, wm.config.blockchainFile))
+	db, err := storm.Open(filepath.Join(bs.wm.config.dbPath, bs.wm.config.blockchainFile))
 	if err != nil {
 		return err
 	}
@@ -119,7 +114,7 @@ func (wm *WalletManager) SaveTransaction(blockHeight uint64) error {
 
 // ----------------------------------------------------------------------------
 //SaveTxToWalletDB 保存交易记录到钱包数据库
-func (wm *WalletManager) SaveUnscanRecord(record *UnscanRecord) error {
+func (bs *FabricBlockScanner) SaveUnscanRecord(record *UnscanRecord) error {
 
 	if record == nil {
 		return errors.New("the unscan record to save is nil")
@@ -130,7 +125,7 @@ func (wm *WalletManager) SaveUnscanRecord(record *UnscanRecord) error {
 	//}
 
 	//获取本地区块高度
-	db, err := storm.Open(filepath.Join(wm.config.dbPath, wm.config.blockchainFile))
+	db, err := storm.Open(filepath.Join(bs.wm.config.dbPath, bs.wm.config.blockchainFile))
 	if err != nil {
 		return err
 	}
@@ -140,9 +135,9 @@ func (wm *WalletManager) SaveUnscanRecord(record *UnscanRecord) error {
 }
 
 //获取未扫记录
-func (wm *WalletManager) GetUnscanRecords() ([]*UnscanRecord, error) {
+func (bs *FabricBlockScanner) GetUnscanRecords() ([]*UnscanRecord, error) {
 	//获取本地区块高度
-	db, err := storm.Open(filepath.Join(wm.config.dbPath, wm.config.blockchainFile))
+	db, err := storm.Open(filepath.Join(bs.wm.config.dbPath, bs.wm.config.blockchainFile))
 	if err != nil {
 		return nil, err
 	}
@@ -157,22 +152,26 @@ func (wm *WalletManager) GetUnscanRecords() ([]*UnscanRecord, error) {
 }
 
 //DeleteUnscanRecord 删除指定高度的未扫记录
-func (wm *WalletManager) DeleteUnscanRecord(height uint64) error {
+func (bs *FabricBlockScanner) DeleteUnscanRecord(height uint64) error {
 	//获取本地区块高度
-	db, err := storm.Open(filepath.Join(wm.config.dbPath, wm.config.blockchainFile))
+	db, err := storm.Open(filepath.Join(bs.wm.config.dbPath, bs.wm.config.blockchainFile))
 	if err != nil {
+		log.Error("Open Failed: ", err)
 		return err
 	}
 	defer db.Close()
 
 	var list []*UnscanRecord
-	err = db.Find("BlockHeight", height, &list)
+	// err = db.Find("BlockHeight", height, &list)
+	err = db.Find("ID", string(height), &list)
 	if err != nil {
+		log.Error("Find Faild: ", err)
 		return err
 	}
 
 	tx, err := db.Begin(true)
 	if err != nil {
+		log.Error("Begin Failed: ", err)
 		return err
 	}
 
@@ -184,13 +183,13 @@ func (wm *WalletManager) DeleteUnscanRecord(height uint64) error {
 }
 
 //DeleteUnscanRecordNotFindTX 删除未没有找到交易记录的重扫记录
-func (wm *WalletManager) DeleteUnscanRecordNotFindTX() error {
+func (bs *FabricBlockScanner) DeleteUnscanRecordNotFindTX() error {
 
 	//删除找不到交易单
 	reason := "[-5]No information available about transaction"
 
 	//获取本地区块高度
-	db, err := storm.Open(filepath.Join(wm.config.dbPath, wm.config.blockchainFile))
+	db, err := storm.Open(filepath.Join(bs.wm.config.dbPath, bs.wm.config.blockchainFile))
 	if err != nil {
 		return err
 	}
@@ -215,9 +214,9 @@ func (wm *WalletManager) DeleteUnscanRecordNotFindTX() error {
 }
 
 //DeleteUnscanRecordByTxID 删除未扫记录
-func (wm *WalletManager) DeleteUnscanRecordByTxID(height uint64, txid string) error {
+func (bs *FabricBlockScanner) DeleteUnscanRecordByTxID(height uint64, txid string) error {
 	//获取本地区块高度
-	db, err := storm.Open(filepath.Join(wm.config.dbPath, wm.config.blockchainFile))
+	db, err := storm.Open(filepath.Join(bs.wm.config.dbPath, bs.wm.config.blockchainFile))
 	if err != nil {
 		return err
 	}
@@ -235,6 +234,119 @@ func (wm *WalletManager) DeleteUnscanRecordByTxID(height uint64, txid string) er
 
 	for _, r := range list {
 		db.DeleteStruct(r)
+	}
+
+	return nil
+}
+
+//GetWalletByAddress 获取地址对应的钱包
+func (bs *FabricBlockScanner) GetWalletByAddress(address string) (*openwallet.Wallet, bool) {
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
+
+	account, ok := bs.addressInScanning[address]
+	if ok {
+		wallet, ok := bs.walletInScanning[account]
+		return wallet, ok
+
+	} else {
+		return nil, false
+	}
+}
+
+//SaveRechargeToWalletDB 保存交易单内的充值记录到钱包数据库
+func (bs *FabricBlockScanner) SaveRechargeToWalletDB(height uint64, list []*openwallet.Recharge) error {
+
+	var (
+		saveSuccess = true
+	)
+
+	for _, r := range list {
+
+		wallet, ok := bs.GetWalletByAddress(r.Address)
+		if ok {
+			reason := ""
+			err := wallet.SaveUnreceivedRecharge(r)
+			//如果blockHash没有值，添加到重扫，避免遗留
+			if err != nil {
+				saveSuccess = false
+				//记录未扫区块
+				reason = err.Error()
+				log.Std.Error("block height: %d, txID: %s save unscan record failed. unexpected error: %v", height, r.TxID, err.Error())
+				unscanRecord := NewUnscanRecord(height, r.TxID, reason)
+
+				err = bs.SaveUnscanRecord(unscanRecord)
+				if err != nil {
+					log.Std.Error("block height: %d, txID: %s save unscan record failed. unexpected error: %v", height, r.TxID, err.Error())
+				}
+
+			} else {
+				log.Info("block scanner save blockHeight:", height, "txid:", r.TxID, "address:", r.Address, "successfully.")
+			}
+
+			//if err != nil || len(r.BlockHash) == 0 {
+			//	saveSuccess = false
+			//	//记录未扫区块
+			//	if err != nil {
+			//		reason = err.Error()
+			//		log.Std.Error("block height: %d, txID: %s save unscan record failed. unexpected error: %v", height, r.TxID, err.Error())
+			//	}
+			//	unscanRecord := NewUnscanRecord(height, r.TxID, reason)
+			//	err = bs.SaveUnscanRecord(unscanRecord)
+			//	if err != nil {
+			//		log.Std.Error("block height: %d, txID: %s save unscan record failed. unexpected error: %v", height, r.TxID, err.Error())
+			//	}
+			//
+			//} else {
+			//	log.Info("block scanner save blockHeight:", height, "txid:", r.TxID, "address:", r.Address, "successfully.")
+			//}
+		} else {
+			log.Error("address:", r.Address, "in wallet is not found, txid:", r.TxID)
+			return errors.New("address in wallet is not found")
+		}
+
+	}
+
+	if !saveSuccess {
+		return errors.New("have unscan record")
+	}
+
+	return nil
+}
+
+//DeleteRechargesByHeight 删除某区块高度的充值记录
+func (bs *FabricBlockScanner) DeleteRechargesByHeight(height uint64) error {
+
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
+
+	for _, wallet := range bs.walletInScanning {
+
+		list, err := wallet.GetRecharges(false, height)
+		if err != nil {
+			return err
+		}
+
+		db, err := wallet.OpenDB()
+		if err != nil {
+			return err
+		}
+
+		tx, err := db.Begin(true)
+		if err != nil {
+			return err
+		}
+
+		for _, r := range list {
+			err = db.DeleteStruct(&r)
+			if err != nil {
+				return err
+			}
+		}
+
+		tx.Commit()
+
+		db.Close()
 	}
 
 	return nil

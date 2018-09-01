@@ -71,7 +71,7 @@ type MerchantAssets interface {
 
 // GetMerchantAssets 根据币种类型获取已注册的管理者
 func GetMerchantAssets(symbol string) MerchantAssets {
-	manager, ok := managers[strings.ToLower(symbol)].(MerchantAssets)
+	manager, ok := Managers[strings.ToLower(symbol)].(MerchantAssets)
 	if !ok {
 		return nil
 	}

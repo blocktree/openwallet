@@ -21,8 +21,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
-
-	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/blocktree/OpenWallet/crypto/sha3"
 )
 
@@ -77,7 +75,7 @@ func NewHDKeystore(keydir string, scryptN, scryptP int) *HDKeystore {
 // StoreHDKey 创建HDKey
 func StoreHDKey(dir, alias, auth string, scryptN, scryptP int) (*HDKey, string, error) {
 
-	seed, err := hdkeychain.GenerateSeed(SeedLen)
+	seed, err := GenerateSeed(SeedLen)
 	if err != nil {
 		return nil, "", err
 	}
@@ -159,8 +157,8 @@ func (ks *HDKeystore) getDecryptedKey(alias, rootId, auth string) (*HDKey, error
 //GetExtendSeed 获得某个币种的扩展种子
 func GetExtendSeed(seed []byte, masterKey string) ([]byte, error) {
 
-	if len(seed) < hdkeychain.MinSeedBytes || len(seed) > hdkeychain.MaxSeedBytes {
-		return nil, hdkeychain.ErrInvalidSeedLen
+	if len(seed) < MinSeedBytes || len(seed) > MaxSeedBytes {
+		return nil, ErrInvalidSeedLen
 	}
 
 	hmac256 := hmac.New(sha3.New256, []byte(masterKey))

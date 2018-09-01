@@ -15,32 +15,57 @@
 
 package bopo
 
-import "testing"
+import (
+	"fmt"
+	"path/filepath"
+	"testing"
 
-// var (
-// 	wm = NewWalletManager()
-// 	bst = TestNewFabricBlockScanner(wm)
-// )
+	"github.com/blocktree/OpenWallet/openwallet"
+)
+
+var (
+	bst *FabricBlockScanner
+
+	testAddress   string = "5ZaPXfJaLNrGnXuyXunFE4xKxakEzgTIZQ"
+	testAccountID string = "simonluo"
+
+	testBlockHeight uint64 = uint64(241234)
+	testBlockHash   string = "gWGQ5CsqNvv3zsn1ED20pFk2z1i/xmW0EmZVJ3IoGYmTiaOILCscsCsPTpCi6bqnzDTK2yIaqNecA7jvxfLreA=="
+)
 
 func TestNewFabricBlockScanner(t *testing.T) {
-	//func TestNewFabricBlockScanner(wm *WalletManager) *FabricBlockScanner {
+	fabricBlockScanner := NewFabricBlockScanner(tw)
+	fmt.Println(fabricBlockScanner)
 }
 
-// func TestAddAddress(t *testing.T) {
-// 	//bst.AddAddress(address, accountID string, wallet *openwallet.Wallet)
-// }
-// func TestAddWallet(t *testing.T) {
-// 	//bst.AddWallet(accountID string, wallet *openwallet.Wallet)
-// }
+func TestAddAddress(t *testing.T) {
+	bst = NewFabricBlockScanner(tw)
+
+	wallet := &openwallet.Wallet{WalletID: testAccountID, DBFile: filepath.Join(tw.config.dbPath, testAccountID+".db")}
+	bst.AddAddress(testAddress, testAccountID, wallet)
+}
+
+func TestAddWallet(t *testing.T) {
+	bst = NewFabricBlockScanner(tw)
+
+	wallet := &openwallet.Wallet{WalletID: testAccountID, DBFile: filepath.Join(tw.config.dbPath, testAccountID+".db")}
+	bst.AddWallet(testAccountID, wallet)
+}
+
 // func TestAddObserver(t *testing.T) {
-// 	//bst.AddObserver(obj openwallet.BlockScanNotificationObject)
+// 	obj := openwallet.BlockScanNotificationObject{}
+// 	bst.AddObserver(obj)
 // }
 // func TestRemoveObserver(t *testing.T) {
-// 	//bst.RemoveObserver(obj openwallet.BlockScanNotificationObject)
+// 	obj := openwallet.BlockScanNotificationObject{}
+// 	bst.RemoveObserver(obj)
 // }
-// func TestClear(t *testing.T) {
-// 	bst.Clear()
-// }
+
+func TestClear(t *testing.T) {
+	bst = NewFabricBlockScanner(tw)
+
+	bst.Clear()
+}
 
 // func TestRun(t *testing.T) {
 // 	bst.Run()
@@ -54,23 +79,39 @@ func TestNewFabricBlockScanner(t *testing.T) {
 // func TestRestart(t *testing.T) {
 // 	bst.Restart()
 // }
-// func TestSetRescanBlockHeight(t *testing.T) {
-// 	var height uint64
-// 	if err := bst.SetRescanBlockHeight(height); err != nil {
-// 	}
-// }
-// func TestGetCurrentBlockHeader(t *testing.T) {
-// 	if blockHeader, err := bst.GetCurrentBlockHeader(); err != nil {
-// 		t.Log(&blockHeader)
-// 	}
-// }
-// func TestIsExistAddress(t *testing.T) {
-// 	var address string = ""
-// 	if exist := bst.IsExistAddress(address); exist == true {
-// 	}
-// }
-// func TestIsExistWallet(t *testing.T) {
-// 	var accountID string
-// 	if bst.IsExistWallet(accountID) == true {
-// 	}
-// }
+
+func TestSetRescanBlockHeight(t *testing.T) {
+	bst = NewFabricBlockScanner(tw)
+	if err := bst.SetRescanBlockHeight(testBlockHeight - 10); err != nil {
+		t.Errorf("TestSetRescanBlockHeight Failed: %v\n", err)
+	}
+}
+func TestGetCurrentBlockHeader(t *testing.T) {
+	bst = NewFabricBlockScanner(tw)
+	if blockHeader, err := bst.GetCurrentBlockHeader(); err != nil {
+		t.Errorf("TestGetCurrentBlockHeader Failed: %v\n", err)
+	} else {
+		fmt.Printf("TestGetCurrentBlockHeader Results: %+v \n", blockHeader)
+	}
+}
+func TestIsExistAddress(t *testing.T) {
+	bst = NewFabricBlockScanner(tw)
+
+	TestAddAddress(t)
+
+	if bst.IsExistAddress(testAddress) != true {
+		t.Errorf("TestIsExistAddress Failed: %v\n", "none")
+	} else {
+		fmt.Printf("TestIsExistAddress Results: %+v \n", "exist")
+	}
+}
+func TestIsExistWallet(t *testing.T) {
+	bst = NewFabricBlockScanner(tw)
+
+	TestAddWallet(t)
+	if bst.IsExistWallet(testAccountID) != true {
+		t.Errorf("TestIsExistWallet Failed: %v\n", "none")
+	} else {
+		fmt.Printf("TestIsExistWallet Results: %+v \n", "exist")
+	}
+}

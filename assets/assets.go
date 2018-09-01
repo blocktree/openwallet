@@ -85,7 +85,7 @@ type ConfigManager interface {
 }
 
 //钱包管理器组
-var managers = make(map[string]interface{})
+var Managers = make(map[string]interface{})
 
 // RegWMD makes a WalletManager available by the name.
 // If Register is called twice with the same name or if driver is nil,
@@ -94,16 +94,16 @@ func RegWMD(name string, manager interface{}) {
 	if manager == nil {
 		panic("WalletManager: Register adapter is nil")
 	}
-	if _, ok := managers[name]; ok {
+	if _, ok := Managers[name]; ok {
 		log.Error("WalletManager: Register called twice for adapter ", name)
 		return
 	}
-	managers[name] = manager
+	Managers[name] = manager
 }
 
 // GetWMD 根据币种类型获取已注册的管理者
 func GetWMD(symbol string) interface{} {
-	manager, ok := managers[symbol]
+	manager, ok := Managers[symbol]
 	if !ok {
 		return nil
 	}
@@ -123,7 +123,7 @@ func init() {
 	RegWMD(strings.ToLower(bitcoin.Symbol), bitcoin.NewWalletManager())
 	RegWMD(strings.ToLower(hypercash.Symbol), hypercash.NewWalletManager())
 	RegWMD(strings.ToLower(iota.Symbol), &iota.WalletManager{})
-	RegWMD(strings.ToLower(tezos.Symbol), &tezos.WalletManager{})
+	RegWMD(strings.ToLower(tezos.Symbol), tezos.NewWalletManager())
 	RegWMD(strings.ToLower(litecoin.Symbol), litecoin.NewWalletManager())
 	RegWMD(strings.ToLower(qtum.Symbol), qtum.NewWalletManager())
 }

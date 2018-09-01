@@ -26,6 +26,7 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 	"path/filepath"
 	"strings"
+	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 
@@ -481,4 +482,25 @@ func (wm *WalletManager) SetConfigFlow(subCmd string) error {
 func (wm *WalletManager) ShowConfigInfo(subCmd string) error {
 	wm.Config.PrintConfig()
 	return nil
+}
+
+
+//CurveType 曲线类型
+func (wm *WalletManager) CurveType() uint32 {
+	return wm.Config.CurveType
+}
+
+//FullName 币种全名
+func (wm *WalletManager) FullName() string {
+	return wm.Config.Symbol
+}
+
+//Symbol 币种标识
+func (wm *WalletManager) Symbol() string {
+	return "Bitcoin"
+}
+
+//AddressDecode 地址解析器
+func (wm *WalletManager) AddressDecode() openwallet.AddressDecoder {
+	return *wm.Decoder
 }

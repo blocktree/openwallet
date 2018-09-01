@@ -185,7 +185,7 @@ func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 		"walletID":   account.AccountID,
 		"balance":    account.Balance,
 		"alias":      account.Alias,
-		"publicKeys": account.PublicKeys,
+		"publicKeys": account.OwnerKeys,
 	}
 
 	responseSuccess(ctx, result)
@@ -263,7 +263,7 @@ func (m *MerchantNode) getWalletList(ctx *owtp.Context) {
 			wmap := make(map[string]interface{})
 			wmap["alias"] = a.Alias
 			wmap["walletID"] = a.WalletID
-			wmap["publicKeys"] = a.PublicKeys
+			wmap["publicKeys"] = a.OwnerKeys
 			wmap["coin"] = a.Symbol
 			wmap["balance"] = a.Balance
 

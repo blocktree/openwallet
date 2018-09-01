@@ -48,7 +48,7 @@ type Response struct {
 
 func NewClient(url string, debug bool) *Client {
 
-	c := Client{
+	c := &Client{
 		BaseURL: url,
 		// AccessToken: token,
 		Debug: debug,
@@ -59,7 +59,7 @@ func NewClient(url string, debug bool) *Client {
 	// trans.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	c.client = reqC
 
-	return &c
+	return c
 }
 
 func (c *Client) Call(path, method string, request interface{}) ([]byte, error) {

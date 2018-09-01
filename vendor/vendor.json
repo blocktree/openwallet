@@ -1468,6 +1468,13 @@
 			"revisionTime": "2018-06-22T17:40:09Z"
 		},
 		{
+			"checksumSHA1": "9wOTz0iWfOSTSTmUkoq0WYkiMdY=",
+			"origin": "github.com/hyperledger/fabric/vendor/github.com/golang/protobuf/ptypes/empty",
+			"path": "github.com/golang/protobuf/ptypes/empty",
+			"revision": "1f146986c4c06b6b9e21fff052b4dd38e8dd73cc",
+			"revisionTime": "2017-04-03T16:40:24Z"
+		},
+		{
 			"checksumSHA1": "FdeygjOuyR2p5v9b0kNOtzfpjS4=",
 			"path": "github.com/golang/protobuf/ptypes/timestamp",
 			"revision": "9eb2c01ac278a5d89ce4b2be68fe4500955d8179",
@@ -1577,6 +1584,18 @@
 			"path": "github.com/huin/goupnp/ssdp",
 			"revision": "c60f6f62147048f80a0e092b483318af88b5d78b",
 			"revisionTime": "2018-05-08T23:20:20Z"
+		},
+		{
+			"checksumSHA1": "s9Sd9Yp6uYrIjS5rLH62mnj9ZZ4=",
+			"path": "github.com/hyperledger/fabric/core/util",
+			"revision": "1f146986c4c06b6b9e21fff052b4dd38e8dd73cc",
+			"revisionTime": "2017-04-03T16:40:24Z"
+		},
+		{
+			"checksumSHA1": "pbcX/gyXiX0O+bdr9Tnwzkr67Gw=",
+			"path": "github.com/hyperledger/fabric/protos",
+			"revision": "1f146986c4c06b6b9e21fff052b4dd38e8dd73cc",
+			"revisionTime": "2017-04-03T16:40:24Z"
 		},
 		{
 			"checksumSHA1": "5SFRzrVflqK1ptx4jWEbnZgaVtg=",
@@ -2134,6 +2153,13 @@
 			"revisionTime": "2018-06-28T11:31:30Z"
 		},
 		{
+			"checksumSHA1": "BoXdUBWB8UnSlFlbnuTQaPqfCGk=",
+			"origin": "github.com/hyperledger/fabric/vendor/github.com/op/go-logging",
+			"path": "github.com/op/go-logging",
+			"revision": "1f146986c4c06b6b9e21fff052b4dd38e8dd73cc",
+			"revisionTime": "2017-04-03T16:40:24Z"
+		},
+		{
 			"checksumSHA1": "VnkNO/q6ZVTYCd/F7nmHosHC5a4=",
 			"path": "github.com/opencontainers/go-digest",
 			"revision": "c9281466c8b2f606084ac71339773efd177436e7",
@@ -2605,6 +2631,13 @@
 			"path": "golang.org/x/net/internal/socks",
 			"revision": "e514e69ffb8bc3c76a71ae40de0118d794855992",
 			"revisionTime": "2018-06-27T15:43:21Z"
+		},
+		{
+			"checksumSHA1": "yhndhWXMs/VSEDLks4dNyFMQStA=",
+			"origin": "github.com/hyperledger/fabric/vendor/golang.org/x/net/lex/httplex",
+			"path": "golang.org/x/net/lex/httplex",
+			"revision": "1f146986c4c06b6b9e21fff052b4dd38e8dd73cc",
+			"revisionTime": "2017-04-03T16:40:24Z"
 		},
 		{
 			"checksumSHA1": "UrFs0T7kkYsUxJG5bsJt7KB8ejI=",
