@@ -108,12 +108,12 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	//备份路径
 	c.backupDir = filepath.Join("data", strings.ToLower(c.Symbol), "backup")
 	//钱包服务API
-	c.ServerAPI = "http://192.168.2.193:10050"
+	c.ServerAPI = ""
 	//gas limit & storage limit
-	c.GasLimit = decimal.NewFromFloat(100)        //0.0001 XTZ
-	c.StorageLimit = decimal.NewFromFloat(100)    //0.0001 XTZ
+	c.GasLimit = decimal.NewFromFloat(0.0001)        //0.0001 XTZ
+	c.StorageLimit = decimal.NewFromFloat(0.0001)    //0.0001 XTZ
 	//最小矿工费
-	c.MinFee = decimal.NewFromFloat(100)
+	c.MinFee = decimal.NewFromFloat(0.0001)
 	//钱包安装的路径
 	c.NodeInstallPath = ""
 	//钱包数据文件目录
@@ -133,20 +133,19 @@ stopNodeCMD = ""
 # node install path
 nodeInstallPath = ""
 # node api url
-apiUrl = ""
-# min fees, unit is μXTZ ，recommend 100， 100 μXTZ = 0.0001 XTZ 
+apiUrl = "http://"
+# min fees, recommend 0.0001 XTZ 
 minFee = ""
-# gas limit, unit is μXTZ ，recommend 100， 100 μXTZ = 0.0001 XTZ
+# gas limit, recommend 0.0001 XTZ
 gasLimit = ""
-# storage limit, unit is μXTZ ，recommend 100， 100 μXTZ = 0.0001 XTZ
+# storage limit，recommend  0.00 XTZ
 storageLimit = ""
 # the safe address that wallet send money to.
 sumAddress = ""
 # when wallet's balance is over this value, the wallet willl send money to [sumAddress]
-#unit is μXTZ， recommend 1000000， 1000000 μXTZ = 1 XTZ
+#unit is μXTZ， recommend 10 XTZ
 threshold = ""
 `
-
 	return &c
 }
 

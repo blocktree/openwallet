@@ -30,9 +30,6 @@ import (
 	"github.com/blocktree/OpenWallet/openwallet"
 )
 
-var (
-	coinDecimal decimal.Decimal = decimal.NewFromFloat(1000000)
-	)
 
 //初始化配置流程
 func (wm *WalletManager) InitConfigFlow() error {
@@ -314,6 +311,7 @@ func (wm *WalletManager) TransferFlow() error {
 
 	atculAmount, _ := decimal.NewFromString(amount)
 	atculAmount = atculAmount.Mul(coinDecimal)
+	log.Printf("amount:%d", atculAmount.IntPart())
 
 	// 等待用户输入发送地址
 	receiver, err := console.InputText("Enter receiver address: ", true)
