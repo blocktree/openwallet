@@ -40,6 +40,9 @@ import (
 const (
 	maxAddresNum = 10000000
 )
+var (
+	coinDecimal decimal.Decimal = decimal.NewFromFloat(1000000)
+)
 
 //地址，公钥，公钥哈希，私钥，签名前缀
 var prefix = map[string][]byte{
@@ -469,7 +472,7 @@ func (wm *WalletManager) summaryWallet(wallet *openwallet.Wallet, password strin
 			txid, _ := wm.Transfer(*k, wm.Config.SumAddress, strconv.FormatInt(wm.Config.MinFee.IntPart(), 10), strconv.FormatInt(wm.Config.GasLimit.IntPart(), 10),
 				strconv.FormatInt(wm.Config.StorageLimit.IntPart(), 10),strconv.FormatInt(amount.IntPart(), 10))
 
-			log.Std.Info("summary address:%s, to address:%s, amount:%d, txid:%s\n", k.Address, wm.Config.SumAddress, amount.IntPart(), txid)
+			log.Std.Info("summary form address:%s, to address:%s, amount:%d, txid:%s\n", k.Address, wm.Config.SumAddress, amount.IntPart(), txid)
 		}
 	}
 
@@ -559,11 +562,11 @@ func (wm *WalletManager) LoadConfig() error {
 	}
 
 	wm.Config.ServerAPI = c.String("apiUrl")
-	wm.Config.Threshold, _ = decimal.NewFromString(c.String("threshold"))
+	wm.Config.Threshold = (decimal.RequireFromString(c.String("threshold"))).Mul(coinDecimal)
 	wm.Config.SumAddress = c.String("sumAddress")
-	wm.Config.MinFee = decimal.RequireFromString(c.String("minFee"))
-	wm.Config.GasLimit = decimal.RequireFromString(c.String("gasLimit"))
-	wm.Config.StorageLimit = decimal.RequireFromString(c.String("storageLimit"))
+	wm.Config.MinFee = (decimal.RequireFromString(c.String("minFee"))).Mul(coinDecimal)
+	wm.Config.GasLimit = (decimal.RequireFromString(c.String("gasLimit"))).Mul(coinDecimal)
+	wm.Config.StorageLimit = (decimal.RequireFromString(c.String("storageLimit"))).Mul(coinDecimal)
 
 	wm.WalletClient = NewClient(wm.Config.ServerAPI,false)
 
