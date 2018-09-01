@@ -48,7 +48,7 @@ type AssetsAccount struct {
 	//Owners          map[string]AccountOwner //拥有者列表, 账户公钥: 拥有者
 	ContractAddress string      `json:"contractAddress"` //多签合约地址
 	Required        uint64      `json:"required"`        //必要签名数
-	Symbol          string      `json:"coin"`            //资产币种类别
+	Symbol          string      `json:"symbol"`            //资产币种类别
 	AddressIndex    int         `json:"addressCount"`
 	Balance         string      `json:"balance"`
 	core            interface{} //核心账户指针
@@ -60,26 +60,7 @@ func NewMultiSigAccount(wallets []*Wallet, required uint, creator *Wallet) (*Ass
 }
 
 //NewUserAccount 创建账户
-func NewUserAccount(user User) *AssetsAccount {
-	//TODO:实现从节点配置文件中读取私钥的存粗文件夹
-	//cfg := gethConfig{Node: defaultNodeConfig()}
-	//// Load config file.
-	//if file := ctx.GlobalString(configFileFlag.Name); file != "" {
-	//	if err := loadConfig(file, &cfg); err != nil {
-	//		utils.Fatalf("%v", err)
-	//	}
-	//}
-	//utils.SetNodeConfig(ctx, &cfg.Node)
-	//scryptN, scryptP, keydir, err := cfg.Node.AccountConfig()
-	//
-	//if err != nil {
-	//	utils.Fatalf("Failed to read configuration: %v", err)
-	//}
-	//
-	//password := getPassPhrase("Your new account is locked with a password. Please give a password. Do not forget this password.", true, 0, utils.MakePasswordList(ctx))
-	//
-
-	//keystore.GenerateHDKey()
+func NewUserAccount() *AssetsAccount {
 	account := &AssetsAccount{}
 	return account
 }

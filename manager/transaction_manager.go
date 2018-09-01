@@ -28,7 +28,7 @@ func (wm *WalletManager) SignTransaction(appID, accountID string, rawTx openwall
 }
 
 // VerifyTransaction
-func (wm *WalletManager) VerifyTransaction(appID, accountID string, txHex string, sigParts []*openwallet.KeySignature) (*openwallet.RawTransaction, error) {
+func (wm *WalletManager) VerifyTransaction(appID, accountID string, rawTx openwallet.RawTransaction) (*openwallet.RawTransaction, error) {
 	return nil, nil
 }
 
