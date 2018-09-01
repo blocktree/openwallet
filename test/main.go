@@ -44,7 +44,12 @@ func main() {
 	//tech.TestRestoreWallet()
 	//tech.TestConfigErcToken()
 	//tech.TestERC20TokenTransfer()
-	tech.TestERC20TokenSummary()
+	//tech.TestERC20TokenSummary()
+	//tech.TestBigInt()
+	//tech.TestDiffer()
+	//tech.TestGetFuncAndFileName()
+	//tech.PrepareTestForBlockScan()
+	tech.TestDbInf()
 
 	fmt.Println("done ... ")
 }

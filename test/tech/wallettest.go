@@ -102,3 +102,40 @@ func TestERC20TokenSummary() {
 		log.Fatal("summary erc20 token failed, err = ", err)
 	}
 }
+
+func PrepareTestForBlockScan() error {
+	/*pending, queued, err := ethereum.EthGetTxpoolStatus()
+	if err != nil {
+		log.Fatal("get txpool status failed, err=", err)
+		return
+	}
+	fmt.Println("pending number is ", pending, " queued number is ", queued)*/
+
+	fromAddrs := make([]string, 0, 2)
+	passwords := make([]string, 0, 2)
+	fromAddrs = append(fromAddrs, "0x50068fd632c1a6e6c5bd407b4ccf8861a589e776")
+	passwords = append(passwords, "123456")
+	fromAddrs = append(fromAddrs, "0x2a63b2203955b84fefe52baca3881b3614991b34")
+	passwords = append(passwords, "123456")
+	err := ethereum.PrepareForBlockScanTest(fromAddrs, passwords)
+	if err != nil {
+		fmt.Println("prepare for test failed, err=", err)
+		return err
+	}
+	return nil
+}
+
+func TestDbInf() error {
+	wallet, err := ethereum.GetWalletList()
+	if err != nil {
+		fmt.Println("get Wallet list failed, err=", err)
+		return err
+	}
+
+	if len(wallet) == 0 {
+		fmt.Println("no wallet found.")
+		return err
+	}
+	wallet[len(wallet)-1].DumpWalletDB()
+	return nil
+}
