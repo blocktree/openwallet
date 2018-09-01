@@ -30,8 +30,6 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-//var _ base64.StdEncoding
-
 //GetBlockHeight 获取区块链高度
 func (wm *WalletManager) GetBlockHeight() (uint64, error) {
 
@@ -86,11 +84,17 @@ func (wm *WalletManager) GetBlockContent(height uint64) (block *Block, err error
 		return nil, err
 	}
 
+	hash, err := GenBlockHash(d)
+	if err != nil {
+		return nil, err
+	}
+	block.Hash = hash
+
 	return block, nil
 }
 
 //GetBlockTxPayload 获取区块中交易详情
-func (wm *WalletManager) GetBlockPayload(payload string) (payloadSpec *PayloadSpec, err error) {
+func (wm *WalletManager) GetBlockPayload(payload string) (payloadSpec *BlockTxPayload, err error) {
 
 	d, err := wm.fullnodeClient.Call("blocks/parsetxpayload", "POST", req.Param{"payload": string(payload)})
 	if err != nil {
@@ -100,7 +104,7 @@ func (wm *WalletManager) GetBlockPayload(payload string) (payloadSpec *PayloadSp
 		return nil, err
 	}
 
-	payloadSpec = &PayloadSpec{}
+	payloadSpec = &BlockTxPayload{}
 	if err := gjson.Unmarshal(d, payloadSpec); err != nil {
 		log.Println(err)
 		return nil, err
@@ -117,8 +121,17 @@ func (wm *WalletManager) GetBlockHash(height uint64) (hash string, err error) {
 		return "", err
 	}
 
+	hash, err = GenBlockHash(d)
+	if err != nil {
+		return "", err
+	}
+	return hash, nil
+}
+
+func GenBlockHash(blockData []byte) (hash string, err error) {
+
 	block := &protos.Block{}
-	if err := gjson.Unmarshal(d, block); err != nil {
+	if err := gjson.Unmarshal(blockData, block); err != nil {
 		return "", err
 	}
 
@@ -143,11 +156,11 @@ func (wm *WalletManager) GetBlockHash(height uint64) (hash string, err error) {
 	sha3.ShakeSum256(hashBytes, data)
 
 	hash = base64.StdEncoding.EncodeToString(hashBytes)
-
 	return hash, nil
 }
 
 /*
+	// 以 Fabric 原生方式解析 Block 数据（暂留，备用）
 	func DecodeTxPayload(payload []byte) (chaincodeSpec *PayloadSpec, err error) {
 		chaincodeSpec = &PayloadSpec{}
 
