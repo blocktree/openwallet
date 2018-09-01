@@ -16,11 +16,7 @@
 package bopo
 
 import (
-	// "fmt"
 	"github.com/imroc/req"
-	// "github.com/tidwall/gjson"
-	// "github.com/pkg/errors"
-	// "log"
 )
 
 // Transfer
@@ -28,13 +24,13 @@ func (wm *WalletManager) toTransfer(wid, toaddr, amount, message string) (*Walle
 	var wallet *Wallet
 
 	// Register
-	if _, err := client.Call("rpc/registar", "POST", req.Param{"id": wid}); err != nil {
+	if _, err := wm.fullnodeClient.Call("rpc/registar", "POST", req.Param{"id": wid}); err != nil {
 		return nil, err
 	}
 
 	// To transfer
 	request := req.Param{"id": wid, "to": toaddr, "amount": amount, "message": message}
-	if _, err := client.Call("rpc/fund", "POST", request); err != nil {
+	if _, err := wm.fullnodeClient.Call("rpc/fund", "POST", request); err != nil {
 		return nil, err
 	} else {
 		if w, err := wm.getWalletInfo(wid); err != nil {
@@ -48,5 +44,7 @@ func (wm *WalletManager) toTransfer(wid, toaddr, amount, message string) (*Walle
 }
 
 // Get detail of a transzation
-func (wm *WalletManager) GetTransaction(txid string) {
+func (wm *WalletManager) GetTransaction(txid string) (txr *BlockTX, err error) {
+
+	return &BlockTX{}, nil
 }

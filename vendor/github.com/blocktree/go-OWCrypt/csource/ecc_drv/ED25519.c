@@ -3585,27 +3585,40 @@ void ED25519_genPubkey(uint8_t *prikey, uint8_t *pubkey)
     free(az);
 }
 
-void ED25519_Sign(uint8_t *prikey, uint8_t *message, uint16_t message_len, uint8_t *sig)
+void ED25519_Sign(uint8_t *prikey, uint8_t *message, uint16_t message_len, uint8_t *sig, uint32_t type)
 {
     uint8_t *az = NULL, *nonce = NULL, *hram = NULL, *pubkey = NULL;
     ge_p3 R;
     SHA512_CTX *hash_ctx = NULL;
+    SHA256_CTX *hash_ctx1=NULL;
     
     az = calloc(SHA512_DIGEST_LENGTH, sizeof(uint8_t));
     nonce = calloc(SHA512_DIGEST_LENGTH, sizeof(uint8_t));
     hram = calloc(SHA512_DIGEST_LENGTH, sizeof(uint8_t));
     pubkey = calloc(32, sizeof(uint8_t));
     hash_ctx = calloc(1, sizeof(SHA512_CTX));
+    hash_ctx1 =calloc(1,sizeof(SHA256_CTX));
+    if(type ==ECC_CURVE_ED25519_EXTEND)
+    {
+        sha256_init(hash_ctx1);
+        sha256_update(hash_ctx1, prikey, 32);
+        sha256_final(hash_ctx1, az+32);
+        memcpy(az,prikey,32);
+        ED25519_point_mul_base(prikey, pubkey);
+        
+    }
+    else
+    {
+        ED25519_genPubkey(prikey, pubkey);
+        sha512_init(hash_ctx);
+        sha512_update(hash_ctx, prikey, 32);
+        sha512_final(hash_ctx, az);
+        
+        az[0] &= 248;
+        az[31] &= 63;
+        az[31] |= 64;
+    }
     
-    ED25519_genPubkey(prikey, pubkey);
-    
-    sha512_init(hash_ctx);
-    sha512_update(hash_ctx, prikey, 32);
-    sha512_final(hash_ctx, az);
-    
-    az[0] &= 248;
-    az[31] &= 63;
-    az[31] |= 64;
     
     sha512_init(hash_ctx);
     sha512_update(hash_ctx, az + 32, 32);

@@ -26,8 +26,10 @@
 #include "blake2b.h"
 #include "blake2s.h"
 #include "md4.h"
+#include "blake256.h"
+#include "blake512.h"
 #include "type.h"
-
+#include "keccak_256.h"
 #define HASH_ALG_SHA1              0xA0000000
 #define HASH_ALG_SHA256            0xA0000002
 #define HASH_ALG_SHA512            0xA0000003
@@ -38,17 +40,33 @@
 #define HASH_ALG_BLAKE2S           0xA0000008
 #define HASH_ALG_SM3               0xA0000009
 #define HASh_ALG_DOUBLE_SHA256     0xA000000A
-#define HASH_ALG_SHA256_RIPEMD160  0xA000000B
+#define HASH_ALG_HASH160           0xA000000B
+#define HASH_ALG_BLKKE256          0xA000000C
+#define HASH_ALG_BLKKE512          0xA000000D
+#define HASH_ALG_KECCAK256         0xA000000E
 
 /*
  @function:hash operation
  @paramter[in]:msg pointer to the message to do hash
  @paramter[in]:msg_len denotes the byte length of msg
- @paramter[in]:type,hash algorithm flag.if type = HASH_ALG_SHA1,choose sha1 algorithm; if type=HASH_ALG_SHA256,choose sha256 algorithm; if type=HASH_ALG_SHA512,
- choose sha512 algorithm; if type=HASH_ALG_SM3,choose sm3 algorithm;if Type=HASH_ALG_MD5, choose md5 algorithm; if Type=HASH_ALG_RIPEMD160,choose ripemd160 algorithm;if type=HASH_ALG_BLAKE2B,choose blake2b algorithm; if type = HASH_ALG_BLAKE2S, choose blake2s algorithm.if type=HASh_ALG_DOUBLE_SHA256,choose two consecutive sha256;if type =HASH_ALG_SHA256_RIPEMD160, first do sha256,then do ripemed160. otherwise,not support.
+ @paramter[in]:type,hash algorithm flag.
+ HASH_ALG_SHA1: sha1
+ HASH_ALG_SHA256: sha256
+ HASH_ALG_SHA512: sha512
+ HASH_ALG_SM3: sm3
+ HASH_ALG_MD5: md5
+ HASH_ALG_RIPEMD160: ripemd160
+ HASH_ALG_BLAKE2B: blake2b
+ HASH_ALG_BLAKE2S: blake2s
+ HASh_ALG_DOUBLE_SHA256: sha256;
+ HASH_ALG_HASH160: hash160
+ HASH_ALG_BLKKE256: blake256
+ HASH_ALG_BLKKE512: blake512
+ HASH_ALG_KECCAK256:keccak256
+ OTHERWISE:not support.
  @paramter[out]:digest pointer to hash result(make sure the space size is enough)
  @paramter[in]:digest_len,the byte length of digest.It is useful if and only if blake2b and blake2s algorithm.Because the digest length of other hash algorithms is fix.
  */
-void hash(uint8_t *msg,uint32_t msg_len,uint8_t *digest,uint16_t digest_len,uint32_t Type);
+void hash(uint8_t *msg,uint32_t msg_len,uint8_t *digest,uint16_t digest_len,uint32_t type);
 
 #endif /* hash_set_h */

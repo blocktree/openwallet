@@ -18,8 +18,21 @@
  @function:hash operation
  @paramter[in]:msg pointer to the message to do hash
  @paramter[in]:msg_len denotes the byte length of msg
- @paramter[in]:type,hash algorithm flag.if type = HASH_ALG_SHA1,choose sha1 algorithm; if type=HASH_ALG_SHA256,choose sha256 algorithm; if type=HASH_ALG_SHA512,
- choose sha512 algorithm; if type=HASH_ALG_SM3,choose sm3 algorithm;if Type=HASH_ALG_MD5, choose md5 algorithm; if Type=HASH_ALG_RIPEMD160,choose ripemd160 algorithm;if type=HASH_ALG_BLAKE2B,choose blake2b algorithm; if type = HASH_ALG_BLAKE2S, choose blake2s algorithm.if type=HASh_ALG_DOUBLE_SHA256,choose two consecutive sha256;if type =HASH_ALG_SHA256_RIPEMD160, first do sha256,then do ripemed160. otherwise,not support.
+ @paramter[in]:type,hash algorithm flag.
+ HASH_ALG_SHA1: sha1
+ HASH_ALG_SHA256: sha256
+ HASH_ALG_SHA512: sha512
+ HASH_ALG_SM3: sm3
+ HASH_ALG_MD5: md5
+ HASH_ALG_RIPEMD160: ripemd160
+ HASH_ALG_BLAKE2B: blake2b
+ HASH_ALG_BLAKE2S: blake2s
+ HASh_ALG_DOUBLE_SHA256: sha256;
+ HASH_ALG_HASH160: hash160
+ HASH_ALG_BLKKE256: blake256
+ HASH_ALG_BLKKE512: blake512
+ HASH_ALG_KECCAK256:keccak256
+ OTHERWISE:not support.
  @paramter[out]:digest pointer to hash result(make sure the space size is enough)
  @paramter[in]:digest_len,the byte length of digest.It is useful if and only if blake2b and blake2s algorithm.Because the digest length of other hash algorithms is fix.
  */
@@ -58,9 +71,20 @@ void hash(uint8_t *msg,uint32_t msg_len,uint8_t *digest,uint16_t digest_len,uint
             sha256_hash(msg, msg_len, digest);
             sha256_hash(digest, 32, digest);
             break;
-        case HASH_ALG_SHA256_RIPEMD160:
+        case HASH_ALG_HASH160:
             sha256_hash(msg, msg_len, digest);
             ripemd160_hash(digest,32,digest);
+            break;
+#if 0
+        case HASH_ALG_BLKKE256:
+            blake256_hash(msg,  msg_len, digest);
+            break;
+        case HASH_ALG_BLKKE512:
+             blake512_hash(msg,  msg_len, digest);
+            break;
+#endif
+        case HASH_ALG_KECCAK256:
+            keccak256_hash(msg, msg_len,digest);
             break;
         default:
             break;

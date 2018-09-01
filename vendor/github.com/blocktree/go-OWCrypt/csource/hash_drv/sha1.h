@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2018 The OpenWallet Authors
  * This file is part of the OpenWallet library.
@@ -13,18 +14,17 @@
  * GNU Lesser General Public License for more details.
  */
 
-#ifndef sha1_h
-#define sha1_h
-
+#ifndef SHA1_H
+#define SHA1_H
 #include <stdio.h>
-#include "string.h"
-#include <stdlib.h>
-#include "type.h"
-typedef struct {
-    uint32_t total[2];   /* number of bits, modulo 2^64 */
-    uint32_t state[5];   /* intermediate state */
-    uint8_t buffer[64];  /* input buffer */
-}SHA1_CTX;
+#include <string.h>
+
+typedef struct
+{
+    uint32_t state[5];
+    uint32_t count[2];
+    unsigned char buffer[64];
+} SHA1_CTX;
 
 /*
  @function:init SHA1_CTX,writing a new message
@@ -32,19 +32,20 @@ typedef struct {
  @return: NULL
  @notice: none
  */
-void sha1_init(SHA1_CTX *ctx );
+void sha1_init(SHA1_CTX * ctx);
 
 /*
  @function:update message Continues an sha1 message-digest operation,
  processing another message block, and updating the context.
  @paramter[in]:ctx pointer to SHA1_CTX
- @paramter[in]:input pointer to the message to do sha1
- @paramter[in]:inputlen,the byte length of input
+ @paramter[in]:msg pointer to the message to do sha1
+ @paramter[in]:msg_len,the byte length of input
  @return:NULL
  @notoce:none
  */
 
-void sha1_update( SHA1_CTX *ctx, uint8_t *msg, uint32_t msg_len );
+void sha1_update(SHA1_CTX * ctx,const uint8_t *msg,uint32_t msg_len);
+
 /*
  @function:finalization sha1 operation ends an sha1 message-digest operation, writing the message digest and zeroizing the context
  @paramter[in]:ctx pointer to SHA1_CTX
@@ -52,16 +53,8 @@ void sha1_update( SHA1_CTX *ctx, uint8_t *msg, uint32_t msg_len );
  @return:NULL
  @notice:nothing
  */
-void sha1_final( SHA1_CTX *ctx, uint8_t digest[20] );
+void sha1_final(SHA1_CTX * ctx,uint8_t digest[20]);
 
-/*
- @function: sha1 hash
- @parameter[in]:input pointer to the message to do hash
- @parameter[in]:the byte length of input
- @parameter[in]:digest pointer to hash result
- @return: none
- @notice:nothing
- */
-void sha1_hash(uint8_t *msg, uint32_t msg_len, uint8_t digest[20]);
+void sha1_hash(const uint8_t *msg,uint32_t msg_len,uint8_t *digest);
 
-#endif /* sha1.h */
+#endif /* SHA1_H */

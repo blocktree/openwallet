@@ -49,6 +49,8 @@ package owcrypt
 // #include "ecc_set.h"
 // #include "hash_set.c"
 // #include "hash_set.h"
+// #include "keccak_256.c"
+// #include "keccak_256.h"
 import "C"
 import "unsafe"
 
@@ -64,6 +66,7 @@ const (
 	HASH_ALG_SM3           = uint32(0xA0000009)
 	HASh_ALG_DOUBLE_SHA256 = uint32(0xA000000A)
 	HASH_ALG_HASH160       = uint32(0xA000000B)
+	HASH_ALG_KECCAK256     = uint32(0xA000000E)
 
 	ECC_CURVE_SECP256K1    = uint32(0xECC00000)
 	ECC_CURVE_SECP256R1    = uint32(0xECC00001)
@@ -71,6 +74,8 @@ const (
 	ECC_CURVE_NIST_P256    = ECC_CURVE_SECP256R1
 	ECC_CURVE_SM2_STANDARD = uint32(0xECC00002)
 	ECC_CURVE_ED25519      = uint32(0xECC00003)
+	ECC_CURVE_ED25519_EXTEND=uint32(0xECC00004)
+
 
 	SUCCESS            = uint16(0x0001)
 	FAILURE            = uint16(0x0000)
@@ -97,9 +102,12 @@ func GenPubkey(prikey []byte, typeChoose uint32) (pubkey []byte, ret uint16) {
 }
 
 func Signature(prikey []byte, ID []byte, IDlen uint16, message []byte, message_len uint16, typeChoose uint32) (signature []byte, ret uint16) {
+	var id *C.uchar = nil
 	signature = make([]byte, 64)
 	pri := (*C.uchar)(unsafe.Pointer(&prikey[0]))
-	id := (*C.uchar)(unsafe.Pointer(&ID[0]))
+	if typeChoose == ECC_CURVE_SM2_STANDARD {
+		id = (*C.uchar)(unsafe.Pointer(&ID[0]))
+	}
 	msg := (*C.uchar)(unsafe.Pointer(&message[0]))
 	sig := (*C.uchar)(unsafe.Pointer(&signature[0]))
 
@@ -336,7 +344,7 @@ func Hash(data []byte, digestLen uint16, typeChoose uint32) []byte {
 	case HASH_ALG_SHA1, HASH_ALG_RIPEMD160, HASH_ALG_HASH160:
 		length = 20
 		break
-	case HASH_ALG_SHA256, HASh_ALG_DOUBLE_SHA256, HASH_ALG_SM3:
+	case HASH_ALG_SHA256, HASh_ALG_DOUBLE_SHA256, HASH_ALG_SM3, HASH_ALG_KECCAK256:
 		length = 32
 		break
 	case HASH_ALG_SHA512:

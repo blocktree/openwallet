@@ -18,13 +18,13 @@ package bopo
 import (
 	"errors"
 	"fmt"
-
-	// "io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/console"
+	"github.com/blocktree/OpenWallet/timer"
 	"github.com/shopspring/decimal"
 )
 
@@ -38,7 +38,7 @@ func (w *WalletManager) ShowConfig() error {
 
 func (w *WalletManager) GetWalletList() error {
 	// Load config
-	if err := loadConfig(); err != nil {
+	if err := w.loadConfig(); err != nil {
 		return err
 	}
 
@@ -53,7 +53,7 @@ func (w *WalletManager) GetWalletList() error {
 
 func (w *WalletManager) CreateWalletFlow() error {
 	// Load config
-	if err := loadConfig(); err != nil {
+	if err := w.loadConfig(); err != nil {
 		return err
 	}
 
@@ -81,7 +81,7 @@ func (w *WalletManager) TransferFlow() error {
 	)
 
 	// Load config
-	if err := loadConfig(); err != nil {
+	if err := w.loadConfig(); err != nil {
 		return err
 	}
 
@@ -141,7 +141,7 @@ func (w *WalletManager) TransferFlow() error {
 			fmt.Println(err)
 			// return err
 		} else {
-			amount = cc.Mul(coinDecimal).String()
+			amount = cc.Mul(w.config.coinDecimal).String()
 			break
 		}
 
@@ -173,7 +173,7 @@ func (w *WalletManager) TransferFlow() error {
 func (w *WalletManager) BackupWalletFlow() error {
 
 	// Load config
-	if err := loadConfig(); err != nil {
+	if err := w.loadConfig(); err != nil {
 		return err
 	}
 
@@ -204,7 +204,7 @@ func (w *WalletManager) RestoreWalletFlow() error {
 	)
 
 	// Load config
-	if err := loadConfig(); err != nil {
+	if err := w.loadConfig(); err != nil {
 		return err
 	}
 
@@ -240,7 +240,6 @@ func (w *WalletManager) RestoreWalletFlow() error {
 		}
 
 	}
-	fmt.Println("EMD")
 
 	// To restore
 	if err := w.restoreWalletData(datFile); err != nil {
@@ -251,9 +250,61 @@ func (w *WalletManager) RestoreWalletFlow() error {
 }
 
 func (w *WalletManager) CreateAddressFlow() error {
-	return errors.New("Writing!")
+	return errors.New("A wallet only have one address, it's same thing in BOPO!")
 }
 
 func (w *WalletManager) SummaryFollow() error {
-	return errors.New("Writing!")
+
+	fmt.Printf("[Summary Wallet Start]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+
+	// Load config
+	if err := w.loadConfig(); err != nil {
+		return err
+	}
+
+	// Check summary addr
+	if len(w.config.sumAddress) == 0 {
+		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
+	}
+	if err := w.verifyAddr(w.config.sumAddress); err != nil {
+		fmt.Println("Summary address invalid!")
+		return err
+	}
+
+	// if w, err := w.getWalletInfo2(w.config.sumAddress); err != nil {
+	// 	log.Println(err)
+	// 	return err
+	// } else {
+	// 	fmt.Println("The summary address info: ")
+	// 	w.printWalletList([]*Wallet{w})
+
+	// 	// Confirm summary wallet
+	// 	if cfi, err := console.InputText(fmt.Sprintf("Confirm  wid[%s](addr[%s]) to summary (yes/no)? ", w.WalletID, w.Addr), true); err != nil || cfi != "yes" {
+	// 		return err
+	// 	}
+	// }
+
+	//	// List all wallets that have balance to summary (without summaryAddr)
+	//	wallets, err := getWalletList()
+	//	if err != nil {
+	//		return err
+	//	}
+	//	tmp := wallets[:0]
+	//	for _, w := range wallets {
+	//		// fmt.Printf("Summary: %d = %+v\t %+v\t %+v\t\n", 1, w.Alias, w.Balance, w.Balance == "")
+	//		if w.Balance != "" && w.Addr != sumAddress {
+	//			tmp = append(tmp, w)
+	//		}
+	//	}
+	//	wallets = tmp
+	//	fmt.Println("\nFollows will be summary")
+	//	printWalletList(wallets)
+
+	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", w.config.cycleSeconds.Seconds())
+
+	// Start timer
+	sumTimer := timer.NewTask(w.config.cycleSeconds, w.SummaryWallets)
+	sumTimer.Start()
+
+	return nil
 }

@@ -175,7 +175,7 @@ func TestGetAddressesByAccount(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	_, _, err := tw.CreateBatchAddress("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek", "1234qwer", 100)
+	_, _, err := tw.CreateBatchAddress("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek", "1234qwer", 5)
 	if err != nil {
 		t.Errorf("CreateBatchAddress failed unexpected error: %v\n", err)
 		return
@@ -261,16 +261,16 @@ func TestCreateNewPrivateKey(t *testing.T) {
 			password: "1234qwer",
 			tag:      "wallet not exist",
 		},
-		{
-			name:     "Zhiquan Test",
-			password: "1234qwer",
-			tag:      "normal",
-		},
-		{
-			name:     "Zhiquan Test",
-			password: "121212121212",
-			tag:      "wrong password",
-		},
+		//{
+		//	name:     "Zhiquan Test",
+		//	password: "1234qwer",
+		//	tag:      "normal",
+		//},
+		//{
+		//	name:     "Zhiquan Test",
+		//	password: "121212121212",
+		//	tag:      "wrong password",
+		//},
 	}
 
 	for i, test := range tests {
@@ -495,14 +495,14 @@ func TestEstimateFee(t *testing.T) {
 func TestSendTransaction(t *testing.T) {
 
 	sends := []string{
-		"miphUAzHHeM1VXGSFnw6owopsQW3jAQZAk",
+		"msnYsBdBXQZqYYqNNJZsjShzwCx9fJVSin",
 	}
 
 	tw.RebuildWalletUnspent("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek")
 
 	for _, to := range sends {
 
-		txIDs, err := tw.SendTransaction("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek", to, decimal.NewFromFloat(0.12), "1234qwer", false)
+		txIDs, err := tw.SendTransaction("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek", to, decimal.NewFromFloat(2.12), "1234qwer", false)
 
 		if err != nil {
 			t.Errorf("SendTransaction failed unexpected error: %v\n", err)
