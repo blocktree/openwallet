@@ -49,7 +49,9 @@ func main() {
 	//tech.TestDiffer()
 	//tech.TestGetFuncAndFileName()
 	//tech.PrepareTestForBlockScan()
-	tech.TestDbInf()
+	//tech.TestDbInf()
+	//tech.TestBlockScan()
+	tech.TestBlockScanWhenFork()
 
 	fmt.Println("done ... ")
 }

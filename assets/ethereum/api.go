@@ -124,13 +124,13 @@ func ethGetBlockSpecByHash(blockHash string, showTransactionSpec bool) (*EthBloc
 		return nil, err
 	}
 
-	if result.Type != gjson.String {
+	if result.Type != gjson.JSON {
 		errInfo := fmt.Sprintf("get block[%v] result type failed, result type is %v", blockHash, result.Type)
 		openwLogger.Log.Errorf(errInfo)
 		return nil, errors.New(errInfo)
 	}
 
-	err = json.Unmarshal([]byte(result.String()), &ethBlock)
+	err = json.Unmarshal([]byte(result.Raw), &ethBlock)
 	if err != nil {
 		openwLogger.Log.Errorf("decode json [%v] failed, err=%v", err)
 		return nil, err
@@ -144,10 +144,9 @@ func ethGetBlockSpecByHash(blockHash string, showTransactionSpec bool) (*EthBloc
 	return &ethBlock, nil
 }
 
-func ethGetBlockSpecByBlockNum(blockNum *big.Int, showTransactionSpec bool) (*EthBlock, error) {
-	blockNumStr := "0x" + blockNum.Text(16)
+func ethGetBlockSpecByBlockNum2(blockNum string, showTransactionSpec bool) (*EthBlock, error) {
 	params := []interface{}{
-		blockNumStr,
+		blockNum,
 		showTransactionSpec,
 	}
 	var ethBlock EthBlock
@@ -155,7 +154,7 @@ func ethGetBlockSpecByBlockNum(blockNum *big.Int, showTransactionSpec bool) (*Et
 	result, err := client.Call("eth_getBlockByNumber", 1, params)
 	if err != nil {
 		//errInfo := fmt.Sprintf("get block[%v] failed, err = %v \n", blockNumStr,  err)
-		openwLogger.Log.Errorf("get block[%v] failed, err = %v \n", blockNumStr, err)
+		openwLogger.Log.Errorf("get block[%v] failed, err = %v \n", blockNum, err)
 		return nil, err
 	}
 
@@ -171,6 +170,11 @@ func ethGetBlockSpecByBlockNum(blockNum *big.Int, showTransactionSpec bool) (*Et
 		return nil, err
 	}
 	return &ethBlock, nil
+}
+
+func ethGetBlockSpecByBlockNum(blockNum *big.Int, showTransactionSpec bool) (*EthBlock, error) {
+	blockNumStr := "0x" + blockNum.Text(16)
+	return ethGetBlockSpecByBlockNum2(blockNumStr, showTransactionSpec)
 }
 
 func ethGetTxpoolStatus() (uint64, uint64, error) {
