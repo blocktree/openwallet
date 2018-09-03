@@ -424,7 +424,45 @@ func (wm *WalletManager) GetWalletList() error {
 
 //RestoreWalletFlow 恢复钱包
 func (w *WalletManager) RestoreWalletFlow() error {
-	fmt.Printf("Restore wallet is unavailable now.\n")
+
+	var (
+		err      error
+		keyFile  string
+		dbFile   string
+		password string
+	)
+
+	//先加载是否有配置文件
+	err = w.LoadConfig()
+	if err != nil {
+		return err
+	}
+
+	//输入恢复文件路径
+	keyFile, err = console.InputText("Enter backup key file path: ", true)
+	if err != nil {
+		return err
+	}
+
+	dbFile, err = console.InputText("Enter backup db file path: ", true)
+	if err != nil {
+		return err
+	}
+
+	password, err = console.InputPassword(false, 3)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Wallet restoring, please wait a moment...\n")
+	err = w.RestoreWallet(keyFile, dbFile, password)
+	if err != nil {
+		return err
+	}
+
+	//输出备份导出目录
+	fmt.Printf("Restore wallet successfully.\n")
+
 	return nil
 }
 

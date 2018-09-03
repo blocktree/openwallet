@@ -13,14 +13,31 @@
  * GNU Lesser General Public License for more details.
  */
 
-package openwallet
+package assets
 
-type AddressDecoder struct {
+import (
+	"fmt"
+	"strings"
+)
 
-	//PrivateKeyToWIF 私钥转WIF
-	PrivateKeyToWIF func(priv []byte, isTestnet bool) (string, error)
-	//PublicKeyToAddress 公钥转地址
-	PublicKeyToAddress func(pub []byte, isTestnet bool) (string, error)
-	//WIFToPrivateKey WIF转私钥
-	WIFToPrivateKey func(wif string, isTestnet bool) ([]byte, error)
+type SymbolInfo interface {
+
+	//CurveType 曲线类型
+	CurveType() uint32
+
+	//FullName 币种全名
+	FullName() string
+
+	//Symbol 币种标识
+	Symbol() string
+
+}
+
+// GetSymbolInfo 获取资产的币种信息
+func GetSymbolInfo(symbol string) (SymbolInfo, error) {
+	manager, ok := Managers[strings.ToLower(symbol)].(SymbolInfo)
+	if !ok {
+		return nil, fmt.Errorf("assets: %s is not support", symbol)
+	}
+	return manager, nil
 }
