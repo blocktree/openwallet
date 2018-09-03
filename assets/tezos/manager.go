@@ -360,7 +360,7 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 		case <-quit:
 			//退出
 			log.Std.Info("get all addresses balance finished!!!")
-			return balance, nil
+			return balance.Div(coinDecimal), nil
 		}
 	}
 
