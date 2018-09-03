@@ -86,9 +86,8 @@ func TestWalletConfig_PrintConfig(t *testing.T) {
 }
 
 func TestWalletManager_CreateBatchAddress(t *testing.T) {
-	return
 	var addrs []*openwallet.Address
-	fpath, addrs, err := wm.CreateBatchAddress("WEY5DDuXbvHrBUa5UBKmVpwLCwP69bieeB", "jinxin", 10)
+	fpath, addrs, err := wm.CreateBatchAddress("WEY5DDuXbvHrBUa5UBKmVpwLCwP69bieeB", "jinxin", 20000)
 	if err != nil {
 		t.Error(err.Error())
 		return
@@ -131,7 +130,7 @@ func TestWalletManager_getBanlance(t *testing.T) {
 	}
 
 	balance, _ := wm.getWalletBalance(w)
-	t.Log(balance.IntPart())
+	t.Log(balance)
 }
 
 func TestWalletManager_TransferFlow(t *testing.T) {
