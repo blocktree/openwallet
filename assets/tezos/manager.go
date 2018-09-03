@@ -261,6 +261,7 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 
 	var balance decimal.Decimal = decimal.NewFromFloat(0)
 	count := len(addrs)
+	log.Std.Info("count:%d", count)
 
 	//生产通道
 	producer := make(chan []decimal.Decimal)
@@ -288,7 +289,6 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 		}
 	} (worker)
 
-
 	/*	计算synCount个线程，内部运行的次数	*/
 	//每个线程内循环的数量，以synCount个线程并行处理
 	runCount := count / synCount
@@ -296,10 +296,10 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 
 	if runCount > 0 {
 		for i := 0; i < synCount; i++ {
-			//开始创建地址
-			log.Std.Info("Start get balance thread[%d]", i)
+			//开始
+			//log.Std.Info("Start get balance thread[%d]", i)
 			start := i * runCount
-			end := (i + 1) * runCount -1
+			end := (i + 1) * runCount - 1
 			as := addrs[start:end]
 
 			go func(producer chan []decimal.Decimal, addrs []*openwallet.Address, wm *WalletManager) {
@@ -317,8 +317,8 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 	}
 
 	if otherCount > 0 {
-		//开始创建地址
-		log.Std.Info("Start get balance thread[REST]")
+		//
+		//log.Std.Info("Start get balance thread[REST]")
 		start := runCount*synCount
 		as := addrs[start:]
 
@@ -352,10 +352,8 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 		//生成者不断生成数据，插入到数据队列尾部
 		case pa := <-producer:
 			values = append(values, pa)
-			//log.Std.Info("completed %d", len(pa))
 			//当激活消费者后，传输数据给消费者，并把顶部数据出队
 		case activeWorker <- activeValue:
-			//log.Std.Info("Get %d", len(activeValue))
 			values = values[1:]
 		case <-quit:
 			//退出
@@ -364,10 +362,11 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 		}
 	}
 
+	return balance.Div(coinDecimal), nil
 }
 
 //打印钱包列表
-func (wm *WalletManager) printWalletList(list []*openwallet.Wallet) {
+func (wm *WalletManager) printWalletListAndGetBalance(list []*openwallet.Wallet) {
 	tableInfo := make([][]interface{}, 0)
 
 	for i, w := range list {
@@ -380,6 +379,24 @@ func (wm *WalletManager) printWalletList(list []*openwallet.Wallet) {
 	t := gotabulate.Create(tableInfo)
 	// Set Headers
 	t.SetHeaders([]string{"No.", "ID", "Name", "DBFile", "Balance",})
+
+	//打印信息
+	fmt.Println(t.Render("simple"))
+}
+
+//打印钱包列表
+func (wm *WalletManager) printWalletList(list []*openwallet.Wallet) {
+	tableInfo := make([][]interface{}, 0)
+
+	for i, w := range list {
+		tableInfo = append(tableInfo, []interface{}{
+			i, w.WalletID, w.Alias, w.DBFile,
+		})
+	}
+
+	t := gotabulate.Create(tableInfo)
+	// Set Headers
+	t.SetHeaders([]string{"No.", "ID", "Name", "DBFile",})
 
 	//打印信息
 	fmt.Println(t.Render("simple"))
@@ -468,7 +485,6 @@ func (wm *WalletManager) CreateBatchAddress(walletId, password string, count uin
 
 	//保存地址过程
 	saveAddressWork := func(addresses chan []*openwallet.Address, filename string, wallet *openwallet.Wallet) {
-
 		var (
 			saveErr error
 		)

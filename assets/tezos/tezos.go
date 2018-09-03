@@ -92,7 +92,7 @@ func (wm *WalletManager) CreateAddressFlow() error {
 	}
 
 	//打印钱包
-	wm.printWalletList(wallets)
+	//wm.printWalletList(wallets)
 
 	fmt.Printf("[Please select a wallet No to create address] \n")
 
@@ -174,7 +174,7 @@ func (wm *WalletManager) SummaryFollow() error {
 	}
 
 	//打印钱包
-	wm.printWalletList(wallets)
+	wm.printWalletListAndGetBalance(wallets)
 
 	fmt.Printf("[Please select the wallet to summary, and enter the numbers split by ','." +
 		" For example: 0,1,2,3] \n")
@@ -287,7 +287,7 @@ func (wm *WalletManager) TransferFlow() error {
 	}
 
 	//打印钱包列表
-	wm.printWalletList(wallets)
+	wm.printWalletListAndGetBalance(wallets)
 
 	fmt.Printf("[Please select a wallet to send transaction] \n")
 
