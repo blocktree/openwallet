@@ -130,7 +130,7 @@ func TestWalletManager_getBanlance(t *testing.T) {
 		return
 	}
 
-	balance, _ := wm.getBalance(w)
+	balance, _ := wm.getWalletBalance(w)
 	t.Log(balance.IntPart())
 }
 
