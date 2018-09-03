@@ -276,7 +276,7 @@ func (wm *WalletManager) printWalletList(list []*openwallet.Wallet) {
 
 	t := gotabulate.Create(tableInfo)
 	// Set Headers
-	t.SetHeaders([]string{"No.", "ID", "Name", "DBFile"})
+	t.SetHeaders([]string{"No.", "ID", "Name", "DBFile", "Balance",})
 
 	//打印信息
 	fmt.Println(t.Render("simple"))

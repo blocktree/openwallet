@@ -806,13 +806,22 @@ func SendTransaction(wallet *Wallet, to string, amount *big.Int, password string
 	return txIds, nil
 }
 
+func removeOxFromHex(value string) string {
+	var result string
+	if strings.Index(value, "0x") != -1 {
+		result = common.Substr(value, 2, len(value))
+	}
+	return result
+}
+
 func convertToBigInt(value string, base int) (*big.Int, error) {
 	bigvalue := new(big.Int)
 	var success bool
 	if base == 16 {
-		if strings.Index(value, "0x") != -1 {
-			value = common.Substr(value, 2, len(value))
-		}
+		//		if strings.Index(value, "0x") != -1 {
+		//			value = common.Substr(value, 2, len(value))
+		//		}
+		value = removeOxFromHex(value)
 	}
 
 	_, success = bigvalue.SetString(value, base)
@@ -919,7 +928,7 @@ func GetWalletBalance(wallet *Wallet) (*big.Int, error) {
 			errinfo := fmt.Sprintf("get balance of addr[%v] failed, err=%v", addr.Address, err)
 			return balanceTotal, errors.New(errinfo)
 		}*/
-		fmt.Printf("addr[%v] : %v\n", addr.Address, addr.balance)
+		openwLogger.Log.Debugf("addr[%v] : %v\n", addr.Address, addr.balance)
 		balanceTotal = balanceTotal.Add(balanceTotal, addr.balance)
 	}
 
