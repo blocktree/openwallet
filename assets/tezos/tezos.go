@@ -242,7 +242,7 @@ func (wm *WalletManager) BackupWalletFlow() error {
 	}
 
 	//打印钱包列表
-	wm.printWalletList(list)
+	//wm.printWalletList(list)
 
 	fmt.Printf("[Please select a wallet to backup] \n")
 
