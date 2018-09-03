@@ -13,16 +13,33 @@
  * GNU Lesser General Public License for more details.
  */
 
-package assets
+package manager
 
-import "github.com/blocktree/OpenWallet/openwallet"
+import (
+	"encoding/json"
+	"github.com/tidwall/gjson"
+)
 
-//EthereumAssets Ethereum资产控制器实现
-type EthereumAssets struct {
-	openwallet.AssetsController
+type Subscription struct {
+
+	//ID       int    // primary key
+	Type     int64  `json:"type"`
+	Symbol   string `json:"symbol"`
+	WalletID string `json:"walletID"`
+	AppID    int64  `json:"appID"`
 }
 
-//Deposit 返回钱包对该资产的充值地址
-func (a *EthereumAssets) Deposit() []byte {
-	return []byte("hello world")
+func NewSubscription(res gjson.Result) *Subscription {
+	var s Subscription
+	err := json.Unmarshal([]byte(res.Raw), &s)
+	if err != nil {
+		return nil
+	}
+	return &s
+}
+
+
+func (wm *WalletManager) Subscribe(subscription []*Subscription) error {
+	//TODO:待实现
+	return nil
 }

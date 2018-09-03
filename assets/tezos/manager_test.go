@@ -25,7 +25,7 @@ var wm *WalletManager
 func init() {
 	wm = NewWalletManager()
 	wm.InitConfigFlow()
-	wm.Config.ServerAPI = "https://rpc.tezrpc.me"
+	wm.Config.ServerAPI = "http://192.168.2.193:10050"
 	wm.WalletClient = NewClient(wm.Config.ServerAPI, false)
 }
 
@@ -118,8 +118,20 @@ func TestGetAddreses(t *testing.T) {
 	db.All(&addrs)
 
 	for _, a := range addrs {
-		t.Logf(a.Address)
+		b := wm.WalletClient.CallGetbalance(a.Address)
+		t.Logf("%s    %s", a.Address, string(b))
 	}
+}
+
+func TestWalletManager_getBanlance(t *testing.T) {
+	w, err := wm.GetWalletByID("WEY5DDuXbvHrBUa5UBKmVpwLCwP69bieeB")
+	if err != nil {
+		t.Error("get wallet by id error")
+		return
+	}
+
+	balance, _ := wm.getWalletBalance(w)
+	t.Log(balance.IntPart())
 }
 
 func TestWalletManager_TransferFlow(t *testing.T) {

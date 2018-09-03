@@ -15,6 +15,13 @@
 
 package openwallet
 
+//Coin 币种信息
+type Coin struct {
+	Symbol     string `json:"symbol"`
+	IsContract bool   `json:"isContract"`
+	ContractID string `json:"contractID"`
+}
+
 //资产类型
 type Assets struct {
 	Symbol string
@@ -55,15 +62,14 @@ type AssetsController struct {
 }
 
 //Init 初始化资产控制器
-func (a *AssetsController) Init(w *Wallet, app interface{}){
+func (a *AssetsController) Init(w *Wallet, app interface{}) {
 
 }
 
 //DeployMultiSigWallet 部署多重签名钱包
-func (a *AssetsController) DeployMultiSigWallet(by Wallet) []byte{
+func (a *AssetsController) DeployMultiSigWallet(by Wallet) []byte {
 	return []byte{}
 }
-
 
 //Deposit 返回钱包对该资产的充值地址
 func (a *AssetsController) Deposit() []byte {
@@ -71,27 +77,27 @@ func (a *AssetsController) Deposit() []byte {
 }
 
 //Transfer 转账amount数量，to目标地址
-func (a *AssetsController) Transfer(amount uint, to []byte) Transaction{
+func (a *AssetsController) Transfer(amount uint, to []byte) Transaction {
 	return Transaction{}
 }
 
 //GetBalance 获取资产
-func (a *AssetsController) GetBalance() uint{
+func (a *AssetsController) GetBalance() uint {
 	return 0
 }
 
 //资产ABI
-func (a *AssetsController) ContractABI() string{
+func (a *AssetsController) ContractABI() string {
 	return ""
 }
 
 //资产的合约地址
-func (a *AssetsController) ContractAddress() []byte{
+func (a *AssetsController) ContractAddress() []byte {
 	return []byte{}
 }
 
 //资产名字
-func (a *AssetsController) Name() string{
+func (a *AssetsController) Name() string {
 	return ""
 }
 
@@ -99,4 +105,3 @@ func (a *AssetsController) Name() string{
 func (a *AssetsController) Boardcast(tx Transaction) []byte {
 	return []byte{}
 }
-

@@ -13,17 +13,15 @@
  * GNU Lesser General Public License for more details.
  */
 
-package bitcoin
+package decred
 
 import (
 	"fmt"
+	"github.com/blocktree/OpenWallet/common/file"
+	"github.com/shopspring/decimal"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/shopspring/decimal"
-	"github.com/blocktree/go-OWCrypt"
 )
 
 /*
@@ -39,24 +37,22 @@ import (
 
 const (
 	//币种
-	Symbol    = "BTC"
-	MasterKey = "Bitcoin seed"
-	CurveType = owcrypt.ECC_CURVE_SECP256K1
+	Symbol    = "DCR"
+	MasterKey = "Decred seed"
 )
-
 
 type WalletConfig struct {
 
 	//币种
-	Symbol    string
-	MasterKey string
+	symbol    string
+	masterKey string
 
 	//RPC认证账户名
-	RpcUser string
+	rpcUser string
 	//RPC认证账户密码
-	RpcPassword string
+	rpcPassword string
 	//证书目录
-	CertsDir string
+	certsDir string
 	//钥匙备份路径
 	keyDir string
 	//地址导出路径
@@ -66,144 +62,125 @@ type WalletConfig struct {
 	//配置文件名
 	configFileName string
 	//rpc证书
-	CertFileName string
+	certFileName string
 	//区块链数据文件
-	BlockchainFile string
+	blockchainFile string
 	//是否测试网络
-	IsTestNet bool
+	isTestNet bool
 	// 核心钱包是否只做监听
 	CoreWalletWatchOnly bool
 	//最大的输入数量
-	MaxTxInputs int
+	maxTxInputs int
 	//本地数据库文件路径
 	dbPath string
 	//备份路径
 	backupDir string
+	//链服务API
+	chainAPI string
 	//钱包服务API
-	ServerAPI string
+	walletAPI string
 	//钱包安装的路径
-	NodeInstallPath string
+	nodeInstallPath string
 	//钱包数据文件目录
-	WalletDataPath string
+	walletDataPath string
 	//汇总阀值
-	Threshold decimal.Decimal
+	threshold decimal.Decimal
 	//汇总地址
-	SumAddress string
+	sumAddress string
 	//汇总执行间隔时间
-	CycleSeconds time.Duration
+	cycleSeconds time.Duration
 	//默认配置内容
-	DefaultConfig string
-	//曲线类型
-	CurveType uint32
+	defaultConfig string
 }
 
-func NewConfig(symbol string, masterKey string) *WalletConfig {
+func NewConfig() *WalletConfig {
 
 	c := WalletConfig{}
 
 	//币种
-	c.Symbol = symbol
-	c.MasterKey = masterKey
-	c.CurveType = CurveType
+	c.symbol = Symbol
+	c.masterKey = MasterKey
 
 	//RPC认证账户名
-	c.RpcUser = ""
+	c.rpcUser = ""
 	//RPC认证账户密码
-	c.RpcPassword = ""
+	c.rpcPassword = ""
 	//证书目录
-	c.CertsDir = filepath.Join("data", strings.ToLower(c.Symbol), "certs")
+	c.certsDir = filepath.Join("data", strings.ToLower(c.symbol), "certs")
 	//钥匙备份路径
-	c.keyDir = filepath.Join("data", strings.ToLower(c.Symbol), "key")
+	c.keyDir = filepath.Join("data", strings.ToLower(c.symbol), "key")
 	//地址导出路径
-	c.addressDir = filepath.Join("data", strings.ToLower(c.Symbol), "address")
+	c.addressDir = filepath.Join("data", strings.ToLower(c.symbol), "address")
 	//区块链数据
 	//blockchainDir = filepath.Join("data", strings.ToLower(Symbol), "blockchain")
 	//配置文件路径
 	c.configFilePath = filepath.Join("conf")
 	//配置文件名
-	c.configFileName = c.Symbol + ".ini"
+	c.configFileName = c.symbol + ".ini"
 	//rpc证书
-	c.CertFileName = "rpc.cert"
+	c.certFileName = "rpc.cert"
 	//区块链数据文件
-	c.BlockchainFile = "blockchain.db"
+	c.blockchainFile = "blockchain.db"
 	//是否测试网络
-	c.IsTestNet = true
+	c.isTestNet = true
 	// 核心钱包是否只做监听
 	c.CoreWalletWatchOnly = true
 	//最大的输入数量
-	c.MaxTxInputs = 50
+	c.maxTxInputs = 50
 	//本地数据库文件路径
-	c.dbPath = filepath.Join("data", strings.ToLower(c.Symbol), "db")
+	c.dbPath = filepath.Join("data", strings.ToLower(c.symbol), "db")
 	//备份路径
-	c.backupDir = filepath.Join("data", strings.ToLower(c.Symbol), "backup")
+	c.backupDir = filepath.Join("data", strings.ToLower(c.symbol), "backup")
+	//链服务API
+	c.chainAPI = "http://127.0.0.1:10000"
 	//钱包服务API
-	c.ServerAPI = "http://127.0.0.1:10000"
+	c.walletAPI = "http://127.0.0.1:10000"
 	//钱包安装的路径
-	c.NodeInstallPath = ""
+	c.nodeInstallPath = ""
 	//钱包数据文件目录
-	c.WalletDataPath = ""
+	c.walletDataPath = ""
 	//汇总阀值
-	c.Threshold = decimal.NewFromFloat(5)
+	c.threshold = decimal.NewFromFloat(5)
 	//汇总地址
-	c.SumAddress = ""
+	c.sumAddress = ""
 	//汇总执行间隔时间
-	c.CycleSeconds = time.Second * 10
+	c.cycleSeconds = time.Second * 10
 
 	//默认配置内容
-	c.DefaultConfig = `
-# start node command
-startNodeCMD = ""
-# stop node command
-stopNodeCMD = ""
+	c.defaultConfig = `
 # node install path
 nodeInstallPath = ""
 # mainnet data path
 mainNetDataPath = ""
 # testnet data path
 testNetDataPath = ""
-# RPC api url
-serverAPI = ""
+# hcd api url
+chainAPI = "http://192.168.2.193:10065"
+# hcwallet api url
+walletAPI = "http://192.168.2.193:10066"
 # RPC Authentication Username
-rpcUser = ""
+rpcUser = "walletdcr"
 # RPC Authentication Password
-rpcPassword = ""
+rpcPassword = "walletdcr"
 # Is network test?
 isTestNet = false
 # the safe address that wallet send money to.
 sumAddress = ""
 # when wallet's balance is over this value, the wallet willl send money to [sumAddress]
-threshold = ""
+threshold = "1"
 `
 
 	return &c
 }
 
 //printConfig Print config information
-func (wc *WalletConfig) PrintConfig() error {
+func (wc *WalletConfig) printConfig() error {
 
-	wc.InitConfig()
+	wc.initConfig()
 	//读取配置
 	absFile := filepath.Join(wc.configFilePath, wc.configFileName)
-	//apiURL := c.String("apiURL")
-	//walletPath := c.String("walletPath")
-	//threshold := c.String("threshold")
-	//minSendAmount := c.String("minSendAmount")
-	//minFees := c.String("minFees")
-	//sumAddress := c.String("sumAddress")
-	//isTestNet, _ := c.Bool("isTestNet")
-
 	fmt.Printf("-----------------------------------------------------------\n")
-	//fmt.Printf("Wallet API URL: %s\n", apiURL)
-	//fmt.Printf("Wallet Data FilePath: %s\n", walletPath)
-	//fmt.Printf("Summary Address: %s\n", sumAddress)
-	//fmt.Printf("Summary Threshold: %s\n", threshold)
-	//fmt.Printf("Min Send Amount: %s\n", minSendAmount)
-	//fmt.Printf("Transfer Fees: %s\n", minFees)
-	//if isTestNet {
-	//	fmt.Printf("Network: TestNet\n")
-	//} else {
-	//	fmt.Printf("Network: MainNet\n")
-	//}
+
 	file.PrintFile(absFile)
 	fmt.Printf("-----------------------------------------------------------\n")
 
@@ -212,13 +189,13 @@ func (wc *WalletConfig) PrintConfig() error {
 }
 
 //initConfig 初始化配置文件
-func (wc *WalletConfig) InitConfig() {
+func (wc *WalletConfig) initConfig() {
 
 	//读取配置
 	absFile := filepath.Join(wc.configFilePath, wc.configFileName)
 	if !file.Exists(absFile) {
 		file.MkdirAll(wc.configFilePath)
-		file.WriteFile(absFile, []byte(wc.DefaultConfig), false)
+		file.WriteFile(absFile, []byte(wc.defaultConfig), false)
 	}
 
 }

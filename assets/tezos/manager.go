@@ -243,6 +243,13 @@ func (wm *WalletManager) AddWalletInSummary(wid string, wallet *openwallet.Walle
 
 //获取钱包余额
 func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.Decimal, error) {
+	var (
+		synCount      int = 20
+		quit              = make(chan struct{})
+		done              = 0 //完成标记
+		shouldDone        = 0 //需要完成的总数
+	)
+
 	db, err := wallet.OpenDB()
 	if err != nil {
 		return decimal.NewFromFloat(0), err
@@ -253,14 +260,110 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 	db.All(&addrs)
 
 	var balance decimal.Decimal = decimal.NewFromFloat(0)
+	count := len(addrs)
 
-	for _, a := range addrs {
-		//get balance
-		decimal_balance, _ := decimal.NewFromString(string(wm.WalletClient.CallGetbalance(a.Address)))
-		balance = balance.Add(decimal_balance)
+	//生产通道
+	producer := make(chan []decimal.Decimal)
+	defer close(producer)
+
+	//消费通道
+	worker := make(chan []decimal.Decimal)
+	defer close(worker)
+
+	//统计余额
+	go func(addrs_balance chan []decimal.Decimal) {
+		for {
+			//
+			balances := <-addrs_balance
+
+			for _, b := range(balances) {
+				balance = balance.Add(b)
+			}
+
+			//累计完成的线程数
+			done++
+			if done == shouldDone {
+				close(quit) //关闭通道，等于给通道传入nil
+			}
+		}
+	} (worker)
+
+
+	/*	计算synCount个线程，内部运行的次数	*/
+	//每个线程内循环的数量，以synCount个线程并行处理
+	runCount := count / synCount
+	otherCount := count % synCount
+
+	if runCount > 0 {
+		for i := 0; i < synCount; i++ {
+			//开始创建地址
+			log.Std.Info("Start get balance thread[%d]", i)
+			start := i * runCount
+			end := (i + 1) * runCount -1
+			as := addrs[start:end]
+
+			go func(producer chan []decimal.Decimal, addrs []*openwallet.Address, wm *WalletManager) {
+				var bs []decimal.Decimal
+				for _, a := range(addrs) {
+					b := wm.WalletClient.CallGetbalance(a.Address)
+					bs = append(bs, decimal.RequireFromString(string(b)))
+				}
+
+				producer <- bs
+			}(producer, as, wm)
+
+			shouldDone++
+		}
 	}
 
-	return balance.Div(coinDecimal), nil
+	if otherCount > 0 {
+		//开始创建地址
+		log.Std.Info("Start get balance thread[REST]")
+		start := runCount*synCount
+		as := addrs[start:]
+
+		go func(producer chan []decimal.Decimal, addrs []*openwallet.Address, wm *WalletManager) {
+			var bs []decimal.Decimal
+			for _, a := range(addrs) {
+				b := wm.WalletClient.CallGetbalance(a.Address)
+				bs = append(bs, decimal.RequireFromString(string(b)))
+			}
+
+			producer <- bs
+		}(producer, as, wm)
+
+		shouldDone++
+	}
+
+	values := make([][]decimal.Decimal, 0)
+
+	//以下使用生产消费模式
+	for {
+		var activeWorker chan<- []decimal.Decimal
+		var activeValue []decimal.Decimal
+
+		//当数据队列有数据时，释放顶部，激活消费
+		if len(values) > 0 {
+			activeWorker = worker
+			activeValue = values[0]
+		}
+
+		select {
+		//生成者不断生成数据，插入到数据队列尾部
+		case pa := <-producer:
+			values = append(values, pa)
+			//log.Std.Info("completed %d", len(pa))
+			//当激活消费者后，传输数据给消费者，并把顶部数据出队
+		case activeWorker <- activeValue:
+			//log.Std.Info("Get %d", len(activeValue))
+			values = values[1:]
+		case <-quit:
+			//退出
+			log.Std.Info("get all addresses balance finished!!!")
+			return balance.Div(coinDecimal), nil
+		}
+	}
+
 }
 
 //打印钱包列表
@@ -591,6 +694,46 @@ func (wm *WalletManager) LoadConfig() error {
 	wm.Config.StorageLimit = (decimal.RequireFromString(c.String("storageLimit"))).Mul(coinDecimal)
 
 	wm.WalletClient = NewClient(wm.Config.ServerAPI,false)
+
+	return nil
+}
+
+
+//RestoreWallet 恢复钱包
+func (wm *WalletManager) RestoreWallet(keyFile, dbFile, password string) error {
+
+	//根据流程，提供种子文件路径，wallet.db文件的路径，钱包数据库文件的路径。
+	//输入钱包密码。
+	//复制种子文件到data/btc/key/。
+	//复制钱包数据库文件到data/btc/db/。
+
+	var (
+		err            error
+		key            *hdkeystore.HDKey
+		//sleepTime      = 30 * time.Second
+	)
+
+	fmt.Printf("Validating key file... \n")
+
+	//检查密码是否可以解析种子文件，是否可以解锁钱包。
+	key, err = wm.Storage.GetKey("", keyFile, password)
+	if err != nil {
+		return fmt.Errorf("Passowrd is incorrect! ")
+	}
+
+	fmt.Printf("Restore wallet key and datebase file... \n")
+
+	//复制种子文件到data/btc/key/
+	file.MkdirAll(wm.Config.keyDir)
+	file.Copy(keyFile, filepath.Join(wm.Config.keyDir, key.FileName()+".key"))
+
+	//复制钱包数据库文件到data/btc/db/
+	file.MkdirAll(wm.Config.dbPath)
+	file.Copy(dbFile, filepath.Join(wm.Config.dbPath, key.FileName()+".db"))
+
+	fmt.Printf("Backup wallet has been restored. \n")
+
+	fmt.Printf("Finally, you should restart the hcwallet to ensure. \n")
 
 	return nil
 }
