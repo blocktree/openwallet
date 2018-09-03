@@ -595,6 +595,46 @@ func (wm *WalletManager) LoadConfig() error {
 	return nil
 }
 
+
+//RestoreWallet 恢复钱包
+func (wm *WalletManager) RestoreWallet(keyFile, dbFile, password string) error {
+
+	//根据流程，提供种子文件路径，wallet.db文件的路径，钱包数据库文件的路径。
+	//输入钱包密码。
+	//复制种子文件到data/btc/key/。
+	//复制钱包数据库文件到data/btc/db/。
+
+	var (
+		err            error
+		key            *hdkeystore.HDKey
+		//sleepTime      = 30 * time.Second
+	)
+
+	fmt.Printf("Validating key file... \n")
+
+	//检查密码是否可以解析种子文件，是否可以解锁钱包。
+	key, err = wm.Storage.GetKey("", keyFile, password)
+	if err != nil {
+		return fmt.Errorf("Passowrd is incorrect! ")
+	}
+
+	fmt.Printf("Restore wallet key and datebase file... \n")
+
+	//复制种子文件到data/btc/key/
+	file.MkdirAll(wm.Config.keyDir)
+	file.Copy(keyFile, filepath.Join(wm.Config.keyDir, key.FileName()+".key"))
+
+	//复制钱包数据库文件到data/btc/db/
+	file.MkdirAll(wm.Config.dbPath)
+	file.Copy(dbFile, filepath.Join(wm.Config.dbPath, key.FileName()+".db"))
+
+	fmt.Printf("Backup wallet has been restored. \n")
+
+	fmt.Printf("Finally, you should restart the hcwallet to ensure. \n")
+
+	return nil
+}
+
 //通过hdpath获取地址，公钥，私钥
 func (wm *WalletManager) getKeys(key *hdkeystore.HDKey, a *openwallet.Address) (*Key, error){
 	childKey, err := key.DerivedKeyWithPath(a.HDPath, wm.Config.CurveType)

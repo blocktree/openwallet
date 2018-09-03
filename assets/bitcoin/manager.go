@@ -1831,7 +1831,7 @@ func (wm *WalletManager) LoadConfig() error {
 		return errors.New("Config is not setup. Please run 'wmd Config -s <symbol>' ")
 	}
 
-	wm.Config.ServerAPI = c.String("apiURL")
+	wm.Config.ServerAPI = c.String("serverAPI")
 	wm.Config.Threshold, _ = decimal.NewFromString(c.String("threshold"))
 	wm.Config.SumAddress = c.String("sumAddress")
 	wm.Config.RpcUser = c.String("rpcUser")
