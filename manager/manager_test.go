@@ -85,7 +85,7 @@ func TestWalletManager_ConcurrentCreateWallet(t *testing.T) {
 }
 
 func TestWalletManager_GetWalletInfo(t *testing.T) {
-	wallet, err := tm.GetWalletInfo(testApp, "Vz334r8h1aks6E4bHFYe1dxAinnkxke6Uo")
+	wallet, err := tm.GetWalletInfo(testApp, "VymCN9VtaG5bHHE6MJgtbpXTvvbXzVTTqN")
 	if err != nil {
 		log.Error("unexpected error:", err)
 		return
@@ -110,7 +110,7 @@ func TestWalletManager_GetWalletList(t *testing.T) {
 
 func TestWalletManager_CreateAssetsAccount(t *testing.T) {
 
-	walletID := "Vz334r8h1aks6E4bHFYe1dxAinnkxke6Uo"
+	walletID := "VymCN9VtaG5bHHE6MJgtbpXTvvbXzVTTqN"
 	account := &openwallet.AssetsAccount{Alias: "bitbank", WalletID: walletID, Required: 1, Symbol: "BTC"}
 	account, err := tm.CreateAssetsAccount(testApp, walletID, account, nil)
 	if err != nil {
@@ -125,7 +125,7 @@ func TestWalletManager_CreateAssetsAccount(t *testing.T) {
 
 func TestWalletManager_GetAssetsAccountList(t *testing.T) {
 
-	walletID := "Vz334r8h1aks6E4bHFYe1dxAinnkxke6Uo"
+	walletID := "VymCN9VtaG5bHHE6MJgtbpXTvvbXzVTTqN"
 	list, err := tm.GetAssetsAccountList(testApp, walletID, 0 , 10000000)
 	if err != nil {
 		log.Error("unexpected error:", err)
@@ -138,4 +138,35 @@ func TestWalletManager_GetAssetsAccountList(t *testing.T) {
 
 	tm.CloseDB(testApp)
 
+}
+
+func TestWalletManager_CreateAddress(t *testing.T) {
+
+	walletID := "VymCN9VtaG5bHHE6MJgtbpXTvvbXzVTTqN"
+	accountID := "L3LYFoAigiVvv7bTSNZ3BL9xx1rgpMFFPk64xRtAxCGEYQFUp4"
+	address, err := tm.CreateAddress(testApp, walletID, accountID, 1)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	log.Info("address:", address)
+
+	tm.CloseDB(testApp)
+}
+
+func TestWalletManager_GetAddressList(t *testing.T) {
+	walletID := "VymCN9VtaG5bHHE6MJgtbpXTvvbXzVTTqN"
+	accountID := "L3LYFoAigiVvv7bTSNZ3BL9xx1rgpMFFPk64xRtAxCGEYQFUp4"
+	list, err := tm.GetAddressList(testApp, walletID, accountID, 0 ,10000000, false)
+	if err != nil {
+		log.Error("unexpected error:", err)
+		return
+	}
+	for i, w := range list {
+		log.Info("address[", i, "] :", w)
+	}
+	log.Info("address count:", len(list))
+
+	tm.CloseDB(testApp)
 }

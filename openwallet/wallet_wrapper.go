@@ -20,6 +20,7 @@ import (
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
 	"github.com/blocktree/OpenWallet/common"
+	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
 	"github.com/coreos/bbolt"
 	"sync"
 	"time"
@@ -246,6 +247,114 @@ func (wrapper *WalletWrapper) GetAddressList(accountID string, offset, limit int
 
 	if err != nil {
 		return nil, fmt.Errorf("can not find addresses")
+	}
+
+	return addrs, nil
+}
+
+// CreateAddress 创建地址
+//@param accountID	指定账户
+//@param count		创建数量
+//@param decoder	地址解释器
+//@param isChange	是否找零地址
+//@param isTestNet	是否测试网
+func (wrapper *WalletWrapper) CreateAddress(accountID string, count uint64, decoder AddressDecoder, isChange bool, isTestNet bool) ([]*Address, error) {
+
+	var (
+		newKeys = make([][]byte, 0)
+		address string
+		addrs   = make([]*Address, 0)
+	)
+
+	account, err := wrapper.GetAssetsAccountInfo(accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	if count == 0 {
+		return nil, fmt.Errorf("create address count is zero")
+	}
+
+	//打开数据库
+	db, err := wrapper.OpenStormDB()
+	if err != nil {
+		return nil, err
+	}
+	defer wrapper.CloseDB()
+
+	tx, err := db.Begin(true)
+	if err != nil {
+		return nil, err
+	}
+
+	defer tx.Rollback()
+
+	changeIndex := uint32(common.BoolToUInt(isChange))
+
+	for i := uint64(0); i < count; i++ {
+
+		address = ""
+
+		newIndex := account.AddressIndex + 1
+
+		derivedPath := fmt.Sprintf("%s/%d/%d", account.HDPath, changeIndex, newIndex)
+
+		//通过多个拥有者公钥生成地址
+		for _, pub := range account.OwnerKeys {
+
+			pubkey, err := owkeychain.OWDecode(pub)
+			if err != nil {
+				return nil, err
+			}
+
+			start, err := pubkey.GenPublicChild(changeIndex)
+			newKey, err := start.GenPublicChild(uint32(newIndex))
+			newKeys = append(newKeys, newKey.GetPublicKeyBytes())
+		}
+
+		if len(account.OwnerKeys) > 1 {
+			address, err = decoder.RedeemScriptToAddress(newKeys, account.Required, isTestNet)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			address, err = decoder.PublicKeyToAddress(newKeys[0], isTestNet)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		addr := &Address{
+			Address:   address,
+			AccountID: accountID,
+			HDPath:    derivedPath,
+			CreatedAt: time.Now(),
+			Symbol:    account.Symbol,
+			Index:     uint64(newIndex),
+			WatchOnly: false,
+			IsChange:  isChange,
+		}
+
+		account.AddressIndex = newIndex
+
+		err = tx.Save(account)
+		if err != nil {
+
+			return nil, err
+		}
+
+		err = tx.Save(addr)
+		if err != nil {
+			return nil, err
+		}
+
+		addrs = append(addrs, addr)
+
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
 	}
 
 	return addrs, nil

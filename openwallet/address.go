@@ -32,22 +32,21 @@ type AddressDecoder struct {
 	RedeemScriptToAddress func(pubs [][]byte, required uint64, isTestnet bool) (string, error)
 }
 
-
-
 //Address OpenWallet地址
 type Address struct {
-	AccountID  string    `json:"accountID" storm:"index"` //钱包ID
-	Address   string    `json:"address" storm:"id"`     //地址字符串
-	Alias     string    `json:"alias"`                  //地址别名，可绑定用户
-	Tag       string    `json:"tag"`                    //标签
-	Index     uint64    `json:"index"`                  //账户ID，索引位
-	HDPath    string    `json:"hdPath"`                 //地址公钥根路径
-	WatchOnly bool      `json:"watchOnly"`              //是否观察地址，true的时候，Index，RootPath，Alias都没有。
-	Symbol    string    `json:"symbol"`                   //币种类别
-	Balance   string    `json:"balance"`                //余额
-	IsMemo    bool      `json:"isMemo"`                 //是否备注
-	Memo      string    `json:"memo"`                   //备注
-	CreatedAt time.Time `json:"createdAt"`
+	AccountID string    `json:"accountID" storm:"index"` //钱包ID
+	Address   string    `json:"address" storm:"id"`      //地址字符串
+	Alias     string    `json:"alias"`                   //地址别名，可绑定用户
+	Tag       string    `json:"tag"`                     //标签
+	Index     uint64    `json:"index"`                   //账户ID，索引位
+	HDPath    string    `json:"hdPath"`                  //地址公钥根路径
+	WatchOnly bool      `json:"watchOnly"`               //是否观察地址，true的时候，Index，RootPath，Alias都没有。
+	Symbol    string    `json:"symbol"`                  //币种类别
+	Balance   string    `json:"balance"`                 //余额
+	IsMemo    bool      `json:"isMemo"`                  //是否备注
+	Memo      string    `json:"memo"`                    //备注
+	CreatedAt time.Time `json:"createdAt"`               //创建时间
+	IsChange  bool      `json:"isChange"`                //是否找零地址
 
 	//核心地址指针
 	Core interface{}

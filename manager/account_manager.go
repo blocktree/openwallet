@@ -19,7 +19,6 @@ import (
 	"github.com/blocktree/OpenWallet/openwallet"
 	"fmt"
 	"github.com/blocktree/OpenWallet/assets"
-	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
 	"time"
 	"github.com/blocktree/OpenWallet/log"
 	"strings"
@@ -58,9 +57,10 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID string, account *op
 			return nil, err
 		}
 
-		newAccIndex := wallet.AccountIndex + 1 + owkeychain.HardenedKeyStart
+		newAccIndex := wallet.AccountIndex + 1
 
-		account.HDPath = fmt.Sprintf("%s/%d",wallet.RootPath, newAccIndex)
+		// root/n' , 使用强化方案
+		account.HDPath = fmt.Sprintf("%s/%d'",wallet.RootPath, newAccIndex)
 
 		childKey, err := key.DerivedKeyWithPath(account.HDPath, symbolInfo.CurveType())
 		if err != nil {
@@ -161,19 +161,18 @@ func (wm *WalletManager) GetAssetsAccountList(appID, walletID string, offset, li
 // CreateAddress
 func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string, count uint64) ([]*openwallet.Address, error) {
 
-	var (
-		newKeys = make([][]byte, 0)
-		address string
-		addrs = make([]*openwallet.Address, 0)
-	)
+	if count == 0 {
+		return nil, fmt.Errorf("create address count is zero")
+	}
 
-	account, err := wm.GetAssetsAccountInfo(appID, walletID, accountID)
+	wrapper, err := wm.newWalletWrapper(appID, walletID)
 	if err != nil {
 		return nil, err
 	}
 
-	if count == 0 {
-		return nil, fmt.Errorf("create address count is zero")
+	account, err := wrapper.GetAssetsAccountInfo(accountID)
+	if err != nil {
+		return nil, err
 	}
 
 	assetsMgr, err := GetAssetsManager(account.Symbol)
@@ -181,81 +180,7 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 		return nil, err
 	}
 
-	//保存钱包到本地应用数据库
-	db, err := wm.OpenDB(appID)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := db.Begin(true)
-	if err != nil {
-		return nil, err
-	}
-
-	defer tx.Rollback()
-
-	for i := uint64(0); i<count;i++{
-
-		address = ""
-
-		newIndex := account.AddressIndex + 1
-
-		derivedPath := fmt.Sprintf("%s/%d", account.HDPath, newIndex)
-
-		//通过多个拥有者公钥生成地址
-		for _, pub := range account.OwnerKeys {
-
-			pubkey, err := owkeychain.OWDecode(pub)
-			if err != nil {
-				return nil, err
-			}
-
-			newKey, err := pubkey.GenPublicChild(uint32(newIndex))
-			newKeys = append(newKeys, newKey.GetPublicKeyBytes())
-		}
-
-
-		if len(account.OwnerKeys) > 1 {
-			address, err = assetsMgr.AddressDecode().RedeemScriptToAddress(newKeys, account.Required, wm.cfg.isTestnet)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			address, err = assetsMgr.AddressDecode().PublicKeyToAddress(newKeys[0], wm.cfg.isTestnet)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		addr := &openwallet.Address{
-			Address:   address,
-			AccountID: accountID,
-			HDPath:    derivedPath,
-			CreatedAt: time.Now(),
-			Symbol:    account.Symbol,
-			Index:     uint64(newIndex),
-			WatchOnly: false,
-		}
-
-
-		account.AddressIndex = newIndex
-
-		err = tx.Save(account)
-		if err != nil {
-
-			return nil, err
-		}
-
-		err = tx.Save(addr)
-		if err != nil {
-			return nil, err
-		}
-
-		addrs = append(addrs, addr)
-
-	}
-
-	err = tx.Commit()
+	addrs, err := wrapper.CreateAddress(accountID, count, assetsMgr.AddressDecode(), false, wm.cfg.isTestnet)
 	if err != nil {
 		return nil, err
 	}
