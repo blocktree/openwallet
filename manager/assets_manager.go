@@ -28,6 +28,9 @@ type AssetsManager interface {
 
 	//AddressDecode 地址解析器
 	AddressDecode() openwallet.AddressDecoder
+
+	//TransactionDecoder 交易单解析器
+	TransactionDecoder() openwallet.TransactionDecoder
 }
 
 

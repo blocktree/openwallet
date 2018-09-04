@@ -19,18 +19,19 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+//TransactionDecoder 交易单解析器
 type TransactionDecoder struct {
 
 	//SendRawTransaction 广播交易单
 	//SendTransaction func(amount, feeRate string, to []string, wallet *Wallet, account *AssetsAccount) (*RawTransaction, error)
 	//CreateRawTransaction 创建交易单
-	CreateRawTransaction func(rawTx *RawTransaction) error
+	CreateRawTransaction func(wrapper *WalletWrapper, rawTx *RawTransaction) error
 	//SignRawTransaction 签名交易单
-	SignRawTransaction func(rawTx *RawTransaction) error
+	SignRawTransaction func(wrapper *WalletWrapper, rawTx *RawTransaction) error
 	//SendRawTransaction 广播交易单
-	SubmitRawTransaction func(rawTx *RawTransaction) error
+	SubmitRawTransaction func(wrapper *WalletWrapper, rawTx *RawTransaction) error
 	//VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
-	VerifyRawTransaction func(rawTx *RawTransaction) error
+	VerifyRawTransaction func(wrapper *WalletWrapper, rawTx *RawTransaction) error
 }
 
 //RawTransaction 原始交易单
@@ -41,7 +42,6 @@ type RawTransaction struct {
 	Amount      string                    //转账数量
 	FeeRate     string                    //自定义费率
 	To          []string                  //目的地址
-	Wallet      *Wallet                   //创建交易单的钱包
 	Account     *AssetsAccount            //创建交易单的账户
 	Signatures  map[string][]KeySignature //拥有者accountID: []未花签名
 	Required    uint64                    //必要签名

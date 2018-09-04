@@ -75,19 +75,15 @@ func (wm *WalletManager) CreateWallet(appID string, wallet *openwallet.Wallet) (
 // GetWalletInfo
 func (wm *WalletManager) GetWalletInfo(appID string, walletID string) (*openwallet.Wallet, error) {
 
-	//打开数据库
-	db, err := wm.OpenDB(appID)
+
+	wrapper, err := wm.newWalletWrapper(appID, walletID)
 	if err != nil {
 		return nil, err
 	}
 
-	var wallet openwallet.Wallet
-	err = db.One("WalletID", walletID, &wallet)
-	if err != nil {
-		return nil, fmt.Errorf("can not find wallet: %s, unexpected error: %v", walletID, err)
-	}
+	wallet := wrapper.GetWallet()
 
-	return &wallet, nil
+	return wallet, nil
 }
 
 // GetWalletList

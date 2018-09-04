@@ -19,12 +19,33 @@ import (
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/coreos/bbolt"
 	"path/filepath"
 	"sync"
 	"time"
-	"github.com/blocktree/OpenWallet/openwallet"
 )
+
+type appWalletWrapper struct {
+	*openwallet.WalletWrapper
+}
+
+//newAppWalletWrapper 创建App专用的包装器
+func newAppWalletWrapper(walletID string, db *openwallet.StormDB, arg ...interface{}) (*appWalletWrapper, error) {
+
+	var wallet openwallet.Wallet
+	err := db.One("WalletID", walletID, &wallet)
+	if err != nil {
+		return nil, err
+	}
+
+	wrapper, err := openwallet.NewWalletWrapper(&wallet, db, arg)
+	if err != nil {
+		return nil, err
+	}
+
+	return &appWalletWrapper{wrapper}, nil
+}
 
 //WalletManager OpenWallet钱包管理器
 type WalletManager struct {
@@ -53,6 +74,10 @@ func (wm *WalletManager) Init() {
 	wm.initialized = true
 }
 
+func (wm *WalletManager) DBFile(appID string) string {
+	return filepath.Join(wm.cfg.dbPath, appID+".db")
+}
+
 func (wm *WalletManager) OpenDB(appID string) (*openwallet.StormDB, error) {
 
 	var (
@@ -79,9 +104,8 @@ func (wm *WalletManager) OpenDB(appID string) (*openwallet.StormDB, error) {
 
 	}
 
-	dbFile := filepath.Join(wm.cfg.dbPath, appID+".db")
 	db, err = openwallet.OpenStormDB(
-		dbFile,
+		wm.DBFile(appID),
 		storm.Batch(),
 		storm.BoltOptions(0600, &bolt.Options{Timeout: 3 * time.Second}),
 	)
@@ -105,4 +129,16 @@ func (wm *WalletManager) CloseDB(appID string) error {
 	}
 
 	return nil
+}
+
+//newWalletWrapper 创建App专用的包装器
+func (wm *WalletManager) newWalletWrapper(appID, walletID string) (*appWalletWrapper, error) {
+
+	//打开数据库
+	db, err := wm.OpenDB(appID)
+	if err != nil {
+		return nil, err
+	}
+	dbFile := openwallet.WalletDBFile(wm.DBFile(appID))
+	return newAppWalletWrapper(walletID, db, dbFile)
 }

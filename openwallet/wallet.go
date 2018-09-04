@@ -24,16 +24,12 @@ import (
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/blocktree/OpenWallet/log"
-	"github.com/coreos/bbolt"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
-	"sync"
-	"time"
 )
 
 type Wallet struct {
@@ -51,8 +47,6 @@ type Wallet struct {
 
 	key      *hdkeystore.HDKey
 	fileName string //钱包文件命名，所有与钱包相关的都以这个filename命名
-	mu       sync.RWMutex
-	db       *StormDB            //打开中的数据库
 	core     interface{}         //核心钱包指针
 	unlocked map[string]unlocked // 已解锁的钱包，集合（钱包地址, 钱包私钥）
 }
@@ -149,45 +143,9 @@ func (w *Wallet) FileName() string {
 	return w.fileName
 }
 
-//openDB 打开钱包数据库
+// openDB 打开钱包数据库
 func (w *Wallet) OpenDB() (*storm.DB, error) {
 	return storm.Open(w.DBFile)
-}
-
-//OpenStormDB 打开数据库
-func (w *Wallet) OpenStormDB() (*StormDB, error) {
-
-	var (
-		db  *StormDB
-		err error
-	)
-
-	if w.db != nil && db.Opened {
-		return db, nil
-	}
-
-	//保证数据库文件并发下不被同时打开
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	//解锁进入后，再次确认是否已经存在
-	if w.db != nil && db.Opened {
-		return db, nil
-	}
-
-	db, err = OpenStormDB(
-		w.DBFile,
-		storm.Batch(),
-		storm.BoltOptions(0600, &bolt.Options{Timeout: 3 * time.Second}),
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	w.db = db
-
-	return db, nil
 }
 
 //SaveToDB 保存到数据库
@@ -481,38 +439,8 @@ func NewWallet(publickeys []Bytes, users []*User, required uint, creator *User) 
 //	return user
 //}
 
-// Deposit 充值
-func (w *Wallet) Deposit(assets string) []byte {
-
-	c := w.FindAssets(assets)
-
-	return c.Deposit()
-}
-
-//FindAssets 寻找资产
-func (w *Wallet) FindAssets(assets string) AssetsInferface {
-
-	var (
-		runAssets  reflect.Type
-		findAssets bool
-		assetsInfo *AssetsInfo
-	)
-
-	assetsInfo, findAssets = OpenWalletApp.Handlers.FindAssetsInfo(assets)
-
-	if !findAssets {
-		return nil
-	}
-
-	runAssets = assetsInfo.controllerType
-
-	vc := reflect.New(runAssets)
-	execController, ok := vc.Interface().(AssetsInferface)
-	if !ok {
-		return nil
-	}
-
-	execController.Init(w, vc.Interface())
-
-	return execController
+//WalletWrapper 返回一个钱包包装器
+func (w *Wallet) WalletWrapper() *WalletWrapper {
+	wrapper, _ := NewWalletWrapper(w, w.DBFile, w.KeyFile)
+	return wrapper
 }
