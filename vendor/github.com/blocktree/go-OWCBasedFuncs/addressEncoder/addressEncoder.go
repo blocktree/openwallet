@@ -2,10 +2,11 @@ package addressEncoder
 
 import (
 	"errors"
+
 	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder/base32PolyMod"
 	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder/bech32"
-	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder/eip55"
 	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder/blake256"
+	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder/eip55"
 	"github.com/blocktree/go-OWCrypt"
 )
 
@@ -90,6 +91,9 @@ func calcHash(data []byte, hashType string) []byte {
 	if hashType == "blake2b160" {
 		return owcrypt.Hash(data, 20, owcrypt.HASH_ALG_BLAKE2B)
 	}
+	if hashType == "ripemd160"{
+		return owcrypt.Hash(data, 20, owcrypt.HASH_ALG_RIPEMD160)
+	}
 	return nil
 }
 
@@ -124,8 +128,6 @@ func AddressDecode(address string, addresstype AddressType) ([]byte, error) {
 		}
 		return ret, nil
 	}
-
-
 	if addresstype.encodeType == "base32PolyMod" {
 		ret, err := base32PolyMod.Decode(address, addresstype.alphabet)
 		if err != nil {
@@ -136,7 +138,6 @@ func AddressDecode(address string, addresstype AddressType) ([]byte, error) {
 		}
 		return ret, nil
 	}
-
 	if addresstype.encodeType == "eip55" {
 		ret, err := eip55.Eip55_decode(address)
 		if err != nil {
@@ -147,7 +148,6 @@ func AddressDecode(address string, addresstype AddressType) ([]byte, error) {
 		}
 		return ret, nil
 	}
-
 	data, err := decodeData(address, addresstype.encodeType, addresstype.alphabet, addresstype.checksumType, addresstype.prefix, addresstype.suffix)
 	if err != nil {
 		return nil, err

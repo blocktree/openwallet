@@ -2,6 +2,7 @@ package addressEncoder
 
 var (
 	btcAlphabet       = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+	zecAlphabet       = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 	btcBech32Alphabet = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
 	ltcAlphabet       = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 	ltcBech32Alphabet = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
@@ -10,6 +11,7 @@ var (
 	xtzAlphabet       = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 	hcAlphabet        = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 	qtumAlphabet      = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+	dcrdAlphabet      = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 )
 
 type AddressType struct {
@@ -38,6 +40,12 @@ var (
 	BTC_testnetPrivateWIFCompressed = AddressType{"base58", btcAlphabet, "doubleSHA256", "", 32, []byte{0xEF}, []byte{0x01}}
 	BTC_testnetPublicBIP32          = AddressType{"base58", btcAlphabet, "doubleSHA256", "", 74, []byte{0x04, 0x35, 0x87, 0xCF}, nil}
 	BTC_testnetPrivateBIP32         = AddressType{"base58", btcAlphabet, "doubleSHA256", "", 74, []byte{0x04, 0x35, 0x83, 0x94}, nil}
+	
+	//ZEC stuff
+	ZEC_mainnet_t_AddressP2PKH         = AddressType{"base58", zecAlphabet, "doubleSHA256", "h160", 20, []byte{0x1C,0xB8}, nil}
+	ZEC_mainnet_t_AddressP2SH          = AddressType{"base58", zecAlphabet, "doubleSHA256", "h160", 20, []byte{0x1C,0xBD}, nil}
+	ZEC_testnet_t_AddressP2PKH         = AddressType{"base58", zecAlphabet, "doubleSHA256", "h160", 20, []byte{0x1D,0x25}, nil}
+	ZEC_testnet_t_AddressP2SH          = AddressType{"base58", zecAlphabet, "doubleSHA256", "h160", 20, []byte{0x1C,0xBA}, nil}
 
 	//LTC stuff
 	LTC_mainnetAddressP2PKH         = AddressType{"base58", ltcAlphabet, "doubleSHA256", "h160", 20, []byte{0x30}, nil}
@@ -89,4 +97,25 @@ var (
 	QTUM_testnetPublicBIP32          = AddressType{"base58", qtumAlphabet, "doubleSHA256", "", 74, []byte{0x04, 0x35, 0x87, 0xCF}, nil}
 	QTUM_testnetPrivateBIP32         = AddressType{"base58", qtumAlphabet, "doubleSHA256", "", 74, []byte{0x04, 0x35, 0x83, 0x94}, nil}
 
+	//DCRD
+	DCRD_mainnetAddressP2PKH         =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x07, 0x3f}, nil} //PubKeyHashAddrID, stars with Ds
+    DCRD_mainnetAddressP2PK          =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x13, 0x86}, nil} //PubKeyAddrID,stars with Dk
+    DCRD_mainnetAddressPKHEdwards    =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x07, 0x1f}, nil}//PKHEdwardsAddrID,starts with De
+	DCRD_mainnetAddressPKHSchnorr    =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x07, 0x01}, nil}//PKHSchnorrAddrID,starts with DS
+    DCRD_mainnetAddressP2SH          =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x07, 0x1a}, nil} //ScriptHashAddrID,starts with Dc
+	DCRD_mainnetAddressPrivate       =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x22, 0xde}, nil} // PrivateKeyID, starts with Pm
+	
+	DCRD_testnetAddressP2PKH         =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x0f, 0x21}, nil} //PubKeyHashAddrID,starts with Ts
+    DCRD_testnetAddressP2PK          =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x28, 0xf7}, nil} //PubKeyAddrID, starts with Tk
+    DCRD_testnetAddressPKHEdwards    =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x0f, 0x01}, nil}//PKHEdwardsAddrID,starts with Te
+	DCRD_testnetAddressP2PKHSchnorr  =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x0e, 0xe3}, nil}//PKHSchnorrAddrID,starts with TS
+    DCRD_testnetAddressP2SH          =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x0e, 0xfc}, nil} //ScriptHashAddrID,starts with Tc
+    DCRD_testnetAddressPrivate       =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x23, 0x0e}, nil} //PrivateKeyID,starts with Pt
+
+	DCRD_simnetAddressP2PKH          =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x0e, 0x91}, nil} //PubKeyHashAddrID,starts with Ss
+	DCRD_simnetAddressP2PK           =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x27, 0x6f}, nil} //PubKeyAddrID,starts with Sk
+    DCRD_simnetAddressPKHEdwards     =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x0e, 0x71}, nil}//PKHEdwardsAddrID,starts with Se
+	DCRD_simnetAddressPKHSchnorr     =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x0e, 0x53}, nil}//PKHSchnorrAddrID,starts with SS
+	DCRD_simnetAddressP2SH           =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x0e, 0x6c}, nil}//ScriptHashAddrID,starts with Sc
+	DCRD_simnetAddressPrivate        =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x23, 0x07}, nil}//PrivateKeyID, starts with Ps
 )
