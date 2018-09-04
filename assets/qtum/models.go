@@ -80,6 +80,16 @@ type Unspent struct {
 	HDAddress     openwallet.Address
 }
 
+// AccountBalance account balance
+type AccountBalance struct {
+	AccountID  string `json:"account_id"`
+	Alias      string `json:"account_alias"`
+	AssetAlias string `json:"asset_alias"`
+	AssetID    string `json:"asset_id"`
+	Amount     uint64 `json:"amount"`
+	Password   string
+}
+
 func NewUnspent(json *gjson.Result) *Unspent {
 	obj := &Unspent{}
 	//解析json

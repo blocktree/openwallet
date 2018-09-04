@@ -38,8 +38,8 @@ import (
 
 const (
 	//币种
-	Symbol    = "QTUM"
-	MasterKey = "Qtum seed"
+	Symbol    = "qtum"
+	 MasterKey = "qtum seed"
 )
 
 
@@ -140,7 +140,7 @@ func NewConfig() *WalletConfig {
 	//钱包数据文件目录
 	c.walletDataPath = ""
 	//汇总阀值
-	c.threshold = decimal.NewFromFloat(5)
+	c.threshold = decimal.NewFromFloat(0.5)
 	//汇总地址
 	c.sumAddress = ""
 	//汇总执行间隔时间
@@ -161,6 +161,8 @@ mainNetDataPath = ""
 testNetDataPath = ""
 # Qtum api url
 chainAPI = ""
+# Qtum server url
+apiURL = ""
 # Qtum wallet api url
 walletAPI = ""
 # RPC Authentication Username

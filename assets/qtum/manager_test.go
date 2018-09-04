@@ -138,7 +138,7 @@ func TestCreateReceiverAddress(t *testing.T) {
 		tag     string
 	}{
 		{
-			account: "kevin",
+			account: "",
 			tag:     "normal",
 		},
 		//{
@@ -161,7 +161,7 @@ func TestCreateReceiverAddress(t *testing.T) {
 }
 
 func TestGetAddressesByAccount(t *testing.T) {
-	addresses, err := tw.GetAddressesByAccount("W9rfcpz4jrHUUXZ56xuuXZaJrF23rnYCAV")
+	addresses, err := tw.GetAddressesByAccount("WMkmkdag1awBr2goVJQrkr4CsR3nnvPrUM")
 	if err != nil {
 		t.Errorf("GetAddressesByAccount failed unexpected error: %v\n", err)
 		return
@@ -241,7 +241,7 @@ func TestGetWalletBalance(t *testing.T) {
 			tag:  "second",
 		},
 		{
-			name: "john",
+			name: "",
 			tag:  "all",
 		},
 		{
@@ -364,15 +364,7 @@ func TestGetWalleInfo(t *testing.T) {
 //	}
 //}
 
-func TestBackupWallet(t *testing.T) {
 
-	backupFile, err := tw.BackupWallet("W9rfcpz4jrHUUXZ56xuuXZaJrF23rnYCAV")
-	if err != nil {
-		t.Errorf("BackupWallet failed unexpected error: %v\n", err)
-	} else {
-		t.Errorf("BackupWallet filePath: %v\n", backupFile)
-	}
-}
 
 //func TestBackupWalletData(t *testing.T) {
 //	tw.config.walletDataPath = "/home/www/btc/testdata/testnet3/"
@@ -525,7 +517,7 @@ func TestSendTransaction(t *testing.T) {
 
 }
 
-//还未有币，不能测试
+//有问题
 func TestSendBatchTransaction(t *testing.T) {
 
 	sends := []string{
@@ -568,15 +560,62 @@ func TestPrintConfig(t *testing.T) {
 	tw.config.printConfig()
 }
 
-//密码错误？
+func TestBackupWallet(t *testing.T) {
+
+	backupFile, err := tw.BackupWallet("W9rfcpz4jrHUUXZ56xuuXZaJrF23rnYCAV")
+	if err != nil {
+		t.Errorf("BackupWallet failed unexpected error: %v\n", err)
+	} else {
+		t.Errorf("BackupWallet filePath: %v\n", backupFile)
+	}
+}
+
 func TestRestoreWallet(t *testing.T) {
-	keyFile := "QTUM03-W2JgPVMS2jEQZ7yUkfHEa4D1ST4NccLCAW.key"
-	dbFile := "QTUM03-W2JgPVMS2jEQZ7yUkfHEa4D1ST4NccLCAW.db"
-	datFile := "/data/qtum/backup/QTUM03-W2JgPVMS2jEQZ7yUkfHEa4D1ST4NccLCAW-20180821160056/wallet.dat"
+	keyFile := "sam2-W9rfcpz4jrHUUXZ56xuuXZaJrF23rnYCAV.key"
+	dbFile := "sam2-W9rfcpz4jrHUUXZ56xuuXZaJrF23rnYCAV.db"
+	datFile := "/data/qtum/qtum-0.15.3/bin/wallet.dat"
 	tw.loadConfig()
 	err := tw.RestoreWallet(keyFile, dbFile, datFile, "1234qwer")
 	if err != nil {
 		t.Errorf("RestoreWallet failed unexpected error: %v\n", err)
 	}
+}
 
+func TestSendFrom(t *testing.T) {
+	fromaccount := "WB3pVcqKYcsehofWvK3SKSf6Zzp9UoUAvf"
+	toaddress := "QPcbo42y1YwAtzg9zeJpY72sqaun4TSUiV"
+	txIDs, err := tw.SendFrom(fromaccount, toaddress, "0.15", "1234qwer")
+
+	if err != nil {
+		t.Errorf("SendTransaction failed unexpected error: %v\n", err)
+		return
+	}
+
+	t.Logf("SendTransaction txid = %v\n", txIDs)
+}
+
+func TestSendToAddress(t *testing.T){
+	address := "QUW3McrVQggMAaKXo1wDvkNYpZsfE94Cc4"
+	txIDs, err := tw.SendToAddress(address, "0.2","", false,"1234qwer")
+
+	if err != nil {
+		t.Errorf("SendTransaction failed unexpected error: %v\n", err)
+		return
+	}
+
+	t.Logf("SendTransaction txid = %v\n", txIDs)
+}
+
+func TestSummaryWallets(t *testing.T){
+	//a := &AccountBalance{}
+	//a.Password = "1234qwer"
+
+	password := "1234qwer"
+	sumAddress = "QcbPCgJJtGkvSYPVubji2JLdYjDyeqDsLA"
+	threshold = decimal.NewFromFloat(0.5).Mul(coinDecimal)
+	//最小转账额度
+	//添加汇总钱包的账户
+	//AddWalletInSummary("", a)
+
+	tw.SummaryWallets(password)
 }
