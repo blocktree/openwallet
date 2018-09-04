@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/asdine/storm"
+
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/console"
 	"github.com/blocktree/OpenWallet/logger"
@@ -804,6 +806,12 @@ func (this *WalletManager) RecoverBlockHeader(height *big.Int) (*EthBlock, error
 		openwLogger.Log.Errorf("get block failed, block number=%v, err=%v", "0x"+height.Text(16), err)
 		return nil, err
 	}
+
+	block.blockHeight, err = convertToBigInt(block.BlockNumber, 16)
+	if err != nil {
+		openwLogger.Log.Errorf("conver block height to big int failed, err= %v", err)
+		return nil, err
+	}
 	return &block, nil
 }
 
@@ -814,7 +822,7 @@ func (this *WalletManager) SaveBlockHeader(block *EthBlock) error {
 		return err
 	}
 	defer db.Close()
-	err = db.Save(block.BlockHeader)
+	err = db.Save(&block.BlockHeader)
 	if err != nil {
 		openwLogger.Log.Errorf("save block failed, err = %v", err)
 		return err
@@ -836,7 +844,7 @@ func (this *WalletManager) SaveBlockHeader2(block *EthBlock) error {
 	}
 	defer tx.Rollback()
 
-	err = tx.Save(block.BlockHeader)
+	err = tx.Save(&block.BlockHeader)
 	if err != nil {
 		openwLogger.Log.Errorf("save block failed, err = %v", err)
 		return err
@@ -907,15 +915,18 @@ func (this *WalletManager) DeleteUnscannedTransaction(height *big.Int) error {
 
 	var list []UnscanTransaction
 	err = db.Find("BlockNumber", "0x"+height.Text(16), &list)
-	if err != nil {
+	if err != nil && err != storm.ErrNotFound {
 		openwLogger.Log.Errorf("find unscanned tx failed, block height=%v, err=%v", height, err)
 		return err
+	} else if err == storm.ErrNotFound {
+		openwLogger.Log.Infof("no unscanned tx found in block [%v]", "0x"+height.Text(16))
+		return nil
 	}
 
 	for _, r := range list {
 		err = db.DeleteStruct(&r)
 		if err != nil {
-			openwLogger.Log.Errorf("delete unscanned tx faled, block height=%v, err=%v", height, err)
+			openwLogger.Log.Errorf("delete unscanned tx faled, block height=%v, err=%v", "0x"+height.Text(16), err)
 			return err
 		}
 	}

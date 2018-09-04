@@ -117,7 +117,7 @@ func PrepareTestForBlockScan() error {
 	passwords = append(passwords, "123456")
 	fromAddrs = append(fromAddrs, "0x2a63b2203955b84fefe52baca3881b3614991b34")
 	passwords = append(passwords, "123456")
-	err := ethereum.PrepareForBlockScanTest(fromAddrs, passwords)
+	_, err := ethereum.PrepareForBlockScanTest(fromAddrs, passwords)
 	if err != nil {
 		fmt.Println("prepare for test failed, err=", err)
 		return err
@@ -126,16 +126,123 @@ func PrepareTestForBlockScan() error {
 }
 
 func TestDbInf() error {
-	wallet, err := ethereum.GetWalletList()
+	wallets, err := ethereum.GetWalletList()
 	if err != nil {
 		fmt.Println("get Wallet list failed, err=", err)
 		return err
 	}
 
-	if len(wallet) == 0 {
+	if len(wallets) == 0 {
 		fmt.Println("no wallet found.")
 		return err
 	}
-	wallet[len(wallet)-1].DumpWalletDB()
+	wallets[len(wallets)-1].DumpWalletDB()
+	ethereum.DumpBlockScanDb()
+	return nil
+}
+
+func TestBlockScanWhenFork() error {
+	//ethereum.OpenDB(ethereum.)
+	db, err := ethereum.OpenDB("/Users/peter/workspace/bitcoin/wallet/src/github.com/blocktree/OpenWallet/test/data/eth/db", ethereum.BLOCK_CHAIN_DB)
+	if err != nil {
+		fmt.Println("open eth block scan db failed, err=", err)
+		return err
+	}
+
+	//手动修改block的hash,
+	blocknums := []string{
+		"0x2a19f",
+		"0x2a19e",
+		"0x2a19d",
+	}
+
+	for i, _ := range blocknums {
+		var theBlocks []ethereum.BlockHeader
+		err = db.Find("BlockNumber", blocknums[i], &theBlocks)
+		if err != nil {
+			fmt.Println("find block bumber failed, err=", err)
+			return err
+		}
+
+		for j, _ := range theBlocks {
+			theBlocks[j].BlockHash = "123456"
+			err = db.Update(&theBlocks[j])
+			if err != nil {
+				fmt.Println("update block bumber failed, err=", err)
+				return err
+			}
+		}
+	}
+
+	db.Close()
+
+	manager := &ethereum.WalletManager{}
+	scanner := ethereum.NewETHBlockScanner(manager)
+	wallets, err := ethereum.GetWalletList()
+	if err != nil {
+		fmt.Println("get Wallet list failed, err=", err)
+		return err
+	}
+
+	if len(wallets) == 0 {
+		fmt.Println("no wallet found.")
+		return err
+	}
+
+	w := wallets[len(wallets)-1]
+	err = scanner.AddWallet(w.WalletID, w)
+	if err != nil {
+		fmt.Println("scanner add wallet failed, err=", err)
+		return err
+	}
+
+	scanner.ScanBlock()
+	fmt.Println("after scan block, show db following:")
+	w.DumpWalletDB()
+	ethereum.DumpBlockScanDb()
+	return nil
+}
+
+func TestBlockScan() error {
+	fromAddrs := make([]string, 0, 2)
+	passwords := make([]string, 0, 2)
+	fromAddrs = append(fromAddrs, "0x50068fd632c1a6e6c5bd407b4ccf8861a589e776")
+	passwords = append(passwords, "123456")
+	fromAddrs = append(fromAddrs, "0x2a63b2203955b84fefe52baca3881b3614991b34")
+	passwords = append(passwords, "123456")
+	beginBlockNum, err := ethereum.PrepareForBlockScanTest(fromAddrs, passwords)
+	if err != nil {
+		fmt.Println("PrepareForBlockScanTest failed, err=", err)
+		return err
+	}
+
+	manager := &ethereum.WalletManager{}
+	scanner := ethereum.NewETHBlockScanner(manager)
+	wallets, err := ethereum.GetWalletList()
+	if err != nil {
+		fmt.Println("get Wallet list failed, err=", err)
+		return err
+	}
+
+	if len(wallets) == 0 {
+		fmt.Println("no wallet found.")
+		return err
+	}
+
+	w := wallets[len(wallets)-1]
+	err = scanner.AddWallet(w.WalletID, w)
+	if err != nil {
+		fmt.Println("scanner add wallet failed, err=", err)
+		return err
+	}
+
+	w.ClearAllTransactions()
+
+	ethereum.ClearBlockScanDb()
+	scanner.SetLocalBlock(beginBlockNum)
+	scanner.ScanBlock()
+	fmt.Println("after scan block, show db following:")
+	w.DumpWalletDB()
+	ethereum.DumpBlockScanDb()
 	return nil
 }
