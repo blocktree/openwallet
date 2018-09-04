@@ -261,7 +261,12 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 
 	var balance decimal.Decimal = decimal.NewFromFloat(0)
 	count := len(addrs)
-	log.Std.Info("count:%d", count)
+	if  count <= 0 {
+		log.Std.Info("This wallet have 0 address!!!")
+		return decimal.NewFromFloat(0), nil
+	} else {
+		log.Std.Info("This wallet have %d addresses", count)
+	}
 
 	//生产通道
 	producer := make(chan []decimal.Decimal)
