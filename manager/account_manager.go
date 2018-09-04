@@ -19,7 +19,6 @@ import (
 	"github.com/blocktree/OpenWallet/openwallet"
 	"fmt"
 	"github.com/blocktree/OpenWallet/assets"
-	"github.com/asdine/storm"
 	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
 	"time"
 	"github.com/blocktree/OpenWallet/log"
@@ -130,38 +129,33 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID string, account *op
 // GetAssetsAccountInfo
 func (wm *WalletManager) GetAssetsAccountInfo(appID, walletID, accountID string) (*openwallet.AssetsAccount, error) {
 
-	//打开数据库
-	db, err := wm.OpenDB(appID)
+	wrapper, err := wm.newWalletWrapper(appID, walletID)
 	if err != nil {
 		return nil, err
 	}
 
-	var account openwallet.AssetsAccount
-	err = db.One("AccountID", accountID, &account)
+	account, err := wrapper.GetAssetsAccountInfo(accountID)
 	if err != nil {
-		return nil, fmt.Errorf("can not find account: %s", accountID)
+		return nil, err
 	}
 
-	return &account, nil
+	return account, nil
 }
 
 // GetAssetsAccountList
 func (wm *WalletManager) GetAssetsAccountList(appID, walletID string, offset, limit int) ([]*openwallet.AssetsAccount, error) {
 
-	//打开数据库
-	db, err := wm.OpenDB(appID)
+	wrapper, err := wm.newWalletWrapper(appID, walletID)
 	if err != nil {
 		return nil, err
 	}
 
-	var accounts []*openwallet.AssetsAccount
-	err = db.Find("WalletID", walletID, &accounts, storm.Limit(limit), storm.Skip(offset))
+	accounts, err := wrapper.GetAssetsAccountList(offset, limit)
 	if err != nil {
 		return nil, err
 	}
 
 	return accounts, nil
-
 }
 
 // CreateAddress
@@ -273,17 +267,22 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 
 // GetAddressList
 func (wm *WalletManager) GetAddressList(appID, walletID, accountID string, offset, limit int, watchOnly bool) ([]*openwallet.Address, error) {
-	//打开数据库
-	db, err := wm.OpenDB(appID)
+
+	wrapper, err := wm.newWalletWrapper(appID, walletID)
 	if err != nil {
 		return nil, err
 	}
 
-	var addrs []*openwallet.Address
-	err = db.Find("AccountID", accountID, &addrs, storm.Limit(limit), storm.Skip(offset))
+	addrs, err := wrapper.GetAddressList(accountID, offset, limit, false)
 	if err != nil {
 		return nil, err
 	}
+
+	//var addrs []*openwallet.Address
+	//err = db.Find("AccountID", accountID, &addrs, storm.Limit(limit), storm.Skip(offset))
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	return addrs, nil
 }

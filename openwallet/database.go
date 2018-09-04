@@ -30,7 +30,7 @@ type StormDB struct {
 func OpenStormDB(filename string, stormOptions ...func(*storm.Options) error) (*StormDB, error) {
 
 	db, err := storm.Open(filename, stormOptions...)
-	fmt.Println("open app db")
+	//fmt.Println("open app db")
 	if err != nil {
 		return nil, fmt.Errorf("can not open dbfile: '%s', unexpected error: %v", filename, err)
 	}

@@ -75,6 +75,7 @@ func NewHDKeystore(keydir string, scryptN, scryptP int) *HDKeystore {
 }
 
 // StoreHDKey 创建HDKey
+// Deprecated: hdkeystore.StoreHDKey instead.
 func StoreHDKey(dir, alias, auth string, scryptN, scryptP int) (*HDKey, string, error) {
 
 	seed, err := hdkeychain.GenerateSeed(SeedLen)
