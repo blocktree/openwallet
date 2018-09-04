@@ -42,8 +42,7 @@ func TestApi(t *testing.T) {
 }
 
 func TestCreateNewWallet(t *testing.T) {
-	return
-	w, keyfile, err := wm.CreateNewWallet("12", "jinxin")
+	w, keyfile, err := wm.CreateNewWallet("11", "jinxin")
 	if err != nil {
 		t.Error("create new wallet fail")
 		return
@@ -87,7 +86,7 @@ func TestWalletConfig_PrintConfig(t *testing.T) {
 
 func TestWalletManager_CreateBatchAddress(t *testing.T) {
 	var addrs []*openwallet.Address
-	fpath, addrs, err := wm.CreateBatchAddress("WEY5DDuXbvHrBUa5UBKmVpwLCwP69bieeB", "jinxin", 20000)
+	fpath, addrs, err := wm.CreateBatchAddress("VyXcihm3vcXxv7nnBsFxq7TRNYcdBmFoPW", "jinxin", 20000)
 	if err != nil {
 		t.Error(err.Error())
 		return
@@ -100,7 +99,7 @@ func TestWalletManager_CreateBatchAddress(t *testing.T) {
 }
 
 func TestGetAddreses(t *testing.T) {
-	w, err := wm.GetWalletByID("WEY5DDuXbvHrBUa5UBKmVpwLCwP69bieeB")
+	w, err := wm.GetWalletByID("VyXcihm3vcXxv7nnBsFxq7TRNYcdBmFoPW")
 	if err != nil {
 		t.Error("get wallet by id error")
 		return
@@ -123,14 +122,39 @@ func TestGetAddreses(t *testing.T) {
 }
 
 func TestWalletManager_getBanlance(t *testing.T) {
-	w, err := wm.GetWalletByID("WEY5DDuXbvHrBUa5UBKmVpwLCwP69bieeB")
+	//w, err := wm.GetWalletByID("WEY5DDuXbvHrBUa5UBKmVpwLCwP69bieeB")
+	w, err := wm.GetWalletByID("VyXcihm3vcXxv7nnBsFxq7TRNYcdBmFoPW")
 	if err != nil {
 		t.Error("get wallet by id error")
 		return
 	}
 
-	balance, _ := wm.getWalletBalance(w)
+	var addrs []*openwallet.Address
+	balance, addrs , _ := wm.getWalletBalance(w)
 	t.Log(balance)
+
+	for _, a := range(addrs) {
+		if a.Balance != "0" {
+			t.Logf("addresss: %s  balance:%s", a.Address, a.Balance)
+		}
+	}
+}
+
+func TestWalletManager_getWalletBalance(t *testing.T) {
+	//查询所有钱包信息
+	wallets, err := wm.GetWallets()
+	if err != nil {
+		t.Logf("The node did not create any wallet!\n")
+	}
+	addrs := wm.printWalletList(wallets, true)
+
+	for _, addr := range(addrs) {
+		for _, a := range(addr) {
+			if a.Balance != "0" {
+				t.Logf("addresss: %s  balance:%s", a.Address, a.Balance)
+			}
+		}
+	}
 }
 
 func TestWalletManager_TransferFlow(t *testing.T) {
