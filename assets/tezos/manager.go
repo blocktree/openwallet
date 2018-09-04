@@ -259,6 +259,10 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 	var addrs []*openwallet.Address
 	db.All(&addrs)
 
+	if len(addrs) == 0 {
+		return decimal.Zero, nil
+	}
+
 	var balance decimal.Decimal = decimal.NewFromFloat(0)
 	count := len(addrs)
 	log.Std.Info("count:%d", count)

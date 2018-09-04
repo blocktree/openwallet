@@ -282,7 +282,10 @@ func (m *MerchantNode) Run() error {
 		case <-m.reconnect:
 			//重新连接
 			log.Info("Connecting to", m.Config.MerchantNodeURL)
-			err = m.Node.Connect(m.Config.MerchantNodeURL, m.Config.MerchantNodeID)
+			config := map[string]string{
+				"address": m.Config.MerchantNodeURL,
+			}
+			err = m.Node.Connect(m.Config.MerchantNodeID, config)
 			if err != nil {
 				log.Error("Connect merchant node faild unexpected error:", err)
 				m.disconnected <- struct{}{}
