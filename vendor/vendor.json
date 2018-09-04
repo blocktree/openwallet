@@ -304,6 +304,12 @@
 			"revisionTime": "2017-03-16T01:29:07Z"
 		},
 		{
+			"checksumSHA1": "F5GnUd5KxQi9v872uTSa6agzRVs=",
+			"path": "github.com/Sereal/Sereal/Go/sereal",
+			"revision": "93be0627ff5053b0aab1618141230cf742caf3c6",
+			"revisionTime": "2018-03-29T15:09:16Z"
+		},
+		{
 			"checksumSHA1": "QC55lHNOv1+UAL2xtIHw17MJ8J8=",
 			"origin": "github.com/ethereum/go-ethereum/vendor/github.com/StackExchange/wmi",
 			"path": "github.com/StackExchange/wmi",
@@ -2302,6 +2308,12 @@
 			"revisionTime": "2018-05-14T06:33:20Z"
 		},
 		{
+			"checksumSHA1": "JPPv7nnUo01Mlyqb0g+Qk5/URR4=",
+			"path": "github.com/streadway/amqp",
+			"revision": "70e15c650864f4fc47f5d3c82ea117285480895d",
+			"revisionTime": "2018-08-06T23:38:56Z"
+		},
+		{
 			"checksumSHA1": "mGbTYZ8dHVTiPTTJu3ktp+84pPI=",
 			"path": "github.com/stretchr/testify/assert",
 			"revision": "890a5c3458b43e6104ff5da8dfa139d013d77544",
@@ -2408,6 +2420,18 @@
 			"path": "github.com/tyler-smith/go-bip39",
 			"revision": "8e7a99b3e716f36d3b080a9a70f9eb45abe4edcc",
 			"revisionTime": "2016-06-29T16:38:56Z"
+		},
+		{
+			"checksumSHA1": "AtGH1LargH2u0nH9SaUq3wFgpj0=",
+			"path": "github.com/vmihailenco/msgpack",
+			"revision": "a053f3dac71df214bfe8b367f34220f0029c9c02",
+			"revisionTime": "2018-04-16T07:03:39Z"
+		},
+		{
+			"checksumSHA1": "tOMrkwvdZiNeJDeT/Cjuo7fCpg0=",
+			"path": "github.com/vmihailenco/msgpack/codes",
+			"revision": "a053f3dac71df214bfe8b367f34220f0029c9c02",
+			"revisionTime": "2018-04-16T07:03:39Z"
 		},
 		{
 			"checksumSHA1": "qM2XTV6+kMW+HM9RbmX2roAXEjg=",
