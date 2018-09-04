@@ -18,37 +18,37 @@ package openwallet
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/hdkeystore"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
-	"github.com/blocktree/OpenWallet/log"
 )
 
 type Wallet struct {
-	//Coin      string `json:"coin"`
-	WalletID  string `json:"walletID"  storm:"id"`
-	Alias     string `json:"alias"`
-	Password  string `json:"password"`
-	RootPub   string `json:"rootpub"`
-	KeyFile   string `json:"keyFile"`   //钱包的密钥文件
-	DBFile    string `json:"dbFile"`    //钱包的数据库文件
-	WatchOnly bool   `json:"watchOnly"` //创建watchonly的钱包，没有私钥文件，只有db文件
-	key       *hdkeystore.HDKey
-	fileName  string //钱包文件命名，所有与钱包相关的都以这个filename命名
+	AppID        string `json:"appID"`
+	WalletID     string `json:"walletID"  storm:"id"`
+	Alias        string `json:"alias"`
+	Password     string `json:"password"`
+	RootPub      string `json:"rootpub"` //弃用
+	RootPath     string `json:"rootPath"`
+	KeyFile      string `json:"keyFile"`      //钱包的密钥文件
+	DBFile       string `json:"dbFile"`       //钱包的数据库文件
+	WatchOnly    bool   `json:"watchOnly"`    //创建watchonly的钱包，没有私钥文件，只有db文件
+	IsTrust      bool   `json:"isTrust"`      //是否托管密钥
+	AccountIndex int    `json:"accountIndex"` //账户索引数，-1代表未创建账户
 
-	//核心钱包指针
-	core interface{}
-
-	// 已解锁的钱包，集合（钱包地址, 钱包私钥）
-	unlocked map[string]unlocked
+	key      *hdkeystore.HDKey
+	fileName string //钱包文件命名，所有与钱包相关的都以这个filename命名
+	core     interface{}         //核心钱包指针
+	unlocked map[string]unlocked // 已解锁的钱包，集合（钱包地址, 钱包私钥）
 }
 
 func NewHDWallet(key *hdkeystore.HDKey) (*Wallet, error) {
@@ -109,7 +109,19 @@ func NewWatchOnlyWallet(walletID string, symbol string) *Wallet {
 }
 
 //HDKey 获取钱包密钥，需要密码
-func (w *Wallet) HDKey(password string) (*hdkeystore.HDKey, error) {
+func (w *Wallet) HDKey(password ...string) (*hdkeystore.HDKey, error) {
+
+	pw := ""
+
+	if len(password) > 0 {
+		pw = password[0]
+	} else {
+		pw = w.Password
+	}
+
+	if len(pw) == 0 {
+		return nil, fmt.Errorf("password is empty")
+	}
 
 	if len(w.KeyFile) == 0 {
 		return nil, errors.New("Wallet key is not exist!")
@@ -119,7 +131,7 @@ func (w *Wallet) HDKey(password string) (*hdkeystore.HDKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	key, err := hdkeystore.DecryptHDKey(keyjson, password)
+	key, err := hdkeystore.DecryptHDKey(keyjson, pw)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +143,7 @@ func (w *Wallet) FileName() string {
 	return w.fileName
 }
 
-//openDB 打开钱包数据库
+// openDB 打开钱包数据库
 func (w *Wallet) OpenDB() (*storm.DB, error) {
 	return storm.Open(w.DBFile)
 }
@@ -180,14 +192,14 @@ func (w *Wallet) GetAddressesByAccount(accountID string) []*Address {
 //SingleAssetsAccount 把钱包作为一个单资产账户来使用
 func (w *Wallet) SingleAssetsAccount(symbol string) *AssetsAccount {
 	a := AssetsAccount{
-		WalletID:   w.WalletID,
-		Alias:      w.Alias,
-		AccountID:  w.WalletID,
-		Index:      0,
-		HDPath:     "",
-		Required:   0,
-		PublicKeys: []string{w.RootPub},
-		Symbol:     symbol,
+		WalletID:  w.WalletID,
+		Alias:     w.Alias,
+		AccountID: w.WalletID,
+		Index:     0,
+		HDPath:    "",
+		Required:  0,
+		OwnerKeys: []string{w.RootPub},
+		Symbol:    symbol,
 	}
 
 	return &a
@@ -346,7 +358,7 @@ func ReadWalletByKey(keyPath string) *Wallet {
 	var (
 		buf = new(bufio.Reader)
 		key struct {
-			Alias  string `json:"alias"`
+			Alias string `json:"alias"`
 			KeyID string `json:"keyid"`
 		}
 	)
@@ -427,38 +439,8 @@ func NewWallet(publickeys []Bytes, users []*User, required uint, creator *User) 
 //	return user
 //}
 
-// Deposit 充值
-func (w *Wallet) Deposit(assets string) []byte {
-
-	c := w.FindAssets(assets)
-
-	return c.Deposit()
-}
-
-//FindAssets 寻找资产
-func (w *Wallet) FindAssets(assets string) AssetsInferface {
-
-	var (
-		runAssets  reflect.Type
-		findAssets bool
-		assetsInfo *AssetsInfo
-	)
-
-	assetsInfo, findAssets = OpenWalletApp.Handlers.FindAssetsInfo(assets)
-
-	if !findAssets {
-		return nil
-	}
-
-	runAssets = assetsInfo.controllerType
-
-	vc := reflect.New(runAssets)
-	execController, ok := vc.Interface().(AssetsInferface)
-	if !ok {
-		return nil
-	}
-
-	execController.Init(w, vc.Interface())
-
-	return execController
+//WalletWrapper 返回一个钱包包装器
+func (w *Wallet) WalletWrapper() *WalletWrapper {
+	wrapper, _ := NewWalletWrapper(w, w.DBFile, w.KeyFile)
+	return wrapper
 }

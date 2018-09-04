@@ -1,12 +1,15 @@
 package ethereum
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"math/big"
 	"path/filepath"
 	"strings"
+
+	"github.com/asdine/storm"
 
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/console"
@@ -34,6 +37,11 @@ const (
 	TRANS_AMOUNT_UNIT_MICRO_ETHER  = 5
 	TRANS_AMOUNT_UNIT_MILLIE_ETHER = 6
 	TRNAS_AMOUNT_UNIT_ETHER        = 7
+)
+
+const (
+	BLOCK_CHAIN_DB     = "blockchain.db"
+	BLOCK_CHAIN_BUCKET = "blockchain"
 )
 
 func toHexBigIntForEtherTrans(value string, base int, unit int64) (*big.Int, error) {
@@ -742,6 +750,211 @@ func (this *WalletManager) BackupWalletFlow() error {
 	//输出备份导出目录
 	fmt.Printf("Wallet backup file path: %s\n", backupPath)
 
+	return nil
+}
+
+func (this *WalletManager) GetLocalBlockHeight() (*big.Int, error) {
+	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+	if err != nil {
+		openwLogger.Log.Errorf("open db for get local block height failed, err=%v", err)
+		return nil, err
+	}
+	defer db.Close()
+	var blockHeightStr string
+	err = db.Get(BLOCK_CHAIN_BUCKET, "BlockNumber", &blockHeightStr)
+	if err != nil {
+		openwLogger.Log.Errorf("get block height from db failed, err=%v", err)
+		return nil, err
+	}
+	blockHeight, err := convertToBigInt(blockHeightStr, 16)
+	if err != nil {
+		openwLogger.Log.Errorf("convert block height string failed, err=%v", err)
+		return nil, err
+	}
+	return blockHeight, nil
+}
+
+func (this *WalletManager) UpdateLocalBlockHeight(blockHeight *big.Int) error {
+	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+	if err != nil {
+		openwLogger.Log.Errorf("open db for update local block height failed, err=%v", err)
+		return err
+	}
+	defer db.Close()
+
+	blockHeightStr := "0x" + blockHeight.Text(16)
+	err = db.Set(BLOCK_CHAIN_BUCKET, "BlockNumber", &blockHeightStr)
+	if err != nil {
+		openwLogger.Log.Errorf("update block height failed, err= %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func (this *WalletManager) RecoverBlockHeader(height *big.Int) (*EthBlock, error) {
+	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+	if err != nil {
+		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
+		return nil, err
+	}
+	defer db.Close()
+	var block EthBlock
+
+	err = db.One("BlockNumber", "0x"+height.Text(16), &block.BlockHeader)
+	if err != nil {
+		openwLogger.Log.Errorf("get block failed, block number=%v, err=%v", "0x"+height.Text(16), err)
+		return nil, err
+	}
+
+	block.blockHeight, err = convertToBigInt(block.BlockNumber, 16)
+	if err != nil {
+		openwLogger.Log.Errorf("conver block height to big int failed, err= %v", err)
+		return nil, err
+	}
+	return &block, nil
+}
+
+func (this *WalletManager) SaveBlockHeader(block *EthBlock) error {
+	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+	if err != nil {
+		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
+		return err
+	}
+	defer db.Close()
+	err = db.Save(&block.BlockHeader)
+	if err != nil {
+		openwLogger.Log.Errorf("save block failed, err = %v", err)
+		return err
+	}
+	return nil
+}
+
+func (this *WalletManager) SaveBlockHeader2(block *EthBlock) error {
+	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+	if err != nil {
+		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin(true)
+	if err != nil {
+		openwLogger.Log.Errorf("start transaction for save block header failed, err=%v", err)
+		return err
+	}
+	defer tx.Rollback()
+
+	err = tx.Save(&block.BlockHeader)
+	if err != nil {
+		openwLogger.Log.Errorf("save block failed, err = %v", err)
+		return err
+	}
+
+	blockHeightStr := "0x" + block.blockHeight.Text(16)
+	err = tx.Set(BLOCK_CHAIN_BUCKET, "BlockNumber", &blockHeightStr)
+	if err != nil {
+		openwLogger.Log.Errorf("update block height failed, err= %v", err)
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+/*func (this *WalletManager) SaveTransaction(tx *BlockTransaction) error {
+	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+	if err != nil {
+		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
+		return err
+	}
+	defer db.Close()
+
+	err = db.Save(tx)
+	if err != nil {
+		openwLogger.Log.Errorf("save block transaction failed, err = %v", err)
+		return err
+	}
+	return nil
+}*/
+
+func (this *WalletManager) GetAllUnscannedTransactions() ([]BlockTransaction, error) {
+	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+	if err != nil {
+		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
+		return nil, err
+	}
+	defer db.Close()
+
+	var allRecords []UnscanTransaction
+	err = db.All(&allRecords)
+	if err != nil {
+		openwLogger.Log.Errorf("get all unscanned transactions failed, err = %v", err)
+		return nil, err
+	}
+
+	allTxs := make([]BlockTransaction, 0)
+	for i, _ := range allRecords {
+		var tx BlockTransaction
+		err = json.Unmarshal([]byte(allRecords[i].TxSpec), &tx)
+		if err != nil {
+			openwLogger.Log.Errorf("decode json [%v] from unscanned transactions failed, err=%v", allRecords[i].TxSpec, err)
+			return nil, err
+		}
+		allTxs = append(allTxs, tx)
+	}
+	return allTxs, nil
+}
+
+func (this *WalletManager) DeleteUnscannedTransaction(height *big.Int) error {
+	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+	if err != nil {
+		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
+		return err
+	}
+	defer db.Close()
+
+	var list []UnscanTransaction
+	err = db.Find("BlockNumber", "0x"+height.Text(16), &list)
+	if err != nil && err != storm.ErrNotFound {
+		openwLogger.Log.Errorf("find unscanned tx failed, block height=%v, err=%v", height, err)
+		return err
+	} else if err == storm.ErrNotFound {
+		openwLogger.Log.Infof("no unscanned tx found in block [%v]", "0x"+height.Text(16))
+		return nil
+	}
+
+	for _, r := range list {
+		err = db.DeleteStruct(&r)
+		if err != nil {
+			openwLogger.Log.Errorf("delete unscanned tx faled, block height=%v, err=%v", "0x"+height.Text(16), err)
+			return err
+		}
+	}
+	return nil
+}
+
+func (this *WalletManager) SaveUnscannedTransaction(tx *BlockTransaction, reason string) error {
+	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+	if err != nil {
+		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
+		return err
+	}
+	defer db.Close()
+
+	txSpec, _ := json.Marshal(tx)
+
+	unscannedRecord := &UnscanTransaction{
+		TxID:        tx.Hash,
+		BlockNumber: tx.BlockNumber,
+		BlockHash:   tx.BlockHash,
+		TxSpec:      string(txSpec),
+		Reason:      reason,
+	}
+	err = db.Save(unscannedRecord)
+	if err != nil {
+		openwLogger.Log.Errorf("save unscanned record failed, err=%v", err)
+		return err
+	}
 	return nil
 }
 

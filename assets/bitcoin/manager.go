@@ -44,14 +44,14 @@ const (
 	maxAddresNum = 10000
 )
 
-
 type WalletManager struct {
-	Storage      *hdkeystore.HDKeystore        //秘钥存取
-	WalletClient *Client                       // 节点客户端
-	Config       *WalletConfig                 //钱包管理配置
-	WalletsInSum map[string]*openwallet.Wallet //参与汇总的钱包
-	Blockscanner *BTCBlockScanner              //区块扫描器
-	Decoder      *openwallet.AddressDecoder    //地址编码器
+	Storage      *hdkeystore.HDKeystore         //秘钥存取
+	WalletClient *Client                        // 节点客户端
+	Config       *WalletConfig                  //钱包管理配置
+	WalletsInSum map[string]*openwallet.Wallet  //参与汇总的钱包
+	Blockscanner *BTCBlockScanner               //区块扫描器
+	Decoder      *openwallet.AddressDecoder     //地址编码器
+	TxDecoder    *openwallet.TransactionDecoder //交易单编码器
 }
 
 func NewWalletManager() *WalletManager {
@@ -1831,7 +1831,7 @@ func (wm *WalletManager) LoadConfig() error {
 		return errors.New("Config is not setup. Please run 'wmd Config -s <symbol>' ")
 	}
 
-	wm.Config.ServerAPI = c.String("apiURL")
+	wm.Config.ServerAPI = c.String("serverAPI")
 	wm.Config.Threshold, _ = decimal.NewFromString(c.String("threshold"))
 	wm.Config.SumAddress = c.String("sumAddress")
 	wm.Config.RpcUser = c.String("rpcUser")

@@ -15,29 +15,173 @@
 
 package tezos
 
-import "testing"
+import (
+	"testing"
+	"github.com/blocktree/OpenWallet/openwallet"
+)
+
+var wm *WalletManager
 
 func init() {
-
-	serverAPI = "https://rpc.tezrpc.me"
+	wm = NewWalletManager()
+	wm.InitConfigFlow()
+	wm.Config.ServerAPI = "http://192.168.2.193:10050"
+	wm.WalletClient = NewClient(wm.Config.ServerAPI, false)
 }
 
-func TestGetWallets(t *testing.T) {
-	wallets, err := GetWallets()
-	if err != nil {
-		t.Errorf("GetWallets failed unexpected error: %v\n", err)
-		return
-	}
+func TestWalletManager_InitConfigFlow(t *testing.T) {
+	wm.InitConfigFlow()
+}
 
-	for i, w := range wallets {
-		t.Logf("GetWallets wallet[%d] = %v\n", i, w)
-	}
+func TestApi(t *testing.T) {
+	ret := wm.WalletClient.CallGetHeader()
+	t.Logf(string(ret))
+
+	ret = wm.WalletClient.CallGetbalance("tz1Neor2KRu3zp5FdMox98sxYLvFqtUs4fCJ")
+	t.Logf(string(ret))
 }
 
 func TestCreateNewWallet(t *testing.T) {
-	err := CreateNewWallet("ZBG")
+	return
+	w, keyfile, err := wm.CreateNewWallet("12", "jinxin")
 	if err != nil {
-		t.Errorf("GetWallets failed unexpected error: %v\n", err)
+		t.Error("create new wallet fail")
 		return
 	}
+
+	t.Logf(w.WalletID)
+	t.Logf(keyfile)
+
+	ret, err := wm.GetWalletByID(w.WalletID)
+	if err != nil {
+		t.Error("get wallet by id err")
+		t.Logf(err.Error())
+		return
+	}
+
+	t.Logf(ret.Alias)
 }
+
+func TestLoadConfig(t *testing.T) {
+	err := wm.LoadConfig()
+	if err != nil {
+		t.Error("load config error")
+		t.Logf(err.Error())
+	}
+}
+
+func TestWalletManager_GetWallets(t *testing.T) {
+	err := wm.GetWalletList()
+	if err != nil {
+		t.Error("get wallet list error")
+		t.Logf(err.Error())
+	}
+}
+
+func TestWalletConfig_PrintConfig(t *testing.T) {
+	err := wm.Config.PrintConfig()
+	if err != nil {
+		t.Error(err.Error())
+	}
+}
+
+func TestWalletManager_CreateBatchAddress(t *testing.T) {
+	var addrs []*openwallet.Address
+	fpath, addrs, err := wm.CreateBatchAddress("WEY5DDuXbvHrBUa5UBKmVpwLCwP69bieeB", "jinxin", 20000)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+
+	t.Logf(fpath)
+	for _, a := range addrs {
+		t.Logf(a.Address)
+	}
+}
+
+func TestGetAddreses(t *testing.T) {
+	w, err := wm.GetWalletByID("WEY5DDuXbvHrBUa5UBKmVpwLCwP69bieeB")
+	if err != nil {
+		t.Error("get wallet by id error")
+		return
+	}
+
+	db, err := w.OpenDB()
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	defer db.Close()
+
+	var addrs []*openwallet.Address
+	db.All(&addrs)
+
+	for _, a := range addrs {
+		b := wm.WalletClient.CallGetbalance(a.Address)
+		t.Logf("%s    %s", a.Address, string(b))
+	}
+}
+
+func TestWalletManager_getBanlance(t *testing.T) {
+	w, err := wm.GetWalletByID("WEY5DDuXbvHrBUa5UBKmVpwLCwP69bieeB")
+	if err != nil {
+		t.Error("get wallet by id error")
+		return
+	}
+
+	balance, _ := wm.getWalletBalance(w)
+	t.Log(balance)
+}
+
+func TestWalletManager_TransferFlow(t *testing.T) {
+	w, err := wm.GetWalletByID("WEY5DDuXbvHrBUa5UBKmVpwLCwP69bieeB")
+	if err != nil {
+		t.Error("get wallet by id error")
+		return
+	}
+
+	keystore, _ := w.HDKey("jinxin")
+
+	db, err := w.OpenDB()
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	defer db.Close()
+
+	var addrs []*openwallet.Address
+	db.All(&addrs)
+
+	var sender *openwallet.Address
+	//key, _ := wm.getKeys(keystore, addrs[0])
+	for _, a := range addrs {
+		if a.Address == "tz1XSuiDu5Fevzwv3CG26dxmsinejRsUviC2" {
+			sender = a
+			break
+		}
+	}
+
+	key, err := wm.getKeys(keystore, sender)
+	if err != nil {
+		t.Error("get key error")
+	}
+
+	dst := "tz1Neor2KRu3zp5FdMox98sxYLvFqtUs4fCJ"
+
+	inj, pre := wm.Transfer(*key, dst, "100", "100", "100", "1001")
+	t.Logf("inj: %s\n, pre: %s\n", inj, pre)
+}
+
+
+/*
+	manager_test.go:121: tz1NGveHiqsNEjUUGqkUHRfp69PkGyNaq8Ax
+	manager_test.go:121: tz1QtdKMHA8vq6EfeU9YMvsNiyNomErX4Hv7
+	manager_test.go:121: tz1RFB11LxGgJj6QxS7wjk1zPrqE4krTbjx1
+	manager_test.go:121: tz1UUH6ixu3AdzjMMjEPSrC9ErsH4VMEvDTB
+	manager_test.go:121: tz1UjEGWubFhpBm4kHGqKNAmf9tfq4nKri64
+	manager_test.go:121: tz1XSuiDu5Fevzwv3CG26dxmsinejRsUviC2
+	manager_test.go:121: tz1XgSKaXyhx1tB3HrhScJP3cJcZA2LXC9fF
+	manager_test.go:121: tz1Y2yZvK2iMMxVcaNm9h5AhdC6uKvRc2JQf
+	manager_test.go:121: tz1YtYZS6KKWJeRjZCCCY4FYu7qyS8hEEz4Z
+	manager_test.go:121: tz1hKLUu55xmfKCizGj5X5w8akxKJrUwnVU3
+*/

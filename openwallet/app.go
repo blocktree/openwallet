@@ -19,6 +19,10 @@ import (
 	"net/http"
 )
 
+const (
+	defaultAppName = "openw"
+)
+
 var (
 	// BeeApp is an application instance
 	OpenWalletApp *App

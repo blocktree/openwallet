@@ -37,6 +37,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"text/template"
@@ -235,8 +237,17 @@ func (l *OpenwLogger) Debug(message string, file string, line int) {
 }
 
 // Debugf outputs a formatted debug log message
-func (l *OpenwLogger) Debugf(message string, file string, line int, vars ...interface{}) {
-	l.mustLogDebug(message, file, line, vars...)
+func (l *OpenwLogger) Debugf(message string, vars ...interface{}) {
+	pc, file, lineno, ok := runtime.Caller(1)
+	if ok {
+		funcName := runtime.FuncForPC(pc).Name()
+		tokens := strings.Split(funcName, ".")
+		funcName = tokens[len(tokens)-1]
+		tokens = strings.Split(file, "/")
+		file = tokens[len(tokens)-1]
+		l.mustLogDebug("["+funcName+"] "+message, file, lineno, vars...)
+	}
+
 }
 
 // Info outputs an information log message

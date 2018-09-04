@@ -82,7 +82,13 @@ uint16_t ECC_sign(uint8_t *prikey, uint8_t *ID, uint16_t IDlen, uint8_t *message
             break;
         case ECC_CURVE_ED25519:
         {
-            ED25519_Sign(prikey, message, message_len, sig);
+            ED25519_Sign(prikey, message, message_len, sig, 0);
+            ret = SUCCESS;
+        }
+            break;
+        case  ECC_CURVE_ED25519_EXTEND:
+        {
+            ED25519_Sign(prikey, message, message_len, sig, ECC_CURVE_ED25519_EXTEND);
             ret = SUCCESS;
         }
             break;

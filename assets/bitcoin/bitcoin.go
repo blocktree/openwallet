@@ -20,14 +20,14 @@ import (
 	"fmt"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/console"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/logger"
+	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/timer"
 	"github.com/shopspring/decimal"
-	"github.com/blocktree/OpenWallet/log"
 	"path/filepath"
 	"strings"
 )
-
 
 //初始化配置流程
 func (wm *WalletManager) InitConfigFlow() error {
@@ -437,7 +437,6 @@ func (wm *WalletManager) RestoreWalletFlow() error {
 
 }
 
-
 //InstallNode 安装节点
 func (wm *WalletManager) InstallNodeFlow() error {
 	return errors.New("Install node is unsupport now. ")
@@ -481,4 +480,29 @@ func (wm *WalletManager) SetConfigFlow(subCmd string) error {
 func (wm *WalletManager) ShowConfigInfo(subCmd string) error {
 	wm.Config.PrintConfig()
 	return nil
+}
+
+//CurveType 曲线类型
+func (wm *WalletManager) CurveType() uint32 {
+	return wm.Config.CurveType
+}
+
+//FullName 币种全名
+func (wm *WalletManager) FullName() string {
+	return wm.Config.Symbol
+}
+
+//Symbol 币种标识
+func (wm *WalletManager) Symbol() string {
+	return "Bitcoin"
+}
+
+//AddressDecode 地址解析器
+func (wm *WalletManager) AddressDecode() openwallet.AddressDecoder {
+	return *wm.Decoder
+}
+
+//TransactionDecoder 交易单解析器
+func (wm *WalletManager) TransactionDecoder() openwallet.TransactionDecoder {
+	return *wm.TxDecoder
 }

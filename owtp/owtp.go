@@ -25,6 +25,7 @@ import (
 	"sync"
 	"time"
 	"strings"
+	"errors"
 )
 
 type ConnectType int
@@ -54,15 +55,22 @@ const (
 	//60X: 自定义错误
 	ErrCustomError uint64 = 600
 
-	Websocket ConnectType = 0
+	Websocket string = "ws"
+
+	MQ string = "mq"
 
 	KeyAgreementMethod = "internal_keyAgreement"
 )
 
+
+//节点主配置 作为json解析工具
+type MainConfig struct {
+	Address     string
+	ConnectType int
+}
+
 //OWTPNode 实现OWTP协议的节点
 type OWTPNode struct {
-	//客户端
-	client *Client
 	//nonce生成器
 	nonceGen *snowflake.Node
 	//缓存文件
@@ -174,22 +182,28 @@ func (node *OWTPNode) Listening() bool {
 	return node.listening
 }
 
-//Connect 建立长连接
-func (node *OWTPNode) Connect(addr string, pid string) error {
 
-	_, err := node.connect(addr, pid)
+//Connect 建立长连接
+func (node *OWTPNode) Connect( pid string,config map[string]string) error {
+
+	_, err := node.connect( pid,config)
 
 	return err
 }
 
 //connect 建立长连接，内部调用
-func (node *OWTPNode) connect(addr string, pid string) (Peer, error) {
+func (node *OWTPNode) connect( pid string,config map[string]string) (Peer, error) {
 
-	if len(addr) == 0 {
-		return nil, fmt.Errorf("the peer address is empty")
+
+	if config == nil{
+		return nil, fmt.Errorf("config  is nil")
 	}
 
-	url := "ws://" + strings.TrimSuffix(addr,"/") + "/" + pid
+	addr := config["address"]
+
+	if len(addr) == 0 {
+		return nil, fmt.Errorf("address must contain by config")
+	}
 
 	auth, err := NewOWTPAuthWithCertificate(node.cert)
 
@@ -199,16 +213,50 @@ func (node *OWTPNode) connect(addr string, pid string) (Peer, error) {
 		return nil, err
 	}
 
-	//建立链接，记录默认的客户端
-	client, err := Dial(pid, url, node, auth.AuthHeader(), node.ReadBufferSize, node.WriteBufferSize)
-	if err != nil {
-		return nil, err
+	//链接类型
+	connectType := config["connectType"]
+
+	if len(connectType) == 0 {
+		return nil, fmt.Errorf("connectType must contain by config")
 	}
 
-	//设置授权规则
-	client.auth = auth
+	//websocket类型
+	if connectType == Websocket{
 
-	return client, nil
+		url := "ws://" + strings.TrimSuffix(addr,"/") + "/" + pid
+
+		//建立链接，记录默认的客户端
+		client, err := Dial(pid, url, node, auth.AuthHeader(), node.ReadBufferSize, node.WriteBufferSize)
+		if err != nil {
+			return nil, err
+		}
+		//设置授权规则
+		client.auth = auth
+		//设置配置
+		client.config = config
+		return client, nil
+	}
+
+	//MQ类型
+	if connectType == MQ{
+
+		mqAccount := config["account"]
+		mqPassword := config["password"]
+		url := "amqp://"+mqAccount+":"+mqPassword+"@" + strings.TrimSuffix(addr,"/") + "/"
+
+		//建立链接，记录默认的客户端
+		client, err := MQDial(pid, url,node)
+		if err != nil {
+			return nil, err
+		}
+		//设置授权规则
+		client.auth = auth
+		//设置配置
+		client.config = config
+		return client, nil
+	}
+
+	return nil,errors.New("connectType can't found! ")
 }
 
 
@@ -243,7 +291,7 @@ func (node *OWTPNode) Run() error {
 			log.Info("Node Join:", peer.PID())
 			log.Info("Node IP:", peer.RemoteAddr().String())
 			node.peerstore.AddOnlinePeer(peer)
-			node.peerstore.SaveAddr(peer.PID(), peer.RemoteAddr().String())
+			node.peerstore.SavePeer(peer.PID(), peer)
 			//加入后打开数据流通道
 			if err := peer.OpenPipe(); err != nil {
 				log.Error("peer:", peer.PID(), "open pipe failed")
@@ -342,13 +390,18 @@ func (node *OWTPNode) Call(
 	//检查是否已经连接服务
 	peer := node.peerstore.GetOnlinePeer(pid)
 	if peer == nil {
-
-		peerAddr := node.peerstore.GetAddr(pid)
+		newPeer := node.peerstore.GetPeer(pid)
+		if newPeer == nil{
+			return fmt.Errorf("the peer: %s is not in peer book", pid)
+		}
+		peerAddr := newPeer.RemoteAddr().String()
 		if peerAddr == "" {
 			return fmt.Errorf("the peer: %s is not in address book", pid)
 		}
 
-		peer, err = node.connect(peerAddr, pid) //重新连接
+		peerInfo := node.peerstore.PeerInfo(pid)
+
+		peer, err = node.connect(pid,peerInfo.Config) //重新连接
 		if err != nil {
 			return err
 		}

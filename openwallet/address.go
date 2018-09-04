@@ -20,6 +20,20 @@ import (
 	"time"
 )
 
+type AddressDecoder struct {
+
+	//PrivateKeyToWIF 私钥转WIF
+	PrivateKeyToWIF func(priv []byte, isTestnet bool) (string, error)
+	//PublicKeyToAddress 公钥转地址
+	PublicKeyToAddress func(pub []byte, isTestnet bool) (string, error)
+	//WIFToPrivateKey WIF转私钥
+	WIFToPrivateKey func(wif string, isTestnet bool) ([]byte, error)
+	//RedeemScriptToAddress 多重签名赎回脚本转地址
+	RedeemScriptToAddress func(pubs [][]byte, required uint64, isTestnet bool) (string, error)
+}
+
+
+
 //Address OpenWallet地址
 type Address struct {
 	AccountID  string    `json:"accountID" storm:"index"` //钱包ID
@@ -29,7 +43,7 @@ type Address struct {
 	Index     uint64    `json:"index"`                  //账户ID，索引位
 	HDPath    string    `json:"hdPath"`                 //地址公钥根路径
 	WatchOnly bool      `json:"watchOnly"`              //是否观察地址，true的时候，Index，RootPath，Alias都没有。
-	Symbol    string    `json:"coin"`                   //币种类别
+	Symbol    string    `json:"symbol"`                   //币种类别
 	Balance   string    `json:"balance"`                //余额
 	IsMemo    bool      `json:"isMemo"`                 //是否备注
 	Memo      string    `json:"memo"`                   //备注

@@ -23,7 +23,8 @@ import (
 )
 
 func (wm *WalletManager) verifyAddr(addr string) error {
-	if r, err := client.Call(fmt.Sprintf("account/verify/%s", addr), "GET", nil); err != nil {
+
+	if r, err := wm.fullnodeClient.Call(fmt.Sprintf("account/verify/%s", addr), "GET", nil); err != nil {
 		return err
 	} else {
 		if data := gjson.GetBytes(r, "verifyState").Bool(); data != true {

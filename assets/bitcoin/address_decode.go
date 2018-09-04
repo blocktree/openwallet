@@ -30,6 +30,7 @@ var (
 		PrivateKeyToWIF:    PrivateKeyToWIF,
 		PublicKeyToAddress: PublicKeyToAddress,
 		WIFToPrivateKey:    WIFToPrivateKey,
+		RedeemScriptToAddress: RedeemScriptToAddress,
 	}
 )
 
@@ -68,6 +69,28 @@ func PublicKeyToAddress(pub []byte, isTestnet bool) (string, error) {
 	//}
 
 	pkHash := owcrypt.Hash(pub, 0, owcrypt.HASH_ALG_HASH160)
+
+	address := addressEncoder.AddressEncode(pkHash, cfg)
+
+	return address, nil
+
+}
+
+//RedeemScriptToAddress 多重签名赎回脚本转地址
+func RedeemScriptToAddress(pubs [][]byte, required uint64, isTestnet bool) (string, error) {
+
+	cfg := addressEncoder.BTC_mainnetAddressP2SH
+	if isTestnet {
+		cfg = addressEncoder.BTC_testnetAddressP2SH
+	}
+
+	redeemScript := make([]byte, 0)
+
+	for _, pub := range pubs {
+		redeemScript = append(redeemScript, pub...)
+	}
+
+	pkHash := owcrypt.Hash(redeemScript, 0, owcrypt.HASH_ALG_HASH160)
 
 	address := addressEncoder.AddressEncode(pkHash, cfg)
 

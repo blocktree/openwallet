@@ -23,6 +23,7 @@ import (
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/keystore"
+	"github.com/blocktree/OpenWallet/logger"
 )
 
 type Wallet struct {
@@ -50,6 +51,240 @@ type Address struct {
 	balance      *big.Int //string `json:"balance"`
 	tokenBalance *big.Int
 	CreatedAt    time.Time
+}
+
+type UnscanTransaction struct {
+	TxID        string `storm:"id"` // primary key
+	BlockNumber string `storm:"index"`
+	BlockHash   string `storm:"index"`
+	//	TxID        string
+	TxSpec string
+	Reason string
+}
+
+type BlockTransaction struct {
+	Hash             string `json:"hash" storm:"id"`
+	BlockNumber      string `json:"blockNumber" storm:"index"`
+	BlockHash        string `json:"blockHash" storm:"index"`
+	From             string `json:"from"`
+	To               string `json:"to"`
+	Gas              string `json:"gas"`
+	GasPrice         string `json:"gasPrice"`
+	Value            string `json:"value"`
+	Data             string `json:"data"`
+	TransactionIndex string `json:"transactionIndex"`
+	Timestamp        string `json:"timestamp"`
+}
+
+type BlockHeader struct {
+	BlockNumber     string `json:"number" storm:"id"`
+	BlockHash       string `json:"hash"`
+	GasLimit        string `json:"gasLimit"`
+	GasUsed         string `json:"gasUsed"`
+	Miner           string `json:"miner"`
+	Difficulty      string `json:"difficulty"`
+	TotalDifficulty string `json:"totalDifficulty"`
+	PreviousHash    string `json:"parentHash"`
+}
+
+func (this *Wallet) ClearAllTransactions() {
+	db, err := this.OpenDB()
+	if err != nil {
+		openwLogger.Log.Errorf("open db failed, err = %v", err)
+		return
+	}
+	defer db.Close()
+
+	var txs []BlockTransaction
+	err = db.All(&txs)
+	if err != nil {
+		openwLogger.Log.Errorf("get transactions failed, err = %v", err)
+		return
+	}
+	for i, _ := range txs {
+		//fmt.Println("BlockHash:", txs[i].BlockHash, " BlockNumber:", txs[i].BlockNumber, "TransactionId:", txs[i].Hash)
+		err := db.DeleteStruct(&txs[i])
+		if err != nil {
+			openwLogger.Log.Errorf("delete tx in wallet failed, err=%v", err)
+			break
+		}
+	}
+
+}
+
+func (this *Wallet) DumpWalletDB() {
+	db, err := this.OpenDB()
+	if err != nil {
+		openwLogger.Log.Errorf("open db failed, err = %v", err)
+		return
+	}
+	defer db.Close()
+
+	var addresses []Address
+	err = db.All(&addresses)
+	if err != nil {
+		openwLogger.Log.Errorf("get address failed, err=%v", err)
+		return
+	}
+
+	for i, _ := range addresses {
+		fmt.Println("Address:", addresses[i].Address, " account:", addresses[i].Account, "hdpath:", addresses[i].HDPath)
+	}
+
+	var txs []BlockTransaction
+	err = db.All(&txs)
+	if err != nil {
+		openwLogger.Log.Errorf("get transactions failed, err = %v", err)
+		return
+	}
+
+	for i, _ := range txs {
+		//fmt.Println("BlockHash:", txs[i].BlockHash, " BlockNumber:", txs[i].BlockNumber, "TransactionId:", txs[i].Hash),
+		fmt.Printf("print tx[%v] in block [%v] = %v\n", txs[i].Hash, txs[i].BlockNumber, txs[i])
+	}
+}
+
+func ClearBlockScanDb() {
+	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+	if err != nil {
+		openwLogger.Log.Errorf("open db failed, err = %v", err)
+		return
+	}
+	defer db.Close()
+
+	var unscanTransactions []UnscanTransaction
+	var blocks []BlockHeader
+
+	err = db.All(&unscanTransactions)
+	if err != nil {
+		openwLogger.Log.Errorf("get transactions failed, err = %v", err)
+		return
+	}
+
+	for i, _ := range unscanTransactions {
+		err = db.DeleteStruct(&unscanTransactions[i])
+		if err != nil {
+			openwLogger.Log.Errorf("delete transaction failed, err=%v", err)
+			return
+		}
+	}
+
+	err = db.All(&blocks)
+	if err != nil {
+		openwLogger.Log.Errorf("get blocks failed failed, err = %v", err)
+		return
+	}
+
+	for i, _ := range blocks {
+		err = db.DeleteStruct(&blocks[i])
+		if err != nil {
+			openwLogger.Log.Errorf("delete blocks failed, err=%v", err)
+			return
+		}
+	}
+}
+
+func DumpBlockScanDb() {
+	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+	if err != nil {
+		openwLogger.Log.Errorf("open db failed, err = %v", err)
+		return
+	}
+	defer db.Close()
+
+	var unscanTransactions []UnscanTransaction
+	var blocks []BlockHeader
+	var blockHeightStr string
+	err = db.All(&unscanTransactions)
+	if err != nil {
+		openwLogger.Log.Errorf("get transactions failed, err = %v", err)
+		return
+	}
+
+	for i, _ := range unscanTransactions {
+		fmt.Printf("Print unscanned transaction [%v] = %v\n", unscanTransactions[i].TxID, unscanTransactions[i])
+	}
+
+	err = db.All(&blocks)
+	if err != nil {
+		openwLogger.Log.Errorf("get blocks failed failed, err = %v", err)
+		return
+	}
+
+	for i, _ := range blocks {
+		fmt.Printf("print block [%v] = %v\n", blocks[i].BlockNumber, blocks[i])
+	}
+
+	err = db.Get(BLOCK_CHAIN_BUCKET, "BlockNumber", &blockHeightStr)
+	if err != nil {
+		openwLogger.Log.Errorf("get block height from db failed, err=%v", err)
+		return
+	}
+
+	fmt.Println("print block number = ", blockHeightStr)
+}
+
+func (this *Wallet) SaveTransactions(txs []BlockTransaction) error {
+	db, err := this.OpenDB()
+	if err != nil {
+		openwLogger.Log.Errorf("open db failed, err = %v", err)
+		return err
+	}
+	defer db.Close()
+
+	dbTx, err := db.Begin(true)
+	if err != nil {
+		openwLogger.Log.Errorf("start transaction for db failed, err=%v", err)
+		return err
+	}
+	defer dbTx.Rollback()
+
+	for i, _ := range txs {
+		err = dbTx.Save(&txs[i])
+		if err != nil {
+			openwLogger.Log.Errorf("save transaction failed, err=%v", err)
+			return err
+		}
+	}
+	dbTx.Commit()
+	return nil
+}
+
+func (this *Wallet) DeleteTransactionByHeight(height *big.Int) error {
+	db, err := this.OpenDB()
+	if err != nil {
+		openwLogger.Log.Errorf("open db for delete txs failed, err = %v", err)
+		return err
+	}
+	defer db.Close()
+
+	var txs []BlockTransaction
+
+	err = db.Find("BlockNumber", "0x"+height.Text(16), &txs)
+	if err != nil && err != storm.ErrNotFound {
+		openwLogger.Log.Errorf("get transactions from block[%v] failed, err=%v", "0x"+height.Text(16), err)
+		return err
+	} else if err == storm.ErrNotFound {
+		openwLogger.Log.Infof("no transactions found in block[%v] ", "0x"+height.Text(16))
+		return nil
+	}
+
+	txdb, err := db.Begin(true)
+	if err != nil {
+		openwLogger.Log.Errorf("start dbtx for delete tx failed, err=%v", err)
+		return err
+	}
+	defer txdb.Rollback()
+
+	for i, _ := range txs {
+		err = txdb.DeleteStruct(&txs[i])
+		if err != nil {
+			openwLogger.Log.Errorf("delete tx[%v] failed, err=%v", txs[i].Hash, err)
+			return err
+		}
+	}
+	txdb.Commit()
+	return nil
 }
 
 //HDKey 获取钱包密钥，需要密码
