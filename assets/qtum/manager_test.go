@@ -161,7 +161,7 @@ func TestCreateReceiverAddress(t *testing.T) {
 }
 
 func TestGetAddressesByAccount(t *testing.T) {
-	addresses, err := tw.GetAddressesByAccount("WMkmkdag1awBr2goVJQrkr4CsR3nnvPrUM")
+	addresses, err := tw.GetAddressesByAccount("")
 	if err != nil {
 		t.Errorf("GetAddressesByAccount failed unexpected error: %v\n", err)
 		return
