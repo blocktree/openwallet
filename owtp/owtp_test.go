@@ -92,7 +92,8 @@ func TestOtherMQConnectNode(t *testing.T){
 	config["exchange"] = "DEFAULT_EXCHANGE"
 	config["queueName"] = "DEFAULT_QUEUE"
 	config["receiveQueueName"] = "DEFAULT_QUEUE"
-
+	config["account"] = "admin"
+	config["password"]= "admin"
 	nodeA := RandomOWTPNode()
 	nodeA.HandleFunc("getInfo", getInfo)
 	err := nodeA.Connect("dasda",config)
@@ -100,7 +101,7 @@ func TestOtherMQConnectNode(t *testing.T){
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
 	}
-	//time.Sleep(3*time.Second)
+	time.Sleep(3*time.Second)
 	nodeA.Call("dasda", "hello", nil, true, func(resp Response) {
 		hello := resp.JsonData().Get("hello").String()
 		fmt.Printf("nodeA call hello, result: %s\n", hello)

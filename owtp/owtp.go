@@ -240,8 +240,9 @@ func (node *OWTPNode) connect( pid string,config map[string]string) (Peer, error
 	//MQ类型
 	if connectType == MQ{
 
-
-		url := "amqp://admin:admin@" + strings.TrimSuffix(addr,"/") + "/"
+		mqAccount := config["account"]
+		mqPassword := config["password"]
+		url := "amqp://"+mqAccount+":"+mqPassword+"@" + strings.TrimSuffix(addr,"/") + "/"
 
 		//建立链接，记录默认的客户端
 		client, err := MQDial(pid, url,node)
