@@ -16,44 +16,55 @@
 package openwallet
 
 import (
+	"fmt"
 	"github.com/asdine/storm"
+	"github.com/asdine/storm/q"
+	"github.com/blocktree/OpenWallet/common"
 	"github.com/coreos/bbolt"
 	"sync"
 	"time"
-	"fmt"
-	"github.com/asdine/storm/q"
-	"github.com/blocktree/OpenWallet/common"
 )
 
+type WalletDBFile string
+
+type WalletKeyFile string
+
 // WalletWrapper 钱包包装器，扩展钱包功能
+// 基于OpenWallet钱包体系模型，专门处理钱包的持久化问题，关系数据查询
 type WalletWrapper struct {
-	wallet   *Wallet
-	walletDB *StormDB
-	mu       sync.RWMutex
-	isExternalDB bool
+	wallet       *Wallet      //需要包装的钱包
+	walletDB     *StormDB     //存储钱包相关数据的数据库，目前使用boltdb作为持久方案
+	mu           sync.RWMutex //锁
+	isExternalDB bool         //是否外部加载的数据库，非内部打开，内部打开需要关闭
+	dbFile       string       //钱包数据库文件路径，用于内部打开
+	keyFile      string       //钱包密钥文件路径
 }
 
-func NewWalletWrapper(wallet *Wallet, db ...*StormDB) (*WalletWrapper, error) {
-
-	var (
-		externalDB *StormDB
-		isExternalDB = false
-	)
+func NewWalletWrapper(wallet *Wallet, args ...interface{}) (*WalletWrapper, error) {
 
 	if wallet == nil {
 		return nil, fmt.Errorf("wallet is nil")
 	}
 
-	if len(db) > 0 {
-		externalDB = db[0]
-		if externalDB == nil || !externalDB.Opened {
-			return nil, fmt.Errorf("wallet db is nil")
+	wrapper := WalletWrapper{wallet: wallet}
+
+	for _, arg := range args {
+		switch obj := arg.(type) {
+		case *StormDB:
+			if obj != nil {
+				if !obj.Opened {
+					return nil, fmt.Errorf("wallet db is close")
+				}
+
+				wrapper.isExternalDB = true
+				wrapper.walletDB = obj
+			}
+		case WalletDBFile:
+			wrapper.dbFile = string(obj)
+		case WalletKeyFile:
+			wrapper.keyFile = string(obj)
 		}
-
-		isExternalDB = true
 	}
-
-	wrapper := WalletWrapper{wallet: wallet, walletDB: externalDB, isExternalDB: isExternalDB}
 
 	return &wrapper, nil
 }
@@ -95,7 +106,7 @@ func (wrapper *WalletWrapper) OpenStormDB() (*StormDB, error) {
 }
 
 //SetStormDB 设置钱包的应用数据库
-func (wrapper *WalletWrapper) SetStormDB(db *StormDB) error {
+func (wrapper *WalletWrapper) SetExternalDB(db *StormDB) error {
 
 	//关闭之前的数据库
 	wrapper.CloseDB()
@@ -144,7 +155,6 @@ func (wrapper *WalletWrapper) GetAssetsAccountInfo(accountID string) (*AssetsAcc
 	return &account, nil
 }
 
-
 //GetAssetsAccounts 获取某种区块链的全部资产账户
 func (wrapper *WalletWrapper) GetAssetsAccountList(offset, limit int, cols ...interface{}) ([]*AssetsAccount, error) {
 
@@ -157,11 +167,11 @@ func (wrapper *WalletWrapper) GetAssetsAccountList(offset, limit int, cols ...in
 
 	var accounts []*AssetsAccount
 
-	query := make([]q.Matcher,0)
+	query := make([]q.Matcher, 0)
 
 	query = append(query, q.Eq("WalletID", wrapper.wallet.WalletID))
 
-	for i := 0;i<len(cols); i=i+2 {
+	for i := 0; i < len(cols); i = i + 2 {
 		field := common.NewString(cols[i])
 		val := cols[i+1]
 		query = append(query, q.Eq(field.String(), val))
@@ -240,4 +250,3 @@ func (wrapper *WalletWrapper) GetAddressList(accountID string, offset, limit int
 
 	return addrs, nil
 }
-

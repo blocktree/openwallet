@@ -19,6 +19,7 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+//TransactionDecoder 交易单解析器
 type TransactionDecoder struct {
 
 	//SendRawTransaction 广播交易单

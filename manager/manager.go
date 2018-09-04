@@ -31,7 +31,7 @@ type appWalletWrapper struct {
 }
 
 //newAppWalletWrapper 创建App专用的包装器
-func newAppWalletWrapper(walletID string, db *openwallet.StormDB) (*appWalletWrapper, error) {
+func newAppWalletWrapper(walletID string, db *openwallet.StormDB, arg ...interface{}) (*appWalletWrapper, error) {
 
 	var wallet openwallet.Wallet
 	err := db.One("WalletID", walletID, &wallet)
@@ -39,7 +39,7 @@ func newAppWalletWrapper(walletID string, db *openwallet.StormDB) (*appWalletWra
 		return nil, err
 	}
 
-	wrapper, err := openwallet.NewWalletWrapper(&wallet, db)
+	wrapper, err := openwallet.NewWalletWrapper(&wallet, db, arg)
 	if err != nil {
 		return nil, err
 	}
@@ -74,6 +74,10 @@ func (wm *WalletManager) Init() {
 	wm.initialized = true
 }
 
+func (wm *WalletManager) DBFile(appID string) string {
+	return filepath.Join(wm.cfg.dbPath, appID+".db")
+}
+
 func (wm *WalletManager) OpenDB(appID string) (*openwallet.StormDB, error) {
 
 	var (
@@ -100,9 +104,8 @@ func (wm *WalletManager) OpenDB(appID string) (*openwallet.StormDB, error) {
 
 	}
 
-	dbFile := filepath.Join(wm.cfg.dbPath, appID+".db")
 	db, err = openwallet.OpenStormDB(
-		dbFile,
+		wm.DBFile(appID),
 		storm.Batch(),
 		storm.BoltOptions(0600, &bolt.Options{Timeout: 3 * time.Second}),
 	)
@@ -136,6 +139,6 @@ func (wm *WalletManager) newWalletWrapper(appID, walletID string) (*appWalletWra
 	if err != nil {
 		return nil, err
 	}
-
-	return newAppWalletWrapper(walletID, db)
+	dbFile := openwallet.WalletDBFile(wm.DBFile(appID))
+	return newAppWalletWrapper(walletID, db, dbFile)
 }

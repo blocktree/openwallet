@@ -441,6 +441,6 @@ func NewWallet(publickeys []Bytes, users []*User, required uint, creator *User) 
 
 //WalletWrapper 返回一个钱包包装器
 func (w *Wallet) WalletWrapper() *WalletWrapper {
-	wrapper, _ := NewWalletWrapper(w)
+	wrapper, _ := NewWalletWrapper(w, w.DBFile, w.KeyFile)
 	return wrapper
 }
