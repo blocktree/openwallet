@@ -32,6 +32,6 @@ func NewWalletManager() *WalletManager {
 	wm := WalletManager{}
 	wm.WalletManager = *bitcoin.NewWalletManager()
 	wm.Config = bitcoin.NewConfig(Symbol, MasterKey)
-	wm.Decoder = AddressDecoder
+	wm.Decoder = &addressDecoder{}
 	return &wm
 }

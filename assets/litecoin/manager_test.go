@@ -265,7 +265,7 @@ func TestCreateNewPrivateKey(t *testing.T) {
 		tag      string
 	}{
 		{
-			name:     "Chance",
+			name:     "WNafusXqpykohfnSKqcsR1y5xgDCdqHYxh",
 			password: "1234qwer",
 			tag:      "wallet not exist",
 		},

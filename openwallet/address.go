@@ -20,16 +20,16 @@ import (
 	"time"
 )
 
-type AddressDecoder struct {
+type AddressDecoder interface {
 
 	//PrivateKeyToWIF 私钥转WIF
-	PrivateKeyToWIF func(priv []byte, isTestnet bool) (string, error)
+	PrivateKeyToWIF(priv []byte, isTestnet bool) (string, error)
 	//PublicKeyToAddress 公钥转地址
-	PublicKeyToAddress func(pub []byte, isTestnet bool) (string, error)
+	PublicKeyToAddress(pub []byte, isTestnet bool) (string, error)
 	//WIFToPrivateKey WIF转私钥
-	WIFToPrivateKey func(wif string, isTestnet bool) ([]byte, error)
+	WIFToPrivateKey(wif string, isTestnet bool) ([]byte, error)
 	//RedeemScriptToAddress 多重签名赎回脚本转地址
-	RedeemScriptToAddress func(pubs [][]byte, required uint64, isTestnet bool) (string, error)
+	RedeemScriptToAddress(pubs [][]byte, required uint64, isTestnet bool) (string, error)
 }
 
 //Address OpenWallet地址

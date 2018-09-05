@@ -20,18 +20,18 @@ import (
 )
 
 //TransactionDecoder 交易单解析器
-type TransactionDecoder struct {
+type TransactionDecoder interface {
 
 	//SendRawTransaction 广播交易单
 	//SendTransaction func(amount, feeRate string, to []string, wallet *Wallet, account *AssetsAccount) (*RawTransaction, error)
 	//CreateRawTransaction 创建交易单
-	CreateRawTransaction func(wrapper *WalletWrapper, rawTx *RawTransaction) error
+	CreateRawTransaction(wrapper *WalletWrapper, rawTx *RawTransaction) error
 	//SignRawTransaction 签名交易单
-	SignRawTransaction func(wrapper *WalletWrapper, rawTx *RawTransaction) error
+	SignRawTransaction(wrapper *WalletWrapper, rawTx *RawTransaction) error
 	//SendRawTransaction 广播交易单
-	SubmitRawTransaction func(wrapper *WalletWrapper, rawTx *RawTransaction) error
+	SubmitRawTransaction(wrapper *WalletWrapper, rawTx *RawTransaction) error
 	//VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
-	VerifyRawTransaction func(wrapper *WalletWrapper, rawTx *RawTransaction) error
+	VerifyRawTransaction(wrapper *WalletWrapper, rawTx *RawTransaction) error
 }
 
 //RawTransaction 原始交易单

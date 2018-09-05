@@ -71,6 +71,22 @@ func (wm *WalletManager) Init() {
 
 	wm.appDB = make(map[string]*openwallet.StormDB)
 
+	for _, symbol := range wm.cfg.supportAssets {
+		assetsMgr, err := GetAssetsManager(symbol)
+		if err != nil {
+
+			log.Error(symbol, "is not support")
+		}
+		scanner := assetsMgr.GetBlockScanner()
+
+
+		//TODO:加载所有应用钱包地址到扫描器
+		scanner.AddWallet("", nil)
+
+
+		scanner.Run()
+	}
+
 	wm.initialized = true
 }
 

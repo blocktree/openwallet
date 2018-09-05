@@ -70,6 +70,7 @@ var debugMode = os.Getenv("DEBUG_ENABLED") == "1"
 var logLevel = levelInfo
 
 // OpenwLogger logs logging records to the specified io.Writer
+// Deprecated: use github.com/blocktree/OpenWallet/log/
 type OpenwLogger struct {
 	mu     sync.Mutex
 	output io.Writer
@@ -85,6 +86,7 @@ type LogRecord struct {
 	LineNo   int
 }
 
+// Deprecated: use github.com/blocktree/OpenWallet/log/ => Log
 var Log = GetOpenwLogger(os.Stdout)
 
 var (
