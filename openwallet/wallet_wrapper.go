@@ -41,16 +41,14 @@ type WalletWrapper struct {
 	keyFile      string       //钱包密钥文件路径
 }
 
-func NewWalletWrapper(wallet *Wallet, args ...interface{}) (*WalletWrapper, error) {
+func NewWalletWrapper(args ...interface{}) (*WalletWrapper, error) {
 
-	if wallet == nil {
-		return nil, fmt.Errorf("wallet is nil")
-	}
-
-	wrapper := WalletWrapper{wallet: wallet}
+	wrapper := WalletWrapper{}
 
 	for _, arg := range args {
 		switch obj := arg.(type) {
+		case *Wallet:
+			wrapper.wallet = obj
 		case *StormDB:
 			if obj != nil {
 				if !obj.Opened {
@@ -69,6 +67,7 @@ func NewWalletWrapper(wallet *Wallet, args ...interface{}) (*WalletWrapper, erro
 
 	return &wrapper, nil
 }
+
 
 //OpenStormDB 打开数据库
 func (wrapper *WalletWrapper) OpenStormDB() (*StormDB, error) {
@@ -134,7 +133,27 @@ func (wrapper *WalletWrapper) CloseDB() {
 
 //GetWallet 获取钱包
 func (wrapper *WalletWrapper) GetWallet() *Wallet {
+
 	return wrapper.wallet
+}
+
+//GetWalletByID 通过钱包ID获取
+func (wrapper *WalletWrapper) GetWalletByID(walletID string) (*Wallet, error) {
+
+	//打开数据库
+	db, err := wrapper.OpenStormDB()
+	if err != nil {
+		return nil, err
+	}
+	defer wrapper.CloseDB()
+
+	var wallet Wallet
+	err = db.One("WalletID", walletID, &wallet)
+	if err != nil {
+		return nil, err
+	}
+
+	return &wallet, nil
 }
 
 // GetAssetsAccountInfo 获取指定账户
@@ -218,7 +237,7 @@ func (wrapper *WalletWrapper) GetAddress(address string) (*Address, error) {
 }
 
 // GetAddresses 获取资产账户地址列表
-func (wrapper *WalletWrapper) GetAddressList(accountID string, offset, limit int, watchOnly bool) ([]*Address, error) {
+func (wrapper *WalletWrapper) GetAddressList(offset, limit int, cols ...interface{}) ([]*Address, error) {
 	//打开数据库
 	db, err := wrapper.OpenStormDB()
 	if err != nil {
@@ -228,19 +247,24 @@ func (wrapper *WalletWrapper) GetAddressList(accountID string, offset, limit int
 
 	var addrs []*Address
 
+	query := make([]q.Matcher, 0)
+
+	for i := 0; i < len(cols); i = i + 2 {
+		field := common.NewString(cols[i])
+		val := cols[i+1]
+		query = append(query, q.Eq(field.String(), val))
+	}
+
 	if limit > 0 {
 
 		err = db.Select(q.And(
-			q.Eq("AccountID", accountID),
-			q.Eq("WatchOnly", watchOnly),
+			query...,
 		)).Limit(limit).Skip(offset).Find(&addrs)
 
-		//err = db.Find("AccountID", walletID, &addresses, storm.Limit(limit), storm.Skip(offset))
 	} else {
 
 		err = db.Select(q.And(
-			q.Eq("AccountID", accountID),
-			q.Eq("WatchOnly", watchOnly),
+			query...,
 		)).Skip(offset).Find(&addrs)
 
 	}

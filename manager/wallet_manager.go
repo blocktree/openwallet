@@ -76,14 +76,14 @@ func (wm *WalletManager) CreateWallet(appID string, wallet *openwallet.Wallet) (
 func (wm *WalletManager) GetWalletInfo(appID string, walletID string) (*openwallet.Wallet, error) {
 
 
-	wrapper, err := wm.newWalletWrapper(appID, walletID)
+	wrapper, err := wm.newWalletWrapper(appID)
 	if err != nil {
 		return nil, err
 	}
 
-	wallet := wrapper.GetWallet()
+	//wallet := wrapper.GetWalletByID(walletID)
 
-	return wallet, nil
+	return wrapper.GetWalletByID(walletID)
 }
 
 // GetWalletList

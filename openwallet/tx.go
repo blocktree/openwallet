@@ -92,6 +92,16 @@ type Recharge struct {
 	Delete      bool
 }
 
+// TxInput 交易输入，则出账记录
+type TxInput struct {
+	Recharge
+}
+
+// TxOutPut 交易输出，则到账记录
+type TxOutPut struct {
+	Recharge
+}
+
 type Withdraw struct {
 	Symbol   string `json:"coin"`
 	WalletID string `json:"walletID"`

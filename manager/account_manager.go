@@ -129,7 +129,7 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID string, account *op
 // GetAssetsAccountInfo
 func (wm *WalletManager) GetAssetsAccountInfo(appID, walletID, accountID string) (*openwallet.AssetsAccount, error) {
 
-	wrapper, err := wm.newWalletWrapper(appID, walletID)
+	wrapper, err := wm.newWalletWrapper(appID)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func (wm *WalletManager) GetAssetsAccountInfo(appID, walletID, accountID string)
 // GetAssetsAccountList
 func (wm *WalletManager) GetAssetsAccountList(appID, walletID string, offset, limit int) ([]*openwallet.AssetsAccount, error) {
 
-	wrapper, err := wm.newWalletWrapper(appID, walletID)
+	wrapper, err := wm.newWalletWrapper(appID)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,7 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 		return nil, fmt.Errorf("create address count is zero")
 	}
 
-	wrapper, err := wm.newWalletWrapper(appID, walletID)
+	wrapper, err := wm.newWalletWrapper(appID)
 	if err != nil {
 		return nil, err
 	}
@@ -193,12 +193,12 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 // GetAddressList
 func (wm *WalletManager) GetAddressList(appID, walletID, accountID string, offset, limit int, watchOnly bool) ([]*openwallet.Address, error) {
 
-	wrapper, err := wm.newWalletWrapper(appID, walletID)
+	wrapper, err := wm.newWalletWrapper(appID)
 	if err != nil {
 		return nil, err
 	}
 
-	addrs, err := wrapper.GetAddressList(accountID, offset, limit, false)
+	addrs, err := wrapper.GetAddressList(offset, limit, "AccountID", accountID, "WatchOnly", false)
 	if err != nil {
 		return nil, err
 	}
