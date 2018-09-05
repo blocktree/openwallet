@@ -17,118 +17,44 @@ package openwallet
 
 import (
 	"fmt"
-	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
-	"github.com/coreos/bbolt"
-	"sync"
 	"time"
 )
 
-type WalletDBFile string
+type WalletDBFile WrapperSourceFile
 
 type WalletKeyFile string
 
 // WalletWrapper 钱包包装器，扩展钱包功能
-// 基于OpenWallet钱包体系模型，专门处理钱包的持久化问题，关系数据查询
 type WalletWrapper struct {
+	*AppWrapper
 	wallet       *Wallet      //需要包装的钱包
-	walletDB     *StormDB     //存储钱包相关数据的数据库，目前使用boltdb作为持久方案
-	mu           sync.RWMutex //锁
-	isExternalDB bool         //是否外部加载的数据库，非内部打开，内部打开需要关闭
-	dbFile       string       //钱包数据库文件路径，用于内部打开
 	keyFile      string       //钱包密钥文件路径
+
 }
 
-func NewWalletWrapper(args ...interface{}) (*WalletWrapper, error) {
+func NewWalletWrapper(args ...interface{}) *WalletWrapper {
 
-	wrapper := WalletWrapper{}
+	wrapper := NewAppWrapper(args...)
+
+	walletWrapper := WalletWrapper{AppWrapper: wrapper}
 
 	for _, arg := range args {
 		switch obj := arg.(type) {
 		case *Wallet:
-			wrapper.wallet = obj
-		case *StormDB:
-			if obj != nil {
-				if !obj.Opened {
-					return nil, fmt.Errorf("wallet db is close")
-				}
-
-				wrapper.isExternalDB = true
-				wrapper.walletDB = obj
-			}
+			walletWrapper.wallet = obj
 		case WalletDBFile:
-			wrapper.dbFile = string(obj)
+			walletWrapper.sourceFile = string(obj)
 		case WalletKeyFile:
-			wrapper.keyFile = string(obj)
+			walletWrapper.keyFile = string(obj)
+		case *AppWrapper:
+			walletWrapper.AppWrapper = obj
 		}
 	}
 
-	return &wrapper, nil
-}
-
-
-//OpenStormDB 打开数据库
-func (wrapper *WalletWrapper) OpenStormDB() (*StormDB, error) {
-
-	var (
-		db  *StormDB
-		err error
-	)
-
-	if wrapper.walletDB != nil && wrapper.walletDB.Opened {
-		return wrapper.walletDB, nil
-	}
-
-	//保证数据库文件并发下不被同时打开
-	wrapper.mu.Lock()
-	defer wrapper.mu.Unlock()
-
-	//解锁进入后，再次确认是否已经存在
-	if wrapper.walletDB != nil && wrapper.walletDB.Opened {
-		return wrapper.walletDB, nil
-	}
-
-	db, err = OpenStormDB(
-		wrapper.wallet.DBFile,
-		storm.BoltOptions(0600, &bolt.Options{Timeout: 3 * time.Second}),
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	wrapper.isExternalDB = false
-	wrapper.walletDB = db
-
-	return db, nil
-}
-
-//SetStormDB 设置钱包的应用数据库
-func (wrapper *WalletWrapper) SetExternalDB(db *StormDB) error {
-
-	//关闭之前的数据库
-	wrapper.CloseDB()
-
-	//保证数据库文件并发下不被同时打开
-	wrapper.mu.Lock()
-	defer wrapper.mu.Unlock()
-
-	wrapper.walletDB = db
-	wrapper.isExternalDB = true
-
-	return nil
-}
-
-//CloseDB 关闭数据库
-func (wrapper *WalletWrapper) CloseDB() {
-	// 如果是外部引入的数据库不进行关闭，因为这样会外部无法再操作同一个数据库实力
-	if wrapper.isExternalDB == false {
-		if wrapper.walletDB != nil && wrapper.walletDB.Opened {
-			wrapper.walletDB.Close()
-		}
-	}
+	return &walletWrapper
 }
 
 //GetWallet 获取钱包
@@ -189,7 +115,13 @@ func (wrapper *WalletWrapper) GetAssetsAccountList(offset, limit int, cols ...in
 
 	query := make([]q.Matcher, 0)
 
-	query = append(query, q.Eq("WalletID", wrapper.wallet.WalletID))
+	if wrapper.wallet != nil {
+		query = append(query, q.Eq("WalletID", wrapper.wallet.WalletID))
+	}
+
+	if len(cols) % 2 != 0 {
+		return nil, fmt.Errorf("condition param is not pair")
+	}
 
 	for i := 0; i < len(cols); i = i + 2 {
 		field := common.NewString(cols[i])
@@ -248,6 +180,10 @@ func (wrapper *WalletWrapper) GetAddressList(offset, limit int, cols ...interfac
 	var addrs []*Address
 
 	query := make([]q.Matcher, 0)
+
+	if len(cols) % 2 != 0 {
+		return nil, fmt.Errorf("condition param is not pair")
+	}
 
 	for i := 0; i < len(cols); i = i + 2 {
 		field := common.NewString(cols[i])

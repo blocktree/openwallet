@@ -72,10 +72,10 @@ type BlockScanner interface {
 type BlockScanNotificationObject interface {
 
 	//BlockScanNotify 新区块扫描完成通知
-	BlockScanNotify(header *BlockHeader)
+	BlockScanNotify(header *BlockHeader) error
 
 	//BlockExtractDataNotify 区块提取结果通知
-	BlockExtractDataNotify(sourceKey string, data *BlockExtractData)
+	BlockExtractDataNotify(sourceKey string, data *BlockExtractData) error
 }
 
 //BlockExtractData 区块扫描后的提取结果

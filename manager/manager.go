@@ -21,32 +21,15 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/coreos/bbolt"
+	"io/ioutil"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
-	"io/ioutil"
-	"strings"
 )
 
-type appWalletWrapper struct {
-	*openwallet.WalletWrapper
-}
-
-//newAppWalletWrapper 创建App专用的包装器
-func newAppWalletWrapper(db *openwallet.StormDB, arg ...interface{}) (*appWalletWrapper, error) {
-
-	//var wallet openwallet.Wallet
-	//err := db.One("WalletID", walletID, &wallet)
-	//if err != nil {
-	//	return nil, err
-	//}
-
-	wrapper, err := openwallet.NewWalletWrapper(db, arg)
-	if err != nil {
-		return nil, err
-	}
-
-	return &appWalletWrapper{wrapper}, nil
+type NotificationObject interface {
+	openwallet.BlockScanNotificationObject
 }
 
 //WalletManager OpenWallet钱包管理器
@@ -55,71 +38,66 @@ type WalletManager struct {
 	cfg         *Config
 	initialized bool
 	mu          sync.RWMutex
+	observers   map[NotificationObject]bool //观察者
 }
 
 // NewWalletManager
 func NewWalletManager(config *Config) *WalletManager {
 	wm := WalletManager{}
 	wm.cfg = config
-
+	wm.Init()
 	return &wm
 }
 
+//Init 初始化
 func (wm *WalletManager) Init() {
+
+	wm.mu.Lock()
+	defer wm.mu.Unlock()
+
+	if wm.initialized {
+		return
+	}
+
+	log.Info("OpenWallet Manager is initializing ...")
 
 	//新建文件目录
 	file.MkdirAll(wm.cfg.dbPath)
 	file.MkdirAll(wm.cfg.keyDir)
 
+	wm.observers = make(map[NotificationObject]bool)
 	wm.appDB = make(map[string]*openwallet.StormDB)
 
 	wm.initBlockScanner()
 
 	wm.initialized = true
+
+	log.Info("OpenWallet Manager has been initialized!")
 }
 
-// initBlockScanner 初始化区块链扫描器
-func (wm *WalletManager) initBlockScanner() error {
+//AddObserver 添加观测者
+func (wm *WalletManager) AddObserver(obj NotificationObject) {
+	wm.mu.Lock()
 
-	//加载已存在所有app
-	appIDs, err := wm.loadAllAppIDs()
-	if err != nil {
-		return err
+	defer wm.mu.Unlock()
+
+	if obj == nil {
+		return
+	}
+	if _, exist := wm.observers[obj]; exist {
+		//已存在，不重复订阅
+		return
 	}
 
-	for _, symbol := range wm.cfg.supportAssets {
-		assetsMgr, err := GetAssetsManager(symbol)
-		if err != nil {
-			log.Error(symbol, "is not support")
-			continue
-		}
-		scanner := assetsMgr.GetBlockScanner()
+	wm.observers[obj] = true
+}
 
-		//加载地址时，暂停区块扫描
-		scanner.Pause()
+//RemoveObserver 移除观测者
+func (wm *WalletManager) RemoveObserver(obj NotificationObject) {
+	wm.mu.Lock()
+	defer wm.mu.Unlock()
 
-		for _, appID := range appIDs {
-
-			wrapper, err :=wm.newWalletWrapper(appID)
-			if err != nil {
-				log.Error("wallet manager init unexpected error:", err)
-				continue
-			}
-
-			addrs, err := wrapper.GetAddressList(0, -1)
-
-			for _, address := range addrs {
-
-				//TODO:加载所有应用钱包地址到扫描器
-				scanner.AddAddress(address.Address, appID)
-			}
-
-		}
-
-		scanner.Run()
-	}
-
-	return nil
+	delete(wm.observers, obj)
 }
 
 //DBFile 应用数据库文件
@@ -183,11 +161,11 @@ func (wm *WalletManager) CloseDB(appID string) error {
 }
 
 //loadAllAppIDs 加载全部应用ID
-func  (wm *WalletManager) loadAllAppIDs() ([]string, error) {
+func (wm *WalletManager) loadAllAppIDs() ([]string, error) {
 
 	var (
 		apps = make([]string, 0)
-		dir = wm.cfg.dbPath
+		dir  = wm.cfg.dbPath
 	)
 
 	//扫描key目录的所有钱包
@@ -213,8 +191,57 @@ func  (wm *WalletManager) loadAllAppIDs() ([]string, error) {
 	return apps, nil
 }
 
+// initBlockScanner 初始化区块链扫描器
+func (wm *WalletManager) initBlockScanner() error {
+
+	//加载已存在所有app
+	appIDs, err := wm.loadAllAppIDs()
+	if err != nil {
+		return err
+	}
+
+	for _, symbol := range wm.cfg.supportAssets {
+		assetsMgr, err := GetAssetsManager(symbol)
+		if err != nil {
+			log.Error(symbol, "is not support")
+			continue
+		}
+		scanner := assetsMgr.GetBlockScanner()
+
+		if scanner == nil {
+			log.Error(symbol, "is not support block scan")
+			continue
+		}
+
+		//加载地址时，暂停区块扫描
+		scanner.Pause()
+
+		for _, appID := range appIDs {
+
+			wrapper, err := wm.newWalletWrapper(appID)
+			if err != nil {
+				log.Error("wallet manager init unexpected error:", err)
+				continue
+			}
+
+			addrs, err := wrapper.GetAddressList(0, -1)
+
+			for _, address := range addrs {
+
+				//TODO:加载所有应用钱包地址到扫描器
+				scanner.AddAddress(address.Address, appID)
+			}
+
+		}
+
+		scanner.Run()
+	}
+
+	return nil
+}
+
 //newWalletWrapper 创建App专用的包装器
-func (wm *WalletManager) newWalletWrapper(appID string) (*appWalletWrapper, error) {
+func (wm *WalletManager) newWalletWrapper(appID string) (*openwallet.WalletWrapper, error) {
 
 	//打开数据库
 	db, err := wm.OpenDB(appID)
@@ -222,5 +249,8 @@ func (wm *WalletManager) newWalletWrapper(appID string) (*appWalletWrapper, erro
 		return nil, err
 	}
 	dbFile := openwallet.WalletDBFile(wm.DBFile(appID))
-	return newAppWalletWrapper(db, dbFile)
+	wrapperAppID := openwallet.WalletDBFile(appID)
+	wrapper := openwallet.NewWalletWrapper(wrapperAppID, dbFile, db)
+	return wrapper, nil
+	//return newAppWalletWrapper(db, dbFile)
 }
