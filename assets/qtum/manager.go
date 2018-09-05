@@ -42,6 +42,19 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 )
 
+var(
+	//参与汇总的钱包
+	walletsInSum = make(map[string]*AccountBalance)
+	//汇总地址
+	sumAddress = ""
+	//小数位长度
+	coinDecimal decimal.Decimal = decimal.NewFromFloat(100000000)
+	//汇总阀值
+	threshold decimal.Decimal = decimal.NewFromFloat(12).Mul(coinDecimal)
+	//钱包数据文件目录
+	walletDataPath = "~/.qtum/"
+)
+
 const (
 	maxAddresNum = 10000
 )
@@ -743,7 +756,7 @@ func (wm *WalletManager) BackupWallet(walletID string) (string, error) {
 	file.MkdirAll(newBackupDir)
 
 	//创建临时备份文件wallet.dat
-	tmpWalletDat := fmt.Sprintf("tmp-walllet-%d.dat", time.Now().Unix())
+	tmpWalletDat := fmt.Sprintf("tmp-wallet-%d.dat", time.Now().Unix())
 	tmpWalletDat = filepath.Join(wm.config.walletDataPath, tmpWalletDat)
 
 	//1. 备份核心钱包的wallet.dat
@@ -778,8 +791,8 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 	//检查密码是否可以解析种子文件，是否可以解锁钱包。
 	//如果密码错误，关闭钱包节点，恢复原钱包的wallet.dat。
 	//重新启动钱包。
-	//复制种子文件到data/btc/key/。
-	//复制钱包数据库文件到data/btc/db/。
+	//复制种子文件到data/qtum/key/。
+	//复制钱包数据库文件到data/qtum/db/。
 
 	var (
 		restoreSuccess = false
@@ -799,19 +812,20 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 	//钱包当前的dat文件
 	curretWDFile := filepath.Join(wm.config.walletDataPath, "wallet.dat")
 
-	//创建临时备份文件wallet.dat，备份
-	tmpWalletDat := fmt.Sprintf("restore-walllet-%d.dat", time.Now().Unix())
+	//创建临时备份文件wallet.dat
+	tmpWalletDat := fmt.Sprintf("store-wallet-%d.dat", time.Now().Unix())
 	tmpWalletDat = filepath.Join(wm.config.walletDataPath, tmpWalletDat)
 
 	fmt.Printf("Backup current wallet.dat file... \n")
 
+	//1. 备份核心钱包的wallet.dat
 	err = wm.BackupWalletData(tmpWalletDat)
 	if err != nil {
 		return err
 	}
 
 	//调试使用
-	//file.Copy(curretWDFile, tmpWalletDat)
+	file.Copy(curretWDFile, tmpWalletDat)
 
 	fmt.Printf("Stop node server... \n")
 
@@ -852,11 +866,11 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 
 		fmt.Printf("Restore wallet key and datebase file... \n")
 
-		//复制种子文件到data/btc/key/
+		//复制种子文件到data/qtum/key/
 		file.MkdirAll(wm.config.keyDir)
 		file.Copy(keyFile, filepath.Join(wm.config.keyDir, key.FileName()+".key"))
 
-		//复制钱包数据库文件到data/btc/db/
+		//复制钱包数据库文件到data/qtum/db/
 		file.MkdirAll(wm.config.dbPath)
 		file.Copy(dbFile, filepath.Join(wm.config.dbPath, key.FileName()+".db"))
 
@@ -879,7 +893,7 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 		//删除当前钱包文件
 		file.Delete(curretWDFile)
 
-		file.Copy(tmpWalletDat, curretWDFile)
+		//file.Copy(tmpWalletDat, curretWDFile)
 
 		fmt.Printf("Start node server... \n")
 
@@ -1140,10 +1154,16 @@ func (wm *WalletManager) SignRawTransaction(txHex, walletID string, key *hdkeyst
 		wifs = make([]string, 0)
 	)
 
+	////曲线类型
+	//wm.config.CurveType= owcrypt.ECC_CURVE_SECP256K1
+
 	//查找未花签名需要的私钥
 	for _, u := range utxos {
 
 		childKey, err := key.DerivedKeyWithPath(u.HDAddress.HDPath, wm.config.CurveType)
+		if err != nil {
+			return "", err
+		}
 
 		keyBytes, err := childKey.GetPrivateKeyBytes()
 		if err != nil {
@@ -1605,6 +1625,7 @@ func (wm *WalletManager) CreateChangeAddress(walletID string, key *hdkeystore.HD
 		return nil, errors.New("Change address creation failed!")
 	}
 
+	//有问题，先注释掉
 	//批量写入数据库
 	err := wm.saveAddressToDB(getAddrs, &openwallet.Wallet{Alias: key.Alias, WalletID: key.KeyID})
 	if err != nil {
@@ -1655,38 +1676,45 @@ func (wm *WalletManager) EstimateFeeRate() (decimal.Decimal, error) {
 	return feeRate, nil
 }
 
+//AddWalletInSummary 添加汇总钱包账户
+//func AddWalletInSummary(wid string, wallet *AccountBalance) {
+//	walletsInSum[wid] = wallet
+//}
+
 //SummaryWallets 执行汇总流程
-func (wm *WalletManager) SummaryWallets() {
+func (wm *WalletManager) SummaryWallets(password string) {
 
 	log.Std.Info("[Summary Wallet Start]------%s", common.TimeFormat("2006-01-02 15:04:05"))
 
 	//读取参与汇总的钱包
-	for wid, wallet := range wm.walletsInSum {
+	//for wid, wallet := range wm.walletsInSum {
 
 		//重新加载utxo
-		wm.RebuildWalletUnspent(wid)
+		//wm.RebuildWalletUnspent(wid)
 
 		//统计钱包最新余额
-		wb := wm.GetWalletBalance(wid)
+		wb := wm.GetBalance()
 
 		balance, _ := decimal.NewFromString(wb)
 		//如果余额大于阀值，汇总的地址
 		if balance.GreaterThan(wm.config.threshold) {
 
-			log.Std.Info("Summary account[%s]balance = %v ", wallet.WalletID, balance)
-			log.Std.Info("Summary account[%s]Start Send Transaction", wallet.WalletID)
+			log.Std.Info("Summary account balance = %v ", balance)
+			log.Std.Info("Summary account Start Send Transaction......")
 
-			txID, err := wm.SendTransaction(wallet.WalletID, wm.config.sumAddress, balance, wallet.Password, false)
+			sumAmounts := balance.Sub(decimal.NewFromFloat(0.005)).Truncate(8)
+
+			txID, err := wm.SendToAddress(sumAddress, sumAmounts.String(),"", false,password)
 			if err != nil {
-				log.Std.Info("Summary account[%s]unexpected error: %v", wallet.WalletID, err)
-				continue
+				log.Std.Info("Summary account unexpected error: %v", err)
+				//continue
 			} else {
-				log.Std.Info("Summary account[%s]successfully，Received Address[%s], TXID：%s", wallet.WalletID, wm.config.sumAddress, txID)
+				log.Std.Info("Summary account successfully，Received Address[%s], TXID：%s", wm.config.sumAddress, txID)
 			}
 		} else {
-			log.Std.Info("Wallet Account[%s]-[%s]Current Balance: %v，below threshold: %v", wallet.Alias, wallet.WalletID, balance, wm.config.threshold)
+			log.Std.Info("Wallet Account Current Balance: %v，below threshold: %v", balance, wm.config.threshold)
 		}
-	}
+
 
 	log.Std.Info("[Summary Wallet end]------%s", common.TimeFormat("2006-01-02 15:04:05"))
 }
@@ -1941,4 +1969,67 @@ func (wm *WalletManager) GenQtumAddress() (string, error){
 	fmt.Println(address)
 
 	return address, nil
+}
+
+//SendFrom 从指定账户发送交易
+func (wm *WalletManager) SendFrom(fromaccount,toaddress,amount string,  password string) (string, error) {
+
+	request := []interface{}{
+		fromaccount,
+		toaddress,
+		amount,
+	}
+
+	//解锁钱包
+	err := wm.UnlockWallet(password, 120)
+	if err != nil {
+		return "", err
+	}
+
+	result, err := wm.walletClient.Call("sendfrom", request)
+	if err != nil {
+		return "", err
+	}
+
+	return result.String(), nil
+}
+
+//SendToAddress 发送交易
+func (wm *WalletManager) SendToAddress(address,amount,comment string,subtractfeefromamount bool, password string) (string, error) {
+
+	request := []interface{}{
+		address,
+		amount,
+		comment,
+		"",
+		subtractfeefromamount,
+	}
+
+	//解锁钱包
+	err := wm.UnlockWallet(password, 120)
+	if err != nil {
+		return "", err
+	}
+
+	result, err := wm.walletClient.Call("sendtoaddress", request)
+	if err != nil {
+		return "", err
+	}
+
+	return result.String(), nil
+}
+
+//GetBalance 获取默认钱包余额
+func (wm *WalletManager) GetBalance() string {
+
+	request := []interface{}{
+
+	}
+
+	balance, err := wm.walletClient.Call("getbalance", request)
+	if err != nil {
+		return ""
+	}
+
+	return balance.String()
 }

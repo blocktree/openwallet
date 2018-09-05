@@ -242,9 +242,9 @@ func (wm *WalletManager) AddWalletInSummary(wid string, wallet *openwallet.Walle
 }
 
 //获取钱包余额
-func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.Decimal, error) {
+func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.Decimal, []*openwallet.Address, error) {
 	var (
-		synCount      int = 20
+		synCount      int = 10
 		quit              = make(chan struct{})
 		done              = 0 //完成标记
 		shouldDone        = 0 //需要完成的总数
@@ -252,7 +252,7 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 
 	db, err := wallet.OpenDB()
 	if err != nil {
-		return decimal.NewFromFloat(0), err
+		return decimal.NewFromFloat(0), nil, err
 	}
 	defer db.Close()
 
@@ -263,27 +263,27 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 	count := len(addrs)
 	if  count <= 0 {
 		log.Std.Info("This wallet have 0 address!!!")
-		return decimal.NewFromFloat(0), nil
+		return decimal.NewFromFloat(0), nil, nil
 	} else {
-		log.Std.Info("This wallet have %d addresses", count)
+		log.Std.Info("wallet %s have %d addresses， please wait minutes to get wallet balance", wallet.Alias, count)
 	}
 
 	//生产通道
-	producer := make(chan []decimal.Decimal)
+	producer := make(chan []*openwallet.Address)
 	defer close(producer)
 
 	//消费通道
-	worker := make(chan []decimal.Decimal)
+	worker := make(chan []*openwallet.Address)
 	defer close(worker)
 
 	//统计余额
-	go func(addrs_balance chan []decimal.Decimal) {
+	go func(addrs chan []*openwallet.Address) {
 		for {
 			//
-			balances := <-addrs_balance
+			balances := <-addrs
 
 			for _, b := range(balances) {
-				balance = balance.Add(b)
+				balance = balance.Add(decimal.RequireFromString(b.Balance))
 			}
 
 			//累计完成的线程数
@@ -307,11 +307,12 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 			end := (i + 1) * runCount - 1
 			as := addrs[start:end]
 
-			go func(producer chan []decimal.Decimal, addrs []*openwallet.Address, wm *WalletManager) {
-				var bs []decimal.Decimal
+			go func(producer chan []*openwallet.Address, addrs []*openwallet.Address, wm *WalletManager) {
+				var bs []*openwallet.Address
 				for _, a := range(addrs) {
 					b := wm.WalletClient.CallGetbalance(a.Address)
-					bs = append(bs, decimal.RequireFromString(string(b)))
+					a.Balance = string(b)
+					bs = append(bs, a)
 				}
 
 				producer <- bs
@@ -327,11 +328,12 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 		start := runCount*synCount
 		as := addrs[start:]
 
-		go func(producer chan []decimal.Decimal, addrs []*openwallet.Address, wm *WalletManager) {
-			var bs []decimal.Decimal
+		go func(producer chan []*openwallet.Address, addrs []*openwallet.Address, wm *WalletManager) {
+			var bs []*openwallet.Address
 			for _, a := range(addrs) {
 				b := wm.WalletClient.CallGetbalance(a.Address)
-				bs = append(bs, decimal.RequireFromString(string(b)))
+				a.Balance = string(b)
+				bs = append(bs, a)
 			}
 
 			producer <- bs
@@ -340,12 +342,13 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 		shouldDone++
 	}
 
-	values := make([][]decimal.Decimal, 0)
+	values := make([][]*openwallet.Address, 0)
+	outputAddress := make([]*openwallet.Address, 0)
 
 	//以下使用生产消费模式
 	for {
-		var activeWorker chan<- []decimal.Decimal
-		var activeValue []decimal.Decimal
+		var activeWorker chan<- []*openwallet.Address
+		var activeValue []*openwallet.Address
 
 		//当数据队列有数据时，释放顶部，激活消费
 		if len(values) > 0 {
@@ -358,53 +361,56 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 		case pa := <-producer:
 			values = append(values, pa)
 			//当激活消费者后，传输数据给消费者，并把顶部数据出队
+			outputAddress = append(outputAddress, pa...)
 		case activeWorker <- activeValue:
 			values = values[1:]
 		case <-quit:
 			//退出
-			log.Std.Info("get all addresses balance finished!!!")
-			return balance.Div(coinDecimal), nil
+			log.Std.Info("wallet %s get all addresses's balance finished", wallet.Alias)
+			return balance.Div(coinDecimal), outputAddress, nil
 		}
 	}
 
-	return balance.Div(coinDecimal), nil
+	return balance.Div(coinDecimal), outputAddress, nil
 }
 
 //打印钱包列表
-func (wm *WalletManager) printWalletListAndGetBalance(list []*openwallet.Wallet) {
+func (wm *WalletManager) printWalletList(list []*openwallet.Wallet, getBalance bool) ([][]*openwallet.Address) {
 	tableInfo := make([][]interface{}, 0)
+	var addrs [][]*openwallet.Address
 
 	for i, w := range list {
-		balance, _ := wm.getWalletBalance(w)
-		tableInfo = append(tableInfo, []interface{}{
-			i, w.WalletID, w.Alias, w.DBFile, balance,
-		})
+		if getBalance {
+			balance, addr, _ := wm.getWalletBalance(w)
+			tableInfo = append(tableInfo, []interface{}{
+				i, w.WalletID, w.Alias, w.DBFile, balance,
+			})
+
+			addrs = append(addrs, addr)
+			//休眠20秒是因为http请求会导致下一个钱包获取余额API请求失败
+			if i != (len(list) - 1) {
+				time.Sleep(time.Second * 20)
+			}
+		} else {
+			tableInfo = append(tableInfo, []interface{}{
+				i, w.WalletID, w.Alias, w.DBFile,
+			})
+		}
+
 	}
 
 	t := gotabulate.Create(tableInfo)
 	// Set Headers
-	t.SetHeaders([]string{"No.", "ID", "Name", "DBFile", "Balance",})
-
-	//打印信息
-	fmt.Println(t.Render("simple"))
-}
-
-//打印钱包列表
-func (wm *WalletManager) printWalletList(list []*openwallet.Wallet) {
-	tableInfo := make([][]interface{}, 0)
-
-	for i, w := range list {
-		tableInfo = append(tableInfo, []interface{}{
-			i, w.WalletID, w.Alias, w.DBFile,
-		})
+	if getBalance {
+		t.SetHeaders([]string{"No.", "ID", "Name", "DBFile", "Balance",})
+	} else {
+		t.SetHeaders([]string{"No.", "ID", "Name", "DBFile",})
 	}
 
-	t := gotabulate.Create(tableInfo)
-	// Set Headers
-	t.SetHeaders([]string{"No.", "ID", "Name", "DBFile",})
-
 	//打印信息
 	fmt.Println(t.Render("simple"))
+
+	return addrs
 }
 
 //CreateNewPrivateKey 创建私钥，返回私钥wif格式字符串
