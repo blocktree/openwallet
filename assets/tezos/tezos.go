@@ -91,7 +91,7 @@ func (wm *WalletManager) CreateAddressFlow() error {
 	}
 
 	//打印钱包
-	//wm.printWalletList(wallets)
+	wm.printWalletList(wallets, false)
 
 	fmt.Printf("[Please select a wallet No to create address] \n")
 
@@ -241,7 +241,7 @@ func (wm *WalletManager) BackupWalletFlow() error {
 	}
 
 	//打印钱包列表
-	//wm.printWalletList(list)
+	wm.printWalletList(list, false)
 
 	fmt.Printf("[Please select a wallet to backup] \n")
 
