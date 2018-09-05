@@ -27,7 +27,6 @@ import (
 	"errors"
 	"github.com/shopspring/decimal"
 	"strconv"
-	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 
@@ -174,7 +173,7 @@ func (wm *WalletManager) SummaryFollow() error {
 	}
 
 	//打印钱包
-	wm.printWalletListAndGetBalance(wallets)
+	wm.printWalletList(wallets, true)
 
 	fmt.Printf("[Please select the wallet to summary, and enter the numbers split by ','." +
 		" For example: 0,1,2,3] \n")
@@ -287,7 +286,7 @@ func (wm *WalletManager) TransferFlow() error {
 	}
 
 	//打印钱包列表
-	wm.printWalletListAndGetBalance(wallets)
+	addrs := wm.printWalletList(wallets, true)
 
 	fmt.Printf("[Please select a wallet to send transaction] \n")
 
@@ -302,6 +301,7 @@ func (wm *WalletManager) TransferFlow() error {
 	}
 
 	wallet := wallets[num]
+	addr := addrs[num]
 
 	// 等待用户输入发送数量
 	amount, err := console.InputRealNumber("Enter amount to send: ", true)
@@ -324,15 +324,6 @@ func (wm *WalletManager) TransferFlow() error {
 	if err != nil {
 		return err
 	}
-	//加载钱包数据库数据
-	db, err := wallet.OpenDB()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	var addrs []*openwallet.Address
-	db.All(&addrs)
 
 	haveEnoughBalance := false
 
@@ -351,11 +342,11 @@ func (wm *WalletManager) TransferFlow() error {
 	var sends []sendStruct
 	var resultSub decimal.Decimal = atculAmount
 	//新建发送地址列表以及验证余额是否足够
-	for _, a := range addrs {
+	for _, a := range addr {
 		k, _ := wm.getKeys(key, a)
 
 		//get balance
-		decimal_balance, _ := decimal.NewFromString(string(wm.WalletClient.CallGetbalance(k.Address)))
+		decimal_balance := decimal.RequireFromString(a.Balance)
 
 		//判断是否是reveal交易
 		fee := wm.Config.MinFee
@@ -416,7 +407,7 @@ func (wm *WalletManager) GetWalletList() error {
 	}
 
 	//打印钱包列表
-	wm.printWalletList(list)
+	wm.printWalletList(list, false)
 
 	return nil
 }
