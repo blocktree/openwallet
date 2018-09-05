@@ -16,7 +16,6 @@
 package litecoin
 
 import (
-	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
 	"github.com/blocktree/go-OWCrypt"
 )
@@ -25,16 +24,18 @@ func init() {
 
 }
 
-var (
-	AddressDecoder = &openwallet.AddressDecoder{
-		PrivateKeyToWIF:    PrivateKeyToWIF,
-		PublicKeyToAddress: PublicKeyToAddress,
-		WIFToPrivateKey:    WIFToPrivateKey,
-	}
-)
+//var (
+//	AddressDecoder = &openwallet.AddressDecoder{
+//		PrivateKeyToWIF:    PrivateKeyToWIF,
+//		PublicKeyToAddress: PublicKeyToAddress,
+//		WIFToPrivateKey:    WIFToPrivateKey,
+//	}
+//)
+
+type addressDecoder struct{}
 
 //PrivateKeyToWIF 私钥转WIF
-func PrivateKeyToWIF(priv []byte, isTestnet bool) (string, error) {
+func (decoder *addressDecoder) PrivateKeyToWIF(priv []byte, isTestnet bool) (string, error) {
 
 	cfg := addressEncoder.LTC_mainnetPrivateWIFCompressed
 	if isTestnet {
@@ -54,7 +55,7 @@ func PrivateKeyToWIF(priv []byte, isTestnet bool) (string, error) {
 }
 
 //PublicKeyToAddress 公钥转地址
-func PublicKeyToAddress(pub []byte, isTestnet bool) (string, error) {
+func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (string, error) {
 
 	cfg := addressEncoder.LTC_mainnetAddressP2PKH
 	if isTestnet {
@@ -75,8 +76,31 @@ func PublicKeyToAddress(pub []byte, isTestnet bool) (string, error) {
 
 }
 
+
+//RedeemScriptToAddress 多重签名赎回脚本转地址
+func (decoder *addressDecoder) RedeemScriptToAddress(pubs [][]byte, required uint64, isTestnet bool) (string, error) {
+
+	cfg := addressEncoder.LTC_mainnetAddressP2SH
+	if isTestnet {
+		cfg = addressEncoder.LTC_testnetAddressP2SH
+	}
+
+	redeemScript := make([]byte, 0)
+
+	for _, pub := range pubs {
+		redeemScript = append(redeemScript, pub...)
+	}
+
+	pkHash := owcrypt.Hash(redeemScript, 0, owcrypt.HASH_ALG_HASH160)
+
+	address := addressEncoder.AddressEncode(pkHash, cfg)
+
+	return address, nil
+
+}
+
 //WIFToPrivateKey WIF转私钥
-func WIFToPrivateKey(wif string, isTestnet bool) ([]byte, error) {
+func (decoder *addressDecoder) WIFToPrivateKey(wif string, isTestnet bool) ([]byte, error) {
 
 	cfg := addressEncoder.LTC_mainnetPrivateWIFCompressed
 	if isTestnet {

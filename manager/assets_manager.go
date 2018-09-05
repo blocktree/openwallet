@@ -26,11 +26,14 @@ type AssetsManager interface {
 
 	assets.SymbolInfo
 
-	//AddressDecode 地址解析器
-	AddressDecode() openwallet.AddressDecoder
+	//GetAddressDecode 地址解析器
+	GetAddressDecode() openwallet.AddressDecoder
 
-	//TransactionDecoder 交易单解析器
-	TransactionDecoder() openwallet.TransactionDecoder
+	//GetTransactionDecoder 交易单解析器
+	GetTransactionDecoder() openwallet.TransactionDecoder
+
+	//GetBlockScanner 获取区块链
+	GetBlockScanner() openwallet.BlockScanner
 }
 
 

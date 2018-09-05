@@ -50,8 +50,8 @@ type WalletManager struct {
 	Config       *WalletConfig                  //钱包管理配置
 	WalletsInSum map[string]*openwallet.Wallet  //参与汇总的钱包
 	Blockscanner *BTCBlockScanner               //区块扫描器
-	Decoder      *openwallet.AddressDecoder     //地址编码器
-	TxDecoder    *openwallet.TransactionDecoder //交易单编码器
+	Decoder      openwallet.AddressDecoder     //地址编码器
+	TxDecoder    openwallet.TransactionDecoder //交易单编码器
 }
 
 func NewWalletManager() *WalletManager {
@@ -63,7 +63,7 @@ func NewWalletManager() *WalletManager {
 	wm.WalletsInSum = make(map[string]*openwallet.Wallet)
 	//区块扫描器
 	wm.Blockscanner = NewBTCBlockScanner(&wm)
-	wm.Decoder = AddressDecoder
+	wm.Decoder = &addressDecoder{}
 	return &wm
 }
 

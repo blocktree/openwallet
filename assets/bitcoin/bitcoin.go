@@ -498,11 +498,16 @@ func (wm *WalletManager) Symbol() string {
 }
 
 //AddressDecode 地址解析器
-func (wm *WalletManager) AddressDecode() openwallet.AddressDecoder {
-	return *wm.Decoder
+func (wm *WalletManager) GetAddressDecode() openwallet.AddressDecoder {
+	return wm.Decoder
 }
 
 //TransactionDecoder 交易单解析器
-func (wm *WalletManager) TransactionDecoder() openwallet.TransactionDecoder {
-	return *wm.TxDecoder
+func (wm *WalletManager) GetTransactionDecoder() openwallet.TransactionDecoder {
+	return wm.TxDecoder
+}
+
+//GetBlockScanner 获取区块链
+func (wm *WalletManager) GetBlockScanner() openwallet.BlockScanner {
+	return wm.Blockscanner
 }

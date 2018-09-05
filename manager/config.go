@@ -26,6 +26,7 @@ type Config struct {
 	dbPath    string //本地数据库文件路径
 	backupDir string //备份路径
 	isTestnet bool   //是否测试网
+	supportAssets []string //支持的资产类型
 }
 
 func NewConfig() *Config {
@@ -38,6 +39,8 @@ func NewConfig() *Config {
 	c.dbPath = filepath.Join(defaultDataDir, "db")
 	//备份路径
 	c.backupDir = filepath.Join(defaultDataDir, "backup")
+
+	c.supportAssets = []string{"BTC"}
 
 	return &c
 }
