@@ -337,7 +337,7 @@ func TestGetBalance(t *testing.T) {
 
 }
 
-func Testgetreceivebyaddress(t *testing.T) {
+func TestGetreive(t *testing.T) {
 	err := tw.UnlockWallet("jinxin", 10)
 	if err != nil {
 		t.Errorf("UnlockWallet failed unexpected error: %v\n", err)
@@ -345,7 +345,7 @@ func Testgetreceivebyaddress(t *testing.T) {
 	}
 
 	request := []interface{}{
-		"TsS18cTdw81WnH8z2JQ89WoiGs6ReWXiPwJ",
+		"TsXTcCRuHYBx2gmVY9U7sSMyzjgDrTn9cyj",
 		2,
 	}
 
