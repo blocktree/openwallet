@@ -154,20 +154,20 @@ nodeInstallPath = ""
 mainNetDataPath = ""
 # testnet data path
 testNetDataPath = ""
-# hcd api url
-chainAPI = "http://192.168.2.193:10065"
-# hcwallet api url
-walletAPI = "http://192.168.2.193:10066"
+# dcrd api url
+chainAPI = "http://"
+# dcrwallet api url
+walletAPI = "http://"
 # RPC Authentication Username
-rpcUser = "walletdcr"
+rpcUser = ""
 # RPC Authentication Password
-rpcPassword = "walletdcr"
+rpcPassword = ""
 # Is network test?
 isTestNet = false
 # the safe address that wallet send money to.
 sumAddress = ""
 # when wallet's balance is over this value, the wallet willl send money to [sumAddress]
-threshold = "1"
+threshold = ""
 `
 
 	return &c

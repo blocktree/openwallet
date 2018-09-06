@@ -16,30 +16,38 @@
 package manager
 
 import (
-	"encoding/json"
-	"github.com/tidwall/gjson"
+	"github.com/blocktree/OpenWallet/openwallet"
 )
 
-type Subscription struct {
-
-	//ID       int    // primary key
-	Type     int64  `json:"type"`
-	Symbol   string `json:"symbol"`
-	WalletID string `json:"walletID"`
-	AppID    int64  `json:"appID"`
-}
-
-func NewSubscription(res gjson.Result) *Subscription {
-	var s Subscription
-	err := json.Unmarshal([]byte(res.Raw), &s)
-	if err != nil {
-		return nil
+//blockScanNotify 区块扫描结果通知
+func (wm *WalletManager) BlockScanNotify(header *openwallet.BlockHeader) error {
+	//推送数据
+	for o, _ := range wm.observers {
+		o.BlockScanNotify(header)
 	}
-	return &s
+	return nil
 }
 
+//BlockExtractDataNotify 区块提取结果通知
+func (wm *WalletManager) BlockExtractDataNotify(sourceKey string, data *openwallet.BlockExtractData) error {
+	//保存提取出来的数据
 
-func (wm *WalletManager) Subscribe(subscription []*Subscription) error {
-	//TODO:待实现
+	wrapper, err := wm.newWalletWrapper(sourceKey)
+	if err != nil {
+		return err
+	}
+
+	txWrapper := openwallet.NewTransactionWrapper(wrapper)
+	err = txWrapper.SaveBlockExtractData(data)
+	if err != nil {
+		return err
+	}
+
+	for o, _ := range wm.observers {
+		o.BlockExtractDataNotify(sourceKey, data)
+	}
+
+	//TODO:定时删除过时的记录，保证数据库不会无限增加
+
 	return nil
 }

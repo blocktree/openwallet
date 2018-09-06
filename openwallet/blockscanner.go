@@ -18,10 +18,18 @@ package openwallet
 type BlockScanner interface {
 
 	//AddAddress 添加扫描地址，账户ID，其钱包指针
-	AddAddress(address, accountID string, wallet *Wallet)
+	//AddAddress(address, accountID string, wallet *Wallet)
 
 	//AddWallet 添加扫描账户及其钱包指针
-	AddWallet(accountID string, wallet *Wallet)
+	//AddWallet(accountID string, wallet *Wallet)
+
+	//AddWallet 添加扫描地址
+	//@param address 地址
+	//@param sourceKey 数据源标识，可以是地址所属的应用钱包的唯一标识，资产账户唯一标识
+	AddAddress(address, sourceKey string)
+
+	//AddWallet 添加扫描账户及其钱包指针
+	//AddWallet(sourceKey string, wrapper *WalletWrapper)
 
 	//AddObserver 添加观测者
 	AddObserver(obj BlockScanNotificationObject)
@@ -50,9 +58,6 @@ type BlockScanner interface {
 	//ScanBlock 扫描指定高度的区块
 	ScanBlock(height uint64) error
 
-	//rescanFailedRecord 重扫失败记录
-	RescanFailedRecord()
-
 	//GetCurrentBlockHeight 获取当前区块高度
 	GetCurrentBlockHeader() (*BlockHeader, error)
 
@@ -60,19 +65,28 @@ type BlockScanner interface {
 	IsExistAddress(address string) bool
 
 	//IsExistWallet 指定账户的钱包是否已登记扫描
-	IsExistWallet(accountID string) bool
+	//IsExistWallet(accountID string) bool
 }
 
 //BlockScanNotificationObject 扫描被通知对象
 type BlockScanNotificationObject interface {
 
 	//BlockScanNotify 新区块扫描完成通知
-	BlockScanNotify(header *BlockHeader)
+	BlockScanNotify(header *BlockHeader) error
+
+	//BlockExtractDataNotify 区块提取结果通知
+	BlockExtractDataNotify(sourceKey string, data *BlockExtractData) error
 }
 
-type ExtractTxResult interface {
-	//是否成功
-	Success() bool
-	//获取提出到的交易记录
-	GetRecharges() []*Recharge
+//BlockExtractData 区块扫描后的提取结果
+type BlockExtractData struct {
+
+	//充值记录
+	TxInputs []*TxInput
+
+	//充值记录
+	TxOutputs []*TxOutPut
+
+	//交易记录
+	Transactions []*Transaction
 }

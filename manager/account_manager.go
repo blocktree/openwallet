@@ -16,12 +16,12 @@
 package manager
 
 import (
-	"github.com/blocktree/OpenWallet/openwallet"
 	"fmt"
 	"github.com/blocktree/OpenWallet/assets"
-	"time"
 	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/OpenWallet/openwallet"
 	"strings"
+	"time"
 )
 
 // CreateAssetsAccount
@@ -60,7 +60,7 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID string, account *op
 		newAccIndex := wallet.AccountIndex + 1
 
 		// root/n' , 使用强化方案
-		account.HDPath = fmt.Sprintf("%s/%d'",wallet.RootPath, newAccIndex)
+		account.HDPath = fmt.Sprintf("%s/%d'", wallet.RootPath, newAccIndex)
 
 		childKey, err := key.DerivedKeyWithPath(account.HDPath, symbolInfo.CurveType())
 		if err != nil {
@@ -129,7 +129,7 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID string, account *op
 // GetAssetsAccountInfo
 func (wm *WalletManager) GetAssetsAccountInfo(appID, walletID, accountID string) (*openwallet.AssetsAccount, error) {
 
-	wrapper, err := wm.newWalletWrapper(appID, walletID)
+	wrapper, err := wm.newWalletWrapper(appID)
 	if err != nil {
 		return nil, err
 	}
@@ -145,12 +145,12 @@ func (wm *WalletManager) GetAssetsAccountInfo(appID, walletID, accountID string)
 // GetAssetsAccountList
 func (wm *WalletManager) GetAssetsAccountList(appID, walletID string, offset, limit int) ([]*openwallet.AssetsAccount, error) {
 
-	wrapper, err := wm.newWalletWrapper(appID, walletID)
+	wrapper, err := wm.newWalletWrapper(appID)
 	if err != nil {
 		return nil, err
 	}
 
-	accounts, err := wrapper.GetAssetsAccountList(offset, limit)
+	accounts, err := wrapper.GetAssetsAccountList(offset, limit, "WalletID", walletID)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,7 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 		return nil, fmt.Errorf("create address count is zero")
 	}
 
-	wrapper, err := wm.newWalletWrapper(appID, walletID)
+	wrapper, err := wm.newWalletWrapper(appID)
 	if err != nil {
 		return nil, err
 	}
@@ -185,6 +185,17 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 		return nil, err
 	}
 
+	//导入新地址到区块扫描器
+	scanner := assetsMgr.GetBlockScanner()
+
+	if scanner == nil {
+		log.Warn(account.Symbol, "is not support block scan")
+	} else {
+		for _, address := range addrs {
+			scanner.AddAddress(address.Address, appID)
+		}
+	}
+
 	log.Debug("new addresses create success:", addrs)
 
 	return addrs, nil
@@ -193,12 +204,12 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 // GetAddressList
 func (wm *WalletManager) GetAddressList(appID, walletID, accountID string, offset, limit int, watchOnly bool) ([]*openwallet.Address, error) {
 
-	wrapper, err := wm.newWalletWrapper(appID, walletID)
+	wrapper, err := wm.newWalletWrapper(appID)
 	if err != nil {
 		return nil, err
 	}
 
-	addrs, err := wrapper.GetAddressList(accountID, offset, limit, false)
+	addrs, err := wrapper.GetAddressList(offset, limit, "AccountID", accountID, "WatchOnly", false)
 	if err != nil {
 		return nil, err
 	}
@@ -212,13 +223,21 @@ func (wm *WalletManager) GetAddressList(appID, walletID, accountID string, offse
 	return addrs, nil
 }
 
-
+// ImportWatchOnlyAddress
 func (wm *WalletManager) ImportWatchOnlyAddress(appID, walletID, accountID string, addresses []*openwallet.Address) error {
 
 	account, err := wm.GetAssetsAccountInfo(appID, walletID, accountID)
 	if err != nil {
 		return err
 	}
+
+	assetsMgr, err := GetAssetsManager(account.Symbol)
+	if err != nil {
+		return err
+	}
+
+	//导入新地址到区块扫描器
+	scanner := assetsMgr.GetBlockScanner()
 
 	createdAt := time.Now()
 
@@ -244,6 +263,14 @@ func (wm *WalletManager) ImportWatchOnlyAddress(appID, walletID, accountID strin
 		if err != nil {
 			return err
 		}
+
+		if scanner == nil {
+			log.Warn(account.Symbol, "is not support block scan")
+		} else {
+			//导入新地址到区块扫描器
+			scanner := assetsMgr.GetBlockScanner()
+			scanner.AddAddress(a.Address, appID)
+		}
 	}
 
 	err = tx.Commit()
@@ -255,4 +282,3 @@ func (wm *WalletManager) ImportWatchOnlyAddress(appID, walletID, accountID strin
 
 	return nil
 }
-
