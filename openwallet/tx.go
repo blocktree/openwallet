@@ -60,8 +60,8 @@ type KeySignature struct {
 
 type Transaction struct {
 	TxID        string   `json:"txid"`
-	AccountID   string `json:"accountID"`
-	Address     string `json:"address"`
+	AccountID   string   `json:"accountID"`
+	Address     string   `json:"address"`
 	Coin        Coin     //区块链类型标识
 	From        []string `json:"from"`
 	To          []string `json:"to"`
@@ -98,6 +98,8 @@ type Recharge struct {
 
 // TxInput 交易输入，则出账记录
 type TxInput struct {
+	SourceTxID  string //源交易单ID
+	SourceIndex uint64 //源交易单输出所因为
 	Recharge
 }
 

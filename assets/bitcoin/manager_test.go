@@ -26,7 +26,6 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-	"encoding/hex"
 )
 
 var (
@@ -260,7 +259,7 @@ func TestCreateNewPrivateKey(t *testing.T) {
 		password: "1234qwer",
 	}
 
-	//count := 100
+	count := 100
 
 	w, err := tw.GetWalletInfo(test.name)
 	if err != nil {
@@ -280,27 +279,17 @@ func TestCreateNewPrivateKey(t *testing.T) {
 	derivedPath := fmt.Sprintf("%s/%d", key.RootPath, timestamp)
 	childKey, _ := key.DerivedKeyWithPath(derivedPath, tw.Config.CurveType)
 
-	fmt.Println(hex.EncodeToString(childKey.GetPublicKeyBytes()))
-	//for i := uint32(0); i < 100; i++ {
-	//	tmp, err := childKey.DerivedPublicKeyFromSerializes(i)
-	//	if err != nil {
-	//		t.Error(i)
-	//	} else {
-	//		fmt.Println(hex.EncodeToString(tmp.GetPublicKeyBytes()))
-	//	}
-	//}
+	for i := 0; i < count; i++ {
 
-	//for i := 0; i < count; i++ {
-	//
-	//	wif, a, err := tw.CreateNewPrivateKey(key.KeyID, childKey, derivedPath, uint64(i))
-	//	if err != nil {
-	//		t.Errorf("CreateNewPrivateKey[%d] failed unexpected error: %v\n", i, err)
-	//		continue
-	//	}
-	//
-	//	t.Logf("CreateNewPrivateKey[%d] wif = %v \n", i, wif)
-	//	t.Logf("CreateNewPrivateKey[%d] address = %v \n", i, a.Address)
-	//}
+		wif, a, err := tw.CreateNewPrivateKey(key.KeyID, childKey, derivedPath, uint64(i))
+		if err != nil {
+			t.Errorf("CreateNewPrivateKey[%d] failed unexpected error: %v\n", i, err)
+			continue
+		}
+
+		t.Logf("CreateNewPrivateKey[%d] wif = %v \n", i, wif)
+		t.Logf("CreateNewPrivateKey[%d] address = %v \n", i, a.Address)
+	}
 }
 
 func TestGetWalleInfo(t *testing.T) {

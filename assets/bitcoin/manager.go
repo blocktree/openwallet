@@ -453,15 +453,14 @@ func (wm *WalletManager) CreateNewWallet(name, password string) (*openwallet.Wal
 		}
 	}
 
-	fmt.Printf("Verify password in bitcoin-core wallet...")
+	fmt.Printf("Verify password in core wallet...")
 
 	err = wm.EncryptWallet(password)
 	if err != nil {
 		//钱包已经加密，解锁钱包1秒，检查密码
 		err = wm.UnlockWallet(password, 1)
 		if err != nil {
-			fmt.Printf("%v\n", err)
-			return nil, "", errors.New("The wallet's password is not equal bitcoin-core wallet!\n")
+			return nil, "", fmt.Errorf("The wallet's password can not unlock core wallet, unexpected error: %v ", err)
 		}
 	} else {
 		//加密钱包后，需要10秒后重启bitcoin core

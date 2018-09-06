@@ -489,12 +489,12 @@ func (wm *WalletManager) CurveType() uint32 {
 
 //FullName 币种全名
 func (wm *WalletManager) FullName() string {
-	return wm.Config.Symbol
+	return "Bitcoin"
 }
 
 //Symbol 币种标识
 func (wm *WalletManager) Symbol() string {
-	return "Bitcoin"
+	return wm.Config.Symbol
 }
 
 //AddressDecode 地址解析器
@@ -509,5 +509,5 @@ func (wm *WalletManager) GetTransactionDecoder() openwallet.TransactionDecoder {
 
 //GetBlockScanner 获取区块链
 func (wm *WalletManager) GetBlockScanner() openwallet.BlockScanner {
-	return nil
+	return wm.Blockscanner
 }

@@ -215,6 +215,8 @@ func (wrapper *TransactionWrapper) SaveBlockExtractData(data *BlockExtractData) 
 		if err != nil {
 			return fmt.Errorf("wallet save TxInputs failed, unexpected error: %v", err)
 		}
+
+		//TODO:统计该交易单下的各个资产账户的支出总数
 	}
 
 	//保存入账的记录
@@ -228,7 +230,11 @@ func (wrapper *TransactionWrapper) SaveBlockExtractData(data *BlockExtractData) 
 		if err != nil {
 			return fmt.Errorf("wallet save TxOutputs failed, unexpected error: %v", err)
 		}
+
+		//TODO:统计该交易单下的各个资产账户的收入总数
 	}
+
+	//TODO:计算该交易单下的各个资产账户实际总收支，记录为账单数据
 
 	//保存入账的记录
 	for _, trx := range data.Transactions {
