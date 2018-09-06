@@ -296,7 +296,7 @@ func (wm *WalletManager) UnlockWallet(passphrase string, seconds int) error {
 		return err
 	}
 
-	return err
+	return nil
 
 }
 
@@ -475,7 +475,6 @@ func (wm *WalletManager) CreateNewWallet(name, password string) (*openwallet.Wal
 	}
 
 	fmt.Printf("Verify password in dcrwallet wallet...\n")
-
 	//钱包已经加密，解锁钱包1秒，检查密码
 	err = wm.UnlockWallet(password, 1)
 	if err != nil {
