@@ -12,9 +12,11 @@ import (
 
 // Load settings for global from local conf/<Symbol>.ini
 //
-//		- will change VAR
+//		- will change Global VAR: WNConfig
 func loadConfig(symbol string) error {
+
 	var c bconfig.Configer
+	WNConfig = &WalletnodeConfig{}
 
 	configFilePath, _ := filepath.Abs("conf")
 	configFileName := s.ToUpper(symbol) + ".ini"
@@ -26,13 +28,15 @@ func loadConfig(symbol string) error {
 		return errors.New(fmt.Sprintf("Load Config Failed-> %s", err))
 	}
 
-	mainNetDataPath = c.String("mainNetDataPath")
-	testNetDataPath = c.String("testNetDataPath")
-	rpcUser = c.String("rpcUser")
-	rpcPassword = c.String("rpcPassword")
-	isTestNet = c.String("isTestNet")
-	serverAddr = c.String("serverAddr")
-	serverPort = c.String("serverPort")
+	WNConfig.mainNetDataPath = c.String("mainNetDataPath")
+	WNConfig.testNetDataPath = c.String("testNetDataPath")
+	WNConfig.rpcUser = c.String("rpcUser")
+	WNConfig.rpcPassword = c.String("rpcPassword")
+	WNConfig.isTestNet = c.String("isTestNet")
+
+	WNConfig.walletnodeServerType = c.String("walletnode::walletnodeServerType")
+	WNConfig.walletnodeServerAddr = c.String("walletnode::walletnodeServerAddr")
+	WNConfig.walletnodeServerSocket = c.String("walletnode::walletnodeServerSocket")
 
 	return nil
 }

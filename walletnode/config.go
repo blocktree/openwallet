@@ -15,44 +15,33 @@
 
 package walletnode
 
-import (
-	"fmt"
-	"log"
-	s "strings"
-
-	"docker.io/go-docker"
-)
-
-var (
-	Symbol                   string                              // Current fullnode wallet's symbol
-	FullnodeContainerConfigs map[string]*FullnodeContainerConfig // All configs of fullnode wallet for Docker
-	// FullnodeContainerPath    *FullnodeContainerPathConfig        // All paths of fullnode wallet on Docker
-)
-
 // Node setup 节点配置
-var (
-	//钱包服务服务地址和端口
-	serverAddr = "localhost"
-	serverPort = "2375"
-	//是否测试网络
-	isTestNet = "true" // default in TestNet
-	//RPC认证账户名
-	rpcUser = "wallet"
-	//RPC认证账户密码
-	rpcPassword = "walletPassword2017"
-	//汇总地址
-	sumAddress = ""
+type WalletnodeConfig struct {
+
+	//钱包全节点服务
+	walletnodePrefix       string "openw_"               // container prefix for name to run same within one server
+	walletnodeServerType   string "localdocker"          // "service"/"localdocker"/"remotedocker"
+	walletnodeServerAddr   string "192.168.2.194:2375"   // type:remotedocker required
+	walletnodeServerSocket string "/var/run/docker.sock" // type:localdocker required
+	walletnodeStartNodeCMD string ""                     // type:local required (from old: startNodeCMD)
+	walletnodeStopNodeCMD  string ""                     // type:local required (from old: stopNodeCMD)
+	walletnodePubAPIs      string ""                     // walletnode returns API to rpc client, etc.
+
+	isTestNet   string "true"               // 是否测试网络，default in TestNet
+	rpcUser     string "wallet"             //RPC认证账户名
+	rpcPassword string "walletPassword2017" //RPC认证账户密码
 
 	// data path
-	mainNetDataPath = "/openwallet/data"
-	testNetDataPath = "/openwallet/testdata"
+	mainNetDataPath string "/openwallet/data"
+	testNetDataPath string "/openwallet/testdata"
 
 	// Fullnode API URL
-	apiURL = ""
+	apiURL string ""
 
 	//------------------------------------------------------------------------------
 	//默认配置内容
-	defaultConfig = `
+	defaultConfig string `
+
 # node api url
 apiURL = ""
 # Is network test?
@@ -68,16 +57,17 @@ testNetDataPath = "/openwallet/testdata"
 # the safe address that wallet send money to.
 sumAddress = ""
 # when wallet's balance is over this value, the wallet willl send money to [sumAddress]
-threshold = 
+threshold =
 
-# docker master server addr
-serverAddr = "localhost"
-# docker master server port
-serverPort = "2375"
+[walletnode]
+# walletnode server type: service/localdocker/remotedocker
+walletnodeservertype = "remotedocker"
+# remote docker master server addr
+walletnodeserveraddr = "192.168.2.194:2375"
+# local docker master server socket
+walletnodeserversocket = "/var/run/docker.socket"
 `
-)
-
-type NodeManagerStruct struct{}
+}
 
 type FullnodeContainerConfig struct {
 	WORKPATH string
@@ -87,58 +77,12 @@ type FullnodeContainerConfig struct {
 	IMAGE    string      // Image that container run from
 }
 
-// type FullnodeContainerPathConfig struct {
-// 	EXEC_PATH string
-// 	DATA_PATH string
-// }
-
-// func (p *FullnodeContainerPathConfig) init(symbol string) error {
-// 	p.EXEC_PATH = s.Replace(p.EXEC_PATH, "<Symbol>", symbol, 1)
-// 	p.DATA_PATH = s.Replace(p.DATA_PATH, "<Symbol>", symbol, 1)
-// 	return nil
-// }
-
-// Get docker client
-func _GetClient() (*docker.Client, error) {
-	var c *docker.Client
-	var err error
-
-	// Init docker client
-	if _, ok := map[string]string{"localhost": "", "127.0.0.1": ""}[serverAddr]; ok {
-		c, err = docker.NewEnvClient()
-	} else {
-		host := fmt.Sprintf("tcp://%s:%s", serverAddr, serverPort)
-		c, err = docker.NewClient(host, "v1.37", nil, map[string]string{})
-	}
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	return c, err
-}
-
-// Private function, generate container name by <Symbol> and <isTestNet>
-func _GetCName(symbol string) (string, error) {
-	// Load global config
-	err := loadConfig(symbol)
-	if err != nil {
-		return "", err
-	}
-
-	// Within testnet, use "<Symbol>_testnet" as container name
-	if isTestNet == "true" {
-		return s.ToLower(symbol) + "_testnet", nil
-	} else {
-		return s.ToLower(symbol), nil
-	}
-}
-
 func init() {
-	log.SetFlags(log.Lshortfile | log.LstdFlags)
+	// log.SetFlags(log.Lshortfile | log.LstdFlags)
 
 	FullnodeContainerConfigs = map[string]*FullnodeContainerConfig{
 		"btc": &FullnodeContainerConfig{
-			CMD: [2][]string{{"/usr/bin/bitcoind", "-datadir=/openwallet/data", "-conf=/etc/bitcoin.conf"},
+			CMD: [2][]string{{"/usr/local/bitcoin/bin/bitcoind", "-datadir=/openwallet/data", "-conf=/usr/local/bitcoin/etc/bitcoin.conf"},
 				{"/usr/bin/bitcoind", "-datadir=/openwallet/testdata", "-conf=/etc/bitcoin-test.conf"}},
 			PORT:    [][3]string{{"18332/tcp", "10001", "20001"}},
 			APIPORT: string("18332/tcp"), // Same within PORT

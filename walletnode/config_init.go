@@ -16,30 +16,29 @@
 package walletnode
 
 import (
-	"context"
-	"docker.io/go-docker/api/types"
-	"fmt"
+	"errors"
+
+	"github.com/blocktree/OpenWallet/common/file"
+	// "github.com/pkg/errors"
+	"path/filepath"
+	s "strings"
 )
 
-func (w *NodeManagerStruct) StartNodeFlow(symbol string) error {
+// Init and create <Symbol>.ini file automatically
+func initConfig(symbol string) error {
+	configFilePath, _ := filepath.Abs("conf")
+	configFileName := s.ToUpper(symbol) + ".ini"
 
-	if err := loadConfig(symbol); err != nil {
-		return err
-	}
+	gc := WalletnodeConfig{}
 
-	// Init docker client
-	c, err := _GetClient()
-	if err != nil {
-		return err
+	absFile := filepath.Join(configFilePath, configFileName)
+	if !file.Exists(absFile) {
+		if file.MkdirAll(configFilePath) != true {
+			return errors.New("initConfig: MkdirAll failed!")
+		}
+		if file.WriteFile(absFile, []byte(gc.defaultConfig), false) != true {
+			return errors.New("initConfig: WriteFile failed!")
+		}
 	}
-	// Action within client
-	cName, err := _GetCName(symbol) // container name
-	if err != nil {
-		return err
-	}
-	err = c.ContainerStart(context.Background(), cName, types.ContainerStartOptions{})
-	if err == nil {
-		fmt.Printf("%s walletnode start in success!\n", symbol)
-	}
-	return err
+	return nil
 }
