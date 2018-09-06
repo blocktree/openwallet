@@ -19,7 +19,6 @@ import (
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/hdkeystore"
 	"fmt"
-	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/log"
 )
 
@@ -75,32 +74,34 @@ func (wm *WalletManager) CreateWallet(appID string, wallet *openwallet.Wallet) (
 // GetWalletInfo
 func (wm *WalletManager) GetWalletInfo(appID string, walletID string) (*openwallet.Wallet, error) {
 
-
-	wrapper, err := wm.newWalletWrapper(appID, walletID)
+	wrapper, err := wm.newWalletWrapper(appID)
 	if err != nil {
 		return nil, err
 	}
-
-	wallet := wrapper.GetWallet()
-
-	return wallet, nil
+	return wrapper.GetWalletInfo(walletID)
 }
 
 // GetWalletList
 func (wm *WalletManager) GetWalletList(appID string, offset, limit int) ([]*openwallet.Wallet, error) {
 
+	wrapper, err := wm.newWalletWrapper(appID)
+	if err != nil {
+		return nil, err
+	}
+	return wrapper.GetWalletList(offset, limit)
+
 	//打开数据库
-	db, err := wm.OpenDB(appID)
-	if err != nil {
-		return nil, err
-	}
-
-	var wallets []*openwallet.Wallet
-	err = db.All(&wallets, storm.Limit(limit), storm.Skip(offset))
-	if err != nil {
-		return nil, err
-	}
-
-	return wallets, nil
+	//db, err := wm.OpenDB(appID)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//var wallets []*openwallet.Wallet
+	//err = db.All(&wallets, storm.Limit(limit), storm.Skip(offset))
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//return wallets, nil
 }
 

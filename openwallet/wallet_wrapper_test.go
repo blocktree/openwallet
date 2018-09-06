@@ -15,18 +15,11 @@
 
 package openwallet
 
-type BlockHeader struct {
-	Hash              string
-	Confirmations     uint64
-	Merkleroot        string
-	Previousblockhash string
-	Height            uint64
-	Version           uint64
-	Time              uint64
-	Fork              bool
-	Symbol            string
-}
+import (
+	"testing"
+)
 
-//BlockScanNotify 新区块扫描完成通知
-//@param  txs 每扫完区块链，与地址相关的交易到
-type BlockScanNotify func(header *BlockHeader)
+func TestWalletWrapper_GetAssetsAccountList(t *testing.T) {
+
+
+}

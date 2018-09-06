@@ -390,11 +390,18 @@ func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 }
 
 //blockScanNotify 区块扫描结果通知
-func (m *MerchantNode) BlockScanNotify(header *openwallet.BlockHeader) {
+func (m *MerchantNode) BlockScanNotify(header *openwallet.BlockHeader) error {
 	//log.Printf("new block: %v", *header)
 	//推送新的充值记录
 	err := m.SubmitNewRecharges(header.Height)
 	if err != nil {
 		log.Error("SubmitNewRecharges unexpected error:", err)
+		return err
 	}
+	return nil
+}
+
+//BlockExtractDataNotify 区块提取结果通知
+func (m *MerchantNode)  BlockExtractDataNotify(sourceKey string, data *openwallet.BlockExtractData) error {
+	return nil
 }
