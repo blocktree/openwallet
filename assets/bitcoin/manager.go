@@ -38,6 +38,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
 )
 
 const (
@@ -627,11 +628,12 @@ func (wm *WalletManager) GetAddressBalance(walletID, address string) string {
 }
 
 //CreateNewPrivateKey 创建私钥，返回私钥wif格式字符串
-func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index uint64) (string, *openwallet.Address, error) {
+func (wm *WalletManager) CreateNewPrivateKey(accountID string, key *owkeychain.ExtendedKey, derivedPath string, index uint64) (string, *openwallet.Address, error) {
 
-	derivedPath := fmt.Sprintf("%s/%d/%d", key.RootPath, start, index)
+	derivedPath = fmt.Sprintf("%s/%d", derivedPath, index)
 	//fmt.Printf("derivedPath = %s\n", derivedPath)
-	childKey, err := key.DerivedKeyWithPath(derivedPath, wm.Config.CurveType)
+	childKey, err := key.GenPrivateChild(uint32(index))
+	//childKey, err := key.DerivedKeyWithPath(derivedPath, wm.Config.CurveType)
 	if err != nil {
 		return "", nil, err
 	}
@@ -652,11 +654,11 @@ func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index
 	//if wm.Config.IsTestNet {
 	//	cfg = chaincfg.TestNet3Params
 	//}
-	//
+
 	//wif, err := btcutil.NewWIF(privateKey, &cfg, true)
-	if err != nil {
-		return "", nil, err
-	}
+	//if err != nil {
+	//	return "", nil, err
+	//}
 
 	publicKey := childKey.GetPublicKeyBytes()
 
@@ -671,7 +673,7 @@ func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index
 
 	addr := openwallet.Address{
 		Address:   address,
-		AccountID: key.KeyID,
+		AccountID: accountID,
 		HDPath:    derivedPath,
 		CreatedAt: time.Now(),
 		Symbol:    wm.Config.Symbol,
@@ -1728,9 +1730,16 @@ func (wm *WalletManager) createAddressWork(k *hdkeystore.HDKey, producer chan<- 
 	runAddress := make([]*openwallet.Address, 0)
 	runWIFs := make([]string, 0)
 
+	derivedPath := fmt.Sprintf("%s/%d", k.RootPath, index)
+	childKey, err := k.DerivedKeyWithPath(derivedPath, wm.Config.CurveType)
+	if err != nil {
+		producer <- make([]*openwallet.Address, 0)
+		return
+	}
+
 	for i := start; i < end; i++ {
 		// 生成地址
-		wif, address, errRun := wm.CreateNewPrivateKey(k, index, i)
+		wif, address, errRun := wm.CreateNewPrivateKey(k.KeyID, childKey, derivedPath, i)
 		if errRun != nil {
 			log.Std.Info("Create new privKey failed unexpected error: %v", errRun)
 			continue
