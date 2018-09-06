@@ -62,7 +62,7 @@ func (wm *WalletManager) CreateWalletFlow() error {
 	name, err = console.InputText("Enter wallet's name: ", true)
 
 	// 等待用户输入密码
-	password, err = console.InputPassword(false, 3)
+	password, err = console.InputPassword(true, 3)
 
 	_, keyFile, err = wm.CreateNewWallet(name, password)
 	if err != nil {
