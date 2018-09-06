@@ -18,23 +18,24 @@ package decred
 import (
 	"errors"
 	"fmt"
+	"math"
+	"path/filepath"
+	"sort"
+	"strings"
+	"time"
+
+	"github.com/asdine/storm/q"
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/hdkeystore"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/walletnode"
 	"github.com/bndr/gotabulate"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/codeskyblue/go-sh"
 	"github.com/shopspring/decimal"
-	"github.com/blocktree/OpenWallet/log"
-	"math"
-	"path/filepath"
-	"sort"
-	"strings"
-	"time"
-	"github.com/asdine/storm/q"
 )
 
 const (
@@ -42,8 +43,8 @@ const (
 )
 
 type WalletManager struct {
-	storage      *hdkeystore.HDKeystore          //秘钥存取
-	dcrdClient    *Client                       // 全节点客户端
+	storage      *hdkeystore.HDKeystore        //秘钥存取
+	dcrdClient   *Client                       // 全节点客户端
 	walletClient *Client                       // 节点客户端
 	config       *WalletConfig                 //钱包管理配置
 	walletsInSum map[string]*openwallet.Wallet //参与汇总的钱包
@@ -158,7 +159,6 @@ func (wm *WalletManager) CreateNewAddress(key *hdkeystore.HDKey) (*openwallet.Ad
 	return &addr, err
 
 }
-
 
 //CreateNewAddress 给指定账户创建地址
 func (wm *WalletManager) CreateNewChangeAddress(walletID string) (*openwallet.Address, error) {
@@ -623,7 +623,7 @@ func (wm *WalletManager) GetAddressBalance(walletID, address string) string {
 	err = db.Select(q.And(
 		q.Eq("AccountID", walletID),
 		q.Eq("Address", address),
-	)).Find( &utxos)
+	)).Find(&utxos)
 	if err != nil {
 		return "0"
 	}
@@ -1888,15 +1888,15 @@ func (wm *WalletManager) printWalletList(list []*openwallet.Wallet) {
 //startNode 开启节点
 func (wm *WalletManager) startNode() error {
 
-	wn := walletnode.NodeManagerStruct{}
-	return wn.StartNodeFlow(wm.config.symbol)
+	wn := walletnode.WalletnodeManager{}
+	return wn.StartWalletnode(wm.config.symbol)
 }
 
 //stopNode 关闭节点
 func (wm *WalletManager) stopNode() error {
 
-	wn := walletnode.NodeManagerStruct{}
-	return wn.StopNodeFlow(wm.config.symbol)
+	wn := walletnode.WalletnodeManager{}
+	return wn.StartWalletnode(wm.config.symbol)
 }
 
 //cmdCall 执行命令
