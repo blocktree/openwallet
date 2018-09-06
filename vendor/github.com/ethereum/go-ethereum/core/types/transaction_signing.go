@@ -55,10 +55,12 @@ func MakeSigner(config *params.ChainConfig, blockNumber *big.Int) Signer {
 // SignTx signs the transaction using the given signer and private key
 func SignTx(tx *Transaction, s Signer, prv *ecdsa.PrivateKey) (*Transaction, error) {
 	h := s.Hash(tx)
+	fmt.Println("only for test, should remove it after release, hash:", h.Hex())
 	sig, err := crypto.Sign(h[:], prv)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("only for test, should remove it after release,sign:", string(sig))
 	return tx.WithSignature(s, sig)
 }
 

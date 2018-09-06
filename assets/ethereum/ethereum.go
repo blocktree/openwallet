@@ -45,7 +45,7 @@ const (
 )
 
 func toHexBigIntForEtherTrans(value string, base int, unit int64) (*big.Int, error) {
-	amount, err := convertToBigInt(value, base)
+	amount, err := ConvertToBigInt(value, base)
 	if err != nil {
 		openwLogger.Log.Errorf("format transaction value failed, err = %v", err)
 		return big.NewInt(0), err
@@ -598,7 +598,7 @@ func (this *WalletManager) ERC20TokenTransferFlow() error {
 		return err
 	}
 
-	amount, err := convertToBigInt(value, 10)
+	amount, err := ConvertToBigInt(value, 10)
 	if err != nil {
 		openwLogger.Log.Errorf("convert to big int failed, err = %v", err)
 		return err
@@ -766,7 +766,7 @@ func (this *WalletManager) GetLocalBlockHeight() (*big.Int, error) {
 		openwLogger.Log.Errorf("get block height from db failed, err=%v", err)
 		return nil, err
 	}
-	blockHeight, err := convertToBigInt(blockHeightStr, 16)
+	blockHeight, err := ConvertToBigInt(blockHeightStr, 16)
 	if err != nil {
 		openwLogger.Log.Errorf("convert block height string failed, err=%v", err)
 		return nil, err
@@ -807,7 +807,7 @@ func (this *WalletManager) RecoverBlockHeader(height *big.Int) (*EthBlock, error
 		return nil, err
 	}
 
-	block.blockHeight, err = convertToBigInt(block.BlockNumber, 16)
+	block.blockHeight, err = ConvertToBigInt(block.BlockNumber, 16)
 	if err != nil {
 		openwLogger.Log.Errorf("conver block height to big int failed, err= %v", err)
 		return nil, err

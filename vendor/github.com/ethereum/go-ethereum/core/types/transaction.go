@@ -18,7 +18,9 @@ package types
 
 import (
 	"container/heap"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"math/big"
 	"sync/atomic"
@@ -50,6 +52,14 @@ type Transaction struct {
 	hash atomic.Value
 	size atomic.Value
 	from atomic.Value
+}
+
+func (this *Transaction) PrintTransaction() {
+	txJson, _ := json.Marshal(this.data)
+	fmt.Printf("tx: %v \n", string(txJson))
+	fmt.Printf("hash:%v\n", this.hash)
+	fmt.Printf("size:%v\n", this.size)
+	fmt.Printf("from:%v\n", this.from)
 }
 
 type txdata struct {
