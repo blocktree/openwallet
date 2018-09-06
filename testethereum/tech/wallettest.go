@@ -298,6 +298,18 @@ func TestOWCrypt_sign() {
 	fmt.Println("signature:", common.ToHex(sig))
 }
 
+/*
+ web3.eth.signTransaction({
+    from: "0x50068fd632c1a6e6c5bd407b4ccf8861a589e776",
+    to: '0x2a63b2203955b84fefe52baca3881b3614991b34',
+    value: "0x56bc75e2d63100000",
+    data: "",
+    gas: "0x1d8a8",
+    gasPrice: "0x430e23400",
+    nonce:"0x5"
+})
+*/
+
 func TestEIP155Signing() {
 	//key, _ := crypto.GenerateKey()
 	//addr := crypto.PubkeyToAddress(key.PublicKey)
@@ -343,5 +355,5 @@ func TestEIP155Signing() {
 		return
 	}
 
-	fmt.Println("result:", common.ToHex(data))
+	fmt.Println("signature:", common.ToHex(data))
 }

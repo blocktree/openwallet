@@ -60,7 +60,7 @@ func SignTx(tx *Transaction, s Signer, prv *ecdsa.PrivateKey) (*Transaction, err
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("only for test, should remove it after release,sign:", string(sig))
+	fmt.Println("only for test, should remove it after release,sign:", common.ToHex(sig))
 	return tx.WithSignature(s, sig)
 }
 
