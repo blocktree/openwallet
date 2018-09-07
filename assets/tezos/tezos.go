@@ -422,7 +422,7 @@ func (wm *WalletManager) GetWalletList() error {
 		return nil
 	}
 
-	fmt.Printf("[Please select a wallet to send transaction] \n")
+	fmt.Printf("[Please select the wallet ] \n")
 
 	//选择钱包
 	num, err = console.InputNumber("Enter wallet No. : ", true)
