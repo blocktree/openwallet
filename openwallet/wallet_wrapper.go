@@ -30,8 +30,8 @@ type WalletKeyFile string
 // WalletWrapper 钱包包装器，扩展钱包功能
 type WalletWrapper struct {
 	*AppWrapper
-	wallet       *Wallet      //需要包装的钱包
-	keyFile      string       //钱包密钥文件路径
+	wallet  *Wallet //需要包装的钱包
+	keyFile string  //钱包密钥文件路径
 
 }
 
@@ -119,7 +119,7 @@ func (wrapper *WalletWrapper) GetAssetsAccountList(offset, limit int, cols ...in
 		query = append(query, q.Eq("WalletID", wrapper.wallet.WalletID))
 	}
 
-	if len(cols) % 2 != 0 {
+	if len(cols)%2 != 0 {
 		return nil, fmt.Errorf("condition param is not pair")
 	}
 
@@ -148,6 +148,30 @@ func (wrapper *WalletWrapper) GetAssetsAccountList(offset, limit int, cols ...in
 	}
 
 	return accounts, nil
+}
+
+//GetAssetsAccountByAddress 通过地址获取资产账户对象
+func (wrapper *WalletWrapper) GetAssetsAccountByAddress(address string) (*AssetsAccount, error) {
+	db, err := wrapper.OpenStormDB()
+	if err != nil {
+		return nil, err
+	}
+	defer wrapper.CloseDB()
+
+	var obj Address
+	err = db.One("Address", address, &obj)
+
+	if err != nil {
+		return nil, fmt.Errorf("can not find address")
+	}
+
+	var account AssetsAccount
+	err = db.One("AccountID", obj.AccountID, &account)
+	if err != nil {
+		return nil, fmt.Errorf("can not find account by address: %s", address)
+	}
+
+	return &account, nil
 }
 
 //GetAddress 通过地址字符串获取地址对象
@@ -181,7 +205,7 @@ func (wrapper *WalletWrapper) GetAddressList(offset, limit int, cols ...interfac
 
 	query := make([]q.Matcher, 0)
 
-	if len(cols) % 2 != 0 {
+	if len(cols)%2 != 0 {
 		return nil, fmt.Errorf("condition param is not pair")
 	}
 

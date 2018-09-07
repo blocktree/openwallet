@@ -337,6 +337,26 @@ func TestGetBalance(t *testing.T) {
 
 }
 
+func TestDumpprivkey(t *testing.T) {
+	err := tw.UnlockWallet("jinxin", 10)
+	if err != nil {
+		t.Errorf("UnlockWallet failed unexpected error: %v\n", err)
+		return
+	}
+
+	request := []interface{}{
+		"Dsnz4MPERzcPjVWoA6iyGVJKmGEh1ZeBkKi",
+	}
+
+	result, err := tw.walletClient.Call("dumpprivkey", request)
+	if err != nil {
+		t.Errorf("dumpprivkey failed unexpected error: %v\n", err)
+		return
+	}
+
+	t.Logf("privkey: %s \n", result.String())
+}
+
 func TestGetreive(t *testing.T) {
 	err := tw.UnlockWallet("jinxin", 10)
 	if err != nil {
@@ -345,13 +365,13 @@ func TestGetreive(t *testing.T) {
 	}
 
 	request := []interface{}{
-		"TsXTcCRuHYBx2gmVY9U7sSMyzjgDrTn9cyj",
+		"Dsnz4MPERzcPjVWoA6iyGVJKmGEh1ZeBkKi",
 		2,
 	}
 
 	result, err := tw.walletClient.Call("getreceivedbyaddress", request)
 	if err != nil {
-		t.Errorf("dumpprivkey failed unexpected error: %v\n", err)
+		t.Errorf("getreceivedbyaddress failed unexpected error: %v\n", err)
 		return
 	}
 
@@ -414,14 +434,14 @@ func TestEstimateFee(t *testing.T) {
 func TestSendTransaction(t *testing.T) {
 
 	sends := []string{
-		"TsS18cTdw81WnH8z2JQ89WoiGs6ReWXiPwJ",
+		"Dsnz4MPERzcPjVWoA6iyGVJKmGEh1ZeBkKi",
 	}
 
-	tw.RebuildWalletUnspent("W1xmuWQv2qCubnjS22zaVTyJ3XZ5JyNjnW")
+	tw.RebuildWalletUnspent("W7ANJPR91CjFhA648fSWaPAPWWWUGY4ffQ")
 
 	for _, to := range sends {
 
-		txIDs, err := tw.SendTransaction("W1xmuWQv2qCubnjS22zaVTyJ3XZ5JyNjnW", to, decimal.NewFromFloat(2), "jinxin", true)
+		txIDs, err := tw.SendTransaction("W7ANJPR91CjFhA648fSWaPAPWWWUGY4ffQ", to, decimal.NewFromFloat(0.8), "jinxin", true)
 
 		if err != nil {
 			t.Errorf("SendTransaction failed unexpected error: %v\n", err)

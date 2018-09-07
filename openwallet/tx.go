@@ -60,6 +60,8 @@ type KeySignature struct {
 
 type Transaction struct {
 	TxID        string   `json:"txid"`
+	AccountID   string   `json:"accountID"`
+	Address     string   `json:"address"`
 	Coin        Coin     //区块链类型标识
 	From        []string `json:"from"`
 	To          []string `json:"to"`
@@ -70,6 +72,8 @@ type Transaction struct {
 	BlockHeight uint64 `json:"blockHeight"`
 	IsMemo      bool   `json:"isMemo"`
 	Memo        string `json:"memo"`
+	Fees        string
+	Received    bool
 	SubmitTime  int64
 	ConfirmTime int64
 }
@@ -79,7 +83,8 @@ type Recharge struct {
 	TxID        string `json:"txid"`
 	AccountID   string `json:"accountID"`
 	Address     string `json:"address"`
-	Symbol      string `json:"symbol"`
+	Symbol      string `json:"symbol"` //Deprecated: use Coin
+	Coin        Coin   //区块链类型标识
 	Amount      string `json:"amount"`
 	Confirm     int64  `json:"confirm"`
 	BlockHash   string `json:"blockHash"`
@@ -94,6 +99,8 @@ type Recharge struct {
 
 // TxInput 交易输入，则出账记录
 type TxInput struct {
+	SourceTxID  string //源交易单ID
+	SourceIndex uint64 //源交易单输出所因为
 	Recharge
 }
 

@@ -228,7 +228,6 @@ func (wm *WalletManager) initBlockScanner() error {
 
 			for _, address := range addrs {
 
-				//TODO:加载所有应用钱包地址到扫描器
 				scanner.AddAddress(address.Address, appID)
 			}
 

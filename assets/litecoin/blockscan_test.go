@@ -13,7 +13,7 @@
  * GNU Lesser General Public License for more details.
  */
 
-package bitcoin
+package litecoin
 
 import (
 	"testing"
@@ -31,7 +31,7 @@ func TestGetBTCBlockHeight(t *testing.T) {
 
 
 func TestBTCBlockScanner_GetCurrentBlockHeight(t *testing.T) {
-	bs := NewBTCBlockScanner(tw)
+	bs := tw.Blockscanner
 	header, _ := bs.GetCurrentBlockHeader()
 	t.Logf("GetCurrentBlockHeight height = %d \n", header.Height)
 	t.Logf("GetCurrentBlockHeight hash = %v \n", header.Hash)
@@ -49,7 +49,7 @@ func TestGetLocalNewBlock(t *testing.T) {
 }
 
 func TestSaveLocalBlockHeight(t *testing.T) {
-	bs := NewBTCBlockScanner(tw)
+	bs := tw.Blockscanner
 	header, _ := bs.GetCurrentBlockHeader()
 	t.Logf("SaveLocalBlockHeight height = %d \n", header.Height)
 	t.Logf("GetLocalBlockHeight hash = %v \n", header.Hash)
@@ -84,16 +84,6 @@ func TestGetTransaction(t *testing.T) {
 	t.Logf("GetTransaction = %v \n", raw)
 }
 
-
-func TestGetTxOut(t *testing.T) {
-	raw, err := tw.GetTxOut("7768a6436475ed804344a3711e90e7f10f7db42da8918580c8b669dd63d64cc3", 0)
-	if err != nil {
-		t.Errorf("GetTxOut failed unexpected error: %v\n", err)
-		return
-	}
-	t.Logf("GetTxOut = %v \n", raw)
-}
-
 func TestGetTxIDsInMemPool(t *testing.T) {
 	txids, err := tw.GetTxIDsInMemPool()
 	if err != nil {
@@ -114,7 +104,7 @@ func TestBTCBlockScanner_scanning(t *testing.T) {
 	//	return
 	//}
 
-	bs := NewBTCBlockScanner(tw)
+	bs := tw.Blockscanner
 
 	//bs.DropRechargeRecords(accountID)
 
@@ -141,11 +131,11 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 		return
 	}
 
-	bs := NewBTCBlockScanner(tw)
+	bs := tw.Blockscanner
 
 	//bs.DropRechargeRecords(accountID)
 
-	//bs.SetRescanBlockHeight(1384586)
+	bs.SetRescanBlockHeight(1384586)
 
 	bs.AddWallet(accountID, wallet.WalletWrapper())
 
@@ -177,7 +167,7 @@ func TestWallet_GetRecharges(t *testing.T) {
 
 //func TestBTCBlockScanner_DropRechargeRecords(t *testing.T) {
 //	accountID := "W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ"
-//	bs := NewBTCBlockScanner(tw)
+//	bs := tw.Blockscanner
 //	bs.DropRechargeRecords(accountID)
 //}
 
@@ -194,7 +184,7 @@ func TestGetUnscanRecords(t *testing.T) {
 }
 
 func TestBTCBlockScanner_RescanFailedRecord(t *testing.T) {
-	bs := NewBTCBlockScanner(tw)
+	bs := tw.Blockscanner
 	bs.RescanFailedRecord()
 }
 
