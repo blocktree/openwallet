@@ -33,7 +33,8 @@ func (wm *WalletManager) backupWalletData() error {
 	src := filepath.Join(wm.config.walletDataPath, "wallet.dat")
 	dst := filepath.Join(newBackupDir, "wallet.dat")
 
-	if err := walletnode.CopyFromContainer(Symbol, src, dst); err != nil {
+	wn := walletnode.WalletnodeManager{}
+	if err := wn.CopyFromContainer(Symbol, src, dst); err != nil {
 		return err
 	}
 
@@ -44,7 +45,8 @@ func (wm *WalletManager) restoreWalletData(datFile string) error {
 	src := datFile
 	dst := wm.config.walletDataPath
 
-	if err := walletnode.CopyToContainer(Symbol, src, dst); err != nil {
+	wn := walletnode.WalletnodeManager{}
+	if err := wn.CopyToContainer(Symbol, src, dst); err != nil {
 		return err
 	}
 

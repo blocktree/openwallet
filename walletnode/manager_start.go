@@ -17,28 +17,29 @@ package walletnode
 
 import (
 	"context"
-	"fmt"
+
+	"docker.io/go-docker/api/types"
 )
 
-func (w *NodeManagerStruct) RestartNodeFlow(symbol string) error {
+func (w *WalletnodeManager) StartWalletnode(symbol string) error {
 
 	if err := loadConfig(symbol); err != nil {
 		return err
 	}
 
 	// Init docker client
-	c, err := _GetClient()
+	c, err := getDockerClient(symbol)
 	if err != nil {
 		return err
 	}
 	// Action within client
-	cName, err := _GetCName(symbol) // container name
+	cName, err := getCName(symbol) // container name
 	if err != nil {
 		return err
 	}
-	err = c.ContainerRestart(context.Background(), cName, nil)
-	if err == nil {
-		fmt.Printf("%s walletnode restart in success!\n", symbol)
+	err = c.ContainerStart(context.Background(), cName, types.ContainerStartOptions{})
+	if err != nil {
+		return err
 	}
-	return err
+	return nil
 }

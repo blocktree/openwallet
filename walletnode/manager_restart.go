@@ -16,21 +16,28 @@
 package walletnode
 
 import (
-	"github.com/blocktree/OpenWallet/common/file"
-	// "github.com/pkg/errors"
-	"path/filepath"
-	s "strings"
+	"context"
 )
 
-// Init and create <Symbol>.ini file automatically
-func initConfig(symbol string) error {
-	configFilePath, _ := filepath.Abs("conf")
-	configFileName := s.ToUpper(symbol) + ".ini"
+func (w *WalletnodeManager) RestartWalletnode(symbol string) error {
 
-	absFile := filepath.Join(configFilePath, configFileName)
-	if !file.Exists(absFile) {
-		file.MkdirAll(configFilePath)
-		file.WriteFile(absFile, []byte(defaultConfig), false)
+	if err := loadConfig(symbol); err != nil {
+		return err
+	}
+
+	// Init docker client
+	c, err := getDockerClient(symbol)
+	if err != nil {
+		return err
+	}
+	// Action within client
+	cName, err := getCName(symbol) // container name
+	if err != nil {
+		return err
+	}
+	err = c.ContainerRestart(context.Background(), cName, nil)
+	if err != nil {
+		return err
 	}
 	return nil
 }

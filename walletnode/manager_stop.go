@@ -17,30 +17,31 @@ package walletnode
 
 import (
 	"context"
-	"fmt"
 	"time"
 )
 
-func (w *NodeManagerStruct) StopNodeFlow(symbol string) error {
+func (w *WalletnodeManager) StopWalletnode(symbol string) error {
 
 	if err := loadConfig(symbol); err != nil {
 		return err
 	}
 
 	// Init docker client
-	c, err := _GetClient()
+	c, err := getDockerClient(symbol)
 	if err != nil {
 		return err
 	}
-	// Action within client
-	cName, err := _GetCName(symbol) // container name
+
+	cName, err := getCName(symbol) // container name
 	if err != nil {
 		return err
 	}
+
 	d := time.Duration(3000)
 	err = c.ContainerStop(context.Background(), cName, &d)
-	if err == nil {
-		fmt.Printf("%s walletnode stop in success!\n", symbol)
+	if err != nil {
+
+		return err
 	}
-	return err
+	return nil
 }

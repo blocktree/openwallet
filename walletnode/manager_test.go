@@ -16,31 +16,19 @@
 package walletnode
 
 import (
-	"fmt"
-	"path/filepath"
-	"strings"
 	"testing"
-	"time"
 )
 
 var ( // Usecase Data
 	symbols = []string{"btc", "bch", "eth", "sc"}
 )
 
-func init() {
-	// Clear env
-
-	// Init data to Usecase
-	testIniData := `
-	`
-}
-
 func TestCreate(t *testing.T) {
-	if err := nil; err != nil {
-		t.Errorf("GetBlockChainInfo failed unexpected error: %v\n", err)
-	} else {
-		t.Logf("GetBlockChainInfo info: %v\n", b)
-	}
+	// if err := nil; err != nil {
+	// 	t.Errorf("GetBlockChainInfo failed unexpected error: %v\n", err)
+	// } else {
+	// 	t.Logf("GetBlockChainInfo info: %v\n", b)
+	// }
 }
 
 func TestGet(t *testing.T) {

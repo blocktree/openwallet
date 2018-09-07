@@ -31,10 +31,7 @@ import (
 // Copy file from container to local filesystem
 //
 //	src/dst: filename
-func CopyFromContainer(symbol, src, dst string) error {
-	// func(vals ...interface{}) {}(
-	// 	tar.Writer{}, os.File{},
-	// ) // Delete before commit
+func (w *WalletnodeManager) CopyFromContainer(symbol, src, dst string) error {
 
 	var buf bytes.Buffer
 
@@ -43,7 +40,7 @@ func CopyFromContainer(symbol, src, dst string) error {
 	}
 
 	// Init docker client
-	c, err := _GetClient()
+	c, err := getDockerClient(symbol)
 	if err != nil {
 		return err
 	}
@@ -85,7 +82,7 @@ func CopyFromContainer(symbol, src, dst string) error {
 //
 //	src: filename
 //	dst: path
-func CopyToContainer(symbol, src, dst string) error {
+func (w *WalletnodeManager) CopyToContainer(symbol, src, dst string) error {
 
 	var content io.Reader
 
@@ -94,7 +91,7 @@ func CopyToContainer(symbol, src, dst string) error {
 	}
 
 	// Init docker client
-	c, err := _GetClient()
+	c, err := getDockerClient(symbol)
 	if err != nil {
 		return err
 	}

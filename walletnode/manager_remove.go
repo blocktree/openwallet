@@ -17,49 +17,30 @@ package walletnode
 
 import (
 	"context"
-	"fmt"
-	"log"
-	s "strings"
+	// "docker.io/go-docker/api"
+
+	"docker.io/go-docker/api/types"
 )
 
-func (w *NodeManagerStruct) GetNodeStatus(symbol string) error {
-	// func(vals ...interface{}) {}(
-	// 	context.Background, log.New, time.Saturday,
-	// 	docker.NewClient, types.ContainerListOptions{},
-	// 	container.Config{}, network.NetworkingConfig{},
-	// 	api.DefaultVersion, s.ToLower("jij"),
-	// ) // Delete before commit
+func (w *WalletnodeManager) RemoveWalletnode(symbol string) error {
 
 	if err := loadConfig(symbol); err != nil {
-		log.Println(err)
 		return err
 	}
 
 	// Init docker client
-	c, err := _GetClient()
+	c, err := getDockerClient(symbol)
 	if err != nil {
 		return err
 	}
-
-	// Instantize parameters
-	cname, err := _GetCName(symbol) // container name
-	if err != nil {
-		return err
-	}
-
-	// dst := "/openwallet/data/wallet.dat"
-	// src := "./eee.dat"
-	// if err := CopyToContainer(cname, src, dst); err != nil {
-	// 	return err
-	// }
-
 	// Action within client
-	res, err := c.ContainerInspect(context.Background(), cname)
+	cName, err := getCName(symbol) // container name
 	if err != nil {
 		return err
 	}
-	// Get results
-	status := res.State.Status
-	fmt.Printf("%s walletnode status: %s\n", s.ToUpper(symbol), status)
+	err = c.ContainerRemove(context.Background(), cName, types.ContainerRemoveOptions{})
+	if err == nil {
+		return err
+	}
 	return nil
 }
