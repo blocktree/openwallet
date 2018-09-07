@@ -27,6 +27,7 @@ import (
 	"errors"
 	"github.com/shopspring/decimal"
 	"strconv"
+	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 
@@ -408,6 +409,75 @@ func (wm *WalletManager) GetWalletList() error {
 
 	//打印钱包列表
 	wm.printWalletList(list, false)
+
+	fmt.Printf("Do you want to query address's public key ?\n0)No\n1)Yes\n")
+
+	//选择钱包
+	num, err := console.InputNumber(":", true)
+	if err != nil {
+		return err
+	}
+
+	if num == 0 {
+		return nil
+	}
+
+	fmt.Printf("[Please select a wallet to send transaction] \n")
+
+	//选择钱包
+	num, err = console.InputNumber("Enter wallet No. : ", true)
+	if err != nil {
+		return err
+	}
+
+	if int(num) >= len(list) {
+		return errors.New("Input number is out of index! ")
+	}
+
+	// 等待用户输入查询地址
+	address, err := console.InputText("Enter query address: ", true)
+	if err != nil {
+		return err
+	}
+
+	//输入密码解锁钱包
+	password, err := console.InputPassword(false, 6)
+	if err != nil {
+		return err
+	}
+
+	db, err := list[num].OpenDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	var addrs []*openwallet.Address
+	db.All(&addrs)
+
+	//加载钱包
+	key, err := list[num].HDKey(password)
+	if err != nil {
+		return err
+	}
+
+	var addr *openwallet.Address
+	got := false
+	for _, a := range addrs {
+		if a.Address == address {
+			addr = a
+			got = true
+			break
+		}
+	}
+
+	if got == false {
+		fmt.Printf("There is no address：%s in wallet %s\n", address, list[num].Alias)
+		return nil
+	}
+
+	k, _ := wm.getKeys(key, addr)
+	fmt.Printf("Public key:%s\n", k.PublicKey)
 
 	return nil
 }
