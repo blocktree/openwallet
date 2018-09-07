@@ -39,15 +39,16 @@ func updateConfig(symbol string) error {
 		return (errors.New(fmt.Sprintf("Load Config Failed: %s", err)))
 	}
 
-	err = c.Set("isTestNet", WNConfig.isTestNet)
-	err = c.Set("rpcuser", WNConfig.rpcUser)
-	err = c.Set("rpcpassword", WNConfig.rpcPassword)
+	err = c.Set("isTestNet", WNConfig.TestNet)
+	err = c.Set("rpcuser", WNConfig.RPCUser)
+	err = c.Set("rpcpassword", WNConfig.RPCPassword)
 	err = c.Set("apiurl", WNConfig.apiURL)
 	err = c.Set("mainnetdatapath", WNConfig.mainNetDataPath)
 	err = c.Set("testnetdatapath", WNConfig.testNetDataPath)
 
 	err = c.Set("walletnode::walletnodeServerType", WNConfig.walletnodeServerType)
 	err = c.Set("walletnode::walletnodeServerAddr", WNConfig.walletnodeServerAddr)
+	err = c.Set("walletnode::walletnodeServerPort", WNConfig.walletnodeServerPort)
 	err = c.Set("walletnode::walletnodeServerSocket", WNConfig.walletnodeServerSocket)
 
 	if err := c.SaveConfigFile(absFile); err != nil {

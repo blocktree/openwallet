@@ -65,11 +65,11 @@ func CheckAndCreateConfig(symbol string) error {
 	} else {
 		switch istestnet {
 		case "testnet":
-			WNConfig.isTestNet = "true"
+			WNConfig.TestNet = "true"
 		case "main":
-			WNConfig.isTestNet = "false"
+			WNConfig.TestNet = "false"
 		case "":
-			WNConfig.isTestNet = "true"
+			WNConfig.TestNet = "true"
 		default:
 			return errors.New("Invalid!")
 		}
@@ -102,13 +102,23 @@ func CheckAndCreateConfig(symbol string) error {
 
 	} else if WNConfig.walletnodeServerType == "remotedocker" {
 
-		if x, err := console.InputText("Docker master server addr [192.168.2.194:2375]: ", false); err != nil {
+		if x, err := console.InputText("Docker master server addr [192.168.2.194]: ", false); err != nil {
 			return err
 		} else {
 			if x != "" {
 				WNConfig.walletnodeServerAddr = x
 			} else {
-				WNConfig.walletnodeServerAddr = "192.168.2.194:2375"
+				WNConfig.walletnodeServerAddr = "192.168.2.194"
+			}
+		}
+
+		if x, err := console.InputText("Docker master server port [2375]: ", false); err != nil {
+			return err
+		} else {
+			if x != "" {
+				WNConfig.walletnodeServerPort = x
+			} else {
+				WNConfig.walletnodeServerPort = "2375"
 			}
 		}
 

@@ -30,13 +30,15 @@ func loadConfig(symbol string) error {
 
 	WNConfig.mainNetDataPath = c.String("mainNetDataPath")
 	WNConfig.testNetDataPath = c.String("testNetDataPath")
-	WNConfig.rpcUser = c.String("rpcUser")
-	WNConfig.rpcPassword = c.String("rpcPassword")
-	WNConfig.isTestNet = c.String("isTestNet")
+	WNConfig.RPCUser = c.String("rpcUser")
+	WNConfig.RPCPassword = c.String("rpcPassword")
+	WNConfig.TestNet = c.String("isTestNet")
 
-	WNConfig.walletnodeServerType = c.String("walletnode::walletnodeServerType")
-	WNConfig.walletnodeServerAddr = c.String("walletnode::walletnodeServerAddr")
-	WNConfig.walletnodeServerSocket = c.String("walletnode::walletnodeServerSocket")
+	WNConfig.walletnodePrefix = c.String("walletnode::WalletnodePrefix")
+	WNConfig.walletnodeServerType = c.String("walletnode::WalletnodeServerType")
+	WNConfig.walletnodeServerAddr = c.String("walletnode::WalletnodeServerAddr")
+	WNConfig.walletnodeServerPort = c.String("walletnode::WalletnodeServerPort")
+	WNConfig.walletnodeServerSocket = c.String("walletnode::WalletnodeServerSocket")
 
 	return nil
 }

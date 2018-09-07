@@ -50,7 +50,7 @@ func getDockerClient(symbol string) (c *docker.Client, err error) {
 		// if _, ok := map[string]string{"localhost": "", "127.0.0.1": ""}[WNConfig.walletnodeServerAddr]; ok {
 		// 	c, err = docker.NewEnvClient()
 		// } else {
-		host := fmt.Sprintf("tcp://%s", WNConfig.walletnodeServerAddr)
+		host := fmt.Sprintf("tcp://%s:%s", WNConfig.walletnodeServerAddr, WNConfig.walletnodeServerPort)
 		c, err = docker.NewClient(host, "v1.37", nil, map[string]string{})
 	}
 
@@ -68,7 +68,7 @@ func getCName(symbol string) (string, error) {
 	}
 
 	// Within testnet, use "<Symbol>_testnet" as container name
-	if WNConfig.isTestNet == "true" {
+	if WNConfig.TestNet == "true" {
 		return s.ToLower(symbol) + "_testnet", nil
 	} else {
 		return s.ToLower(symbol), nil

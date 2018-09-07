@@ -1,9 +1,11 @@
 ## Walletnode
 --------------
 
-Openwallet 基础架构中，关于 Wallet Fullnode 管理相关的接口。
+Openwallet 基础架构中，关于 Wallet Fullnode 管理相关的接口。含两个部分：
+  - `wmd node XXX -s Symbol` 操作
+	- Golang API for walletnode managment(Like: start/stop/restart/copy)
 
-## Golang 接口调用示例：启动，重启，关闭
+### 其中 Golang 接口调用示例一：启动，重启，关闭
 ```
 	import "github.com/blocktree/OpenWallet/walletnode"
 
@@ -26,13 +28,29 @@ Openwallet 基础架构中，关于 Wallet Fullnode 管理相关的接口。
 	}
 ```
 --------------
-## Golang 接口调用示例：备份/恢复(only files)
+### Golang 接口调用示例二：备份/恢复(only files)
 ```
 import "github.com/blocktree/OpenWallet/walletnode"
 
 symbol := "bopo"
 wn := walletnode.WalletnodeManager{}
 ```
+
+### wmd node 操作相关
+
+如果使用 `docker+自制镜像` 作为钱包节点（无论docker是在本地还是远程），都需要先执行 `wmd node create -s Symbol`， 否则跳过。过程：
+
+（[自制镜像](http://192.168.5.138:3000/WalletTeam/WalletImageRegistry)）
+
+	先执行  wmd node create -s Symbol
+	后执行  wmd wallet create -s Symbol
+	最后：任何 wmd 命令都可用
+
+wmd node ceate -s Symbol 操作的结果，以 conf/SYMBOL.ini 文件内容的形式输出，这里无专门的 API。
+
+任何对 walletnode 的数据需求，都可以通过此 ini 文件获得（比如 rpcUser/rpcPassword/rpcURL/httpURL 等）
+
+
 
 Done!
 

@@ -104,26 +104,33 @@ func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 	exposedPorts := map[nat.Port]struct{}{}
 	// WNConfig.apiURL := ""
 	for _, v := range ctn_config.PORT {
-		if WNConfig.isTestNet == "true" {
+		WNConfig.RPCAddr = WNConfig.walletnodeServerAddr
+		if WNConfig.TestNet == "true" {
 			portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{HostPort: v[2]}}
 			exposedPorts[nat.Port(v[0])] = struct{}{}
-			if v[0] == ctn_config.APIPORT {
-				// apiPort = v[2]
+			if v[0] == ctn_config.RPCPORT {
+				WNConfig.RPCPort = v[2]
 			}
 		} else {
 			portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{HostPort: v[1]}}
 			exposedPorts[nat.Port(v[0])] = struct{}{}
-			if v[0] == ctn_config.APIPORT {
-				// apiPort = v[1]
+			if v[0] == ctn_config.RPCPORT {
+				WNConfig.RPCPort = v[1]
 			}
 		}
 	}
 
 	Cmd := []string{}
-	if WNConfig.isTestNet == "true" {
+	Env := []string{}
+	netDir := ""
+	if WNConfig.TestNet == "true" {
 		Cmd = ctn_config.CMD[1]
+		Env = []string{"TESTNET=true"}
+		netDir = "testdata/"
 	} else {
 		Cmd = ctn_config.CMD[0]
+		Env = []string{"TESTNET=false"}
+		netDir = "data/"
 	}
 	cConfig := container.Config{
 		// string,
@@ -132,12 +139,14 @@ func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 		Domainname: fmt.Sprintf("%s.local.com", cName),
 		// string, Command to run when starting the container
 		Cmd: Cmd,
+		// string, List of environment variable to set in the container
+		Env: Env,
 		// string, Name of the image as it was passed by the operator(e.g. could be symbolic)
 		Image: ctn_config.IMAGE,
 		// nat.PortSet         `json:",omitempty"` , List of exposed ports
 		ExposedPorts: exposedPorts,
 		// string, Current directory (PWD) in the command will be launched
-		WorkingDir: "/root",
+		// WorkingDir: "/root",
 
 		// // map[string]struct{}, List of volumes (mounts) used for the container
 		// Volumes: map[string]struct{}{
@@ -174,8 +183,8 @@ func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 			// 	BindOptions: &mount.BindOptions{Propagation: "private"}},
 			{
 				Type:        mount.TypeBind,
-				Source:      fmt.Sprintf("/openwallet/data/%s", s.ToLower(symbol)),
-				Target:      "/openwallet",
+				Source:      fmt.Sprintf("/openwallet/data/%s/%s", s.ToLower(symbol), netDir),
+				Target:      "/data",
 				ReadOnly:    false,
 				BindOptions: &mount.BindOptions{Propagation: "private"}},
 		},
@@ -227,6 +236,6 @@ func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 	// }
 
 	// Get info from docker inspect for fullnode API
-	WNConfig.apiURL = fmt.Sprintf("http://%s", WNConfig.walletnodeServerAddr)
+	WNConfig.apiURL = fmt.Sprintf("http://%s:%s", WNConfig.RPCAddr, WNConfig.RPCPort)
 	return nil
 }
