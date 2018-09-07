@@ -17,13 +17,17 @@ package owtp
 
 import (
 	"fmt"
+	"github.com/blocktree/OpenWallet/log"
 	"testing"
 	"time"
 )
 
 var (
-	hostURL = "127.0.0.1:9432"
-	mqURL   = "192.168.30.160:5672"
+	hostURL     = "127.0.0.1:9432"
+	transferURL = "127.0.0.1:9431"
+	mqURL       = "192.168.30.160:5672"
+	hostNodeID  = "AR7ZxNbPJeQS7iqvzqEPCq5koTJQvnggNhWR7SSD6LCS"
+	hostkey     = "3JYgidyyjhqbTsGzduK9rkM2JaYht4gzRWyhUdCAH1vf"
 )
 
 func init() {
@@ -50,6 +54,20 @@ func getInfo(ctx *Context) {
 }
 
 func (node *OWTPNode) hello(ctx *Context) {
+
+	log.Info("Call host Hello")
+
+	ctx.Resp = Response{
+		Status: 0,
+		Msg:    "success",
+		Result: map[string]interface{}{
+			"hello": "hello world",
+		},
+	}
+
+}
+
+func (node *OWTPNode) transferHello(ctx *Context) {
 	//ctx.Resp = Response{
 	//	Status: 0,
 	//	Msg:    "success",
@@ -58,8 +76,10 @@ func (node *OWTPNode) hello(ctx *Context) {
 	//	},
 	//}
 
-	//转发给C
-	node.Call("MQPeer", ctx.Method, ctx.Params(), true, func(resp Response) {
+	log.Info("Call transfer Hello")
+
+	//转发主机
+	node.Call(hostNodeID, ctx.Method, ctx.Params(), true, func(resp Response) {
 		ctx.Resp = resp
 	})
 
@@ -67,8 +87,13 @@ func (node *OWTPNode) hello(ctx *Context) {
 
 func createHost() *OWTPNode {
 
+	cert, err := NewCertificate(hostkey, "")
+	if err != nil {
+		return nil
+	}
+
 	//主机
-	host := RandomOWTPNode()
+	host := NewOWTPNode(cert, 0, 0)
 	host.Listen(":9432")
 
 	host.HandleFunc("hello", host.hello)
@@ -191,14 +216,14 @@ func TestConnectNode(t *testing.T) {
 	//A,B请求经host转发给C，C处理业务返回结果
 
 	//主机
-	host := RandomOWTPNode()
-	host.Listen(":9432")
-	host.HandleFunc("hello", host.hello)
+	host := createHost()
+	//host.Listen(":9432")
+	//host.HandleFunc("hello", host.hello)
 
 	//中转
 	transfer := RandomOWTPNode()
 	transfer.Listen(":9431")
-	transfer.HandleFunc("hello", transfer.hello)
+	transfer.HandleFunc("hello", transfer.transferHello)
 
 	//客户端
 	nodeA := RandomOWTPNode()
@@ -208,16 +233,22 @@ func TestConnectNode(t *testing.T) {
 
 	time.Sleep(5 * time.Second)
 
-	config := make(map[string]string)
-	config["address"] = hostURL
-	config["connectType"] = Websocket
+	transferConfig := make(map[string]string)
+	transferConfig["address"] = hostURL
+	transferConfig["connectType"] = Websocket
 
-	err := transfer.Connect(host.NodeID(), config)
+	//中转连接主机
+	err := transfer.Connect(host.NodeID(), transferConfig)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
 	}
 
+	config := make(map[string]string)
+	config["address"] = transferURL
+	config["connectType"] = Websocket
+
+	//A连接中转
 	err = nodeA.Connect(transfer.NodeID(), config)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
@@ -226,6 +257,7 @@ func TestConnectNode(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
+	//B连接中转
 	err = nodeB.Connect(transfer.NodeID(), config)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)

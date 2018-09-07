@@ -24,7 +24,10 @@ func TestRandomPrivateKey(t *testing.T) {
 
 func TestNewOWTPAuthWithCertificate(t *testing.T) {
 
-	cert, err := NewCertificate(RandomPrivateKey(), "")
+	key := RandomPrivateKey()
+	t.Logf("key: %v", key)
+
+	cert, err := NewCertificate(key, "")
 	if err != nil {
 		t.Errorf("Dial failed unexpected error: %v", err)
 		return

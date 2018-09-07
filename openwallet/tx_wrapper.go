@@ -190,11 +190,11 @@ func (wrapper *WalletWrapper) GetTransactions(offset, limit int, cols ...interfa
 //SaveBlockExtractData 保存区块提取数据
 func (wrapper *TransactionWrapper) SaveBlockExtractData(data *BlockExtractData) error {
 
-	accountWithTXs := make(map[string]struct {
-		account *AssetsAccount
-		input map[string]string
-		output map[string]string
-	})
+	//accountWithTXs := make(map[string]struct {
+	//	account *AssetsAccount
+	//	input map[string]string
+	//	output map[string]string
+	//})
 
 	//打开数据库
 	db, err := wrapper.OpenStormDB()
@@ -223,10 +223,10 @@ func (wrapper *TransactionWrapper) SaveBlockExtractData(data *BlockExtractData) 
 		}
 
 		//TODO:统计该交易单下的各个资产账户的支出总数
-		account, err := wrapper.GetAssetsAccountByAddress(input.Address)
-		if err != nil {
-			continue
-		}
+		//account, err := wrapper.GetAssetsAccountByAddress(input.Address)
+		//if err != nil {
+		//	continue
+		//}
 
 
 	}
@@ -249,17 +249,17 @@ func (wrapper *TransactionWrapper) SaveBlockExtractData(data *BlockExtractData) 
 	//TODO:计算该交易单下的各个资产账户实际总收支，记录为账单数据
 
 	//保存入账的记录
-	for _, trx := range data.Transactions {
-		a, err := wrapper.GetAddress(trx.Address)
-		if err != nil {
-
-		}
-		trx.AccountID = a.AccountID
-		err = tx.Save(trx)
-		if err != nil {
-			return fmt.Errorf("wallet save Transactions failed, unexpected error: %v", err)
-		}
-	}
+	//for _, trx := range data.Transactions {
+	//	a, err := wrapper.GetAddress(trx.Address)
+	//	if err != nil {
+	//
+	//	}
+	//	trx.AccountID = a.AccountID
+	//	err = tx.Save(trx)
+	//	if err != nil {
+	//		return fmt.Errorf("wallet save Transactions failed, unexpected error: %v", err)
+	//	}
+	//}
 
 	err = tx.Commit()
 	if err != nil {
