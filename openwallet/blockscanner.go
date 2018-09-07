@@ -88,14 +88,13 @@ type BlockExtractData struct {
 	TxOutputs []*TxOutPut
 
 	//交易记录
-	Transactions []*Transaction
+	Transaction *Transaction
 }
 
 func NewBlockExtractData() *BlockExtractData {
 	data := BlockExtractData{
 		TxInputs: make([]*TxInput, 0),
 		TxOutputs: make([]*TxOutPut, 0),
-		Transactions: make([]*Transaction, 0),
 	}
 	return &data
 }

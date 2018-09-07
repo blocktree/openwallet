@@ -23,7 +23,7 @@ import (
 
 var (
 	hostURL = "127.0.0.1:9432"
-	mqURL = "192.168.30.160:5672"
+	mqURL   = "192.168.30.160:5672"
 )
 
 func init() {
@@ -49,14 +49,20 @@ func getInfo(ctx *Context) {
 	}
 }
 
-func hello(ctx *Context) {
-	ctx.Resp = Response{
-		Status: 0,
-		Msg:    "success",
-		Result: map[string]interface{}{
-			"hello": "hello world",
-		},
-	}
+func (node *OWTPNode) hello(ctx *Context) {
+	//ctx.Resp = Response{
+	//	Status: 0,
+	//	Msg:    "success",
+	//	Result: map[string]interface{}{
+	//		"hello": "hello world",
+	//	},
+	//}
+
+	//转发给C
+	node.Call("MQPeer", ctx.Method, ctx.Params(), true, func(resp Response) {
+		ctx.Resp = resp
+	})
+
 }
 
 func createHost() *OWTPNode {
@@ -65,7 +71,7 @@ func createHost() *OWTPNode {
 	host := RandomOWTPNode()
 	host.Listen(":9432")
 
-	host.HandleFunc("hello", hello)
+	host.HandleFunc("hello", host.hello)
 
 	return host
 }
@@ -84,8 +90,7 @@ func TestGenerateRangeNum(t *testing.T) {
 	}
 }
 
-
-func TestOtherMQConnectNode(t *testing.T){
+func TestOtherMQConnectNode(t *testing.T) {
 	config := make(map[string]string)
 	config["address"] = mqURL
 	config["connectType"] = MQ
@@ -93,15 +98,15 @@ func TestOtherMQConnectNode(t *testing.T){
 	config["queueName"] = "DEFAULT_QUEUE"
 	config["receiveQueueName"] = "DEFAULT_QUEUE"
 	config["account"] = "admin"
-	config["password"]= "admin"
+	config["password"] = "admin"
 	nodeA := RandomOWTPNode()
 	nodeA.HandleFunc("getInfo", getInfo)
-	err := nodeA.Connect("dasda",config)
+	err := nodeA.Connect("dasda", config)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
 	}
-	time.Sleep(3*time.Second)
+	time.Sleep(3 * time.Second)
 	nodeA.Call("dasda", "hello", nil, true, func(resp Response) {
 		hello := resp.JsonData().Get("hello").String()
 		fmt.Printf("nodeA call hello, result: %s\n", hello)
@@ -121,7 +126,7 @@ func TestMQConnectNode(t *testing.T) {
 	//客户端
 	nodeA := RandomOWTPNode()
 	nodeA.HandleFunc("getInfo", getInfo)
-	err := nodeA.Connect("dasda",config)
+	err := nodeA.Connect("dasda", config)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
@@ -131,7 +136,7 @@ func TestMQConnectNode(t *testing.T) {
 
 	nodeB := RandomOWTPNode()
 	nodeB.HandleFunc("getInfo", getInfo)
-	err = nodeB.Connect("dasda",config)
+	err = nodeB.Connect("dasda", config)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
@@ -141,7 +146,7 @@ func TestMQConnectNode(t *testing.T) {
 
 	nodeC := RandomOWTPNode()
 	nodeC.HandleFunc("getWallegetInfotInfo", getInfo)
-	err = nodeC.Connect("dasda",config)
+	err = nodeC.Connect("dasda", config)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
@@ -180,34 +185,40 @@ func TestMQConnectNode(t *testing.T) {
 
 }
 
-
-
-
-
-
 func TestConnectNode(t *testing.T) {
 
-	host := createHost()
-	//
-	//time.Sleep(5 * time.Second)
-	config := make(map[string]string)
-	config["address"] = hostURL
-	config["connectType"] = Websocket
+	//A,B连接host，host连接C
+	//A,B请求经host转发给C，C处理业务返回结果
+
+	//主机
+	host := RandomOWTPNode()
+	host.Listen(":9432")
+	host.HandleFunc("hello", host.hello)
+
+	//中转
+	transfer := RandomOWTPNode()
+	transfer.Listen(":9431")
+	transfer.HandleFunc("hello", transfer.hello)
+
 	//客户端
 	nodeA := RandomOWTPNode()
 	nodeA.HandleFunc("getInfo", getInfo)
-	err := nodeA.Connect(host.NodeID(),config)
-	if err != nil {
-		t.Errorf("Connect failed unexpected error: %v", err)
-		return
-	}
-
-	time.Sleep(1 * time.Second)
-
 	nodeB := RandomOWTPNode()
 	nodeB.HandleFunc("getInfo", getInfo)
 
-	err = nodeB.Connect(host.NodeID(),config)
+	time.Sleep(5 * time.Second)
+
+	config := make(map[string]string)
+	config["address"] = hostURL
+	config["connectType"] = Websocket
+
+	err := transfer.Connect(host.NodeID(), config)
+	if err != nil {
+		t.Errorf("Connect failed unexpected error: %v", err)
+		return
+	}
+
+	err = nodeA.Connect(transfer.NodeID(), config)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
@@ -215,9 +226,7 @@ func TestConnectNode(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
-	nodeC := RandomOWTPNode()
-	nodeC.HandleFunc("getWallegetInfotInfo", getInfo)
-	err = nodeC.Connect( host.NodeID(),config)
+	err = nodeB.Connect(transfer.NodeID(), config)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
@@ -226,25 +235,25 @@ func TestConnectNode(t *testing.T) {
 	time.Sleep(3 * time.Second)
 
 	//调用方法
-	nodeA.Call(host.NodeID(), "hello", nil, true, func(resp Response) {
+	nodeA.Call(transfer.NodeID(), "hello", nil, true, func(resp Response) {
 		hello := resp.JsonData().Get("hello").String()
-		fmt.Printf("nodeA call hello, result: %s\n", hello)
+		fmt.Printf("nodeA call transfer, result: %s\n", hello)
 	})
 
 	time.Sleep(3 * time.Second)
 
-	nodeA.Call(nodeA.NodeID(), "getInfo", nil, true, func(resp Response) {
-		result := resp.JsonData()
-		fmt.Printf("host call nodeA, result: %s\n", result)
+	nodeB.Call(transfer.NodeID(), "hello", nil, true, func(resp Response) {
+		hello := resp.JsonData().Get("hello").String()
+		fmt.Printf("nodeB call transfer, result: %s\n", hello)
 	})
 
 	t.Logf("node close \n")
 
-	time.Sleep(3 * time.Second)
+	time.Sleep(2 * time.Second)
 
-	nodeA.ClosePeer(host.NodeID())
+	nodeA.ClosePeer(transfer.NodeID())
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(4 * time.Second)
 
 	host.Close()
 
@@ -271,7 +280,7 @@ func TestConcurrentConnect(t *testing.T) {
 
 			//客户端
 			node := createClient()
-			err := node.Connect(host.NodeID(),config)
+			err := node.Connect(host.NodeID(), config)
 			if err != nil {
 				t.Errorf("Connect failed unexpected error: %v", err)
 				return

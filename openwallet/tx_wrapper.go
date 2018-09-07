@@ -190,6 +190,12 @@ func (wrapper *WalletWrapper) GetTransactions(offset, limit int, cols ...interfa
 //SaveBlockExtractData 保存区块提取数据
 func (wrapper *TransactionWrapper) SaveBlockExtractData(data *BlockExtractData) error {
 
+	accountWithTXs := make(map[string]struct {
+		account *AssetsAccount
+		input map[string]string
+		output map[string]string
+	})
+
 	//打开数据库
 	db, err := wrapper.OpenStormDB()
 	if err != nil {
@@ -208,7 +214,7 @@ func (wrapper *TransactionWrapper) SaveBlockExtractData(data *BlockExtractData) 
 	for _, input := range data.TxInputs {
 		a, err := wrapper.GetAddress(input.Address)
 		if err != nil {
-
+			continue
 		}
 		input.AccountID = a.AccountID
 		err = tx.Save(input)
@@ -217,6 +223,12 @@ func (wrapper *TransactionWrapper) SaveBlockExtractData(data *BlockExtractData) 
 		}
 
 		//TODO:统计该交易单下的各个资产账户的支出总数
+		account, err := wrapper.GetAssetsAccountByAddress(input.Address)
+		if err != nil {
+			continue
+		}
+
+
 	}
 
 	//保存入账的记录

@@ -72,6 +72,7 @@ type Transaction struct {
 	BlockHeight uint64 `json:"blockHeight"`
 	IsMemo      bool   `json:"isMemo"`
 	Memo        string `json:"memo"`
+	Fees        string
 	Received    bool
 	SubmitTime  int64
 	ConfirmTime int64

@@ -569,10 +569,11 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 }
 
 //ExtractTxInput 提取交易单输入部分
-func (bs *BTCBlockScanner) ExtractTxInput(blockHeight uint64, blockHash string, vin []gjson.Result, result *ExtractResult) error {
+func (bs *BTCBlockScanner) ExtractTxInput(blockHeight uint64, blockHash string, trx gjson.Result, result *ExtractResult) error {
 
+	vin := trx.Get("vin")
 
-	for i, input := range vin {
+	for i, input := range vin.Array() {
 
 		txid := input.Get("txid").String()
 		vout := input.Get("vout").Uint()
@@ -619,6 +620,10 @@ func (bs *BTCBlockScanner) ExtractTxInput(blockHeight uint64, blockHash string, 
 
 				ed.TxInputs = append(ed.TxInputs, &input)
 
+				if ed.Transaction == nil {
+
+				}
+
 			}
 		}
 
@@ -628,9 +633,13 @@ func (bs *BTCBlockScanner) ExtractTxInput(blockHeight uint64, blockHash string, 
 
 
 //ExtractTxInput 提取交易单输入部分
-func (bs *BTCBlockScanner) ExtractTxOutput(blockHeight uint64, blockHash, txid string, vout []gjson.Result, result *ExtractResult) error {
+func (bs *BTCBlockScanner) ExtractTxOutput(blockHeight uint64, blockHash string, trx gjson.Result, result *ExtractResult) error {
 
-	for _, output := range vout {
+	confirmations := trx.Get("confirmations").Int()
+	vout := trx.Get("vout")
+	txid := trx.Get("txid").String()
+
+	for _, output := range vout.Array() {
 
 		amount := output.Get("value").String()
 		n := output.Get("n").Uint()
@@ -660,7 +669,7 @@ func (bs *BTCBlockScanner) ExtractTxOutput(blockHeight uint64, blockHash, txid s
 				if blockHeight > 0 {
 					outPut.BlockHeight = blockHeight
 					outPut.BlockHash = blockHash
-					//outPut.Confirm = confirmations
+					outPut.Confirm = confirmations
 				}
 
 				//transactions = append(transactions, &transaction)
@@ -676,6 +685,14 @@ func (bs *BTCBlockScanner) ExtractTxOutput(blockHeight uint64, blockHash, txid s
 		}
 
 	}
+
+	return nil
+}
+
+//ExtractSimpleTrx 提出简易的交易单信息
+func (bs *BTCBlockScanner) ExtractSimpleTrx(blockHeight uint64, blockHash string, trx gjson.Result) *openwallet.Transaction {
+
+
 
 	return nil
 }
