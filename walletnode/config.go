@@ -153,12 +153,10 @@ func init() {
 		},
 		"qtum": &FullnodeContainerConfig{
 			WORKPATH: "/data",
-			CMD: [2][]string{
-				{"qtumd", "--datadir=/data", "--logdir=/data", "--rpcuser=wallet", "--rpcpass=walletPassword2017", "--rpclisten=127.0.0.1:14009"},
-				{"qtumd", "--datadir=/data", "--logdir=/data", "--rpcuser=wallet", "--rpcpass=walletPassword2017", "--rpclisten=127.0.0.1:14009", "--testnet"}},
-			PORT:    [][3]string{{"9360/tcp", "12010", "22010"}, {"14009/tcp", "14009", "24009"}},
-			RPCPORT: string("9360/tcp"),
-			IMAGE:   string("openw/qtum:0.15.3"),
+			CMD:      [2][]string{},
+			PORT:     [][3]string{{"9360/tcp", "10006", "20006"}},
+			RPCPORT:  string("9360/tcp"),
+			IMAGE:    string("openw/qtum:0.15.3"),
 		},
 		"ltc": &FullnodeContainerConfig{ // litecoin
 			WORKPATH: "/data",
