@@ -145,6 +145,8 @@ sumAddress = ""
 # when wallet's balance is over this value, the wallet willl send money to [sumAddress]
 #unit is μXTZ， recommend 10 XTZ
 threshold = ""
+# summary task timer cycle time, sample: 1h, 1h1m , 2m, 30s, 3m20s etc...
+cycleSeconds = ""
 `
 	return &c
 }

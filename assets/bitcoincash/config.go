@@ -96,6 +96,8 @@ isTestNet = false
 sumAddress = ""
 # when wallet's balance is over this value, the wallet willl send money to [sumAddress]
 threshold = ""
+# summary task timer cycle time, sample: 1m , 30s, 3m20s etc
+cycleSeconds = ""
 `
 )
 

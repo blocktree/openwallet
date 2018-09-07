@@ -720,6 +720,13 @@ func (wm *WalletManager) LoadConfig() error {
 	wm.Config.GasLimit = (decimal.RequireFromString(c.String("gasLimit"))).Mul(coinDecimal)
 	wm.Config.StorageLimit = (decimal.RequireFromString(c.String("storageLimit"))).Mul(coinDecimal)
 
+	cyclesec := c.String("cycleSeconds")
+	if cyclesec == "" {
+		return errors.New(fmt.Sprintf(" cycleSeconds is not set, sample: 1m , 30s, 3m20s etc... Please set it in './conf/%s.ini' \n", Symbol))
+	}
+
+	wm.Config.CycleSeconds, _ = time.ParseDuration(cyclesec)
+
 	wm.WalletClient = NewClient(wm.Config.ServerAPI,false)
 
 	return nil

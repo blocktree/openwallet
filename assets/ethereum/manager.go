@@ -814,7 +814,7 @@ func removeOxFromHex(value string) string {
 	return result
 }
 
-func convertToBigInt(value string, base int) (*big.Int, error) {
+func ConvertToBigInt(value string, base int) (*big.Int, error) {
 	bigvalue := new(big.Int)
 	var success bool
 	if base == 16 {
@@ -888,7 +888,7 @@ func ethGetGasPrice() (*big.Int, error) {
 		return big.NewInt(0), err
 	}
 
-	gasLimit, err := convertToBigInt(result.String(), 16)
+	gasLimit, err := ConvertToBigInt(result.String(), 16)
 	if err != nil {
 		errInfo := fmt.Sprintf("convert estimated gas[%v] format to bigint failed, err = %v\n", result.String(), err)
 		openwLogger.Log.Errorf(errInfo)
