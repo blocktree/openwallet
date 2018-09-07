@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	_ "github.com/blocktree/OpenWallet/test/environment"
-	"github.com/blocktree/OpenWallet/test/tech"
+	_ "github.com/blocktree/OpenWallet/testethereum/environment"
+	"github.com/blocktree/OpenWallet/testethereum/tech"
 )
 
 func GetCurrentDirectory() string {
@@ -51,7 +51,10 @@ func main() {
 	//tech.PrepareTestForBlockScan()
 	//tech.TestDbInf()
 	//tech.TestBlockScan()
-	tech.TestBlockScanWhenFork()
+	//tech.TestBlockScanWhenFork()
+	//tech.TestEIP155Signing()
+	//tech.TestAddr()
+	tech.TestOWCrypt_sign()
 
 	fmt.Println("done ... ")
 }

@@ -473,3 +473,8 @@ func TestKeyPoolRefill(t *testing.T) {
 func TestPrintConfig(t *testing.T) {
 	printConfig()
 }
+
+func TestTimer(t *testing.T) {
+		m, _ := time.ParseDuration("1m")
+		fmt.Printf("take off in t-%.0f seconds.", m.Seconds())
+}

@@ -102,7 +102,7 @@ type EthBlock struct {
 
 func (this *EthBlock) Init() error {
 	var err error
-	this.blockHeight, err = convertToBigInt(this.BlockNumber, 16) //strconv.ParseUint(this.BlockNumber, 16, 64)
+	this.blockHeight, err = ConvertToBigInt(this.BlockNumber, 16) //strconv.ParseUint(this.BlockNumber, 16, 64)
 	if err != nil {
 		openwLogger.Log.Errorf("init blockheight failed, err=%v", err)
 		return err
@@ -289,7 +289,7 @@ func ERC20GetAddressBalance(address string, contractAddr string) (*big.Int, erro
 		return big.NewInt(0), errors.New(errInfo)
 	}
 
-	balance, err := convertToBigInt(result.String(), 16)
+	balance, err := ConvertToBigInt(result.String(), 16)
 	if err != nil {
 		errInfo := fmt.Sprintf("convert addr[%v] erc20 balance format to bigint failed, response is %v, and err = %v\n", address, result.String(), err)
 		openwLogger.Log.Errorf(errInfo)
@@ -315,7 +315,7 @@ func GetAddrBalance(address string) (*big.Int, error) {
 		return big.NewInt(0), errors.New(errInfo)
 	}
 
-	balance, err := convertToBigInt(result.String(), 16)
+	balance, err := ConvertToBigInt(result.String(), 16)
 	if err != nil {
 		errInfo := fmt.Sprintf("convert addr[%v] balance format to bigint failed, response is %v, and err = %v\n", address, result.String(), err)
 		openwLogger.Log.Errorf(errInfo)
@@ -440,7 +440,7 @@ func ethGetGasEstimated(paraMap map[string]interface{}) (*big.Int, error) {
 		return big.NewInt(0), errors.New(errInfo)
 	}
 
-	gasLimit, err := convertToBigInt(result.String(), 16)
+	gasLimit, err := ConvertToBigInt(result.String(), 16)
 	if err != nil {
 		errInfo := fmt.Sprintf("convert estimated gas[%v] format to bigint failed, err = %v\n", result.String(), err)
 		openwLogger.Log.Errorf(errInfo)
@@ -598,7 +598,7 @@ func ethGetBlockNumber() (*big.Int, error) {
 		return nil, errors.New("result of block number type error")
 	}
 
-	blockNum, err := convertToBigInt(result.String(), 16)
+	blockNum, err := ConvertToBigInt(result.String(), 16)
 	if err != nil {
 		openwLogger.Log.Errorf("parse block number to big.Int failed, err=%v", err)
 		return nil, err

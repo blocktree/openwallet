@@ -4,8 +4,17 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"strconv"
 
 	"github.com/blocktree/OpenWallet/assets/ethereum"
+	"github.com/blocktree/go-OWCrypt"
+	"github.com/bytom/common"
+	"github.com/ethereum/go-ethereum/accounts"
+	ethKStore "github.com/ethereum/go-ethereum/accounts/keystore"
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 func TestNewWallet(aliaz string, password string) {
@@ -245,4 +254,106 @@ func TestBlockScan() error {
 	w.DumpWalletDB()
 	ethereum.DumpBlockScanDb()
 	return nil
+}
+
+func TestAddr() {
+	addr := ethcommon.HexToAddress("0x45990739752539ae4C5DA39442177466292096eB")
+	fmt.Println("addr str:", addr.String())
+}
+
+func TestOWCrypt_sign() {
+	ethKeyStore := ethKStore.NewKeyStore(ethereum.EthereumKeyPath, ethKStore.StandardScryptN, ethKStore.StandardScryptP)
+	from := ethcommon.HexToAddress("0x50068fd632c1a6e6c5bd407b4ccf8861a589e776")
+	a := accounts.Account{Address: from}
+	a, key, err := ethKeyStore.GetDecryptedKeyForOpenWallet(a, "123456")
+	if err != nil {
+		fmt.Println("get decrypted key failed, err= ", err)
+		return
+	}
+
+	amount, err := ethereum.ConvertToBigInt("0x56bc75e2d63100000", 16)
+	if err != nil {
+		fmt.Println("amount format error.")
+		return
+	}
+
+	gasPrice, err := ethereum.ConvertToBigInt("0x430e23400", 16)
+	if err != nil {
+		fmt.Println("gas price format error.")
+		return
+	}
+
+	tx := types.NewTransaction(5, ethcommon.HexToAddress("0x2a63b2203955b84fefe52baca3881b3614991b34"),
+		amount, 121000, gasPrice, nil)
+	signer := types.NewEIP155Signer(big.NewInt(12))
+	message := signer.Hash(tx)
+	seckey := math.PaddedBigBytes(key.PrivateKey.D, key.PrivateKey.Params().BitSize/8)
+
+	sig, ret := owcrypt.Signature(seckey, nil, 0, message[:], 32, owcrypt.ECC_CURVE_SECP256K1)
+	if ret != owcrypt.SUCCESS {
+		fmt.Println("signature error, ret:", "0x"+strconv.FormatUint(uint64(ret), 16))
+		return
+	}
+
+	fmt.Println("signature:", common.ToHex(sig))
+}
+
+/*
+ web3.eth.signTransaction({
+    from: "0x50068fd632c1a6e6c5bd407b4ccf8861a589e776",
+    to: '0x2a63b2203955b84fefe52baca3881b3614991b34',
+    value: "0x56bc75e2d63100000",
+    data: "",
+    gas: "0x1d8a8",
+    gasPrice: "0x430e23400",
+    nonce:"0x5"
+})
+*/
+
+func TestEIP155Signing() {
+	//key, _ := crypto.GenerateKey()
+	//addr := crypto.PubkeyToAddress(key.PublicKey)
+	addr := ethcommon.HexToAddress("0x50068fd632c1a6e6c5bd407b4ccf8861a589e776")
+
+	signer := types.NewEIP155Signer(big.NewInt(12))
+	fmt.Println("addr:", addr.String())
+
+	ethKeyStore := ethKStore.NewKeyStore(ethereum.EthereumKeyPath, ethKStore.StandardScryptN, ethKStore.StandardScryptP)
+	a := accounts.Account{Address: addr}
+	a, key, err := ethKeyStore.GetDecryptedKeyForOpenWallet(a, "123456")
+	if err != nil {
+		fmt.Println("get decrypted key failed, err= ", err)
+		return
+	}
+
+	amount, err := ethereum.ConvertToBigInt("0x56bc75e2d63100000", 16)
+	if err != nil {
+		fmt.Println("amount format error.")
+		return
+	}
+
+	gasPrice, err := ethereum.ConvertToBigInt("0x430e23400", 16)
+	if err != nil {
+		fmt.Println("gas price format error.")
+		return
+	}
+
+	tx, err := types.SignTx(types.NewTransaction(5, ethcommon.HexToAddress("0x2a63b2203955b84fefe52baca3881b3614991b34"),
+		amount, 121000, gasPrice, nil), signer, key.PrivateKey)
+	if err != nil {
+		//t.Fatal(err)
+		fmt.Println("sign tx failed, err = ", err)
+		return
+	}
+
+	//fmt.Println("tx:", tx.data)
+	tx.PrintTransaction()
+
+	data, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		fmt.Println("EncodeToBytes failed, err = ", err)
+		return
+	}
+
+	fmt.Println("signature:", common.ToHex(data))
 }
