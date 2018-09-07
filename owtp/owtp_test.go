@@ -31,7 +31,7 @@ var (
 )
 
 func init() {
-	Debug = true
+	Debug = false
 }
 
 func getInfo(ctx *Context) {
@@ -212,13 +212,18 @@ func TestMQConnectNode(t *testing.T) {
 
 func TestConnectNode(t *testing.T) {
 
-	//A,B连接host，host连接C
-	//A,B请求经host转发给C，C处理业务返回结果
+	//A,B连接transfer，transfer连接host
+	//A,B请求经transfer转发给host，host处理业务返回结果
+
+	cert, err := NewCertificate(hostkey, "")
+	if err != nil {
+		return
+	}
 
 	//主机
-	host := createHost()
-	//host.Listen(":9432")
-	//host.HandleFunc("hello", host.hello)
+	host := NewOWTPNode(cert, 0, 0)
+	host.Listen(":9432")
+	host.HandleFunc("hello", host.hello)
 
 	//中转
 	transfer := RandomOWTPNode()
@@ -233,12 +238,21 @@ func TestConnectNode(t *testing.T) {
 
 	time.Sleep(5 * time.Second)
 
+	//transferConfig := make(map[string]string)
+	//transferConfig["address"] = mqURL
+	//transferConfig["connectType"] = MQ
+
 	transferConfig := make(map[string]string)
-	transferConfig["address"] = hostURL
-	transferConfig["connectType"] = Websocket
+	transferConfig["address"] = mqURL
+	transferConfig["connectType"] = MQ
+	transferConfig["exchange"] = "DEFAULT_EXCHANGE"
+	transferConfig["queueName"] = "DEFAULT_QUEUE"
+	transferConfig["receiveQueueName"] = "DEFAULT_QUEUE"
+	transferConfig["account"] = "admin"
+	transferConfig["password"]= "admin"
 
 	//中转连接主机
-	err := transfer.Connect(host.NodeID(), transferConfig)
+	err = transfer.Connect("dasda", transferConfig)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
