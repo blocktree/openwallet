@@ -52,7 +52,7 @@ var(
 	//汇总阀值
 	threshold decimal.Decimal = decimal.NewFromFloat(12).Mul(coinDecimal)
 	//钱包数据文件目录
-	walletDataPath = "~/.qtum/"
+	walletDataPath = ""
 )
 
 const (
@@ -1625,12 +1625,11 @@ func (wm *WalletManager) CreateChangeAddress(walletID string, key *hdkeystore.HD
 		return nil, errors.New("Change address creation failed!")
 	}
 
-	//有问题，先注释掉
 	//批量写入数据库
-	err := wm.saveAddressToDB(getAddrs, &openwallet.Wallet{Alias: key.Alias, WalletID: key.KeyID})
-	if err != nil {
-		return nil, err
-	}
+	//err := wm.saveAddressToDB(getAddrs, &openwallet.Wallet{Alias: key.Alias, WalletID: key.KeyID})
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	return getAddrs[0], nil
 }

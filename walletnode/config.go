@@ -100,6 +100,28 @@ func init() {
 			RPCPORT: string("18332/tcp"), // Same within PORT
 			IMAGE:   string("openwallet/btc:0.15.1"),
 		},
+		"eth": &FullnodeContainerConfig{
+			// CMD: [2][]string{{"/usr/bin/parity", "--port=30307", "--datadir=/openwallet/data", "--cache-size=4096", "--min-peers=25", "--max-peers=50", "--jsonrpc-interface=0.0.0.0", "--jsonrpc-port=18332"},
+			// 	{"/usr/bin/parity", "--port=30307", "--datadir=/openwallet/testdata", "--cache-size=4096", "--min-peers=25", "--max-peers=50", "--jsonrpc-interface=0.0.0.0", "--jsonrpc-port=18332"}},
+			CMD: [2][]string{{"/bin/bash", "-c", "/usr/sbin/geth.eth -rpc --rpcaddr=0.0.0.0 --rpcport=8545 --datadir=/openwallet/data --port=30301 --rpcapi=eth,personal,net >> /openwallet/data/run.log 2>&1"},
+				{"/bin/bash", "-c", "cp -rf /root/chain/* /openwallet/testdata/ && /usr/sbin/geth.eth --identity TestNode -rpc --rpcaddr=0.0.0.0 --rpcport=8545 --datadir=/openwallet/testdata --port=30301 --rpcapi=eth,personal,net --nodiscover >> /openwallet/testdata/run.log 2>&1"}},
+			PORT:    [][3]string{{"8545/tcp", "10002", "20002"}},
+			RPCPORT: string("8545/tcp"),
+			IMAGE:   string("openwallet/eth:geth-1.7.3"),
+		},
+		"eos": &FullnodeContainerConfig{ // Writing
+			CMD:     [2][]string{},
+			PORT:    [][3]string{{"3000/tcp", "10003", "20003"}},
+			RPCPORT: string("3000/tcp"),
+			IMAGE:   string("openwallet/eos:latest"),
+		},
+		// "iota": &FullnodeContainerConfig{
+		// 	CMD:     [2][]string{{"/bin/bash", "-c", "while sleep 1; do date; done"}, {}},
+		// 	PORT:    [][3]string{{"18265/tcp", "10004", "20004"}},
+		// 	RPCPORT: string("18265/tcp"),
+		// 	IMAGE:   string("openwallet/iota:latest"),
+		// },
+
 		"bch": &FullnodeContainerConfig{
 			CMD: [2][]string{{"/usr/bin/bitcoind", "-datadir=/openwallet/data", "-conf=/etc/bitcoin.conf"},
 				{"/usr/bin/bitcoind", "-datadir=/openwallet/testdata", "-conf=/etc/bitcoin-test.conf"}},
@@ -107,21 +129,20 @@ func init() {
 			RPCPORT: string("18335/tcp"),
 			IMAGE:   string("openwallet/bch:0.17.1"),
 		},
-		"eth": &FullnodeContainerConfig{
-			// CMD: [2][]string{{"/usr/bin/parity", "--port=30307", "--datadir=/openwallet/data", "--cache-size=4096", "--min-peers=25", "--max-peers=50", "--jsonrpc-interface=0.0.0.0", "--jsonrpc-port=18332"},
-			// 	{"/usr/bin/parity", "--port=30307", "--datadir=/openwallet/testdata", "--cache-size=4096", "--min-peers=25", "--max-peers=50", "--jsonrpc-interface=0.0.0.0", "--jsonrpc-port=18332"}},
-			CMD: [2][]string{{"/bin/bash", "-c", "/usr/sbin/geth.eth -rpc --rpcaddr=0.0.0.0 --rpcport=8545 --datadir=/openwallet/data --port=30301 --rpcapi=eth,personal,net >> /openwallet/data/run.log 2>&1"},
-				{"/bin/bash", "-c", "cp -rf /root/chain/* /openwallet/testdata/ && /usr/sbin/geth.eth --identity TestNode -rpc --rpcaddr=0.0.0.0 --rpcport=8545 --datadir=/openwallet/testdata --port=30301 --rpcapi=eth,personal,net --nodiscover >> /openwallet/testdata/run.log 2>&1"}},
-			PORT:    [][3]string{{"8545/tcp", "10021", "20021"}},
-			RPCPORT: string("8545/tcp"),
-			IMAGE:   string("openwallet/eth:geth-1.7.3"),
+		"bopo": &FullnodeContainerConfig{
+			WORKPATH: "/usr/local/paicode",
+			CMD:      [2][]string{{"/bin/bash", "-c", "cd /usr/local/paicode; ./gamepaicore --listen 0.0.0.0:7280 >> /openwallet/data/run.log 2>&1"}, {}},
+			PORT:     [][3]string{{"7280/tcp", "10021", "20021"}},
+			RPCPORT:  string("7280/tcp"),
+			IMAGE:    string("openwallet/bopo:latest"),
 		},
-		// "eos": &FullnodeContainerConfig{ // Writing
-		// 	CMD:     [2][]string{{"/bin/bash", "-c", "while sleep 1; do date; done"}, {}},
-		// 	PORT:    [][3]string{{"3000/tcp", "10031", "20031"}, {"8888/tcp", "10032", "20032"}},
-		// 	RPCPORT: string("3000/tcp"),
-		// 	IMAGE:   string("openwallet/eos:latest"),
-		// },
+		"qtum": &FullnodeContainerConfig{
+			WORKPATH: "/data",
+			CMD:      [2][]string{},
+			PORT:     [][3]string{{"9360/tcp", "10031", "20031"}},
+			RPCPORT:  string("9360/tcp"),
+			IMAGE:    string("openw/qtum:0.15.3"),
+		},
 		"sc": &FullnodeContainerConfig{
 			CMD: [2][]string{{"/usr/bin/siad", "-M gctwrh", "--api-addr=0.0.0.0:9980", "--authenticate-api", "--disable-api-security"},
 				{"/usr/bin/siad", "-M gctwrh", "--api-addr=0.0.0.0:9980", "--authenticate-api", "--disable-api-security"}},
@@ -129,41 +150,19 @@ func init() {
 			RPCPORT: string("9980/tcp"),
 			IMAGE:   string("openwallet/sc:1.3.3"),
 		},
-		// "iota": &FullnodeContainerConfig{
-		// 	CMD:     [2][]string{{"/bin/bash", "-c", "while sleep 1; do date; done"}, {}},
-		// 	PORT:    [][3]string{{"18265/tcp", "10051", "20051"}},
-		// 	RPCPORT: string("18265/tcp"),
-		// 	IMAGE:   string("openwallet/iota:latest"),
-		// },
-		"bopo": &FullnodeContainerConfig{
-			WORKPATH: "/usr/local/paicode",
-			CMD:      [2][]string{{"/bin/bash", "-c", "cd /usr/local/paicode; ./gamepaicore --listen 0.0.0.0:7280 >> /openwallet/data/run.log 2>&1"}, {}},
-			PORT:     [][3]string{{"7280/tcp", "17280", "27280"}},
-			RPCPORT:  string("7280/tcp"),
-			IMAGE:    string("openwallet/bopo:latest"),
-		},
 		"hc": &FullnodeContainerConfig{
 			WORKPATH: "/usr/local/paicode",
 			CMD: [2][]string{
 				{"/bin/bash", "-c", "/usr/local/hypercash/bin/hcd --datadir=/openwallet/data --logdir=/openwallet/data --rpcuser=wallet --rpcpass=walletPassword2017 --txindex --rpclisten=0.0.0.0:14009 && /usr/local/hypercash/bin/hcwallet --rpcconnect=127.0.0.1:14009 --username=wallet --password=walletPassword2017 --rpclisten=0.0.0.0:12010"},
 				{"/bin/bash", "-c", "/usr/local/hypercash/bin/hcd --datadir=/openwallet/testdata --logdir=/openwallet/testdata --rpcuser=wallet --rpcpass=walletPassword2017 --txindex --rpclisten=0.0.0.0:14009 --testnet && /usr/local/hypercash/bin/hcwallet --testnet --rpcconnect=127.0.0.1:14009 --username=wallet --password=walletPassword2017 --rpclisten=0.0.0.0:12010"}},
-			PORT:    [][3]string{{"12010/tcp", "12010", "22010"}, {"14009/tcp", "14009", "24009"}},
+			PORT:    [][3]string{{"12010/tcp", "10051", "20051"}, {"14009/tcp", "14009", "24009"}},
 			RPCPORT: string("12010/tcp"),
 			IMAGE:   string("openwallet/hc:2.0.3dev"),
-		},
-		"qtum": &FullnodeContainerConfig{
-			WORKPATH: "/data",
-			CMD: [2][]string{
-				{"qtumd", "--datadir=/data", "--logdir=/data", "--rpcuser=wallet", "--rpcpass=walletPassword2017", "--rpclisten=127.0.0.1:14009"},
-				{"qtumd", "--datadir=/data", "--logdir=/data", "--rpcuser=wallet", "--rpcpass=walletPassword2017", "--rpclisten=127.0.0.1:14009", "--testnet"}},
-			PORT:    [][3]string{{"9360/tcp", "12010", "22010"}, {"14009/tcp", "14009", "24009"}},
-			RPCPORT: string("9360/tcp"),
-			IMAGE:   string("openw/qtum:0.15.3"),
 		},
 		"ltc": &FullnodeContainerConfig{ // litecoin
 			WORKPATH: "/data",
 			CMD:      [2][]string{},
-			PORT:     [][3]string{{"9360/tcp", "10004", "20004"}},
+			PORT:     [][3]string{{"9360/tcp", "10061", "20061"}},
 			RPCPORT:  string("9360/tcp"),
 			IMAGE:    string("openw/litecoin:0.16.0"),
 		},
