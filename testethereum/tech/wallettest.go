@@ -295,7 +295,20 @@ func TestOWCrypt_sign() {
 		return
 	}
 
-	fmt.Println("signature:", common.ToHex(sig))
+	tx, err = tx.WithSignature(signer, sig)
+	if err != nil {
+		fmt.Println("with signature failed, err=", err)
+	}
+
+	tx.PrintTransaction()
+
+	data, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		fmt.Println("EncodeToBytes failed, err = ", err)
+		return
+	}
+
+	fmt.Println("signature:", common.ToHex(data))
 }
 
 /*
