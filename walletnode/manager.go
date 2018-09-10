@@ -18,10 +18,10 @@ package walletnode
 import (
 	"errors"
 	"fmt"
+	"log"
 	s "strings"
 
 	docker "docker.io/go-docker"
-	"github.com/blocktree/OpenWallet/log"
 )
 
 var (
@@ -43,19 +43,18 @@ func getDockerClient(symbol string) (c *docker.Client, err error) {
 
 	// Init docker client
 	//walletnodeServerType
-	if WNConfig.walletnodeServerType == "localdocker" {
-		c, err = docker.NewEnvClient()
-	} else if WNConfig.walletnodeServerType == "remotedocker" {
+	if WNConfig.walletnodeServerType == "docker" {
 
-		// if _, ok := map[string]string{"localhost": "", "127.0.0.1": ""}[WNConfig.walletnodeServerAddr]; ok {
-		// 	c, err = docker.NewEnvClient()
-		// } else {
-		host := fmt.Sprintf("tcp://%s:%s", WNConfig.walletnodeServerAddr, WNConfig.walletnodeServerPort)
-		c, err = docker.NewClient(host, "v1.37", nil, map[string]string{})
+		if WNConfig.walletnodeServerAddr == "" {
+			c, err = docker.NewEnvClient()
+		} else {
+			host := fmt.Sprintf("tcp://%s:%s", WNConfig.walletnodeServerAddr, WNConfig.walletnodeServerPort)
+			c, err = docker.NewClient(host, "v1.37", nil, map[string]string{})
+		}
 	}
 
 	if err != nil {
-		log.Error(err)
+		log.Println(err)
 		return nil, err
 	}
 	return c, err
@@ -69,7 +68,7 @@ func getCName(symbol string) (string, error) {
 
 	// Within testnet, use "<Symbol>_testnet" as container name
 	if WNConfig.TestNet == "true" {
-		return s.ToLower(symbol) + "_testnet", nil
+		return s.ToLower(symbol) + "_t", nil
 	} else {
 		return s.ToLower(symbol), nil
 	}

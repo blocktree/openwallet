@@ -44,7 +44,8 @@ func CheckAndCreateConfig(symbol string) error {
 
 	// Ask about whether create new
 	dirname, _ := filepath.Abs("./")
-	if isnew, err := console.InputText(fmt.Sprintf("Init new %s wallet fullnode in '%s/'(yes, no, quit)[yes]: ", s.ToUpper(symbol), dirname), false); err != nil {
+	fmt.Printf("Init new %s wallet fullnode in '%s/'( \n  yes:\t to create config file and docker, \n  no:\t just to create docker, \n  quit:\t exit now!)", s.ToUpper(symbol), dirname)
+	if isnew, err := console.InputText("[yes]: ", false); err != nil {
 		log.Println(err)
 		return err
 	} else {
@@ -76,31 +77,33 @@ func CheckAndCreateConfig(symbol string) error {
 	}
 
 	// Ask about Docker master
-	if x, err := console.InputText("Where to run Walletnode: service/localdocker/remotedocker [localdocker]: ", false); err != nil {
+	if x, err := console.InputText("Where to run Walletnode: local/docker [docker]: ", false); err != nil {
 		return err
 	} else {
 		if x == "" {
-			WNConfig.walletnodeServerType = "localdocker"
+			WNConfig.walletnodeServerType = "docker"
 		} else {
-			if _, ok := map[string]string{"service": "", "localdocker": "", "remotedocker": ""}[x]; !ok {
+			if _, ok := map[string]string{"local": "", "docker": ""}[x]; !ok {
 				return errors.New("Invalid!")
 			}
 			WNConfig.walletnodeServerType = x
 		}
 	}
-	if WNConfig.walletnodeServerType == "localdocker" {
+	//if WNConfig.walletnodeServerType == "localdocker" {
 
-		if x, err := console.InputText("Docker master server socket [/var/run/docker.socket]: ", false); err != nil {
-			return err
-		} else {
-			if x != "" {
-				WNConfig.walletnodeServerSocket = x
-			} else {
-				WNConfig.walletnodeServerSocket = "/var/run/docker.socket"
-			}
-		}
+	//	if x, err := console.InputText("Docker master server socket [/var/run/docker.socket]: ", false); err != nil {
+	//		return err
+	//	} else {
+	//		if x != "" {
+	//			WNConfig.walletnodeServerSocket = x
+	//		} else {
+	//			WNConfig.walletnodeServerSocket = "/var/run/docker.socket"
+	//		}
+	//	}
 
-	} else if WNConfig.walletnodeServerType == "remotedocker" {
+	//} else if WNConfig.walletnodeServerType == "docker" {
+
+	if WNConfig.walletnodeServerType == "docker" {
 
 		if x, err := console.InputText("Docker master server addr [192.168.2.194]: ", false); err != nil {
 			return err
@@ -122,8 +125,19 @@ func CheckAndCreateConfig(symbol string) error {
 			}
 		}
 
-	} else if WNConfig.walletnodeServerType == "service" {
-		console.InputText("Please edit <stopnodecmd/startnodecmd> in Symbol.ini before use wallet [yes]: ", false)
+	} else if WNConfig.walletnodeServerType == "local" {
+		if x, err := console.InputText("Start walletnode command: ", false); err != nil {
+			return err
+		} else {
+			WNConfig.walletnodeStartNodeCMD = x
+		}
+
+		if x, err := console.InputText("Stop walletnode command: ", false); err != nil {
+			return err
+		} else {
+			WNConfig.walletnodeStopNodeCMD = x
+		}
+		// console.InputText("Please edit <stopnodecmd/startnodecmd> in Symbol.ini before use wallet [yes]: ", false)
 	}
 
 	fmt.Println("Start to create/update config file...")
@@ -132,11 +146,13 @@ func CheckAndCreateConfig(symbol string) error {
 		log.Println(err)
 		return err
 	}
+	fmt.Println("\t create success!")
 
 	if err := updateConfig(symbol); err != nil {
 		log.Println(err)
 		return err
 	}
+	fmt.Println("\t update success!")
 
 	return nil
 }
