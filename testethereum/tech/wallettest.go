@@ -14,6 +14,7 @@ import (
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
@@ -323,6 +324,33 @@ func TestOWCrypt_sign() {
 })
 */
 
+func TestGetNonce() {
+	addr := "0x50068fd632c1a6e6c5bd407b4ccf8861a589e776"
+	nonce, err := ethereum.GetNonceForAddress(addr)
+	if err != nil {
+		fmt.Printf("get nonce for address[%v] failed, err=%v\n", addr, err)
+		return
+	}
+	fmt.Println("the nonce is ", nonce)
+}
+
+func TestEthereumSigningFunc() {
+	h := []byte{0xA4, 0x4C, 0x69, 0x32, 0x00, 0xC3, 0x7B, 0x00, 0x32, 0x68, 0x76, 0x27, 0x17, 0x6E, 0x41, 0xDF, 0xAC, 0xC9, 0x53, 0xCC, 0x77, 0xEB, 0x97, 0x63, 0x81, 0xCD, 0xB7, 0xA6, 0x6B, 0x17, 0x21, 0x58}
+	prv := []byte{0xBC, 0xB9, 0x71, 0xDD, 0x9A, 0x73, 0x1B, 0x66, 0xA4, 0x25, 0x51, 0x7F, 0x1F, 0x02, 0xC8, 0xC3, 0xAF, 0x46, 0xAF, 0x74, 0xFF, 0x2F, 0x62, 0xF4, 0xEF, 0x21, 0x14, 0x70, 0x41, 0xC6, 0xBB, 0xA5}
+	sig, err := secp256k1.Sign(h, prv)
+	if err != nil {
+		fmt.Println("sign error:", err)
+		return
+	}
+	fmt.Printf("sig:")
+	for i, b := range sig {
+		fmt.Printf("0x%x", b)
+		if i != len(sig)-1 {
+			fmt.Printf(",")
+		}
+	}
+	fmt.Printf("\n")
+}
 func TestEIP155Signing() {
 	//key, _ := crypto.GenerateKey()
 	//addr := crypto.PubkeyToAddress(key.PublicKey)

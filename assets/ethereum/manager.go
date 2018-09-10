@@ -1180,3 +1180,32 @@ func RestoreWallet(keyFile string, password string) error {
 
 	return nil
 }
+
+func GetNonceForAddress(address string) (uint64, error) {
+	txpool, err := ethGetTxPoolContent()
+	if err != nil {
+		openwLogger.Log.Errorf("ethGetTxPoolContent failed, err = %v", err)
+		return 0, err
+	}
+
+	txCount := txpool.GetPendingTxCountForAddr(address)
+	openwLogger.Log.Infof("address[%v] has %v tx in pending queue of txpool.", address, txCount)
+	for txCount > 0 {
+		time.Sleep(time.Second * 1)
+		txpool, err = ethGetTxPoolContent()
+		if err != nil {
+			openwLogger.Log.Errorf("ethGetTxPoolContent failed, err = %v", err)
+			return 0, err
+		}
+
+		txCount = txpool.GetPendingTxCountForAddr(address)
+		openwLogger.Log.Infof("address[%v] has %v tx in pending queue of txpool.", address, txCount)
+	}
+
+	nonce, err := ethGetTransactionCount(address)
+	if err != nil {
+		openwLogger.Log.Errorf("ethGetTransactionCount failed, err=%v", err)
+		return 0, err
+	}
+	return nonce, nil
+}
