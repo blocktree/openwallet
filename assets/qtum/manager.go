@@ -52,7 +52,7 @@ var(
 	//汇总阀值
 	threshold decimal.Decimal = decimal.NewFromFloat(12).Mul(coinDecimal)
 	//钱包数据文件目录
-	walletDataPath = "~/.qtum/"
+	walletDataPath = ""
 )
 
 const (
@@ -678,7 +678,8 @@ func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index
 
 	//fmt.Println(hex.EncodeToString(pubkey))
 
-	pubdata := append([]byte{0x04}, pubkey[:]...)
+	//pubdata := append([]byte{0x04}, pubkey[:]...)
+	pubdata := owcrypt.PointCompress(pubkey, owcrypt.ECC_CURVE_SECP256K1)
 
 	//fmt.Println(hex.EncodeToString(pubdata))
 
@@ -1625,12 +1626,11 @@ func (wm *WalletManager) CreateChangeAddress(walletID string, key *hdkeystore.HD
 		return nil, errors.New("Change address creation failed!")
 	}
 
-	//有问题，先注释掉
 	//批量写入数据库
-	err := wm.saveAddressToDB(getAddrs, &openwallet.Wallet{Alias: key.Alias, WalletID: key.KeyID})
-	if err != nil {
-		return nil, err
-	}
+	//err := wm.saveAddressToDB(getAddrs, &openwallet.Wallet{Alias: key.Alias, WalletID: key.KeyID})
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	return getAddrs[0], nil
 }
@@ -1682,39 +1682,37 @@ func (wm *WalletManager) EstimateFeeRate() (decimal.Decimal, error) {
 //}
 
 //SummaryWallets 执行汇总流程
-func (wm *WalletManager) SummaryWallets(password string) {
+func (wm *WalletManager) SummaryWallets() {
 
 	log.Std.Info("[Summary Wallet Start]------%s", common.TimeFormat("2006-01-02 15:04:05"))
 
 	//读取参与汇总的钱包
-	//for wid, wallet := range wm.walletsInSum {
+	for wid, wallet := range wm.walletsInSum {
 
 		//重新加载utxo
-		//wm.RebuildWalletUnspent(wid)
+		wm.RebuildWalletUnspent(wid)
 
 		//统计钱包最新余额
-		wb := wm.GetBalance()
+		wb := wm.GetWalletBalance(wid)
 
 		balance, _ := decimal.NewFromString(wb)
 		//如果余额大于阀值，汇总的地址
 		if balance.GreaterThan(wm.config.threshold) {
 
-			log.Std.Info("Summary account balance = %v ", balance)
-			log.Std.Info("Summary account Start Send Transaction......")
+			log.Std.Info("Summary account[%s]balance = %v ", wallet.WalletID, balance)
+			log.Std.Info("Summary account[%s]Start Send Transaction", wallet.WalletID)
 
-			sumAmounts := balance.Sub(decimal.NewFromFloat(0.005)).Truncate(8)
-
-			txID, err := wm.SendToAddress(sumAddress, sumAmounts.String(),"", false,password)
+			txID, err := wm.SendTransaction(wallet.WalletID, wm.config.sumAddress, balance, wallet.Password, false)
 			if err != nil {
-				log.Std.Info("Summary account unexpected error: %v", err)
-				//continue
+				log.Std.Info("Summary account[%s]unexpected error: %v", wallet.WalletID, err)
+				continue
 			} else {
-				log.Std.Info("Summary account successfully，Received Address[%s], TXID：%s", wm.config.sumAddress, txID)
+				log.Std.Info("Summary account[%s]successfully，Received Address[%s], TXID：%s", wallet.WalletID, wm.config.sumAddress, txID)
 			}
 		} else {
-			log.Std.Info("Wallet Account Current Balance: %v，below threshold: %v", balance, wm.config.threshold)
+			log.Std.Info("Wallet Account[%s]-[%s]Current Balance: %v，below threshold: %v", wallet.Alias, wallet.WalletID, balance, wm.config.threshold)
 		}
-
+	}
 
 	log.Std.Info("[Summary Wallet end]------%s", common.TimeFormat("2006-01-02 15:04:05"))
 }
