@@ -29,7 +29,7 @@ func loadConfig(symbol string) error {
 
 	WNConfig.RPCUser = c.String("rpcUser")
 	WNConfig.RPCPassword = c.String("rpcPassword")
-	WNConfig.TestNet = c.String("isTestNet")
+	WNConfig.isTestNet = c.String("isTestNet")
 
 	WNConfig.walletnodePrefix = c.String("walletnode::Prefix")
 	WNConfig.walletnodeServerType = c.String("walletnode::ServerType")
