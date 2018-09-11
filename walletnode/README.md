@@ -1,15 +1,20 @@
 ## Walletnode
 --------------
 
-Openwallet 基础架构中，关于 Wallet Fullnode 管理相关的接口。含两个部分：
-  - `wmd node XXX -s Symbol` 操作
-	- Golang API for walletnode managment(Like: start/stop/restart/copy)
+Openwallet 基础架构中，生产环境使用 Docker 作为全节点钱包。这将使得重启，备份等操作，都需要实现 “远程”，也就是跨 Docker 容器的调用。
+
+而，大多数开发环境，全节点都是直接安装在本地，这显然和生产环境不一样，那么在同样的代码中，如何使得开发和生产环境适配，是个“问题”。
+
+本节实现基于 Docker 的 Fullnode 管理接口，应用于全节点的：
+- start/stop/restart，重启节点(如导入私钥等)
+- copy/back，远程备份和恢复(如：生产环境中使用docker，而不是本地安装来部署全节点，这时候显然需要跨容器远程复制，而不是本地 cp，因为数据在容器)全节点钱包数据（如：wallet.dat等文件）
+- `兼容本地操作`的功能，已开发，待讨论决定
 
 ### 其中 Golang 接口调用示例一：启动，重启，关闭
 ```
 	import "github.com/blocktree/OpenWallet/walletnode"
 
-	symbol := "bopo" // 币种，同 assets.Symbol
+	symbol := "bopo" // 币种，同 assets.Symbo
 	wn := walletnode.WalletnodeManager{}
 
 	// 关闭钱包节点， return error
@@ -34,9 +39,24 @@ import "github.com/blocktree/OpenWallet/walletnode"
 
 symbol := "bopo"
 wn := walletnode.WalletnodeManager{}
+
+// 备份
+src := "/data/wallet.dat"  // 备份来源，全节点中的文件 (如： src = MainDataPath + '/' + filename)
+dst := "/tmp/2018...../wallet.dat" // 备份目标，自设
+if err := wn.CopyFromContainer(symbol, src, dst); err != nil {
+	return err
+}
+
+// 恢复
+src := "/tmp/2018....../wallet.dat"  // 恢复来源，用户提供
+dst := "/data/wallet.dat" // 恢复目标的文件名 (如：dst = MainDataPath + '/')
+if err := wn.CopyToContainer(symbol, src, dst); err != nil {
+	return err
+}
+
 ```
 
-### wmd node 操作相关
+### 使用 wmd node 创建全节点
 
 如果使用 `docker+自制镜像` 作为钱包节点（无论docker是在本地还是远程），都需要先执行 `wmd node create -s Symbol`， 否则跳过。过程：
 
@@ -50,14 +70,41 @@ wmd node ceate -s Symbol 操作的结果，以 conf/SYMBOL.ini 文件内容的�
 
 任何对 walletnode 的数据需求，都可以通过此 ini 文件获得（比如 rpcUser/rpcPassword/rpcURL/httpURL 等）
 
+```
+simonluo@MBP15L:mainnet/$ wmd node create -s qtum
+2018/09/10 20:18:50 [N] Wallet Manager Load Successfully.
+Config file <QTUM.ini> existed!
+Init new QTUM wallet fullnode in '/Users/simonluo/.wmd/mainnet/'(
+  yes:   to create config file and docker,
+  no:    just to create docker,
+[yes]: yes																								// 已存在 ini 文件，选择是否重写，否则创建一个新的
+Within testnet('testnet','main')[testnet]: main           // 主网/测试链
+Where to run Walletnode: local/docker [docker]: docker    // 使用容器/本地安装的方式部署全节点
+Docker master server addr [192.168.2.194]: 192.168.2.194  // 如果选择 docker，需提供 master 的 IP 地址
+Docker master server port [2375]: 2375                    // Docker 服务端口
+Start to create/update config file...
+         create success!
+         update success!
+QTUM walletnode exist: running
+simonluo@MBP15L:mainnet/$
+```
 
+如果选择本地安装的全节点（一般用来自己测试或开发）
+```
+Within testnet('testnet','main')[testnet]:
+Where to run Walletnode: local/docker [docker]: local
+Start walletnode command: /usr/local/bin/bitcoin-cli XXXX       // 输入启动命令
+Stop walletnode command: /usr/local/bin/bitcoin-cli XXXX stop    // 输入关闭命令
+Start to create/update config file...
+         create success!
+         update success!
+```
 
 Done!
 
 ============================================ 以下内容适合深度了解
 
 ## 本接口功能定位
-
 
 正常情形下，OpenWallet 创建一个币的全节点，含：
   1. 创建节点  wmd node create -s BCH

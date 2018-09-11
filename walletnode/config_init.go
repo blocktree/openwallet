@@ -29,16 +29,21 @@ func initConfig(symbol string) error {
 	configFilePath, _ := filepath.Abs("conf")
 	configFileName := s.ToUpper(symbol) + ".ini"
 
-	gc := WalletnodeConfig{}
-
 	absFile := filepath.Join(configFilePath, configFileName)
 	if !file.Exists(absFile) {
 		if file.MkdirAll(configFilePath) != true {
 			return errors.New("initConfig: MkdirAll failed!")
 		}
-		if file.WriteFile(absFile, []byte(gc.defaultConfig), false) != true {
+		if file.WriteFile(absFile, []byte(WNConfig.defaultConfig), false) != true {
 			return errors.New("initConfig: WriteFile failed!")
 		}
 	}
 	return nil
 }
+
+// //读取配置
+// absFile := filepath.Join(wc.configFilePath, wc.configFileName)
+// if !file.Exists(absFile) {
+// 	file.MkdirAll(wc.configFilePath)
+// 	file.WriteFile(absFile, []byte(wc.defaultConfig), false)
+// }

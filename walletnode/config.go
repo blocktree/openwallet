@@ -15,8 +15,10 @@
 
 package walletnode
 
+import "errors"
+
 const (
-	RPCUser       = "wallet"             //RPC默认的认证账户名
+	RPCUser       = "walletUser"         //RPC默认的认证账户名
 	RPCPassword   = "walletPassword2017" //RPC默认的认证账户密码
 	RPCDockerPort = "9360/tcp"           //Docker中默认的RPC端口
 
@@ -28,57 +30,45 @@ const (
 type WalletnodeConfig struct {
 
 	//钱包全节点服务
-	walletnodePrefix       string "openw_"               // container prefix for name to run same within one server
-	walletnodeServerType   string "localdocker"          // "service"/"localdocker"/"remotedocker"
-	walletnodeServerAddr   string "192.168.2.194"        // type:remotedocker required
-	walletnodeServerPort   string "2375"                 // type:remotedocker required
-	walletnodeServerSocket string "/var/run/docker.sock" // type:localdocker required
-	// walletnodeStartNodeCMD string ""                     // type:local required (from old: startNodeCMD)
-	// walletnodeStopNodeCMD  string ""                     // type:local required (from old: stopNodeCMD)
+	walletnodePrefix          string // container prefix for name to run same within one server
+	walletnodeServerType      string // "service"/"localdocker"/"remotedocker"
+	walletnodeServerAddr      string // type:remotedocker required
+	walletnodeServerPort      string // type:remotedocker required
+	walletnodeStartNodeCMD    string // type:local required (from old: startNodeCMD)
+	walletnodeStopNodeCMD     string // type:local required (from old: stopNodeCMD)
+	walletnodeMainNetDataPath string // type:local required (from old: stopNodeCMD)
+	walletnodeTestNetDataPath string // type:local required (from old: stopNodeCMD)
+	// walletnodeServerSocket string "/var/run/docker.sock" // type:localdocker required
 	// walletnodePubAPIs      string ""                     // walletnode returns API to rpc client, etc.
 
-	TestNet     string "true"               // 是否测试网络，default in TestNet
-	RPCUser     string "wallet"             //RPC认证账户名
-	RPCPassword string "walletPassword2017" //RPC认证账户密码
+	TestNet     string // 是否测试网络，default in TestNet
+	RPCUser     string // RPC认证账户名
+	RPCPassword string // RPC认证账户密码
 	RPCAddr     string
 	RPCPort     string
 
-	// data path
-	mainNetDataPath string "/openwallet/data"
-	testNetDataPath string "/openwallet/testdata"
-
 	// Fullnode API URL
-	apiURL string ""
+	apiURL string
 
 	//------------------------------------------------------------------------------
 	//默认配置内容
-	defaultConfig string `
+	defaultConfig string
+}
 
-# node api url
-apiURL = ""
-# Is network test?
-isTestNet = true
-# RPC Authentication Username
-rpcUser = "wallet"
-# RPC Authentication Password
-rpcPassword = "walletPassword2017"
-# mainnet data path
-mainNetDataPath = "/openwallet/data"
-# testnet data path
-testNetDataPath = "/openwallet/testdata"
-# the safe address that wallet send money to.
-sumAddress = ""
-# when wallet's balance is over this value, the wallet willl send money to [sumAddress]
-threshold =
-
-[walletnode]
-# walletnode server type: service/localdocker/remotedocker
-walletnodeservertype = "remotedocker"
-# remote docker master server addr
-walletnodeserveraddr = "192.168.2.194:2375"
-# local docker master server socket
-walletnodeserversocket = "/var/run/docker.socket"
-`
+func (wc WalletnodeConfig) getDataDir() (string, error) {
+	if wc.TestNet == "true" {
+		if wc.walletnodeTestNetDataPath == "" {
+			return "", errors.New("TestNetDataPath not config!")
+		} else {
+			return wc.walletnodeTestNetDataPath, nil
+		}
+	} else {
+		if wc.walletnodeMainNetDataPath == "" {
+			return "", errors.New("")
+		} else {
+			return wc.walletnodeMainNetDataPath, nil
+		}
+	}
 }
 
 type FullnodeContainerConfig struct {
@@ -91,6 +81,65 @@ type FullnodeContainerConfig struct {
 
 func init() {
 	// log.SetFlags(log.Lshortfile | log.LstdFlags)
+
+	WNConfig = &WalletnodeConfig{
+
+		//钱包全节点服务
+		walletnodePrefix:          "",
+		walletnodeServerType:      "",
+		walletnodeServerAddr:      "",
+		walletnodeServerPort:      "",
+		walletnodeStartNodeCMD:    "",
+		walletnodeStopNodeCMD:     "",
+		walletnodeMainNetDataPath: MainNetDataPath,
+		walletnodeTestNetDataPath: TestNetDataPath,
+		// walletnodeServerSocket string "/var/run/docker.sock" // type:localdocker required
+		// walletnodePubAPIs      string ""                     // walletnode returns API to rpc client, etc.
+
+		TestNet:     "",
+		RPCUser:     "walletUser",
+		RPCPassword: "walletPassword2017",
+		RPCAddr:     "",
+		RPCPort:     "",
+
+		// Fullnode API URL
+		apiURL: "",
+
+		//------------------------------------------------------------------------------
+		//默认配置内容
+		defaultConfig: `
+# Is network test?
+isTestNet = true
+# node api url
+apiURL = ""
+# RPC Authentication Username
+rpcUser = "walletUser"
+# RPC Authentication Password
+rpcPassword = "walletPassword2017"
+		
+[walletnode]
+# walletnode server type: local/docker
+servertype = "docker"
+# remote docker master server addr
+serveraddr = "192.168.2.194"
+# remote docker master server port
+serverport = "2375"
+# local docker master server socket if serveraddr=="" and servertype=="docker"
+serversocket = "/var/run/docker.socket"
+
+# prefix for container name
+prefix = "openw_",
+# start node command if servertype==local
+startNodeCMD = "",
+# stop node command if servertype==local
+stopNodeCMD = "",
+
+# mainnet data path
+mainNetDataPath = "/data"
+# testnet data path
+testNetDataPath = "/data"
+`,
+	}
 
 	FullnodeContainerConfigs = map[string]*FullnodeContainerConfig{
 		"btc": &FullnodeContainerConfig{

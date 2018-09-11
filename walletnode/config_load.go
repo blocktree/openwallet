@@ -16,7 +16,6 @@ import (
 func loadConfig(symbol string) error {
 
 	var c bconfig.Configer
-	WNConfig = &WalletnodeConfig{}
 
 	configFilePath, _ := filepath.Abs("conf")
 	configFileName := s.ToUpper(symbol) + ".ini"
@@ -28,17 +27,19 @@ func loadConfig(symbol string) error {
 		return errors.New(fmt.Sprintf("Load Config Failed-> %s", err))
 	}
 
-	WNConfig.mainNetDataPath = c.String("mainNetDataPath")
-	WNConfig.testNetDataPath = c.String("testNetDataPath")
 	WNConfig.RPCUser = c.String("rpcUser")
 	WNConfig.RPCPassword = c.String("rpcPassword")
 	WNConfig.TestNet = c.String("isTestNet")
 
-	WNConfig.walletnodePrefix = c.String("walletnode::WalletnodePrefix")
-	WNConfig.walletnodeServerType = c.String("walletnode::WalletnodeServerType")
-	WNConfig.walletnodeServerAddr = c.String("walletnode::WalletnodeServerAddr")
-	WNConfig.walletnodeServerPort = c.String("walletnode::WalletnodeServerPort")
-	WNConfig.walletnodeServerSocket = c.String("walletnode::WalletnodeServerSocket")
+	WNConfig.walletnodePrefix = c.String("walletnode::Prefix")
+	WNConfig.walletnodeServerType = c.String("walletnode::ServerType")
+	WNConfig.walletnodeServerAddr = c.String("walletnode::ServerAddr")
+	WNConfig.walletnodeServerPort = c.String("walletnode::ServerPort")
+	WNConfig.walletnodeStartNodeCMD = c.String("walletnode::StartNodeCMD")
+	WNConfig.walletnodeStopNodeCMD = c.String("walletnode::StopNodeCMD")
+	WNConfig.walletnodeMainNetDataPath = c.String("walletnode::mainNetDataPath")
+	WNConfig.walletnodeTestNetDataPath = c.String("walletnode::testNetDataPath")
+	// WNConfig.walletnodeServerSocket = c.String("walletnode::WalletnodeServerSocket")
 
 	return nil
 }
