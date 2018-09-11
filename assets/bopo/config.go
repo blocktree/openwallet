@@ -59,10 +59,8 @@ type WalletConfig struct {
 	dbPath string
 	//备份路径
 	backupDir string
-	//链服务API
-	chainAPI string
 	//钱包服务API
-	walletAPI string
+	walletURL string
 	//钱包安装的路径
 	nodeInstallPath string
 	//钱包数据文件目录
@@ -113,10 +111,8 @@ func NewWalletConfig() *WalletConfig {
 	c.dbPath = filepath.Join("data", strings.ToLower(Symbol), "db")
 	//备份路径
 	c.backupDir = filepath.Join("data", strings.ToLower(Symbol), "backup")
-	//链服务API
-	// c.chainAPI = "http://127.0.0.1:10000"
 	//钱包服务API
-	c.walletAPI = "http://127.0.0.1:10000"
+	c.walletURL = ""
 	//钱包安装的路径
 	c.nodeInstallPath = ""
 	//钱包数据文件目录
@@ -135,24 +131,7 @@ func NewWalletConfig() *WalletConfig {
 	//配置文件名
 	c.configFileName = Symbol + ".ini"
 	//默认配置内容
-	c.defaultConfig = `
-# mainnet data path
-mainNetDataPath = ""
-# testnet data path
-testNetDataPath = ""
-# node api url
-apiURL = ""
-# RPC Authentication Username
-rpcUser = ""
-# RPC Authentication Password
-rpcPassword = ""
-# Is network test?
-isTestNet = false
-# the safe address that wallet send money to.
-sumAddress = ""
-# when wallet's balance is over this value, the wallet willl send money to [sumAddress]
-threshold = ""
-`
+	c.defaultConfig = ""
 
 	return &c
 }
