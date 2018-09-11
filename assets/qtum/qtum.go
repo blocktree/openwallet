@@ -26,6 +26,7 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 	"path/filepath"
 	"strings"
+	"github.com/blocktree/OpenWallet/timer"
 )
 
 
@@ -237,8 +238,8 @@ func (wm *WalletManager) SummaryFollow() error {
 	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", wm.config.cycleSeconds.Seconds())
 
 	//启动钱包汇总程序
-	//sumTimer := timer.NewTask(wm.config.cycleSeconds, wm.SummaryWallets())
-	//sumTimer.Start()
+	sumTimer := timer.NewTask(wm.config.cycleSeconds, wm.SummaryWallets)
+	sumTimer.Start()
 
 	<-endRunning
 

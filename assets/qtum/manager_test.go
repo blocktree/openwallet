@@ -39,6 +39,9 @@ func init() {
 	tw.config.serverAPI = "http://120.78.220.105:3889"
 	tw.config.rpcUser = "test"
 	tw.config.rpcPassword = "test1234"
+	//tw.config.serverAPI = "http://192.168.2.194:10006"
+	//tw.config.rpcUser = "wallet"
+	//tw.config.rpcPassword = "walletPassword2017"
 	token := basicAuth(tw.config.rpcUser, tw.config.rpcPassword)
 	tw.walletClient = NewClient(tw.config.serverAPI, token, true)
 }
@@ -161,7 +164,7 @@ func TestCreateReceiverAddress(t *testing.T) {
 }
 
 func TestGetAddressesByAccount(t *testing.T) {
-	addresses, err := tw.GetAddressesByAccount("WB3pVcqKYcsehofWvK3SKSf6Zzp9UoUAvf")
+	addresses, err := tw.GetAddressesByAccount("")
 	if err != nil {
 		t.Errorf("GetAddressesByAccount failed unexpected error: %v\n", err)
 		return
@@ -173,7 +176,7 @@ func TestGetAddressesByAccount(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	_, _, err := tw.CreateBatchAddress("W9rfcpz4jrHUUXZ56xuuXZaJrF23rnYCAV", "1234qwer", 5)
+	_, _, err := tw.CreateBatchAddress("W9rfcpz4jrHUUXZ56xuuXZaJrF23rnYCAV", "1234qwer", 3)
 	if err != nil {
 		t.Errorf("CreateBatchAddress failed unexpected error: %v\n", err)
 		return
@@ -571,9 +574,9 @@ func TestBackupWallet(t *testing.T) {
 }
 
 func TestRestoreWallet(t *testing.T) {
-	keyFile := "sam2-W9rfcpz4jrHUUXZ56xuuXZaJrF23rnYCAV.key"
-	dbFile := "sam2-W9rfcpz4jrHUUXZ56xuuXZaJrF23rnYCAV.db"
-	datFile := "/data/qtum/qtum-0.15.3/bin/wallet.dat"
+	keyFile := "D:/Go_WorkSpace/src/github.com/blocktree/OpenWallet/cmd/data/qtum/backup/aaaa-WFQHSQbJmsKMkjScRhP18EnY1dysusfCaP-20180910150312/aaaa-WFQHSQbJmsKMkjScRhP18EnY1dysusfCaP.key"
+	dbFile := "D:/Go_WorkSpace/src/github.com/blocktree/OpenWallet/cmd/data/qtum/backup/aaaa-WFQHSQbJmsKMkjScRhP18EnY1dysusfCaP-20180910150312/aaaa-WFQHSQbJmsKMkjScRhP18EnY1dysusfCaP.db"
+	datFile := "/data/qtum/qtum-0.15.3/bin/tmp-wallet-1536562992.dat"
 	tw.loadConfig()
 	err := tw.RestoreWallet(keyFile, dbFile, datFile, "1234qwer")
 	if err != nil {
@@ -595,8 +598,8 @@ func TestSendFrom(t *testing.T) {
 }
 
 func TestSendToAddress(t *testing.T){
-	address := "QShYaRUanKs5svdp2AnYVE5vCbdmJUwrN3"
-	txIDs, err := tw.SendToAddress(address, "0.1","", false,"1234qwer")
+	address := "QUqsuSQKLBeAfwsWg9FvrsWMPEzMrQnzpc"
+	txIDs, err := tw.SendToAddress(address, "0.585","", false,"1234qwer")
 
 	if err != nil {
 		t.Errorf("SendTransaction failed unexpected error: %v\n", err)
@@ -606,16 +609,16 @@ func TestSendToAddress(t *testing.T){
 	t.Logf("SendTransaction txid = %v\n", txIDs)
 }
 
-func TestSummaryWallets(t *testing.T){
-	//a := &AccountBalance{}
-	//a.Password = "1234qwer"
-
-	password := "1234qwer"
-	sumAddress = "QcbPCgJJtGkvSYPVubji2JLdYjDyeqDsLA"
-	threshold = decimal.NewFromFloat(0.5).Mul(coinDecimal)
-	//最小转账额度
-	//添加汇总钱包的账户
-	//AddWalletInSummary("", a)
-
-	tw.SummaryWallets(password)
-}
+//func TestSummaryWallets(t *testing.T){
+//	a := &openwallet.Wallet{}
+//	a.Password = "1234qwer"
+//
+//	//password := "1234qwer"
+//	sumAddress = "QcbPCgJJtGkvSYPVubji2JLdYjDyeqDsLA"
+//	threshold = decimal.NewFromFloat(0.1).Mul(coinDecimal)
+//	//最小转账额度
+//	//添加汇总钱包的账户
+//	tw.AddWalletInSummary("", a)
+//
+//	tw.SummaryWallets()
+//}
