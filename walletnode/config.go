@@ -22,8 +22,14 @@ const (
 	RPCPassword   = "walletPassword2017" //RPC默认的认证账户密码
 	RPCDockerPort = "9360/tcp"           //Docker中默认的RPC端口
 
-	MainNetDataPath = "/data" //容器中目录，实则在物理机："/openwallet/<Symbol>/"
+	DockerAllowed = "127.0.0.1" // ?500 For productive environment
+	// DockerAllowed = "0.0.0.0"
+
+	MainNetDataPath = "/data" //容器中目录，实则在物理机："/openwallet/<Symbol>/data"
 	TestNetDataPath = "/data" //容器中目录，实则在物理机："/openwallet/<Symbol>/testdata"
+
+	MountSrcPrefix = "/openwallet/data" // The prefix to mounted source directory
+	MountDstDir    = "/data"            // Which directory will be mounted in container
 )
 
 // Node setup 节点配置
@@ -41,14 +47,10 @@ type WalletnodeConfig struct {
 	// walletnodeServerSocket string "/var/run/docker.sock" // type:localdocker required
 	// walletnodePubAPIs      string ""                     // walletnode returns API to rpc client, etc.
 
-	TestNet     string // 是否测试网络，default in TestNet
+	isTestNet   string // 是否测试网络，default in TestNet
 	RPCUser     string // RPC认证账户名
 	RPCPassword string // RPC认证账户密码
-	RPCAddr     string
-	RPCPort     string
-
-	// Fullnode API URL
-	apiURL string
+	WalletURL   string // Fullnode API URL
 
 	//------------------------------------------------------------------------------
 	//默认配置内容
@@ -56,7 +58,7 @@ type WalletnodeConfig struct {
 }
 
 func (wc WalletnodeConfig) getDataDir() (string, error) {
-	if wc.TestNet == "true" {
+	if wc.isTestNet == "true" {
 		if wc.walletnodeTestNetDataPath == "" {
 			return "", errors.New("TestNetDataPath not config!")
 		} else {
@@ -96,14 +98,10 @@ func init() {
 		// walletnodeServerSocket string "/var/run/docker.sock" // type:localdocker required
 		// walletnodePubAPIs      string ""                     // walletnode returns API to rpc client, etc.
 
-		TestNet:     "",
+		isTestNet:   "",
 		RPCUser:     "walletUser",
 		RPCPassword: "walletPassword2017",
-		RPCAddr:     "",
-		RPCPort:     "",
-
-		// Fullnode API URL
-		apiURL: "",
+		WalletURL:   "",
 
 		//------------------------------------------------------------------------------
 		//默认配置内容
@@ -111,7 +109,7 @@ func init() {
 # Is network test?
 isTestNet = true
 # node api url
-apiURL = ""
+WalletURL = ""
 # RPC Authentication Username
 rpcUser = "walletUser"
 # RPC Authentication Password
@@ -180,10 +178,10 @@ testNetDataPath = "/data"
 		},
 		"bopo": &FullnodeContainerConfig{
 			WORKPATH: "/usr/local/paicode",
-			CMD:      [2][]string{{"/bin/bash", "-c", "cd /usr/local/paicode; ./gamepaicore --listen 0.0.0.0:7280 >> /openwallet/data/run.log 2>&1"}, {}},
-			PORT:     [][3]string{{"7280/tcp", "10021", "20021"}},
-			RPCPORT:  string("7280/tcp"),
-			IMAGE:    string("openwallet/bopo:latest"),
+			CMD:      [2][]string{{}, {}},
+			PORT:     [][3]string{{"9360/tcp", "10021", "20021"}},
+			RPCPORT:  string("9360/tcp"),
+			IMAGE:    string("openw/bopo:latest"),
 		},
 		"qtum": &FullnodeContainerConfig{
 			WORKPATH: "/data",

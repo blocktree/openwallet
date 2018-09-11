@@ -61,16 +61,14 @@ func CheckAndCreateConfig(symbol string) error {
 	}
 
 	// Ask about whether sync by testnet
-	if istestnet, err := console.InputText("Within testnet('testnet','main')[testnet]: ", false); err != nil {
+	if istestnet, err := console.InputText("Within testnet('testnet','main')[main]: ", false); err != nil {
 		return err
 	} else {
 		switch istestnet {
+		case "main", "":
+			WNConfig.isTestNet = "false"
 		case "testnet":
-			WNConfig.TestNet = "true"
-		case "main":
-			WNConfig.TestNet = "false"
-		case "":
-			WNConfig.TestNet = "true"
+			WNConfig.isTestNet = "true"
 		default:
 			return errors.New("Invalid!")
 		}
@@ -105,13 +103,13 @@ func CheckAndCreateConfig(symbol string) error {
 
 	if WNConfig.walletnodeServerType == "docker" {
 
-		if x, err := console.InputText("Docker master server addr [192.168.2.194]: ", false); err != nil {
+		if x, err := console.InputText("Docker master server addr [127.0.0.1]: ", false); err != nil {
 			return err
 		} else {
 			if x != "" {
 				WNConfig.walletnodeServerAddr = x
 			} else {
-				WNConfig.walletnodeServerAddr = "192.168.2.194"
+				WNConfig.walletnodeServerAddr = "127.0.0.1"
 			}
 		}
 
@@ -138,6 +136,13 @@ func CheckAndCreateConfig(symbol string) error {
 			WNConfig.walletnodeStopNodeCMD = x
 		}
 		// console.InputText("Please edit <stopnodecmd/startnodecmd> in Symbol.ini before use wallet [yes]: ", false)
+	}
+
+	if x, err := console.InputText("Input password to encrypt wallet [None: default to unlock]: ", false); err != nil {
+		return err
+	} else {
+		fmt.Println(x)
+		// = x
 	}
 
 	fmt.Println("Start to create/update config file...")

@@ -283,7 +283,7 @@ func removeNode(c *cli.Context) error {
 		return nil
 	}
 	m := assets.NodeManager(&wn.NodeManager{})
-	if m != nil {
+	if m == nil {
 		log.Error(symbol, " walletnode manager did not load")
 		return nil
 	}

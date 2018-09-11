@@ -45,7 +45,7 @@ func getDockerClient(symbol string) (c *docker.Client, err error) {
 	//walletnodeServerType
 	if WNConfig.walletnodeServerType == "docker" {
 
-		if WNConfig.walletnodeServerAddr == "" {
+		if WNConfig.walletnodeServerAddr == "127.0.0.1" || WNConfig.walletnodeServerAddr == "localhost" {
 			c, err = docker.NewEnvClient()
 		} else {
 			host := fmt.Sprintf("tcp://%s:%s", WNConfig.walletnodeServerAddr, WNConfig.walletnodeServerPort)
@@ -57,6 +57,7 @@ func getDockerClient(symbol string) (c *docker.Client, err error) {
 		log.Println(err)
 		return nil, err
 	}
+
 	return c, err
 }
 
@@ -67,7 +68,7 @@ func getCName(symbol string) (string, error) {
 	}
 
 	// Within testnet, use "<Symbol>_testnet" as container name
-	if WNConfig.TestNet == "true" {
+	if WNConfig.isTestNet == "true" {
 		return s.ToLower(symbol) + "_t", nil
 	} else {
 		return s.ToLower(symbol), nil
