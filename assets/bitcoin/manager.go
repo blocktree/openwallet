@@ -939,7 +939,7 @@ func (wm *WalletManager) GetBlockChainInfo() (*BlockchainInfo, error) {
 }
 
 //ListUnspent 获取未花记录
-func (wm *WalletManager) ListUnspent(min uint64) ([]*Unspent, error) {
+func (wm *WalletManager) ListUnspent(min uint64, addresses ...string) ([]*Unspent, error) {
 
 	var (
 		utxos = make([]*Unspent, 0)
@@ -947,6 +947,11 @@ func (wm *WalletManager) ListUnspent(min uint64) ([]*Unspent, error) {
 
 	request := []interface{}{
 		min,
+		9999999,
+	}
+
+	if len(addresses) > 0 {
+		request = append(request, addresses)
 	}
 
 	result, err := wm.WalletClient.Call("listunspent", request)

@@ -343,3 +343,15 @@ func (wrapper *WalletWrapper) CreateAddress(accountID string, count uint64, deco
 
 	return addrs, nil
 }
+
+//SaveAssetsAccount 更新账户信息
+func (wrapper *WalletWrapper) SaveAssetsAccount(account *AssetsAccount) error {
+	//打开数据库
+	db, err := wrapper.OpenStormDB()
+	if err != nil {
+		return err
+	}
+	defer wrapper.CloseDB()
+
+	return db.Save(account)
+}
