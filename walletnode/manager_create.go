@@ -17,6 +17,7 @@ package walletnode
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	s "strings"
 	"time"
 
@@ -93,58 +94,61 @@ func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 		}
 	}
 
+	// --------------------------------- Create Container -----------------------------------------
+	var portBindings map[nat.Port][]nat.PortBinding
+	// portBindings := map[nat.Port][]nat.PortBinding{}
+	// var exposedPorts map[nat.Port]struct{}
+	// exposedPorts := map[nat.Port]struct{}{}
+	var RPCPort string
+	// var Cmd []string
+	var Env []string
+	var MountSrcDir string
+
 	ctn_config, ok := FullnodeContainerConfigs[s.ToLower(symbol)]
 	if !ok {
 		return nil
 	}
 
-	// var portBindings map[nat.Port][]nat.PortBinding
-	portBindings := map[nat.Port][]nat.PortBinding{}
-	// var exposedPorts map[nat.Port]struct{}
-	exposedPorts := map[nat.Port]struct{}{}
-	// WNConfig.apiURL := ""
+	portBindings = map[nat.Port][]nat.PortBinding{}
 	for _, v := range ctn_config.PORT {
-		WNConfig.RPCAddr = WNConfig.walletnodeServerAddr
-		if WNConfig.TestNet == "true" {
-			portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{HostPort: v[2]}}
-			exposedPorts[nat.Port(v[0])] = struct{}{}
+		if WNConfig.isTestNet == "true" {
+			portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{HostIP: DockerAllowed, HostPort: v[2]}}
+			//exposedPorts[nat.Port(v[0])] = struct{}{}
 			if v[0] == ctn_config.RPCPORT {
-				WNConfig.RPCPort = v[2]
+				RPCPort = v[2]
 			}
 		} else {
-			portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{HostPort: v[1]}}
-			exposedPorts[nat.Port(v[0])] = struct{}{}
+			portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{HostIP: DockerAllowed, HostPort: v[1]}}
+			// exposedPorts[nat.Port(v[0])] = struct{}{}
 			if v[0] == ctn_config.RPCPORT {
-				WNConfig.RPCPort = v[1]
+				RPCPort = v[1]
 			}
 		}
 	}
 
-	Cmd := []string{}
-	Env := []string{}
-	netDir := ""
-	if WNConfig.TestNet == "true" {
-		Cmd = ctn_config.CMD[1]
+	if WNConfig.isTestNet == "true" {
+		// Cmd = ctn_config.CMD[1]
 		Env = []string{"TESTNET=true"}
-		netDir = "testdata/"
+		MountSrcDir = filepath.Join(MountSrcPrefix, s.ToLower(symbol), "/testdata")
 	} else {
-		Cmd = ctn_config.CMD[0]
+		// Cmd = ctn_config.CMD[0]
 		Env = []string{"TESTNET=false"}
-		netDir = "data/"
+		MountSrcDir = filepath.Join(MountSrcPrefix, s.ToLower(symbol), "/data")
 	}
+
 	cConfig := container.Config{
-		// string,
+		// string to container name
 		Hostname: cName,
-		// string,
-		Domainname: fmt.Sprintf("%s.local.com", cName),
+		// string to container domainname
+		// Domainname: fmt.Sprintf("%s.local.com", cName),
 		// string, Command to run when starting the container
-		Cmd: Cmd,
+		// Cmd: Cmd,
 		// string, List of environment variable to set in the container
 		Env: Env,
 		// string, Name of the image as it was passed by the operator(e.g. could be symbolic)
 		Image: ctn_config.IMAGE,
 		// nat.PortSet         `json:",omitempty"` , List of exposed ports
-		ExposedPorts: exposedPorts,
+		// ExposedPorts: exposedPorts,
 		// string, Current directory (PWD) in the command will be launched
 		// WorkingDir: "/root",
 
@@ -173,22 +177,18 @@ func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 		PortBindings: portBindings,
 		// Mount Volumes
 		Mounts: []mount.Mount{
-			// {
-			// 	// "Driver":      "local",
-			// 	// "vers":        "4,soft,timeo=180,bg,tcp,rw",
-			// 	Type:        mount.TypeBind,
-			// 	Source:      "/openwallet/exec/" + s.ToLower(symbol),
-			// 	Target:      "/exec",
-			// 	ReadOnly:    true,
-			// 	BindOptions: &mount.BindOptions{Propagation: "private"}},
 			{
+				// "Driver":      "local",
+				// "vers":        "4,soft,timeo=180,bg,tcp,rw",
 				Type:        mount.TypeBind,
-				Source:      fmt.Sprintf("/openwallet/data/%s/%s", s.ToLower(symbol), netDir),
-				Target:      "/data",
+				Source:      MountSrcDir,
+				Target:      MountDstDir,
 				ReadOnly:    false,
-				BindOptions: &mount.BindOptions{Propagation: "private"}},
+				BindOptions: &mount.BindOptions{Propagation: "private"},
+			},
 		},
 	}
+
 	// endpointSetting := network.EndpointSettings{
 	// 	// // Configurations
 	// 	// IPAMConfig, // *EndpointIPAMConfig
@@ -206,10 +206,12 @@ func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 	// 	// MacAddress,          // string
 	// 	// DriverOpts,          // map[string]string
 	// }
+
 	nConfig := network.NetworkingConfig{
 		// map[string]*EndpointSettings // Endpoint configs for each connecting network
 		// EndpointsConfig: map[string]*network.EndpointSettings{"endporint": &endpointSetting},
 	}
+
 	if ctn, err := c.ContainerCreate(context.Background(), &cConfig, &hConfig, &nConfig, cName); err != nil {
 		log.Error(err)
 		return err
@@ -236,6 +238,6 @@ func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 	// }
 
 	// Get info from docker inspect for fullnode API
-	WNConfig.apiURL = fmt.Sprintf("http://%s:%s", WNConfig.RPCAddr, WNConfig.RPCPort)
+	WNConfig.WalletURL = fmt.Sprintf("http://%s:%s", WNConfig.walletnodeServerAddr, RPCPort)
 	return nil
 }

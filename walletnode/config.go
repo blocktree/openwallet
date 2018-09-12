@@ -15,82 +15,154 @@
 
 package walletnode
 
+import (
+	"errors"
+	"log"
+	"strings"
+)
+
 const (
-	RPCUser       = "wallet"             //RPC默认的认证账户名
+	RPCUser       = "walletUser"         //RPC默认的认证账户名
 	RPCPassword   = "walletPassword2017" //RPC默认的认证账户密码
 	RPCDockerPort = "9360/tcp"           //Docker中默认的RPC端口
 
-	MainNetDataPath = "/data" //容器中目录，实则在物理机："/openwallet/<Symbol>/"
+	DockerAllowed = "127.0.0.1" // ?500 For productive environment
+	// DockerAllowed = "0.0.0.0"
+
+	MainNetDataPath = "/data" //容器中目录，实则在物理机："/openwallet/<Symbol>/data"
 	TestNetDataPath = "/data" //容器中目录，实则在物理机："/openwallet/<Symbol>/testdata"
+
+	MountSrcPrefix = "/openwallet/data" // The prefix to mounted source directory
+	MountDstDir    = "/data"            // Which directory will be mounted in container
 )
 
 // Node setup 节点配置
 type WalletnodeConfig struct {
 
 	//钱包全节点服务
-	walletnodePrefix       string "openw_"               // container prefix for name to run same within one server
-	walletnodeServerType   string "localdocker"          // "service"/"localdocker"/"remotedocker"
-	walletnodeServerAddr   string "192.168.2.194"        // type:remotedocker required
-	walletnodeServerPort   string "2375"                 // type:remotedocker required
-	walletnodeServerSocket string "/var/run/docker.sock" // type:localdocker required
-	// walletnodeStartNodeCMD string ""                     // type:local required (from old: startNodeCMD)
-	// walletnodeStopNodeCMD  string ""                     // type:local required (from old: stopNodeCMD)
+	walletnodePrefix          string // container prefix for name to run same within one server
+	walletnodeServerType      string // "service"/"localdocker"/"remotedocker"
+	walletnodeServerAddr      string // type:remotedocker required
+	walletnodeServerPort      string // type:remotedocker required
+	walletnodeStartNodeCMD    string // type:local required (from old: startNodeCMD)
+	walletnodeStopNodeCMD     string // type:local required (from old: stopNodeCMD)
+	walletnodeMainNetDataPath string // type:local required (from old: stopNodeCMD)
+	walletnodeTestNetDataPath string // type:local required (from old: stopNodeCMD)
+	walletnodeIsEncrypted     string
+	// walletnodeServerSocket string "/var/run/docker.sock" // type:localdocker required
 	// walletnodePubAPIs      string ""                     // walletnode returns API to rpc client, etc.
 
-	TestNet     string "true"               // 是否测试网络，default in TestNet
-	RPCUser     string "wallet"             //RPC认证账户名
-	RPCPassword string "walletPassword2017" //RPC认证账户密码
-	RPCAddr     string
-	RPCPort     string
-
-	// data path
-	mainNetDataPath string "/openwallet/data"
-	testNetDataPath string "/openwallet/testdata"
-
-	// Fullnode API URL
-	apiURL string ""
+	isTestNet   string // 是否测试网络，default in TestNet
+	RPCUser     string // RPC认证账户名
+	RPCPassword string // RPC认证账户密码
+	WalletURL   string // Fullnode API URL
 
 	//------------------------------------------------------------------------------
 	//默认配置内容
-	defaultConfig string `
+	defaultConfig string
+}
 
-# node api url
-apiURL = ""
-# Is network test?
-isTestNet = true
-# RPC Authentication Username
-rpcUser = "wallet"
-# RPC Authentication Password
-rpcPassword = "walletPassword2017"
-# mainnet data path
-mainNetDataPath = "/openwallet/data"
-# testnet data path
-testNetDataPath = "/openwallet/testdata"
-# the safe address that wallet send money to.
-sumAddress = ""
-# when wallet's balance is over this value, the wallet willl send money to [sumAddress]
-threshold =
-
-[walletnode]
-# walletnode server type: service/localdocker/remotedocker
-walletnodeservertype = "remotedocker"
-# remote docker master server addr
-walletnodeserveraddr = "192.168.2.194:2375"
-# local docker master server socket
-walletnodeserversocket = "/var/run/docker.socket"
-`
+func (wc WalletnodeConfig) getDataDir() (string, error) {
+	if wc.isTestNet == "true" {
+		if wc.walletnodeTestNetDataPath == "" {
+			return "", errors.New("TestNetDataPath not config!")
+		} else {
+			return wc.walletnodeTestNetDataPath, nil
+		}
+	} else {
+		if wc.walletnodeMainNetDataPath == "" {
+			return "", errors.New("")
+		} else {
+			return wc.walletnodeMainNetDataPath, nil
+		}
+	}
 }
 
 type FullnodeContainerConfig struct {
-	WORKPATH string
-	CMD      [2][]string // Commands to run fullnode wallet ex: {{"/bin/sh", "mainnet"}, {"/bin/sh", "testnet"}}
-	PORT     [][3]string // Which ports need to be mapped, ex: {{innerPort, mainNetPort, testNetPort}, ...}
-	RPCPORT  string      // Port of default fullnode API(within container), from PORT
-	IMAGE    string      // Image that container run from
+	// WORKPATH    string
+	CMD     [2][]string // Commands to run fullnode wallet ex: {{"/bin/sh", "mainnet"}, {"/bin/sh", "testnet"}}
+	PORT    [][3]string // Which ports need to be mapped, ex: {{innerPort, mainNetPort, testNetPort}, ...}
+	RPCPORT string      // Port of default fullnode API(within container), from PORT
+	IMAGE   string      // Image that container run from
+	ENCRYPT []string    // Encrypt wallet fullnode as an option
+}
+
+func (nc *FullnodeContainerConfig) isEncrypted() bool {
+	if nc.ENCRYPT != nil {
+		return true
+	} else {
+		return false
+	}
+}
+
+func GetFullnodeConfig(symbol string) *FullnodeContainerConfig {
+	if v, exist := FullnodeContainerConfigs[strings.ToLower(symbol)]; exist {
+		return v
+	} else {
+		return nil
+	}
 }
 
 func init() {
-	// log.SetFlags(log.Lshortfile | log.LstdFlags)
+	log.SetFlags(log.Lshortfile | log.LstdFlags)
+
+	WNConfig = &WalletnodeConfig{
+
+		//钱包全节点服务
+		walletnodePrefix:          "",
+		walletnodeServerType:      "",
+		walletnodeServerAddr:      "",
+		walletnodeServerPort:      "",
+		walletnodeStartNodeCMD:    "",
+		walletnodeStopNodeCMD:     "",
+		walletnodeMainNetDataPath: MainNetDataPath,
+		walletnodeTestNetDataPath: TestNetDataPath,
+		// walletnodeServerSocket string "/var/run/docker.sock" // type:localdocker required
+		// walletnodePubAPIs      string ""                     // walletnode returns API to rpc client, etc.
+
+		isTestNet:   "",
+		RPCUser:     "walletUser",
+		RPCPassword: "walletPassword2017",
+		WalletURL:   "",
+
+		//------------------------------------------------------------------------------
+		//默认配置内容
+		defaultConfig: `
+# Is network test?
+isTestNet = true
+# node api url
+WalletURL = ""
+# RPC Authentication Username
+rpcUser = "walletUser"
+# RPC Authentication Password
+rpcPassword = "walletPassword2017"
+		
+[walletnode]
+# walletnode server type: local/docker
+servertype = "docker"
+# remote docker master server addr
+serveraddr = "192.168.2.194"
+# remote docker master server port
+serverport = "2375"
+# local docker master server socket if serveraddr=="" and servertype=="docker"
+serversocket = "/var/run/docker.socket"
+
+# prefix for container name
+prefix = "openw_",
+# wallet fullnode is crypted?
+isEnCrypted = ""
+
+# start node command if servertype==local
+startNodeCMD = "",
+# stop node command if servertype==local
+stopNodeCMD = "",
+
+# mainnet data path
+mainNetDataPath = "/data"
+# testnet data path
+testNetDataPath = "/data"
+`,
+	}
 
 	FullnodeContainerConfigs = map[string]*FullnodeContainerConfig{
 		"btc": &FullnodeContainerConfig{
@@ -130,18 +202,16 @@ func init() {
 			IMAGE:   string("openwallet/bch:0.17.1"),
 		},
 		"bopo": &FullnodeContainerConfig{
-			WORKPATH: "/usr/local/paicode",
-			CMD:      [2][]string{{"/bin/bash", "-c", "cd /usr/local/paicode; ./gamepaicore --listen 0.0.0.0:7280 >> /openwallet/data/run.log 2>&1"}, {}},
-			PORT:     [][3]string{{"7280/tcp", "10021", "20021"}},
-			RPCPORT:  string("7280/tcp"),
-			IMAGE:    string("openwallet/bopo:latest"),
+			CMD:     [2][]string{{}, {}},
+			PORT:    [][3]string{{"9360/tcp", "10021", "20021"}},
+			RPCPORT: string("9360/tcp"),
+			IMAGE:   string("openw/bopo:latest"),
 		},
 		"qtum": &FullnodeContainerConfig{
-			WORKPATH: "/data",
-			CMD:      [2][]string{},
-			PORT:     [][3]string{{"9360/tcp", "10031", "20031"}},
-			RPCPORT:  string("9360/tcp"),
-			IMAGE:    string("openw/qtum:0.15.3"),
+			CMD:     [2][]string{},
+			PORT:    [][3]string{{"9360/tcp", "10031", "20031"}},
+			RPCPORT: string("9360/tcp"),
+			IMAGE:   string("openw/qtum:0.15.3"),
 		},
 		"sc": &FullnodeContainerConfig{
 			CMD: [2][]string{{"/usr/bin/siad", "-M gctwrh", "--api-addr=0.0.0.0:9980", "--authenticate-api", "--disable-api-security"},
@@ -151,7 +221,6 @@ func init() {
 			IMAGE:   string("openwallet/sc:1.3.3"),
 		},
 		"hc": &FullnodeContainerConfig{
-			WORKPATH: "/usr/local/paicode",
 			CMD: [2][]string{
 				{"/bin/bash", "-c", "/usr/local/hypercash/bin/hcd --datadir=/openwallet/data --logdir=/openwallet/data --rpcuser=wallet --rpcpass=walletPassword2017 --txindex --rpclisten=0.0.0.0:14009 && /usr/local/hypercash/bin/hcwallet --rpcconnect=127.0.0.1:14009 --username=wallet --password=walletPassword2017 --rpclisten=0.0.0.0:12010"},
 				{"/bin/bash", "-c", "/usr/local/hypercash/bin/hcd --datadir=/openwallet/testdata --logdir=/openwallet/testdata --rpcuser=wallet --rpcpass=walletPassword2017 --txindex --rpclisten=0.0.0.0:14009 --testnet && /usr/local/hypercash/bin/hcwallet --testnet --rpcconnect=127.0.0.1:14009 --username=wallet --password=walletPassword2017 --rpclisten=0.0.0.0:12010"}},
@@ -160,11 +229,11 @@ func init() {
 			IMAGE:   string("openwallet/hc:2.0.3dev"),
 		},
 		"ltc": &FullnodeContainerConfig{ // litecoin
-			WORKPATH: "/data",
-			CMD:      [2][]string{},
-			PORT:     [][3]string{{"9360/tcp", "10061", "20061"}},
-			RPCPORT:  string("9360/tcp"),
-			IMAGE:    string("openw/litecoin:0.16.0"),
+			CMD:     [2][]string{},
+			PORT:    [][3]string{{"9360/tcp", "10061", "20061"}},
+			RPCPORT: string("9360/tcp"),
+			IMAGE:   string("openw/litecoin:0.16.0"),
+			ENCRYPT: []string{"litecoind", "-datadir=/data", "-conf=/etc/litecoin.conf", "encryptwallet 1234qwer"},
 		},
 	}
 }
