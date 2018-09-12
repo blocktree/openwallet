@@ -12,11 +12,15 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
  */
+#ifndef bigrand_h
+#define bigrand_h
 
-package litecoin
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include "type.h"
 
-import "github.com/blocktree/OpenWallet/assets/bitcoin"
+void bigrand_get_rand_range(uint8_t *rand, uint8_t *range, uint16_t len);
 
-type LTCBlockScanner struct {
-	bitcoin.BTCBlockScanner
-}
+#endif /* bigrand_h */

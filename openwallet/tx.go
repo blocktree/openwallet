@@ -52,24 +52,30 @@ type RawTransaction struct {
 
 //KeySignature 签名信息
 type KeySignature struct {
-	EccType    uint32   //曲线类型
+	EccType    uint32 //曲线类型
+	Nonce      string
 	Address    *Address //提供签名的地址
 	Signatures string   //未花签名
 	Message    string   //被签消息
 }
 
 type Transaction struct {
-	TxID        string   `json:"txid"`
+	TxID      string `json:"txid"`
+	AccountID string `json:"accountID"`
+	//Address     string   `json:"address"`
 	Coin        Coin     //区块链类型标识
 	From        []string `json:"from"`
 	To          []string `json:"to"`
 	Amount      string   `json:"amount"`
+	Decimal     int32    `json:"decimal"`
 	TxType      uint64
 	Confirm     int64  `json:"confirm"`
 	BlockHash   string `json:"blockHash"`
 	BlockHeight uint64 `json:"blockHeight"`
 	IsMemo      bool   `json:"isMemo"`
 	Memo        string `json:"memo"`
+	Fees        string
+	Received    bool
 	SubmitTime  int64
 	ConfirmTime int64
 }
@@ -79,7 +85,8 @@ type Recharge struct {
 	TxID        string `json:"txid"`
 	AccountID   string `json:"accountID"`
 	Address     string `json:"address"`
-	Symbol      string `json:"symbol"`
+	Symbol      string `json:"symbol"` //Deprecated: use Coin
+	Coin        Coin   //区块链类型标识
 	Amount      string `json:"amount"`
 	Confirm     int64  `json:"confirm"`
 	BlockHash   string `json:"blockHash"`
@@ -94,6 +101,8 @@ type Recharge struct {
 
 // TxInput 交易输入，则出账记录
 type TxInput struct {
+	SourceTxID  string //源交易单ID
+	SourceIndex uint64 //源交易单输出所因为
 	Recharge
 }
 

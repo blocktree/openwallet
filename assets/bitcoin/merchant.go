@@ -103,7 +103,7 @@ func (wm *WalletManager) ImportMerchantAddress(wallet *openwallet.Wallet, accoun
 			return err
 		}
 
-		wm.Blockscanner.AddAddress(a.Address, wallet.WalletID, wallet)
+		//wm.Blockscanner.AddAddress(a.Address, wallet.WalletID, wallet)
 	}
 
 	err = tx.Commit()
@@ -196,7 +196,7 @@ func (wm *WalletManager) AddMerchantObserverForBlockScan(obj openwallet.BlockSca
 	}
 
 	wm.Blockscanner.AddObserver(obj)
-	wm.Blockscanner.AddWallet(wallet.WalletID, wallet)
+	//wm.Blockscanner.AddWallet(wallet.WalletID, wallet)
 
 	wm.Blockscanner.Run()
 	return nil
@@ -205,7 +205,7 @@ func (wm *WalletManager) AddMerchantObserverForBlockScan(obj openwallet.BlockSca
 //RemoveMerchantObserverForBlockScan 移除区块链扫描的观测者
 func (wm *WalletManager) RemoveMerchantObserverForBlockScan(obj openwallet.BlockScanNotificationObject) {
 	wm.Blockscanner.RemoveObserver(obj)
-	if len(wm.Blockscanner.observers) == 0 {
+	if len(wm.Blockscanner.Observers) == 0 {
 		wm.Blockscanner.Stop()
 		wm.Blockscanner.Clear()
 	}
