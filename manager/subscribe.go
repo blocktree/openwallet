@@ -75,6 +75,9 @@ func (wm *WalletManager) BlockExtractDataNotify(sourceKey string, data *openwall
 		return err
 	}
 
+	//更新账户余额
+	wm.RefreshAssetsAccountBalance(appID, accountID)
+
 	account, err := wrapper.GetAssetsAccountInfo(accountID)
 	if err != nil {
 		return err
@@ -86,7 +89,6 @@ func (wm *WalletManager) BlockExtractDataNotify(sourceKey string, data *openwall
 
 	return nil
 }
-
 
 //DeleteRechargesByHeight 删除某区块高度的充值记录
 func (wm *WalletManager) DeleteRechargesByHeight(height uint64) error {

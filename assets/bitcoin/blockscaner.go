@@ -80,23 +80,6 @@ func NewBTCBlockScanner(wm *WalletManager) *BTCBlockScanner {
 	return &bs
 }
 
-//AddWallet 添加扫描钱包
-func (bs *BTCBlockScanner) AddWallet(accountID string, wrapper *openwallet.WalletWrapper) {
-
-	//导入钱包该账户的所有地址
-	addrs, err := wrapper.GetAddressList(0, -1, "AccountID", accountID)
-	if err != nil {
-		return
-	}
-
-	log.Std.Info("block scanner load wallet [%s] existing addresses: %d ", accountID, len(addrs))
-
-	for _, address := range addrs {
-		bs.AddAddress(address.Address, accountID)
-	}
-
-}
-
 //SetRescanBlockHeight 重置区块链扫描高度
 func (bs *BTCBlockScanner) SetRescanBlockHeight(height uint64) error {
 	height = height - 1
@@ -490,13 +473,15 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 
 	var (
 		//transactions = make([]*openwallet.Recharge, 0)
-		success = false
+		success = true
 		result  = ExtractResult{
 			BlockHeight: blockHeight,
 			TxID:        txid,
 			extractData: make(map[string]*openwallet.TxExtractData),
 		}
 	)
+
+	//log.Std.Debug("block scanner scanning tx: %s ...", txid)
 
 	trx, err := bs.wm.GetTransaction(txid)
 	if err != nil {
@@ -512,16 +497,29 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 
 		for _, input := range vin {
 
-			txid := input.Get("txid").String()
-			vout := trx.Get("vout").Uint()
+			if input.Get("coinbase").Exists() {
+				//coinbase skip
+				success = true
+				break
+			}
 
-			output, err := bs.wm.GetTxOut(txid, vout)
+			intxid := input.Get("txid").String()
+			vout := input.Get("vout").Uint()
+
+			preTx, err := bs.wm.GetTransaction(intxid)
 			if err != nil {
 				success = false
 				break
 			} else {
-				vinout = append(vinout, *output)
-				success = true
+				output := preTx.Get("vout").Array()
+				if len(output) > int(vout) {
+
+					vinout = append(vinout, output[vout])
+					success = true
+
+					//log.Debug("GetTxOut:", output[vout])
+
+				}
 			}
 		}
 
@@ -529,11 +527,11 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 
 			//提取出账部分记录
 			from, totalSpent := bs.ExtractTxInput(blockHeight, blockHash, vin, vinout, &result)
-			log.Debug("from:", from, "totalSpent:", totalSpent)
+			//log.Debug("from:", from, "totalSpent:", totalSpent)
 
 			//提取入账部分记录
 			to, totalReceived := bs.ExtractTxOutput(blockHeight, blockHash, trx, &result)
-			log.Debug("to:", to, "totalReceived:", totalReceived)
+			//log.Debug("to:", to, "totalReceived:", totalReceived)
 
 			for _, extractData := range result.extractData {
 				extractData.Transaction = &openwallet.Transaction{
@@ -620,6 +618,7 @@ func (bs *BTCBlockScanner) ExtractTxInput(blockHeight uint64, blockHash string, 
 				ed := result.extractData[sourceKey]
 				if ed == nil {
 					ed = openwallet.NewBlockExtractData()
+					result.extractData[sourceKey] = ed
 				}
 
 				ed.TxInputs = append(ed.TxInputs, &input)
@@ -685,6 +684,7 @@ func (bs *BTCBlockScanner) ExtractTxOutput(blockHeight uint64, blockHash string,
 				ed := result.extractData[sourceKey]
 				if ed == nil {
 					ed = openwallet.NewBlockExtractData()
+					result.extractData[sourceKey] = ed
 				}
 
 				ed.TxOutputs = append(ed.TxOutputs, &outPut)
