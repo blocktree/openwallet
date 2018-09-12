@@ -25,15 +25,15 @@ import (
 	"net"
 	"sync"
 	"time"
-	"github.com/streadway/amqp"
+	"net/http"
+	"io/ioutil"
 )
 
-
-//MQClient 基于mq的通信客户端
-type MQClient struct {
+//HTTPClient 基于http的通信服务端
+type HTTPClient struct {
+	responseWriter  http.ResponseWriter
+	request         *http.Request
 	auth            Authorization
-	conn            *amqp.Connection
-	channel         *amqp.Channel
 	handler         PeerHandler
 	send            chan []byte
 	isHost          bool
@@ -47,11 +47,18 @@ type MQClient struct {
 	config          map[string]string //节点配置
 }
 
-// Dial connects a client to the given URL.
-func MQDial(pid, url string, handler PeerHandler) (*MQClient, error) {
+func HTTPDial(
+	pid, url string,
+	handler PeerHandler,
+	header map[string]string,
+	ReadBufferSize, WriteBufferSize int) ( error) {
+
+	var (
+		httpHeader http.Header
+	)
 
 	if handler == nil {
-		return nil, errors.New("hander should not be nil! ")
+		return  errors.New("hander should not be nil! ")
 	}
 
 	//处理连接授权
@@ -61,40 +68,31 @@ func MQDial(pid, url string, handler PeerHandler) (*MQClient, error) {
 	//}
 	log.Debug("Connecting URL:", url)
 
-	conn, err := amqp.Dial(url)
-	if err != nil {
-		return nil, err
+
+	if header != nil {
+		httpHeader = make(http.Header)
+		for key, value := range header {
+			httpHeader.Add(key, value)
+		}
 	}
 
-	channel, err := conn.Channel()
-	if err != nil {
-		return nil, err
-	}
-	client, err := NewMQClient(pid, conn, channel, handler, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	client.isConnect = true
-	client.isHost = true //我方主动连接
-	client.handler.OnPeerOpen(client)
-
-	return client, nil
+	return  nil
 }
 
-func NewMQClient(pid string, conn *amqp.Connection, channel *amqp.Channel, hander PeerHandler, auth Authorization, done func()) (*MQClient, error) {
+
+func NewHTTPClient(pid string,responseWriter  http.ResponseWriter, request *http.Request , hander PeerHandler, auth Authorization, done func()) (*HTTPClient, error) {
 
 	if hander == nil {
 		return nil, errors.New("hander should not be nil! ")
 	}
 
-	client := &MQClient{
+	client := &HTTPClient{
 		pid:  pid,
-		conn: conn,
-		channel:channel,
 		send: make(chan []byte, MaxMessageSize),
 		auth: auth,
 		done: done,
+		responseWriter:responseWriter,
+		request:request,
 	}
 
 	client.isConnect = true
@@ -103,37 +101,35 @@ func NewMQClient(pid string, conn *amqp.Connection, channel *amqp.Channel, hande
 	return client, nil
 }
 
-func (c *MQClient) PID() string {
+func (c *HTTPClient) PID() string {
 	return c.pid
 }
 
-func (c *MQClient) Auth() Authorization {
+func (c *HTTPClient) Auth() Authorization {
 
 	return c.auth
 }
 
-func (c *MQClient) SetHandler(handler PeerHandler) error {
+func (c *HTTPClient) SetHandler(handler PeerHandler) error {
 	c.handler = handler
 	return nil
 }
 
-func (c *MQClient) IsHost() bool {
+func (c *HTTPClient) IsHost() bool {
 	return c.isHost
 }
 
-func (c *MQClient) IsConnected() bool {
+func (c *HTTPClient) IsConnected() bool {
 	return c.isConnect
 }
 
-func (c *MQClient) GetConfig() map[string]string {
+func (c *HTTPClient) GetConfig() map[string]string {
 	return c.config
 }
 
-
 //Close 关闭连接
-func (c *MQClient) Close() error {
+func (c *HTTPClient) Close() error {
 	var err error
-
 	//保证节点只关闭一次
 	c.closeOnce.Do(func() {
 
@@ -148,8 +144,6 @@ func (c *MQClient) Close() error {
 			// Be nice to GC
 			c.done = nil
 		}
-
-		err = c.conn.Close()
 		c.isConnect = false
 		c.handler.OnPeerClose(c, "client close")
 	})
@@ -157,26 +151,29 @@ func (c *MQClient) Close() error {
 }
 
 //LocalAddr 本地节点地址
-func (c *MQClient) LocalAddr() net.Addr {
-	if c.conn == nil {
-		return nil
-	}
-	return c.conn.LocalAddr()
-}
-
-//RemoteAddr 远程节点地址
-func (c *MQClient) RemoteAddr() net.Addr {
-	if c.conn == nil {
+func (c *HTTPClient) LocalAddr() net.Addr {
+	if c.request == nil {
 		return nil
 	}
 	addr := &MqAddr{
-		NetWork:c.config["address"],
+		NetWork: c.request.Host,
+	}
+	return addr
+}
+
+//RemoteAddr 远程节点地址
+func (c *HTTPClient) RemoteAddr() net.Addr {
+	if c.request == nil {
+		return nil
+	}
+	addr := &MqAddr{
+		NetWork: c.request.RemoteAddr,
 	}
 	return addr
 }
 
 //Send 发送消息
-func (c *MQClient) Send(data DataPacket) error {
+func (c *HTTPClient) Send(data DataPacket) error {
 
 	////添加授权
 	//if c.auth != nil && c.auth.EnableAuth() {
@@ -198,12 +195,14 @@ func (c *MQClient) Send(data DataPacket) error {
 	}
 
 	//log.Printf("Send: %s\n", string(respBytes))
-	c.send <- respBytes
+	if err := c.write(websocket.TextMessage, respBytes); err != nil {
+		return nil
+	}
 	return nil
 }
 
 //OpenPipe 打开通道
-func (c *MQClient) OpenPipe() error {
+func (c *HTTPClient) OpenPipe() error {
 
 	if !c.IsConnected() {
 		return fmt.Errorf("client is not connect")
@@ -219,7 +218,7 @@ func (c *MQClient) OpenPipe() error {
 }
 
 // WritePump 发送消息通道
-func (c *MQClient) writePump() {
+func (c *HTTPClient) writePump() {
 
 	ticker := time.NewTicker(PingPeriod) //发送心跳间隔事件要<等待时间
 	defer func() {
@@ -254,47 +253,21 @@ func (c *MQClient) writePump() {
 }
 
 // write 输出数据
-func (c *MQClient) write(mt int, message []byte) error {
-	if c.channel == nil {
-		return new(amqp.Error)
+func (c *HTTPClient) write(mt int, message []byte) error {
+	defer c.Close()
+	if c.responseWriter == nil {
+		return fmt.Errorf("responseWriter is nil")
 	}
-	exchange := c.config["exchange"]
-	queueName := c.config["queueName"]
-	fmt.Println("queueName:",queueName,",exchange",exchange)
-	err := c.channel.Publish(exchange, queueName, false, false, amqp.Publishing{
-		ContentType: "text/plain",
-		Body:        []byte(message),
-	})
-	return err
+	w := c.responseWriter
+	//fmt.Fprint(c.responseWriter,[]byte(message))
+	w.Write([]byte(message))
+	w.(http.Flusher).Flush()
+	return nil
 }
 
 // ReadPump 监听消息
-func (c *MQClient) readPump() {
-	if c.channel == nil {
-		return
-	}
-
-	queueName := c.config["receiveQueueName"]
-
-	fmt.Println("queueName:",queueName)
-	msgs, err := c.channel.Consume(queueName, "", true, false, false, false, nil)
-
-	if err!=nil{
-		log.Error("readPump: ",err)
-	}
-
-	forever := make(chan bool)
-
-	go func() {
-		//fmt.Println(*msgs)
-		for d := range msgs {
-			packet := NewDataPacket(gjson.ParseBytes(d.Body))
-
-			//开一个goroutine处理消息
-			go c.handler.OnPeerNewDataPacketReceived(c, packet)
-		}
-	}()
-	fmt.Printf(" [*] Waiting for messages. To exit press CTRL+C\n")
-	<-forever
-
+func (c *HTTPClient) readPump() {
+	s, _ := ioutil.ReadAll(c.request.Body)
+	packet := NewDataPacket(gjson.ParseBytes(s))
+	c.handler.OnPeerNewDataPacketReceived(c, packet)
 }

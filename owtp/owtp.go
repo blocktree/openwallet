@@ -59,6 +59,8 @@ const (
 
 	MQ string = "mq"
 
+	HTTP string = "http"
+
 	KeyAgreementMethod = "internal_keyAgreement"
 )
 
@@ -150,29 +152,51 @@ func (node *OWTPNode) Peerstore() Peerstore {
 }
 
 //Listen 监听TCP地址
-func (node *OWTPNode) Listen(addr string) error {
+func (node *OWTPNode) Listen(config map[string]string) error {
 
+	addr := config["address"]
+	connectType := config["connectType"]
 	if node.listening {
 		return fmt.Errorf("the node is listening, please close listener first")
 	}
 
-	l, err := ListenAddr(addr, node)
-	if err != nil {
-		return err
-	}
-	node.listener = l
 
-	go func(listener Listener) {
-		for {
-			peer, err := listener.Accept()
-			if err != nil {
-				return
-			}
-			node.Join <- peer
+	if connectType == Websocket || connectType == MQ{
+		l, err := ListenAddr(addr, node)
+		if err != nil {
+			return err
 		}
-	}(l)
+		node.listener = l
 
-	node.listening = true
+		go func(listener Listener) {
+			for {
+				peer, err := listener.Accept()
+				if err != nil {
+					return
+				}
+				node.Join <- peer
+			}
+		}(l)
+
+		node.listening = true
+	}else if connectType == HTTP{
+		l, err := HttpListenAddr(addr, node)
+		if err != nil {
+			return err
+		}
+		node.listener = l
+		go func(listener Listener) {
+			for {
+				peer, err := listener.Accept()
+				if err != nil {
+					return
+				}
+				node.Join <- peer
+			}
+		}(l)
+
+		node.listening = true
+	}
 
 	return nil
 }
@@ -254,6 +278,23 @@ func (node *OWTPNode) connect( pid string,config map[string]string) (Peer, error
 		//设置配置
 		client.config = config
 		return client, nil
+	}
+
+	//HTTP类型
+	if connectType == HTTP{
+
+		//url := "http://" + strings.TrimSuffix(addr,"/") + "/" + pid
+		//
+		////建立链接，记录默认的客户端
+		//client, err := HTTPDial(pid, url,node)
+		//if err != nil {
+		//	return nil, err
+		//}
+		////设置授权规则
+		//client.auth = auth
+		////设置配置
+		//client.config = config
+		//return client, nil
 	}
 
 	return nil,errors.New("connectType can't found! ")

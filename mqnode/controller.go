@@ -16,14 +16,14 @@
 package mqnode
 
 import (
-	"fmt"
 	"github.com/blocktree/OpenWallet/assets"
-	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/owtp"
 	"github.com/pkg/errors"
 	"github.com/blocktree/OpenWallet/manager"
+	"strconv"
+	"encoding/json"
 )
 
 const (
@@ -35,7 +35,7 @@ const (
 
 var (
 	//商户节点
-	merchantNode *MerchantNode
+	merchantNode *BitBankNode
 
 	/* 异常错误 */
 
@@ -46,7 +46,7 @@ var (
 /********** 钱包管理相关方法【被动】 **********/
 
 //setupRouter 配置路由
-func (m *MerchantNode) setupRouter() {
+func (m *BitBankNode) setupRouter() {
 
 	m.Node.HandleFunc("subscribe", m.subscribe)
 	m.Node.HandleFunc("createWallet", m.createWallet)
@@ -66,7 +66,7 @@ func (m *MerchantNode) setupRouter() {
 /**
  * appID
  */
-func (m *MerchantNode) subscribe(ctx *owtp.Context) {
+func (m *BitBankNode) subscribe(ctx *owtp.Context) {
 
 	log.Info("Merchant handle: subscribe")
 	log.Info("params:", ctx.Params())
@@ -81,17 +81,17 @@ func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 	*/
 
 	var (
-		subscriptions []*manager.Subscription
+		subscriptions []*Subscription
 	)
 
 	for _, p := range ctx.Params().Get("subscriptions").Array() {
-		s := manager.NewSubscription(p)
+		s := NewSubscription(p)
 		subscriptions = append(subscriptions, s)
 	}
 
-	config := manager.NewConfig()
-	ow := manager.NewWalletManager(config)
-	err := ow.Subscribe(subscriptions)
+	//config := manager.NewConfig()
+	//ow := manager.NewWalletManager(config)
+	err := Subscribe(subscriptions)
 	if err != nil {
 		responseError(ctx, errors.New("subscriptions error"))
 		return
@@ -100,7 +100,7 @@ func (m *MerchantNode) subscribe(ctx *owtp.Context) {
 }
 
 //importWatchOnlyAddress 导入资产账户订阅地址
-func (m *MerchantNode) importWatchOnlyAddress(ctx *owtp.Context) {
+func (m *BitBankNode) importWatchOnlyAddress(ctx *owtp.Context) {
 
 	log.Info("Merchant handle: importWatchOnlyAddress")
 	log.Info("params:", ctx.Params())
@@ -138,13 +138,18 @@ func (m *MerchantNode) importWatchOnlyAddress(ctx *owtp.Context) {
 		responseError(ctx, errors.New("addresses is empty"))
 		return
 	}
-	//config := manager.NewConfig()
-	//ow := manager.NewWalletManager(config)
-	//err := ow.ImportWatchOnlyAddress(appID, walletID, accountID , nil)
+	config := manager.NewConfig()
+	ow := manager.NewWalletManager(config)
+	err := ow.ImportWatchOnlyAddress(appID, walletID, accountID , nil)
+	if err != nil {
+		responseError(ctx, errors.New("getWatchOnlyAddressInfo error"))
+		return
+	}
+	responseSuccess(ctx, nil)
 }
 
 //getWatchOnlyAddressInfo 获取资产账户已导入的地址统计信息
-func (m *MerchantNode) getWatchOnlyAddressInfo(ctx *owtp.Context) {
+func (m *BitBankNode) getWatchOnlyAddressInfo(ctx *owtp.Context) {
 
 	log.Info("Merchant handle: getWatchOnlyAddressInfo")
 	log.Info("params:", ctx.Params())
@@ -176,13 +181,19 @@ func (m *MerchantNode) getWatchOnlyAddressInfo(ctx *owtp.Context) {
 		return
 	}
 
-	//config := manager.NewConfig()
-	//ow := manager.NewWalletManager(config)
-	//err := ow.ImportWatchOnlyAddress(appID, walletID, accountID , nil)
+//	config := manager.NewConfig()
+//	ow := manager.NewWalletManager(config)
+//	err := ow.ImportWatchOnlyAddress(appID, walletID, accountID , nil)
+//	if err != nil {
+//		responseError(ctx, errors.New("getWatchOnlyAddressInfo error"))
+//		return
+//	}
+//	responseSuccess(ctx, creationWallet)
 }
 
-//创建钱包
-func (m *MerchantNode) createWallet(ctx *owtp.Context) {
+
+//### 3.4 创建钱包 `createWallet`
+func (m *BitBankNode) createWallet(ctx *owtp.Context) {
 
 	log.Info("Merchant handle: createWallet")
 	log.Info("params:", ctx.Params())
@@ -271,169 +282,280 @@ func (m *MerchantNode) createWallet(ctx *owtp.Context) {
 	ow := manager.NewWalletManager(config)
 
 	//执行创建方法
-	creationWallet,_,err := ow.CreateWallet(appID,wallet)
+	creationWallet,keystore,err := ow.CreateWallet(appID,wallet)
 
 	if err != nil {
 		responseError(ctx, errors.New("createWallet error"))
 		return
 	}
-	responseSuccess(ctx, creationWallet)
+	result := map[string]interface{}{
+		"wallet": creationWallet,
+		"keystore":keystore,
+	}
+	responseSuccess(ctx, result)
 
 }
 
-func (m *MerchantNode) getWalletInfo(ctx *owtp.Context) {
+//### 3.5 获取钱包信息 `getWalletInfo`
+func (m *BitBankNode) getWalletInfo(ctx *owtp.Context) {
 
-	log.Info("Merchant handle: configWallet")
+	log.Info("Merchant handle: getWalletInfo")
 	log.Info("params:", ctx.Params())
 
 	/*
-
 		| 参数名称 | 类型   | 是否可空 | 描述                                         |
 		|----------|--------|----------|----------------------------------------------|
 		| appID    | string | 否       | 钱包应用id                                   |
 		| walletID | string | 否       | 钱包ID，由钱包种子哈希，openwallet钱包地址编码 |
-
 	*/
-	//appID := ctx.Params().Get("appID").String()
-	//walletID := ctx.Params().Get("walletID").String()
-	//
-	//config := manager.NewConfig()
-	//ow := manager.NewWalletManager(config)
 
-	responseSuccess(ctx, nil)
+	appID := ctx.Params().Get("appID").String()
+	walletID := ctx.Params().Get("walletID").String()
+
+	if len(appID) == 0 {
+		responseError(ctx, errors.New("appID  is empty"))
+		return
+	}
+
+	if len(walletID) == 0 {
+		responseError(ctx, errors.New("walletID  is empty"))
+		return
+	}
+
+	config := manager.NewConfig()
+	ow := manager.NewWalletManager(config)
+	wallet,err := ow.GetWalletInfo(appID,walletID)
+
+	if err != nil {
+		responseError(ctx, errors.New("getWalletInfo error"))
+		return
+	}
+	result := map[string]interface{}{
+		"wallet": wallet,
+	}
+	responseSuccess(ctx, result)
 }
 
-func (m *MerchantNode) getWalletList(ctx *owtp.Context) {
+//### 3.6 创建资产账户 `createAssetsAccount`
+func (m *BitBankNode) createAssetsAccount(ctx *owtp.Context) {
+
+	log.Info("Merchant handle: createAssetsAccount")
+	log.Info("params:", ctx.Params())
+
+	/*
+		| 参数名称                     | 类型   | 是否可空 | 描述                                                        |
+		|------------------------------|--------|----------|-------------------------------------------------------------|
+		| appID                        | string | 否       | 钱包应用id                                                  |
+		| alias                        | string | 否       | 账户别名                                                    |
+		| walletID                     | string | 否       | 钱包ID，由钱包种子哈希，openwallet钱包地址编码                |
+		| symbol                       | string | 否       | 币种类型                                                    |
+		| otherOwnerKeys               | string | 是       | 其他资产账户拥有者公钥数组，默认为空                         |
+		| reqSigs                      | int    | 是       | 必要签名数，必须大于0，默认为1                                |
+		| isTrust                      | int    | 否       | 是否托管密钥，0：否，1：是                                      |
+		| **isTrust = 1，以下字段必填** |        |          |                                                             |
+		| password                     | string | 否       | 解锁钱包密码                                                |
+		| isTrust = 0，以下字段必填 |        |          |                                                             |
+		| publicKey                    | string | 否       | 钱包分配的资产账户公钥，不可与已存在的重复，公钥地址编码，唯一 |
+		| accountIndex                 | int    | 否       | 账户索引数，必须大于等于0，不可与已存在的重复                 |
+	*/
+
+	appID := ctx.Params().Get("appID").String()
+	walletID := ctx.Params().Get("walletID").String()
+	alias := ctx.Params().Get("alias").String()
+	symbol := ctx.Params().Get("symbol").String()
+	isTrustStr := ctx.Params().Get("isTrust").String()
+	otherOwnerKeys := ctx.Params().Get("otherOwnerKeys").Array()
+	//reqSigs := ctx.Params().Get("reqSigs").Int()
+
+	if len(appID) == 0 {
+		responseError(ctx, errors.New("appID is empty"))
+		return
+	}
+	if len(walletID) == 0 {
+		responseError(ctx, errors.New("walletID is empty"))
+		return
+	}
+	if len(alias) == 0 {
+		responseError(ctx, errors.New("alias is empty"))
+		return
+	}
+	if len(symbol) == 0 {
+		responseError(ctx, errors.New("symbol is empty"))
+		return
+	}
+	if len(isTrustStr) == 0 {
+		responseError(ctx, errors.New("isTrust is empty"))
+		return
+	}
+
+	isTrust,error := strconv.Atoi(isTrustStr)
+	if error != nil{
+		responseError(ctx, errors.New("isTrust must be a number"))
+		return
+	}
+
+
+	password := ""
+	publicKey := ""
+	var accountIndex uint64
+
+	if isTrust == 1{
+		password = ctx.Params().Get("password").String()
+		if len(password) == 0 {
+			responseError(ctx, errors.New("password is empty"))
+			return
+		}
+	}else if isTrust == 0{
+		publicKey = ctx.Params().Get("publicKey").String()
+		if len(publicKey) == 0 {
+			responseError(ctx, errors.New("publicKey is empty"))
+			return
+		}
+		accountIndex = ctx.Params().Get("accountIndex").Uint()
+		if accountIndex == 0 {
+			responseError(ctx, errors.New("accountIndex is empty"))
+			return
+		}
+	}else{
+		responseError(ctx, errors.New("isTrust must be a 1 or 0"))
+		return
+	}
+
+	config := manager.NewConfig()
+	ow := manager.NewWalletManager(config)
+
+	//创建 assetsAccount
+	var assetsAccount *openwallet.AssetsAccount
+	err := json.Unmarshal([]byte(ctx.Params().Raw), &assetsAccount)
+	if err != nil {
+		responseError(ctx, errors.New("can't unmarshal to AssetsAccount"))
+		return
+	}
+
+	//创建 otherOwnerKeysList
+	otherOwnerKeysList := make([]string, 0)
+	for _,v := range otherOwnerKeys{
+		otherOwnerKeysList = append(otherOwnerKeysList, v.Str)
+	}
+
+	newAssetsAccount,err := ow.CreateAssetsAccount(appID, walletID , assetsAccount,otherOwnerKeysList )
+
+	if err != nil {
+		responseError(ctx, errors.New("createAssetsAccount error"))
+		return
+	}
+	//result := map[string]interface{}{
+	//	"wallet": newAssetsAccount,
+	//}
+
+	responseSuccess(ctx, newAssetsAccount)
+}
+
+
+// ### 3.7 获取资产账户 `getAssetsAccountInfo`
+func (m *BitBankNode) getAssetsAccountInfo(ctx *owtp.Context) {
 
 	log.Info("Merchant handle: getWalletList")
 	log.Info("params:", ctx.Params())
 
-	coin := ctx.Params().Get("coin").String()
+	/*
+	| 参数名称  | 类型   | 是否可空 | 描述                                         |
+	|-----------|--------|----------|----------------------------------------------|
+	| appID     | string | 否       | 钱包应用id                                   |
+	| walletID  | string | 否       | 钱包ID，由钱包种子哈希，openwallet钱包地址编码 |
+	| accountID | string | 否       | 资产账户ID                                   |
+	*/
 
-	//导入到每个币种的数据库
-	am := assets.GetMerchantAssets(coin)
-	if am == nil {
-		errorMsg := fmt.Sprintf("%s assets manager not found!", coin)
-		responseError(ctx, errors.New(errorMsg))
+	appID := ctx.Params().Get("appID").String()
+	walletID := ctx.Params().Get("walletID").String()
+	accountID := ctx.Params().Get("accountID").String()
+
+	if len(appID) == 0 {
+		responseError(ctx, errors.New("appID is empty"))
+		return
+	}
+	if len(walletID) == 0 {
+		responseError(ctx, errors.New("walletID is empty"))
+		return
+	}
+	if len(accountID) == 0 {
+		responseError(ctx, errors.New("accountID is empty"))
 		return
 	}
 
-	//提交给资产管理包转账
-	wallets, err := m.GetMerchantWalletList()
-	if err != nil {
-		responseError(ctx, err)
+	config := manager.NewConfig()
+	ow := manager.NewWalletManager(config)
+
+	account,err := ow.GetAssetsAccountInfo(appID,walletID,accountID)
+
+	if err != nil{
+		responseError(ctx, errors.New("getAssetsAccountInfo error"))
 		return
 	}
 
-	walletsMaps := make([]map[string]interface{}, 0)
+	//result := map[string]interface{}{
+	//	"wallets": walletsMaps,
+	//}
 
-	for _, w := range wallets {
-
-		accounts, err := am.GetMerchantAssetsAccountList(w)
-		if err != nil {
-			continue
-		}
-
-		for _, a := range accounts {
-
-			wmap := make(map[string]interface{})
-			wmap["alias"] = a.Alias
-			wmap["walletID"] = a.WalletID
-			wmap["publicKeys"] = a.OwnerKeys
-			wmap["coin"] = a.Symbol
-			wmap["balance"] = a.Balance
-
-			//查询钱包配置
-			config, err := m.GetMerchantWalletConfig(coin, w.WalletID)
-			if err == nil {
-				wmap["coin"] = config.Coin
-				wmap["surplus"] = config.Surplus
-				wmap["fee"] = config.Fee
-				wmap["confirm"] = config.Confirm
-			}
-
-			walletsMaps = append(walletsMaps, wmap)
-
-		}
-	}
-
-	result := map[string]interface{}{
-		"wallets": walletsMaps,
-	}
-
-	responseSuccess(ctx, result)
+	responseSuccess(ctx, account)
 }
 
-func (m *MerchantNode) createAddress(ctx *owtp.Context) {
+//### 3.8 创建地址 `createAddress`
+func (m *BitBankNode) createAddress(ctx *owtp.Context) {
 
 	log.Info("Merchant handle: createAddress")
 	log.Info("params:", ctx.Params())
 
 	/*
-		| 参数名称 | 类型   | 是否可空 | 描述         |
-		|----------|--------|----------|--------------|
-		| coin     | string | 否       | 币种标识     |
-		| walletID | string | 否       | 钱包ID       |
-		| count    | uint   | 否       | 条数         |
-		| password | string | 是       | 钱包解锁密码 |
+		| 参数名称  | 类型   | 是否可空 | 描述                                         |
+		|-----------|--------|----------|----------------------------------------------|
+		| appID     | string | 否       | 钱包应用id                                   |
+		| walletID  | string | 否       | 钱包ID，由钱包种子哈希，openwallet钱包地址编码 |
+		| accountID | string | 否       | 资产账户ID                                   |
+		| count     | string | 否       | 创建数量                                     |
 	*/
 
-	coin := ctx.Params().Get("coin").String()
+	appID := ctx.Params().Get("appID").String()
 	walletID := ctx.Params().Get("walletID").String()
+	accountID := ctx.Params().Get("accountID").String()
+	countStr := ctx.Params().Get("count").String()
 	count := ctx.Params().Get("count").Uint()
-	password := ctx.Params().Get("password").String()
-
-	if count == 0 {
-		responseError(ctx, errors.New("create address count must be greater than 0"))
+	if len(appID) == 0 {
+		responseError(ctx, errors.New("appID is empty"))
+		return
+	}
+	if len(walletID) == 0 {
+		responseError(ctx, errors.New("walletID is empty"))
+		return
+	}
+	if len(accountID) == 0 {
+		responseError(ctx, errors.New("accountID is empty"))
+		return
+	}
+	if len(countStr) == 0 {
+		responseError(ctx, errors.New("countStr is empty"))
 		return
 	}
 
-	//导入到每个币种的数据库
-	am := assets.GetMerchantAssets(coin)
-	if am == nil {
-		errorMsg := fmt.Sprintf("%s assets manager not found!", coin)
-		responseError(ctx, errors.New(errorMsg))
+	config := manager.NewConfig()
+	ow := manager.NewWalletManager(config)
+
+	addressList,err := ow.CreateAddress(appID,walletID,accountID,count)
+	if err != nil{
+		responseError(ctx, errors.New("createAddress error"))
 		return
 	}
 
-	//提交给资产管理包转账
-	wallet, err := m.GetMerchantWalletByID(walletID)
-	if err != nil {
-		responseError(ctx, err)
-		return
+	result := map[string]interface{}{
+		"addresses": addressList,
 	}
-	wallet.Password = password
 
-	//导入到每个币种的数据库
-	mer := assets.GetMerchantAssets(coin)
-	_, err = mer.CreateMerchantAddress(wallet, wallet.SingleAssetsAccount(coin), count)
-
-	if err != nil {
-		responseError(ctx, err)
-		return
-	}
-	/*
-		addrsMaps := make([]map[string]interface{}, 0)
-
-		for _, a := range newAddrs {
-			addrsMaps = append(addrsMaps, map[string]interface{} {
-				"address": a.Address,
-				"walletID": a.AccountID,
-				"balance":a.Balance,
-				"isMemo": a.IsMemo,
-				"memo": a.Memo,
-				"alias": a.Alias,
-			})
-		}
-
-		result := map[string]interface{}{
-			"addresses": addrsMaps,
-		}
-	*/
-	responseSuccess(ctx, nil)
+	responseSuccess(ctx, result)
 }
 
-func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
+
+//### 3.9 获取地址列表 `getAddressList`
+func (m *BitBankNode) getAddressList(ctx *owtp.Context) {
 
 	log.Info("Merchant handle: getAddressList")
 	log.Info("params:", ctx.Params())
@@ -441,176 +563,603 @@ func (m *MerchantNode) getAddressList(ctx *owtp.Context) {
 	/*
 		| 参数名称  | 类型   | 是否可空 | 描述                                         |
 		|-----------|--------|----------|----------------------------------------------|
-		| coin      | string | 否       | 币种标识                                     |
-		| walletID  | string | 否       | 钱包ID                                       |
-		| watchOnly | uint   | 否       | 0: 钱包自己创建的地址,1：外部导入的订阅的地址 |
-		| offset    | uint   | 是       | 从0开始                                      |
-		| limit     | uint   | 是       | 查询条数                                     |
+		| appID     | string | 否       | 钱包应用id                                   |
+		| walletID  | string | 否       | 钱包ID，由钱包种子哈希，openwallet钱包地址编码 |
+		| accountID | string | 否       | 资产账户ID                                   |
+		| offset    | int    | 是       | 从0开始                                      |
+		| limit     | int    | 是       | 查询条数                                     |
+		| watchOnly | int    | 否       | 观察类型，只做订阅使用，0：否，1：是              |
 	*/
-
-	coin := ctx.Params().Get("coin").String()
+	appID := ctx.Params().Get("appID").String()
 	walletID := ctx.Params().Get("walletID").String()
-	watchOnly := ctx.Params().Get("watchOnly").Bool()
-	offset := ctx.Params().Get("offset").Uint()
-	limit := ctx.Params().Get("limit").Uint()
-
-	//导入到每个币种的数据库
-	am := assets.GetMerchantAssets(coin)
-	if am == nil {
-		errorMsg := fmt.Sprintf("%s assets manager not found!", coin)
-		responseError(ctx, errors.New(errorMsg))
+	accountID := ctx.Params().Get("accountID").String()
+	offset := ctx.Params().Get("offset").Int()
+	limit := ctx.Params().Get("limit").Int()
+	watchOnly := ctx.Params().Get("watchOnly").Int()
+	if len(appID) == 0 {
+		responseError(ctx, errors.New("appID is empty"))
 		return
 	}
-
-	//提交给资产管理包转账
-	wallet, err := m.GetMerchantWalletByID(walletID)
-	if err != nil {
-		responseError(ctx, err)
+	if len(walletID) == 0 {
+		responseError(ctx, errors.New("walletID is empty"))
 		return
 	}
-
-	//导入到每个币种的数据库
-	addrs, err := am.GetMerchantAddressList(wallet, wallet.SingleAssetsAccount(coin), watchOnly, offset, limit)
-
-	if err != nil {
-		responseError(ctx, err)
+	if len(accountID) == 0 {
+		responseError(ctx, errors.New("accountID is empty"))
 		return
 	}
+	if len(ctx.Params().Get("watchOnly").String()) == 0 {
+		responseError(ctx, errors.New("watchOnly is empty"))
+		return
+	}
+	watchOnlyBool := false
+	if watchOnly == 1{
+		watchOnlyBool = true
+	}else if watchOnly == 0{
+		watchOnlyBool = false
+	}else{
+		responseError(ctx, errors.New("watchOnly must be 0 or 1"))
+		return
+	}
+	config := manager.NewConfig()
+	ow := manager.NewWalletManager(config)
 
-	addrsMaps := make([]map[string]interface{}, 0)
-
-	for _, a := range addrs {
-		addrsMaps = append(addrsMaps, map[string]interface{}{
-			"address":  a.Address,
-			"walletID": a.AccountID,
-			"balance":  a.Balance,
-			"isMemo":   common.BoolToUInt(a.IsMemo),
-			"memo":     a.Memo,
-			"alias":    a.Alias,
-		})
+	addresses,err := ow.GetAddressList(appID,walletID,accountID,int(offset),int(limit),watchOnlyBool)
+	if err != nil{
+		responseError(ctx, errors.New("getAddressList error"))
+		return
 	}
 
 	result := map[string]interface{}{
-		"addresses": addrsMaps,
+		"addresses": addresses,
 	}
 
 	responseSuccess(ctx, result)
 }
 
-func (m *MerchantNode) submitTransaction(ctx *owtp.Context) {
+//3.10 获取钱包列表 `getWalletList`
+func (m *BitBankNode) getWalletList(ctx *owtp.Context) {
+
+	log.Info("Merchant handle: getWalletList")
+	log.Info("params:", ctx.Params())
+
+	/*
+	| 参数名称  | 类型   | 是否可空 | 描述                                         |
+	|-----------|--------|----------|----------------------------------------------|
+	| appID    | string | 否       | 钱包应用id |
+	| offset   | int    | 是       | 从0开始    |
+	| limit    | int    | 是       | 查询条数   |
+	*/
+
+
+	appID := ctx.Params().Get("appID").String()
+	offset := ctx.Params().Get("walletID").Int()
+	limit := ctx.Params().Get("accountID").Int()
+
+	if len(appID) == 0 {
+		responseError(ctx, errors.New("appID is empty"))
+		return
+	}
+
+	if offset == 0{
+		offset = 0
+	}
+	if limit == 0{
+		limit = 20
+	}
+
+	config := manager.NewConfig()
+	ow := manager.NewWalletManager(config)
+
+	walletList ,err := ow.GetWalletList(appID,int(offset),int(limit))
+	if err != nil{
+		responseError(ctx, errors.New("getWalletList error"))
+		return
+	}
+
+	result := map[string]interface{}{
+		"wallets": walletList,
+	}
+
+	responseSuccess(ctx, result)
+}
+
+
+//### 3.11 获取资产账户列表 `getAssetsAccountList`
+func (m *BitBankNode) getAssetsAccountList(ctx *owtp.Context) {
+
+	log.Info("Merchant handle: getAssetsAccountList")
+	log.Info("params:", ctx.Params())
+
+	/*
+		| 参数名称  | 类型   | 是否可空 | 描述                                         |
+		|-----------|--------|----------|----------------------------------------------|
+		| appID    | string | 否       | 钱包应用id                                   |
+		| walletID | string | 否       | 钱包ID，由钱包种子哈希，openwallet钱包地址编码 |
+		| offset   | int    | 是       | 从0开始                                      |
+		| limit    | int    | 是       | 查询条数                                     |
+	*/
+	appID := ctx.Params().Get("appID").String()
+	walletID := ctx.Params().Get("walletID").String()
+	offset := ctx.Params().Get("walletID").Int()
+	limit := ctx.Params().Get("accountID").Int()
+
+	if len(appID) == 0 {
+		responseError(ctx, errors.New("appID is empty"))
+		return
+	}
+
+	if len(walletID) == 0 {
+		responseError(ctx, errors.New("walletID is empty"))
+		return
+	}
+	if offset == 0{
+		offset = 0
+	}
+	if limit == 0{
+		limit = 20
+	}
+
+	config := manager.NewConfig()
+	ow := manager.NewWalletManager(config)
+
+	walletList ,err := ow.GetAssetsAccountList(appID,walletID,int(offset),int(limit))
+	if err != nil{
+		responseError(ctx, errors.New("getAssetsAccountList error"))
+		return
+	}
+
+	result := map[string]interface{}{
+		"accounts": walletList,
+	}
+
+	responseSuccess(ctx, result)
+}
+
+//### 3.12 创建转账交易 `createTransaction`
+func (m *BitBankNode) createTransaction(ctx *owtp.Context) {
+
+	log.Info("Merchant handle: createTransaction")
+	log.Info("params:", ctx.Params())
+
+	/*
+		| 参数名称  | 类型   | 是否可空 | 描述                                         |
+		|-----------|--------|----------|----------------------------------------------|
+		| appID     | string     | 否       | 钱包应用id，bitbank是一个App     |
+		| coin      | CoinInfo | 否       | 转账币种信息                    |
+		| accountID | string     | 否       | 资产账户ID                      |
+		| amount    | string     | 否       | 转账数量                        |
+		| address   | string     | 否       | 地址                            |
+		| feeRate   | string     | 否       | 自定服务费率， fees/K            |
+		| memo      | string     | 是       | 备注                            |
+	*/
+
+	appID := ctx.Params().Get("appID").String()
+	coin := ctx.Params().Get("coin").Map()
+	accountID := ctx.Params().Get("accountID").String()
+	amount := ctx.Params().Get("amount").String()
+	address := ctx.Params().Get("address").String()
+	feeRate := ctx.Params().Get("feeRate").String()
+	memo := ctx.Params().Get("memo").String()
+
+	if len(appID) == 0 {
+		responseError(ctx, errors.New("appID is empty"))
+		return
+	}
+	if len(accountID) == 0 {
+		responseError(ctx, errors.New("accountID is empty"))
+		return
+	}
+	if len(amount) == 0 {
+		responseError(ctx, errors.New("amount is empty"))
+		return
+	}
+	if len(address) == 0 {
+		responseError(ctx, errors.New("address is empty"))
+		return
+	}
+	if len(feeRate) == 0 {
+		responseError(ctx, errors.New("feeRate is empty"))
+		return
+	}
+	if len(memo) == 0 {
+		responseError(ctx, errors.New("memo is empty"))
+		return
+	}
+	if coin == nil ||  len(coin) == 0 {
+		responseError(ctx, errors.New("coin is empty"))
+		return
+	}
+	if _,ok := coin["symbol"]; !ok {
+		responseError(ctx, errors.New("symbol is empty"))
+		return
+	}
+	if _,ok := coin["isContract"]; !ok {
+		responseError(ctx, errors.New("isContract is empty"))
+		return
+	}
+	if _,ok := coin["contractID"]; !ok {
+		responseError(ctx, errors.New("contractID is empty"))
+		return
+	}
+
+	config := manager.NewConfig()
+	ow := manager.NewWalletManager(config)
+
+	rawTransaction ,err := ow.CreateTransaction(appID, accountID, amount, address, feeRate, memo)
+	if err != nil{
+		responseError(ctx, errors.New("createTransaction error"))
+		return
+	}
+
+	result := map[string]interface{}{
+		"rawTx": rawTransaction,
+	}
+
+	responseSuccess(ctx, result)
+}
+
+//### 3.13 广播转账交易 `submitTransaction`
+func (m *BitBankNode) submitTransaction(ctx *owtp.Context) {
 
 	log.Info("Merchant handle: submitTransaction")
 	log.Info("params:", ctx.Params())
 
-	var (
-		//withdraws = make([]*openwallet.Withdraw, 0)
-		wallets  = make(map[string][]*openwallet.Withdraw)
-		tmpArray []*openwallet.Withdraw
-		txIDMaps = make([]map[string]interface{}, 0)
-	)
+	/*
+		| 参数名称  | 类型   | 是否可空 | 描述                                         |
+		|-----------|--------|----------|----------------------------------------------|
+		| appID     | string     | 否       | 钱包应用id，bitbank是一个App     |
+		| rawTx     | RawTransaction | 否       | 未完成的交易单              |
+	*/
 
-	db, err := m.OpenDB()
+	appID := ctx.Params().Get("appID").String()
+	rawTx := ctx.Params().Get("rawTx").Raw
+
+	if len(appID) == 0 {
+		responseError(ctx, errors.New("appID is empty"))
+		return
+	}
+	var raw openwallet.RawTransaction
+
+	err := json.Unmarshal([]byte(rawTx), &raw)
 	if err != nil {
-		responseError(ctx, err)
+		responseError(ctx, errors.New("can't unmarshal to RawTransaction"))
 		return
 	}
 
-	for _, p := range ctx.Params().Get("withdraws").Map() {
-		s := openwallet.NewWithdraw(p)
 
-		if len(s.WalletID) == 0 {
-			continue
-		}
-		var replayWith *openwallet.Withdraw
-		//检查sid是否重放
-		err = db.One("Sid", s.Sid, &replayWith)
-		if replayWith != nil {
-			//存在相关的sid不加入提现表
-			errMsg := fmt.Sprintf("withdraw sid: %s is duplicate\n", s.Sid)
-			//log.Printf(errMsg)
+	config := manager.NewConfig()
+	ow := manager.NewWalletManager(config)
 
-			txIDMaps = append(txIDMaps, map[string]interface{}{
-				"sid":    s.Sid,
-				"txid":   replayWith.TxID,
-				"status": 2,
-				"reason": errMsg,
-			})
-
-			continue
-		}
-
-		//withdraws = append(withdraws, s)
-
-		tmpArray = wallets[s.WalletID]
-		if tmpArray == nil {
-			tmpArray = make([]*openwallet.Withdraw, 0)
-		}
-
-		tmpArray = append(tmpArray, s)
-		wallets[s.WalletID] = tmpArray
-
-	}
-
-	db.Close()
-
-	for wid, withs := range wallets {
-		if len(withs) > 0 {
-			//提交给资产管理包转账
-			wallet, err := m.GetMerchantWalletByID(wid)
-			if err != nil {
-				responseError(ctx, err)
-				return
-			}
-			wallet.Password = withs[0].Password
-			//导入到每个币种的数据库
-			mer := assets.GetMerchantAssets(withs[0].Symbol)
-			if mer == nil {
-				continue
-			}
-
-			walletConfig, _ := m.GetMerchantWalletConfig(withs[0].Symbol, wid)
-
-			status := 0
-			reason := ""
-			txid := ""
-			tx, err := mer.SubmitTransactions(wallet, wallet.SingleAssetsAccount(withs[0].Symbol), withs, walletConfig.Surplus)
-			if err != nil {
-				log.Error("SubmitTransactions unexpected error:", err)
-				status = 3
-				reason = err.Error()
-				txid = ""
-			} else {
-				status = 1
-				err = nil
-				reason = ""
-				txid = tx.TxID
-			}
-
-			for _, with := range withs {
-				txIDMaps = append(txIDMaps, map[string]interface{}{
-					"sid":    with.Sid,
-					"txid":   txid,
-					"status": status,
-					"reason": reason,
-				})
-
-				if status == 1 {
-					with.TxID = txid
-					m.SaveToDB(with)
-				}
-			}
-
-		}
+	transaction ,err := ow.SubmitTransaction(appID,raw.Account.AccountID,raw)
+	if err != nil{
+		responseError(ctx, errors.New("submitTransaction error"))
+		return
 	}
 
 	result := map[string]interface{}{
-		"withdraws": txIDMaps,
+		"tx": transaction,
 	}
 
 	responseSuccess(ctx, result)
 }
 
-func (m *MerchantNode) getNewHeight(ctx *owtp.Context) {
+
+//### 3.14 提交转账交易 `sendTransaction`
+func (m *BitBankNode) sendTransaction(ctx *owtp.Context) {
+
+	log.Info("Merchant handle: sendTransaction")
+	log.Info("params:", ctx.Params())
+
+	/*
+		| 参数名称  | 类型   | 是否可空 | 描述                                         |
+		|-----------|--------|----------|----------------------------------------------|
+		| appID           | string               | 否       | 钱包应用id，bitbank是一个App       |
+		| walletID        | string               | 否       | 钱包id，必须是托管密码的钱包       |
+		| withdraws       | map[string: Object]] | 否       | 所需提币条目 （每个为一个withdraw） |
+		| -> address      | string               | 否       | 目标地址                       |
+		| -> withdraw     | Object               | 否       | 所需提币条目 （每个为一个withdraw） |
+		| -> -> accountID | string               | 否       | 资产账户ID                        |
+		| -> -> sid       | string               | 否       | 安全id（防止重复提交）              |
+		| -> -> isMemo    | int                  | 否       | 1为memo，0为address                |
+		| -> -> address   | string               | 否       | 目标地址                        |
+		| -> -> amount    | string               | 否       | 提笔金额                          |
+		| -> -> memo      | string               | 是       | 备注                              |
+		| -> -> password  | string               | 是       | 解锁钱包密码                      |
+	*/
+
+	appID := ctx.Params().Get("appID").String()
+	walletID := ctx.Params().Get("walletID").String()
+	withdraws := ctx.Params().Get("withdraws").Map()
+
+	if len(appID) == 0 {
+		responseError(ctx, errors.New("appID is empty"))
+		return
+	}
+	if len(walletID) == 0 {
+		responseError(ctx, errors.New("walletID is empty"))
+		return
+	}
+	if withdraws == nil || len(withdraws) == 0 {
+		responseError(ctx, errors.New("withdraws is empty"))
+		return
+	}
+
+	withdrawList := make([]*openwallet.Withdraw,0)
+
+	for _,v := range withdraws{
+		var w *openwallet.Withdraw
+		err := json.Unmarshal([]byte(v.Raw), &w)
+		if err != nil {
+			continue
+		}
+		withdrawList = append(withdrawList,w)
+	}
+
+	//config := manager.NewConfig()
+	//ow := manager.NewWalletManager(config)
+
+	//if err != nil{
+	//	responseError(ctx, errors.New("submitTransaction error"))
+	//	return
+	//}
+	//
+	//result := map[string]interface{}{
+	//	"tx": transaction,
+	//}
+
+	responseSuccess(ctx, withdrawList)
+}
+
+//### 3.15 获取资产账户余额 `getAssetsAccountBalance`
+func (m *BitBankNode) getAssetsAccountBalance(ctx *owtp.Context) {
+
+	log.Info("Merchant handle: getAssetsAccountBalance")
+	log.Info("params:", ctx.Params())
+
+	/*
+		| 参数名称  | 类型   | 是否可空 | 描述                                         |
+		|-----------|--------|----------|----------------------------------------------|
+		| appID     | string | 否       | 钱包应用id，bitbank是一个App |
+		| walletID  | string  | 否       | 钱包ID                      |
+		| accountID | string | 否       | 账户ID                      |
+	*/
+
+	appID := ctx.Params().Get("appID").String()
+	walletID := ctx.Params().Get("walletID").String()
+	accountID := ctx.Params().Get("accountID").String()
+
+	if len(appID) == 0 {
+		responseError(ctx, errors.New("appID is empty"))
+		return
+	}
+	if len(walletID) == 0 {
+		responseError(ctx, errors.New("walletID is empty"))
+		return
+	}
+	if len(accountID) == 0 {
+		responseError(ctx, errors.New("accountID is empty"))
+		return
+	}
+
+
+	//config := manager.NewConfig()
+	//ow := manager.NewWalletManager(config)
+	//ow.GetAssetsAccountInfo()
+	//if err != nil{
+	//	responseError(ctx, errors.New("getAssetsAccountBalance error"))
+	//	return
+	//}
+	//
+	//result := map[string]interface{}{
+	//	"tx": transaction,
+	//}
+
+	responseSuccess(ctx, nil)
+}
+
+//### 3.16 通过地址获取余额 `getAddressBalance`
+func (m *BitBankNode) getAddressBalance(ctx *owtp.Context) {
+
+	log.Info("Merchant handle: getAddressBalance")
+	log.Info("params:", ctx.Params())
+
+	/*
+		| 参数名称  | 类型   | 是否可空 | 描述                                         |
+		|-----------|--------|----------|----------------------------------------------|
+		| appID     | string  | 否       | 钱包应用id，bitbank是一个App |
+		| walletID  | string  | 否       | 钱包ID                      |
+		| accountID | string  | 否       | 账户ID                      |
+		| address   | Balance | 否       | 地址                        |
+	*/
+
+	appID := ctx.Params().Get("appID").String()
+	walletID := ctx.Params().Get("walletID").String()
+	accountID := ctx.Params().Get("accountID").String()
+	address := ctx.Params().Get("address").String()
+
+	if len(appID) == 0 {
+		responseError(ctx, errors.New("appID is empty"))
+		return
+	}
+	if len(walletID) == 0 {
+		responseError(ctx, errors.New("walletID is empty"))
+		return
+	}
+	if len(accountID) == 0 {
+		responseError(ctx, errors.New("accountID is empty"))
+		return
+	}
+	if len(address) == 0 {
+		responseError(ctx, errors.New("address is empty"))
+		return
+	}
+
+	//config := manager.NewConfig()
+	//ow := manager.NewWalletManager(config)
+
+
+	//ow.GetAssetsAccountInfo()
+	//if err != nil{
+	//	responseError(ctx, errors.New("getAssetsAccountBalance error"))
+	//	return
+	//}
+	//
+	//result := map[string]interface{}{
+	//	"tx": transaction,
+	//}
+
+	responseSuccess(ctx, nil)
+}
+
+//### 3.17 获取交易记录 `getTransactions`
+func (m *BitBankNode) getTransactions(ctx *owtp.Context) {
+
+	log.Info("Merchant handle: getTransactions")
+	log.Info("params:", ctx.Params())
+
+	/*
+		| 参数名称  | 类型   | 是否可空 | 描述                                         |
+		|-----------|--------|----------|----------------------------------------------|
+		| appID     | string | 否       | 钱包应用id，bitbank是一个App |
+		| walletID | string | 否       | 钱包ID                      |
+		| accountID | string | 否       | 账户ID                      |
+		| offset    | int    | 是       | 从0开始                     |
+		| limit     | int    | 是       | 查询条数                    |
+	*/
+
+	appID := ctx.Params().Get("appID").String()
+	walletID := ctx.Params().Get("walletID").String()
+	accountID := ctx.Params().Get("accountID").String()
+	//offset := ctx.Params().Get("offset").Int()
+	//limit := ctx.Params().Get("limit").Int()
+
+	if len(appID) == 0 {
+		responseError(ctx, errors.New("appID is empty"))
+		return
+	}
+	if len(walletID) == 0 {
+		responseError(ctx, errors.New("walletID is empty"))
+		return
+	}
+	if len(accountID) == 0 {
+		responseError(ctx, errors.New("accountID is empty"))
+		return
+	}
+
+	//config := manager.NewConfig()
+	//ow := manager.NewWalletManager(config)
+
+	responseSuccess(ctx, nil)
+}
+
+//### 3.18 推送订阅数据 `pushNotifications`
+func (m *BitBankNode) pushNotifications(ctx *owtp.Context) {
+
+	log.Info("Merchant handle: pushNotifications")
+	log.Info("params:", ctx.Params())
+
+	/*
+| 参数名称  | 类型                            | 是否可空 | 描述                                      |
+|-----------|---------------------------------|----------|-------------------------------------------|
+| appID     | string                          | 否       | 钱包应用id，bitbank是一个App               |
+| walletID  | string                          | 否       | 钱包ID                                    |
+| accountID | string                          | 否       | 账户ID                                    |
+| dataType  | int                             | 否       | 数据类型：1：钱包余额，2：交易记录，3：充值记录(未花交易)，4：提现记录（未花消费记录） |
+| content   | [Transaction]/Balance/[Unspent] | 否       | 根据数据类型，返回数据主体                 |
+
+#### 未花交易 `Unspent`
+
+| 参数名称      | 类型   | 是否可空 | 描述                      |
+|---------------|--------|----------|---------------------------|
+| txid          | string | 否       | 唯一交易单号              |
+| symbol        | string | 否       | 币种类型                  |
+| vout          | int    | 否       | 输出位置                  |
+| accountID     | string | 否       | 资产账户ID                |
+| address       | string | 否       | 地址                      |
+| amount        | string | 否       | 未花数量                  |
+| confirmations | int    | 否       | 确认次数                  |
+| spendable     | int    | 否       | 是否可用， 0：不可用，1：可用 |
+| confirmTime   | int    | 否       | 确认时间                  |
+	*/
+
+	appID := ctx.Params().Get("appID").String()
+	walletID := ctx.Params().Get("walletID").String()
+	accountID := ctx.Params().Get("accountID").String()
+	//dataType := ctx.Params().Get("dataType").Int()
+	//content := ctx.Params().Get("content").Array()
+
+	if len(appID) == 0 {
+		responseError(ctx, errors.New("appID is empty"))
+		return
+	}
+	if len(walletID) == 0 {
+		responseError(ctx, errors.New("walletID is empty"))
+		return
+	}
+	if len(accountID) == 0 {
+		responseError(ctx, errors.New("accountID is empty"))
+		return
+	}
+	if len(ctx.Params().Get("dataType").String()) == 0 {
+		responseError(ctx, errors.New("dataType is empty"))
+		return
+	}
+	if len(ctx.Params().Get("content").String()) == 0 {
+		responseError(ctx, errors.New("content is empty"))
+		return
+	}
+
+	//config := manager.NewConfig()
+	//ow := manager.NewWalletManager(config)
+
+	responseSuccess(ctx, nil)
+}
+
+//### 3.19 获取资产账户代币余额 `getAssetsAccountTokens`
+func (m *BitBankNode) getAssetsAccountTokens(ctx *owtp.Context) {
+
+	log.Info("Merchant handle: getAssetsAccountTokens")
+	log.Info("params:", ctx.Params())
+
+	/*
+		| 参数名称  | 类型   | 是否可空 | 描述                                         |
+		|-----------|--------|----------|----------------------------------------------|
+		| appID     | string | 否       | 钱包应用id，bitbank是一个App |
+		| walletID  | string  | 否       | 钱包ID                      |
+		| accountID | string | 否       | 账户ID                      |
+		| offset    | int    | 是       | 从0开始                     |
+		| limit     | int    | 是       | 查询条数                    |
+	*/
+
+	appID := ctx.Params().Get("appID").String()
+	walletID := ctx.Params().Get("walletID").String()
+	accountID := ctx.Params().Get("accountID").String()
+	//offset := ctx.Params().Get("offset").Int()
+	//limit := ctx.Params().Get("limit").Int()
+
+	if len(appID) == 0 {
+		responseError(ctx, errors.New("appID is empty"))
+		return
+	}
+	if len(walletID) == 0 {
+		responseError(ctx, errors.New("walletID is empty"))
+		return
+	}
+	if len(accountID) == 0 {
+		responseError(ctx, errors.New("accountID is empty"))
+		return
+	}
+
+	//config := manager.NewConfig()
+	//ow := manager.NewWalletManager(config)
+
+	responseSuccess(ctx, nil)
+}
+
+
+
+func (m *BitBankNode) getNewHeight(ctx *owtp.Context) {
 
 	log.Info("Merchant handle: getNewHeight")
 	log.Info("params:", ctx.Params())
@@ -640,7 +1189,7 @@ func (m *MerchantNode) getNewHeight(ctx *owtp.Context) {
 	responseSuccess(ctx, result)
 }
 
-func (m *MerchantNode) getWalletBalance(ctx *owtp.Context) {
+func (m *BitBankNode) getWalletBalance(ctx *owtp.Context) {
 
 	log.Info("Merchant handle: getWalletBalance")
 	log.Info("params:", ctx.Params())
@@ -669,7 +1218,7 @@ func (m *MerchantNode) getWalletBalance(ctx *owtp.Context) {
 	responseSuccess(ctx, result)
 }
 
-func (m *MerchantNode) getBalanceByAddress(ctx *owtp.Context) {
+func (m *BitBankNode) getBalanceByAddress(ctx *owtp.Context) {
 
 	log.Info("Merchant handle: getBalanceByAddress")
 	log.Info("params:", ctx.Params())
@@ -700,7 +1249,7 @@ func (m *MerchantNode) getBalanceByAddress(ctx *owtp.Context) {
 	responseSuccess(ctx, result)
 }
 
-func (m *MerchantNode) rescanBlockHeight(ctx *owtp.Context) {
+func (m *BitBankNode) rescanBlockHeight(ctx *owtp.Context) {
 	log.Info("Merchant handle: rescanBlockHeight")
 	log.Info("params:", ctx.Params())
 

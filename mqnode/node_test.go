@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"github.com/blocktree/OpenWallet/owtp"
 	"testing"
+	"time"
 )
 var mqURL = "192.168.30.160:5672"
 var nodeConfig NodeConfig
@@ -36,8 +37,23 @@ func init() {
 }
 
 
-func TestOtherMQConnectNode(t *testing.T){
- 	n,_ := NewMerchantNode(nodeConfig)
+func TestNewNode(t *testing.T) {
 
-	n.Run()
+	nodeConfig := NodeConfig{
+		MerchantNodeURL :mqURL,
+		ConnectType     :"mq",
+		Exchange     :  "DEFAULT_EXCHANGE",
+		QueueName     :  "DEFAULT_QUEUE",
+		ReceiveQueueName  :     "DEFAULT_QUEUE",
+		Account    :   "admin",
+		Password    :   "admin",
+	}
+	node,_ := NewBitNodeNode(nodeConfig)
+	node.Run()
+	time.Sleep(3 * time.Second)
+	config := make(map[string]string)
+	config["address"] = ":8675"
+	config["connectType"] = "http"
+	node.Node.Listen(config)
+
 }

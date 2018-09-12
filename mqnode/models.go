@@ -16,11 +16,25 @@
 package mqnode
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/tidwall/gjson"
-	"encoding/json"
 )
 
+//NodeConfig 节点配置
+type NodeConfig struct {
+	MerchantNodeID  string
+	LocalPublicKey  string
+	LocalPrivateKey string
+	CacheFile       string
+	MerchantNodeURL string
+	ConnectType     string
+	Exchange       string
+	QueueName       string
+	ReceiveQueueName       string
+	Account       string
+	Password       string
+}
 
 type Subscription struct {
 
@@ -41,26 +55,9 @@ func NewSubscription(res gjson.Result) *Subscription {
 }
 
 
-func Subscribe(subscription []*Subscription) error {
-
+func  Subscribe(subscription []*Subscription) error {
 	return nil
 }
-
-//NodeConfig 节点配置
-type NodeConfig struct {
-	MerchantNodeID  string
-	LocalPublicKey  string
-	LocalPrivateKey string
-	CacheFile       string
-	MerchantNodeURL string
-	ConnectType     string
-	Exchange       string
-	QueueName       string
-	ReceiveQueueName       string
-	Account       string
-	Password       string
-}
-
 
 
 type AddressVersion struct {
@@ -91,5 +88,3 @@ type MerchantDataStruct interface {
 	// extra 附加条件，默认不传入
 	EncodeMerchantJSON(extra ...map[string]interface{}) (json map[string]interface{})
 }
-
-

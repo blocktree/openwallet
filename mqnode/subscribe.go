@@ -25,7 +25,7 @@ import (
 )
 
 //GetChargeAddressVersion 获取要订阅的地址版本信息
-func (m *MerchantNode) GetChargeAddressVersion() error {
+func (m *BitBankNode) GetChargeAddressVersion() error {
 
 	var (
 		//err  error
@@ -102,7 +102,7 @@ func (m *MerchantNode) GetChargeAddressVersion() error {
 }
 
 //GetChargeAddress 获取地址
-func (m *MerchantNode) getChargeAddress() error {
+func (m *BitBankNode) getChargeAddress() error {
 
 	var (
 		err   error
@@ -184,7 +184,7 @@ func (m *MerchantNode) getChargeAddress() error {
 }
 
 //HandleTimerTask 设置定时任务
-func (m *MerchantNode) HandleTimerTask(name string, handler func(), period time.Duration) {
+func (m *BitBankNode) HandleTimerTask(name string, handler func(), period time.Duration) {
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -210,7 +210,7 @@ func (m *MerchantNode) HandleTimerTask(name string, handler func(), period time.
 }
 
 //runSubscribeAddressTask 运行订阅地址任务
-func (m *MerchantNode) runSubscribeAddressTask() {
+func (m *BitBankNode) runSubscribeAddressTask() {
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -229,7 +229,7 @@ func (m *MerchantNode) runSubscribeAddressTask() {
 }
 
 //updateSubscribeAddress 更新地址
-func (m *MerchantNode) updateSubscribeAddress() {
+func (m *BitBankNode) updateSubscribeAddress() {
 
 	var (
 		err error
@@ -248,7 +248,7 @@ func (m *MerchantNode) updateSubscribeAddress() {
 }
 
 //SubmitNewRecharges 提交新的充值单
-func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
+func (m *BitBankNode) SubmitNewRecharges(blockHeight uint64) error {
 
 	var (
 		//err      error
@@ -390,7 +390,7 @@ func (m *MerchantNode) SubmitNewRecharges(blockHeight uint64) error {
 }
 
 //blockScanNotify 区块扫描结果通知
-func (m *MerchantNode) BlockScanNotify(header *openwallet.BlockHeader) {
+func (m *BitBankNode) BlockScanNotify(header *openwallet.BlockHeader) {
 	//log.Printf("new block: %v", *header)
 	//推送新的充值记录
 	err := m.SubmitNewRecharges(header.Height)
@@ -398,3 +398,5 @@ func (m *MerchantNode) BlockScanNotify(header *openwallet.BlockHeader) {
 		log.Error("SubmitNewRecharges unexpected error:", err)
 	}
 }
+
+

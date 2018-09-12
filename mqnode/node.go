@@ -24,7 +24,6 @@ import (
 	"sync"
 	"time"
 	"github.com/blocktree/OpenWallet/openwallet"
-	"github.com/blocktree/OpenWallet/assets"
 )
 
 var (
@@ -35,7 +34,7 @@ var (
 )
 
 //商户节点
-type MerchantNode struct {
+type BitBankNode struct {
 
 	//读写锁，用于处理订阅更新和根据订阅获取数据的同步控制
 	mu sync.RWMutex
@@ -61,9 +60,9 @@ type MerchantNode struct {
 	TaskTimers map[string]*timer.TaskTimer
 }
 
-func NewMerchantNode(config NodeConfig) (*MerchantNode, error) {
+func NewBitNodeNode(config NodeConfig) (*BitBankNode, error) {
 
-	m := MerchantNode{}
+	m := BitBankNode{}
 	if len(config.MerchantNodeURL) == 0 {
 		return nil, errors.New("merchant node url is not configed! ")
 	}
@@ -108,53 +107,14 @@ func NewMerchantNode(config NodeConfig) (*MerchantNode, error) {
 	return &m, nil
 }
 
-//resetSubscriptions 重置订阅表
-func (m *MerchantNode) resetSubscriptions(news []*Subscription) {
-
-	//清除旧订阅
-	for _, s := range m.subscriptions {
-
-		am := assets.GetMerchantAssets(s.Coin)
-		if am == nil {
-			continue
-		}
-
-		//移除旧的订阅观察者
-		am.RemoveMerchantObserverForBlockScan(m)
-
-		//TODO: 重新订阅扫描地址
-	}
-
-	m.mu.Lock()
-	m.subscriptions = nil
-	m.subscriptions = news
-	m.mu.Unlock()
-
-	//加载新订阅
-	for _, s := range m.subscriptions {
-
-		am := assets.GetMerchantAssets(s.Coin)
-		if am == nil {
-			continue
-		}
-
-		wallet, err := m.GetMerchantWalletByID(s.WalletID)
-		if err != nil {
-			continue
-		}
-
-		//加入到区块链观测者表单
-		am.AddMerchantObserverForBlockScan(m, wallet)
-	}
-}
 
 //OpenDB 访问数据库
-func (m *MerchantNode) OpenDB() (*storm.DB, error) {
+func (m *BitBankNode) OpenDB() (*storm.DB, error) {
 	return storm.Open(m.Config.CacheFile)
 }
 
 //SaveToDB 保存到商户数据库
-func (m *MerchantNode) SaveToDB(data interface{})  error {
+func (m *BitBankNode) SaveToDB(data interface{})  error {
 	db, err := m.OpenDB()
 	if err != nil {
 		return err
@@ -164,7 +124,7 @@ func (m *MerchantNode) SaveToDB(data interface{})  error {
 }
 
 //GetMerchantWalletByID 获取商户钱包
-func (m *MerchantNode) GetMerchantWalletByID(walletID string) (*openwallet.Wallet, error) {
+func (m *BitBankNode) GetMerchantWalletByID(walletID string) (*openwallet.Wallet, error) {
 
 	db, err := m.OpenDB()
 	if err != nil {
@@ -183,7 +143,7 @@ func (m *MerchantNode) GetMerchantWalletByID(walletID string) (*openwallet.Walle
 
 
 //GetMerchantWalletList 获取商户钱包列表
-func (m *MerchantNode) GetMerchantWalletList() ([]*openwallet.Wallet, error) {
+func (m *BitBankNode) GetMerchantWalletList() ([]*openwallet.Wallet, error) {
 
 	db, err := m.OpenDB()
 	if err != nil {
@@ -202,7 +162,7 @@ func (m *MerchantNode) GetMerchantWalletList() ([]*openwallet.Wallet, error) {
 
 
 //GetMerchantAccountByID 获取商户资产账户
-func (m *MerchantNode) GetMerchantAccountByID(accountID string) (*openwallet.AssetsAccount, error) {
+func (m *BitBankNode) GetMerchantAccountByID(accountID string) (*openwallet.AssetsAccount, error) {
 
 	db, err := m.OpenDB()
 	if err != nil {
@@ -221,7 +181,7 @@ func (m *MerchantNode) GetMerchantAccountByID(accountID string) (*openwallet.Ass
 
 
 //GetMerchantAccountList 获取商户资产账户列表
-func (m *MerchantNode) GetMerchantAccountList(coin string) ([]*openwallet.AssetsAccount, error) {
+func (m *BitBankNode) GetMerchantAccountList(coin string) ([]*openwallet.AssetsAccount, error) {
 
 	db, err := m.OpenDB()
 	if err != nil {
@@ -239,7 +199,7 @@ func (m *MerchantNode) GetMerchantAccountList(coin string) ([]*openwallet.Assets
 }
 
 //GetMerchantWalletConfig 获取商户钱包配置信息
-func (m *MerchantNode) GetMerchantWalletConfig(coin string, walletID string) (*openwallet.WalletConfig, error) {
+func (m *BitBankNode) GetMerchantWalletConfig(coin string, walletID string) (*openwallet.WalletConfig, error) {
 
 	db, err := m.OpenDB()
 	if err != nil {
@@ -257,7 +217,7 @@ func (m *MerchantNode) GetMerchantWalletConfig(coin string, walletID string) (*o
 }
 
 //Run 运行商户节点管理
-func (m *MerchantNode) Run() error {
+func (m *BitBankNode) Run() error {
 
 	var (
 		err error
@@ -323,7 +283,7 @@ func (m *MerchantNode) Run() error {
 }
 
 //IsConnected 检查商户节点是否连接
-func (m *MerchantNode) IsConnected() error {
+func (m *BitBankNode) IsConnected() error {
 
 	if m.Node == nil {
 		return ErrMerchantNodeDisconnected
@@ -336,20 +296,20 @@ func (m *MerchantNode) IsConnected() error {
 }
 
 //Stop 停止运行
-func (m *MerchantNode) Stop() {
+func (m *BitBankNode) Stop() {
 	close(m.disconnected)
 }
 
 
 //StartTimerTask 启动定时任务
-func (m *MerchantNode) StartTimerTask() {
+func (m *BitBankNode) StartTimerTask() {
 
 	log.Info("Merchant timer task start...")
 
 }
 
 //StopTimerTask 停止定时任务
-func (m *MerchantNode) StopTimerTask() {
+func (m *BitBankNode) StopTimerTask() {
 
 	log.Info("Merchant timer task stop...")
 
@@ -360,7 +320,7 @@ func (m *MerchantNode) StopTimerTask() {
 }
 
 //DeleteAddressVersion 删除地址版本
-func (m *MerchantNode) DeleteAddressVersion(a *AddressVersion) error {
+func (m *BitBankNode) DeleteAddressVersion(a *AddressVersion) error {
 
 	db, err := m.OpenDB()
 	if err != nil {

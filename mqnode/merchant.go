@@ -89,7 +89,7 @@ func JoinMerchantNodeFlow() error {
 		return err
 	}
 
-	merchantNode, err = NewMerchantNode(c)
+	merchantNode, err = NewBitNodeNode(c)
 	if err != nil {
 		return err
 	}
