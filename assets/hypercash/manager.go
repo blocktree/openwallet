@@ -18,23 +18,24 @@ package hypercash
 import (
 	"errors"
 	"fmt"
+	"math"
+	"path/filepath"
+	"sort"
+	"strings"
+	"time"
+
+	"github.com/asdine/storm/q"
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/hdkeystore"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/walletnode"
 	"github.com/bndr/gotabulate"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/codeskyblue/go-sh"
 	"github.com/shopspring/decimal"
-	"github.com/blocktree/OpenWallet/log"
-	"math"
-	"path/filepath"
-	"sort"
-	"strings"
-	"time"
-	"github.com/asdine/storm/q"
 )
 
 const (
@@ -42,7 +43,7 @@ const (
 )
 
 type WalletManager struct {
-	storage      *hdkeystore.HDKeystore          //秘钥存取
+	storage      *hdkeystore.HDKeystore        //秘钥存取
 	hcdClient    *Client                       // 全节点客户端
 	walletClient *Client                       // 节点客户端
 	config       *WalletConfig                 //钱包管理配置
@@ -158,7 +159,6 @@ func (wm *WalletManager) CreateNewAddress(key *hdkeystore.HDKey) (*openwallet.Ad
 	return &addr, err
 
 }
-
 
 //CreateNewAddress 给指定账户创建地址
 func (wm *WalletManager) CreateNewChangeAddress(walletID string) (*openwallet.Address, error) {
@@ -624,7 +624,7 @@ func (wm *WalletManager) GetAddressBalance(walletID, address string) string {
 	err = db.Select(q.And(
 		q.Eq("AccountID", walletID),
 		q.Eq("Address", address),
-	)).Find( &utxos)
+	)).Find(&utxos)
 	if err != nil {
 		return "0"
 	}
@@ -1856,6 +1856,13 @@ func (wm *WalletManager) loadConfig() error {
 		wm.config.walletDataPath = c.String("mainNetDataPath")
 	}
 
+	cyclesec := c.String("cycleSeconds")
+	if cyclesec == "" {
+		return errors.New(fmt.Sprintf(" cycleSeconds is not set, sample: 1m , 30s, 3m20s etc... Please set it in './conf/%s.ini' \n", Symbol))
+	}
+
+	wm.config.cycleSeconds, _ = time.ParseDuration(cyclesec)
+
 	token := basicAuth(wm.config.rpcUser, wm.config.rpcPassword)
 
 	wm.walletClient = NewClient(wm.config.walletAPI, token, false)
@@ -1889,15 +1896,15 @@ func (wm *WalletManager) printWalletList(list []*openwallet.Wallet) {
 //startNode 开启节点
 func (wm *WalletManager) startNode() error {
 
-	wn := walletnode.NodeManagerStruct{}
-	return wn.StartNodeFlow(wm.config.symbol)
+	wn := walletnode.WalletnodeManager{}
+	return wn.StartWalletnode(wm.config.symbol)
 }
 
 //stopNode 关闭节点
 func (wm *WalletManager) stopNode() error {
 
-	wn := walletnode.NodeManagerStruct{}
-	return wn.StopNodeFlow(wm.config.symbol)
+	wn := walletnode.WalletnodeManager{}
+	return wn.StopWalletnode(wm.config.symbol)
 }
 
 //cmdCall 执行命令

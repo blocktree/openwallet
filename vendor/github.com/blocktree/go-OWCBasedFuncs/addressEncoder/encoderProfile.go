@@ -97,7 +97,7 @@ var (
 	QTUM_testnetPublicBIP32          = AddressType{"base58", qtumAlphabet, "doubleSHA256", "", 74, []byte{0x04, 0x35, 0x87, 0xCF}, nil}
 	QTUM_testnetPrivateBIP32         = AddressType{"base58", qtumAlphabet, "doubleSHA256", "", 74, []byte{0x04, 0x35, 0x83, 0x94}, nil}
 
-	//DCRD
+	//DCRD stuff
 	DCRD_mainnetAddressP2PKH         =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x07, 0x3f}, nil} //PubKeyHashAddrID, stars with Ds
     DCRD_mainnetAddressP2PK          =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x13, 0x86}, nil} //PubKeyAddrID,stars with Dk
     DCRD_mainnetAddressPKHEdwards    =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x07, 0x1f}, nil}//PKHEdwardsAddrID,starts with De
@@ -118,4 +118,9 @@ var (
 	DCRD_simnetAddressPKHSchnorr     =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x0e, 0x53}, nil}//PKHSchnorrAddrID,starts with SS
 	DCRD_simnetAddressP2SH           =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x0e, 0x6c}, nil}//ScriptHashAddrID,starts with Sc
 	DCRD_simnetAddressPrivate        =  AddressType{"base58", dcrdAlphabet, "doubleBlake256", "ripemd160", 20, []byte{0x23, 0x07}, nil}//PrivateKeyID, starts with Ps
+	
+	//Nebulas stuff
+	NAS_AccountAddress               =    AddressType{"base58", dcrdAlphabet, "sha3_256", "sha3_256_ripemd160", 20, []byte{0x19, 0x57}, nil}
+	NAS_SmartContractAddress         =    AddressType{"base58", dcrdAlphabet, "sha3_256", "sha3_256_ripemd160", 20, []byte{0x19, 0x58}, nil}
+
 )

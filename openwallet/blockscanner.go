@@ -75,11 +75,11 @@ type BlockScanNotificationObject interface {
 	BlockScanNotify(header *BlockHeader) error
 
 	//BlockExtractDataNotify 区块提取结果通知
-	BlockExtractDataNotify(sourceKey string, data *BlockExtractData) error
+	BlockExtractDataNotify(sourceKey string, data *TxExtractData) error
 }
 
-//BlockExtractData 区块扫描后的提取结果
-type BlockExtractData struct {
+//TxExtractData 区块扫描后的交易单提取结果
+type TxExtractData struct {
 
 	//充值记录
 	TxInputs []*TxInput
@@ -91,8 +91,8 @@ type BlockExtractData struct {
 	Transaction *Transaction
 }
 
-func NewBlockExtractData() *BlockExtractData {
-	data := BlockExtractData{
+func NewBlockExtractData() *TxExtractData {
+	data := TxExtractData{
 		TxInputs: make([]*TxInput, 0),
 		TxOutputs: make([]*TxOutPut, 0),
 	}

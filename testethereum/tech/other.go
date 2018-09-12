@@ -45,3 +45,37 @@ func Log(args ...interface{}) {
 func TestGetFuncAndFileName() {
 	Log()
 }
+
+func TestSlice() {
+	slice := make([]int, 8, 20) //{1, 2, 3, 4, 5, 6, 7, 8}
+	fmt.Println("slice:", slice, " cap:", cap(slice), " len:", len(slice))
+	slice = slice[0:8:15]
+	fmt.Println("slice:", slice, " cap:", cap(slice), " len:", len(slice))
+	slice = slice[0:6:10]
+	fmt.Println("slice:", slice, " cap:", cap(slice), " len:", len(slice))
+}
+
+func TestMap() {
+
+	type t struct {
+		a string
+		b int
+	}
+	t1 := t{a: "haha", b: 0}
+	t2 := t{a: "xixi", b: 1}
+	tmap := map[string]t{
+		"haha": t1,
+		"xixi": t2,
+	}
+
+	fmt.Println(tmap)
+	for k, v := range tmap {
+		if k == "xixi" {
+			v.b++
+			//tmap[k].b++ will report a compile error
+			tmap[k] = v
+		}
+	}
+
+	fmt.Println(tmap)
+}

@@ -23,18 +23,16 @@ import (
 	"io/ioutil"
 	"log"
 	"path/filepath"
-	"strings"
 
 	"docker.io/go-docker/api/types"
 )
 
 // Copy file from container to local filesystem
 //
+//	src := "wallet.dat"  // 备份来源，全节点中的文件名 (MainDataPath + '/' + src)
+//	dst := "2018.....wallet.dat" // 备份目标，自设
 //	src/dst: filename
-func CopyFromContainer(symbol, src, dst string) error {
-	// func(vals ...interface{}) {}(
-	// 	tar.Writer{}, os.File{},
-	// ) // Delete before commit
+func (w *WalletnodeManager) CopyFromContainer(symbol, src, dst string) error {
 
 	var buf bytes.Buffer
 
@@ -43,12 +41,22 @@ func CopyFromContainer(symbol, src, dst string) error {
 	}
 
 	// Init docker client
-	c, err := _GetClient()
+	c, err := getDockerClient(symbol)
 	if err != nil {
 		return err
 	}
 
-	cname := strings.ToLower(symbol)
+	cname, err := getCName(symbol)
+	if err != nil {
+		return err
+	}
+
+	// dataDir, err := WNConfig.getDataDir()
+	// if err != nil {
+	// 	return err
+	// }
+	// src = filepath.Join(dataDir, src)
+
 	// API Return: CopyFromContainer -> (io.ReadCloser, types.ContainerPathStat, error)
 	fp, _, err := c.CopyFromContainer(context.Background(), cname, src)
 	if err != nil {
@@ -83,9 +91,14 @@ func CopyFromContainer(symbol, src, dst string) error {
 
 // Copy file to container from local filesystem
 //
+// Define:
 //	src: filename
 //	dst: path
-func CopyToContainer(symbol, src, dst string) error {
+// Example:
+//	src := "/tmp/2018......wallet.dat"  // 恢复来源，用户提供
+//	dst := "wallet.dat" // 恢复目标的文件名 (MainDataPath + '/' + dst)
+
+func (w *WalletnodeManager) CopyToContainer(symbol, src, dst string) error {
 
 	var content io.Reader
 
@@ -94,12 +107,22 @@ func CopyToContainer(symbol, src, dst string) error {
 	}
 
 	// Init docker client
-	c, err := _GetClient()
+	c, err := getDockerClient(symbol)
 	if err != nil {
 		return err
 	}
 
-	cname := strings.ToLower(symbol)
+	cname, err := getCName(symbol)
+	if err != nil {
+		return err
+	}
+
+	// dataDir, err := WNConfig.getDataDir()
+	// if err != nil {
+	// 	return err
+	// }
+	// dst = filepath.Join(dataDir, dst)
+
 	// Return: ioutil.ReadFile() -> ([]byte, err)
 	if dat, err := ioutil.ReadFile(src); err != nil {
 		log.Println(err)

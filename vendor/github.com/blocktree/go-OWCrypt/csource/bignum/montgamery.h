@@ -23,8 +23,8 @@
 #define MONT_OKAY   0
 #define MONT_ERROR -1
 
-typedef uint64_t mont_unit;
-typedef unsigned long mp_double_unit __attribute__((mode(TI)));
+typedef uint32_t mont_unit;
+typedef uint64_t mp_double_unit;
 
 typedef struct
 {

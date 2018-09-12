@@ -63,6 +63,8 @@ var (
 	sumAddress = "0x2a63b2203955b84fefe52baca3881b3614991b34"
 	//是否测试网络
 	isTestNet = true
+	//网络号
+	chainID int64 = 12
 	//ethereum key存放路径
 	EthereumKeyPath = "/Users/peter/workspace/bitcoin/wallet/src/github.com/ethereum/go-ethereum/chain/keystore"
 	//钱包下keystore默认密码

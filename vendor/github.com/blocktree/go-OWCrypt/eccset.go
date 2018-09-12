@@ -51,31 +51,39 @@ package owcrypt
 // #include "hash_set.h"
 // #include "keccak_256.c"
 // #include "keccak_256.h"
+//#include "sha3_256.c"
+//#include "sha3_256.h"
 import "C"
 import "unsafe"
 
 const (
-	HASH_ALG_SHA1          = uint32(0xA0000000)
-	HASH_ALG_SHA256        = uint32(0xA0000002)
-	HASH_ALG_SHA512        = uint32(0xA0000003)
-	HASH_ALG_MD4           = uint32(0xA0000004)
-	HASH_ALG_MD5           = uint32(0xA0000005)
-	HASH_ALG_RIPEMD160     = uint32(0xA0000006)
-	HASH_ALG_BLAKE2B       = uint32(0xA0000007)
-	HASH_ALG_BLAKE2S       = uint32(0xA0000008)
-	HASH_ALG_SM3           = uint32(0xA0000009)
-	HASh_ALG_DOUBLE_SHA256 = uint32(0xA000000A)
-	HASH_ALG_HASH160       = uint32(0xA000000B)
-	HASH_ALG_KECCAK256     = uint32(0xA000000E)
+	HASH_ALG_SHA1                = uint32(0xA0000000)
+	HASH_ALG_SHA3_256            = uint32(0xA0000001)
+	HASH_ALG_SHA256              = uint32(0xA0000002)
+	HASH_ALG_SHA512              = uint32(0xA0000003)
+	HASH_ALG_MD4                 = uint32(0xA0000004)
+	HASH_ALG_MD5                 = uint32(0xA0000005)
+	HASH_ALG_RIPEMD160           = uint32(0xA0000006)
+	HASH_ALG_BLAKE2B             = uint32(0xA0000007)
+	HASH_ALG_BLAKE2S             = uint32(0xA0000008)
+	HASH_ALG_SM3                 = uint32(0xA0000009)
+	HASh_ALG_DOUBLE_SHA256       = uint32(0xA000000A)
+	HASH_ALG_HASH160             = uint32(0xA000000B)
+	HASH_ALG_KECCAK256           = uint32(0xA000000E)
+	HASH_ALG_KECCAK256_RIPEMD160 = uint32(0xA000000F)
+	HASH_ALG_SHA3_256_RIPEMD160  = uint32(0xA0000010)
 
-	ECC_CURVE_SECP256K1    = uint32(0xECC00000)
-	ECC_CURVE_SECP256R1    = uint32(0xECC00001)
-	ECC_CURVE_PRIMEV1      = ECC_CURVE_SECP256R1
-	ECC_CURVE_NIST_P256    = ECC_CURVE_SECP256R1
-	ECC_CURVE_SM2_STANDARD = uint32(0xECC00002)
-	ECC_CURVE_ED25519      = uint32(0xECC00003)
-	ECC_CURVE_ED25519_EXTEND=uint32(0xECC00004)
+	HMAC_SHA256_ALG = uint32(0x50505050)
+	HMAC_SHA512_ALG = uint32(0x50505051)
+	HMAC_SM3_ALG    = uint32(0x50505052)
 
+	ECC_CURVE_SECP256K1      = uint32(0xECC00000)
+	ECC_CURVE_SECP256R1      = uint32(0xECC00001)
+	ECC_CURVE_PRIMEV1        = ECC_CURVE_SECP256R1
+	ECC_CURVE_NIST_P256      = ECC_CURVE_SECP256R1
+	ECC_CURVE_SM2_STANDARD   = uint32(0xECC00002)
+	ECC_CURVE_ED25519        = uint32(0xECC00003)
+	ECC_CURVE_ED25519_EXTEND = uint32(0xECC00004)
 
 	SUCCESS            = uint16(0x0001)
 	FAILURE            = uint16(0x0000)
@@ -117,8 +125,11 @@ func Signature(prikey []byte, ID []byte, IDlen uint16, message []byte, message_l
 }
 
 func Verify(pubkey []byte, ID []byte, IDlen uint16, message []byte, message_len uint16, signature []byte, typeChoose uint32) uint16 {
+	var id *C.uchar = nil
 	pub := (*C.uchar)(unsafe.Pointer(&pubkey[0]))
-	id := (*C.uchar)(unsafe.Pointer(&ID[0]))
+	if typeChoose == ECC_CURVE_SM2_STANDARD {
+		id = (*C.uchar)(unsafe.Pointer(&ID[0]))
+	}
 	msg := (*C.uchar)(unsafe.Pointer(&message[0]))
 	sig := (*C.uchar)(unsafe.Pointer(&signature[0]))
 	ret := C.ushort(0)
@@ -341,10 +352,10 @@ func Hash(data []byte, digestLen uint16, typeChoose uint32) []byte {
 	case HASH_ALG_MD4, HASH_ALG_MD5:
 		length = 16
 		break
-	case HASH_ALG_SHA1, HASH_ALG_RIPEMD160, HASH_ALG_HASH160:
+	case HASH_ALG_SHA1, HASH_ALG_RIPEMD160, HASH_ALG_HASH160,HASH_ALG_KECCAK256_RIPEMD160,HASH_ALG_SHA3_256_RIPEMD160:
 		length = 20
 		break
-	case HASH_ALG_SHA256, HASh_ALG_DOUBLE_SHA256, HASH_ALG_SM3, HASH_ALG_KECCAK256:
+	case HASH_ALG_SHA256, HASh_ALG_DOUBLE_SHA256, HASH_ALG_SM3, HASH_ALG_KECCAK256,HASH_ALG_SHA3_256:
 		length = 32
 		break
 	case HASH_ALG_SHA512:
@@ -363,5 +374,25 @@ func Hash(data []byte, digestLen uint16, typeChoose uint32) []byte {
 
 	C.hash(msg, C.uint(len(data)), dig, C.ushort(digestLen), C.uint(typeChoose))
 
+	return ret[:]
+}
+
+func Hmac(key []byte, data []byte, typeChoose uint32) []byte {
+	var length uint16
+	switch typeChoose {
+	case HMAC_SHA256_ALG, HMAC_SM3_ALG:
+		length = 32
+		break
+	case HMAC_SHA512_ALG:
+		length = 64
+		break
+	default:
+		break
+	}
+	ret := make([]byte, length)
+	msg := (*C.uchar)(unsafe.Pointer(&data[0]))
+	k := (*C.uchar)(unsafe.Pointer(&key[0]))
+	out := (*C.uchar)(unsafe.Pointer(&ret[0]))
+	C.HMAC(k, C.ushort(len(key)), msg, C.ushort(len(data)), out, C.uint(typeChoose))
 	return ret[:]
 }

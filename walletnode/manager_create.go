@@ -16,106 +16,18 @@ package walletnode
 
 import (
 	"context"
-	// "docker.io/go-docker"
-	// "github.com/astaxie/beego"
-	"errors"
-	"log"
-	// "docker.io/go-docker/api"
+	"fmt"
+	"path/filepath"
+	s "strings"
+	"time"
+
 	"docker.io/go-docker/api/types"
 	"docker.io/go-docker/api/types/container"
 	"docker.io/go-docker/api/types/mount"
 	"docker.io/go-docker/api/types/network"
-	"fmt"
-	"github.com/blocktree/OpenWallet/console"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/docker/go-connections/nat"
-	"path/filepath"
-	s "strings"
-	"time"
 )
-
-// Check <Symbol>.ini file, create new if not
-//
-// Workflow:
-//		1> 当前目录没有 ini，是否创建？
-//			1.1 存在，return nil
-//		2> 询问是否设置为测试链？
-//		3> 获取Master服务器IP地址和端口
-func _CheckAndCreateConfig(symbol string) error {
-
-	// Init
-	// if err := FullnodeContainerPath.init(symbol); err != nil {
-	// 	return err
-	// }
-
-	// Check <Symbol>.ini
-	if err := loadConfig(symbol); err == nil {
-		// <Symbol>.ini exist, return and go next
-		// return nil
-	} else {
-		fmt.Println("Current: ", err)
-	}
-
-	// Ask about whether create new
-	dirname, _ := filepath.Abs("./")
-	if isnew, err := console.InputText(fmt.Sprintf("Init new %s wallet fullnode in '%s/'(yes, no, quit)[yes]: ", s.ToUpper(symbol), dirname), false); err != nil {
-		log.Println(err)
-		return err
-	} else {
-		switch isnew {
-		case "", "yes":
-		case "no":
-			return nil
-		case "quit":
-			return errors.New("Init terminated!")
-		default:
-			return errors.New("Invalid!")
-		}
-	}
-
-	// Ask about whether sync by testnet
-	if istestnet, err := console.InputText("Within testnet('testnet','main')[testnet]: ", false); err != nil {
-		return err
-	} else {
-		switch istestnet {
-		case "testnet":
-			isTestNet = "true"
-		case "main":
-			isTestNet = "false"
-		case "":
-			isTestNet = "true"
-		default:
-			return errors.New("Invalid!")
-		}
-	}
-
-	// Ask about Docker master Address and Port
-	if addr, err := console.InputText("Docker master server address [localhost]: ", false); err != nil {
-		return err
-	} else {
-		if addr != "" {
-			serverAddr = addr
-		}
-	}
-	if port, err := console.InputText("Docker master server port[2375]: ", false); err != nil {
-		return err
-	} else {
-		if port != "" {
-			serverPort = port
-		}
-	}
-
-	// Create new INI file, and update
-	if err := initConfig(symbol); err != nil {
-		log.Println(err)
-		return err
-	}
-	if err := updateConfig(symbol); err != nil {
-		log.Println(err)
-		return err
-	}
-
-	return nil
-}
 
 // Check wallet container, create if not
 //
@@ -129,22 +41,20 @@ func _CheckAndCreateConfig(symbol string) error {
 //			1> 初始化物理服务器目录
 //			return {IP, Status}
 //
-func _CheckAdnCreateContainer(symbol string) error {
-	symbol = s.ToLower(symbol)
-
-	// Init docker client
-	c, err := _GetClient()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
+func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 
 	if err := loadConfig(symbol); err != nil {
-		log.Println(err)
 		return err
 	}
 
-	cName, err := _GetCName(symbol) // container name
+	// Init docker client
+	c, err := getDockerClient(symbol)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	cName, err := getCName(symbol) // container name
 	if err != nil {
 		return err
 	}
@@ -172,63 +82,75 @@ func _CheckAdnCreateContainer(symbol string) error {
 			}},
 		&network.NetworkingConfig{},
 		"temp"); err != nil {
-		log.Println(err)
+		log.Error(err)
 		return err
 	} else {
 		// Start
 		if err = c.ContainerStart(context.Background(), "temp", types.ContainerStartOptions{}); err != nil {
-			log.Println(err)
+			log.Error(err)
 		}
 		if err = c.ContainerRemove(context.Background(), "temp", types.ContainerRemoveOptions{Force: true}); err != nil {
-			log.Println(err)
+			log.Error(err)
 		}
 	}
+
+	// --------------------------------- Create Container -----------------------------------------
+	var portBindings map[nat.Port][]nat.PortBinding
+	// portBindings := map[nat.Port][]nat.PortBinding{}
+	// var exposedPorts map[nat.Port]struct{}
+	// exposedPorts := map[nat.Port]struct{}{}
+	var RPCPort string
+	// var Cmd []string
+	var Env []string
+	var MountSrcDir string
 
 	ctn_config, ok := FullnodeContainerConfigs[s.ToLower(symbol)]
 	if !ok {
 		return nil
 	}
 
-	// var portBindings map[nat.Port][]nat.PortBinding
-	portBindings := map[nat.Port][]nat.PortBinding{}
-	// var exposedPorts map[nat.Port]struct{}
-	exposedPorts := map[nat.Port]struct{}{}
-	apiPort := ""
+	portBindings = map[nat.Port][]nat.PortBinding{}
 	for _, v := range ctn_config.PORT {
-		if isTestNet == "true" {
-			portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{HostPort: v[2]}}
-			exposedPorts[nat.Port(v[0])] = struct{}{}
-			if v[0] == ctn_config.APIPORT {
-				apiPort = v[2]
+		if WNConfig.isTestNet == "true" {
+			portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{HostIP: DockerAllowed, HostPort: v[2]}}
+			//exposedPorts[nat.Port(v[0])] = struct{}{}
+			if v[0] == ctn_config.RPCPORT {
+				RPCPort = v[2]
 			}
 		} else {
-			portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{HostPort: v[1]}}
-			exposedPorts[nat.Port(v[0])] = struct{}{}
-			if v[0] == ctn_config.APIPORT {
-				apiPort = v[1]
+			portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{HostIP: DockerAllowed, HostPort: v[1]}}
+			// exposedPorts[nat.Port(v[0])] = struct{}{}
+			if v[0] == ctn_config.RPCPORT {
+				RPCPort = v[1]
 			}
 		}
 	}
 
-	Cmd := []string{}
-	if isTestNet == "true" {
-		Cmd = ctn_config.CMD[1]
+	if WNConfig.isTestNet == "true" {
+		// Cmd = ctn_config.CMD[1]
+		Env = []string{"TESTNET=true"}
+		MountSrcDir = filepath.Join(MountSrcPrefix, s.ToLower(symbol), "/testdata")
 	} else {
-		Cmd = ctn_config.CMD[0]
+		// Cmd = ctn_config.CMD[0]
+		Env = []string{"TESTNET=false"}
+		MountSrcDir = filepath.Join(MountSrcPrefix, s.ToLower(symbol), "/data")
 	}
+
 	cConfig := container.Config{
-		// string,
+		// string to container name
 		Hostname: cName,
-		// string,
-		Domainname: fmt.Sprintf("%s.local.com", cName),
+		// string to container domainname
+		// Domainname: fmt.Sprintf("%s.local.com", cName),
 		// string, Command to run when starting the container
-		Cmd: Cmd,
+		// Cmd: Cmd,
+		// string, List of environment variable to set in the container
+		Env: Env,
 		// string, Name of the image as it was passed by the operator(e.g. could be symbolic)
 		Image: ctn_config.IMAGE,
 		// nat.PortSet         `json:",omitempty"` , List of exposed ports
-		ExposedPorts: exposedPorts,
+		// ExposedPorts: exposedPorts,
 		// string, Current directory (PWD) in the command will be launched
-		WorkingDir: "/root",
+		// WorkingDir: "/root",
 
 		// // map[string]struct{}, List of volumes (mounts) used for the container
 		// Volumes: map[string]struct{}{
@@ -255,22 +177,18 @@ func _CheckAdnCreateContainer(symbol string) error {
 		PortBindings: portBindings,
 		// Mount Volumes
 		Mounts: []mount.Mount{
-			// {
-			// 	// "Driver":      "local",
-			// 	// "vers":        "4,soft,timeo=180,bg,tcp,rw",
-			// 	Type:        mount.TypeBind,
-			// 	Source:      "/openwallet/exec/" + s.ToLower(symbol),
-			// 	Target:      "/exec",
-			// 	ReadOnly:    true,
-			// 	BindOptions: &mount.BindOptions{Propagation: "private"}},
 			{
+				// "Driver":      "local",
+				// "vers":        "4,soft,timeo=180,bg,tcp,rw",
 				Type:        mount.TypeBind,
-				Source:      fmt.Sprintf("/openwallet/data/%s", s.ToLower(symbol)),
-				Target:      "/openwallet",
+				Source:      MountSrcDir,
+				Target:      MountDstDir,
 				ReadOnly:    false,
-				BindOptions: &mount.BindOptions{Propagation: "private"}},
+				BindOptions: &mount.BindOptions{Propagation: "private"},
+			},
 		},
 	}
+
 	// endpointSetting := network.EndpointSettings{
 	// 	// // Configurations
 	// 	// IPAMConfig, // *EndpointIPAMConfig
@@ -288,12 +206,14 @@ func _CheckAdnCreateContainer(symbol string) error {
 	// 	// MacAddress,          // string
 	// 	// DriverOpts,          // map[string]string
 	// }
+
 	nConfig := network.NetworkingConfig{
 		// map[string]*EndpointSettings // Endpoint configs for each connecting network
 		// EndpointsConfig: map[string]*network.EndpointSettings{"endporint": &endpointSetting},
 	}
+
 	if ctn, err := c.ContainerCreate(context.Background(), &cConfig, &hConfig, &nConfig, cName); err != nil {
-		log.Println(err)
+		log.Error(err)
 		return err
 	} else {
 		fmt.Println(ctn)
@@ -303,7 +223,7 @@ func _CheckAdnCreateContainer(symbol string) error {
 	// // Get exposed port
 	// apiPort := string("")
 	// if res, err := c.ContainerInspect(context.Background(), cName); err != nil {
-	// 	log.Println(err)
+	// 	log.Error(err)
 	// 	return err
 	// } else {
 	// 	fmt.Println(res.NetworkSettings)
@@ -312,62 +232,12 @@ func _CheckAdnCreateContainer(symbol string) error {
 	// 		apiPort = v[0].HostPort
 	// 		fmt.Println("apiPort = ", apiPort)
 	// 	} else {
-	// 		log.Println("No apiPort loaded!")
+	// 		log.Error("No apiPort loaded!")
 	// 		return errors.New("No apiPort loaded!")
 	// 	}
 	// }
 
 	// Get info from docker inspect for fullnode API
-	apiURL = fmt.Sprintf("http://%s:%s", serverAddr, apiPort)
-
-	return nil
-}
-
-func _InitConfigFile(symbol string) error {
-	// Update config
-	if err := updateConfig(symbol); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Create a new container for wallet fullnode
-//
-// Workflow:
-//		// 步骤一: 判定本地 .ini 文件是否存在
-//		if  .ini 不存在，创建一个默认的 {
-//			1> 询问用户配置参数
-//			2> 创建初始 .ini 文件
-//		} else {									// .ini 存在
-//			1> 无操作，进入下一步
-//		}
-//
-//		// 步骤二：判断是否需要创建节点容器
-//		if 容器不存在 or 不正常 {
-//			1> 删除后，或直接创建一个新的(需：)
-//			2> 导出 container 数据(IP, status)
-//		} else {									// 正常
-//			1> 导出 container 数据(IP, status)
-//		}
-//
-//		// 步骤三
-//		1> 根据导出的 container 数据，更新配置文件中关于 container 的项（重复更新，方便用户改错后自动恢复）
-func (w *NodeManagerStruct) CreateNodeFlow(symbol string) error {
-
-	// 一:
-	if err := _CheckAndCreateConfig(symbol); err != nil {
-		return err
-	}
-
-	// 二:
-	if err := _CheckAdnCreateContainer(symbol); err != nil {
-		return err
-	}
-
-	// 三:
-	if err := _InitConfigFile(symbol); err != nil {
-		return err
-	}
-
+	WNConfig.WalletURL = fmt.Sprintf("http://%s:%s", WNConfig.walletnodeServerAddr, RPCPort)
 	return nil
 }

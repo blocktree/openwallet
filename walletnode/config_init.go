@@ -16,6 +16,8 @@
 package walletnode
 
 import (
+	"errors"
+
 	"github.com/blocktree/OpenWallet/common/file"
 	// "github.com/pkg/errors"
 	"path/filepath"
@@ -29,8 +31,19 @@ func initConfig(symbol string) error {
 
 	absFile := filepath.Join(configFilePath, configFileName)
 	if !file.Exists(absFile) {
-		file.MkdirAll(configFilePath)
-		file.WriteFile(absFile, []byte(defaultConfig), false)
+		if file.MkdirAll(configFilePath) != true {
+			return errors.New("initConfig: MkdirAll failed!")
+		}
+		if file.WriteFile(absFile, []byte(WNConfig.defaultConfig), false) != true {
+			return errors.New("initConfig: WriteFile failed!")
+		}
 	}
 	return nil
 }
+
+// //读取配置
+// absFile := filepath.Join(wc.configFilePath, wc.configFileName)
+// if !file.Exists(absFile) {
+// 	file.MkdirAll(wc.configFilePath)
+// 	file.WriteFile(absFile, []byte(wc.defaultConfig), false)
+// }

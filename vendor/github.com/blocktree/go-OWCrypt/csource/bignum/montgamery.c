@@ -15,7 +15,7 @@
 
 #include "montgamery.h"
 
-#define MONT_UNIT_BIT    60
+#define MONT_UNIT_BIT    30
 #define MONT_PRE_SIZE    32
 #define MONT_NO    0
 #define MONT_YES    1

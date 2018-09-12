@@ -19,12 +19,12 @@ import (
 	"fmt"
 	"github.com/asdine/storm/q"
 	"github.com/blocktree/OpenWallet/common"
+	"github.com/shopspring/decimal"
 )
 
 // TransactionWrapper 交易包装器，扩展钱包交易单相关功能
 type TransactionWrapper struct {
 	*WalletWrapper
-
 }
 
 func NewTransactionWrapper(args ...interface{}) *TransactionWrapper {
@@ -33,22 +33,8 @@ func NewTransactionWrapper(args ...interface{}) *TransactionWrapper {
 
 	walletWrapper := TransactionWrapper{WalletWrapper: wrapper}
 
-	for _, arg := range args {
-		switch obj := arg.(type) {
-		case *Wallet:
-			walletWrapper.wallet = obj
-		case WalletDBFile:
-			walletWrapper.sourceFile = string(obj)
-		case WalletKeyFile:
-			walletWrapper.keyFile = string(obj)
-		case *WalletWrapper:
-			walletWrapper.WalletWrapper = obj
-		}
-	}
-
 	return &walletWrapper
 }
-
 
 //GetTxInputs 获取钱包的出账记录
 func (wrapper *WalletWrapper) GetTxInputs(offset, limit int, cols ...interface{}) ([]*TxInput, error) {
@@ -64,7 +50,7 @@ func (wrapper *WalletWrapper) GetTxInputs(offset, limit int, cols ...interface{}
 
 	query := make([]q.Matcher, 0)
 
-	if len(cols) % 2 != 0 {
+	if len(cols)%2 != 0 {
 		return nil, fmt.Errorf("condition param is not pair")
 	}
 
@@ -95,7 +81,6 @@ func (wrapper *WalletWrapper) GetTxInputs(offset, limit int, cols ...interface{}
 	return txs, nil
 }
 
-
 //GetTxOutputs 获取钱包的入账记录
 func (wrapper *WalletWrapper) GetTxOutputs(offset, limit int, cols ...interface{}) ([]*TxOutPut, error) {
 
@@ -110,7 +95,7 @@ func (wrapper *WalletWrapper) GetTxOutputs(offset, limit int, cols ...interface{
 
 	query := make([]q.Matcher, 0)
 
-	if len(cols) % 2 != 0 {
+	if len(cols)%2 != 0 {
 		return nil, fmt.Errorf("condition param is not pair")
 	}
 
@@ -141,7 +126,6 @@ func (wrapper *WalletWrapper) GetTxOutputs(offset, limit int, cols ...interface{
 	return txs, nil
 }
 
-
 //GetTransactions 获取钱包的交易记录
 func (wrapper *WalletWrapper) GetTransactions(offset, limit int, cols ...interface{}) ([]*Transaction, error) {
 
@@ -156,7 +140,7 @@ func (wrapper *WalletWrapper) GetTransactions(offset, limit int, cols ...interfa
 
 	query := make([]q.Matcher, 0)
 
-	if len(cols) % 2 != 0 {
+	if len(cols)%2 != 0 {
 		return nil, fmt.Errorf("condition param is not pair")
 	}
 
@@ -188,13 +172,12 @@ func (wrapper *WalletWrapper) GetTransactions(offset, limit int, cols ...interfa
 }
 
 //SaveBlockExtractData 保存区块提取数据
-func (wrapper *TransactionWrapper) SaveBlockExtractData(data *BlockExtractData) error {
+func (wrapper *TransactionWrapper) SaveBlockExtractData(accountID string, data *TxExtractData) error {
 
-	//accountWithTXs := make(map[string]struct {
-	//	account *AssetsAccount
-	//	input map[string]string
-	//	output map[string]string
-	//})
+	var (
+		accountSpent    = decimal.Zero
+		accountReceived = decimal.Zero
+	)
 
 	//打开数据库
 	db, err := wrapper.OpenStormDB()
@@ -222,13 +205,11 @@ func (wrapper *TransactionWrapper) SaveBlockExtractData(data *BlockExtractData) 
 			return fmt.Errorf("wallet save TxInputs failed, unexpected error: %v", err)
 		}
 
-		//TODO:统计该交易单下的各个资产账户的支出总数
-		//account, err := wrapper.GetAssetsAccountByAddress(input.Address)
-		//if err != nil {
-		//	continue
-		//}
-
-
+		//统计该交易单下的各个资产账户的支出总数
+		if a.AccountID == accountID {
+			amount, _ := decimal.NewFromString(input.Amount)
+			accountSpent = accountSpent.Add(amount)
+		}
 	}
 
 	//保存入账的记录
@@ -243,37 +224,34 @@ func (wrapper *TransactionWrapper) SaveBlockExtractData(data *BlockExtractData) 
 			return fmt.Errorf("wallet save TxOutputs failed, unexpected error: %v", err)
 		}
 
-		//TODO:统计该交易单下的各个资产账户的收入总数
+		//统计该交易单下的各个资产账户的收入总数
+		if a.AccountID == accountID {
+			amount, _ := decimal.NewFromString(output.Amount)
+			accountReceived = accountReceived.Add(amount)
+		}
 	}
 
-	//TODO:计算该交易单下的各个资产账户实际总收支，记录为账单数据
+	//计算该交易单下的各个资产账户实际总收支，记录为账单数据
+	trx := data.Transaction
+	trx.AccountID = accountID
+	trx.Amount = accountReceived.Sub(accountSpent).StringFixed(trx.Decimal)
 
-	//保存入账的记录
-	//for _, trx := range data.Transactions {
-	//	a, err := wrapper.GetAddress(trx.Address)
-	//	if err != nil {
-	//
-	//	}
-	//	trx.AccountID = a.AccountID
-	//	err = tx.Save(trx)
-	//	if err != nil {
-	//		return fmt.Errorf("wallet save Transactions failed, unexpected error: %v", err)
-	//	}
-	//}
+	//保存账户相关的记录
+	err = tx.Save(trx)
+	if err != nil {
+		return fmt.Errorf("wallet save Transactions failed, unexpected error: %v", err)
+	}
 
 	err = tx.Commit()
 	if err != nil {
-		return fmt.Errorf("wallet save BlockExtractData failed, unexpected error: %v", err)
+		return fmt.Errorf("wallet save TxExtractData failed, unexpected error: %v", err)
 	}
 
 	return nil
 }
 
-
 //DeleteBlockDataByHeight 删除钱包中指定区块高度相关的交易记录
 func (wrapper *TransactionWrapper) DeleteBlockDataByHeight(height uint64) error {
-
-
 
 	//打开数据库
 	db, err := wrapper.OpenStormDB()

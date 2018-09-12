@@ -54,7 +54,11 @@ func main() {
 	//tech.TestBlockScanWhenFork()
 	//tech.TestEIP155Signing()
 	//tech.TestAddr()
-	tech.TestOWCrypt_sign()
+	//tech.TestOWCrypt_sign()
+	//tech.TestSlice()
+	//tech.TestMap()
+	tech.TestEthereumSigningFunc()
+	//tech.TestGetNonce()
 
 	fmt.Println("done ... ")
 }

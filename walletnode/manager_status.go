@@ -17,30 +17,38 @@ package walletnode
 
 import (
 	"context"
-	// "docker.io/go-docker/api"
-	"docker.io/go-docker/api/types"
-	"fmt"
 )
 
-func (w *NodeManagerStruct) RemoveNodeFlow(symbol string) error {
+func (w *WalletnodeManager) GetWalletnodeStatus(symbol string) (status string, err error) {
+	// func(vals ...interface{}) {}(
+	// 	context.Background, log.New, time.Saturday,
+	// 	docker.NewClient, types.ContainerListOptions{},
+	// 	container.Config{}, network.NetworkingConfig{},
+	// 	api.DefaultVersion, s.ToLower("jij"),
+	// ) // Delete before commit
 
 	if err := loadConfig(symbol); err != nil {
-		return err
+		return "", err
 	}
 
 	// Init docker client
-	c, err := _GetClient()
+	c, err := getDockerClient(symbol)
 	if err != nil {
-		return err
+		return "", err
 	}
+
+	// Instantize parameters
+	cname, err := getCName(symbol) // container name
+	if err != nil {
+		return "", err
+	}
+
 	// Action within client
-	cName, err := _GetCName(symbol) // container name
+	res, err := c.ContainerInspect(context.Background(), cname)
 	if err != nil {
-		return err
+		return "", err
 	}
-	err = c.ContainerRemove(context.Background(), cName, types.ContainerRemoveOptions{})
-	if err == nil {
-		fmt.Printf("%s walletnode remove in success!\n", symbol)
-	}
-	return err
+	// Get results
+	status = res.State.Status
+	return status, nil
 }

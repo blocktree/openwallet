@@ -19,6 +19,15 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"math"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+	"time"
+
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
@@ -30,14 +39,6 @@ import (
 	"github.com/codeskyblue/go-sh"
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
-	"io/ioutil"
-	"log"
-	"math"
-	"os"
-	"path/filepath"
-	"sort"
-	"strings"
-	"time"
 )
 
 const (
@@ -417,7 +418,6 @@ func CreateBatchAddress(name, password string, count uint64) (string, error) {
 
 	return filePath, nil
 }
-
 
 //CreateNewWallet 创建钱包
 func CreateNewWallet(name, password string) (*Wallet, string, error) {
@@ -1596,7 +1596,7 @@ func loadConfig() error {
 		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
 	}
 
-	serverAPI = c.String("apiURL")
+	walletURL = c.String("WalletURL")
 	threshold, _ = decimal.NewFromString(c.String("threshold"))
 	sumAddress = c.String("sumAddress")
 	rpcUser = c.String("rpcUser")
@@ -1619,7 +1619,7 @@ func loadConfig() error {
 	token := basicAuth(rpcUser, rpcPassword)
 
 	client = &Client{
-		BaseURL:     serverAPI,
+		BaseURL:     walletURL,
 		Debug:       false,
 		AccessToken: token,
 	}

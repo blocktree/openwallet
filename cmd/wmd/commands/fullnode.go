@@ -18,9 +18,9 @@ package commands
 import (
 	"github.com/blocktree/OpenWallet/assets"
 	"github.com/blocktree/OpenWallet/cmd/utils"
-	wf "github.com/blocktree/OpenWallet/walletnode"
-	"gopkg.in/urfave/cli.v1"
 	"github.com/blocktree/OpenWallet/log"
+	wn "github.com/blocktree/OpenWallet/walletnode"
+	"gopkg.in/urfave/cli.v1"
 )
 
 var (
@@ -192,7 +192,7 @@ func getNode(c *cli.Context) error {
 		log.Error("Argument -s <symbol> is missing")
 		return nil
 	}
-	m := assets.NodeManager(&wf.NodeManagerStruct{})
+	m := assets.NodeManager(&wn.NodeManager{})
 	if m == nil {
 		log.Error(symbol, " walletnode manager did not load")
 		return nil
@@ -210,7 +210,7 @@ func createNode(c *cli.Context) error {
 		log.Error("Argument -s <symbol> is missing")
 		return nil
 	}
-	m := assets.NodeManager(&wf.NodeManagerStruct{})
+	m := assets.NodeManager(&wn.NodeManager{})
 	if m == nil {
 		log.Error(symbol, " walletnode manager did not load")
 		return nil
@@ -228,7 +228,7 @@ func startNode(c *cli.Context) error {
 		log.Error("Argument -s <symbol> is missing")
 		return nil
 	}
-	m := assets.NodeManager(&wf.NodeManagerStruct{})
+	m := assets.NodeManager(&wn.NodeManager{})
 	if m == nil {
 		log.Error(symbol, " walletnode manager did not load")
 		return nil
@@ -246,7 +246,7 @@ func stopNode(c *cli.Context) error {
 		log.Error("Argument -s <symbol> is missing")
 		return nil
 	}
-	m := assets.NodeManager(&wf.NodeManagerStruct{})
+	m := assets.NodeManager(&wn.NodeManager{})
 	if m == nil {
 		log.Error(symbol, " walletnode manager did not load")
 		return nil
@@ -264,7 +264,7 @@ func restartNode(c *cli.Context) error {
 		log.Error("Argument -s <symbol> is missing")
 		return nil
 	}
-	m := assets.NodeManager(&wf.NodeManagerStruct{})
+	m := assets.NodeManager(&wn.NodeManager{})
 	if m == nil {
 		log.Error(symbol, " walletnode manager did not load")
 		return nil
@@ -282,7 +282,7 @@ func removeNode(c *cli.Context) error {
 		log.Error("Argument -s <symbol> is missing")
 		return nil
 	}
-	m := assets.NodeManager(&wf.NodeManagerStruct{})
+	m := assets.NodeManager(&wn.NodeManager{})
 	if m == nil {
 		log.Error(symbol, " walletnode manager did not load")
 		return nil

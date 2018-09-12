@@ -16,7 +16,6 @@
 package walletnode
 
 import (
-	// "encoding/json"
 	"fmt"
 	"path/filepath"
 	s "strings"
@@ -27,10 +26,10 @@ import (
 
 // Update <Symbol>.ini file
 func updateConfig(symbol string) error {
-	// defer func() { return recover() }()
-	// if err := loadConfig(symbol); err != nil {
-	// 	return err
-	// }
+	if WNConfig == nil {
+		return errors.New("getDockerClient: WalletnodeConfig does not initialized!")
+	}
+
 	configFilePath, _ := filepath.Abs("conf")
 	configFileName := s.ToUpper(symbol) + ".ini"
 	absFile := filepath.Join(configFilePath, configFileName)
@@ -40,14 +39,20 @@ func updateConfig(symbol string) error {
 		return (errors.New(fmt.Sprintf("Load Config Failed: %s", err)))
 	}
 
-	err = c.Set("serverAddr", serverAddr)
-	err = c.Set("serverPort", serverPort)
-	err = c.Set("isTestNet", isTestNet)
-	err = c.Set("rpcuser", rpcUser)
-	err = c.Set("rpcpassword", rpcPassword)
-	err = c.Set("apiurl", apiURL)
-	err = c.Set("mainnetdatapath", mainNetDataPath)
-	err = c.Set("testnetdatapath", testNetDataPath)
+	err = c.Set("isTestNet", WNConfig.isTestNet)
+	err = c.Set("rpcuser", WNConfig.RPCUser)
+	err = c.Set("rpcpassword", WNConfig.RPCPassword)
+	err = c.Set("WalletURL", WNConfig.WalletURL)
+
+	err = c.Set("walletnode::ServerType", WNConfig.walletnodeServerType)
+	err = c.Set("walletnode::ServerAddr", WNConfig.walletnodeServerAddr)
+	err = c.Set("walletnode::ServerPort", WNConfig.walletnodeServerPort)
+	// err = c.Set("walletnode::ServerSocket", WNConfig.walletnodeServerSocket)
+	err = c.Set("walletnode::StartNodeCMD", WNConfig.walletnodeStartNodeCMD)
+	err = c.Set("walletnode::StopNodeCMD", WNConfig.walletnodeStopNodeCMD)
+	err = c.Set("walletnode::MainnetDataPath", WNConfig.walletnodeMainNetDataPath)
+	err = c.Set("walletnode::TestnetDataPath", WNConfig.walletnodeTestNetDataPath)
+	err = c.Set("walletnode::IsEncrypted", WNConfig.walletnodeIsEncrypted)
 
 	if err := c.SaveConfigFile(absFile); err != nil {
 		return err
