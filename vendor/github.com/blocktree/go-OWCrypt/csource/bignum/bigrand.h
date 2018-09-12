@@ -12,15 +12,15 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
  */
+#ifndef bigrand_h
+#define bigrand_h
 
-package openwallet
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include "type.h"
 
+void bigrand_get_rand_range(uint8_t *rand, uint8_t *range, uint16_t len);
 
-
-type Balance struct {
-	Symbol           string
-	AccountID        string
-	ConfirmBalance   string
-	UnconfirmBalance string
-	Balance          string
-}
+#endif /* bigrand_h */

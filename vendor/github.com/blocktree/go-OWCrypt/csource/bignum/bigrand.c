@@ -13,14 +13,27 @@
  * GNU Lesser General Public License for more details.
  */
 
-package openwallet
+#include "bigrand.h"
 
-
-
-type Balance struct {
-	Symbol           string
-	AccountID        string
-	ConfirmBalance   string
-	UnconfirmBalance string
-	Balance          string
+void bigrand_get_rand_range(uint8_t *bigrand, uint8_t *range, uint16_t len)
+{
+    uint32_t tmp = 0;
+    uint16_t i = 0;
+    
+    srand((uint32_t)time(NULL));
+    
+    for(i = 0; i < len / 4; i ++)
+    {
+        tmp = rand();
+        memcpy(bigrand + i * 4, (uint8_t *)&tmp, 4);
+    }
+    
+    if((len - i * 4) % 4)
+    {
+        tmp = rand();
+        memcpy(bigrand + i * 4, (uint8_t *)&tmp, (len - i * 4) % 4);
+    }
+    
+    while(*bigrand >= *range)
+        *bigrand -= *range;
 }

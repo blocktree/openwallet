@@ -52,20 +52,22 @@ type RawTransaction struct {
 
 //KeySignature 签名信息
 type KeySignature struct {
-	EccType    uint32   //曲线类型
+	EccType    uint32 //曲线类型
+	Nonce      string
 	Address    *Address //提供签名的地址
 	Signatures string   //未花签名
 	Message    string   //被签消息
 }
 
 type Transaction struct {
-	TxID        string   `json:"txid"`
-	AccountID   string   `json:"accountID"`
-	Address     string   `json:"address"`
+	TxID      string `json:"txid"`
+	AccountID string `json:"accountID"`
+	//Address     string   `json:"address"`
 	Coin        Coin     //区块链类型标识
 	From        []string `json:"from"`
 	To          []string `json:"to"`
 	Amount      string   `json:"amount"`
+	Decimal     int32    `json:"decimal"`
 	TxType      uint64
 	Confirm     int64  `json:"confirm"`
 	BlockHash   string `json:"blockHash"`

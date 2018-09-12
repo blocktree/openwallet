@@ -13,14 +13,16 @@
  * GNU Lesser General Public License for more details.
  */
 
-package openwallet
+#ifndef type_h
+#define type_h
 
+#define uint8_t  unsigned char
+#define int8_t   signed char
+#define uint16_t unsigned short
+#define int16_t  short
+#define uint32_t unsigned int
+#define int32_t  int
+#define uint64_t unsigned long long
+#define int64_t  long long
 
-
-type Balance struct {
-	Symbol           string
-	AccountID        string
-	ConfirmBalance   string
-	UnconfirmBalance string
-	Balance          string
-}
+#endif /* type_h */
