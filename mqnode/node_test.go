@@ -43,17 +43,17 @@ func TestNewNode(t *testing.T) {
 		MerchantNodeURL :mqURL,
 		ConnectType     :"mq",
 		Exchange     :  "DEFAULT_EXCHANGE",
-		QueueName     :  "DEFAULT_QUEUE",
-		ReceiveQueueName  :     "DEFAULT_QUEUE",
+		QueueName     :  "Test",
+		ReceiveQueueName  :     "OW_RPC_JAVA",
 		Account    :   "admin",
 		Password    :   "admin",
 	}
 	node,_ := NewBitNodeNode(nodeConfig)
 	node.Run()
-	time.Sleep(3 * time.Second)
-	config := make(map[string]string)
-	config["address"] = ":8675"
-	config["connectType"] = "http"
-	node.Node.Listen(config)
+	time.Sleep(10000 * time.Second)
+	//config := make(map[string]string)
+	//config["address"] = ":8675"
+	//config["connectType"] = "http"
+	//node.Node.Listen(config)
 
 }

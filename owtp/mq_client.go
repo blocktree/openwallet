@@ -24,7 +24,6 @@ import (
 	"github.com/tidwall/gjson"
 	"net"
 	"sync"
-	"time"
 	"github.com/streadway/amqp"
 )
 
@@ -221,9 +220,7 @@ func (c *MQClient) OpenPipe() error {
 // WritePump 发送消息通道
 func (c *MQClient) writePump() {
 
-	ticker := time.NewTicker(PingPeriod) //发送心跳间隔事件要<等待时间
 	defer func() {
-		ticker.Stop()
 		c.Close()
 		log.Debug("writePump end")
 	}()
@@ -241,13 +238,6 @@ func (c *MQClient) writePump() {
 			if err := c.write(websocket.TextMessage, message); err != nil {
 				return
 			}
-		case <-ticker.C:
-			//定时器的回调,发送心跳检查,
-			err := c.write(websocket.PingMessage, []byte{})
-
-			if err != nil {
-				return //客户端不响应心跳就停止
-			}
 
 		}
 	}
@@ -260,7 +250,7 @@ func (c *MQClient) write(mt int, message []byte) error {
 	}
 	exchange := c.config["exchange"]
 	queueName := c.config["queueName"]
-	fmt.Println("queueName:",queueName,",exchange",exchange)
+	fmt.Println("queueName:",queueName,",exchange",exchange,"message:",message)
 	err := c.channel.Publish(exchange, queueName, false, false, amqp.Publishing{
 		ContentType: "text/plain",
 		Body:        []byte(message),
@@ -276,7 +266,7 @@ func (c *MQClient) readPump() {
 
 	queueName := c.config["receiveQueueName"]
 
-	fmt.Println("queueName:",queueName)
+	fmt.Println("receiveQueueName:",queueName)
 	msgs, err := c.channel.Consume(queueName, "", true, false, false, false, nil)
 
 	if err!=nil{
@@ -289,7 +279,7 @@ func (c *MQClient) readPump() {
 		//fmt.Println(*msgs)
 		for d := range msgs {
 			packet := NewDataPacket(gjson.ParseBytes(d.Body))
-
+			fmt.Printf("packet：%s",string(d.Body))
 			//开一个goroutine处理消息
 			go c.handler.OnPeerNewDataPacketReceived(c, packet)
 		}

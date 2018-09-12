@@ -244,7 +244,7 @@ func (m *BitBankNode) Run() error {
 			log.Info("Connecting to", m.Config.MerchantNodeURL)
 			config := map[string]string{
 				"address": m.Config.MerchantNodeURL,
-				"connectType": m.Config.MerchantNodeURL,
+				"connectType": m.Config.ConnectType,
 				"exchange": m.Config.Exchange,
 				"queueName":m.Config.QueueName,
 				"receiveQueueName":m.Config.ReceiveQueueName,
