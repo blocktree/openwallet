@@ -417,11 +417,11 @@ func makeSimpleTransactiomnPara2(fromAddr string, toAddr string, amount *big.Int
 }
 
 func makeSimpleTransGasEstimatedPara(fromAddr string, toAddr string, amount *big.Int) map[string]interface{} {
-	paraMap := make(map[string]interface{})
-	paraMap["from"] = fromAddr
-	paraMap["to"] = toAddr
-	paraMap["value"] = "0x" + amount.Text(16)
-	return paraMap
+	//paraMap := make(map[string]interface{})
+	//paraMap["from"] = fromAddr
+	//paraMap["to"] = toAddr
+	//paraMap["value"] = "0x" + amount.Text(16)
+	return makeGasEstimatePara(fromAddr, toAddr, amount, "") //araMap
 }
 
 func makeERC20TokenTransData(contractAddr string, toAddr string, amount *big.Int) (string, error) {
@@ -445,19 +445,33 @@ func makeERC20TokenTransData(contractAddr string, toAddr string, amount *big.Int
 	return data, nil
 }
 
+func makeGasEstimatePara(fromAddr string, toAddr string, value *big.Int, data string) map[string]interface{} {
+	paraMap := make(map[string]interface{})
+	paraMap["from"] = fromAddr
+	paraMap["to"] = toAddr
+	if data != "" {
+		paraMap["data"] = data
+	}
+
+	if value != nil {
+		paraMap["value"] = "0x" + value.Text(16)
+	}
+	return paraMap
+}
+
 func makeERC20TokenTransGasEstimatePara(fromAddr string, contractAddr string, data string) map[string]interface{} {
 
-	paraMap := make(map[string]interface{})
+	//paraMap := make(map[string]interface{})
 
 	//use password to unlock the account
 	//use the following attr to eth_sendTransaction
-	paraMap["from"] = fromAddr //fromAddr.Address
-	paraMap["to"] = contractAddr
+	//paraMap["from"] = fromAddr //fromAddr.Address
+	//paraMap["to"] = contractAddr
 	//paraMap["value"] = "0x" + amount.Text(16)
 	//paraMap["gas"] = "0x" + fee.GasLimit.Text(16)
 	//paraMap["gasPrice"] = "0x" + fee.GasPrice.Text(16)
-	paraMap["data"] = data
-	return paraMap
+	//paraMap["data"] = data
+	return makeGasEstimatePara(fromAddr, contractAddr, nil, data)
 }
 
 func ethGetGasEstimated(paraMap map[string]interface{}) (*big.Int, error) {

@@ -56,8 +56,9 @@ func main() {
 	//tech.TestAddr()
 	//tech.TestOWCrypt_sign()
 	//tech.TestSlice()
-	//tech.TestEthereumSigningFunc()
-	tech.TestGetNonce()
+	//tech.TestMap()
+	tech.TestEthereumSigningFunc()
+	//tech.TestGetNonce()
 
 	fmt.Println("done ... ")
 }
