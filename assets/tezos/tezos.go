@@ -412,13 +412,13 @@ func (wm *WalletManager) GetWalletList() error {
 
 	fmt.Printf("Do you want to query address's public key ?\n0)No\n1)Yes\n")
 
-	//选择钱包
+	//选择0或则1
 	num, err := console.InputNumber(":", true)
 	if err != nil {
 		return err
 	}
 
-	if num == 0 {
+	if num != 1 {
 		return nil
 	}
 

@@ -1866,6 +1866,13 @@ func (wm *WalletManager) loadConfig() error {
 		wm.config.walletDataPath = c.String("mainNetDataPath")
 	}
 
+	cyclesec := c.String("cycleSeconds")
+	if cyclesec == "" {
+		return errors.New(fmt.Sprintf(" cycleSeconds is not set, sample: 1m , 30s, 3m20s etc... Please set it in './conf/%s.ini' \n", Symbol))
+	}
+
+	wm.config.cycleSeconds, _ = time.ParseDuration(cyclesec)
+
 	token := basicAuth(wm.config.rpcUser, wm.config.rpcPassword)
 
 	wm.walletClient = NewClient(wm.config.serverAPI, token, false)
