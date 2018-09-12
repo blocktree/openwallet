@@ -18,12 +18,13 @@ package bitcoincash
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/astaxie/beego/config"
-	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/shopspring/decimal"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/astaxie/beego/config"
+	"github.com/blocktree/OpenWallet/common/file"
+	"github.com/shopspring/decimal"
 )
 
 const (
@@ -57,7 +58,7 @@ var (
 	//备份路径
 	backupDir = filepath.Join("data", strings.ToLower(Symbol), "backup")
 	//钱包服务API
-	serverAPI = "http://127.0.0.1:10000"
+	walletURL = "http://127.0.0.1:10000"
 	//钱包安装的路径
 	nodeInstallPath = ""
 	//钱包数据文件目录

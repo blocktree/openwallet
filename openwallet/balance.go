@@ -15,6 +15,8 @@
 
 package openwallet
 
+
+
 type Balance struct {
 	Symbol           string
 	AccountID        string

@@ -489,12 +489,12 @@ func (wm *WalletManager) CurveType() uint32 {
 
 //FullName 币种全名
 func (wm *WalletManager) FullName() string {
-	return wm.Config.Symbol
+	return "Bitcoin"
 }
 
 //Symbol 币种标识
 func (wm *WalletManager) Symbol() string {
-	return "Bitcoin"
+	return wm.Config.Symbol
 }
 
 //AddressDecode 地址解析器
@@ -509,5 +509,35 @@ func (wm *WalletManager) GetTransactionDecoder() openwallet.TransactionDecoder {
 
 //GetBlockScanner 获取区块链
 func (wm *WalletManager) GetBlockScanner() openwallet.BlockScanner {
-	return nil
+	return wm.Blockscanner
+}
+
+func (wm *WalletManager) GetAssetsAccountBalance(wrapper *openwallet.WalletWrapper, accountID string) (balance string, err error) {
+
+	//查找核心钱包确认数大于1的
+	utxos, err := wm.ListUnspent(0)
+	if err != nil {
+		return "0", err
+	}
+
+	balanceDel := decimal.New(0, 0)
+
+	//批量插入到本地数据库
+	//设置utxo的钱包账户
+	for _, utxo := range utxos {
+
+		address, err := wrapper.GetAddress(utxo.Address)
+		if err != nil {
+			continue
+		}
+
+		if address.AccountID == accountID {
+			amount, _ := decimal.NewFromString(utxo.Amount)
+			balanceDel = balanceDel.Add(amount)
+		}
+
+	}
+
+	balance = balanceDel.StringFixed(8)
+	return balance, nil
 }

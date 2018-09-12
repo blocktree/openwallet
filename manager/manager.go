@@ -29,7 +29,12 @@ import (
 )
 
 type NotificationObject interface {
-	openwallet.BlockScanNotificationObject
+
+	//BlockScanNotify 新区块扫描完成通知
+	BlockScanNotify(header *openwallet.BlockHeader) error
+
+	//BlockTxExtractDataNotify 区块提取结果通知
+	BlockTxExtractDataNotify(account *openwallet.AssetsAccount, data *openwallet.TxExtractData) error
 }
 
 //WalletManager OpenWallet钱包管理器
@@ -227,9 +232,8 @@ func (wm *WalletManager) initBlockScanner() error {
 			addrs, err := wrapper.GetAddressList(0, -1)
 
 			for _, address := range addrs {
-
-				//TODO:加载所有应用钱包地址到扫描器
-				scanner.AddAddress(address.Address, appID)
+				key := wm.encodeSourceKey(appID, address.AccountID)
+				scanner.AddAddress(address.Address, key)
 			}
 
 		}
@@ -253,4 +257,20 @@ func (wm *WalletManager) newWalletWrapper(appID string) (*openwallet.WalletWrapp
 	wrapper := openwallet.NewWalletWrapper(wrapperAppID, dbFile, db)
 	return wrapper, nil
 	//return newAppWalletWrapper(db, dbFile)
+}
+
+// encodeSourceKey 编码sourceKey
+func (wm *WalletManager) encodeSourceKey(appID, accountID string) string {
+	key := appID + ":" + accountID
+	return key
+}
+
+// decodeSourceKey 解码sourceKey
+func (wm *WalletManager) decodeSourceKey(key string) (appID string, accountID string) {
+	sources := strings.Split(key, ":")
+	if len(sources) == 2 {
+		return sources[0], sources[1]
+	} else {
+		return "", ""
+	}
 }

@@ -177,6 +177,8 @@ sumAddress = ""
 threshold = ""
 # wallet data path
 walletDataPath = ""
+# summary task timer cycle time, sample: 1h, 1h1m , 2m, 30s, 3m20s etc...
+cycleSeconds = ""
 `
 
 	return &c

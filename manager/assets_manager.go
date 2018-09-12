@@ -34,6 +34,10 @@ type AssetsManager interface {
 
 	//GetBlockScanner 获取区块链
 	GetBlockScanner() openwallet.BlockScanner
+
+	GetAssetsAccountBalance(wrapper *openwallet.WalletWrapper, accountID string) (balance string, err error)
+
+	//GetAssetsAccountTransactions(wrapper *openwallet.WalletWrapper, account *openwallet.AssetsAccount) (txs []*openwallet.Transaction, err error)
 }
 
 
