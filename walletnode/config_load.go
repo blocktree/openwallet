@@ -39,6 +39,7 @@ func loadConfig(symbol string) error {
 	WNConfig.walletnodeStopNodeCMD = c.String("walletnode::StopNodeCMD")
 	WNConfig.walletnodeMainNetDataPath = c.String("walletnode::mainNetDataPath")
 	WNConfig.walletnodeTestNetDataPath = c.String("walletnode::testNetDataPath")
+	WNConfig.walletnodeIsEncrypted = c.String("walletnode::isEncrypted")
 	// WNConfig.walletnodeServerSocket = c.String("walletnode::WalletnodeServerSocket")
 
 	return nil

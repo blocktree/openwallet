@@ -44,7 +44,7 @@ func CheckAndCreateConfig(symbol string) error {
 
 	// Ask about whether create new
 	dirname, _ := filepath.Abs("./")
-	fmt.Printf("Init new %s wallet fullnode in '%s/'( \n  yes:\t to create config file and docker, \n  no:\t just to create docker, \n  quit:\t exit now!)", s.ToUpper(symbol), dirname)
+	fmt.Printf("\nInit new %s wallet fullnode in '%s/'( \n  yes:\t to create config file and docker, \n  no:\t just to create docker, \n  quit:\t exit now!)", s.ToUpper(symbol), dirname)
 	if isnew, err := console.InputText("[yes]: ", false); err != nil {
 		log.Println(err)
 		return err
@@ -138,13 +138,13 @@ func CheckAndCreateConfig(symbol string) error {
 		// console.InputText("Please edit <stopnodecmd/startnodecmd> in Symbol.ini before use wallet [yes]: ", false)
 	}
 
-	if x, err := console.InputText("Input password to encrypt wallet [None: default to unlock]: ", false); err != nil {
-		return err
-	} else {
-		fmt.Println(x)
-		// = x
+	if cnf := GetFullnodeConfig(symbol); cnf != nil {
+		if cnf.isEncrypted() {
+			fmt.Println("** Wallet fullnode need to be encrypted, and will encrypt within starting! **")
+		}
 	}
 
+	// ---------------------- Create container success and update SYMBOL.ini -----------------
 	fmt.Println("Start to create/update config file...")
 	// Create new INI file, and update
 	if err := initConfig(symbol); err != nil {
