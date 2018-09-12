@@ -139,7 +139,7 @@ Done!
 
 ## 其他技术细节
 
-  1. 为了兼容开发，测试，生产环境中 walletnode 不同的部署方式，通过 .ini 文件中 `ServerType=service/localdocker/remotedocker` 三个参数来指定全节点是 直接安装在裸机或本地PC/安装在本地Docker/安装在远程服务器的Docker。指定后，接口中将自动处理后续问题（连接，pull镜像，创建，备份，恢复等）
+  1. 为了兼容开发，测试，生产环境中 walletnode 不同的部署方式，通过 .ini 文件中 `ServerType=local/docker` 三个参数来指定全节点是 直接安装在裸机或本地PC/安装在本地Docker/安装在远程服务器的Docker。指定后，接口中将自动处理后续问题（连接，pull镜像，创建，备份，恢复等）
 
 
   2. 同样，备份也有上述需求（本地的 copy，或 远程的网络传输），通过 WalletnodeManager 这个 Interface 实现几个方法，解决：

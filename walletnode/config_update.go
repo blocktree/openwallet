@@ -52,6 +52,7 @@ func updateConfig(symbol string) error {
 	err = c.Set("walletnode::StopNodeCMD", WNConfig.walletnodeStopNodeCMD)
 	err = c.Set("walletnode::MainnetDataPath", WNConfig.walletnodeMainNetDataPath)
 	err = c.Set("walletnode::TestnetDataPath", WNConfig.walletnodeTestNetDataPath)
+	err = c.Set("walletnode::IsEncrypted", WNConfig.walletnodeIsEncrypted)
 
 	if err := c.SaveConfigFile(absFile); err != nil {
 		return err
