@@ -215,7 +215,7 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 		return nil, err
 	}
 
-	addrs, err := wrapper.CreateAddress(accountID, count, assetsMgr.GetAddressDecode(), false, wm.cfg.isTestnet)
+	addrs, err := wrapper.CreateAddress(accountID, count, assetsMgr.GetAddressDecode(), false, wm.cfg.IsTestnet)
 	if err != nil {
 		return nil, err
 	}
