@@ -76,7 +76,7 @@ func TestGetBlock(t *testing.T) {
 }
 
 func TestGetTransaction(t *testing.T) {
-	raw, err := tw.GetTransaction("7768a6436475ed804344a3711e90e7f10f7db42da8918580c8b669dd63d64cc3")
+	raw, err := tw.GetTransaction("6d793916d75ccd9725aa37a5747fbe9df865d2c07d58c3a182c8bf51d88fb49e")
 	if err != nil {
 		t.Errorf("GetTransaction failed unexpected error: %v\n", err)
 		return
@@ -133,13 +133,13 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 	)
 
 	accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
-	//address := "mpkUFiXonEZriywHUhig6PTDQXKzT6S5in"
+	address := "msnYsBdBXQZqYYqNNJZsjShzwCx9fJVSin"
 
-	wallet, err := tw.GetWalletInfo(accountID)
-	if err != nil {
-		t.Errorf("BTCBlockScanner_Run failed unexpected error: %v\n", err)
-		return
-	}
+	//wallet, err := tw.GetWalletInfo(accountID)
+	//if err != nil {
+	//	t.Errorf("BTCBlockScanner_Run failed unexpected error: %v\n", err)
+	//	return
+	//}
 
 	bs := NewBTCBlockScanner(tw)
 
@@ -147,11 +147,35 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 
 	//bs.SetRescanBlockHeight(1384586)
 
-	bs.AddWallet(accountID, wallet.WalletWrapper())
+	bs.AddAddress(address, accountID)
 
 	bs.Run()
 
 	<- endRunning
+
+}
+
+func TestBTCBlockScanner_ScanBlock(t *testing.T) {
+
+	accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
+	address := "msnYsBdBXQZqYYqNNJZsjShzwCx9fJVSin"
+
+	bs := tw.Blockscanner
+	bs.AddAddress(address, accountID)
+	bs.ScanBlock(1384961)
+}
+
+func TestBTCBlockScanner_ExtractTransaction(t *testing.T) {
+
+	accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
+	address := "msnYsBdBXQZqYYqNNJZsjShzwCx9fJVSin"
+
+	bs := tw.Blockscanner
+	bs.AddAddress(address, accountID)
+	bs.ExtractTransaction(
+		1384961,
+		"000000000000001d2f5750ebdeddc17f39c6365c6c9243b0a7c2f79e4b34b39e",
+		"a5866d27379bf4fb446c71e18d0822bfb9c676e9388310389b7eb4d44c44f7a6")
 
 }
 

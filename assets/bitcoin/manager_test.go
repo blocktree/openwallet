@@ -40,7 +40,7 @@ func init() {
 	tw.Config.RpcUser = "wallet"
 	tw.Config.RpcPassword = "walletPassword2017"
 	token := BasicAuth(tw.Config.RpcUser, tw.Config.RpcPassword)
-	tw.WalletClient = NewClient(tw.Config.ServerAPI, token, false)
+	tw.WalletClient = NewClient(tw.Config.ServerAPI, token, true)
 }
 
 func TestImportPrivKey(t *testing.T) {
@@ -293,7 +293,7 @@ func TestCreateNewPrivateKey(t *testing.T) {
 }
 
 func TestGetWalleInfo(t *testing.T) {
-	w, err := tw.GetWalletInfo("Zhiquan Test")
+	w, err := tw.GetWalletInfo("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek")
 	if err != nil {
 		t.Errorf("GetWalletInfo failed unexpected error: %v\n", err)
 		return
@@ -403,7 +403,7 @@ func TestGetBlockChainInfo(t *testing.T) {
 }
 
 func TestListUnspent(t *testing.T) {
-	utxos, err := tw.ListUnspent(0)
+	utxos, err := tw.ListUnspent(0, "msnYsBdBXQZqYYqNNJZsjShzwCx9fJVSin")
 	if err != nil {
 		t.Errorf("ListUnspent failed unexpected error: %v\n", err)
 		return

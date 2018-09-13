@@ -56,11 +56,10 @@ func NewWalletManager(config *Config) *WalletManager {
 
 //Init 初始化
 func (wm *WalletManager) Init() {
-
 	wm.mu.Lock()
-	defer wm.mu.Unlock()
 
 	if wm.initialized {
+		wm.mu.Unlock()
 		return
 	}
 
@@ -73,9 +72,11 @@ func (wm *WalletManager) Init() {
 	wm.observers = make(map[NotificationObject]bool)
 	wm.appDB = make(map[string]*openwallet.StormDB)
 
-	wm.initBlockScanner()
-
 	wm.initialized = true
+
+	wm.mu.Unlock()
+
+	wm.initBlockScanner()
 
 	log.Info("OpenWallet Manager has been initialized!")
 }

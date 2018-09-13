@@ -512,44 +512,44 @@
 		{
 			"checksumSHA1": "sDZOETFZy/n0hLhterr5c99vV7s=",
 			"path": "github.com/blocktree/go-OWCBasedFuncs/addressEncoder",
-			"revision": "48bc37523ce3bdcccc84b2585408231c33f30f78",
-			"revisionTime": "2018-09-10T09:18:24Z"
+			"revision": "0214a88899476e6e99b0d945185c4e99666248f3",
+			"revisionTime": "2018-09-12T09:36:09Z"
 		},
 		{
 			"checksumSHA1": "+feiQu0zGRLaflHCZBi9DKz1qcU=",
 			"path": "github.com/blocktree/go-OWCBasedFuncs/addressEncoder/base32PolyMod",
-			"revision": "48bc37523ce3bdcccc84b2585408231c33f30f78",
-			"revisionTime": "2018-09-10T09:18:24Z"
+			"revision": "0214a88899476e6e99b0d945185c4e99666248f3",
+			"revisionTime": "2018-09-12T09:36:09Z"
 		},
 		{
 			"checksumSHA1": "216e8SQkZ6kuNUHKQ6VyZbROcj4=",
 			"path": "github.com/blocktree/go-OWCBasedFuncs/addressEncoder/bech32",
-			"revision": "48bc37523ce3bdcccc84b2585408231c33f30f78",
-			"revisionTime": "2018-09-10T09:18:24Z"
+			"revision": "0214a88899476e6e99b0d945185c4e99666248f3",
+			"revisionTime": "2018-09-12T09:36:09Z"
 		},
 		{
 			"checksumSHA1": "9zniWFG5U5gyTh4zeBegHeczAlA=",
 			"path": "github.com/blocktree/go-OWCBasedFuncs/addressEncoder/blake256",
-			"revision": "48bc37523ce3bdcccc84b2585408231c33f30f78",
-			"revisionTime": "2018-09-10T09:18:24Z"
+			"revision": "0214a88899476e6e99b0d945185c4e99666248f3",
+			"revisionTime": "2018-09-12T09:36:09Z"
 		},
 		{
 			"checksumSHA1": "MD7UcC+/JLjMZAeyU5p+ZTDYpQw=",
 			"path": "github.com/blocktree/go-OWCBasedFuncs/addressEncoder/eip55",
-			"revision": "48bc37523ce3bdcccc84b2585408231c33f30f78",
-			"revisionTime": "2018-09-10T09:18:24Z"
+			"revision": "0214a88899476e6e99b0d945185c4e99666248f3",
+			"revisionTime": "2018-09-12T09:36:09Z"
 		},
 		{
 			"checksumSHA1": "zQB2fofDApInWPc4CWVeeEZ3rro=",
 			"path": "github.com/blocktree/go-OWCBasedFuncs/owkeychain",
-			"revision": "48bc37523ce3bdcccc84b2585408231c33f30f78",
-			"revisionTime": "2018-09-10T09:18:24Z"
+			"revision": "0214a88899476e6e99b0d945185c4e99666248f3",
+			"revisionTime": "2018-09-12T09:36:09Z"
 		},
 		{
-			"checksumSHA1": "b9J6OugXU03UOP44ErnkRDc6NBg=",
+			"checksumSHA1": "r6mAU7AqaQMwl4/M9wMtDwASKFg=",
 			"path": "github.com/blocktree/go-OWCrypt",
-			"revision": "01d04e94a282252c65ea3110d796bc998ab96ac3",
-			"revisionTime": "2018-09-10T09:34:42Z"
+			"revision": "84047059634441703a341b73f3b00324b5bebfe1",
+			"revisionTime": "2018-09-12T08:53:27Z"
 		},
 		{
 			"checksumSHA1": "APzA8rkuz7X5P2yh2uy22DG+rA8=",

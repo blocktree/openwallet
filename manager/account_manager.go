@@ -142,6 +142,41 @@ func (wm *WalletManager) GetAssetsAccountInfo(appID, walletID, accountID string)
 	return account, nil
 }
 
+//RefreshAssetsAccountBalance 刷新资产账户余额
+func (wm *WalletManager) RefreshAssetsAccountBalance(appID, accountID string) error {
+
+	wrapper, err := wm.newWalletWrapper(appID)
+	if err != nil {
+		return err
+	}
+
+	account, err := wrapper.GetAssetsAccountInfo(accountID)
+	if err != nil {
+		return err
+	}
+
+	assetsMgr, err := GetAssetsManager(account.Symbol)
+	if err != nil {
+		return err
+	}
+
+	address, err := wrapper.GetAddressList(0, -1, "AccountID", accountID)
+
+	searchAddrs := make([]string, 0)
+	for _, address := range address {
+		searchAddrs = append(searchAddrs, address.Address)
+	}
+
+	balance, err := assetsMgr.CountBalanceByAddresses(searchAddrs...)
+	if err != nil {
+		return err
+	}
+
+	account.Balance = balance
+
+	return wrapper.SaveAssetsAccount(account)
+}
+
 // GetAssetsAccountList
 func (wm *WalletManager) GetAssetsAccountList(appID, walletID string, offset, limit int) ([]*openwallet.AssetsAccount, error) {
 

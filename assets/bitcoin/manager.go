@@ -939,7 +939,7 @@ func (wm *WalletManager) GetBlockChainInfo() (*BlockchainInfo, error) {
 }
 
 //ListUnspent 获取未花记录
-func (wm *WalletManager) ListUnspent(min uint64) ([]*Unspent, error) {
+func (wm *WalletManager) ListUnspent(min uint64, addresses ...string) ([]*Unspent, error) {
 
 	var (
 		utxos = make([]*Unspent, 0)
@@ -947,6 +947,11 @@ func (wm *WalletManager) ListUnspent(min uint64) ([]*Unspent, error) {
 
 	request := []interface{}{
 		min,
+		9999999,
+	}
+
+	if len(addresses) > 0 {
+		request = append(request, addresses)
 	}
 
 	result, err := wm.WalletClient.Call("listunspent", request)
@@ -1128,8 +1133,8 @@ func (wm *WalletManager) BuildTransaction(utxos []*Unspent, to []string, change 
 	return rawTx.String(), changeAmount, nil
 }
 
-//SignRawTransaction 钱包交易单
-func (wm *WalletManager) SignRawTransaction(txHex, walletID string, key *hdkeystore.HDKey, utxos []*Unspent) (string, error) {
+//SignRawTransactionInCoreWallet 钱包交易单
+func (wm *WalletManager) SignRawTransactionInCoreWallet(txHex, walletID string, key *hdkeystore.HDKey, utxos []*Unspent) (string, error) {
 
 	var (
 		wifs = make([]string, 0)
@@ -1381,7 +1386,7 @@ func (wm *WalletManager) SendTransaction(walletID, to string, amount decimal.Dec
 		fmt.Printf("Build Transaction Successfully\n")
 
 		//签名交易
-		signedHex, err := wm.SignRawTransaction(txRaw, walletID, key, sendUxto)
+		signedHex, err := wm.SignRawTransactionInCoreWallet(txRaw, walletID, key, sendUxto)
 		if err != nil {
 			return nil, err
 		}
@@ -1567,7 +1572,7 @@ func (wm *WalletManager) SendBatchTransaction(walletID string, to []string, amou
 	fmt.Printf("Build Transaction Successfully\n")
 
 	//签名交易
-	signedHex, err := wm.SignRawTransaction(txRaw, walletID, key, usedUTXO)
+	signedHex, err := wm.SignRawTransactionInCoreWallet(txRaw, walletID, key, usedUTXO)
 	if err != nil {
 		return "", err
 	}
