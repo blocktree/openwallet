@@ -19,16 +19,7 @@
 #include "sm2.h"
 #include "ED25519.h"
 
-static uint8_t randNum[32]={0};
-uint16_t ECC_preprocess_randomnum(uint8_t *rand)
-{
-    if(rand==NULL)
-    {
-        return RAND_IS_NULL;
-    }
-    memcpy(randNum,rand,32);
-    return SUCCESS;
-}
+
 uint16_t ECC_genPubkey(uint8_t *prikey, uint8_t *pubkey, uint32_t type)
 {
     uint16_t ret = 0;
@@ -69,104 +60,24 @@ uint16_t ECC_genPubkey(uint8_t *prikey, uint8_t *pubkey, uint32_t type)
 uint16_t ECC_sign(uint8_t *prikey, uint8_t *ID, uint16_t IDlen, uint8_t *message, uint16_t message_len, uint8_t *sig, uint32_t type)
 {
     uint16_t ret = 0;
-    uint32_t mask1=1<<8,mask2=1<<9,mask3=0xECC000FF;
-    //外部传入随机数
-    switch (type & mask3)
+    
+    switch (type)
     {
         case ECC_CURVE_SECP256K1:
         {
-            if(type&mask1) //外部传入随机数
-            {
-                //判断传入的随机数是否为全0
-                if(is_all_zero(randNum, ECC_LEN))
-                {
-                    return RAND_IS_NULL;
-                }
-                if(type&mask2)//外部已经计算哈希值
-                {
-                    ret = secp256k1_sign(prikey, message, message_len,randNum,1,sig);
-                }
-                else//需要内部计算哈希值
-                {
-                    ret = secp256k1_sign(prikey, message, message_len,randNum,0,sig);
-                }
-            }
-            else //需要内部产生随机数
-            {
-               if(type &mask2)
-               {
-                   ret = secp256k1_sign(prikey, message, message_len,NULL,1,sig);
-               }
-                else
-                {
-                    ret = secp256k1_sign(prikey, message, message_len,NULL,0,sig);
-                }
-            }
+            ret = secp256k1_sign(prikey, message, message_len, sig);
         }
             break;
         case ECC_CURVE_SECP256R1:
         {
-            if(type & mask1)//外部传入随机数
-            {
-                //判断随机数是否为全0
-                if(is_all_zero(randNum, ECC_LEN))
-                {
-                    return RAND_IS_NULL;
-                }
-                if(type & mask2)//外部已经计算哈希值
-                {
-                    ret = secp256r1_sign(prikey, message, message_len,randNum,1,sig);
-                }
-                else//需要内部计算哈希值
-                {
-                    ret = secp256r1_sign(prikey, message, message_len,randNum,0,sig);
-                }
-            }
-            else //需要内部产生随机数
-            {
-                if(type & mask2)//外部已经计算哈希值
-                {
-                    ret = secp256r1_sign(prikey, message, message_len,NULL,1,sig);
-                }
-                else //需要内部计算哈希值
-                {
-                    ret = secp256r1_sign(prikey, message, message_len,NULL,0,sig);
-                }
-            }
+            ret = secp256r1_sign(prikey, message, message_len, sig);
         }
             break;
         case ECC_CURVE_SM2_STANDARD:
         {
             if(ID == NULL || IDlen == 0)
                 return ECC_MISS_ID;
-            if(type&mask1)//外部传入随机数
-            {
-                //判断随机数是否为全0
-                if(is_all_zero(randNum, ECC_LEN))
-                {
-                    return RAND_IS_NULL;
-                }
-                if(type&mask2) //外部已经计算哈希值
-                {
-                    ret = sm2_std_sign(prikey, ID, IDlen, message, message_len,randNum,1,sig);
-                }
-                else//需要内部计算哈希值
-                {
-                    ret = sm2_std_sign(prikey, ID, IDlen, message, message_len,randNum,0,sig);
-                }
-            }
-            else//需要内部计算随机数
-            {
-                if(type&mask2)//外部已经计算哈希值
-                {
-                    ret = sm2_std_sign(prikey, ID, IDlen, message, message_len,NULL,1,sig);
-                }
-                else//需要内部计算哈希值
-                {
-                    ret = sm2_std_sign(prikey, ID, IDlen, message, message_len,NULL,0,sig);
-                }
-            }
-            
+            ret = sm2_std_sign(prikey, ID, IDlen, message, message_len, sig);
         }
             break;
         case ECC_CURVE_ED25519:
@@ -187,55 +98,31 @@ uint16_t ECC_sign(uint8_t *prikey, uint8_t *ID, uint16_t IDlen, uint8_t *message
         }
             break;
     }
+    
     return  ret;
 }
 
 uint16_t ECC_verify(uint8_t *pubkey, uint8_t *ID, uint16_t IDlen, uint8_t *message, uint16_t message_len, uint8_t *sig, uint32_t type)
 {
     uint16_t ret = 0;
-    uint32_t mask1=1<<9,mask2=0xECC000FF;
     
-    switch (type & mask2)
+    switch (type)
     {
         case ECC_CURVE_SECP256K1:
         {
-            if(type & mask1)//外部已经计算哈希值
-            {
-                ret = secp256k1_verify(pubkey, message, message_len, 1,sig);
-            }
-            else//需要内部计算哈希值
-            {
-                ret = secp256k1_verify(pubkey, message, message_len, 0,sig);
-            }
-            
+            ret = secp256k1_verify(pubkey, message, message_len, sig);
         }
             break;
         case ECC_CURVE_SECP256R1:
         {
-            if(type & mask1)//外部已经计算哈希值
-            {
-                 ret = secp256r1_verify(pubkey, message, message_len,1,sig);
-            }
-            else
-            {
-                ret = secp256r1_verify(pubkey, message, message_len,0,sig);
-            }
-           
+            ret = secp256r1_verify(pubkey, message, message_len, sig);
         }
             break;
         case ECC_CURVE_SM2_STANDARD:
         {
             if(ID == NULL || IDlen == 0)
                 return ECC_MISS_ID;
-            if(type & mask1)//外部已经计算哈希值
-            {
-                ret = sm2_std_verify(pubkey, ID, IDlen, message, message_len,1, sig);
-            }
-            else//需要内部计算哈希值
-            {
-                 ret = sm2_std_verify(pubkey, ID, IDlen, message, message_len,0, sig);
-            }
-            
+            ret = sm2_std_verify(pubkey, ID, IDlen, message, message_len, sig);
         }
             break;
         case ECC_CURVE_ED25519:
@@ -250,6 +137,7 @@ uint16_t ECC_verify(uint8_t *pubkey, uint8_t *ID, uint16_t IDlen, uint8_t *messa
         }
             break;
     }
+    
     return  ret;
 }
 
@@ -294,6 +182,9 @@ uint16_t ECC_dec(uint8_t *prikey, uint8_t *cipher, uint16_t cipher_len, uint8_t 
     
     return  ret;
 }
+
+
+
 
 
 //////////////////////////////////////////////////////协商////////////////////////////////////////////////

@@ -24,8 +24,7 @@
 #include "type.h"
 
 uint16_t ECDSA_genPubkey(ECC_CURVE_PARAM *curveParam, uint8_t *prikey, ECC_POINT *pubkey);
-//uint16_t ECDSA_sign(ECC_CURVE_PARAM *curveParam, uint8_t *prikey, uint8_t *message, uint16_t message_len, uint8_t *sig);
-uint16_t ECDSA_sign(ECC_CURVE_PARAM *curveParam, uint8_t *prikey, uint8_t *message, uint16_t message_len,uint8_t *rand, uint8_t hash_flag, uint8_t *sig);
-//uint16_t ECDSA_verify(ECC_CURVE_PARAM *curveParam, ECC_POINT *pubkey, uint8_t *message, uint16_t message_len, uint8_t *sig);
-uint16_t ECDSA_verify(ECC_CURVE_PARAM *curveParam, ECC_POINT *pubkey, uint8_t *message, uint16_t message_len,uint8_t hash_flag, uint8_t *sig);
+uint16_t ECDSA_sign(ECC_CURVE_PARAM *curveParam, uint8_t *prikey, uint8_t *message, uint16_t message_len, uint8_t *sig);
+uint16_t ECDSA_verify(ECC_CURVE_PARAM *curveParam, ECC_POINT *pubkey, uint8_t *message, uint16_t message_len, uint8_t *sig);
+
 #endif /* ECDSA_h */

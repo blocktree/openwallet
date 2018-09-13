@@ -55,7 +55,7 @@ uint16_t secp256k1_genPubkey(uint8_t *prikey, uint8_t *pubkey)
 }
 
 
-uint16_t secp256k1_sign(uint8_t *prikey, uint8_t *message, uint16_t message_len,uint8_t *rand,uint8_t hash_flag, uint8_t *sig)
+uint16_t secp256k1_sign(uint8_t *prikey, uint8_t *message, uint16_t message_len, uint8_t *sig)
 {
     uint16_t ret = 0;
     ECC_CURVE_PARAM *curveParam = NULL;
@@ -69,7 +69,7 @@ uint16_t secp256k1_sign(uint8_t *prikey, uint8_t *message, uint16_t message_len,
     curveParam -> y = (uint8_t *)curve_secp256k1_y;
     curveParam -> n = (uint8_t *)curve_secp256k1_n;
     
-    ret = ECDSA_sign(curveParam, prikey, message, message_len, rand, hash_flag, sig);
+    ret = ECDSA_sign(curveParam, prikey, message, message_len, sig);
     
     free(curveParam);
     return ret;
@@ -77,7 +77,7 @@ uint16_t secp256k1_sign(uint8_t *prikey, uint8_t *message, uint16_t message_len,
 
 
 
-uint16_t secp256k1_verify(uint8_t *pubkey, uint8_t *message, uint16_t message_len, uint8_t hash_flag,uint8_t *sig)
+uint16_t secp256k1_verify(uint8_t *pubkey, uint8_t *message, uint16_t message_len, uint8_t *sig)
 {
     uint16_t ret = 0;
     ECC_CURVE_PARAM *curveParam = NULL;
@@ -96,7 +96,7 @@ uint16_t secp256k1_verify(uint8_t *pubkey, uint8_t *message, uint16_t message_le
     memcpy(point -> x, pubkey, ECC_LEN);
     memcpy(point -> y, pubkey + ECC_LEN, ECC_LEN);
     
-    ret = ECDSA_verify(curveParam, point, message, message_len, hash_flag,sig);
+    ret = ECDSA_verify(curveParam, point, message, message_len, sig);
     
     free(curveParam);
     free(point);

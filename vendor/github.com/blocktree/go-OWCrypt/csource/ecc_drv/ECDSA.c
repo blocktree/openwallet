@@ -39,67 +39,57 @@ uint16_t ECDSA_genPubkey(ECC_CURVE_PARAM *curveParam, uint8_t *prikey, ECC_POINT
 
 
 
-uint16_t ECDSA_sign(ECC_CURVE_PARAM *curveParam, uint8_t *prikey, uint8_t *message, uint16_t message_len,uint8_t *rand, uint8_t hash_flag, uint8_t *sig)
+uint16_t ECDSA_sign(ECC_CURVE_PARAM *curveParam, uint8_t *prikey, uint8_t *message, uint16_t message_len, uint8_t *sig)
 {
     uint8_t *k = NULL, *tmp = NULL;
     ECC_POINT *point = NULL;
+    
     if(!is_prikey_legal(curveParam, prikey))
         return ECC_PRIKEY_ILLEGAL;
+    
     k = calloc(ECC_LEN, sizeof(uint8_t));
     tmp = calloc(ECC_LEN, sizeof(uint8_t));
     point = calloc(1, sizeof(ECC_POINT));
+    
     while(1)
     {
         memcpy(point -> x, curveParam -> x, ECC_LEN);
         memcpy(point -> y, curveParam -> y, ECC_LEN);
         
-        if(rand==NULL)
-        {
-            bigrand_get_rand_range(k, curveParam -> n, ECC_LEN);
-        }
-        else
-        {
-            memcpy(k,rand,ECC_LEN);
-        }
+        bigrand_get_rand_range(k, curveParam -> n, ECC_LEN);
+        
         point_mul(curveParam, point, k, point);
+        
         bignum_mod(point -> x, curveParam -> n, sig);
+        
         if(is_all_zero(sig, ECC_LEN))
             continue;
-        if(!hash_flag)//传入的是消息
-        {
-            sha256_hash(message, message_len, tmp);
-        }
-        else//传入的是哈希值
-        {
-            if(message_len != ECC_LEN)
-            {
-                return HASH_LENGTH_ERROR;
-            }
-            else
-            {
-                 memcpy(tmp, message, message_len);
-            }
-           
-        }
+        
+        sha256_hash(message, message_len, tmp);
+        
         bignum_mod_mul(prikey, sig, curveParam -> n, sig + ECC_LEN);
         bignum_mod_add(tmp, sig + ECC_LEN, curveParam -> n, tmp);
         bignum_mod_inv(k, curveParam -> n, k);
         bignum_mod_mul(k, tmp, curveParam -> n, sig + ECC_LEN);
+        
         if(is_all_zero(sig + ECC_LEN, ECC_LEN))
             continue;
         else
             break;
     }
+    
     free(k);
     free(tmp);
     free(point);
+    
     return SUCCESS;
 }
 
-uint16_t ECDSA_verify(ECC_CURVE_PARAM *curveParam, ECC_POINT *pubkey, uint8_t *message, uint16_t message_len,uint8_t hash_flag, uint8_t *sig)
+uint16_t ECDSA_verify(ECC_CURVE_PARAM *curveParam, ECC_POINT *pubkey, uint8_t *message, uint16_t message_len, uint8_t *sig)
 {
     uint8_t *tmp1 = NULL, *tmp2 = NULL;
     ECC_POINT *point1 = NULL, *point2 = NULL;
+    
     if(!is_pubkey_legal(curveParam, pubkey))
         return ECC_PUBKEY_ILLEGAL;
     
@@ -110,20 +100,10 @@ uint16_t ECDSA_verify(ECC_CURVE_PARAM *curveParam, ECC_POINT *pubkey, uint8_t *m
     tmp2 = calloc(ECC_LEN, sizeof(uint8_t));
     point1 = calloc(1, sizeof(ECC_POINT));
     point2 = calloc(1, sizeof(ECC_POINT));
-    if(!hash_flag) //需要内部计算哈希值
-    {
-        sha256_hash(message, message_len, tmp1);
-    }
-    else//外部已经计算哈希值
-    {
-        if(message_len != ECC_LEN)
-        {
-            return HASH_LENGTH_ERROR;
-        }
-        memcpy(tmp1,message,message_len);
-    }
     
+    sha256_hash(message, message_len, tmp1);
     bignum_mod_inv(sig + ECC_LEN, curveParam -> n, tmp2);
+    
     bignum_mod_mul(tmp1, tmp2, curveParam -> n, tmp1);
     bignum_mod_mul(sig, tmp2, curveParam -> n, tmp2);
     
