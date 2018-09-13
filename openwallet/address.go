@@ -36,7 +36,7 @@ type AddressDecoder interface {
 type Address struct {
 	AccountID string    `json:"accountID" storm:"index"` //钱包ID
 	Address   string    `json:"address" storm:"id"`      //地址字符串
-	PublicKey string    `json:"publicKey"`               //地址公钥
+	PublicKey string    `json:"publicKey"`               //地址公钥/赎回脚本
 	Alias     string    `json:"alias"`                   //地址别名，可绑定用户
 	Tag       string    `json:"tag"`                     //标签
 	Index     uint64    `json:"index"`                   //账户ID，索引位

@@ -95,6 +95,8 @@ type WalletConfig struct {
 	DefaultConfig string
 	//曲线类型
 	CurveType uint32
+	//小数位长度
+	CoinDecimal decimal.Decimal
 }
 
 func NewConfig(symbol string, masterKey string) *WalletConfig {
@@ -148,6 +150,8 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	c.SumAddress = ""
 	//汇总执行间隔时间
 	c.CycleSeconds = time.Second * 10
+	//小数位长度
+	c.CoinDecimal = decimal.NewFromFloat(100000000)
 
 	//默认配置内容
 	c.DefaultConfig = `

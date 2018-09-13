@@ -84,6 +84,11 @@ const (
 	ECC_CURVE_SM2_STANDARD   = uint32(0xECC00002)
 	ECC_CURVE_ED25519        = uint32(0xECC00003)
 	ECC_CURVE_ED25519_EXTEND = uint32(0xECC00004)
+	
+	//签名流程中的随机数是外部传入的标志位置
+	NOUNCE_OUTSIDE_FLAG      = uint32(1<<8)
+	//外部已经计算消息的哈希值的标识位置
+	HASH_OUTSIDE_FLAG        = uint32(1<<9)
 
 	SUCCESS            = uint16(0x0001)
 	FAILURE            = uint16(0x0000)
@@ -107,6 +112,12 @@ func GenPubkey(prikey []byte, typeChoose uint32) (pubkey []byte, ret uint16) {
 	ret = uint16(C.ECC_genPubkey(pri, pub, C.uint(typeChoose)))
 
 	return pubkey[:], ret
+}
+
+func PreprocessRandomNum(rand []byte) (ret uint16){
+	rd := (*C.uchar)(unsafe.Pointer(&rand[0]))
+	ret = uint16(C.ECC_preprocess_randomnum(rd))
+	return ret
 }
 
 func Signature(prikey []byte, ID []byte, IDlen uint16, message []byte, message_len uint16, typeChoose uint32) (signature []byte, ret uint16) {
