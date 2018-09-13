@@ -52,7 +52,7 @@ func (m *BitBankNode) setupRouter() {
 	m.Node.HandleFunc("createWallet", m.createWallet)
 	m.Node.HandleFunc("createAddress", m.createAddress)
 	m.Node.HandleFunc("getAddressList", m.getAddressList)
-	//m.Node.HandleFunc("configWallet", m.configWallet)
+	m.Node.HandleFunc("createAssetsAccount", m.createAssetsAccount)
 	m.Node.HandleFunc("getWalletList", m.getWalletList)
 	m.Node.HandleFunc("submitTransaction", m.submitTransaction)
 	m.Node.HandleFunc("getNewHeight", m.getNewHeight)
@@ -280,7 +280,7 @@ func (m *BitBankNode) createWallet(ctx *owtp.Context) {
 
 	config := manager.NewConfig()
 	ow := manager.NewWalletManager(config)
-
+	ow.Init()
 	//执行创建方法
 	creationWallet,keystore,err := ow.CreateWallet(appID,wallet)
 
@@ -288,6 +288,10 @@ func (m *BitBankNode) createWallet(ctx *owtp.Context) {
 		responseError(ctx, errors.New("createWallet error"))
 		return
 	}
+	//h := &hdkeystore.HDKey{
+	//
+	//}
+
 	result := map[string]interface{}{
 		"wallet": creationWallet,
 		"keystore":keystore,
@@ -423,7 +427,7 @@ func (m *BitBankNode) createAssetsAccount(ctx *owtp.Context) {
 
 	config := manager.NewConfig()
 	ow := manager.NewWalletManager(config)
-
+	ow.Init()
 	//创建 assetsAccount
 	var assetsAccount *openwallet.AssetsAccount
 	err := json.Unmarshal([]byte(ctx.Params().Raw), &assetsAccount)
