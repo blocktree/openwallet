@@ -27,11 +27,14 @@
  HASH_ALG_RIPEMD160: ripemd160
  HASH_ALG_BLAKE2B: blake2b
  HASH_ALG_BLAKE2S: blake2s
- HASh_ALG_DOUBLE_SHA256: sha256;
+ HASh_ALG_DOUBLE_SHA256: do sha256 for twice;
  HASH_ALG_HASH160: hash160
  HASH_ALG_BLKKE256: blake256
  HASH_ALG_BLKKE512: blake512
  HASH_ALG_KECCAK256:keccak256
+ HASH_ALG_KECCAK256_RIPEMD160:first do sha3_256,then do ripemd160
+
+ 
  OTHERWISE:not support.
  @paramter[out]:digest pointer to hash result(make sure the space size is enough)
  @paramter[in]:digest_len,the byte length of digest.It is useful if and only if blake2b and blake2s algorithm.Because the digest length of other hash algorithms is fix.
@@ -41,7 +44,10 @@ void hash(uint8_t *msg,uint32_t msg_len,uint8_t *digest,uint16_t digest_len,uint
     switch (type)
     {
         case HASH_ALG_SHA1:
-            sha1_hash(msg, msg_len,  digest);
+            sha1_hash(msg, msg_len, digest);
+            break;
+        case HASH_ALG_SHA3_256:
+            sha3_256_hash(msg, msg_len, digest);
             break;
         case HASH_ALG_SHA256:
             sha256_hash(msg, msg_len, digest);
@@ -85,6 +91,14 @@ void hash(uint8_t *msg,uint32_t msg_len,uint8_t *digest,uint16_t digest_len,uint
 #endif
         case HASH_ALG_KECCAK256:
             keccak256_hash(msg, msg_len,digest);
+            break;
+        case HASH_ALG_KECCAK256_RIPEMD160:
+            keccak256_hash(msg, msg_len,digest);
+            ripemd160_hash(digest,32,digest);
+            break;
+            case HASH_ALG_SHA3_256_RIPEMD160:
+            sha3_256_hash(msg, msg_len,digest);
+            ripemd160_hash(digest,32,digest);
             break;
         default:
             break;

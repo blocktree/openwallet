@@ -1,6 +1,7 @@
 package tech
 
 import (
+	"crypto/ecdsa"
 	"fmt"
 	"log"
 	"math/big"
@@ -290,9 +291,21 @@ func TestOWCrypt_sign() {
 	message := signer.Hash(tx)
 	seckey := math.PaddedBigBytes(key.PrivateKey.D, key.PrivateKey.Params().BitSize/8)
 
-	sig, ret := owcrypt.Signature(seckey, nil, 0, message[:], 32, owcrypt.ECC_CURVE_SECP256K1)
+	sig, ret := ethereum.ETHsignature(seckey, message[:])
 	if ret != owcrypt.SUCCESS {
 		fmt.Println("signature error, ret:", "0x"+strconv.FormatUint(uint64(ret), 16))
+		return
+	}
+
+	toPublicKey := func(pk *ecdsa.PublicKey) []byte {
+		testByteX := pk.X.Bytes() //[]byte(*pk.X)
+		testByteY := pk.Y.Bytes() //[]byte(*pk.X)
+		return append(testByteX, testByteY...)
+	}
+
+	ret = owcrypt.Verify(toPublicKey(&key.PrivateKey.PublicKey), nil, 0, message[:], 32, sig, owcrypt.ECC_CURVE_SECP256K1|owcrypt.HASH_OUTSIDE_FLAG)
+	if ret != owcrypt.SUCCESS {
+		fmt.Println("verify error, ret:", "0x"+strconv.FormatUint(uint64(ret), 16))
 		return
 	}
 

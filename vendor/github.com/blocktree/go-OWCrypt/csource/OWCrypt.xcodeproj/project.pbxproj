@@ -11,6 +11,7 @@
 		2BB2E50421240BCD003F4BBB /* blake256.c in Sources */ = {isa = PBXBuildFile; fileRef = 2BB2E50221240BCD003F4BBB /* blake256.c */; };
 		2BB2E50D21240FDD003F4BBB /* blake512.c in Sources */ = {isa = PBXBuildFile; fileRef = 2BB2E50B21240FDD003F4BBB /* blake512.c */; };
 		2BB2E51F212A50E2003F4BBB /* keccak_256.c in Sources */ = {isa = PBXBuildFile; fileRef = 2BB2E51D212A50E2003F4BBB /* keccak_256.c */; };
+		2BB2E689214650ED003F4BBB /* sha3_256.c in Sources */ = {isa = PBXBuildFile; fileRef = 2BB2E687214650ED003F4BBB /* sha3_256.c */; };
 		C656B24A20E2551F008FC33F /* bigrand.c in Sources */ = {isa = PBXBuildFile; fileRef = C656B24920E2551F008FC33F /* bigrand.c */; };
 		C656B24D20E263D3008FC33F /* secp256k1.c in Sources */ = {isa = PBXBuildFile; fileRef = C656B24C20E263D3008FC33F /* secp256k1.c */; };
 		C656B25020E26A2A008FC33F /* secp256r1.c in Sources */ = {isa = PBXBuildFile; fileRef = C656B24F20E26A2A008FC33F /* secp256r1.c */; };
@@ -54,6 +55,8 @@
 		2BB2E50C21240FDD003F4BBB /* blake512.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = blake512.h; sourceTree = "<group>"; };
 		2BB2E51D212A50E2003F4BBB /* keccak_256.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = keccak_256.c; sourceTree = "<group>"; };
 		2BB2E51E212A50E2003F4BBB /* keccak_256.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = keccak_256.h; sourceTree = "<group>"; };
+		2BB2E687214650ED003F4BBB /* sha3_256.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sha3_256.c; sourceTree = "<group>"; };
+		2BB2E688214650ED003F4BBB /* sha3_256.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sha3_256.h; sourceTree = "<group>"; };
 		C62A19E1210DA95200B56E52 /* type.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = type.h; sourceTree = "<group>"; };
 		C656B24820E2551F008FC33F /* bigrand.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bigrand.h; sourceTree = "<group>"; };
 		C656B24920E2551F008FC33F /* bigrand.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = bigrand.c; sourceTree = "<group>"; };
@@ -212,6 +215,8 @@
 				2BB2E50C21240FDD003F4BBB /* blake512.h */,
 				2BB2E51D212A50E2003F4BBB /* keccak_256.c */,
 				2BB2E51E212A50E2003F4BBB /* keccak_256.h */,
+				2BB2E687214650ED003F4BBB /* sha3_256.c */,
+				2BB2E688214650ED003F4BBB /* sha3_256.h */,
 			);
 			path = hash_drv;
 			sourceTree = "<group>";
@@ -286,6 +291,7 @@
 				C656B24A20E2551F008FC33F /* bigrand.c in Sources */,
 				C6EF4F9620E227E200C263DE /* ecc_set.c in Sources */,
 				C6EF4F9020E20D3600C263DE /* ecc_drv.c in Sources */,
+				2BB2E689214650ED003F4BBB /* sha3_256.c in Sources */,
 				C6EF4F8120E20B4800C263DE /* main.c in Sources */,
 				C6DEAE6B2113F7A10044BF1F /* blake2b.c in Sources */,
 				C6DEAE6A2113F7A10044BF1F /* blake2s.c in Sources */,

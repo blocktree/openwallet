@@ -71,10 +71,10 @@ type RawTransaction struct {
 	TxID        string                    //
 	RawHex      string                    //区块链协议构造的交易原生数据
 	Amount      string                    //
-	FeeRate     string                    //
+	FeeRate     string                    //gas price
 	To          []string                  //
-	Account     *AssetsAccount            //
-	Signatures  map[string][]KeySignature //拥有者accountID: []未花签名
+	Account     *AssetsAccount            //对象中包含了WalletWrapper用于查询db, 获取账户地址的一个
+	Signatures  map[string][]KeySignature //传入CreateRawTransaction的时候, map为空; 由CreateRawTransaction对KeySignature进行初始化
 	Required    uint64                    //必要签名
 	IsBuilt     bool                      //是否完成构建建议单
 	IsCompleted bool                      //是否完成所有签名

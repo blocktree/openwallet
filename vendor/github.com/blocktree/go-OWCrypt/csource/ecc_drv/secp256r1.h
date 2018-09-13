@@ -24,8 +24,10 @@
 void secp256r1_get_order(uint8_t *order);
 
 uint16_t secp256r1_genPubkey(uint8_t *prikey, uint8_t *pubkey);
-uint16_t secp256r1_sign(uint8_t *prikey, uint8_t *message, uint16_t message_len, uint8_t *sig);
-uint16_t secp256r1_verify(uint8_t *pubkey, uint8_t *message, uint16_t message_len, uint8_t *sig);
+//uint16_t secp256r1_sign(uint8_t *prikey, uint8_t *message, uint16_t message_len, uint8_t *sig);
+uint16_t secp256r1_sign(uint8_t *prikey, uint8_t *message, uint16_t message_len,uint8_t *rand,uint8_t hash_flag, uint8_t *sig);
+//uint16_t secp256r1_verify(uint8_t *pubkey, uint8_t *message, uint16_t message_len, uint8_t *sig);
+uint16_t secp256r1_verify(uint8_t *pubkey, uint8_t *message, uint16_t message_len,uint8_t hash_flag, uint8_t *sig);
 /*
  @function:(Point) outpoint_buf= (Point)inputpoint1_buf+[k](Point)inputpoint2_buf
  @paramter[in]:inputpoint1_buf pointer to one point (stored by byte string)on the curve elliptic

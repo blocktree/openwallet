@@ -20,7 +20,11 @@
 #include "ecc_drv.h"
 #include "type.h"
 
-
+/*
+ note：定义的type为0xECCXXXXX，其中低8bit(bit 0~7）为曲线类型，具体参考下面宏定义；
+ bit 8 为随机数生成方式的标志位，1:外部传入随机数；0:内部产生随机数；
+ bit 9 为传入消息形式的标志位，1:传入消息的哈希值；0；传入消息本身.
+ */
 #define  ECC_CURVE_SECP256K1        0xECC00000
 #define  ECC_CURVE_SECP256R1        0xECC00001
 #define  ECC_CURVE_PRIMEV1          ECC_CURVE_SECP256R1
@@ -35,7 +39,16 @@
 #define ECC_PUBKEY_ILLEGAL   0xE001
 #define ECC_WRONG_TYPE       0xE002
 #define ECC_MISS_ID          0xE003
+#define RAND_IS_NULL         0xE004
+#define HASH_LENGTH_ERROR    0xE005
 
+/*
+ @function:preprocess the random number in ECC signeture
+ @paramter[in]rand pointer to the random number used in ECC signature
+ @return:SUCCESS,operation success;others:operation fail
+ @note:if you want to incomming random number from outside in ECC signature,this function muse be recalled before start signature.
+*/
+uint16_t ECC_preprocess_randomnum(uint8_t *rand);
 uint16_t ECC_genPubkey(uint8_t *prikey, uint8_t *pubkey, uint32_t type);
 uint16_t ECC_sign(uint8_t *prikey, uint8_t *ID, uint16_t IDlen, uint8_t *message, uint16_t message_len, uint8_t *sig, uint32_t type);
 uint16_t ECC_verify(uint8_t *pubkey, uint8_t *ID, uint16_t IDlen, uint8_t *message, uint16_t message_len, uint8_t *sig, uint32_t type);
