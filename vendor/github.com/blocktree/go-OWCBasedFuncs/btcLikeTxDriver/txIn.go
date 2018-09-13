@@ -3,10 +3,10 @@ package btcLikeTxDriver
 import "errors"
 
 type TxIn struct {
-	txID                  []byte
-	vout                  []byte
-	scriptPubkeySignature []byte
-	sequence              []byte
+	TxID                  []byte
+	Vout                  []byte
+	ScriptPubkeySignature []byte
+	Sequence              []byte
 }
 
 func newTxInForEmptyTrans(vin []Vin) ([]TxIn, error) {
@@ -26,10 +26,10 @@ func newTxInForEmptyTrans(vin []Vin) ([]TxIn, error) {
 
 func (vin *TxIn) setSequence(lockTime uint32, replaceable bool) {
 	if replaceable {
-		vin.sequence = uint32ToLittleEndianBytes(SequenceMaxBip125RBF)
+		vin.Sequence = uint32ToLittleEndianBytes(SequenceMaxBip125RBF)
 	} else if lockTime != 0 {
-		vin.sequence = uint32ToLittleEndianBytes(SequenceFinal - 1)
+		vin.Sequence = uint32ToLittleEndianBytes(SequenceFinal - 1)
 	} else {
-		vin.sequence = uint32ToLittleEndianBytes(SequenceFinal)
+		vin.Sequence = uint32ToLittleEndianBytes(SequenceFinal)
 	}
 }

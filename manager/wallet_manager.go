@@ -43,7 +43,7 @@ func (wm *WalletManager) CreateWallet(appID string, wallet *openwallet.Wallet) (
 		}
 
 		//生成keystore
-		key, filePath, err := hdkeystore.StoreHDKey(wm.cfg.keyDir, wallet.Alias, wallet.Password, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
+		key, filePath, err := hdkeystore.StoreHDKey(wm.cfg.KeyDir, wallet.Alias, wallet.Password, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
 		if err != nil {
 			return nil, nil, err
 		}

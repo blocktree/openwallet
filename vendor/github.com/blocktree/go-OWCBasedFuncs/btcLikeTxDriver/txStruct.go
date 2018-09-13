@@ -48,15 +48,15 @@ func (t Transaction) encodeToBytes() ([]byte, error) {
 	ret = append(ret, byte(len(t.Vins)))
 
 	for _, in := range t.Vins {
-		ret = append(ret, in.txID...)
-		ret = append(ret, in.vout...)
-		if in.scriptPubkeySignature == nil {
+		ret = append(ret, in.TxID...)
+		ret = append(ret, in.Vout...)
+		if in.ScriptPubkeySignature == nil {
 			ret = append(ret, 0x00)
 		} else {
-			ret = append(ret, byte(len(in.scriptPubkeySignature)))
-			ret = append(ret, in.scriptPubkeySignature...)
+			ret = append(ret, byte(len(in.ScriptPubkeySignature)))
+			ret = append(ret, in.ScriptPubkeySignature...)
 		}
-		ret = append(ret, in.sequence...)
+		ret = append(ret, in.Sequence...)
 	}
 
 	ret = append(ret, byte(len(t.Vouts)))
@@ -81,7 +81,7 @@ func (t Transaction) encodeToBytes() ([]byte, error) {
 	return ret, nil
 }
 
-func decodeFromBytes(txBytes []byte) Transaction {
+func DecodeRawTransaction(txBytes []byte) Transaction {
 	var rawTx Transaction
 	index := int(0)
 	segwit := false
@@ -102,20 +102,20 @@ func decodeFromBytes(txBytes []byte) Transaction {
 
 	for i := byte(0); i < numOfVins; i++ {
 		var tmpTxIn TxIn
-		tmpTxIn.txID = txBytes[index : index+32]
+		tmpTxIn.TxID = txBytes[index : index+32]
 		index += 32
-		tmpTxIn.vout = txBytes[index : index+4]
+		tmpTxIn.Vout = txBytes[index : index+4]
 		index += 4
 		scriptLen := txBytes[index]
 		index++
 		if scriptLen == 0 {
-			tmpTxIn.scriptPubkeySignature = nil
+			tmpTxIn.ScriptPubkeySignature = nil
 		} else {
-			tmpTxIn.scriptPubkeySignature = txBytes[index : index+int(scriptLen)]
+			tmpTxIn.ScriptPubkeySignature = txBytes[index : index+int(scriptLen)]
 		}
 		index += int(scriptLen)
 
-		tmpTxIn.sequence = txBytes[index : index+4]
+		tmpTxIn.Sequence = txBytes[index : index+4]
 		index += 4
 
 		rawTx.Vins = append(rawTx.Vins, tmpTxIn)
@@ -174,10 +174,10 @@ func calcSegwitHash(tx Transaction) ([]byte, []byte, []byte, error) {
 	hashOutputs := []byte{}
 
 	for _, vin := range tx.Vins {
-		hashPrevouts = append(hashPrevouts, vin.txID...)
-		hashPrevouts = append(hashPrevouts, vin.vout...)
+		hashPrevouts = append(hashPrevouts, vin.TxID...)
+		hashPrevouts = append(hashPrevouts, vin.Vout...)
 
-		hashSequence = append(hashSequence, vin.sequence...)
+		hashSequence = append(hashSequence, vin.Sequence...)
 	}
 
 	for _, vout := range tx.Vouts {
@@ -251,20 +251,20 @@ func (t Transaction) getHashesForSig(unlockData []TxUnlock) ([][]byte, error) {
 	for i := 0; i < len(unlockData); i++ {
 		sigBytes := []byte{}
 		for j := 0; j < len(unlockData); j++ {
-			t.Vins[j].scriptPubkeySignature = nil
+			t.Vins[j].ScriptPubkeySignature = nil
 		}
 		lockBytes, err := hex.DecodeString(unlockData[i].LockScript)
 		if err != nil {
 			return nil, errors.New("Invalid lockscript!")
 		}
 		if isScriptHash(lockBytes) {
-			sigBytes, err = t.calcSegwitHashForSig(unlockData[i], t.Vins[i].txID, t.Vins[i].vout, t.Vins[i].sequence)
+			sigBytes, err = t.calcSegwitHashForSig(unlockData[i], t.Vins[i].TxID, t.Vins[i].Vout, t.Vins[i].Sequence)
 			if err != nil {
 				return nil, err
 			}
 
 		} else {
-			t.Vins[i].scriptPubkeySignature = lockBytes
+			t.Vins[i].ScriptPubkeySignature = lockBytes
 
 			sigBytes, err = t.encodeToBytes()
 			if err != nil {

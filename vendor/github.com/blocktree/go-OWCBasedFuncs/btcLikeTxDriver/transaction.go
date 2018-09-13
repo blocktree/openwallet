@@ -47,7 +47,7 @@ func CreateRawTransactionHashForSig(txHex string, unlockData []TxUnlock) ([]stri
 	if err != nil {
 		return nil, errors.New("Invalid transaction hex string!")
 	}
-	emptyTrans := decodeFromBytes(txBytes)
+	emptyTrans := DecodeRawTransaction(txBytes)
 
 	hashes, err := emptyTrans.getHashesForSig(unlockData)
 	if err != nil {
@@ -68,7 +68,7 @@ func SignEmptyRawTransaction(txHex string, unlockData []TxUnlock) (string, error
 	if err != nil {
 		return "", errors.New("Invalid transaction hex string!")
 	}
-	emptyTrans := decodeFromBytes(txBytes)
+	emptyTrans := DecodeRawTransaction(txBytes)
 
 	hashes, err := emptyTrans.getHashesForSig(unlockData)
 	if err != nil {
@@ -88,7 +88,7 @@ func SignEmptyRawTransaction(txHex string, unlockData []TxUnlock) (string, error
 				return "", errors.New("Invalid redeem script!")
 			}
 			redeemScript = append([]byte{byte(len(redeemScript))}, redeemScript...)
-			emptyTrans.Vins[i].scriptPubkeySignature = redeemScript
+			emptyTrans.Vins[i].ScriptPubkeySignature = redeemScript
 
 			if emptyTrans.Witness == nil {
 				for j := 0; j < i; j++ {
@@ -98,7 +98,7 @@ func SignEmptyRawTransaction(txHex string, unlockData []TxUnlock) (string, error
 			}
 
 		} else {
-			emptyTrans.Vins[i].scriptPubkeySignature = sigPub[i].encodeToScript(SigHashAll)
+			emptyTrans.Vins[i].ScriptPubkeySignature = sigPub[i].encodeToScript(SigHashAll)
 			if emptyTrans.Witness != nil {
 				emptyTrans.Witness = append(emptyTrans.Witness, TxWitness{})
 			}
@@ -131,11 +131,11 @@ func InsertSignatureIntoEmptyTransaction(txHex string, sigPub []SignaturePubkey,
 		return "", errors.New("Invalid transaction hex data!")
 	}
 
-	emptyTrans := decodeFromBytes(txBytes)
+	emptyTrans := DecodeRawTransaction(txBytes)
 
 	for i := 0; i < len(sigPub); i++ {
 		if unlockData[i].RedeemScript == "" {
-			emptyTrans.Vins[i].scriptPubkeySignature = sigPub[i].encodeToScript(SigHashAll)
+			emptyTrans.Vins[i].ScriptPubkeySignature = sigPub[i].encodeToScript(SigHashAll)
 			if emptyTrans.Witness != nil {
 				emptyTrans.Witness = append(emptyTrans.Witness, TxWitness{})
 			}
@@ -151,7 +151,7 @@ func InsertSignatureIntoEmptyTransaction(txHex string, sigPub []SignaturePubkey,
 				return "", errors.New("Invlalid redeem script!")
 			}
 			redeem = append([]byte{byte(len(redeem))}, redeem...)
-			emptyTrans.Vins[i].scriptPubkeySignature = redeem
+			emptyTrans.Vins[i].ScriptPubkeySignature = redeem
 		}
 	}
 	txBytes, err = emptyTrans.encodeToBytes()
@@ -167,12 +167,12 @@ func VerifyRawTransaction(txHex string, unlockData []TxUnlock) bool {
 		return false
 	}
 
-	signedTrans := decodeFromBytes(txBytes)
+	signedTrans := DecodeRawTransaction(txBytes)
 
 	var sigAndPub []SignaturePubkey
 	if signedTrans.Witness == nil {
 		for _, sp := range signedTrans.Vins {
-			tmp, err := decodeFromScriptBytes(sp.scriptPubkeySignature)
+			tmp, err := decodeFromScriptBytes(sp.ScriptPubkeySignature)
 			if err != nil {
 				return false
 			}
@@ -181,14 +181,14 @@ func VerifyRawTransaction(txHex string, unlockData []TxUnlock) bool {
 	} else {
 		for i := 0; i < len(signedTrans.Vins); i++ {
 			if signedTrans.Witness[i].Signature == nil {
-				tmp, err := decodeFromScriptBytes(signedTrans.Vins[i].scriptPubkeySignature)
+				tmp, err := decodeFromScriptBytes(signedTrans.Vins[i].ScriptPubkeySignature)
 				if err != nil {
 					return false
 				}
 				sigAndPub = append(sigAndPub, *tmp)
 			} else {
 				sigAndPub = append(sigAndPub, SignaturePubkey{signedTrans.Witness[i].Signature, signedTrans.Witness[i].Pubkey})
-				unlockData[i].RedeemScript = hex.EncodeToString(signedTrans.Vins[i].scriptPubkeySignature[1:])
+				unlockData[i].RedeemScript = hex.EncodeToString(signedTrans.Vins[i].ScriptPubkeySignature[1:])
 			}
 		}
 	}

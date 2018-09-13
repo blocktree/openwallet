@@ -292,7 +292,22 @@ func (wm *WalletManager) VerifyRawTransaction(wrapper *openwallet.WalletWrapper,
 	//	}
 	//}
 	//
+	//txBytes, err := hex.DecodeString(emptyTrans)
+	//if err != nil {
+	//	return errors.New("Invalid transaction hex data!")
+	//}
 	//
+	//trx := btcLikeTxDriver.DecodeRawTransaction(txBytes)
+	//
+	//
+	//for _, vin := range trx.Vins {
+	//
+	//	utxo, err := wm.GetTxOut(hex.EncodeToString(vin.TxID), vin.Vout)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//}
 	//
 	//////////填充签名结果到空交易单
 	////  传入TxUnlock结构体的原因是： 解锁向脚本支付的UTXO时需要对应地址的赎回脚本， 当前案例的对应字段置为 "" 即可

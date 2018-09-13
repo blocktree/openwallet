@@ -66,8 +66,8 @@ func (wm *WalletManager) Init() {
 	log.Info("OpenWallet Manager is initializing ...")
 
 	//新建文件目录
-	file.MkdirAll(wm.cfg.dbPath)
-	file.MkdirAll(wm.cfg.keyDir)
+	file.MkdirAll(wm.cfg.DBPath)
+	file.MkdirAll(wm.cfg.KeyDir)
 
 	wm.observers = make(map[NotificationObject]bool)
 	wm.appDB = make(map[string]*openwallet.StormDB)
@@ -108,7 +108,7 @@ func (wm *WalletManager) RemoveObserver(obj NotificationObject) {
 
 //DBFile 应用数据库文件
 func (wm *WalletManager) DBFile(appID string) string {
-	return filepath.Join(wm.cfg.dbPath, appID+".db")
+	return filepath.Join(wm.cfg.DBPath, appID+".db")
 }
 
 //OpenDB 打开应用数据库文件
@@ -171,7 +171,7 @@ func (wm *WalletManager) loadAllAppIDs() ([]string, error) {
 
 	var (
 		apps = make([]string, 0)
-		dir  = wm.cfg.dbPath
+		dir  = wm.cfg.DBPath
 	)
 
 	//扫描key目录的所有钱包
@@ -200,13 +200,17 @@ func (wm *WalletManager) loadAllAppIDs() ([]string, error) {
 // initBlockScanner 初始化区块链扫描器
 func (wm *WalletManager) initBlockScanner() error {
 
+	if !wm.cfg.EnableBlockScan {
+		return nil
+	}
+
 	//加载已存在所有app
 	appIDs, err := wm.loadAllAppIDs()
 	if err != nil {
 		return err
 	}
 
-	for _, symbol := range wm.cfg.supportAssets {
+	for _, symbol := range wm.cfg.SupportAssets {
 		assetsMgr, err := GetAssetsManager(symbol)
 		if err != nil {
 			log.Error(symbol, "is not support")
