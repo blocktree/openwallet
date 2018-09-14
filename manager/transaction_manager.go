@@ -19,6 +19,7 @@ import "github.com/blocktree/OpenWallet/openwallet"
 
 // CreateTransaction
 func (wm *WalletManager) CreateTransaction(appID, accountID, amount, address, feeRate, memo string) (*openwallet.RawTransaction, error) {
+
 	return nil, nil
 }
 

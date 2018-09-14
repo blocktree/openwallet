@@ -1133,8 +1133,8 @@ func (wm *WalletManager) BuildTransaction(utxos []*Unspent, to []string, change 
 	return rawTx.String(), changeAmount, nil
 }
 
-//SignRawTransaction 钱包交易单
-func (wm *WalletManager) SignRawTransaction(txHex, walletID string, key *hdkeystore.HDKey, utxos []*Unspent) (string, error) {
+//SignRawTransactionInCoreWallet 钱包交易单
+func (wm *WalletManager) SignRawTransactionInCoreWallet(txHex, walletID string, key *hdkeystore.HDKey, utxos []*Unspent) (string, error) {
 
 	var (
 		wifs = make([]string, 0)
@@ -1386,7 +1386,7 @@ func (wm *WalletManager) SendTransaction(walletID, to string, amount decimal.Dec
 		fmt.Printf("Build Transaction Successfully\n")
 
 		//签名交易
-		signedHex, err := wm.SignRawTransaction(txRaw, walletID, key, sendUxto)
+		signedHex, err := wm.SignRawTransactionInCoreWallet(txRaw, walletID, key, sendUxto)
 		if err != nil {
 			return nil, err
 		}
@@ -1572,7 +1572,7 @@ func (wm *WalletManager) SendBatchTransaction(walletID string, to []string, amou
 	fmt.Printf("Build Transaction Successfully\n")
 
 	//签名交易
-	signedHex, err := wm.SignRawTransaction(txRaw, walletID, key, usedUTXO)
+	signedHex, err := wm.SignRawTransactionInCoreWallet(txRaw, walletID, key, usedUTXO)
 	if err != nil {
 		return "", err
 	}

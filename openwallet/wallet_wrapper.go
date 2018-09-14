@@ -21,6 +21,7 @@ import (
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
 	"time"
+	"encoding/hex"
 )
 
 type WalletDBFile WrapperSourceFile
@@ -248,6 +249,7 @@ func (wrapper *WalletWrapper) CreateAddress(accountID string, count uint64, deco
 		newKeys = make([][]byte, 0)
 		address string
 		addrs   = make([]*Address, 0)
+		publicKey string
 	)
 
 	account, err := wrapper.GetAssetsAccountInfo(accountID)
@@ -279,6 +281,8 @@ func (wrapper *WalletWrapper) CreateAddress(accountID string, count uint64, deco
 
 		address = ""
 
+		publicKey = ""
+
 		newIndex := account.AddressIndex + 1
 
 		derivedPath := fmt.Sprintf("%s/%d/%d", account.HDPath, changeIndex, newIndex)
@@ -301,11 +305,13 @@ func (wrapper *WalletWrapper) CreateAddress(accountID string, count uint64, deco
 			if err != nil {
 				return nil, err
 			}
+			publicKey = ""
 		} else {
 			address, err = decoder.PublicKeyToAddress(newKeys[0], isTestNet)
 			if err != nil {
 				return nil, err
 			}
+			publicKey = hex.EncodeToString(newKeys[0])
 		}
 
 		addr := &Address{
@@ -317,6 +323,7 @@ func (wrapper *WalletWrapper) CreateAddress(accountID string, count uint64, deco
 			Index:     uint64(newIndex),
 			WatchOnly: false,
 			IsChange:  isChange,
+			PublicKey: publicKey,
 		}
 
 		account.AddressIndex = newIndex
