@@ -24,6 +24,7 @@ import (
 	"github.com/shopspring/decimal"
 	"sort"
 	"strings"
+	"encoding/hex"
 )
 
 //CreateRawTransaction 创建交易单
@@ -270,63 +271,66 @@ func (wm *WalletManager) SubmitRawTransaction(wrapper *openwallet.WalletWrapper,
 //VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
 func (wm *WalletManager) VerifyRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
 
-	//var (
-	//	txUnlocks = make([]btcLikeTxDriver.TxUnlock, 0)
-	//	emptyTrans = rawTx.RawHex
-	//	sigPub = make([]btcLikeTxDriver.SignaturePubkey, 0)
-	//)
-	//
-	//
-	//for accountID, keySignatures := range rawTx.Signatures {
-	//	for _, keySignature := range keySignatures {
-	//
-	//		signature, _ := hex.DecodeString(keySignature.Signature)
-	//		pubkey, _ := hex.DecodeString(keySignature.Address.PublicKey)
-	//
-	//		signaturePubkey := btcLikeTxDriver.SignaturePubkey {
-	//			Signature: signature,
-	//			Pubkey: pubkey,
-	//		}
-	//
-	//		sigPub = append(sigPub, signaturePubkey)
-	//	}
-	//}
-	//
-	//txBytes, err := hex.DecodeString(emptyTrans)
-	//if err != nil {
-	//	return errors.New("Invalid transaction hex data!")
-	//}
-	//
-	//trx := btcLikeTxDriver.DecodeRawTransaction(txBytes)
-	//
-	//
-	//for _, vin := range trx.Vins {
-	//
-	//	utxo, err := wm.GetTxOut(hex.EncodeToString(vin.TxID), vin.Vout)
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//}
-	//
-	//////////填充签名结果到空交易单
-	////  传入TxUnlock结构体的原因是： 解锁向脚本支付的UTXO时需要对应地址的赎回脚本， 当前案例的对应字段置为 "" 即可
-	//signedTrans, err := btcLikeTxDriver.InsertSignatureIntoEmptyTransaction(emptyTrans, sigPub, []btcLikeTxDriver.TxUnlock{unlockData1, unlockData2})
-	//if err != nil {
-	//	t.Error("交易单拼接失败")
-	//} else {
-	//	fmt.Println("拼接后的交易单")
-	//	fmt.Println(signedTrans)
-	//}
-	//
-	///////////验证交易单
-	////验证时，对于公钥哈希地址，需要将对应的锁定脚本传入TxUnlock结构体
-	//pass := btcLikeTxDriver.VerifyRawTransaction(signedTrans, []btcLikeTxDriver.TxUnlock{unlockData1, unlockData2})
-	//if pass {
-	//	fmt.Println("验证通过")
-	//} else {
-	//	t.Error("验证失败")
-	//}
+	var (
+		txUnlocks = make([]btcLikeTxDriver.TxUnlock, 0)
+		emptyTrans = rawTx.RawHex
+		sigPub = make([]btcLikeTxDriver.SignaturePubkey, 0)
+	)
+
+
+	for _, keySignatures := range rawTx.Signatures {
+		for _, keySignature := range keySignatures {
+
+			signature, _ := hex.DecodeString(keySignature.Signature)
+			pubkey, _ := hex.DecodeString(keySignature.Address.PublicKey)
+
+			signaturePubkey := btcLikeTxDriver.SignaturePubkey {
+				Signature: signature,
+				Pubkey: pubkey,
+			}
+
+			sigPub = append(sigPub, signaturePubkey)
+		}
+	}
+
+	txBytes, err := hex.DecodeString(emptyTrans)
+	if err != nil {
+		return errors.New("Invalid transaction hex data!")
+	}
+
+	trx := btcLikeTxDriver.DecodeRawTransaction(txBytes)
+
+
+	for _, vin := range trx.Vins {
+
+		utxo, err := wm.GetTxOut(vin.GetTxID(), uint64(vin.GetVout()))
+		if err != nil {
+			return err
+		}
+
+		txUnlock := btcLikeTxDriver.TxUnlock{LockScript: utxo.Get("scriptPubKey.hex").String()}
+		txUnlocks = append(txUnlocks, txUnlock)
+
+	}
+
+	////////填充签名结果到空交易单
+	//  传入TxUnlock结构体的原因是： 解锁向脚本支付的UTXO时需要对应地址的赎回脚本， 当前案例的对应字段置为 "" 即可
+	signedTrans, err := btcLikeTxDriver.InsertSignatureIntoEmptyTransaction(emptyTrans, sigPub, txUnlocks)
+	if err != nil {
+		log.Error("交易单拼接失败")
+	} else {
+		fmt.Println("拼接后的交易单")
+		fmt.Println(signedTrans)
+	}
+
+	/////////验证交易单
+	//验证时，对于公钥哈希地址，需要将对应的锁定脚本传入TxUnlock结构体
+	pass := btcLikeTxDriver.VerifyRawTransaction(signedTrans, txUnlocks)
+	if pass {
+		fmt.Println("验证通过")
+	} else {
+		log.Error("验证失败")
+	}
 
 	return nil
 }

@@ -1,12 +1,31 @@
 package btcLikeTxDriver
 
-import "errors"
+import (
+	"encoding/hex"
+	"errors"
+)
 
 type TxIn struct {
 	TxID                  []byte
 	Vout                  []byte
 	ScriptPubkeySignature []byte
 	Sequence              []byte
+}
+
+func (in TxIn) GetTxID() string {
+	return reverseBytesToHex(in.TxID)
+}
+
+func (in TxIn) GetVout() uint32 {
+	return littleEndianBytesToUint32(in.Vout)
+}
+
+func (in TxIn) GetScriptPubkey() string {
+	return hex.EncodeToString(in.ScriptPubkeySignature)
+}
+
+func (in TxIn) GetSequence() uint32 {
+	return littleEndianBytesToUint32(in.Sequence)
 }
 
 func newTxInForEmptyTrans(vin []Vin) ([]TxIn, error) {
