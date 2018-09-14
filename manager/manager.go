@@ -228,7 +228,7 @@ func (wm *WalletManager) initBlockScanner() error {
 
 		for _, appID := range appIDs {
 
-			wrapper, err := wm.newWalletWrapper(appID)
+			wrapper, err := wm.newWalletWrapper(appID, "")
 			if err != nil {
 				log.Error("wallet manager init unexpected error:", err)
 				continue
@@ -250,18 +250,35 @@ func (wm *WalletManager) initBlockScanner() error {
 }
 
 //newWalletWrapper 创建App专用的包装器
-func (wm *WalletManager) newWalletWrapper(appID string) (*openwallet.WalletWrapper, error) {
+func (wm *WalletManager) newWalletWrapper(appID, walletID string) (*openwallet.WalletWrapper, error) {
+
+	var walletWrapper *openwallet.WalletWrapper
 
 	//打开数据库
 	db, err := wm.OpenDB(appID)
 	if err != nil {
 		return nil, err
 	}
+
 	dbFile := openwallet.WalletDBFile(wm.DBFile(appID))
 	wrapperAppID := openwallet.WalletDBFile(appID)
-	wrapper := openwallet.NewWalletWrapper(wrapperAppID, dbFile, db)
-	return wrapper, nil
-	//return newAppWalletWrapper(db, dbFile)
+	wrapper := openwallet.NewAppWrapper(wrapperAppID, dbFile, db)
+
+	if len(walletID) > 0 {
+
+		wallet, err := wrapper.GetWalletInfo(walletID)
+		if err != nil {
+			return nil, err
+		}
+
+		keyFile := openwallet.WalletKeyFile(wallet.KeyFile)
+		walletWrapper = openwallet.NewWalletWrapper(wallet, keyFile, wrapper)
+
+	} else {
+		walletWrapper = openwallet.NewWalletWrapper(wrapper)
+	}
+
+	return walletWrapper, nil
 }
 
 // encodeSourceKey 编码sourceKey

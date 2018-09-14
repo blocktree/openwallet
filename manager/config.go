@@ -44,6 +44,8 @@ func NewConfig() *Config {
 	c.SupportAssets = []string{"BTC"}
 	//开启区块扫描
 	c.EnableBlockScan = false
+	//测试网
+	c.IsTestnet = true
 
 	return &c
 }

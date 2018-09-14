@@ -65,6 +65,7 @@ func NewWalletManager() *WalletManager {
 	//区块扫描器
 	wm.Blockscanner = NewBTCBlockScanner(&wm)
 	wm.Decoder = &addressDecoder{}
+	wm.TxDecoder = NewTransactionDecoder(&wm)
 	return &wm
 }
 
@@ -141,8 +142,27 @@ func (wm *WalletManager) ImportPrivKey(wif, walletID string) error {
 
 }
 
+//ImportAddress 导入地址核心钱包
+func (wm *WalletManager)  ImportAddress(address *openwallet.Address) error {
+
+	request := []interface{}{
+		address.Address,
+		address.AccountID,
+		false,
+	}
+
+	_, err := wm.WalletClient.Call("importaddress", request)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
 //ImportMulti 批量导入地址和私钥
-func (wm *WalletManager) ImportMulti(addresses []*openwallet.Address, keys []string, walletID string, watchOnly bool) ([]int, error) {
+func (wm *WalletManager) ImportMulti(addresses []*openwallet.Address, keys []string, watchOnly bool) ([]int, error) {
 
 	/*
 		[
@@ -165,22 +185,23 @@ func (wm *WalletManager) ImportMulti(addresses []*openwallet.Address, keys []str
 		failedIndex = make([]int, 0)
 	)
 
-	if len(addresses) != len(keys) {
+	if len(addresses) != len(keys) && !watchOnly {
 		return nil, errors.New("Import addresses is not equal keys count!")
 	}
 
 	for i, a := range addresses {
-		k := keys[i]
+
 		obj := map[string]interface{}{
 			"scriptPubKey": map[string]interface{}{
 				"address": a.Address,
 			},
-			"label":     walletID,
+			"label":     a.AccountID,
 			"timestamp": "now",
 			"watchonly": watchOnly,
 		}
 
 		if !watchOnly {
+			k := keys[i]
 			obj["keys"] = []string{k}
 		}
 
@@ -1761,7 +1782,7 @@ func (wm *WalletManager) createAddressWork(k *hdkeystore.HDKey, producer chan<- 
 	}
 
 	//批量导入私钥
-	failed, errRun := wm.ImportMulti(runAddress, runWIFs, walletID, true)
+	failed, errRun := wm.ImportMulti(runAddress, runWIFs, true)
 	if errRun != nil {
 		producer <- make([]*openwallet.Address, 0)
 		return
@@ -1866,7 +1887,7 @@ func (wm *WalletManager) LoadConfig() error {
 
 	token := BasicAuth(wm.Config.RpcUser, wm.Config.RpcPassword)
 
-	wm.WalletClient = NewClient(wm.Config.ServerAPI, token, false)
+	wm.WalletClient = NewClient(wm.Config.ServerAPI, token, true)
 
 	return nil
 }

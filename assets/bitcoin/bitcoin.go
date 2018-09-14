@@ -497,6 +497,11 @@ func (wm *WalletManager) Symbol() string {
 	return wm.Config.Symbol
 }
 
+//小数位精度
+func (wm *WalletManager) Decimal() int32 {
+	return 8
+}
+
 //AddressDecode 地址解析器
 func (wm *WalletManager) GetAddressDecode() openwallet.AddressDecoder {
 	return wm.Decoder
@@ -509,30 +514,92 @@ func (wm *WalletManager) GetTransactionDecoder() openwallet.TransactionDecoder {
 
 //GetBlockScanner 获取区块链
 func (wm *WalletManager) GetBlockScanner() openwallet.BlockScanner {
+
+	//先加载是否有配置文件
+	err := wm.LoadConfig()
+	if err != nil {
+		return nil
+	}
+
 	return wm.Blockscanner
 }
 
-//CountBalanceByAddresses
-func (wm *WalletManager) CountBalanceByAddresses(address ...string) (balance string, err error) {
+//ImportWatchOnlyAddress 导入观测地址
+func (wm *WalletManager) ImportWatchOnlyAddress(address ...*openwallet.Address) error {
 
-	//查找核心钱包确认数大于1的
-	utxos, err := wm.ListUnspent(0, address...)
+	//先加载是否有配置文件
+	err := wm.LoadConfig()
 	if err != nil {
-		return "0", err
+		return nil
 	}
 
-	balanceDel := decimal.New(0, 0)
+	var (
+		failedIndex = make([]int, 0)
+	)
+
+	for i, a := range address {
+		err = wm.ImportAddress(a)
+		if err != nil {
+			failedIndex = append(failedIndex, i)
+		}
+	}
+
+	//failed, err := wm.ImportMulti(address, nil, true)
+	//if err != nil {
+	//	return err
+	//}
+
+	if len(failedIndex) > 0 {
+		failedReason := ""
+
+		for _, index := range failedIndex {
+			failedReason = failedReason + address[index].Address + ", "
+		}
+
+		failedReason = failedReason + "import failed"
+
+		return fmt.Errorf(failedReason)
+	}
+
+	return nil
+}
+
+//GetAddressWithBalance
+func (wm *WalletManager) GetAddressWithBalance(address ...*openwallet.Address) error {
+
+	var (
+		addressMap = make(map[string]*openwallet.Address)
+		searchAddrs = make([]string, 0)
+	)
+
+	//先加载是否有配置文件
+	err := wm.LoadConfig()
+	if err != nil {
+		return err
+	}
+
+
+	for _, address := range address {
+		searchAddrs = append(searchAddrs, address.Address)
+		addressMap[address.Address] = address
+	}
+
+	//查找核心钱包确认数大于0的
+	utxos, err := wm.ListUnspent(0, searchAddrs...)
+	if err != nil {
+		return err
+	}
+	log.Debug(utxos)
+	//balanceDel := decimal.New(0, 0)
 
 	//批量插入到本地数据库
 	//设置utxo的钱包账户
 	for _, utxo := range utxos {
-
-		amount, _ := decimal.NewFromString(utxo.Amount)
-		balanceDel = balanceDel.Add(amount)
+		a := addressMap[utxo.Address]
+		a.Balance = utxo.Amount
 
 	}
 
-	balance = balanceDel.StringFixed(8)
-	return balance, nil
+	return nil
 
 }

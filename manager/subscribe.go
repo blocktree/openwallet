@@ -33,7 +33,7 @@ func (wm *WalletManager) BlockScanNotify(header *openwallet.BlockHeader) error {
 
 		for _, appID := range appIDs {
 
-			wrapper, err := wm.newWalletWrapper(appID)
+			wrapper, err := wm.newWalletWrapper(appID, "")
 			if err != nil {
 				return err
 			}
@@ -64,7 +64,7 @@ func (wm *WalletManager) BlockExtractDataNotify(sourceKey string, data *openwall
 
 	appID, accountID := wm.decodeSourceKey(sourceKey)
 
-	wrapper, err := wm.newWalletWrapper(appID)
+	wrapper, err := wm.newWalletWrapper(appID, "")
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (wm *WalletManager) DeleteRechargesByHeight(height uint64) error {
 
 	for _, appID := range appIDs {
 
-		wrapper, err := wm.newWalletWrapper(appID)
+		wrapper, err := wm.newWalletWrapper(appID, "")
 		if err != nil {
 			return err
 		}
