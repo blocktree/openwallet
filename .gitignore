@@ -18,6 +18,7 @@ _cgo_gotypes.go
 _cgo_export.*
 
 _testmain.go
+
 *.exe
 *.test
 *.prof
@@ -26,5 +27,5 @@ _testmain.go
 conf/
 data/
 assets/sia/data/sc/address/
-mqnode/openw_data/db/b4b1962d415d4d30ec71b28769fda585.db
-mqnode/openw_data/key/我的钱包-W91X96C6YeKBVfkEv2e9uw9GuC7QXLD5rq.key
+hdkeystore/keys/sogosdfo-VykdgSwVtbEWExc5AdNykKCDqgw8cBKLs2.key
+vendor/github.com/blocktree/go-OWCBasedFuncs/

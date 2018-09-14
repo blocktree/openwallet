@@ -512,38 +512,44 @@
 		{
 			"checksumSHA1": "sDZOETFZy/n0hLhterr5c99vV7s=",
 			"path": "github.com/blocktree/go-OWCBasedFuncs/addressEncoder",
-			"revision": "0214a88899476e6e99b0d945185c4e99666248f3",
-			"revisionTime": "2018-09-12T09:36:09Z"
+			"revision": "94bb4af06b71939f4d56a740fac32f7eec0dd7c1",
+			"revisionTime": "2018-09-13T10:02:33Z"
 		},
 		{
 			"checksumSHA1": "+feiQu0zGRLaflHCZBi9DKz1qcU=",
 			"path": "github.com/blocktree/go-OWCBasedFuncs/addressEncoder/base32PolyMod",
-			"revision": "0214a88899476e6e99b0d945185c4e99666248f3",
-			"revisionTime": "2018-09-12T09:36:09Z"
+			"revision": "94bb4af06b71939f4d56a740fac32f7eec0dd7c1",
+			"revisionTime": "2018-09-13T10:02:33Z"
 		},
 		{
 			"checksumSHA1": "216e8SQkZ6kuNUHKQ6VyZbROcj4=",
 			"path": "github.com/blocktree/go-OWCBasedFuncs/addressEncoder/bech32",
-			"revision": "0214a88899476e6e99b0d945185c4e99666248f3",
-			"revisionTime": "2018-09-12T09:36:09Z"
+			"revision": "94bb4af06b71939f4d56a740fac32f7eec0dd7c1",
+			"revisionTime": "2018-09-13T10:02:33Z"
 		},
 		{
 			"checksumSHA1": "9zniWFG5U5gyTh4zeBegHeczAlA=",
 			"path": "github.com/blocktree/go-OWCBasedFuncs/addressEncoder/blake256",
-			"revision": "0214a88899476e6e99b0d945185c4e99666248f3",
-			"revisionTime": "2018-09-12T09:36:09Z"
+			"revision": "94bb4af06b71939f4d56a740fac32f7eec0dd7c1",
+			"revisionTime": "2018-09-13T10:02:33Z"
 		},
 		{
 			"checksumSHA1": "MD7UcC+/JLjMZAeyU5p+ZTDYpQw=",
 			"path": "github.com/blocktree/go-OWCBasedFuncs/addressEncoder/eip55",
-			"revision": "0214a88899476e6e99b0d945185c4e99666248f3",
-			"revisionTime": "2018-09-12T09:36:09Z"
+			"revision": "94bb4af06b71939f4d56a740fac32f7eec0dd7c1",
+			"revisionTime": "2018-09-13T10:02:33Z"
+		},
+		{
+			"checksumSHA1": "jf2Ui5IuX4gZO0YZd6SdQoWQxfI=",
+			"path": "github.com/blocktree/go-OWCBasedFuncs/btcLikeTxDriver",
+			"revision": "94bb4af06b71939f4d56a740fac32f7eec0dd7c1",
+			"revisionTime": "2018-09-13T10:02:33Z"
 		},
 		{
 			"checksumSHA1": "zQB2fofDApInWPc4CWVeeEZ3rro=",
 			"path": "github.com/blocktree/go-OWCBasedFuncs/owkeychain",
-			"revision": "0214a88899476e6e99b0d945185c4e99666248f3",
-			"revisionTime": "2018-09-12T09:36:09Z"
+			"revision": "94bb4af06b71939f4d56a740fac32f7eec0dd7c1",
+			"revisionTime": "2018-09-13T10:02:33Z"
 		},
 		{
 			"checksumSHA1": "r6mAU7AqaQMwl4/M9wMtDwASKFg=",
