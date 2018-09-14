@@ -155,6 +155,100 @@ func (k *HDKey) DerivedKeyWithPath(path string, curveType uint32) (*owkeychain.E
 	return owkeychain.DerivedPrivateKeyWithPath(k.seed, path, curveType)
 }
 
+//func (k *HDKey) DerivedKeyWithPath2(path string, curveType uint32) (*hdkeychain.ExtendedKey, error) {
+//	return getDerivedKeyWithPath(k.seed, path)
+//}
+//
+//// newKeyFromBIP32 创建根私钥
+//func newKeyFromBIP32(seed []byte) (*hdkeychain.ExtendedKey, error) {
+//	// Per [BIP32], the seed must be in range [MinSeedBytes, MaxSeedBytes].
+//	if len(seed) < hdkeychain.MinSeedBytes || len(seed) > hdkeychain.MaxSeedBytes {
+//		return nil, hdkeychain.ErrInvalidSeedLen
+//	}
+//
+//	// First take the HMAC-SHA512 of the master key and the seed data:
+//	//   I = HMAC-SHA512(Key = "Bitcoin seed", Data = S)
+//	hmac512 := hmac.New(sha512.New, masterKey)
+//	hmac512.Write(seed)
+//	lr := hmac512.Sum(nil)
+//
+//	// Split "I" into two 32-byte sequences Il and Ir where:
+//	//   Il = master secret key
+//	//   Ir = master chain code
+//	secretKey := lr[:len(lr)/2]
+//	chainCode := lr[len(lr)/2:]
+//
+//	// Ensure the key in usable.
+//	secretKeyNum := new(big.Int).SetBytes(secretKey)
+//	if secretKeyNum.Cmp(btcec.S256().N) >= 0 || secretKeyNum.Sign() == 0 {
+//		return nil, hdkeychain.ErrUnusableSeed
+//	}
+//
+//	parentFP := []byte{0x00, 0x00, 0x00, 0x00}
+//	hdPrivateKeyID := [4]byte{0x04, 0x88, 0xad, 0xe4}
+//	return hdkeychain.NewExtendedKey(hdPrivateKeyID[:], secretKey, chainCode,
+//		parentFP, 0, 0, true), nil
+//}
+//
+//func getDerivedKeyWithPath(seed []byte, path string) (*hdkeychain.ExtendedKey, error) {
+//
+//	var (
+//		err error
+//	)
+//
+//	//if len(path) == 0 {
+//	//	return nil, ErrInvalidDerivedPath
+//	//}
+//
+//	key, err := newKeyFromBIP32(seed)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	if path == "m" || path == "/" || path == "" {
+//		// 直接返回当前根
+//		return key, nil
+//	}
+//
+//	// strip "m/" from the beginning.
+//	if strings.Index(path, "m/") == 0 {
+//		path = path[2:]
+//	}
+//
+//	derivedKey := key
+//
+//	// m/<purpose>'/<coin type>' 分解路径
+//	elements := strings.Split(path, "/")
+//	//log.Println(elements)
+//	for i, elem := range elements {
+//		if len(elem) == 0 {
+//			continue
+//		}
+//		var value common.String
+//		hardened := false
+//		if strings.Index(elem, "'") == len(elem)-1 {
+//			hardened = true
+//			elem = elem[0 : len(elem)-1]
+//		}
+//
+//		value = common.NewString(elem)
+//		if i >= 0 && value.String() == elem {
+//			if hardened {
+//				derivedKey, err = derivedKey.Child(hdkeychain.HardenedKeyStart + value.UInt32())
+//			} else {
+//				derivedKey, err = derivedKey.Child(value.UInt32())
+//			}
+//			if err != nil {
+//				return nil, err
+//			}
+//		} else {
+//			return nil, ErrInvalidDerivedPath
+//		}
+//	}
+//
+//	return derivedKey, err
+//}
+
 //Mnemonic 密钥助记词
 func (k *HDKey) Mnemonic() string {
 	mnemonic, _ := bip39.NewMnemonic(k.seed)

@@ -63,8 +63,7 @@ func (wm *WalletManager) loadConfig() error {
 		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
 	}
 
-	wm.config.walletAPI = c.String("walletAPI")
-	wm.config.chainAPI = c.String("chainAPI")
+	wm.config.walletURL = c.String("walletURL")
 	wm.config.threshold, _ = decimal.NewFromString(c.String("threshold"))
 	wm.config.sumAddress = c.String("sumAddress")
 	wm.config.rpcUser = c.String("rpcUser")
@@ -77,6 +76,6 @@ func (wm *WalletManager) loadConfig() error {
 		wm.config.walletDataPath = c.String("mainNetDataPath")
 	}
 	// wm.walletClient = NewClient(wm.config.walletAPI, false)
-	wm.fullnodeClient = NewClient(wm.config.walletAPI, false)
+	wm.fullnodeClient = NewClient(wm.config.walletURL, false)
 	return nil
 }

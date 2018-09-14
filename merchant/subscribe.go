@@ -402,6 +402,6 @@ func (m *MerchantNode) BlockScanNotify(header *openwallet.BlockHeader) error {
 }
 
 //BlockExtractDataNotify 区块提取结果通知
-func (m *MerchantNode)  BlockExtractDataNotify(sourceKey string, data *openwallet.BlockExtractData) error {
+func (m *MerchantNode)  BlockExtractDataNotify(sourceKey string, data *openwallet.TxExtractData) error {
 	return nil
 }

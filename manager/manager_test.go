@@ -35,7 +35,7 @@ func init() {
 
 func TestWalletManager_CreateWallet(t *testing.T) {
 
-	w := &openwallet.Wallet{Alias: "zbg", IsTrust: true, Password: "12345678"}
+	w := &openwallet.Wallet{Alias: "zbg3", IsTrust: true, Password: "12345678"}
 	nw, key, err := tm.CreateWallet(testApp, w)
 	if err != nil {
 		log.Error(err)

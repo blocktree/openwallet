@@ -110,6 +110,75 @@ func (this *EthBlock) Init() error {
 	return nil
 }
 
+type TxpoolContent struct {
+	Pending map[string]map[string]BlockTransaction `json:"pending"`
+}
+
+func (this *TxpoolContent) GetPendingTxCountForAddr(addr string) int {
+	txpool := this.Pending
+	if _, exist := txpool[addr]; !exist {
+		return 0
+	}
+	if txpool[addr] == nil {
+		return 0
+	}
+	return len(txpool[addr])
+}
+
+func ethGetTransactionCount(addr string) (uint64, error) {
+	params := []interface{}{
+		addr,
+		"latest",
+	}
+
+	result, err := client.Call("eth_getTransactionCount", 1, params)
+	if err != nil {
+		//errInfo := fmt.Sprintf("get block[%v] failed, err = %v \n", blockNumStr,  err)
+		openwLogger.Log.Errorf("get transaction count failed, err = %v \n", err)
+		return 0, err
+	}
+
+	if result.Type != gjson.String {
+		openwLogger.Log.Errorf("result type failed. ")
+		return 0, errors.New("result type failed. ")
+	}
+
+	//blockNum, err := ConvertToBigInt(result.String(), 16)
+	nonceStr := result.String()
+	nonceStr = strings.ToLower(nonceStr)
+	nonceStr = removeOxFromHex(nonceStr)
+	nonce, err := strconv.ParseUint(nonceStr, 16, 64)
+	if err != nil {
+		openwLogger.Log.Errorf("parse nounce failed, err=%v", err)
+		return 0, err
+	}
+	return nonce, nil
+}
+
+func ethGetTxPoolContent() (*TxpoolContent, error) {
+	result, err := client.Call("txpool_content", 1, nil)
+	if err != nil {
+		//errInfo := fmt.Sprintf("get block[%v] failed, err = %v \n", blockNumStr,  err)
+		openwLogger.Log.Errorf("get tx pool failed, err = %v \n", err)
+		return nil, err
+	}
+
+	if result.Type != gjson.JSON {
+		errInfo := fmt.Sprintf("get tx pool content failed, result type is %v", result.Type)
+		openwLogger.Log.Errorf(errInfo)
+		return nil, errors.New(errInfo)
+	}
+
+	var txpool TxpoolContent
+	err = json.Unmarshal([]byte(result.Raw), &txpool)
+	if err != nil {
+		openwLogger.Log.Errorf("decode json [%v] failed, err=%v", []byte(result.Raw), err)
+		return nil, err
+	}
+
+	return &txpool, nil
+}
+
 func ethGetBlockSpecByHash(blockHash string, showTransactionSpec bool) (*EthBlock, error) {
 	params := []interface{}{
 		blockHash,
@@ -132,7 +201,7 @@ func ethGetBlockSpecByHash(blockHash string, showTransactionSpec bool) (*EthBloc
 
 	err = json.Unmarshal([]byte(result.Raw), &ethBlock)
 	if err != nil {
-		openwLogger.Log.Errorf("decode json [%v] failed, err=%v", err)
+		openwLogger.Log.Errorf("decode json [%v] failed, err=%v", []byte(result.Raw), err)
 		return nil, err
 	}
 
@@ -348,11 +417,11 @@ func makeSimpleTransactiomnPara2(fromAddr string, toAddr string, amount *big.Int
 }
 
 func makeSimpleTransGasEstimatedPara(fromAddr string, toAddr string, amount *big.Int) map[string]interface{} {
-	paraMap := make(map[string]interface{})
-	paraMap["from"] = fromAddr
-	paraMap["to"] = toAddr
-	paraMap["value"] = "0x" + amount.Text(16)
-	return paraMap
+	//paraMap := make(map[string]interface{})
+	//paraMap["from"] = fromAddr
+	//paraMap["to"] = toAddr
+	//paraMap["value"] = "0x" + amount.Text(16)
+	return makeGasEstimatePara(fromAddr, toAddr, amount, "") //araMap
 }
 
 func makeERC20TokenTransData(contractAddr string, toAddr string, amount *big.Int) (string, error) {
@@ -376,19 +445,33 @@ func makeERC20TokenTransData(contractAddr string, toAddr string, amount *big.Int
 	return data, nil
 }
 
+func makeGasEstimatePara(fromAddr string, toAddr string, value *big.Int, data string) map[string]interface{} {
+	paraMap := make(map[string]interface{})
+	paraMap["from"] = fromAddr
+	paraMap["to"] = toAddr
+	if data != "" {
+		paraMap["data"] = data
+	}
+
+	if value != nil {
+		paraMap["value"] = "0x" + value.Text(16)
+	}
+	return paraMap
+}
+
 func makeERC20TokenTransGasEstimatePara(fromAddr string, contractAddr string, data string) map[string]interface{} {
 
-	paraMap := make(map[string]interface{})
+	//paraMap := make(map[string]interface{})
 
 	//use password to unlock the account
 	//use the following attr to eth_sendTransaction
-	paraMap["from"] = fromAddr //fromAddr.Address
-	paraMap["to"] = contractAddr
+	//paraMap["from"] = fromAddr //fromAddr.Address
+	//paraMap["to"] = contractAddr
 	//paraMap["value"] = "0x" + amount.Text(16)
 	//paraMap["gas"] = "0x" + fee.GasLimit.Text(16)
 	//paraMap["gasPrice"] = "0x" + fee.GasPrice.Text(16)
-	paraMap["data"] = data
-	return paraMap
+	//paraMap["data"] = data
+	return makeGasEstimatePara(fromAddr, contractAddr, nil, data)
 }
 
 func ethGetGasEstimated(paraMap map[string]interface{}) (*big.Int, error) {
@@ -503,6 +586,24 @@ func SendTransactionToAddr(param map[string]interface{}) (string, error) {
 	}
 
 	return txId, nil
+}
+
+func ethSendRawTransaction(signedTx string) (string, error) {
+	params := []interface{}{
+		signedTx,
+	}
+
+	result, err := client.Call("eth_sendRawTransaction", 1, params)
+	if err != nil {
+		openwLogger.Log.Errorf(fmt.Sprintf("start raw transaction faield, err = %v \n", err))
+		return "", err
+	}
+
+	if result.Type != gjson.String {
+		openwLogger.Log.Errorf("eth_sendRawTransaction result type error")
+		return "", errors.New("eth_sendRawTransaction result type error")
+	}
+	return result.String(), nil
 }
 
 func ethSendTransaction(paraMap map[string]interface{}) (string, error) {

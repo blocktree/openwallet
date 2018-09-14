@@ -26,34 +26,34 @@ type BlockScanner interface {
 	//AddWallet 添加扫描地址
 	//@param address 地址
 	//@param sourceKey 数据源标识，可以是地址所属的应用钱包的唯一标识，资产账户唯一标识
-	AddAddress(address, sourceKey string)
+	AddAddress(address, sourceKey string) error
 
 	//AddWallet 添加扫描账户及其钱包指针
 	//AddWallet(sourceKey string, wrapper *WalletWrapper)
 
 	//AddObserver 添加观测者
-	AddObserver(obj BlockScanNotificationObject)
+	AddObserver(obj BlockScanNotificationObject) error
 
 	//RemoveObserver 移除观测者
-	RemoveObserver(obj BlockScanNotificationObject)
+	RemoveObserver(obj BlockScanNotificationObject) error
 
 	//Clear 清理订阅扫描的内容
-	Clear()
+	Clear() error
 
 	//SetRescanBlockHeight 重置区块链扫描高度
 	SetRescanBlockHeight(height uint64) error
 
 	//Run 运行
-	Run()
+	Run() error
 
 	//Stop 停止扫描
-	Stop()
+	Stop() error
 
 	//Pause 暂停扫描
-	Pause()
+	Pause() error
 
 	//Restart 继续扫描
-	Restart()
+	Restart() error
 
 	//ScanBlock 扫描指定高度的区块
 	ScanBlock(height uint64) error
@@ -75,11 +75,11 @@ type BlockScanNotificationObject interface {
 	BlockScanNotify(header *BlockHeader) error
 
 	//BlockExtractDataNotify 区块提取结果通知
-	BlockExtractDataNotify(sourceKey string, data *BlockExtractData) error
+	BlockExtractDataNotify(sourceKey string, data *TxExtractData) error
 }
 
-//BlockExtractData 区块扫描后的提取结果
-type BlockExtractData struct {
+//TxExtractData 区块扫描后的交易单提取结果
+type TxExtractData struct {
 
 	//充值记录
 	TxInputs []*TxInput
@@ -88,5 +88,13 @@ type BlockExtractData struct {
 	TxOutputs []*TxOutPut
 
 	//交易记录
-	Transactions []*Transaction
+	Transaction *Transaction
+}
+
+func NewBlockExtractData() *TxExtractData {
+	data := TxExtractData{
+		TxInputs: make([]*TxInput, 0),
+		TxOutputs: make([]*TxOutPut, 0),
+	}
+	return &data
 }

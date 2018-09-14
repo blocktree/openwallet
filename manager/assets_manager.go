@@ -34,6 +34,11 @@ type AssetsManager interface {
 
 	//GetBlockScanner 获取区块链
 	GetBlockScanner() openwallet.BlockScanner
+
+	//CountBalanceByAddresses 计算地址的余额，用于计算账户的所有地址余额
+	CountBalanceByAddresses(address ...string) (balance string, err error)
+
+	//GetAssetsAccountTransactions(wrapper *openwallet.WalletWrapper, account *openwallet.AssetsAccount) (txs []*openwallet.Transaction, err error)
 }
 
 

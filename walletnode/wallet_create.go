@@ -44,7 +44,7 @@ func CheckAndCreateConfig(symbol string) error {
 
 	// Ask about whether create new
 	dirname, _ := filepath.Abs("./")
-	fmt.Printf("Init new %s wallet fullnode in '%s/'( \n  yes:\t to create config file and docker, \n  no:\t just to create docker, \n  quit:\t exit now!)", s.ToUpper(symbol), dirname)
+	fmt.Printf("\nInit new %s wallet fullnode in '%s/'( \n  yes:\t to create config file and docker, \n  no:\t just to create docker, \n  quit:\t exit now!)", s.ToUpper(symbol), dirname)
 	if isnew, err := console.InputText("[yes]: ", false); err != nil {
 		log.Println(err)
 		return err
@@ -61,16 +61,14 @@ func CheckAndCreateConfig(symbol string) error {
 	}
 
 	// Ask about whether sync by testnet
-	if istestnet, err := console.InputText("Within testnet('testnet','main')[testnet]: ", false); err != nil {
+	if istestnet, err := console.InputText("Within testnet('testnet','main')[main]: ", false); err != nil {
 		return err
 	} else {
 		switch istestnet {
+		case "main", "":
+			WNConfig.isTestNet = "false"
 		case "testnet":
-			WNConfig.TestNet = "true"
-		case "main":
-			WNConfig.TestNet = "false"
-		case "":
-			WNConfig.TestNet = "true"
+			WNConfig.isTestNet = "true"
 		default:
 			return errors.New("Invalid!")
 		}
@@ -105,13 +103,13 @@ func CheckAndCreateConfig(symbol string) error {
 
 	if WNConfig.walletnodeServerType == "docker" {
 
-		if x, err := console.InputText("Docker master server addr [192.168.2.194]: ", false); err != nil {
+		if x, err := console.InputText("Docker master server addr [127.0.0.1]: ", false); err != nil {
 			return err
 		} else {
 			if x != "" {
 				WNConfig.walletnodeServerAddr = x
 			} else {
-				WNConfig.walletnodeServerAddr = "192.168.2.194"
+				WNConfig.walletnodeServerAddr = "127.0.0.1"
 			}
 		}
 
@@ -140,6 +138,13 @@ func CheckAndCreateConfig(symbol string) error {
 		// console.InputText("Please edit <stopnodecmd/startnodecmd> in Symbol.ini before use wallet [yes]: ", false)
 	}
 
+	if cnf := GetFullnodeConfig(symbol); cnf != nil {
+		if cnf.isEncrypted() {
+			fmt.Println("** Wallet fullnode need to be encrypted, and will encrypt within starting! **")
+		}
+	}
+
+	// ---------------------- Create container success and update SYMBOL.ini -----------------
 	fmt.Println("Start to create/update config file...")
 	// Create new INI file, and update
 	if err := initConfig(symbol); err != nil {

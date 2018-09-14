@@ -39,6 +39,8 @@ import (
 	"github.com/blocktree/OpenWallet/logger"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	ethKStore "github.com/ethereum/go-ethereum/accounts/keystore"
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 const (
@@ -596,8 +598,8 @@ type txFeeInfo struct {
 	Fee      *big.Int
 }
 
-func GetERC20TokenTransactionFeeEstimated(from string, to string, data string) (*txFeeInfo, error) {
-	gasLimit, err := ethGetGasEstimated(makeERC20TokenTransGasEstimatePara(from, to, data))
+func GetTransactionFeeEstimated(from string, to string, value *big.Int, data string) (*txFeeInfo, error) {
+	gasLimit, err := ethGetGasEstimated(makeGasEstimatePara(from, to, value, data))
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("get gas limit failed, err = %v\n", err))
 		return nil, err
@@ -620,8 +622,8 @@ func GetERC20TokenTransactionFeeEstimated(from string, to string, data string) (
 	return feeInfo, nil
 }
 
-func GetSimpleTransactionFeeEstimated(from string, to string, amount *big.Int) (*txFeeInfo, error) {
-	gasLimit, err := ethGetGasEstimated(makeSimpleTransGasEstimatedPara(from, to, amount))
+func GetERC20TokenTransactionFeeEstimated(from string, to string, data string) (*txFeeInfo, error) {
+	/*gasLimit, err := ethGetGasEstimated(makeERC20TokenTransGasEstimatePara(from, to, data))
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("get gas limit failed, err = %v\n", err))
 		return nil, err
@@ -641,7 +643,33 @@ func GetSimpleTransactionFeeEstimated(from string, to string, amount *big.Int) (
 		GasPrice: gasPrice,
 		Fee:      fee,
 	}
-	return feeInfo, nil
+	return feeInfo, nil*/
+	return GetTransactionFeeEstimated(from, to, nil, data)
+}
+
+func GetSimpleTransactionFeeEstimated(from string, to string, amount *big.Int) (*txFeeInfo, error) {
+	/*gasLimit, err := ethGetGasEstimated(makeSimpleTransGasEstimatedPara(from, to, amount))
+	if err != nil {
+		openwLogger.Log.Errorf(fmt.Sprintf("get gas limit failed, err = %v\n", err))
+		return nil, err
+	}
+
+	gasPrice, err := ethGetGasPrice()
+	if err != nil {
+		openwLogger.Log.Errorf(fmt.Sprintf("get gas price failed, err = %v\n", err))
+		return nil, err
+	}
+
+	fee := new(big.Int)
+	fee.Mul(gasLimit, gasPrice)
+
+	feeInfo := &txFeeInfo{
+		GasLimit: gasLimit,
+		GasPrice: gasPrice,
+		Fee:      fee,
+	}
+	return feeInfo, nil*/
+	return GetTransactionFeeEstimated(from, to, amount, "")
 }
 
 func ERC20SendTransaction(wallet *Wallet, to string, amount *big.Int, password string, feesInSender bool) ([]string, error) {
@@ -872,6 +900,31 @@ func LockAddr(address string) error {
 		return errors.New(errInfo)
 	}
 
+	return nil
+}
+
+func createRawTransaction(from string, to string, value *big.Int, data string) ([]byte, error) {
+	fee, err := GetTransactionFeeEstimated(from, to, value, data)
+	if err != nil {
+		openwLogger.Log.Errorf("GetTransactionFeeEstimated from[%v] -> to[%v] failed, err=%v", from, to, err)
+		return nil, err
+	}
+
+	nonce, err := GetNonceForAddress(from)
+	if err != nil {
+		openwLogger.Log.Errorf("GetNonceForAddress from[%v] failed, err=%v", from, err)
+		return nil, err
+	}
+
+	signer := types.NewEIP155Signer(big.NewInt(chainID))
+
+	tx := types.NewTransaction(nonce, ethcommon.HexToAddress(to),
+		value, fee.GasLimit.Uint64(), fee.GasPrice, []byte(data))
+	msg := signer.Hash(tx)
+	return msg[:], nil
+}
+
+func verifyTransaction(nonce uint64, to string, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) error {
 	return nil
 }
 
@@ -1179,4 +1232,33 @@ func RestoreWallet(keyFile string, password string) error {
 	}
 
 	return nil
+}
+
+func GetNonceForAddress(address string) (uint64, error) {
+	txpool, err := ethGetTxPoolContent()
+	if err != nil {
+		openwLogger.Log.Errorf("ethGetTxPoolContent failed, err = %v", err)
+		return 0, err
+	}
+
+	txCount := txpool.GetPendingTxCountForAddr(address)
+	openwLogger.Log.Infof("address[%v] has %v tx in pending queue of txpool.", address, txCount)
+	for txCount > 0 {
+		time.Sleep(time.Second * 1)
+		txpool, err = ethGetTxPoolContent()
+		if err != nil {
+			openwLogger.Log.Errorf("ethGetTxPoolContent failed, err = %v", err)
+			return 0, err
+		}
+
+		txCount = txpool.GetPendingTxCountForAddr(address)
+		openwLogger.Log.Infof("address[%v] has %v tx in pending queue of txpool.", address, txCount)
+	}
+
+	nonce, err := ethGetTransactionCount(address)
+	if err != nil {
+		openwLogger.Log.Errorf("ethGetTransactionCount failed, err=%v", err)
+		return 0, err
+	}
+	return nonce, nil
 }

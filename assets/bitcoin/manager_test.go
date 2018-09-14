@@ -32,7 +32,6 @@ var (
 	tw *WalletManager
 )
 
-
 func init() {
 
 	tw = NewWalletManager()
@@ -41,7 +40,7 @@ func init() {
 	tw.Config.RpcUser = "wallet"
 	tw.Config.RpcPassword = "walletPassword2017"
 	token := BasicAuth(tw.Config.RpcUser, tw.Config.RpcPassword)
-	tw.WalletClient = NewClient(tw.Config.ServerAPI, token, false)
+	tw.WalletClient = NewClient(tw.Config.ServerAPI, token, true)
 }
 
 func TestImportPrivKey(t *testing.T) {
@@ -175,7 +174,7 @@ func TestGetAddressesByAccount(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	_, _, err := tw.CreateBatchAddress("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek", "1234qwer", 5)
+	_, _, err := tw.CreateBatchAddress("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek", "1234qwer", 50)
 	if err != nil {
 		t.Errorf("CreateBatchAddress failed unexpected error: %v\n", err)
 		return
@@ -251,56 +250,50 @@ func TestGetWalletBalance(t *testing.T) {
 
 func TestCreateNewPrivateKey(t *testing.T) {
 
-	tests := []struct {
+	test := struct {
 		name     string
 		password string
 		tag      string
 	}{
-		{
-			name:     "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek",
-			password: "1234qwer",
-			tag:      "wallet not exist",
-		},
-		//{
-		//	name:     "Zhiquan Test",
-		//	password: "1234qwer",
-		//	tag:      "normal",
-		//},
-		//{
-		//	name:     "Zhiquan Test",
-		//	password: "121212121212",
-		//	tag:      "wrong password",
-		//},
+		name:     "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek",
+		password: "1234qwer",
 	}
 
-	for i, test := range tests {
-		w, err := tw.GetWalletInfo(test.name)
-		if err != nil {
-			t.Errorf("CreateNewPrivateKey[%d] failed unexpected error: %v\n", i, err)
-			continue
-		}
+	count := 100
 
-		key, err := w.HDKey(test.password)
-		if err != nil {
-			t.Errorf("CreateNewPrivateKey[%d] failed unexpected error: %v\n", i, err)
-			continue
-		}
+	w, err := tw.GetWalletInfo(test.name)
+	if err != nil {
+		t.Errorf("CreateNewPrivateKey failed unexpected error: %v\n", err)
+		return
+	}
 
-		timestamp := time.Now().Unix()
-		t.Logf("CreateNewPrivateKey[%d] timestamp = %v \n", i, timestamp)
-		wif, a, err := tw.CreateNewPrivateKey(key, uint64(timestamp), 0)
+	key, err := w.HDKey(test.password)
+	if err != nil {
+		t.Errorf("CreateNewPrivateKey failed unexpected error: %v\n", err)
+		return
+	}
+
+	timestamp := 1
+	t.Logf("CreateNewPrivateKey timestamp = %v \n", timestamp)
+
+	derivedPath := fmt.Sprintf("%s/%d", key.RootPath, timestamp)
+	childKey, _ := key.DerivedKeyWithPath(derivedPath, tw.Config.CurveType)
+
+	for i := 0; i < count; i++ {
+
+		wif, a, err := tw.CreateNewPrivateKey(key.KeyID, childKey, derivedPath, uint64(i))
 		if err != nil {
 			t.Errorf("CreateNewPrivateKey[%d] failed unexpected error: %v\n", i, err)
 			continue
 		}
 
 		t.Logf("CreateNewPrivateKey[%d] wif = %v \n", i, wif)
-		t.Logf("CreateNewPrivateKey[%d] address = %v \n", i, a)
+		t.Logf("CreateNewPrivateKey[%d] address = %v \n", i, a.Address)
 	}
 }
 
 func TestGetWalleInfo(t *testing.T) {
-	w, err := tw.GetWalletInfo("Zhiquan Test")
+	w, err := tw.GetWalletInfo("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek")
 	if err != nil {
 		t.Errorf("GetWalletInfo failed unexpected error: %v\n", err)
 		return
@@ -410,7 +403,7 @@ func TestGetBlockChainInfo(t *testing.T) {
 }
 
 func TestListUnspent(t *testing.T) {
-	utxos, err := tw.ListUnspent(0)
+	utxos, err := tw.ListUnspent(0, "msnYsBdBXQZqYYqNNJZsjShzwCx9fJVSin")
 	if err != nil {
 		t.Errorf("ListUnspent failed unexpected error: %v\n", err)
 		return

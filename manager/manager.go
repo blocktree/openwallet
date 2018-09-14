@@ -29,7 +29,12 @@ import (
 )
 
 type NotificationObject interface {
-	openwallet.BlockScanNotificationObject
+
+	//BlockScanNotify 新区块扫描完成通知
+	BlockScanNotify(header *openwallet.BlockHeader) error
+
+	//BlockTxExtractDataNotify 区块提取结果通知
+	BlockTxExtractDataNotify(account *openwallet.AssetsAccount, data *openwallet.TxExtractData) error
 }
 
 //WalletManager OpenWallet钱包管理器
@@ -51,26 +56,27 @@ func NewWalletManager(config *Config) *WalletManager {
 
 //Init 初始化
 func (wm *WalletManager) Init() {
-
 	wm.mu.Lock()
-	defer wm.mu.Unlock()
 
 	if wm.initialized {
+		wm.mu.Unlock()
 		return
 	}
 
 	log.Info("OpenWallet Manager is initializing ...")
 
 	//新建文件目录
-	file.MkdirAll(wm.cfg.dbPath)
-	file.MkdirAll(wm.cfg.keyDir)
+	file.MkdirAll(wm.cfg.DBPath)
+	file.MkdirAll(wm.cfg.KeyDir)
 
 	wm.observers = make(map[NotificationObject]bool)
 	wm.appDB = make(map[string]*openwallet.StormDB)
 
-	wm.initBlockScanner()
-
 	wm.initialized = true
+
+	wm.mu.Unlock()
+
+	wm.initBlockScanner()
 
 	log.Info("OpenWallet Manager has been initialized!")
 }
@@ -102,7 +108,7 @@ func (wm *WalletManager) RemoveObserver(obj NotificationObject) {
 
 //DBFile 应用数据库文件
 func (wm *WalletManager) DBFile(appID string) string {
-	return filepath.Join(wm.cfg.dbPath, appID+".db")
+	return filepath.Join(wm.cfg.DBPath, appID+".db")
 }
 
 //OpenDB 打开应用数据库文件
@@ -165,7 +171,7 @@ func (wm *WalletManager) loadAllAppIDs() ([]string, error) {
 
 	var (
 		apps = make([]string, 0)
-		dir  = wm.cfg.dbPath
+		dir  = wm.cfg.DBPath
 	)
 
 	//扫描key目录的所有钱包
@@ -194,13 +200,17 @@ func (wm *WalletManager) loadAllAppIDs() ([]string, error) {
 // initBlockScanner 初始化区块链扫描器
 func (wm *WalletManager) initBlockScanner() error {
 
+	if !wm.cfg.EnableBlockScan {
+		return nil
+	}
+
 	//加载已存在所有app
 	appIDs, err := wm.loadAllAppIDs()
 	if err != nil {
 		return err
 	}
 
-	for _, symbol := range wm.cfg.supportAssets {
+	for _, symbol := range wm.cfg.SupportAssets {
 		assetsMgr, err := GetAssetsManager(symbol)
 		if err != nil {
 			log.Error(symbol, "is not support")
@@ -227,9 +237,8 @@ func (wm *WalletManager) initBlockScanner() error {
 			addrs, err := wrapper.GetAddressList(0, -1)
 
 			for _, address := range addrs {
-
-				//TODO:加载所有应用钱包地址到扫描器
-				scanner.AddAddress(address.Address, appID)
+				key := wm.encodeSourceKey(appID, address.AccountID)
+				scanner.AddAddress(address.Address, key)
 			}
 
 		}
@@ -253,4 +262,20 @@ func (wm *WalletManager) newWalletWrapper(appID string) (*openwallet.WalletWrapp
 	wrapper := openwallet.NewWalletWrapper(wrapperAppID, dbFile, db)
 	return wrapper, nil
 	//return newAppWalletWrapper(db, dbFile)
+}
+
+// encodeSourceKey 编码sourceKey
+func (wm *WalletManager) encodeSourceKey(appID, accountID string) string {
+	key := appID + ":" + accountID
+	return key
+}
+
+// decodeSourceKey 解码sourceKey
+func (wm *WalletManager) decodeSourceKey(key string) (appID string, accountID string) {
+	sources := strings.Split(key, ":")
+	if len(sources) == 2 {
+		return sources[0], sources[1]
+	} else {
+		return "", ""
+	}
 }

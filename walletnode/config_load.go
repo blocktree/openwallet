@@ -29,7 +29,7 @@ func loadConfig(symbol string) error {
 
 	WNConfig.RPCUser = c.String("rpcUser")
 	WNConfig.RPCPassword = c.String("rpcPassword")
-	WNConfig.TestNet = c.String("isTestNet")
+	WNConfig.isTestNet = c.String("isTestNet")
 
 	WNConfig.walletnodePrefix = c.String("walletnode::Prefix")
 	WNConfig.walletnodeServerType = c.String("walletnode::ServerType")
@@ -39,6 +39,7 @@ func loadConfig(symbol string) error {
 	WNConfig.walletnodeStopNodeCMD = c.String("walletnode::StopNodeCMD")
 	WNConfig.walletnodeMainNetDataPath = c.String("walletnode::mainNetDataPath")
 	WNConfig.walletnodeTestNetDataPath = c.String("walletnode::testNetDataPath")
+	WNConfig.walletnodeIsEncrypted = c.String("walletnode::isEncrypted")
 	// WNConfig.walletnodeServerSocket = c.String("walletnode::WalletnodeServerSocket")
 
 	return nil

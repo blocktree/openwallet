@@ -11,6 +11,7 @@ Openwallet 基础架构中，生产环境使用 Docker 作为全节点钱包。�
 - `兼容本地操作`的功能，已开发，待讨论决定
 
 ### 其中 Golang 接口调用示例一：启动，重启，关闭
+
 ```
 	import "github.com/blocktree/OpenWallet/walletnode"
 
@@ -32,8 +33,10 @@ Openwallet 基础架构中，生产环境使用 Docker 作为全节点钱包。�
 		log.Println(err)
 	}
 ```
+
 --------------
 ### Golang 接口调用示例二：备份/恢复(only files)
+
 ```
 import "github.com/blocktree/OpenWallet/walletnode"
 
@@ -136,9 +139,9 @@ Done!
 
 ## 其他技术细节
 
-  1. 为了兼容开发，测试，生产环境中 walletnode 不同的部署方式，通过 .ini 文件中 `WalletnodeServerType=service/localdocker/remotedocker` 三个参数来指定全节点是 直接安装在裸机或本地PC/安装在本地Docker/安装在远程服务器的Docker。指定后，接口中将自动处理后续问题（连接，pull镜像，创建，备份，恢复等）。
+  1. 为了兼容开发，测试，生产环境中 walletnode 不同的部署方式，通过 .ini 文件中 `ServerType=local/docker` 三个参数来指定全节点是 直接安装在裸机或本地PC/安装在本地Docker/安装在远程服务器的Docker。指定后，接口中将自动处理后续问题（连接，pull镜像，创建，备份，恢复等）
 
 
   2. 同样，备份也有上述需求（本地的 copy，或 远程的网络传输），通过 WalletnodeManager 这个 Interface 实现几个方法，解决：
-	- 自动选择是从本地还是Docker中备份/恢复文件，避免开发时采用本地 cp，而生产中需要 docker cp（经过 docker 处理备份）的冲突
+	 - 自动选择是从本地还是Docker中备份/恢复文件，避免开发时采用本地 cp，而生产中需要 docker cp（经过 docker 处理备份）的冲突
 
