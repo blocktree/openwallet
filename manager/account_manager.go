@@ -22,6 +22,7 @@ import (
 	"github.com/blocktree/OpenWallet/openwallet"
 	"strings"
 	"time"
+	"github.com/shopspring/decimal"
 )
 
 // CreateAssetsAccount
@@ -129,7 +130,7 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID string, account *op
 // GetAssetsAccountInfo
 func (wm *WalletManager) GetAssetsAccountInfo(appID, walletID, accountID string) (*openwallet.AssetsAccount, error) {
 
-	wrapper, err := wm.newWalletWrapper(appID)
+	wrapper, err := wm.newWalletWrapper(appID, "")
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +146,7 @@ func (wm *WalletManager) GetAssetsAccountInfo(appID, walletID, accountID string)
 //RefreshAssetsAccountBalance 刷新资产账户余额
 func (wm *WalletManager) RefreshAssetsAccountBalance(appID, accountID string) error {
 
-	wrapper, err := wm.newWalletWrapper(appID)
+	wrapper, err := wm.newWalletWrapper(appID, "")
 	if err != nil {
 		return err
 	}
@@ -161,26 +162,58 @@ func (wm *WalletManager) RefreshAssetsAccountBalance(appID, accountID string) er
 	}
 
 	address, err := wrapper.GetAddressList(0, -1, "AccountID", accountID)
-
-	searchAddrs := make([]string, 0)
-	for _, address := range address {
-		searchAddrs = append(searchAddrs, address.Address)
-	}
-
-	balance, err := assetsMgr.CountBalanceByAddresses(searchAddrs...)
 	if err != nil {
 		return err
 	}
 
-	account.Balance = balance
+	err = assetsMgr.GetAddressWithBalance(address...)
+	if err != nil {
+		return err
+	}
 
-	return wrapper.SaveAssetsAccount(account)
+	balanceDel := decimal.New(0, 0)
+
+	//打开数据库
+	db, err := wrapper.OpenStormDB()
+	if err != nil {
+		return err
+	}
+	defer wrapper.CloseDB()
+
+	tx, err := db.Begin(true)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback()
+
+	//批量插入到本地数据库
+	//设置utxo的钱包账户
+	for _, address := range address {
+
+		amount, _ := decimal.NewFromString(address.Balance)
+		balanceDel = balanceDel.Add(amount)
+
+		err = tx.Save(address)
+		if err != nil {
+			return err
+		}
+	}
+
+	account.Balance = balanceDel.StringFixed(assetsMgr.Decimal())
+
+	err = tx.Save(account)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // GetAssetsAccountList
 func (wm *WalletManager) GetAssetsAccountList(appID, walletID string, offset, limit int) ([]*openwallet.AssetsAccount, error) {
 
-	wrapper, err := wm.newWalletWrapper(appID)
+	wrapper, err := wm.newWalletWrapper(appID, "")
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +233,7 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 		return nil, fmt.Errorf("create address count is zero")
 	}
 
-	wrapper, err := wm.newWalletWrapper(appID)
+	wrapper, err := wm.newWalletWrapper(appID, "")
 	if err != nil {
 		return nil, err
 	}
@@ -216,6 +249,12 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 	}
 
 	addrs, err := wrapper.CreateAddress(accountID, count, assetsMgr.GetAddressDecode(), false, wm.cfg.IsTestnet)
+	if err != nil {
+		return nil, err
+	}
+
+	//导入地址到核心钱包中
+	err = assetsMgr.ImportWatchOnlyAddress(addrs...)
 	if err != nil {
 		return nil, err
 	}
@@ -239,12 +278,12 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 // GetAddressList
 func (wm *WalletManager) GetAddressList(appID, walletID, accountID string, offset, limit int, watchOnly bool) ([]*openwallet.Address, error) {
 
-	wrapper, err := wm.newWalletWrapper(appID)
+	wrapper, err := wm.newWalletWrapper(appID, "")
 	if err != nil {
 		return nil, err
 	}
 
-	addrs, err := wrapper.GetAddressList(offset, limit, "AccountID", accountID, "WatchOnly", false)
+	addrs, err := wrapper.GetAddressList(offset, limit, "AccountID", accountID, "WatchOnly", watchOnly)
 	if err != nil {
 		return nil, err
 	}
@@ -266,10 +305,24 @@ func (wm *WalletManager) ImportWatchOnlyAddress(appID, walletID, accountID strin
 		return err
 	}
 
+	//wrapper, err := wm.newWalletWrapper(appID, "")
+	//if err != nil {
+	//	return err
+	//}
+
+	//导入观测地址
+	//err = wrapper.ImportWatchOnlyAddress(addresses...)
+	//if err != nil {
+	//	return err
+	//}
+
 	assetsMgr, err := GetAssetsManager(account.Symbol)
 	if err != nil {
 		return err
 	}
+
+	//导入地址到核心钱包中
+	assetsMgr.ImportWatchOnlyAddress(addresses...)
 
 	//导入新地址到区块扫描器
 	scanner := assetsMgr.GetBlockScanner()
