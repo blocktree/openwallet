@@ -38,7 +38,7 @@ import (
 
 const (
 	//币种
-	Symbol    = "qtum"
+	Symbol    = "QTUM"
 	 MasterKey = "qtum seed"
 )
 
