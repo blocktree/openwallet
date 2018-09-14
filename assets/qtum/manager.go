@@ -758,7 +758,6 @@ func (wm *WalletManager) BackupWallet(walletID string) (string, error) {
 
 	//创建临时备份文件wallet.dat
 	tmpWalletDat := fmt.Sprintf("tmp-wallet-%d.dat", time.Now().Unix())
-	tmpWalletDat = filepath.Join(wm.config.walletDataPath, tmpWalletDat)
 
 	//1. 备份核心钱包的wallet.dat
 	err = wm.BackupWalletData(tmpWalletDat)
@@ -766,6 +765,7 @@ func (wm *WalletManager) BackupWallet(walletID string) (string, error) {
 		return "", err
 	}
 
+	tmpWalletDat = filepath.Join(wm.config.walletDataPath, tmpWalletDat)
 	//复制临时文件到备份文件夹
 	file.Copy(tmpWalletDat, filepath.Join(newBackupDir, "wallet.dat"))
 
@@ -1182,6 +1182,8 @@ func (wm *WalletManager) SignRawTransaction(txHex, walletID string, key *hdkeyst
 		if err != nil {
 			return "", err
 		}
+
+		fmt.Println(wif.String())
 
 		wifs = append(wifs, wif.String())
 
