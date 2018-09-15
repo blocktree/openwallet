@@ -52,14 +52,14 @@ func main() {
 	//tech.TestDbInf()
 	//tech.TestBlockScan()
 	//tech.TestBlockScanWhenFork()
-	//tech.TestEIP155Signing()
+	tech.TestEIP155Signing()
 	//tech.TestAddr()
 	//tech.TestOWCrypt_sign()
 	//tech.TestSlice()
 	//tech.TestMap()
 	//tech.TestEthereumSigningFunc()
 	//tech.TestGetNonce()
-	tech.TestOfficialVerify()
+	//tech.TestOfficialVerify()
 
 	fmt.Println("done ... ")
 }

@@ -493,6 +493,31 @@ func UnlockWallet(wallet *Wallet, password string) error {
 	return nil
 }
 
+func CreateAddressForTest(name, password string, count uint64) (*ethKStore.Key, *Address, error) {
+	//读取钱包
+	w, err := GetWalletInfo(name)
+	if err != nil {
+		openwLogger.Log.Errorf(fmt.Sprintf("get wallet info, err=%v\n", err))
+		return nil, nil, err
+	}
+
+	//验证钱包
+	keyroot, err := w.HDKey(password, storage)
+	if err != nil {
+		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
+		return nil, nil, err
+	}
+
+	timestamp := uint64(time.Now().Unix())
+
+	keyCombo, address, err := CreateNewPrivateKey(keyroot, timestamp, count)
+	if err != nil {
+		log.Printf("Create new privKey failed unexpected error: %v\n", err)
+		return nil, nil, err
+	}
+	return keyCombo, address, nil
+}
+
 func CreateBatchAddress(name, password string, count uint64) error {
 	//读取钱包
 	w, err := GetWalletInfo(name)
@@ -598,6 +623,13 @@ type txFeeInfo struct {
 	Fee      *big.Int
 }
 
+func (this *txFeeInfo) CalcFee() error {
+	fee := new(big.Int)
+	fee.Mul(this.GasLimit, this.GasPrice)
+	this.Fee = fee
+	return nil
+}
+
 func GetTransactionFeeEstimated(from string, to string, value *big.Int, data string) (*txFeeInfo, error) {
 	gasLimit, err := ethGetGasEstimated(makeGasEstimatePara(from, to, value, data))
 	if err != nil {
@@ -611,14 +643,16 @@ func GetTransactionFeeEstimated(from string, to string, value *big.Int, data str
 		return nil, err
 	}
 
-	fee := new(big.Int)
-	fee.Mul(gasLimit, gasPrice)
+	//	fee := new(big.Int)
+	//	fee.Mul(gasLimit, gasPrice)
 
 	feeInfo := &txFeeInfo{
 		GasLimit: gasLimit,
 		GasPrice: gasPrice,
-		Fee:      fee,
+		//		Fee:      fee,
 	}
+
+	feeInfo.CalcFee()
 	return feeInfo, nil
 }
 
@@ -846,9 +880,6 @@ func ConvertToBigInt(value string, base int) (*big.Int, error) {
 	bigvalue := new(big.Int)
 	var success bool
 	if base == 16 {
-		//		if strings.Index(value, "0x") != -1 {
-		//			value = common.Substr(value, 2, len(value))
-		//		}
 		value = removeOxFromHex(value)
 	}
 
