@@ -226,6 +226,9 @@ func (wm *WalletManager) initBlockScanner() error {
 		//加载地址时，暂停区块扫描
 		scanner.Pause()
 
+		//添加观测者到区块扫描器
+		scanner.AddObserver(wm)
+
 		for _, appID := range appIDs {
 
 			wrapper, err := wm.newWalletWrapper(appID, "")
@@ -239,6 +242,8 @@ func (wm *WalletManager) initBlockScanner() error {
 			for _, address := range addrs {
 				key := wm.encodeSourceKey(appID, address.AccountID)
 				scanner.AddAddress(address.Address, key)
+
+				log.Debug("import address:", address, "key:", key, "to block scanner")
 			}
 
 		}

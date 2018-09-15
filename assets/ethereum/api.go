@@ -436,7 +436,7 @@ func makeERC20TokenTransData(contractAddr string, toAddr string, amount *big.Int
 		ParamValue: amount,
 	})
 
-	fmt.Println("make token transfer data, amount:", amount.String())
+	//fmt.Println("make token transfer data, amount:", amount.String())
 	data, err := makeTransactionData(ETH_TRANSFER_TOKEN_BALANCE_METHOD, funcParams)
 	if err != nil {
 		openwLogger.Log.Errorf("make transaction data failed, err = %v", err)

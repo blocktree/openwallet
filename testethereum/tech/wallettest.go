@@ -379,6 +379,39 @@ func TestOfficialVerify() {
 	}
 }
 
+func TestEthRawTransaction() {
+	key, _, err := ethereum.CreateAddressForTest("peter3", "987654321", 0)
+	if err != nil {
+		fmt.Println("CreateAddressForTest err=", err)
+		return
+	}
+
+	amount, err := ethereum.ConvertToBigInt("0x56bc75e2d63100000", 16)
+	if err != nil {
+		fmt.Println("amount format error.")
+		return
+	}
+
+	gasPrice, err := ethereum.ConvertToBigInt("0x430e23400", 16)
+	if err != nil {
+		fmt.Println("gas price format error.")
+		return
+	}
+
+	tx := types.NewTransaction(0, ethcommon.HexToAddress("0x2a63b2203955b84fefe52baca3881b3614991b34"),
+		amount, 121000, gasPrice, nil)
+
+	signer := types.NewEIP155Signer(big.NewInt(12))
+	message := signer.Hash(tx)
+	seckey := math.PaddedBigBytes(key.PrivateKey.D, key.PrivateKey.Params().BitSize/8)
+
+	_, ret := ethereum.ETHsignature(seckey, message[:])
+	if ret != owcrypt.SUCCESS {
+		fmt.Println("signature error, ret:", "0x"+strconv.FormatUint(uint64(ret), 16))
+		return
+	}
+}
+
 func TestEthereumSigningFunc() {
 	h := []byte{0xA4, 0x4C, 0x69, 0x32, 0x00, 0xC3, 0x7B, 0x00, 0x32, 0x68, 0x76, 0x27, 0x17, 0x6E, 0x41, 0xDF, 0xAC, 0xC9, 0x53, 0xCC, 0x77, 0xEB, 0x97, 0x63, 0x81, 0xCD, 0xB7, 0xA6, 0x6B, 0x17, 0x21, 0x58}
 	prv := []byte{0xA8, 0xDE, 0xCB, 0xDF, 0x2A, 0x5C, 0x92, 0xF8, 0xD8, 0xFC, 0x4D, 0x53, 0x36, 0x7F, 0x3A, 0x21, 0x55, 0x84, 0xB0, 0xDD, 0xA9, 0x2E, 0xFC, 0x30, 0xBE, 0x89, 0x51, 0x44, 0xD3, 0xD5, 0x6F, 0x97}
@@ -425,13 +458,21 @@ func TestEIP155Signing() {
 		return
 	}
 
-	tx, err := types.SignTx(types.NewTransaction(5, ethcommon.HexToAddress("0x2a63b2203955b84fefe52baca3881b3614991b34"),
+	tx, err := types.SignTx(types.NewTransaction(176, ethcommon.HexToAddress("0x2a63b2203955b84fefe52baca3881b3614991b34"),
 		amount, 121000, gasPrice, nil), signer, key.PrivateKey)
 	if err != nil {
 		//t.Fatal(err)
 		fmt.Println("sign tx failed, err = ", err)
 		return
 	}
+
+	toPublicKey := func(pk *ecdsa.PublicKey) []byte {
+		testByteX := pk.X.Bytes() //[]byte(*pk.X)
+		testByteY := pk.Y.Bytes() //[]byte(*pk.X)
+		return append(testByteX, testByteY...)
+	}
+
+	fmt.Println("public key:", common.ToHex(toPublicKey(&key.PrivateKey.PublicKey)))
 
 	//fmt.Println("tx:", tx.data)
 	tx.PrintTransaction()

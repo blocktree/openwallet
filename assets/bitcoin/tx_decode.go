@@ -310,10 +310,13 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper *openwallet.Wallet
 
 	txBytes, err := hex.DecodeString(emptyTrans)
 	if err != nil {
-		return errors.New("Invalid transaction hex data!")
+		return errors.New("Invalid transaction hex data! ")
 	}
 
-	trx := btcLikeTxDriver.DecodeRawTransaction(txBytes)
+	trx, err := btcLikeTxDriver.DecodeRawTransaction(txBytes)
+	if err != nil {
+		return errors.New("Invalid transaction data! ")
+	}
 
 	for _, vin := range trx.Vins {
 
@@ -398,7 +401,10 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper *openwallet.Wall
 		return errors.New("Invalid transaction hex data!")
 	}
 
-	trx := btcLikeTxDriver.DecodeRawTransaction(txBytes)
+	trx, err := btcLikeTxDriver.DecodeRawTransaction(txBytes)
+	if err != nil {
+		return errors.New("Invalid transaction data! ")
+	}
 
 	for _, vin := range trx.Vins {
 

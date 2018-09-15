@@ -17,6 +17,9 @@ package openwallet
 
 import (
 	"github.com/tidwall/gjson"
+	"fmt"
+	"encoding/base64"
+	"github.com/blocktree/OpenWallet/crypto"
 )
 
 //TransactionDecoder 交易单解析器
@@ -63,6 +66,11 @@ type KeySignature struct {
 }
 
 type Transaction struct {
+
+	//openwallet自定义的ID，在不同链可能存在重复的txid，
+	// 所以我们要生成一个全局不重复的
+	WxID      string `json:"wxid" storm:"id"`
+
 	TxID      string `json:"txid"`
 	AccountID string `json:"accountID"`
 	//Address     string   `json:"address"`
@@ -83,8 +91,16 @@ type Transaction struct {
 	ConfirmTime int64
 }
 
+//GenTransactionWxID 生成交易单的WxID，格式为 base64(sha1(tx_{txID}_{symbol_contractID}))
+func GenTransactionWxID(tx *Transaction) string {
+	txid := tx.TxID
+	symbol := tx.Coin.Symbol + "_" + tx.Coin.ContractID
+	wxid := base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("tx_%s_%s", txid, symbol))))
+	return wxid
+}
+
 type Recharge struct {
-	Sid         string `json:"sid"  storm:"id"` // base64(sha1(txid+n+addr))
+	Sid         string `json:"sid" storm:"id"` // base64(sha1(txid+n+addr))
 	TxID        string `json:"txid"`
 	AccountID   string `json:"accountID"`
 	Address     string `json:"address"`
@@ -106,12 +122,12 @@ type Recharge struct {
 type TxInput struct {
 	SourceTxID  string //源交易单ID
 	SourceIndex uint64 //源交易单输出所因为
-	Recharge
+	Recharge    `storm:"inline"`
 }
 
 // TxOutPut 交易输出，则到账记录
 type TxOutPut struct {
-	Recharge
+	Recharge `storm:"inline"`
 }
 
 type Withdraw struct {
