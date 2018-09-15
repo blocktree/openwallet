@@ -47,6 +47,8 @@ func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 		return err
 	}
 
+	WNConfig.walletnodeIsEncrypted = "false"
+
 	// Init docker client
 	c, err := getDockerClient(symbol)
 	if err != nil {

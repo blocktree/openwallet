@@ -22,6 +22,11 @@ import (
 	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
 	"time"
 	"encoding/hex"
+	"github.com/blocktree/OpenWallet/log"
+	"strings"
+	"github.com/blocktree/OpenWallet/hdkeystore"
+	"io/ioutil"
+	"errors"
 )
 
 type WalletDBFile WrapperSourceFile
@@ -33,7 +38,7 @@ type WalletWrapper struct {
 	*AppWrapper
 	wallet  *Wallet //需要包装的钱包
 	keyFile string  //钱包密钥文件路径
-
+	key *hdkeystore.HDKey
 }
 
 func NewWalletWrapper(args ...interface{}) *WalletWrapper {
@@ -319,7 +324,7 @@ func (wrapper *WalletWrapper) CreateAddress(accountID string, count uint64, deco
 			AccountID: accountID,
 			HDPath:    derivedPath,
 			CreatedAt: time.Now(),
-			Symbol:    account.Symbol,
+			Symbol:    strings.ToLower(account.Symbol),
 			Index:     uint64(newIndex),
 			WatchOnly: false,
 			IsChange:  isChange,
@@ -351,6 +356,45 @@ func (wrapper *WalletWrapper) CreateAddress(accountID string, count uint64, deco
 	return addrs, nil
 }
 
+
+//ImportWatchOnlyAddress 导入观测地址
+func (wrapper *WalletWrapper)  ImportWatchOnlyAddress(address ...*Address) error {
+
+	//打开数据库
+	db, err := wrapper.OpenStormDB()
+	if err != nil {
+		return err
+	}
+	defer wrapper.CloseDB()
+
+	tx, err := db.Begin(true)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback()
+
+	for _, a := range address {
+
+		var searchAddress Address
+		err = tx.One("Address", a.Address, &searchAddress)
+		if &searchAddress != nil {
+			log.Info(a.Address, "is existed, skip import wallet.")
+			continue
+		}
+
+		searchAddress.WatchOnly = false
+
+		err = tx.Save(&searchAddress)
+		if err != nil {
+			continue
+		}
+	}
+
+	return tx.Commit()
+
+}
+
 //SaveAssetsAccount 更新账户信息
 func (wrapper *WalletWrapper) SaveAssetsAccount(account *AssetsAccount) error {
 	//打开数据库
@@ -361,4 +405,47 @@ func (wrapper *WalletWrapper) SaveAssetsAccount(account *AssetsAccount) error {
 	defer wrapper.CloseDB()
 
 	return db.Save(account)
+}
+
+func (wrapper *WalletWrapper) UnlockWallet(password string, time time.Duration) error {
+	key, err := wrapper.HDKey(password)
+	if err != nil {
+		return err
+	}
+	wrapper.key = key
+	return nil
+}
+
+//HDKey 获取钱包密钥，需要密码
+func (wrapper *WalletWrapper) HDKey(password ...string) (*hdkeystore.HDKey, error) {
+
+	pw := ""
+
+	if len(password) > 0 {
+		pw = password[0]
+	} else {
+		if wrapper.key != nil {
+			return wrapper.key, nil
+		} else {
+			return nil, fmt.Errorf("the wallet is locked. ")
+		}
+	}
+
+	if len(pw) == 0 {
+		return nil, fmt.Errorf("password is empty")
+	}
+
+	if len(wrapper.keyFile) == 0 {
+		return nil, errors.New("Wallet key is not exist!")
+	}
+
+	keyjson, err := ioutil.ReadFile(wrapper.keyFile)
+	if err != nil {
+		return nil, err
+	}
+	key, err := hdkeystore.DecryptHDKey(keyjson, pw)
+	if err != nil {
+		return nil, err
+	}
+	return key, err
 }

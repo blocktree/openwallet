@@ -26,8 +26,8 @@ const (
 	RPCPassword   = "walletPassword2017" //RPC默认的认证账户密码
 	RPCDockerPort = "9360/tcp"           //Docker中默认的RPC端口
 
-	DockerAllowed = "127.0.0.1" // ?500 For productive environment
-	// DockerAllowed = "0.0.0.0"
+	// DockerAllowed = "127.0.0.1" // ?500 For productive environment
+	DockerAllowed = "0.0.0.0"
 
 	MainNetDataPath = "/data" //容器中目录，实则在物理机："/openwallet/<Symbol>/data"
 	TestNetDataPath = "/data" //容器中目录，实则在物理机："/openwallet/<Symbol>/testdata"
@@ -46,9 +46,9 @@ type WalletnodeConfig struct {
 	walletnodeServerPort      string // type:remotedocker required
 	walletnodeStartNodeCMD    string // type:local required (from old: startNodeCMD)
 	walletnodeStopNodeCMD     string // type:local required (from old: stopNodeCMD)
-	walletnodeMainNetDataPath string // type:local required (from old: stopNodeCMD)
-	walletnodeTestNetDataPath string // type:local required (from old: stopNodeCMD)
-	walletnodeIsEncrypted     string
+	walletnodeMainNetDataPath string
+	walletnodeTestNetDataPath string
+	walletnodeIsEncrypted     string // true/false
 	// walletnodeServerSocket string "/var/run/docker.sock" // type:localdocker required
 	// walletnodePubAPIs      string ""                     // walletnode returns API to rpc client, etc.
 
@@ -166,26 +166,27 @@ testNetDataPath = "/data"
 
 	FullnodeContainerConfigs = map[string]*FullnodeContainerConfig{
 		"btc": &FullnodeContainerConfig{
-			CMD: [2][]string{{"/usr/local/bitcoin/bin/bitcoind", "-datadir=/openwallet/data", "-conf=/usr/local/bitcoin/etc/bitcoin.conf"},
-				{"/usr/bin/bitcoind", "-datadir=/openwallet/testdata", "-conf=/etc/bitcoin-test.conf"}},
+			CMD:     [2][]string{},
 			PORT:    [][3]string{{"18332/tcp", "10001", "20001"}},
 			RPCPORT: string("18332/tcp"), // Same within PORT
-			IMAGE:   string("openwallet/btc:0.15.1"),
+			IMAGE:   string("openw/btc:v0.15.1"),
+			ENCRYPT: []string{"bitcoin-cli", "-datadir=/data", "-conf=/etc/litecoin.conf", "encryptwallet 1234qwer"},
 		},
 		"eth": &FullnodeContainerConfig{
 			// CMD: [2][]string{{"/usr/bin/parity", "--port=30307", "--datadir=/openwallet/data", "--cache-size=4096", "--min-peers=25", "--max-peers=50", "--jsonrpc-interface=0.0.0.0", "--jsonrpc-port=18332"},
 			// 	{"/usr/bin/parity", "--port=30307", "--datadir=/openwallet/testdata", "--cache-size=4096", "--min-peers=25", "--max-peers=50", "--jsonrpc-interface=0.0.0.0", "--jsonrpc-port=18332"}},
-			CMD: [2][]string{{"/bin/bash", "-c", "/usr/sbin/geth.eth -rpc --rpcaddr=0.0.0.0 --rpcport=8545 --datadir=/openwallet/data --port=30301 --rpcapi=eth,personal,net >> /openwallet/data/run.log 2>&1"},
-				{"/bin/bash", "-c", "cp -rf /root/chain/* /openwallet/testdata/ && /usr/sbin/geth.eth --identity TestNode -rpc --rpcaddr=0.0.0.0 --rpcport=8545 --datadir=/openwallet/testdata --port=30301 --rpcapi=eth,personal,net --nodiscover >> /openwallet/testdata/run.log 2>&1"}},
+			// CMD: [2][]string{{"/bin/bash", "-c", "/usr/sbin/geth.eth -rpc --rpcaddr=0.0.0.0 --rpcport=8545 --datadir=/openwallet/data --port=30301 --rpcapi=eth,personal,net >> /openwallet/data/run.log 2>&1"},
+			// 	{"/bin/bash", "-c", "cp -rf /root/chain/* /openwallet/testdata/ && /usr/sbin/geth.eth --identity TestNode -rpc --rpcaddr=0.0.0.0 --rpcport=8545 --datadir=/openwallet/testdata --port=30301 --rpcapi=eth,personal,net --nodiscover >> /openwallet/testdata/run.log 2>&1"}},
 			PORT:    [][3]string{{"8545/tcp", "10002", "20002"}},
 			RPCPORT: string("8545/tcp"),
-			IMAGE:   string("openwallet/eth:geth-1.7.3"),
+			// IMAGE:   string("openwallet/eth:geth-1.7.3"),
+			IMAGE: string("openw/eth:geth-v1.8.9"),
 		},
 		"eos": &FullnodeContainerConfig{ // Writing
-			CMD:     [2][]string{},
-			PORT:    [][3]string{{"3000/tcp", "10003", "20003"}},
-			RPCPORT: string("3000/tcp"),
-			IMAGE:   string("openwallet/eos:latest"),
+			// CMD:     nil,
+			PORT:    [][3]string{{"8888/tcp", "10003", "20003"}},
+			RPCPORT: string("8888/tcp"),
+			IMAGE:   string("openw/eos:v1.2.5"),
 		},
 		// "iota": &FullnodeContainerConfig{
 		// 	CMD:     [2][]string{{"/bin/bash", "-c", "while sleep 1; do date; done"}, {}},
@@ -232,7 +233,7 @@ testNetDataPath = "/data"
 			CMD:     [2][]string{},
 			PORT:    [][3]string{{"9360/tcp", "10061", "20061"}},
 			RPCPORT: string("9360/tcp"),
-			IMAGE:   string("openw/litecoin:0.16.0"),
+			IMAGE:   string("openw/litecoin:v0.16.0"),
 			ENCRYPT: []string{"litecoind", "-datadir=/data", "-conf=/etc/litecoin.conf", "encryptwallet 1234qwer"},
 		},
 	}

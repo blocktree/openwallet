@@ -37,7 +37,7 @@ func init() {
 	tw = NewWalletManager()
 
 	tw.Config.ServerAPI = "http://192.168.2.194:20001"
-	tw.Config.RpcUser = "wallet"
+	tw.Config.RpcUser = "walletUser"
 	tw.Config.RpcPassword = "walletPassword2017"
 	token := BasicAuth(tw.Config.RpcUser, tw.Config.RpcPassword)
 	tw.WalletClient = NewClient(tw.Config.ServerAPI, token, true)
@@ -162,7 +162,7 @@ func TestCreateReceiverAddress(t *testing.T) {
 }
 
 func TestGetAddressesByAccount(t *testing.T) {
-	addresses, err := tw.GetAddressesByAccount("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek")
+	addresses, err := tw.GetAddressesByAccount("KjCuFxiTQhMQe955XptJ2WRrj3UgaGf4Ft6fkn78gQwdeMv99K")
 	if err != nil {
 		t.Errorf("GetAddressesByAccount failed unexpected error: %v\n", err)
 		return
@@ -403,7 +403,7 @@ func TestGetBlockChainInfo(t *testing.T) {
 }
 
 func TestListUnspent(t *testing.T) {
-	utxos, err := tw.ListUnspent(0, "msnYsBdBXQZqYYqNNJZsjShzwCx9fJVSin")
+	utxos, err := tw.ListUnspent(0)
 	if err != nil {
 		t.Errorf("ListUnspent failed unexpected error: %v\n", err)
 		return
@@ -428,7 +428,7 @@ func TestGetAddressesFromLocalDB(t *testing.T) {
 
 func TestRebuildWalletUnspent(t *testing.T) {
 
-	err := tw.RebuildWalletUnspent("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ")
+	err := tw.RebuildWalletUnspent("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek")
 	if err != nil {
 		t.Errorf("RebuildWalletUnspent failed unexpected error: %v\n", err)
 		return
@@ -438,7 +438,7 @@ func TestRebuildWalletUnspent(t *testing.T) {
 }
 
 func TestListUnspentFromLocalDB(t *testing.T) {
-	utxos, err := tw.ListUnspentFromLocalDB("W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ")
+	utxos, err := tw.ListUnspentFromLocalDB("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek")
 	if err != nil {
 		t.Errorf("ListUnspentFromLocalDB failed unexpected error: %v\n", err)
 		return
@@ -488,14 +488,14 @@ func TestEstimateFee(t *testing.T) {
 func TestSendTransaction(t *testing.T) {
 
 	sends := []string{
-		"msnYsBdBXQZqYYqNNJZsjShzwCx9fJVSin",
+		"mifDUXy3bzKVbKDHb4FiQTCXwDjWCixKWm",
 	}
 
 	tw.RebuildWalletUnspent("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek")
 
 	for _, to := range sends {
 
-		txIDs, err := tw.SendTransaction("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek", to, decimal.NewFromFloat(2.12), "1234qwer", false)
+		txIDs, err := tw.SendTransaction("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek", to, decimal.NewFromFloat(1), "1234qwer", false)
 
 		if err != nil {
 			t.Errorf("SendTransaction failed unexpected error: %v\n", err)

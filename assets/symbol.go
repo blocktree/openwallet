@@ -31,6 +31,9 @@ type SymbolInfo interface {
 	//Symbol 币种标识
 	Symbol() string
 
+	//小数位精度
+	Decimal() int32
+
 }
 
 // GetSymbolInfo 获取资产的币种信息
