@@ -447,6 +447,7 @@ func (this *EthTransactionDecoder) SubmitRawTransaction(wrapper *openwallet.Wall
 		}
 
 		rawTx.TxID = txid
+		rawTx.IsSubmit = true
 		txStatis.UpdateTime()
 		(*txStatis.TransactionCount)++
 
