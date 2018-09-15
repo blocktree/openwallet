@@ -181,6 +181,11 @@ threshold = ""
 cycleSeconds = ""
 `
 
+	//创建目录
+	file.MkdirAll(c.dbPath)
+	file.MkdirAll(c.backupDir)
+	file.MkdirAll(c.keyDir)
+
 	return &c
 }
 

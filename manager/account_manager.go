@@ -344,7 +344,7 @@ func (wm *WalletManager) ImportWatchOnlyAddress(appID, walletID, accountID strin
 
 	for _, a := range addresses {
 		a.WatchOnly = true //观察地址
-		a.Symbol = strings.ToLower(account.Symbol)
+		a.Symbol = strings.ToUpper(account.Symbol)
 		a.AccountID = account.AccountID
 		a.CreatedAt = createdAt
 		err = tx.Save(a)

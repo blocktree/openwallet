@@ -31,9 +31,16 @@ func NewTransactionWrapper(args ...interface{}) *TransactionWrapper {
 
 	wrapper := NewWalletWrapper(args...)
 
-	walletWrapper := TransactionWrapper{WalletWrapper: wrapper}
+	txWrapper := TransactionWrapper{WalletWrapper: wrapper}
 
-	return &walletWrapper
+	for _, arg := range args {
+		switch obj := arg.(type) {
+		case *WalletWrapper:
+			txWrapper.WalletWrapper = obj
+		}
+	}
+
+	return &txWrapper
 }
 
 //GetTxInputs 获取钱包的出账记录

@@ -29,7 +29,7 @@ func createTransaction(walletID, accountID, to string) (*openwallet.RawTransacti
 		return nil, err
 	}
 
-	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "0.5", to, "", "")
+	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "0.2", to, "", "")
 	if err != nil {
 		log.Error("CreateTransaction failed, unexpected error:", err)
 		return nil, err
@@ -140,4 +140,59 @@ func TestWalletManager_SubmitTransaction(t *testing.T) {
 	}
 
 	log.Info("txID:", rawTx.TxID)
+}
+
+func TestWalletManager_GetTransactions(t *testing.T) {
+	list, err := tm.GetTransactions(testApp, 0, -1, "Received", false)
+	if err != nil {
+		log.Error("GetTransactions failed, unexpected error:", err)
+		return
+	}
+	for i, tx := range list {
+		log.Info("trx[", i, "] :", tx)
+	}
+	log.Info("trx count:", len(list))
+}
+
+func TestWalletManager_GetTxUnspent(t *testing.T) {
+	list, err := tm.GetTxUnspent(testApp, 0, -1, "Received", false)
+	if err != nil {
+		log.Error("GetTxUnspent failed, unexpected error:", err)
+		return
+	}
+	for i, tx := range list {
+		log.Info("Unspent[", i, "] :", tx)
+	}
+	log.Info("Unspent count:", len(list))
+}
+
+func TestWalletManager_GetTxSpent(t *testing.T) {
+	list, err := tm.GetTxSpent(testApp, 0, -1, "Received", false)
+	if err != nil {
+		log.Error("GetTxSpent failed, unexpected error:", err)
+		return
+	}
+	for i, tx := range list {
+		log.Info("Spent[", i, "] :", tx)
+	}
+	log.Info("Spent count:", len(list))
+}
+
+func TestWalletManager_ExtractUTXO(t *testing.T) {
+
+	unspent, err := tm.GetTxUnspent(testApp, 0, -1, "Received", false)
+	if err != nil {
+		log.Error("GetTxUnspent failed, unexpected error:", err)
+		return
+	}
+	for i, tx := range unspent {
+
+		_, err := tm.GetTxSpent(testApp, 0, -1, "SourceTxID", tx.TxID, "SourceIndex", tx.Index)
+		if err == nil {
+			continue
+		}
+
+		log.Info("ExtractUTXO[", i, "] :", tx)
+	}
+
 }
