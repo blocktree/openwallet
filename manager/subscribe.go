@@ -17,11 +17,12 @@ package manager
 
 import (
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/OpenWallet/log"
 )
 
 //blockScanNotify 区块扫描结果通知
 func (wm *WalletManager) BlockScanNotify(header *openwallet.BlockHeader) error {
-
+	log.Debug("NewBlock:", header)
 	if header.Fork {
 		//TODO:分叉的区块，删除提出记录
 
@@ -60,9 +61,11 @@ func (wm *WalletManager) BlockScanNotify(header *openwallet.BlockHeader) error {
 
 //BlockExtractDataNotify 区块提取结果通知
 func (wm *WalletManager) BlockExtractDataNotify(sourceKey string, data *openwallet.TxExtractData) error {
-	//保存提取出来的数据
 
+	//保存提取出来的数据
 	appID, accountID := wm.decodeSourceKey(sourceKey)
+
+	log.Debug("NewBlockExtractData:", appID, accountID)
 
 	wrapper, err := wm.newWalletWrapper(appID, "")
 	if err != nil {

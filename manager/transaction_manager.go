@@ -65,14 +65,12 @@ func (wm *WalletManager) CreateTransaction(appID, walletID, accountID, amount, a
 // SignTransaction
 func (wm *WalletManager) SignTransaction(appID, walletID, accountID, password string, rawTx *openwallet.RawTransaction) (*openwallet.RawTransaction, error) {
 
-	wrapper, err := wm.newWalletWrapper(appID, walletID)
+	account, err := wm.GetAssetsAccountInfo(appID, "", accountID)
 	if err != nil {
 		return nil, err
 	}
 
-	//TODO:通过accountID来找钱包
-
-	account, err := wrapper.GetAssetsAccountInfo(accountID)
+	wrapper, err := wm.newWalletWrapper(appID, account.WalletID)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +104,7 @@ func (wm *WalletManager) SignTransaction(appID, walletID, accountID, password st
 // VerifyTransaction
 func (wm *WalletManager) VerifyTransaction(appID, walletID, accountID string, rawTx *openwallet.RawTransaction) (*openwallet.RawTransaction, error) {
 
-	wrapper, err := wm.newWalletWrapper(appID, walletID)
+	wrapper, err := wm.newWalletWrapper(appID, "")
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +137,7 @@ func (wm *WalletManager) VerifyTransaction(appID, walletID, accountID string, ra
 // SubmitTransaction
 func (wm *WalletManager) SubmitTransaction(appID, walletID, accountID string, rawTx *openwallet.RawTransaction) (*openwallet.Transaction, error) {
 
-	wrapper, err := wm.newWalletWrapper(appID, walletID)
+	wrapper, err := wm.newWalletWrapper(appID, "")
 	if err != nil {
 		return nil, err
 	}
@@ -166,11 +164,78 @@ func (wm *WalletManager) SubmitTransaction(appID, walletID, accountID string, ra
 
 	log.Debug("transaction has been submitted successfully")
 
-	return nil, nil
+	des := make([]string, 0)
+
+	for to, _ := range rawTx.To  {
+		des = append(des, to)
+	}
+
+	tx := &openwallet.Transaction{
+		To:   des,
+		Coin: rawTx.Coin,
+		TxID:        rawTx.TxID,
+		Decimal:     assetsMgr.Decimal(),
+		AccountID: rawTx.Account.AccountID,
+	}
+
+	tx.WxID = openwallet.GenTransactionWxID(tx)
+
+	return tx, nil
+}
+
+//GetTransactions
+func (wm *WalletManager) GetTransactions(appID string, offset, limit int, cols ...interface{}) ([]*openwallet.Transaction, error) {
+
+	wrapper, err := wm.newWalletWrapper(appID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	txWrapper := openwallet.NewTransactionWrapper(wrapper)
+	trx, err := txWrapper.GetTransactions(offset, limit, cols...)
+	if err != nil {
+		return nil, err
+	}
+
+	return trx, nil
 }
 
 //GetTransaction 通过TxID获取交易单
 func (wm *WalletManager) GetTransactionByTxID(appID, txID string) (*openwallet.Transaction, error) {
 
 	return nil, nil
+}
+
+//GetTxUnspent
+func (wm *WalletManager) GetTxUnspent(appID string, offset, limit int, cols ...interface{}) ([]*openwallet.TxOutPut, error) {
+
+	wrapper, err := wm.newWalletWrapper(appID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	txWrapper := openwallet.NewTransactionWrapper(wrapper)
+	trx, err := txWrapper.GetTxOutputs(offset, limit, cols...)
+	if err != nil {
+		return nil, err
+	}
+
+	return trx, nil
+}
+
+//GetTxSpent
+func (wm *WalletManager) GetTxSpent(appID string, offset, limit int, cols ...interface{}) ([]*openwallet.TxInput, error) {
+
+	wrapper, err := wm.newWalletWrapper(appID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	txWrapper := openwallet.NewTransactionWrapper(wrapper)
+	trx, err := txWrapper.GetTxInputs(offset, limit, cols...)
+	if err != nil {
+		return nil, err
+	}
+
+	return trx, nil
 }
