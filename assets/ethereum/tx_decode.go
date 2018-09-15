@@ -1,6 +1,7 @@
 package ethereum
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -15,9 +16,21 @@ import (
 	"github.com/bytom/common"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 type EthTxExtPara struct {
+	Data     string `json:"data"`
+	GasLimit string `json:"gasLimit"`
+}
+
+func (this *EthTxExtPara) GetGasLimit() (uint64, error) {
+	gasLimit, err := strconv.ParseUint(removeOxFromHex(this.GasLimit), 16, 64)
+	if err != nil {
+		openwLogger.Log.Errorf("parse gas limit to uint64 failed, err=%v", err)
+		return 0, err
+	}
+	return gasLimit, nil
 }
 
 const (
@@ -303,6 +316,12 @@ func (this *EthTransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 		amount, fee.GasLimit.Uint64(), fee.GasPrice, []byte(data))
 	msg := signer.Hash(tx)
 
+	extpara := EthTxExtPara{
+		Data:     data,
+		GasLimit: "0x" + fee.GasLimit.Text(16),
+	}
+	extparastr, _ := json.Marshal(extpara)
+	rawTx.ExtParam = string(extparastr)
 	keySignList[0].Nonce = "0x" + strconv.FormatUint(nonce, 16)
 	keySignList[0].Message = common.ToHex(msg[:])
 	signatureMap[rawTx.Account.AccountID] = keySignList
@@ -348,10 +367,21 @@ func (this *EthTransactionDecoder) SubmitRawTransaction(wrapper *openwallet.Wall
 
 	from := rawTx.Signatures[rawTx.Account.AccountID][0].Address.Address
 	sig := rawTx.Signatures[rawTx.Account.AccountID][0].Signature
-	var from, amountStr string
+
+	var extPara EthTxExtPara
+	err = json.Unmarshal([]byte(rawTx.ExtParam), &extPara)
+	if err != nil {
+		openwLogger.Log.Errorf("decode json from extpara failed, err=%v", err)
+		return err
+	}
+
+	signer := types.NewEIP155Signer(big.NewInt(12))
+
+	var to, amountStr string
 	for k, v := range rawTx.To {
-		from = k
+		to = k
 		amountStr = v
+		break
 	}
 	amount, err := ConvertToBigInt(amountStr, 10)
 	if err != nil {
@@ -361,8 +391,25 @@ func (this *EthTransactionDecoder) SubmitRawTransaction(wrapper *openwallet.Wall
 
 	txStatis, _, err := this.GetTransactionCount2(from)
 	if err != nil {
-		openwLogger.Log.Errorf("get transaction count2 faile, err=%v", err)
+		openwLogger.Log.Errorf("get transaction count2 failed, err=%v", err)
 		return errors.New("get transaction count2 faile")
+	}
+
+	gaslimit, err := extPara.GetGasLimit()
+	if err != nil {
+		openwLogger.Log.Errorf("get gas limit failed, err=%v", err)
+		return errors.New("get gas limit failed")
+	}
+
+	gasPrice, err := ConvertToBigInt(rawTx.FeeRate, 16)
+	if err != nil {
+		openwLogger.Log.Errorf("get gas price failed, err=%v", err)
+		return errors.New("get gas price failed")
+	}
+
+	var data []byte = nil
+	if rawTx.Coin.IsContract {
+		data = []byte(extPara.Data)
 	}
 
 	err = func() error {
@@ -379,8 +426,29 @@ func (this *EthTransactionDecoder) SubmitRawTransaction(wrapper *openwallet.Wall
 			return errors.New("nonce out of dated, please try to start ur tx once again. ")
 		}
 
-		tx := types.NewTransaction(nonceSigned, ethcommon.HexToAddress("0x2a63b2203955b84fefe52baca3881b3614991b34"),
-			amount, 121000, gasPrice, nil)
+		tx := types.NewTransaction(nonceSigned, ethcommon.HexToAddress(to),
+			amount, gaslimit, gasPrice, data)
+		tx, err = tx.WithSignature(signer, common.FromHex(sig))
+		if err != nil {
+			openwLogger.Log.Errorf("tx with signature failed, err=%v ", err)
+			return errors.New("tx with signature failed. ")
+		}
+
+		rawTxPara, err := rlp.EncodeToBytes(tx)
+		if err != nil {
+			openwLogger.Log.Errorf("encode tx to rlp failed, err=%v ", err)
+			return errors.New("encode tx to rlp failed. ")
+		}
+
+		txid, err := ethSendRawTransaction(common.ToHex(rawTxPara))
+		if err != nil {
+			openwLogger.Log.Errorf("sent raw tx faield, err=%v", err)
+			return errors.New("sent raw tx faield. ")
+		}
+
+		rawTx.TxID = txid
+		txStatis.UpdateTime()
+		(*txStatis.TransactionCount)++
 
 		return nil
 	}()
