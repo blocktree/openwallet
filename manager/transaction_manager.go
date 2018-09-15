@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"time"
+	"github.com/blocktree/OpenWallet/log"
 )
 
 // CreateTransaction
@@ -56,6 +57,8 @@ func (wm *WalletManager) CreateTransaction(appID, walletID, accountID, amount, a
 		return nil, err
 	}
 
+	log.Debug("transaction has been created successfully")
+
 	return &rawTx, nil
 }
 
@@ -66,6 +69,8 @@ func (wm *WalletManager) SignTransaction(appID, walletID, accountID, password st
 	if err != nil {
 		return nil, err
 	}
+
+	//TODO:通过accountID来找钱包
 
 	account, err := wrapper.GetAssetsAccountInfo(accountID)
 	if err != nil {
@@ -92,6 +97,8 @@ func (wm *WalletManager) SignTransaction(appID, walletID, accountID, password st
 	if err != nil {
 		return nil, err
 	}
+
+	log.Debug("transaction has been signed successfully")
 
 	return rawTx, nil
 }
@@ -124,10 +131,46 @@ func (wm *WalletManager) VerifyTransaction(appID, walletID, accountID string, ra
 		return nil, err
 	}
 
+	log.Debug("transaction has been validated successfully")
+
 	return rawTx, nil
 }
 
 // SubmitTransaction
 func (wm *WalletManager) SubmitTransaction(appID, walletID, accountID string, rawTx *openwallet.RawTransaction) (*openwallet.Transaction, error) {
+
+	wrapper, err := wm.newWalletWrapper(appID, walletID)
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := wrapper.GetAssetsAccountInfo(accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	assetsMgr, err := GetAssetsManager(account.Symbol)
+	if err != nil {
+		return nil, err
+	}
+
+	txdecoder := assetsMgr.GetTransactionDecoder()
+	if txdecoder == nil {
+		return nil, fmt.Errorf("[%s] is not support transaction. ", account.Symbol)
+	}
+
+	err = txdecoder.SubmitRawTransaction(wrapper, rawTx)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Debug("transaction has been submitted successfully")
+
+	return nil, nil
+}
+
+//GetTransaction 通过TxID获取交易单
+func (wm *WalletManager) GetTransactionByTxID(appID, txID string) (*openwallet.Transaction, error) {
+
 	return nil, nil
 }
