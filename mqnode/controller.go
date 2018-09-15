@@ -745,6 +745,7 @@ func (m *BitBankNode) createTransaction(ctx *owtp.Context) {
 	*/
 
 	appID := ctx.Params().Get("appID").String()
+	walletID := ctx.Params().Get("walletID").String()
 	coin := ctx.Params().Get("coin").Map()
 	accountID := ctx.Params().Get("accountID").String()
 	amount := ctx.Params().Get("amount").String()
@@ -796,7 +797,7 @@ func (m *BitBankNode) createTransaction(ctx *owtp.Context) {
 	config := manager.NewConfig()
 	ow := manager.NewWalletManager(config)
 
-	rawTransaction ,err := ow.CreateTransaction(appID, accountID, amount, address, feeRate, memo)
+	rawTransaction ,err := ow.CreateTransaction(appID, walletID, accountID, amount, address, feeRate, memo )
 	if err != nil{
 		responseError(ctx, errors.New("createTransaction error"))
 		return
@@ -823,6 +824,7 @@ func (m *BitBankNode) submitTransaction(ctx *owtp.Context) {
 	*/
 
 	appID := ctx.Params().Get("appID").String()
+	walletID := ctx.Params().Get("walletID").String()
 	rawTx := ctx.Params().Get("rawTx").Raw
 
 	if len(appID) == 0 {
@@ -841,7 +843,7 @@ func (m *BitBankNode) submitTransaction(ctx *owtp.Context) {
 	config := manager.NewConfig()
 	ow := manager.NewWalletManager(config)
 
-	transaction ,err := ow.SubmitTransaction(appID,raw.Account.AccountID,raw)
+	transaction ,err := ow.SubmitTransaction(appID,walletID,raw.Account.AccountID,raw)
 	if err != nil{
 		responseError(ctx, errors.New("submitTransaction error"))
 		return
