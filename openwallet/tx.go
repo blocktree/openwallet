@@ -49,6 +49,7 @@ type RawTransaction struct {
 	IsCompleted bool                      //是否完成所有签名
 	IsSubmit    bool                      //是否已广播
 	Change      *Address                  //找零地址
+	ExtParam    string                    //扩展参数, 用于调用智能合约, json结构
 }
 
 //KeySignature 签名信息
