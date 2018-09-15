@@ -38,18 +38,19 @@ type TransactionDecoder interface {
 type RawTransaction struct {
 	Coin   Coin   //区块链类型标识
 	TxID   string //交易单ID，广播后会生成
+	Sid    string //业务订单号，保证业务不重复交易而用
 	RawHex string //区块链协议构造的交易原生数据
 	//Amount      string                    //转账数量
-	FeeRate     string                    //自定义费率
-	To          map[string]string         //目的地址:转账数量
-	Account     *AssetsAccount            //创建交易单的账户
-	Signatures  map[string][]KeySignature //拥有者accountID: []未花签名
-	Required    uint64                    //必要签名
-	IsBuilt     bool                      //是否完成构建建议单
-	IsCompleted bool                      //是否完成所有签名
-	IsSubmit    bool                      //是否已广播
-	Change      *Address                  //找零地址
-	ExtParam    string                    //扩展参数, 用于调用智能合约, json结构
+	FeeRate     string                     //自定义费率
+	To          map[string]string          //目的地址:转账数量
+	Account     *AssetsAccount             //创建交易单的账户
+	Signatures  map[string][]*KeySignature //拥有者accountID: []未花签名
+	Required    uint64                     //必要签名
+	IsBuilt     bool                       //是否完成构建建议单
+	IsCompleted bool                       //是否完成所有签名
+	IsSubmit    bool                       //是否已广播
+	Change      *Address                   //找零地址
+	ExtParam    string                     //扩展参数，用于调用智能合约，json结构
 }
 
 //KeySignature 签名信息

@@ -17,6 +17,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
+type EthTxExtPara struct {
+}
+
 const (
 	ADRESS_STATIS_OVERDATED_TIME = 30
 )

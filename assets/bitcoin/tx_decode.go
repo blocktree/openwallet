@@ -25,7 +25,6 @@ import (
 	"github.com/shopspring/decimal"
 	"sort"
 	"strings"
-	"github.com/btcsuite/btcutil/base58"
 )
 
 type TransactionDecoder struct {
@@ -185,6 +184,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 	log.Std.Notice("Fees: %v", actualFees.StringFixed(8))
 	log.Std.Notice("Receive: %v", computeTotalSend.StringFixed(8))
 	log.Std.Notice("Change: %v", changeAmount.StringFixed(8))
+	log.Std.Notice("Change Address: %v", changeAddress.Address)
 	log.Std.Notice("-----------------------------------------------")
 
 	//装配输入
@@ -225,9 +225,6 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 	if err != nil {
 		return fmt.Errorf("create transaction failed, unexpected error: %v", err)
 		//log.Error("构建空交易单失败")
-	} else {
-		log.Info("Transaction:")
-		log.Info(emptyTrans)
 	}
 
 	////////构建用于签名的交易单哈希
@@ -240,11 +237,11 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 	rawTx.RawHex = emptyTrans
 
 	if rawTx.Signatures == nil {
-		rawTx.Signatures = make(map[string][]openwallet.KeySignature)
+		rawTx.Signatures = make(map[string][]*openwallet.KeySignature)
 	}
 
 	//装配签名
-	keySigs := make([]openwallet.KeySignature, 0)
+	keySigs := make([]*openwallet.KeySignature, 0)
 
 	for i, unlock := range txUnlocks {
 
@@ -262,9 +259,11 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 			Message: beSignHex,
 		}
 
-		keySigs = append(keySigs, signature)
+		keySigs = append(keySigs, &signature)
 
 	}
+
+	//TODO:多重签名要使用owner的公钥填充
 
 	rawTx.Signatures[rawTx.Account.AccountID] = keySigs
 	rawTx.IsBuilt = true
@@ -331,16 +330,15 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper *openwallet.Wallet
 	/////////交易单哈希签名
 	sigPub, err = btcLikeTxDriver.SignRawTransactionHash(transHash, txUnlocks)
 	if err != nil {
-		log.Error("交易单哈希签名失败")
-		return err
+		return fmt.Errorf("transaction hash sign failed")
 	} else {
-		fmt.Println("签名结果")
-		for i, s := range sigPub {
-			log.Info("第", i+1, "个签名结果")
-			log.Info(hex.EncodeToString(s.Signature))
-			log.Info("对应的公钥为")
-			log.Info(hex.EncodeToString(s.Pubkey))
-		}
+		log.Info("transaction hash sign success")
+		//for i, s := range sigPub {
+		//	log.Info("第", i+1, "个签名结果")
+		//	log.Info()
+		//	log.Info("对应的公钥为")
+		//	log.Info(hex.EncodeToString(s.Pubkey))
+		//}
 	}
 
 	if len(sigPub) != len(keySignatures) {
@@ -348,22 +346,13 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper *openwallet.Wallet
 	}
 
 	for i, keySignature := range keySignatures {
-		keySignature.Signature = base58.Encode(sigPub[i].Signature)
+		keySignature.Signature = hex.EncodeToString(sigPub[i].Signature)
+		//log.Debug("keySignature.Signature:",i, "=", keySignature.Signature)
 	}
 
 	rawTx.Signatures[rawTx.Account.AccountID] = keySignatures
 
-	return nil
-}
-
-//SendRawTransaction 广播交易单
-func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
-
-	//先加载是否有配置文件
-	err := decoder.wm.LoadConfig()
-	if err != nil {
-		return err
-	}
+	//log.Info("rawTx.Signatures 1:", rawTx.Signatures)
 
 	return nil
 }
@@ -385,7 +374,8 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper *openwallet.Wall
 
 	//TODO:待支持多重签名
 
-	for _, keySignatures := range rawTx.Signatures {
+	for accountID, keySignatures := range rawTx.Signatures {
+		log.Debug("accountID Signatures:", accountID)
 		for _, keySignature := range keySignatures {
 
 			signature, _ := hex.DecodeString(keySignature.Signature)
@@ -397,6 +387,9 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper *openwallet.Wall
 			}
 
 			sigPub = append(sigPub, signaturePubkey)
+
+			log.Debug("Signature:", keySignature.Signature)
+			log.Debug("PublicKey:", keySignature.Address.PublicKey)
 		}
 	}
 
@@ -419,25 +412,58 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper *openwallet.Wall
 
 	}
 
+	//log.Debug(emptyTrans)
+
 	////////填充签名结果到空交易单
 	//  传入TxUnlock结构体的原因是： 解锁向脚本支付的UTXO时需要对应地址的赎回脚本， 当前案例的对应字段置为 "" 即可
 	signedTrans, err := btcLikeTxDriver.InsertSignatureIntoEmptyTransaction(emptyTrans, sigPub, txUnlocks)
 	if err != nil {
-		log.Error("交易单拼接失败")
-	} else {
-		fmt.Println("拼接后的交易单")
-		fmt.Println(signedTrans)
+		return fmt.Errorf("transaction compose signatures failed")
 	}
+	//else {
+	//	//	fmt.Println("拼接后的交易单")
+	//	//	fmt.Println(signedTrans)
+	//	//}
 
 	/////////验证交易单
 	//验证时，对于公钥哈希地址，需要将对应的锁定脚本传入TxUnlock结构体
 	pass := btcLikeTxDriver.VerifyRawTransaction(signedTrans, txUnlocks)
 	if pass {
-		fmt.Println("验证通过")
+		log.Debug("transaction verify passed")
 		rawTx.IsCompleted = true
+		rawTx.RawHex = signedTrans
 	} else {
-		log.Error("验证失败")
+		log.Debug("transaction verify failed")
+		rawTx.IsCompleted = false
 	}
+
+	return nil
+}
+
+//SendRawTransaction 广播交易单
+func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
+
+	//先加载是否有配置文件
+	err := decoder.wm.LoadConfig()
+	if err != nil {
+		return err
+	}
+
+	if len(rawTx.RawHex) == 0 {
+		return fmt.Errorf("transaction hex is empty")
+	}
+
+	if !rawTx.IsCompleted {
+		return fmt.Errorf("transaction is not completed validation")
+	}
+
+	txid, err := decoder.wm.SendRawTransaction(rawTx.RawHex)
+	if err != nil {
+		return err
+	}
+
+	rawTx.TxID = txid
+	rawTx.IsSubmit = true
 
 	return nil
 }

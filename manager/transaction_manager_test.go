@@ -29,7 +29,7 @@ func createTransaction(walletID, accountID, to string) (*openwallet.RawTransacti
 		return nil, err
 	}
 
-	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "0.1", to, "", "")
+	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "0.5", to, "", "")
 	if err != nil {
 		log.Error("CreateTransaction failed, unexpected error:", err)
 		return nil, err
@@ -67,10 +67,77 @@ func TestWalletManager_SignTransaction(t *testing.T) {
 
 	_, err = tm.SignTransaction(testApp, walletID, accountID, "12345678", rawTx)
 	if err != nil {
-		log.Error("CreateTransaction failed, unexpected error:", err)
+		log.Error("SignTransaction failed, unexpected error:", err)
 		return
 	}
 
 	log.Info("rawTx:", rawTx)
 
+}
+
+func TestWalletManager_VerifyTransaction(t *testing.T) {
+
+	walletID := "WFPHAs2uyeHcfBzKF4vN4NkMpArX8wkCxp"
+	accountID := "Jq9LCP9AkDfi6zqsgwodfFHPQpo9VDxXCBaM6pxRQQYk1Ra1mH"
+	to := "mySLanFVyyUL6P2fAsbiwfTuBBh9xf3vhT"
+
+	rawTx, err := createTransaction(walletID, accountID, to)
+	if err != nil {
+		return
+	}
+
+	_, err = tm.SignTransaction(testApp, walletID, accountID, "12345678", rawTx)
+	if err != nil {
+		log.Error("SignTransaction failed, unexpected error:", err)
+		return
+	}
+
+	//log.Info("rawTx.Signatures:", rawTx.Signatures)
+
+	_, err = tm.VerifyTransaction(testApp, walletID, accountID, rawTx)
+	if err != nil {
+		log.Error("VerifyTransaction failed, unexpected error:", err)
+		return
+	}
+
+	log.Info("rawTx:", rawTx)
+
+}
+
+func TestWalletManager_SubmitTransaction(t *testing.T) {
+
+	walletID := "WFPHAs2uyeHcfBzKF4vN4NkMpArX8wkCxp"
+	accountID := "Jq9LCP9AkDfi6zqsgwodfFHPQpo9VDxXCBaM6pxRQQYk1Ra1mH"
+	to := "mySLanFVyyUL6P2fAsbiwfTuBBh9xf3vhT"
+
+	rawTx, err := createTransaction(walletID, accountID, to)
+	if err != nil {
+		return
+	}
+
+	log.Info("rawTx unsigned:", rawTx.RawHex)
+
+	_, err = tm.SignTransaction(testApp, walletID, accountID, "12345678", rawTx)
+	if err != nil {
+		log.Error("SignTransaction failed, unexpected error:", err)
+		return
+	}
+
+	//log.Info("rawTx.Signatures:", rawTx.Signatures)
+
+	_, err = tm.VerifyTransaction(testApp, walletID, accountID, rawTx)
+	if err != nil {
+		log.Error("VerifyTransaction failed, unexpected error:", err)
+		return
+	}
+
+	log.Info("rawTx signed:", rawTx.RawHex)
+
+	_, err = tm.SubmitTransaction(testApp, walletID, accountID, rawTx)
+	if err != nil {
+		log.Error("SubmitTransaction failed, unexpected error:", err)
+		return
+	}
+
+	log.Info("txID:", rawTx.TxID)
 }
