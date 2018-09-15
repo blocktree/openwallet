@@ -1887,7 +1887,7 @@ func (wm *WalletManager) LoadConfig() error {
 
 	token := BasicAuth(wm.Config.RpcUser, wm.Config.RpcPassword)
 
-	wm.WalletClient = NewClient(wm.Config.ServerAPI, token, true)
+	wm.WalletClient = NewClient(wm.Config.ServerAPI, token, false)
 
 	return nil
 }
