@@ -93,6 +93,8 @@ type WalletConfig struct {
 	defaultConfig string
 	//曲线类型
 	CurveType uint32
+	//小数位长度
+	CoinDecimal decimal.Decimal
 }
 
 func NewConfig() *WalletConfig {

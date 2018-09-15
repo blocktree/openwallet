@@ -141,7 +141,7 @@ func TestCreateReceiverAddress(t *testing.T) {
 		tag     string
 	}{
 		{
-			account: "",
+			account: "sunny",
 			tag:     "normal",
 		},
 		//{
@@ -164,7 +164,7 @@ func TestCreateReceiverAddress(t *testing.T) {
 }
 
 func TestGetAddressesByAccount(t *testing.T) {
-	addresses, err := tw.GetAddressesByAccount("WMPJk5bYPFzRQsrpX6C5MvNn1jQnpCKdbk")
+	addresses, err := tw.GetAddressesByAccount("W8C6dcVGbuPxJJ5imguFQNzK7vMtBhg58J")
 	if err != nil {
 		t.Errorf("GetAddressesByAccount failed unexpected error: %v\n", err)
 		return

@@ -64,7 +64,9 @@ type WalletManager struct {
 	walletClient *Client                       // 节点客户端
 	config       *WalletConfig                 //钱包管理配置
 	walletsInSum map[string]*openwallet.Wallet //参与汇总的钱包
-	//blockscanner *BTCBlockScanner              //区块扫描器
+	blockscanner *BTCBlockScanner              //区块扫描器
+	Decoder      openwallet.AddressDecoder     //地址编码器
+	TxDecoder    openwallet.TransactionDecoder //交易单编码器
 }
 
 func NewWalletManager() *WalletManager {
@@ -75,7 +77,9 @@ func NewWalletManager() *WalletManager {
 	//参与汇总的钱包
 	wm.walletsInSum = make(map[string]*openwallet.Wallet)
 	//区块扫描器
-	//wm.blockscanner = NewBTCBlockScanner(&wm)
+	wm.blockscanner = NewBTCBlockScanner(&wm)
+	//wm.Decoder = &addressDecoder{}
+	wm.TxDecoder = NewTransactionDecoder(&wm)
 	return &wm
 }
 
@@ -959,7 +963,7 @@ func (wm *WalletManager) GetBlockChainInfo() (*BlockchainInfo, error) {
 }
 
 //ListUnspent 获取未花记录
-func (wm *WalletManager) ListUnspent(min uint64) ([]*Unspent, error) {
+func (wm *WalletManager) ListUnspent(min uint64, addresses ...string) ([]*Unspent, error) {
 
 	var (
 		utxos = make([]*Unspent, 0)
@@ -967,6 +971,11 @@ func (wm *WalletManager) ListUnspent(min uint64) ([]*Unspent, error) {
 
 	request := []interface{}{
 		min,
+		9999999,
+	}
+
+	if len(addresses) > 0 {
+		request = append(request, addresses)
 	}
 
 	result, err := wm.walletClient.Call("listunspent", request)

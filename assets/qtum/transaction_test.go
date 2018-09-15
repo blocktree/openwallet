@@ -1,3 +1,18 @@
+/*
+ * Copyright 2018 The OpenWallet Authors
+ * This file is part of the OpenWallet library.
+ *
+ * The OpenWallet library is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The OpenWallet library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ */
+
 package qtum
 
 import (
@@ -44,9 +59,12 @@ func Test_case1(t *testing.T) {
 	in1Lock := "76a914f0ed48938dfa7dea31c4d12a1461b9f77560500e88ac"
 	in2Lock := "76a914f3ecec22a336e205f6fbcb95ea459b6ed859a04f88ac"
 
+	address1 := "mzsts8xiVWv8uGEYUrAB6XzKXZPiX9j6jq"
+	address2 := "mzsts8xiVWv8uGEYUrAB6XzKXZPiX9j6jq"
+
 	//针对此类指向公钥哈希地址的UTXO，此处仅需要锁定脚本即可计算待签交易单
-	unlockData1 := btcLikeTxDriver.TxUnlock{nil, in1Lock, "", uint64(0)}
-	unlockData2 := btcLikeTxDriver.TxUnlock{nil, in2Lock, "", uint64(0)}
+	unlockData1 := btcLikeTxDriver.TxUnlock{nil, in1Lock, "", uint64(0),address1}
+	unlockData2 := btcLikeTxDriver.TxUnlock{nil, in2Lock, "", uint64(0),address2}
 
 	////////构建用于签名的交易单哈希
 	transHash, err := btcLikeTxDriver.CreateRawTransactionHashForSig(emptyTrans, []btcLikeTxDriver.TxUnlock{unlockData1, unlockData2})
@@ -74,8 +92,8 @@ func Test_case1(t *testing.T) {
 	in1Prikey := ret
 
 	// in2 address Qiqk8a4ezUci9s6xeoBZHMTE1CtyjKJhNq
-	address2 := "KxRGsMrnSRhcjmKDeajpWQXQi6agP8WiJ19djdGQ8gdWmzAsTFBe"
-	ret2, err := addressEncoder.AddressDecode(address2, addressEncoder.QTUM_mainnetPrivateWIFCompressed)
+	address = "KxRGsMrnSRhcjmKDeajpWQXQi6agP8WiJ19djdGQ8gdWmzAsTFBe"
+	ret2, err := addressEncoder.AddressDecode(address, addressEncoder.QTUM_mainnetPrivateWIFCompressed)
 	if err != nil {
 		t.Error("decode error")
 	} else {
@@ -171,10 +189,12 @@ func Test_case2(t *testing.T) {
 	in2Redeem := "001469b6968a3d6917d0e1270b0b21d3605b86f3dee5"
 	in1Amount := uint64(17411199)
 	in2Amount := uint64(5559614)
+	address1 := "mzsts8xiVWv8uGEYUrAB6XzKXZPiX9j6jq"
+	address2 := "mzsts8xiVWv8uGEYUrAB6XzKXZPiX9j6jq"
 
 	//针对此类指向脚本哈希地址的UTXO，此需要锁定脚本、赎回脚本以及该UTXO包含的数额方可计算待签交易单
-	unlockData1 := btcLikeTxDriver.TxUnlock{nil, in1Lock, in1Redeem, in1Amount}
-	unlockData2 := btcLikeTxDriver.TxUnlock{nil, in2Lock, in2Redeem, in2Amount}
+	unlockData1 := btcLikeTxDriver.TxUnlock{nil, in1Lock, in1Redeem, in1Amount,address1}
+	unlockData2 := btcLikeTxDriver.TxUnlock{nil, in2Lock, in2Redeem, in2Amount,address2}
 
 	/////////计算待签名交易单哈希
 	transHash, err := btcLikeTxDriver.CreateRawTransactionHashForSig(emptyTrans, []btcLikeTxDriver.TxUnlock{unlockData1, unlockData2})
@@ -287,10 +307,12 @@ func Test_case3(t *testing.T) {
 	in2Redeem := "0014774334d4657dc2d251eff89af58d0a92bde2ec05"
 	in1Amount := uint64(0)
 	in2Amount := uint64(823237)
+	address1 := "mzsts8xiVWv8uGEYUrAB6XzKXZPiX9j6jq"
+	address2 := "mzsts8xiVWv8uGEYUrAB6XzKXZPiX9j6jq"
 
 	//针对此类指向脚本哈希地址的UTXO，此需要锁定脚本、赎回脚本以及该UTXO包含的数额方可计算待签交易单
-	unlockData1 := btcLikeTxDriver.TxUnlock{nil, in1Lock, in1Redeem, in1Amount}
-	unlockData2 := btcLikeTxDriver.TxUnlock{nil, in2Lock, in2Redeem, in2Amount}
+	unlockData1 := btcLikeTxDriver.TxUnlock{nil, in1Lock, in1Redeem, in1Amount,address1}
+	unlockData2 := btcLikeTxDriver.TxUnlock{nil, in2Lock, in2Redeem, in2Amount,address2}
 
 	/////////计算待签名交易单哈希
 	transHash, err := btcLikeTxDriver.CreateRawTransactionHashForSig(emptyTrans, []btcLikeTxDriver.TxUnlock{unlockData1, unlockData2})

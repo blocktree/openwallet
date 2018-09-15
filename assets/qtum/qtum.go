@@ -490,3 +490,13 @@ func (wm *WalletManager) ShowConfigInfo(subCmd string) error {
 	wm.config.printConfig()
 	return nil
 }
+
+//Symbol 币种标识
+func (wm *WalletManager) Symbol() string {
+	return wm.config.symbol
+}
+
+//小数位精度
+func (wm *WalletManager) Decimal() int32 {
+	return 8
+}
