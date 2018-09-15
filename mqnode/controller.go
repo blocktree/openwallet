@@ -16,7 +16,6 @@
 package mqnode
 
 import (
-	"github.com/blocktree/OpenWallet/assets"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/owtp"
@@ -49,17 +48,24 @@ var (
 func (m *BitBankNode) setupRouter() {
 
 	m.Node.HandleFunc("subscribe", m.subscribe)
+	m.Node.HandleFunc("importWatchOnlyAddress", m.importWatchOnlyAddress)
+	m.Node.HandleFunc("getWatchOnlyAddressInfo", m.getWatchOnlyAddressInfo)
 	m.Node.HandleFunc("createWallet", m.createWallet)
+	m.Node.HandleFunc("getWalletInfo", m.getWalletInfo)
+	m.Node.HandleFunc("createAssetsAccount", m.createAssetsAccount)
+	m.Node.HandleFunc("getAssetsAccountInfo", m.getAssetsAccountInfo)
 	m.Node.HandleFunc("createAddress", m.createAddress)
 	m.Node.HandleFunc("getAddressList", m.getAddressList)
-	m.Node.HandleFunc("createAssetsAccount", m.createAssetsAccount)
 	m.Node.HandleFunc("getWalletList", m.getWalletList)
+	m.Node.HandleFunc("getAssetsAccountList", m.getAssetsAccountList)
+	m.Node.HandleFunc("createTransaction", m.createTransaction)
 	m.Node.HandleFunc("submitTransaction", m.submitTransaction)
-	m.Node.HandleFunc("getNewHeight", m.getNewHeight)
-	m.Node.HandleFunc("getBalanceByAddress", m.getBalanceByAddress)
-	m.Node.HandleFunc("getWalletBalance", m.getWalletBalance)
-	m.Node.HandleFunc("rescanBlockHeight", m.rescanBlockHeight)
-
+	m.Node.HandleFunc("sendTransaction", m.sendTransaction)
+	m.Node.HandleFunc("getAssetsAccountBalance", m.getAssetsAccountBalance)
+	m.Node.HandleFunc("getAddressBalance", m.getAddressBalance)
+	m.Node.HandleFunc("getTransactions", m.getTransactions)
+	m.Node.HandleFunc("pushNotifications", m.pushNotifications)
+	m.Node.HandleFunc("getAssetsAccountTokens", m.getAssetsAccountTokens)
 }
 
 //subscribe 订阅方法
@@ -1162,132 +1168,6 @@ func (m *BitBankNode) getAssetsAccountTokens(ctx *owtp.Context) {
 }
 
 
-
-func (m *BitBankNode) getNewHeight(ctx *owtp.Context) {
-
-	log.Info("Merchant handle: getNewHeight")
-	log.Info("params:", ctx.Params())
-
-	/*
-		| 参数名称 | 类型   | 是否可空 | 描述     |
-		|----------|--------|----------|----------|
-		| coin     | string | 否       | 币种标识 |
-	*/
-
-	coin := ctx.Params().Get("coin").String()
-	//walletID := ctx.Params().Get("walletID").String()
-
-	am := assets.GetMerchantAssets(coin)
-	blockchain, err := am.GetBlockchainInfo()
-	if err != nil {
-		responseError(ctx, err)
-		return
-	}
-
-	result := map[string]interface{}{
-		"coin":      coin,
-		"cmdHeight": blockchain.ScanHeight,
-		"height":    blockchain.Blocks,
-	}
-
-	responseSuccess(ctx, result)
-}
-
-func (m *BitBankNode) getWalletBalance(ctx *owtp.Context) {
-
-	log.Info("Merchant handle: getWalletBalance")
-	log.Info("params:", ctx.Params())
-
-	/*
-		| 参数名称     | 类型   | 是否可空 | 描述   |
-		|--------------|--------|----------|--------|
-		| coin         | string | 否       | 币名   |
-		| walletID     | string | 否       | 钱包ID |
-	*/
-
-	coin := ctx.Params().Get("coin").String()
-	walletID := ctx.Params().Get("walletID").String()
-
-	am := assets.GetMerchantAssets(coin)
-	balance, err := am.GetMerchantWalletBalance(walletID)
-	if err != nil {
-		responseError(ctx, err)
-		return
-	}
-
-	result := map[string]interface{}{
-		"balance": balance,
-	}
-
-	responseSuccess(ctx, result)
-}
-
-func (m *BitBankNode) getBalanceByAddress(ctx *owtp.Context) {
-
-	log.Info("Merchant handle: getBalanceByAddress")
-	log.Info("params:", ctx.Params())
-
-	/*
-		| 参数名称     | 类型   | 是否可空 | 描述   |
-		|--------------|--------|----------|--------|
-		| coin         | string | 否       | 币名   |
-		| walletID     | string | 否       | 钱包ID |
-		| address      | string  | 否        | 地址 |
-	*/
-
-	coin := ctx.Params().Get("coin").String()
-	walletID := ctx.Params().Get("walletID").String()
-	address := ctx.Params().Get("address").String()
-
-	am := assets.GetMerchantAssets(coin)
-	balance, err := am.GetMerchantAddressBalance(walletID, address)
-	if err != nil {
-		responseError(ctx, err)
-		return
-	}
-
-	result := map[string]interface{}{
-		"balance": balance,
-	}
-
-	responseSuccess(ctx, result)
-}
-
-func (m *BitBankNode) rescanBlockHeight(ctx *owtp.Context) {
-	log.Info("Merchant handle: rescanBlockHeight")
-	log.Info("params:", ctx.Params())
-
-	/*
-	| 参数名称    | 类型   | 是否可空 | 描述                   |
-	|-------------|--------|----------|------------------------|
-	| coin        | string | 否       | 币名                   |
-	| startHeight | string | 否       | 起始高度               |
-	| endHeight   | string | 否       | 结束高度，0代表最新高度 |
-	*/
-
-	var (
-		err error
-	)
-
-	coin := ctx.Params().Get("coin").String()
-	//walletID := ctx.Params().Get("walletID").String()
-	startHeight := ctx.Params().Get("startHeight").Uint()
-	endHeight := ctx.Params().Get("endHeight").Uint()
-
-	am := assets.GetMerchantAssets(coin)
-	if endHeight == 0 {
-		err = am.SetMerchantRescanBlockHeight(startHeight)
-	} else {
-		err = am.MerchantRescanBlockHeight(startHeight, endHeight)
-	}
-
-	if err != nil {
-		responseError(ctx, err)
-		return
-	}
-
-	responseSuccess(ctx, nil)
-}
 
 //responseSuccess 成功结果响应
 func responseSuccess(ctx *owtp.Context, result interface{}) {
