@@ -166,9 +166,8 @@ testNetDataPath = "/data"
 
 	FullnodeContainerConfigs = map[string]*FullnodeContainerConfig{
 		"btc": &FullnodeContainerConfig{
-			CMD:     [2][]string{},
 			PORT:    [][3]string{{"18332/tcp", "10001", "20001"}},
-			RPCPORT: string("18332/tcp"), // Same within PORT
+			RPCPORT: string("18332/tcp"),
 			IMAGE:   string("openw/btc:v0.15.1"),
 			ENCRYPT: []string{"bitcoin-cli", "-datadir=/data", "-conf=/etc/litecoin.conf", "encryptwallet 1234qwer"},
 		},
@@ -179,11 +178,9 @@ testNetDataPath = "/data"
 			// 	{"/bin/bash", "-c", "cp -rf /root/chain/* /openwallet/testdata/ && /usr/sbin/geth.eth --identity TestNode -rpc --rpcaddr=0.0.0.0 --rpcport=8545 --datadir=/openwallet/testdata --port=30301 --rpcapi=eth,personal,net --nodiscover >> /openwallet/testdata/run.log 2>&1"}},
 			PORT:    [][3]string{{"8545/tcp", "10002", "20002"}},
 			RPCPORT: string("8545/tcp"),
-			// IMAGE:   string("openwallet/eth:geth-1.7.3"),
-			IMAGE: string("openw/eth:geth-v1.8.9"),
+			IMAGE:   string("openw/eth:geth-v1.8.15"),
 		},
 		"eos": &FullnodeContainerConfig{ // Writing
-			// CMD:     nil,
 			PORT:    [][3]string{{"8888/tcp", "10003", "20003"}},
 			RPCPORT: string("8888/tcp"),
 			IMAGE:   string("openw/eos:v1.2.5"),

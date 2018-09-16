@@ -77,7 +77,7 @@ func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 		context.Background(),
 		&container.Config{
 			Image: "ubuntu:latest",
-			Cmd:   []string{"/bin/sh", "-c", fmt.Sprintf("mkdir -p /openwallet/data/%s/data /openwallet/data/%s/testdata", symbol, symbol)}},
+			Cmd:   []string{"/bin/sh", "-c", fmt.Sprintf("mkdir -p %s/%s/data %s/%s/testdata", MountSrcPrefix, symbol, MountSrcPrefix, symbol)}},
 		&container.HostConfig{
 			Mounts: []mount.Mount{
 				{Type: mount.TypeBind, Source: "/openwallet", Target: "/openwallet", ReadOnly: false, BindOptions: &mount.BindOptions{Propagation: "private"}},
@@ -129,11 +129,9 @@ func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 	}
 
 	if WNConfig.isTestNet == "true" {
-		// Cmd = ctn_config.CMD[1]
 		Env = []string{"TESTNET=true"}
 		MountSrcDir = filepath.Join(MountSrcPrefix, s.ToLower(symbol), "/testdata")
 	} else {
-		// Cmd = ctn_config.CMD[0]
 		Env = []string{"TESTNET=false"}
 		MountSrcDir = filepath.Join(MountSrcPrefix, s.ToLower(symbol), "/data")
 	}
@@ -144,7 +142,7 @@ func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 		// string to container domainname
 		// Domainname: fmt.Sprintf("%s.local.com", cName),
 		// string, Command to run when starting the container
-		// Cmd: Cmd,
+		// Cmd: []string,
 		// string, List of environment variable to set in the container
 		Env: Env,
 		// string, Name of the image as it was passed by the operator(e.g. could be symbolic)
