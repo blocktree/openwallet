@@ -103,7 +103,7 @@ func TestCreateWallet(t *testing.T) {
 func TestCreateAddress(t *testing.T) {
 	var conn *amqp.Connection
 	var channel *amqp.Channel
-	json := `{"accountID":"KzrePTHiBZSZUtpzAsmvaVeAH2PJPgMn35csBEx3rZBUGbyxyy","appID":"b4b1962d415d4d30ec71b28769fda585","count":1,"walletID":"WDdipmoXN9zRG9r4m1SndeXfqtJqXckn9W"}`
+	json := `{"accountID":"K3RdseCsmukL42ARf4YjMV1joAt33m1G429BXByLzXiSmwad4J","appID":"b4b1962d415d4d30ec71b28769fda585","count":1,"walletID":"WDdipmoXN9zRG9r4m1SndeXfqtJqXckn9W"}`
 	conn, _ = amqp.Dial(mqurl)
 	channel, _ = conn.Channel()
 

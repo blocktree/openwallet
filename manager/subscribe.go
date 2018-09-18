@@ -24,7 +24,7 @@ import (
 func (wm *WalletManager) BlockScanNotify(header *openwallet.BlockHeader) error {
 	log.Debug("NewBlock:", header)
 	if header.Fork {
-		//TODO:分叉的区块，删除提出记录
+
 
 		//加载已存在所有app
 		appIDs, err := wm.loadAllAppIDs()
@@ -32,6 +32,7 @@ func (wm *WalletManager) BlockScanNotify(header *openwallet.BlockHeader) error {
 			return err
 		}
 
+		//分叉的区块，删除提出记录
 		for _, appID := range appIDs {
 
 			wrapper, err := wm.newWalletWrapper(appID, "")
@@ -55,6 +56,7 @@ func (wm *WalletManager) BlockScanNotify(header *openwallet.BlockHeader) error {
 	}
 
 	//TODO:定时删除过时的记录，保证数据库不会无限增加
+	//可以由配置，自定义删除超过例如1000个块之前的记录
 
 	return nil
 }
