@@ -441,7 +441,7 @@ func (m *BitBankNode) createAssetsAccount(ctx *owtp.Context) {
 		otherOwnerKeysList = append(otherOwnerKeysList, v.Str)
 	}
 
-	newAssetsAccount,err := ow.CreateAssetsAccount(appID, walletID , assetsAccount,otherOwnerKeysList )
+	newAssetsAccount,err := ow.CreateAssetsAccount(appID, walletID, password, assetsAccount,otherOwnerKeysList )
 
 	if err != nil {
 		responseError(ctx, err)

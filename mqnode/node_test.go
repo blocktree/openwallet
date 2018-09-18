@@ -103,7 +103,7 @@ func TestCreateWallet(t *testing.T) {
 func TestCreateAddress(t *testing.T) {
 	var conn *amqp.Connection
 	var channel *amqp.Channel
-	json := `{"accountID":"KcYEWNt8T8xYfZBPyxs5MdGsKbYRuoUyqNzfqPkLGxjjbdZEvH","appID":"b4b1962d415d4d30ec71b28769fda585","count":2,"walletID":"WF5AV44fG1TNyHZLaou81u6QgdYsS1oCkN"}`
+	json := `{"accountID":"KzrePTHiBZSZUtpzAsmvaVeAH2PJPgMn35csBEx3rZBUGbyxyy","appID":"b4b1962d415d4d30ec71b28769fda585","count":1,"walletID":"WDdipmoXN9zRG9r4m1SndeXfqtJqXckn9W"}`
 	conn, _ = amqp.Dial(mqurl)
 	channel, _ = conn.Channel()
 
@@ -132,7 +132,7 @@ func TestCreateAddress(t *testing.T) {
 func TestCreateAssetsAccount(t *testing.T) {
 	var conn *amqp.Connection
 	var channel *amqp.Channel
-	json := `{"d":{"walletID":"WF5AV44fG1TNyHZLaou81u6QgdYsS1oCkN","symbol":"BTC","password":"123456","appID":"b4b1962d415d4d30ec71b28769fda585","alias":"我的资产账户","otherOwnerKeys":"","isTrust":1,"reqSigs":1},"m":"createAssetsAccount","n":"239379936731860992","r":1,"t":1537246290}`
+	json := `{"d":{"walletID":"WDdipmoXN9zRG9r4m1SndeXfqtJqXckn9W","symbol":"BTC","password":"123456","appID":"b4b1962d415d4d30ec71b28769fda585","alias":"我的资产账户","otherOwnerKeys":"","isTrust":1,"reqSigs":1},"m":"createAssetsAccount","n":"239379936731860992","r":1,"t":1537246290}`
 	conn, _ = amqp.Dial(mqurl)
 	channel, _ = conn.Channel()
 
