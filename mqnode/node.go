@@ -24,6 +24,7 @@ import (
 	"sync"
 	"time"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/OpenWallet/manager"
 )
 
 var (
@@ -58,6 +59,8 @@ type BitBankNode struct {
 	subscribeAddressTask *timer.TaskTimer
 	//定时器任务
 	TaskTimers map[string]*timer.TaskTimer
+
+	manager *manager.WalletManager
 }
 
 func NewBitNodeNode(config NodeConfig) (*BitBankNode, error) {
