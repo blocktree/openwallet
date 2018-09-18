@@ -20,7 +20,6 @@ import (
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/owtp"
 	"github.com/pkg/errors"
-	"github.com/blocktree/OpenWallet/manager"
 	"strconv"
 	"encoding/json"
 )
@@ -144,8 +143,7 @@ func (m *BitBankNode) importWatchOnlyAddress(ctx *owtp.Context) {
 		responseError(ctx, errors.New("addresses is empty"))
 		return
 	}
-	config := manager.NewConfig()
-	ow := manager.NewWalletManager(config)
+	ow := m.manager
 	err := ow.ImportWatchOnlyAddress(appID, walletID, accountID , nil)
 	if err != nil {
 		responseError(ctx, errors.New("getWatchOnlyAddressInfo error"))
@@ -284,9 +282,7 @@ func (m *BitBankNode) createWallet(ctx *owtp.Context) {
 	}
 
 
-	config := manager.NewConfig()
-	ow := manager.NewWalletManager(config)
-	ow.Init()
+	ow := m.manager
 	//执行创建方法
 	creationWallet,keystore,err := ow.CreateWallet(appID,wallet)
 
@@ -332,8 +328,7 @@ func (m *BitBankNode) getWalletInfo(ctx *owtp.Context) {
 		return
 	}
 
-	config := manager.NewConfig()
-	ow := manager.NewWalletManager(config)
+	ow := m.manager
 	wallet,err := ow.GetWalletInfo(appID,walletID)
 
 	if err != nil {
@@ -431,9 +426,7 @@ func (m *BitBankNode) createAssetsAccount(ctx *owtp.Context) {
 		return
 	}
 
-	config := manager.NewConfig()
-	ow := manager.NewWalletManager(config)
-	ow.Init()
+	ow := m.manager
 	//创建 assetsAccount
 	var assetsAccount *openwallet.AssetsAccount
 	err := json.Unmarshal([]byte(ctx.Params().Raw), &assetsAccount)
@@ -493,9 +486,7 @@ func (m *BitBankNode) getAssetsAccountInfo(ctx *owtp.Context) {
 		return
 	}
 
-	config := manager.NewConfig()
-	ow := manager.NewWalletManager(config)
-
+	ow := m.manager
 	account,err := ow.GetAssetsAccountInfo(appID,walletID,accountID)
 
 	if err != nil{
@@ -547,9 +538,7 @@ func (m *BitBankNode) createAddress(ctx *owtp.Context) {
 		return
 	}
 
-	config := manager.NewConfig()
-	ow := manager.NewWalletManager(config)
-
+	ow := m.manager
 	addressList,err := ow.CreateAddress(appID,walletID,accountID,count)
 	if err != nil{
 		responseError(ctx, err)
@@ -611,9 +600,7 @@ func (m *BitBankNode) getAddressList(ctx *owtp.Context) {
 		responseError(ctx, errors.New("watchOnly must be 0 or 1"))
 		return
 	}
-	config := manager.NewConfig()
-	ow := manager.NewWalletManager(config)
-
+	ow := m.manager
 	addresses,err := ow.GetAddressList(appID,walletID,accountID,int(offset),int(limit),watchOnlyBool)
 	if err != nil{
 		responseError(ctx, errors.New("getAddressList error"))
@@ -658,9 +645,7 @@ func (m *BitBankNode) getWalletList(ctx *owtp.Context) {
 		limit = 20
 	}
 
-	config := manager.NewConfig()
-	ow := manager.NewWalletManager(config)
-
+	ow := m.manager
 	walletList ,err := ow.GetWalletList(appID,int(offset),int(limit))
 	if err != nil{
 		responseError(ctx, errors.New("getWalletList error"))
@@ -710,8 +695,8 @@ func (m *BitBankNode) getAssetsAccountList(ctx *owtp.Context) {
 		limit = 20
 	}
 
-	config := manager.NewConfig()
-	ow := manager.NewWalletManager(config)
+
+	ow := m.manager
 
 	walletList ,err := ow.GetAssetsAccountList(appID,walletID,int(offset),int(limit))
 	if err != nil{
@@ -791,9 +776,7 @@ func (m *BitBankNode) createTransaction(ctx *owtp.Context) {
 		return
 	}
 
-	config := manager.NewConfig()
-	ow := manager.NewWalletManager(config)
-
+	ow := m.manager
 	rawTransaction ,err := ow.CreateTransaction(appID, walletID, accountID, amount, address, feeRate, memo )
 	if err != nil{
 		responseError(ctx, err)
@@ -837,9 +820,7 @@ func (m *BitBankNode) submitTransaction(ctx *owtp.Context) {
 	}
 
 
-	config := manager.NewConfig()
-	ow := manager.NewWalletManager(config)
-
+	ow := m.manager
 	transaction ,err := ow.SubmitTransaction(appID,walletID,raw.Account.AccountID,raw)
 	if err != nil{
 		responseError(ctx, errors.New("submitTransaction error"))
