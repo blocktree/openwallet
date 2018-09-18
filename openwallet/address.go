@@ -17,7 +17,6 @@ package openwallet
 
 import (
 	"github.com/tidwall/gjson"
-	"time"
 )
 
 type AddressDecoder interface {
@@ -46,7 +45,7 @@ type Address struct {
 	Balance   string    `json:"balance"`                 //余额
 	IsMemo    bool      `json:"isMemo"`                  //是否备注
 	Memo      string    `json:"memo"`                    //备注
-	CreatedAt time.Time `json:"createdAt"`               //创建时间
+	CreatedAt int64 `json:"createdAt"`               //创建时间
 	IsChange  bool      `json:"isChange"`                //是否找零地址
 
 	//核心地址指针
