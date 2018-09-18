@@ -85,6 +85,17 @@ func (node *OWTPNode) transferHello(ctx *Context) {
 
 }
 
+func (node *OWTPNode) subscribe(ctx *Context) {
+	ctx.Resp = Response{
+		Status: 0,
+		Msg:    "success",
+		Result: map[string]interface{}{
+			"subscribe": "subscribe",
+		},
+	}
+	log.Info("Call transfer subscribe")
+}
+
 func createHost() *OWTPNode {
 
 	cert, err := NewCertificate(hostkey, "")
@@ -94,7 +105,11 @@ func createHost() *OWTPNode {
 
 	//主机
 	host := NewOWTPNode(cert, 0, 0)
-	host.Listen(":9432")
+
+	config := make(map[string]string)
+	config["address"] = ":9432"
+
+	host.Listen(config)
 
 	host.HandleFunc("hello", host.hello)
 
@@ -120,8 +135,8 @@ func TestOtherMQConnectNode(t *testing.T) {
 	config["address"] = mqURL
 	config["connectType"] = MQ
 	config["exchange"] = "DEFAULT_EXCHANGE"
-	config["queueName"] = "DEFAULT_QUEUE"
-	config["receiveQueueName"] = "DEFAULT_QUEUE"
+	config["queueName"] = "OW_RPC_GO"
+	config["receiveQueueName"] = "OW_RPC_JAVA"
 	config["account"] = "admin"
 	config["password"] = "admin"
 	nodeA := RandomOWTPNode()
@@ -210,6 +225,44 @@ func TestMQConnectNode(t *testing.T) {
 
 }
 
+func TestHttp(t *testing.T) {
+	transfer := RandomOWTPNode()
+	config := make(map[string]string)
+	config["address"] = "127.0.0.1:8422"
+	config["connectType"] = HTTP
+	transfer.HandleFunc("getInfo", getInfo)
+	transfer.Listen(config)
+	time.Sleep(4 * time.Second)
+	httpTestClient := NewHTTPT("http://"+config["address"], "", true)
+	httpTestClient.Call("getInfo", nil)
+}
+
+func TestMQtNode(t *testing.T) {
+	transfer := RandomOWTPNode()
+	config := make(map[string]string)
+	config["address"] = ":94321"
+	config["connectType"] = MQ
+	transfer.Listen(config)
+	transfer.HandleFunc("createWallet", transfer.subscribe)
+	transferConfig := make(map[string]string)
+	transferConfig["address"] = mqURL
+	transferConfig["connectType"] = MQ
+	transferConfig["exchange"] = "DEFAULT_EXCHANGE"
+	transferConfig["queueName"] = "OW_RPC_GO"
+	transferConfig["receiveQueueName"] = "OW_RPC_JAVA"
+	transferConfig["account"] = "admin"
+	transferConfig["password"] = "admin"
+
+	//中转连接主机
+	err := transfer.Connect("dasda", transferConfig)
+	if err != nil {
+		t.Errorf("Connect failed unexpected error: %v", err)
+		return
+	}
+	transfer.Run()
+	time.Sleep(100 * time.Second)
+}
+
 func TestConnectNode(t *testing.T) {
 
 	//A,B连接transfer，transfer连接host
@@ -222,12 +275,18 @@ func TestConnectNode(t *testing.T) {
 
 	//主机
 	host := NewOWTPNode(cert, 0, 0)
-	host.Listen(":9432")
+	config := make(map[string]string)
+	config["address"] = ":9432"
+	config["connectType"] = Websocket
+	host.Listen(config)
 	host.HandleFunc("hello", host.hello)
 
 	//中转
 	transfer := RandomOWTPNode()
-	transfer.Listen(":9431")
+	config1 := make(map[string]string)
+	config1["address"] = ":9431"
+	config1["connectType"] = Websocket
+	transfer.Listen(config1)
 	transfer.HandleFunc("hello", transfer.transferHello)
 
 	//客户端
@@ -249,7 +308,7 @@ func TestConnectNode(t *testing.T) {
 	transferConfig["queueName"] = "DEFAULT_QUEUE"
 	transferConfig["receiveQueueName"] = "DEFAULT_QUEUE"
 	transferConfig["account"] = "admin"
-	transferConfig["password"]= "admin"
+	transferConfig["password"] = "admin"
 
 	//中转连接主机
 	err = transfer.Connect("dasda", transferConfig)
@@ -258,12 +317,12 @@ func TestConnectNode(t *testing.T) {
 		return
 	}
 
-	config := make(map[string]string)
-	config["address"] = transferURL
-	config["connectType"] = Websocket
+	config2 := make(map[string]string)
+	config2["address"] = transferURL
+	config2["connectType"] = Websocket
 
 	//A连接中转
-	err = nodeA.Connect(transfer.NodeID(), config)
+	err = nodeA.Connect(transfer.NodeID(), config2)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
@@ -343,3 +402,6 @@ func TestConcurrentConnect(t *testing.T) {
 
 	host.Close()
 }
+
+
+
