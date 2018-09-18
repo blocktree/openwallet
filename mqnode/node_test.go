@@ -20,6 +20,7 @@ import (
 	"github.com/blocktree/OpenWallet/owtp"
 	"testing"
 	"time"
+	"github.com/streadway/amqp"
 )
 var mqURL = "192.168.30.160:5672"
 var nodeConfig NodeConfig
@@ -56,4 +57,91 @@ func TestNewNode(t *testing.T) {
 	//config["connectType"] = "http"
 	//node.Node.Listen(config)
 
+}
+
+
+const (
+	exchange = "DEFAULT_EXCHANGE"
+	queueName = "OW_RPC_JAVA"
+	//mqurl ="amqp://aielves:aielves12301230@39.108.64.191:36672/"
+
+	mqurl ="amqp://admin:admin@192.168.30.160:5672/"
+)
+
+func TestCreateAddress(t *testing.T) {
+	var conn *amqp.Connection
+	var channel *amqp.Channel
+	json := `{"accountID":"KcYEWNt8T8xYfZBPyxs5MdGsKbYRuoUyqNzfqPkLGxjjbdZEvH","appID":"b4b1962d415d4d30ec71b28769fda585","count":2,"walletID":"WF5AV44fG1TNyHZLaou81u6QgdYsS1oCkN"}`
+	conn, _ = amqp.Dial(mqurl)
+	channel, _ = conn.Channel()
+
+
+	channel.Publish(exchange, queueName, false, false, amqp.Publishing{
+		ContentType: "text/plain",
+		Body:        []byte(json),
+	})
+	nodeConfig := NodeConfig{
+		MerchantNodeURL :mqURL,
+		ConnectType     :"mq",
+		Exchange     :  "DEFAULT_EXCHANGE",
+		QueueName     :  "Test",
+		ReceiveQueueName  :   "OW_RPC_JAVA",
+		Account    :   "admin",
+		Password    :   "admin",
+	}
+	node,_ := NewBitNodeNode(nodeConfig)
+	node.Run()
+	time.Sleep(10000 * time.Second)
+}
+
+func TestCreateAssetsAccount(t *testing.T) {
+	var conn *amqp.Connection
+	var channel *amqp.Channel
+	json := `{"d":{"walletID":"WF5AV44fG1TNyHZLaou81u6QgdYsS1oCkN","symbol":"BTC","password":"123456","appID":"b4b1962d415d4d30ec71b28769fda585","alias":"我的资产账户","otherOwnerKeys":"","isTrust":1,"reqSigs":1},"m":"createAssetsAccount","n":"239379936731860992","r":1,"t":1537246290}`
+	conn, _ = amqp.Dial(mqurl)
+	channel, _ = conn.Channel()
+
+
+	channel.Publish(exchange, queueName, false, false, amqp.Publishing{
+		ContentType: "text/plain",
+		Body:        []byte(json),
+	})
+	nodeConfig := NodeConfig{
+		MerchantNodeURL :mqURL,
+		ConnectType     :"mq",
+		Exchange     :  "DEFAULT_EXCHANGE",
+		QueueName     :  "Test",
+		ReceiveQueueName  :     "OW_RPC_JAVA",
+		Account    :   "admin",
+		Password    :   "admin",
+	}
+	node,_ := NewBitNodeNode(nodeConfig)
+	node.Run()
+	time.Sleep(10000 * time.Second)
+}
+
+func TestCreateTransaction(t *testing.T) {
+	var conn *amqp.Connection
+	var channel *amqp.Channel
+	json := `{"d":{"accountID":"KcYEWNt8T8xYfZBPyxs5MdGsKbYRuoUyqNzfqPkLGxjjbdZEvH","amount":"1.08","address":"mgU7H36xabdHWi9RHKvTJu3Nfd1hNTFQhQ","appID":"b4b1962d415d4d30ec71b28769fda585","memo":"","feeRate":"0.001","coin":{"isContract":1,"symbol":"BTC","contractID":""},"sid":"239381340338917376"},"m":"createTransaction","n":"239381351374131200","r":1,"t":1537246627}`
+	conn, _ = amqp.Dial(mqurl)
+	channel, _ = conn.Channel()
+
+
+	channel.Publish(exchange, queueName, false, false, amqp.Publishing{
+		ContentType: "text/plain",
+		Body:        []byte(json),
+	})
+	nodeConfig := NodeConfig{
+		MerchantNodeURL :mqURL,
+		ConnectType     :"mq",
+		Exchange     :  "DEFAULT_EXCHANGE",
+		QueueName     :  "Test",
+		ReceiveQueueName  :     "OW_RPC_JAVA",
+		Account    :   "admin",
+		Password    :   "admin",
+	}
+	node,_ := NewBitNodeNode(nodeConfig)
+	node.Run()
+	time.Sleep(10000 * time.Second)
 }

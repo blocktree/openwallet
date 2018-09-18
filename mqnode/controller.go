@@ -291,7 +291,7 @@ func (m *BitBankNode) createWallet(ctx *owtp.Context) {
 	creationWallet,keystore,err := ow.CreateWallet(appID,wallet)
 
 	if err != nil {
-		responseError(ctx, errors.New("createWallet error"))
+		responseError(ctx, err)
 		return
 	}
 	//h := &hdkeystore.HDKey{
@@ -451,7 +451,7 @@ func (m *BitBankNode) createAssetsAccount(ctx *owtp.Context) {
 	newAssetsAccount,err := ow.CreateAssetsAccount(appID, walletID , assetsAccount,otherOwnerKeysList )
 
 	if err != nil {
-		responseError(ctx, errors.New("createAssetsAccount error"))
+		responseError(ctx, err)
 		return
 	}
 	//result := map[string]interface{}{
@@ -499,7 +499,7 @@ func (m *BitBankNode) getAssetsAccountInfo(ctx *owtp.Context) {
 	account,err := ow.GetAssetsAccountInfo(appID,walletID,accountID)
 
 	if err != nil{
-		responseError(ctx, errors.New("getAssetsAccountInfo error"))
+		responseError(ctx,err)
 		return
 	}
 
@@ -552,7 +552,7 @@ func (m *BitBankNode) createAddress(ctx *owtp.Context) {
 
 	addressList,err := ow.CreateAddress(appID,walletID,accountID,count)
 	if err != nil{
-		responseError(ctx, errors.New("createAddress error"))
+		responseError(ctx, err)
 		return
 	}
 
@@ -773,10 +773,7 @@ func (m *BitBankNode) createTransaction(ctx *owtp.Context) {
 		responseError(ctx, errors.New("feeRate is empty"))
 		return
 	}
-	if len(memo) == 0 {
-		responseError(ctx, errors.New("memo is empty"))
-		return
-	}
+
 	if coin == nil ||  len(coin) == 0 {
 		responseError(ctx, errors.New("coin is empty"))
 		return
@@ -799,7 +796,7 @@ func (m *BitBankNode) createTransaction(ctx *owtp.Context) {
 
 	rawTransaction ,err := ow.CreateTransaction(appID, walletID, accountID, amount, address, feeRate, memo )
 	if err != nil{
-		responseError(ctx, errors.New("createTransaction error"))
+		responseError(ctx, err)
 		return
 	}
 
@@ -831,7 +828,7 @@ func (m *BitBankNode) submitTransaction(ctx *owtp.Context) {
 		responseError(ctx, errors.New("appID is empty"))
 		return
 	}
-	var raw openwallet.RawTransaction
+	var raw *openwallet.RawTransaction
 
 	err := json.Unmarshal([]byte(rawTx), &raw)
 	if err != nil {
