@@ -80,11 +80,12 @@ func (wc WalletnodeConfig) getDataDir() (string, error) {
 
 type FullnodeContainerConfig struct {
 	// WORKPATH    string
-	CMD     [2][]string // Commands to run fullnode wallet ex: {{"/bin/sh", "mainnet"}, {"/bin/sh", "testnet"}}
-	PORT    [][3]string // Which ports need to be mapped, ex: {{innerPort, mainNetPort, testNetPort}, ...}
-	RPCPORT string      // Port of default fullnode API(within container), from PORT
-	IMAGE   string      // Image that container run from
-	ENCRYPT []string    // Encrypt wallet fullnode as an option
+	CMD              [2][]string // Commands to run fullnode wallet ex: {{"/bin/sh", "mainnet"}, {"/bin/sh", "testnet"}}
+	PORT             [][3]string // Which ports need to be mapped, ex: {{innerPort, mainNetPort, testNetPort}, ...}
+	RPCPORT          string      // Port of default fullnode API(within container), from PORT
+	IMAGE            string      // Image that container run from
+	ENCRYPT          []string    // Encrypt wallet fullnode as an option
+	IsTestnetSupport bool        // Is to support Testnet?
 }
 
 func (nc *FullnodeContainerConfig) isEncrypted() bool {
@@ -165,22 +166,18 @@ testNetDataPath = "/data"
 	}
 
 	FullnodeContainerConfigs = map[string]*FullnodeContainerConfig{
-		"btc": &FullnodeContainerConfig{
+		"btc": &FullnodeContainerConfig{ // Btc
 			PORT:    [][3]string{{"18332/tcp", "10001", "20001"}},
 			RPCPORT: string("18332/tcp"),
 			IMAGE:   string("openw/btc:v0.15.1"),
 			ENCRYPT: []string{"bitcoin-cli", "-datadir=/data", "-conf=/etc/litecoin.conf", "encryptwallet 1234qwer"},
 		},
-		"eth": &FullnodeContainerConfig{
-			// CMD: [2][]string{{"/usr/bin/parity", "--port=30307", "--datadir=/openwallet/data", "--cache-size=4096", "--min-peers=25", "--max-peers=50", "--jsonrpc-interface=0.0.0.0", "--jsonrpc-port=18332"},
-			// 	{"/usr/bin/parity", "--port=30307", "--datadir=/openwallet/testdata", "--cache-size=4096", "--min-peers=25", "--max-peers=50", "--jsonrpc-interface=0.0.0.0", "--jsonrpc-port=18332"}},
-			// CMD: [2][]string{{"/bin/bash", "-c", "/usr/sbin/geth.eth -rpc --rpcaddr=0.0.0.0 --rpcport=8545 --datadir=/openwallet/data --port=30301 --rpcapi=eth,personal,net >> /openwallet/data/run.log 2>&1"},
-			// 	{"/bin/bash", "-c", "cp -rf /root/chain/* /openwallet/testdata/ && /usr/sbin/geth.eth --identity TestNode -rpc --rpcaddr=0.0.0.0 --rpcport=8545 --datadir=/openwallet/testdata --port=30301 --rpcapi=eth,personal,net --nodiscover >> /openwallet/testdata/run.log 2>&1"}},
+		"eth": &FullnodeContainerConfig{ // Eth
 			PORT:    [][3]string{{"8545/tcp", "10002", "20002"}},
 			RPCPORT: string("8545/tcp"),
 			IMAGE:   string("openw/eth:geth-v1.8.15"),
 		},
-		"eos": &FullnodeContainerConfig{ // Writing
+		"eos": &FullnodeContainerConfig{
 			PORT:    [][3]string{{"8888/tcp", "10003", "20003"}},
 			RPCPORT: string("8888/tcp"),
 			IMAGE:   string("openw/eos:v1.2.5"),
@@ -199,24 +196,21 @@ testNetDataPath = "/data"
 			RPCPORT: string("18335/tcp"),
 			IMAGE:   string("openwallet/bch:0.17.1"),
 		},
-		"bopo": &FullnodeContainerConfig{
-			CMD:     [2][]string{{}, {}},
-			PORT:    [][3]string{{"9360/tcp", "10021", "20021"}},
-			RPCPORT: string("9360/tcp"),
-			IMAGE:   string("openw/bopo:latest"),
+		"bopo": &FullnodeContainerConfig{ // Bopo
+			PORT:             [][3]string{{"9360/tcp", "10021", "20021"}},
+			RPCPORT:          string("9360/tcp"),
+			IMAGE:            string("openw/bopo:latest"),
+			IsTestnetSupport: false,
 		},
-		"qtum": &FullnodeContainerConfig{
-			CMD:     [2][]string{},
+		"qtum": &FullnodeContainerConfig{ // Qtum
 			PORT:    [][3]string{{"9360/tcp", "10031", "20031"}},
 			RPCPORT: string("9360/tcp"),
-			IMAGE:   string("openw/qtum:0.15.3"),
+			IMAGE:   string("openw/qtum:v0.15.3"),
 		},
-		"sc": &FullnodeContainerConfig{
-			CMD: [2][]string{{"/usr/bin/siad", "-M gctwrh", "--api-addr=0.0.0.0:9980", "--authenticate-api", "--disable-api-security"},
-				{"/usr/bin/siad", "-M gctwrh", "--api-addr=0.0.0.0:9980", "--authenticate-api", "--disable-api-security"}},
+		"sc": &FullnodeContainerConfig{ // Siadcoin
 			PORT:    [][3]string{{"9980/tcp", "10041", "20041"}, {"9981/tcp", "10042", "20042"}},
 			RPCPORT: string("9980/tcp"),
-			IMAGE:   string("openwallet/sc:1.3.3"),
+			IMAGE:   string("openw/siacoin:v1.3.4"),
 		},
 		"hc": &FullnodeContainerConfig{
 			CMD: [2][]string{
@@ -227,10 +221,15 @@ testNetDataPath = "/data"
 			IMAGE:   string("openwallet/hc:2.0.3dev"),
 		},
 		"ltc": &FullnodeContainerConfig{ // litecoin
-			CMD:     [2][]string{},
 			PORT:    [][3]string{{"9360/tcp", "10061", "20061"}},
 			RPCPORT: string("9360/tcp"),
 			IMAGE:   string("openw/litecoin:v0.16.0"),
+			ENCRYPT: []string{"litecoind", "-datadir=/data", "-conf=/etc/litecoin.conf", "encryptwallet 1234qwer"},
+		},
+		"tron": &FullnodeContainerConfig{ //
+			PORT:    [][3]string{{"9360/tcp", "10061", "20061"}},
+			RPCPORT: string("9360/tcp"),
+			IMAGE:   string("openw/tron:v0.16.0"),
 			ENCRYPT: []string{"litecoind", "-datadir=/data", "-conf=/etc/litecoin.conf", "encryptwallet 1234qwer"},
 		},
 	}
