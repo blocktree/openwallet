@@ -288,6 +288,8 @@ func (wrapper *WalletWrapper) CreateAddress(accountID string, count uint64, deco
 
 		publicKey = ""
 
+		newKeys = [][]byte{}
+
 		newIndex := account.AddressIndex + 1
 
 		derivedPath := fmt.Sprintf("%s/%d/%d", account.HDPath, changeIndex, newIndex)
@@ -328,7 +330,7 @@ func (wrapper *WalletWrapper) CreateAddress(accountID string, count uint64, deco
 			Address:   address,
 			AccountID: accountID,
 			HDPath:    derivedPath,
-			CreatedAt: time.Now(),
+			CreatedAt: time.Now().Unix(),
 			Symbol:    strings.ToLower(account.Symbol),
 			Index:     uint64(newIndex),
 			WatchOnly: false,

@@ -110,6 +110,7 @@ func TestImportPrivKey(t *testing.T) {
 		} else {
 			t.Logf("ImportPrivKey[%d] success \n", i)
 		}
+
 	}
 
 }
@@ -174,7 +175,7 @@ func TestGetAddressesByAccount(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	_, _, err := tw.CreateBatchAddress("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek", "1234qwer", 50)
+	_, _, err := tw.CreateBatchAddress("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek", "1234qwer", 1)
 	if err != nil {
 		t.Errorf("CreateBatchAddress failed unexpected error: %v\n", err)
 		return

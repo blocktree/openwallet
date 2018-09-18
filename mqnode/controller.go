@@ -144,7 +144,7 @@ func (m *BitBankNode) importWatchOnlyAddress(ctx *owtp.Context) {
 		return
 	}
 	ow := m.manager
-	err := ow.ImportWatchOnlyAddress(appID, walletID, accountID , nil)
+	err := ow.ImportWatchOnlyAddress(appID, walletID, accountID, nil)
 	if err != nil {
 		responseError(ctx, errors.New("getWatchOnlyAddressInfo error"))
 		return
@@ -185,16 +185,15 @@ func (m *BitBankNode) getWatchOnlyAddressInfo(ctx *owtp.Context) {
 		return
 	}
 
-//	config := manager.NewConfig()
-//	ow := manager.NewWalletManager(config)
-//	err := ow.ImportWatchOnlyAddress(appID, walletID, accountID , nil)
-//	if err != nil {
-//		responseError(ctx, errors.New("getWatchOnlyAddressInfo error"))
-//		return
-//	}
-//	responseSuccess(ctx, creationWallet)
+	//	config := manager.NewConfig()
+	//	ow := manager.NewWalletManager(config)
+	//	err := ow.ImportWatchOnlyAddress(appID, walletID, accountID , nil)
+	//	if err != nil {
+	//		responseError(ctx, errors.New("getWatchOnlyAddressInfo error"))
+	//		return
+	//	}
+	//	responseSuccess(ctx, creationWallet)
 }
-
 
 //### 3.4 创建钱包 `createWallet`
 func (m *BitBankNode) createWallet(ctx *owtp.Context) {
@@ -250,8 +249,8 @@ func (m *BitBankNode) createWallet(ctx *owtp.Context) {
 			responseError(ctx, errors.New("rootPath is empty"))
 			return
 		}
-	}else if isTrust == 1{
-		if len(ctx.Params().Get("passwordType").String()) == 0  {
+	} else if isTrust == 1 {
+		if len(ctx.Params().Get("passwordType").String()) == 0 {
 			responseError(ctx, errors.New("passwordType is empty"))
 			return
 		}
@@ -266,25 +265,24 @@ func (m *BitBankNode) createWallet(ctx *owtp.Context) {
 	}
 
 	var isTrustBool bool
-	if isTrust == 1{
+	if isTrust == 1 {
 		isTrustBool = true
-	}else{
+	} else {
 		isTrustBool = false
 	}
 
 	wallet := &openwallet.Wallet{
-		AppID      : appID,
-		WalletID    :  walletID,
-		Alias       : alias,
-		Password    : password,
-		RootPath    : rootPath,
-		IsTrust     : isTrustBool,
+		AppID:    appID,
+		WalletID: walletID,
+		Alias:    alias,
+		Password: password,
+		RootPath: rootPath,
+		IsTrust:  isTrustBool,
 	}
-
 
 	ow := m.manager
 	//执行创建方法
-	creationWallet,keystore,err := ow.CreateWallet(appID,wallet)
+	creationWallet, keystore, err := ow.CreateWallet(appID, wallet)
 
 	if err != nil {
 		responseError(ctx, err)
@@ -295,8 +293,8 @@ func (m *BitBankNode) createWallet(ctx *owtp.Context) {
 	//}
 
 	result := map[string]interface{}{
-		"wallet": creationWallet,
-		"keystore":keystore,
+		"wallet":   creationWallet,
+		"keystore": keystore,
 	}
 	responseSuccess(ctx, result)
 
@@ -329,7 +327,7 @@ func (m *BitBankNode) getWalletInfo(ctx *owtp.Context) {
 	}
 
 	ow := m.manager
-	wallet,err := ow.GetWalletInfo(appID,walletID)
+	wallet, err := ow.GetWalletInfo(appID, walletID)
 
 	if err != nil {
 		responseError(ctx, errors.New("getWalletInfo error"))
@@ -393,24 +391,28 @@ func (m *BitBankNode) createAssetsAccount(ctx *owtp.Context) {
 		return
 	}
 
-	isTrust,error := strconv.Atoi(isTrustStr)
-	if error != nil{
+	isTrust, error := strconv.Atoi(isTrustStr)
+	if error != nil {
 		responseError(ctx, errors.New("isTrust must be a number"))
 		return
 	}
-
 
 	password := ""
 	publicKey := ""
 	var accountIndex uint64
 
-	if isTrust == 1{
+	//isTrust 转换
+	var isTrustBool bool
+
+	if isTrust == 1 {
+		isTrustBool = true
 		password = ctx.Params().Get("password").String()
 		if len(password) == 0 {
 			responseError(ctx, errors.New("password is empty"))
 			return
 		}
-	}else if isTrust == 0{
+	} else if isTrust == 0 {
+		isTrustBool = false
 		publicKey = ctx.Params().Get("publicKey").String()
 		if len(publicKey) == 0 {
 			responseError(ctx, errors.New("publicKey is empty"))
@@ -421,27 +423,31 @@ func (m *BitBankNode) createAssetsAccount(ctx *owtp.Context) {
 			responseError(ctx, errors.New("accountIndex is empty"))
 			return
 		}
-	}else{
+	} else {
 		responseError(ctx, errors.New("isTrust must be a 1 or 0"))
 		return
+	}
+	//创建 otherOwnerKeysList
+	otherOwnerKeysList := make([]string, 0)
+	if otherOwnerKeys != nil && len(otherOwnerKeys) > 0 {
+		for _, v := range otherOwnerKeys {
+			otherOwnerKeysList = append(otherOwnerKeysList, v.Str)
+		}
 	}
 
 	ow := m.manager
 	//创建 assetsAccount
-	var assetsAccount *openwallet.AssetsAccount
-	err := json.Unmarshal([]byte(ctx.Params().Raw), &assetsAccount)
-	if err != nil {
-		responseError(ctx, errors.New("can't unmarshal to AssetsAccount"))
-		return
+	assetsAccount := &openwallet.AssetsAccount{
+		WalletID:  walletID,
+		Alias:     alias,
+		Index:     accountIndex,
+		PublicKey: publicKey,
+		OwnerKeys: otherOwnerKeysList,
+		Symbol:    symbol,
+		IsTrust:   isTrustBool,
 	}
 
-	//创建 otherOwnerKeysList
-	otherOwnerKeysList := make([]string, 0)
-	for _,v := range otherOwnerKeys{
-		otherOwnerKeysList = append(otherOwnerKeysList, v.Str)
-	}
-
-	newAssetsAccount,err := ow.CreateAssetsAccount(appID, walletID, password, assetsAccount,otherOwnerKeysList )
+	newAssetsAccount, err := ow.CreateAssetsAccount(appID, walletID, password, assetsAccount, otherOwnerKeysList)
 
 	if err != nil {
 		responseError(ctx, err)
@@ -453,7 +459,6 @@ func (m *BitBankNode) createAssetsAccount(ctx *owtp.Context) {
 
 	responseSuccess(ctx, newAssetsAccount)
 }
-
 
 // ### 3.7 获取资产账户 `getAssetsAccountInfo`
 func (m *BitBankNode) getAssetsAccountInfo(ctx *owtp.Context) {
@@ -487,10 +492,10 @@ func (m *BitBankNode) getAssetsAccountInfo(ctx *owtp.Context) {
 	}
 
 	ow := m.manager
-	account,err := ow.GetAssetsAccountInfo(appID,walletID,accountID)
+	account, err := ow.GetAssetsAccountInfo(appID, walletID, accountID)
 
-	if err != nil{
-		responseError(ctx,err)
+	if err != nil {
+		responseError(ctx, err)
 		return
 	}
 
@@ -539,8 +544,8 @@ func (m *BitBankNode) createAddress(ctx *owtp.Context) {
 	}
 
 	ow := m.manager
-	addressList,err := ow.CreateAddress(appID,walletID,accountID,count)
-	if err != nil{
+	addressList, err := ow.CreateAddress(appID, walletID, accountID, count)
+	if err != nil {
 		responseError(ctx, err)
 		return
 	}
@@ -551,7 +556,6 @@ func (m *BitBankNode) createAddress(ctx *owtp.Context) {
 
 	responseSuccess(ctx, result)
 }
-
 
 //### 3.9 获取地址列表 `getAddressList`
 func (m *BitBankNode) getAddressList(ctx *owtp.Context) {
@@ -592,17 +596,17 @@ func (m *BitBankNode) getAddressList(ctx *owtp.Context) {
 		return
 	}
 	watchOnlyBool := false
-	if watchOnly == 1{
+	if watchOnly == 1 {
 		watchOnlyBool = true
-	}else if watchOnly == 0{
+	} else if watchOnly == 0 {
 		watchOnlyBool = false
-	}else{
+	} else {
 		responseError(ctx, errors.New("watchOnly must be 0 or 1"))
 		return
 	}
 	ow := m.manager
-	addresses,err := ow.GetAddressList(appID,walletID,accountID,int(offset),int(limit),watchOnlyBool)
-	if err != nil{
+	addresses, err := ow.GetAddressList(appID, walletID, accountID, int(offset), int(limit), watchOnlyBool)
+	if err != nil {
 		responseError(ctx, errors.New("getAddressList error"))
 		return
 	}
@@ -628,7 +632,6 @@ func (m *BitBankNode) getWalletList(ctx *owtp.Context) {
 	| limit    | int    | 是       | 查询条数   |
 	*/
 
-
 	appID := ctx.Params().Get("appID").String()
 	offset := ctx.Params().Get("walletID").Int()
 	limit := ctx.Params().Get("accountID").Int()
@@ -638,16 +641,16 @@ func (m *BitBankNode) getWalletList(ctx *owtp.Context) {
 		return
 	}
 
-	if offset == 0{
+	if offset == 0 {
 		offset = 0
 	}
-	if limit == 0{
+	if limit == 0 {
 		limit = 20
 	}
 
 	ow := m.manager
-	walletList ,err := ow.GetWalletList(appID,int(offset),int(limit))
-	if err != nil{
+	walletList, err := ow.GetWalletList(appID, int(offset), int(limit))
+	if err != nil {
 		responseError(ctx, errors.New("getWalletList error"))
 		return
 	}
@@ -658,7 +661,6 @@ func (m *BitBankNode) getWalletList(ctx *owtp.Context) {
 
 	responseSuccess(ctx, result)
 }
-
 
 //### 3.11 获取资产账户列表 `getAssetsAccountList`
 func (m *BitBankNode) getAssetsAccountList(ctx *owtp.Context) {
@@ -688,18 +690,17 @@ func (m *BitBankNode) getAssetsAccountList(ctx *owtp.Context) {
 		responseError(ctx, errors.New("walletID is empty"))
 		return
 	}
-	if offset == 0{
+	if offset == 0 {
 		offset = 0
 	}
-	if limit == 0{
+	if limit == 0 {
 		limit = 20
 	}
 
-
 	ow := m.manager
 
-	walletList ,err := ow.GetAssetsAccountList(appID,walletID,int(offset),int(limit))
-	if err != nil{
+	walletList, err := ow.GetAssetsAccountList(appID, walletID, int(offset), int(limit))
+	if err != nil {
 		responseError(ctx, errors.New("getAssetsAccountList error"))
 		return
 	}
@@ -759,26 +760,26 @@ func (m *BitBankNode) createTransaction(ctx *owtp.Context) {
 		return
 	}
 
-	if coin == nil ||  len(coin) == 0 {
+	if coin == nil || len(coin) == 0 {
 		responseError(ctx, errors.New("coin is empty"))
 		return
 	}
-	if _,ok := coin["symbol"]; !ok {
+	if _, ok := coin["symbol"]; !ok {
 		responseError(ctx, errors.New("symbol is empty"))
 		return
 	}
-	if _,ok := coin["isContract"]; !ok {
+	if _, ok := coin["isContract"]; !ok {
 		responseError(ctx, errors.New("isContract is empty"))
 		return
 	}
-	if _,ok := coin["contractID"]; !ok {
+	if _, ok := coin["contractID"]; !ok {
 		responseError(ctx, errors.New("contractID is empty"))
 		return
 	}
 
 	ow := m.manager
-	rawTransaction ,err := ow.CreateTransaction(appID, walletID, accountID, amount, address, feeRate, memo )
-	if err != nil{
+	rawTransaction, err := ow.CreateTransaction(appID, walletID, accountID, amount, address, feeRate, memo)
+	if err != nil {
 		responseError(ctx, err)
 		return
 	}
@@ -819,10 +820,9 @@ func (m *BitBankNode) submitTransaction(ctx *owtp.Context) {
 		return
 	}
 
-
 	ow := m.manager
-	transaction ,err := ow.SubmitTransaction(appID,walletID,raw.Account.AccountID,raw)
-	if err != nil{
+	transaction, err := ow.SubmitTransaction(appID, walletID, raw.Account.AccountID, raw)
+	if err != nil {
 		responseError(ctx, errors.New("submitTransaction error"))
 		return
 	}
@@ -833,7 +833,6 @@ func (m *BitBankNode) submitTransaction(ctx *owtp.Context) {
 
 	responseSuccess(ctx, result)
 }
-
 
 //### 3.14 提交转账交易 `sendTransaction`
 func (m *BitBankNode) sendTransaction(ctx *owtp.Context) {
@@ -875,15 +874,15 @@ func (m *BitBankNode) sendTransaction(ctx *owtp.Context) {
 		return
 	}
 
-	withdrawList := make([]*openwallet.Withdraw,0)
+	withdrawList := make([]*openwallet.Withdraw, 0)
 
-	for _,v := range withdraws{
+	for _, v := range withdraws {
 		var w *openwallet.Withdraw
 		err := json.Unmarshal([]byte(v.Raw), &w)
 		if err != nil {
 			continue
 		}
-		withdrawList = append(withdrawList,w)
+		withdrawList = append(withdrawList, w)
 	}
 
 	//config := manager.NewConfig()
@@ -931,7 +930,6 @@ func (m *BitBankNode) getAssetsAccountBalance(ctx *owtp.Context) {
 		responseError(ctx, errors.New("accountID is empty"))
 		return
 	}
-
 
 	//config := manager.NewConfig()
 	//ow := manager.NewWalletManager(config)
@@ -987,7 +985,6 @@ func (m *BitBankNode) getAddressBalance(ctx *owtp.Context) {
 
 	//config := manager.NewConfig()
 	//ow := manager.NewWalletManager(config)
-
 
 	//ow.GetAssetsAccountInfo()
 	//if err != nil{
@@ -1146,8 +1143,6 @@ func (m *BitBankNode) getAssetsAccountTokens(ctx *owtp.Context) {
 
 	responseSuccess(ctx, nil)
 }
-
-
 
 //responseSuccess 成功结果响应
 func responseSuccess(ctx *owtp.Context, result interface{}) {
