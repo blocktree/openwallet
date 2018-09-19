@@ -69,8 +69,8 @@ const (
 
 	mqurl ="amqp://admin:admin@192.168.30.160:5672/"
 	appId = "b4b1962d415d4d30ec71b28769fda585"
-	account = "JpjoSMcpwsVZ5QKaXuhZXByh3ncZdyo6KEJhetLTPKKNNVJG5u"
-	walletID = "WBSHH7isT1rgwU8q7YCai9FocGKQhu1s6f"
+	account = "K6HY1UTM9jzfiXzk9ywioYwhrVJdpQ7JGnzptyhNhsBFkcjdHs"
+	walletID = "W3W8KXx14p4aDE6x9WuwAfw1vAsRKBdCJA"
 )
 
 
@@ -191,5 +191,6 @@ func TestCreateTransaction(t *testing.T) {
 	config := manager.NewConfig()
 	node.manager = manager.NewWalletManager(config)
 	node.manager.Init()
+	node.manager.RefreshAssetsAccountBalance(walletID, account)
 	node.Run()
 }
