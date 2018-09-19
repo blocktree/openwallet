@@ -16,9 +16,9 @@
 package tron
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/imroc/req"
@@ -29,26 +29,26 @@ import (
 // request and responses. A Client must be configured with a secret token
 // to authenticate with other Cores on the network.
 type Client struct {
-	BaseURL     string
-	AccessToken string
-	Debug       bool
-	client      *req.Req
+	BaseURL string
+	// AccessToken string
+	Debug  bool
+	client *req.Req
 	//Client *req.Req
 }
 
-type Response struct {
-	Code    int         `json:"code,omitempty"`
-	Error   interface{} `json:"error,omitempty"`
-	Result  interface{} `json:"result,omitempty"`
-	Message string      `json:"message,omitempty"`
-	Id      string      `json:"id,omitempty"`
-}
+// type Response struct {
+// 	Code    int         `json:"code,omitempty"`
+// 	Error   interface{} `json:"error,omitempty"`
+// 	Result  interface{} `json:"result,omitempty"`
+// 	Message string      `json:"message,omitempty"`
+// 	Id      string      `json:"id,omitempty"`
+// }
 
 func NewClient(url, token string, debug bool) *Client {
 	c := Client{
-		BaseURL:     url,
-		AccessToken: token,
-		Debug:       debug,
+		BaseURL: url,
+		// AccessToken: token,
+		Debug: debug,
 	}
 
 	api := req.New()
@@ -62,95 +62,40 @@ func NewClient(url, token string, debug bool) *Client {
 // Call calls a remote procedure on another node, specified by the path.
 func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error) {
 
-	var (
-		body = make(map[string]interface{}, 0)
-	)
-
-	if c.client == nil {
+	if c == nil || c.client == nil {
 		return nil, errors.New("API url is not setup. ")
 	}
 
-	authHeader := req.Header{
-		"Accept":        "application/json",
-		"Authorization": "Basic " + c.AccessToken,
-	}
+	url := c.BaseURL + path
+	authHeader := req.Header{"Accept": "application/json"}
 
-	//json-rpc
-	body["jsonrpc"] = "2.0"
-	body["id"] = "1"
-	body["method"] = path
-	body["params"] = request
+	// if c.Debug {
+	// 	log.Std.Info("Start Request API...")
+	// }
 
-	if c.Debug {
-		log.Std.Info("Start Request API...")
-	}
+	r, err := c.client.Do("POST", url, request, authHeader)
 
-	r, err := c.client.Post(c.BaseURL, req.BodyJSON(&body), authHeader)
+	// if c.Debug {
+	// 	log.Std.Info("Request API Completed")
+	// }
 
-	if c.Debug {
-		log.Std.Info("Request API Completed")
-	}
-
-	if c.Debug {
-		log.Std.Info("%+v", r)
-	}
+	// if c.Debug {
+	// 	log.Std.Info("%+v", r)
+	// }
 
 	if err != nil {
+		log.Error("Failed: %+v >\n", err)
 		return nil, err
+	}
+
+	if r.Response().StatusCode != http.StatusOK {
+		message := gjson.ParseBytes(r.Bytes()).String()
+		message = fmt.Sprintf("[%s]%s", r.Response().Status, message)
+		log.Error(message)
+		return nil, errors.New(message)
 	}
 
 	resp := gjson.ParseBytes(r.Bytes())
-	err = isError(&resp)
-	if err != nil {
-		return nil, err
-	}
 
-	result := resp.Get("result")
-
-	return &result, nil
-}
-
-// See 2 (end of page 4) http://www.ietf.org/rfc/rfc2617.txt
-// "To receive authorization, the client sends the userid and password,
-// separated by a single colon (":") character, within a base64
-// encoded string in the credentials."
-// It is not meant to be urlencoded.
-func BasicAuth(username, password string) string {
-	auth := username + ":" + password
-	return base64.StdEncoding.EncodeToString([]byte(auth))
-}
-
-//isError 是否报错
-func isError(result *gjson.Result) error {
-	var (
-		err error
-	)
-
-	/*
-		//failed 返回错误
-		{
-			"result": null,
-			"error": {
-				"code": -8,
-				"message": "Block height out of range"
-			},
-			"id": "foo"
-		}
-	*/
-
-	if !result.Get("error").IsObject() {
-
-		if !result.Get("result").Exists() {
-			return errors.New("Response is empty! ")
-		}
-
-		return nil
-	}
-
-	errInfo := fmt.Sprintf("[%d]%s",
-		result.Get("error.code").Int(),
-		result.Get("error.message").String())
-	err = errors.New(errInfo)
-
-	return err
+	return &resp, nil
 }
