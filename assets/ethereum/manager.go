@@ -35,8 +35,10 @@ import (
 
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
+	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/blocktree/OpenWallet/keystore"
 	"github.com/blocktree/OpenWallet/logger"
+	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	ethKStore "github.com/ethereum/go-ethereum/accounts/keystore"
 	ethcommon "github.com/ethereum/go-ethereum/common"
@@ -68,6 +70,30 @@ var (
 func init() {
 	storage = keystore.NewHDKeystore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	client = &Client{BaseURL: serverAPI, Debug: true}
+}
+
+type WalletManager struct {
+	Storage      *hdkeystore.HDKeystore        //秘钥存取
+	WalletClient *Client                       // 节点客户端
+	Config       *WalletConfig                 //钱包管理配置
+	WalletsInSum map[string]*openwallet.Wallet //参与汇总的钱包
+	Blockscanner *ETHBlockScanner              //区块扫描器
+	Decoder      openwallet.AddressDecoder     //地址编码器
+	TxDecoder    openwallet.TransactionDecoder //交易单编码器
+}
+
+func NewWalletManager() *WalletManager {
+	wm := WalletManager{}
+	wm.Config = NewConfig("frame_data", Symbol, MasterKey)
+	storage := hdkeystore.NewHDKeystore(wm.Config.keyDir, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
+	wm.Storage = storage
+	//参与汇总的钱包
+	wm.WalletsInSum = make(map[string]*openwallet.Wallet)
+	//区块扫描器
+	wm.Blockscanner = NewETHBlockScanner(&wm)
+	wm.Decoder = &addressDecoder{}
+	wm.TxDecoder = NewTransactionDecoder(&wm)
+	return &wm
 }
 
 //CreateNewWallet 创建钱包

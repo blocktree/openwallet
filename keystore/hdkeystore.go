@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/btcsuite/btcutil/hdkeychain"
 )
 
@@ -105,6 +106,7 @@ func storeNewKey(ks *HDKeystore, alias, auth string, seed []byte) (*HDKey, strin
 		return nil, "", err
 	}
 	filePath := ks.JoinPath(keyFileName(key.Alias, key.RootId) + ".key")
+	log.Debugf("filepath:%v", filePath)
 	ks.StoreKey(filePath, key, auth)
 	return key, filePath, err
 }

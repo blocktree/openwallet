@@ -32,8 +32,6 @@ import (
 	"github.com/bndr/gotabulate"
 )
 
-type WalletManager struct{}
-
 const (
 	TRANS_AMOUNT_UNIT_LIST = `
 	1: wei

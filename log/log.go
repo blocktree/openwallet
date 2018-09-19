@@ -16,6 +16,7 @@
 package log
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/astaxie/beego/logs"
@@ -97,6 +98,13 @@ func Informational(v ...interface{}) {
 // Info compatibility alias for Warning()
 func Info(v ...interface{}) {
 	Std.Info(generateFmtStr(len(v)), v...)
+}
+
+// Format & debug logs a message at debug level.
+func Debugf(format string, v ...interface{}) {
+	txt := fmt.Sprintf(format, v)
+	SetLogFuncCall(true)
+	Std.Debug(txt)
 }
 
 // Debug logs a message at debug level.

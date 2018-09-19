@@ -19,6 +19,11 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
 	"github.com/blocktree/OpenWallet/common/file"
@@ -26,10 +31,6 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 type Wallet struct {
@@ -46,7 +47,7 @@ type Wallet struct {
 	AccountIndex int    `json:"accountIndex"` //账户索引数，-1代表未创建账户
 
 	key      *hdkeystore.HDKey
-	fileName string //钱包文件命名，所有与钱包相关的都以这个filename命名
+	fileName string              //钱包文件命名，所有与钱包相关的都以这个filename命名
 	core     interface{}         //核心钱包指针
 	unlocked map[string]unlocked // 已解锁的钱包，集合（钱包地址, 钱包私钥）
 }
@@ -145,6 +146,7 @@ func (w *Wallet) FileName() string {
 
 // openDB 打开钱包数据库
 func (w *Wallet) OpenDB() (*storm.DB, error) {
+	log.Debugf("wallet dbfile:%v", w.DBFile)
 	return storm.Open(w.DBFile)
 }
 
@@ -167,12 +169,17 @@ func (w *Wallet) GetAssetsAccounts(symbol string) []*AssetsAccount {
 func (w *Wallet) GetAddress(address string) *Address {
 	db, err := w.OpenDB()
 	if err != nil {
+		log.Error("open db failed, err=", err)
 		return nil
 	}
 	defer db.Close()
 
 	var obj Address
-	db.One("Address", address, &obj)
+	err = db.One("Address", address, &obj)
+	if err != nil {
+		log.Debugf("get address failed, err=%v", err)
+	}
+	log.Debugf("obj:%v", obj)
 	return &obj
 }
 
