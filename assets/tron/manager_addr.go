@@ -51,16 +51,19 @@ func (wm *WalletManager) CreateAddress(passValue string) (addr string, err error
 // Warning:
 // 	Please control risks when using this API.
 // 	To ensure environmental security, please do not invoke APIs provided by other or invoke this very API on a public network.
-func (wm *WalletManager) GenerateAddress() (addr, pk string, err error) {
+func (wm *WalletManager) GenerateAddress() (res map[string]string, err error) {
+
+	res = map[string]string{"addr": "", "privatekey": ""}
 
 	r, err := wm.WalletClient.Call("/wallet/generateaddress", nil)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
-	addr = r.Get("address").String()
-	pk = r.Get("privateKey").String()
 
-	return addr, pk, nil
+	res["address"] = r.Get("address").String()
+	res["privatekey"] = r.Get("privateKey").String()
+
+	return res, nil
 }
 
 // Function：validate address
@@ -69,10 +72,10 @@ func (wm *WalletManager) GenerateAddress() (addr, pk string, err error) {
 // Parameters：
 // 	The address, should be in base58checksum, hexString or base64 format.
 // Return value: ture or false
-func (wm *WalletManager) ValidateAddress(addr string) (err error) {
+func (wm *WalletManager) ValidateAddress(address string) (err error) {
 
 	request := []interface{}{
-		addr,
+		address,
 	}
 	r, err := wm.WalletClient.Call("/wallet/validateaddress", request)
 	if err != nil {

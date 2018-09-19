@@ -99,3 +99,47 @@ func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error)
 
 	return &resp, nil
 }
+
+// Call calls a remote procedure on another node, specified by the path.
+// func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error) {
+func (c *Client) Call2(path string, request []interface{}) ([]byte, error) {
+
+	if c == nil || c.client == nil {
+		return nil, errors.New("API url is not setup. ")
+	}
+
+	url := c.BaseURL + path
+	authHeader := req.Header{"Accept": "application/json"}
+
+	// if c.Debug {
+	// 	log.Std.Info("Start Request API...")
+	// }
+
+	r, err := c.client.Do("POST", url, request, authHeader)
+
+	// if c.Debug {
+	// 	log.Std.Info("Request API Completed")
+	// }
+
+	// if c.Debug {
+	// 	log.Std.Info("%+v", r)
+	// }
+
+	if err != nil {
+		log.Error("Failed: %+v >\n", err)
+		return nil, err
+	}
+
+	if r.Response().StatusCode != http.StatusOK {
+		message := gjson.ParseBytes(r.Bytes()).String()
+		message = fmt.Sprintf("[%s]%s", r.Response().Status, message)
+		log.Error(message)
+		return nil, errors.New(message)
+	}
+
+	return r.Bytes(), nil
+
+	// resp := gjson.ParseBytes(r.Bytes())
+
+	// return &resp, nil
+}

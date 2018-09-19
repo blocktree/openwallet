@@ -40,6 +40,7 @@ func TestGenerateAddress(t *testing.T) {
 func TestValidateAddress(t *testing.T) {
 
 	var addr string = "4189139CB1387AF85E3D24E212A008AC974967E561"
+	addr = "TUZYMxXwwnX77rQvmP3RMwm3RhfBJ7bovV"
 
 	if err := tw.ValidateAddress(addr); err != nil {
 		t.Errorf("ValidateAddress failed: %v\n", err)

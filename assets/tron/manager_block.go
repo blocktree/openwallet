@@ -18,21 +18,30 @@ package tron
 import (
 	"errors"
 	"fmt"
+
+	"github.com/tidwall/gjson"
+	"github.com/tronprotocol/grpc-gateway/core"
 )
 
 // Function：Query the latest block
 // 	demo: curl -X POST http://127.0.0.1:8090/wallet/getnowblock
 // Parameters：None
 // Return value：Latest block on full node
-func (wm *WalletManager) GetNowBlock() (block string, err error) {
+func (wm *WalletManager) GetNowBlock() (block *core.Block, err error) {
 
-	r, err := wm.WalletClient.Call("/wallet/getnowblock", nil)
+	r, err := wm.WalletClient.Call2("/wallet/getnowblock", nil)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	fmt.Println("Result = ", r)
+	// fmt.Println("Result = ", r)
 
-	return "", nil
+	block = &core.Block{}
+	if err := gjson.Unmarshal(r, block); err != nil {
+		return nil, err
+	}
+
+	// fmt.Println(core.Block)
+	return block, nil
 }
 
 // Function：Query block by height
