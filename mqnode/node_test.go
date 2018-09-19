@@ -22,6 +22,7 @@ import (
 	"time"
 	"github.com/streadway/amqp"
 	"github.com/blocktree/OpenWallet/manager"
+	"strconv"
 )
 var mqURL = "192.168.30.160:5672"
 var nodeConfig NodeConfig
@@ -67,13 +68,18 @@ const (
 	//mqurl ="amqp://aielves:aielves12301230@39.108.64.191:36672/"
 
 	mqurl ="amqp://admin:admin@192.168.30.160:5672/"
+	appId = "b4b1962d415d4d30ec71b28769fda585"
+	account = "JpjoSMcpwsVZ5QKaXuhZXByh3ncZdyo6KEJhetLTPKKNNVJG5u"
+	walletID = "WBSHH7isT1rgwU8q7YCai9FocGKQhu1s6f"
 )
 
 
 func TestCreateWallet(t *testing.T) {
 	var conn *amqp.Connection
 	var channel *amqp.Channel
-	json := `{"d":{"authKey":"e10adc3949ba59abbe56e057f20f883e","password":"123456","appID":"b4b1962d415d4d30ec71b28769fda585","alias":"我的钱包","passwordType":1,"isTrust":1},"m":"createWallet","n":"239424950006583296","r":1,"t":1537257022}`
+	n := time.Now().Unix()
+
+	json := `{"d":{"authKey":"e10adc3949ba59abbe56e057f20f883e","password":"123456","appID":"` +appId+ `","alias":"我的钱包","passwordType":1,"isTrust":1},"m":"createWallet","n":"`+strconv.FormatInt(n, 10)+`","r":1,"t":1537257022}`
 	conn, _ = amqp.Dial(mqurl)
 	channel, _ = conn.Channel()
 
@@ -103,7 +109,8 @@ func TestCreateWallet(t *testing.T) {
 func TestCreateAddress(t *testing.T) {
 	var conn *amqp.Connection
 	var channel *amqp.Channel
-	json := `{"r":1,"t":1537267858,"d":{"walletID":"WDdipmoXN9zRG9r4m1SndeXfqtJqXckn9W","accountID":"L68oA5FdEFxkT17wacymBcjbmNSbcGYE2c43ZCkC1UPrqpJ6qR","appID":"b4b1962d415d4d30ec71b28769fda585","count":2},"m":"createAddress","n":"239470400399085568"}`
+	n := time.Now().Unix()
+	json := `{"r":1,"t":1537267858,"d":{"walletID":"` +walletID+ `","accountID":"` +account+ `","appID":"` +appId+ `","count":2},"m":"createAddress","n":"`+strconv.FormatInt(n, 10)+`"}`
 	conn, _ = amqp.Dial(mqurl)
 	channel, _ = conn.Channel()
 
@@ -132,7 +139,9 @@ func TestCreateAddress(t *testing.T) {
 func TestCreateAssetsAccount(t *testing.T) {
 	var conn *amqp.Connection
 	var channel *amqp.Channel
-	json := `{"d":{"walletID":"WDdipmoXN9zRG9r4m1SndeXfqtJqXckn9W","symbol":"BTC","password":"123456","appID":"b4b1962d415d4d30ec71b28769fda585","alias":"我的资产账户","otherOwnerKeys":"","isTrust":1,"reqSigs":1},"m":"createAssetsAccount","n":"239379936731860992","r":1,"t":1537246290}`
+
+	n := time.Now().Unix()
+	json := `{"d":{"walletID":"` +walletID+ `","symbol":"BTC","password":"123456","appID":"` +appId+ `","alias":"我的资产账户","otherOwnerKeys":"","isTrust":1,"reqSigs":1},"m":"createAssetsAccount","n":"`+strconv.FormatInt(n, 10)+`","r":1,"t":1537246290}`
 	conn, _ = amqp.Dial(mqurl)
 	channel, _ = conn.Channel()
 
@@ -141,27 +150,27 @@ func TestCreateAssetsAccount(t *testing.T) {
 		ContentType: "text/plain",
 		Body:        []byte(json),
 	})
-	//nodeConfig := NodeConfig{
-	//	MerchantNodeURL :mqURL,
-	//	ConnectType     :"mq",
-	//	Exchange     :  "DEFAULT_EXCHANGE",
-	//	QueueName     :  "Test",
-	//	ReceiveQueueName  :     "OW_RPC_JAVA",
-	//	Account    :   "admin",
-	//	Password    :   "admin",
-	//}
-	//node,_ := NewBitNodeNode(nodeConfig)
-	//config := manager.NewConfig()
-	//node.manager = manager.NewWalletManager(config)
-	//node.manager.Init()
-	//node.Run()
-	//time.Sleep(10000 * time.Second)
+	nodeConfig := NodeConfig{
+		MerchantNodeURL :mqURL,
+		ConnectType     :"mq",
+		Exchange     :  "DEFAULT_EXCHANGE",
+		QueueName     :  "Test",
+		ReceiveQueueName  :     "OW_RPC_JAVA",
+		Account    :   "admin",
+		Password    :   "admin",
+	}
+	node,_ := NewBitNodeNode(nodeConfig)
+	config := manager.NewConfig()
+	node.manager = manager.NewWalletManager(config)
+	node.manager.Init()
+	node.Run()
 }
 
 func TestCreateTransaction(t *testing.T) {
 	var conn *amqp.Connection
 	var channel *amqp.Channel
-	json := `{"d":{"accountID":"KcYEWNt8T8xYfZBPyxs5MdGsKbYRuoUyqNzfqPkLGxjjbdZEvH","amount":"1.08","address":"mgU7H36xabdHWi9RHKvTJu3Nfd1hNTFQhQ","appID":"b4b1962d415d4d30ec71b28769fda585","memo":"","feeRate":"0.001","coin":{"isContract":1,"symbol":"BTC","contractID":""},"sid":"239381340338917376"},"m":"createTransaction","n":"239381351374131200","r":1,"t":1537246627}`
+	n := time.Now().Unix()
+	json := `{"d":{"accountID":"` +account+ `","amount":"1.08","address":"mgU7H36xabdHWi9RHKvTJu3Nfd1hNTFQhQ","appID":"` +appId+ `","memo":"","feeRate":"0.001","coin":{"isContract":1,"symbol":"BTC","contractID":""},"sid":"239381340338917376"},"m":"createTransaction","n":"`+strconv.FormatInt(n, 10)+`","r":1,"t":1537246627}`
 	conn, _ = amqp.Dial(mqurl)
 	channel, _ = conn.Channel()
 
@@ -170,19 +179,18 @@ func TestCreateTransaction(t *testing.T) {
 		ContentType: "text/plain",
 		Body:        []byte(json),
 	})
-	//nodeConfig := NodeConfig{
-	//	MerchantNodeURL :mqURL,
-	//	ConnectType     :"mq",
-	//	Exchange     :  "DEFAULT_EXCHANGE",
-	//	QueueName     :  "Test",
-	//	ReceiveQueueName  :     "OW_RPC_JAVA",
-	//	Account    :   "admin",
-	//	Password    :   "admin",
-	//}
-	//node,_ := NewBitNodeNode(nodeConfig)
-	//config := manager.NewConfig()
-	//node.manager = manager.NewWalletManager(config)
-	//node.manager.Init()
-	//node.Run()
-	//time.Sleep(10000 * time.Second)
+	nodeConfig := NodeConfig{
+		MerchantNodeURL :mqURL,
+		ConnectType     :"mq",
+		Exchange     :  "DEFAULT_EXCHANGE",
+		QueueName     :  "Test",
+		ReceiveQueueName  :     "OW_RPC_JAVA",
+		Account    :   "admin",
+		Password    :   "admin",
+	}
+	node,_ := NewBitNodeNode(nodeConfig)
+	config := manager.NewConfig()
+	node.manager = manager.NewWalletManager(config)
+	node.manager.Init()
+	node.Run()
 }
