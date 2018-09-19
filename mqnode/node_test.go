@@ -89,21 +89,21 @@ func TestCreateWallet(t *testing.T) {
 		Body:        []byte(json),
 	})
 	time.Sleep(1*time.Second)
-	//nodeConfig := NodeConfig{
-	//	MerchantNodeURL :mqURL,
-	//	ConnectType     :"mq",
-	//	Exchange     :  "DEFAULT_EXCHANGE",
-	//	QueueName     :  "Test",
-	//	ReceiveQueueName  :   "OW_RPC_JAVA",
-	//	Account    :   "admin",
-	//	Password    :   "admin",
-	//}
-	//node,_ := NewBitNodeNode(nodeConfig)
-	//config := manager.NewConfig()
-	//node.manager = manager.NewWalletManager(config)
-	//node.manager.Init()
-	//node.Run()
-	//time.Sleep(10000 * time.Second)
+	nodeConfig := NodeConfig{
+		MerchantNodeURL :mqURL,
+		ConnectType     :"mq",
+		Exchange     :  "DEFAULT_EXCHANGE",
+		QueueName     :  "Test",
+		ReceiveQueueName  :   "OW_RPC_JAVA",
+		Account    :   "admin",
+		Password    :   "admin",
+	}
+	node,_ := NewBitNodeNode(nodeConfig)
+	config := manager.NewConfig()
+	node.manager = manager.NewWalletManager(config)
+	node.manager.Init()
+	node.Run()
+	time.Sleep(10000 * time.Second)
 }
 
 func TestCreateAddress(t *testing.T) {
@@ -119,21 +119,20 @@ func TestCreateAddress(t *testing.T) {
 		ContentType: "text/plain",
 		Body:        []byte(json),
 	})
-	//nodeConfig := NodeConfig{
-	//	MerchantNodeURL :mqURL,
-	//	ConnectType     :"mq",
-	//	Exchange     :  "DEFAULT_EXCHANGE",
-	//	QueueName     :  "Test",
-	//	ReceiveQueueName  :   "OW_RPC_JAVA",
-	//	Account    :   "admin",
-	//	Password    :   "admin",
-	//}
-	//node,_ := NewBitNodeNode(nodeConfig)
-	//config := manager.NewConfig()
-	//node.manager = manager.NewWalletManager(config)
-	//node.manager.Init()
-	//node.Run()
-	//time.Sleep(10000 * time.Second)
+	nodeConfig := NodeConfig{
+		MerchantNodeURL :mqURL,
+		ConnectType     :"mq",
+		Exchange     :  "DEFAULT_EXCHANGE",
+		QueueName     :  "Test",
+		ReceiveQueueName  :   "OW_RPC_JAVA",
+		Account    :   "admin",
+		Password    :   "admin",
+	}
+	node,_ := NewBitNodeNode(nodeConfig)
+	config := manager.NewConfig()
+	node.manager = manager.NewWalletManager(config)
+	node.manager.Init()
+	node.Run()
 }
 
 func TestCreateAssetsAccount(t *testing.T) {
