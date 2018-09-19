@@ -69,8 +69,8 @@ const (
 
 	mqurl ="amqp://admin:admin@192.168.30.160:5672/"
 	appId = "b4b1962d415d4d30ec71b28769fda585"
-	account = "K6HY1UTM9jzfiXzk9ywioYwhrVJdpQ7JGnzptyhNhsBFkcjdHs"
-	walletID = "W3W8KXx14p4aDE6x9WuwAfw1vAsRKBdCJA"
+	account = "LSLjUtetpKiYBEmnnvhWgsnVCgBqKByy55tuJdJVWWpD9zJB4D"
+	walletID = "WLJAzHCcFU6BMg1yND7SjpYFdY4LHXvEyn"
 )
 
 
