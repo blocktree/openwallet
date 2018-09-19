@@ -227,10 +227,9 @@ testNetDataPath = "/data"
 			ENCRYPT: []string{"litecoind", "-datadir=/data", "-conf=/etc/litecoin.conf", "encryptwallet 1234qwer"},
 		},
 		"tron": &FullnodeContainerConfig{ //
-			PORT:    [][3]string{{"9360/tcp", "10061", "20061"}},
-			RPCPORT: string("9360/tcp"),
-			IMAGE:   string("openw/tron:v0.16.0"),
-			ENCRYPT: []string{"litecoind", "-datadir=/data", "-conf=/etc/litecoin.conf", "encryptwallet 1234qwer"},
+			PORT:    [][3]string{{"18890/tcp", "18890", "28890"}},
+			RPCPORT: string("18890/tcp"),
+			IMAGE:   string("openw/tron:v3.1.1"),
 		},
 	}
 }

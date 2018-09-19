@@ -16,14 +16,14 @@
 package manager
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/blocktree/OpenWallet/assets"
 	"github.com/blocktree/OpenWallet/openwallet"
-	"strings"
-	"fmt"
 )
 
 type AssetsManager interface {
-
 	assets.SymbolInfo
 
 	//GetAddressDecode 地址解析器
@@ -44,13 +44,11 @@ type AssetsManager interface {
 	//GetAssetsAccountTransactions(wrapper *openwallet.WalletWrapper, account *openwallet.AssetsAccount) (txs []*openwallet.Transaction, err error)
 }
 
-
-
 // GetAssetsController 获取资产控制器
 func GetAssetsManager(symbol string) (AssetsManager, error) {
-	manager, ok := assets.Managers[strings.ToLower(symbol)].(AssetsManager)
+	manager, ok := assets.Managers[strings.ToLower(symbol)]
 	if !ok {
 		return nil, fmt.Errorf("assets: %s is not support", symbol)
 	}
-	return manager, nil
+	return manager.(AssetsManager), nil
 }

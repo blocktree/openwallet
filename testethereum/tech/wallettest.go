@@ -3,11 +3,13 @@ package tech
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"log"
+
+	//"log"
 	"math/big"
 	"strconv"
 
 	"github.com/blocktree/OpenWallet/assets/ethereum"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/go-OWCrypt"
 	"github.com/bytom/common"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -59,7 +61,7 @@ func TestTransferFlow() {
 
 	err := manager.TransferFlow()
 	if err != nil {
-		log.Fatal("transfer flow failed, err = ", err)
+		log.Debugf("transfer flow failed, err = ", err)
 	}
 }
 
@@ -68,7 +70,7 @@ func TestSummaryFlow() {
 
 	err := manager.SummaryFollow()
 	if err != nil {
-		log.Fatal("summary flow failed, err = ", err)
+		log.Debugf("summary flow failed, err = ", err)
 	}
 }
 
@@ -77,7 +79,7 @@ func TestBackupWallet() {
 
 	err := manager.BackupWalletFlow()
 	if err != nil {
-		log.Fatal("backup wallet flow failed, err = ", err)
+		log.Debugf("backup wallet flow failed, err = ", err)
 	}
 }
 
@@ -86,7 +88,7 @@ func TestRestoreWallet() {
 
 	err := manager.RestoreWalletFlow()
 	if err != nil {
-		log.Fatal("restore wallet flow failed, err = ", err)
+		log.Debugf("restore wallet flow failed, err = ", err)
 	}
 }
 
@@ -95,7 +97,7 @@ func TestConfigErcToken() {
 
 	err := manager.ConfigERC20Token()
 	if err != nil {
-		log.Fatal("config erc20 token failed, err = ", err)
+		log.Debugf("config erc20 token failed, err = ", err)
 	}
 }
 
@@ -104,7 +106,7 @@ func TestERC20TokenTransfer() {
 
 	err := manager.ERC20TokenTransferFlow()
 	if err != nil {
-		log.Fatal("transfer erc20 token failed, err = ", err)
+		log.Debugf("transfer erc20 token failed, err = ", err)
 	}
 }
 
@@ -113,14 +115,14 @@ func TestERC20TokenSummary() {
 
 	err := manager.ERC20TokenSummaryFollow()
 	if err != nil {
-		log.Fatal("summary erc20 token failed, err = ", err)
+		log.Debugf("summary erc20 token failed, err = ", err)
 	}
 }
 
 func PrepareTestForBlockScan() error {
 	/*pending, queued, err := ethereum.EthGetTxpoolStatus()
 	if err != nil {
-		log.Fatal("get txpool status failed, err=", err)
+		log.Debugf("get txpool status failed, err=", err)
 		return
 	}
 	fmt.Println("pending number is ", pending, " queued number is ", queued)*/
@@ -430,6 +432,23 @@ func TestEthereumSigningFunc() {
 	}
 	fmt.Printf("\n")
 }
+
+//key: "0x50068fd632c1a6e6c5bd407b4ccf8861a589e776" password:"123456"
+func ExportPrivateKeyFromGeth(address string, password string) string {
+	addr := ethcommon.HexToAddress(address)
+	ethKeyStore := ethKStore.NewKeyStore(ethereum.EthereumKeyPath, ethKStore.StandardScryptN, ethKStore.StandardScryptP)
+	a := accounts.Account{Address: addr}
+	_, key, err := ethKeyStore.GetDecryptedKeyForOpenWallet(a, password)
+	if err != nil {
+		fmt.Println("get decrypted key failed, err= ", err)
+		return ""
+	}
+	seckey := math.PaddedBigBytes(key.PrivateKey.D, key.PrivateKey.Params().BitSize/8) //key.PrivateKey
+	prikey := common.ToHex(seckey)
+	log.Debugf("address[%v] private key is:%v", address, prikey)
+	return prikey
+}
+
 func TestEIP155Signing() {
 	//key, _ := crypto.GenerateKey()
 	//addr := crypto.PubkeyToAddress(key.PublicKey)
