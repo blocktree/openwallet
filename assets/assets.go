@@ -16,22 +16,23 @@
 package assets
 
 import (
-	"github.com/blocktree/OpenWallet/log"
 	"strings"
+
+	"github.com/blocktree/OpenWallet/log"
 
 	"github.com/blocktree/OpenWallet/assets/bitcoin"
 	"github.com/blocktree/OpenWallet/assets/bitcoincash"
 	"github.com/blocktree/OpenWallet/assets/bopo"
 	"github.com/blocktree/OpenWallet/assets/bytom"
 	"github.com/blocktree/OpenWallet/assets/cardano"
+	"github.com/blocktree/OpenWallet/assets/decred"
 	"github.com/blocktree/OpenWallet/assets/ethereum"
 	"github.com/blocktree/OpenWallet/assets/hypercash"
 	"github.com/blocktree/OpenWallet/assets/iota"
-	"github.com/blocktree/OpenWallet/assets/sia"
-	"github.com/blocktree/OpenWallet/assets/tezos"
 	"github.com/blocktree/OpenWallet/assets/litecoin"
 	"github.com/blocktree/OpenWallet/assets/qtum"
-	"github.com/blocktree/OpenWallet/assets/decred"
+	"github.com/blocktree/OpenWallet/assets/sia"
+	"github.com/blocktree/OpenWallet/assets/tezos"
 )
 
 //WalletManager 钱包管理器
@@ -120,7 +121,7 @@ func init() {
 	RegWMD(strings.ToLower(bopo.Symbol), &bopo.WalletManager{})
 	RegWMD(strings.ToLower(bitcoincash.Symbol), &bitcoincash.WalletManager{})
 	RegWMD(strings.ToLower(sia.Symbol), &sia.WalletManager{})
-	RegWMD(strings.ToLower(ethereum.Symbol), &ethereum.WalletManager{})
+	RegWMD(strings.ToLower(ethereum.Symbol), ethereum.NewWalletManager())
 	RegWMD(strings.ToLower(bitcoin.Symbol), bitcoin.NewWalletManager())
 	RegWMD(strings.ToLower(hypercash.Symbol), hypercash.NewWalletManager())
 	RegWMD(strings.ToLower(iota.Symbol), &iota.WalletManager{})

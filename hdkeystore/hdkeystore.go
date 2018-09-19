@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+
 	"github.com/blocktree/OpenWallet/crypto/sha3"
 )
 

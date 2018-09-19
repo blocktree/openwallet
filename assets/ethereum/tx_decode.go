@@ -68,7 +68,8 @@ func (this *AddressTxStatistic) UpdateTime() {
 
 type EthTransactionDecoder struct {
 	AddrTxStatisMap *sync.Map
-	DecoderLocker   *sync.Mutex //保护一些全局不可并发的操作, 如对AddrTxStatisMap的初始化
+	DecoderLocker   *sync.Mutex    //保护一些全局不可并发的操作, 如对AddrTxStatisMap的初始化
+	wm              *WalletManager //钱包管理者
 }
 
 func (this *EthTransactionDecoder) GetTransactionCount2(address string) (*AddressTxStatistic, uint64, error) {
@@ -186,6 +187,13 @@ func VerifyRawTransaction(rawTx *openwallet.RawTransaction) error {
 	}
 
 	return nil
+}
+
+//NewTransactionDecoder 交易单解析器
+func NewTransactionDecoder(wm *WalletManager) *EthTransactionDecoder {
+	decoder := EthTransactionDecoder{}
+	decoder.wm = wm
+	return &decoder
 }
 
 //CreateRawTransaction 创建交易单

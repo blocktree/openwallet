@@ -17,11 +17,12 @@ package manager
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/blocktree/OpenWallet/assets"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
-	"strings"
-	"time"
 	"github.com/shopspring/decimal"
 )
 
@@ -45,6 +46,7 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID string, account *op
 		account.Required = 1
 	}
 
+	log.Debugf("found wallet[%v]", wallet.WalletID)
 	symbolInfo, err := assets.GetSymbolInfo(account.Symbol)
 	if err != nil {
 		return nil, err
@@ -52,6 +54,7 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID string, account *op
 
 	if wallet.IsTrust {
 
+		log.Debugf("wallet[%v] is trusted", wallet.WalletID)
 		//使用私钥创建子账户
 		key, err := wallet.HDKey()
 		if err != nil {
