@@ -697,7 +697,7 @@ func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index
 		Address:   address,
 		AccountID: key.KeyID,
 		HDPath:    derivedPath,
-		CreatedAt: time.Now(),
+		CreatedAt: time.Now().Unix(),
 		Symbol:    wm.config.symbol,
 		Index:     index,
 		WatchOnly: false,

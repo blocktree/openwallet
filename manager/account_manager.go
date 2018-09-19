@@ -27,12 +27,11 @@ import (
 )
 
 // CreateAssetsAccount
-func (wm *WalletManager) CreateAssetsAccount(appID, walletID string, account *openwallet.AssetsAccount, otherOwnerKeys []string) (*openwallet.AssetsAccount, error) {
+func (wm *WalletManager) CreateAssetsAccount(appID, walletID, password string, account *openwallet.AssetsAccount, otherOwnerKeys []string) (*openwallet.AssetsAccount, error) {
 
-	wallet, err := wm.GetWalletInfo(appID, walletID)
-	if err != nil {
-		return nil, err
-	}
+	var (
+		wallet *openwallet.Wallet
+	)
 
 	if len(account.Alias) == 0 {
 		return nil, fmt.Errorf("account alias is empty")
@@ -52,11 +51,18 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID string, account *op
 		return nil, err
 	}
 
-	if wallet.IsTrust {
+	if account.IsTrust {
+
+		wrapper, err := wm.newWalletWrapper(appID, walletID)
+		if err != nil {
+			return nil, err
+		}
+
+		wallet = wrapper.GetWallet()
 
 		log.Debugf("wallet[%v] is trusted", wallet.WalletID)
 		//使用私钥创建子账户
-		key, err := wallet.HDKey()
+		key, err := wrapper.HDKey(password)
 		if err != nil {
 			return nil, err
 		}
@@ -71,11 +77,23 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID string, account *op
 			return nil, err
 		}
 
-		account.PublicKey = childKey.OWEncode()
+		account.PublicKey = childKey.GetPublicKey().OWEncode()
 		account.Index = uint64(newAccIndex)
 		account.AccountID = account.GetAccountID()
 
 		wallet.AccountIndex = newAccIndex
+	} else {
+
+		//非托管的，创建资产账户的钱包
+		wallet, _, err = wm.CreateWallet(appID, &openwallet.Wallet{
+			Alias: "imported",
+			WalletID: walletID,
+			IsTrust: false,
+		})
+		if err != nil {
+			return nil, err
+		}
+
 	}
 
 	account.AddressIndex = -1
@@ -85,7 +103,11 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID string, account *op
 		account.PublicKey,
 	}
 
-	account.OwnerKeys = append(account.OwnerKeys, otherOwnerKeys...)
+	for _, otherKey := range otherOwnerKeys {
+		if len(otherKey) > 0 {
+			account.OwnerKeys = append(account.OwnerKeys, otherKey)
+		}
+	}
 
 	if len(account.PublicKey) == 0 {
 		return nil, fmt.Errorf("account publicKey is empty")
@@ -256,6 +278,7 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 		return nil, err
 	}
 
+	log.Debug("addrs:", addrs)
 	//导入地址到核心钱包中
 	err = assetsMgr.ImportWatchOnlyAddress(addrs...)
 	if err != nil {
@@ -349,7 +372,7 @@ func (wm *WalletManager) ImportWatchOnlyAddress(appID, walletID, accountID strin
 		a.WatchOnly = true //观察地址
 		a.Symbol = strings.ToUpper(account.Symbol)
 		a.AccountID = account.AccountID
-		a.CreatedAt = createdAt
+		a.CreatedAt = createdAt.Unix()
 		err = tx.Save(a)
 		if err != nil {
 			return err

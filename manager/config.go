@@ -41,9 +41,9 @@ func NewConfig() *Config {
 	//备份路径
 	c.BackupDir = filepath.Join(defaultDataDir, "backup")
 	//支持资产
-	c.SupportAssets = []string{"BTC"}
+	c.SupportAssets = []string{"BTC", "ETH"}
 	//开启区块扫描
-	c.EnableBlockScan = true
+	c.EnableBlockScan = false
 	//测试网
 	c.IsTestnet = true
 

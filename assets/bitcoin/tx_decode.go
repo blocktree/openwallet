@@ -194,6 +194,8 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 
 		txUnlock := btcLikeTxDriver.TxUnlock{LockScript: utxo.ScriptPubKey, Address: utxo.Address}
 		txUnlocks = append(txUnlocks, txUnlock)
+
+		//log.Debug("txUnlock:", txUnlock)
 	}
 
 	//装配输入
@@ -285,6 +287,7 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper *openwallet.Wallet
 		emptyTrans = rawTx.RawHex
 		transHash  = make([]string, 0)
 		sigPub     = make([]btcLikeTxDriver.SignaturePubkey, 0)
+		privateKeys = make([][]byte, 0)
 	)
 
 	key, err := wrapper.HDKey()
@@ -301,9 +304,7 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper *openwallet.Wallet
 			if err != nil {
 				return err
 			}
-
-			unlock := btcLikeTxDriver.TxUnlock{PrivateKey: keyBytes}
-			txUnlocks = append(txUnlocks, unlock)
+			privateKeys = append(privateKeys, keyBytes)
 			transHash = append(transHash, keySignature.Message)
 		}
 	}
@@ -318,22 +319,33 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper *openwallet.Wallet
 		return errors.New("Invalid transaction data! ")
 	}
 
-	for _, vin := range trx.Vins {
+	//log.Debug("trx.Vins:", len(trx.Vins))
+
+	for i, vin := range trx.Vins {
 
 		utxo, err := decoder.wm.GetTxOut(vin.GetTxID(), uint64(vin.GetVout()))
 		if err != nil {
 			return err
 		}
 
-		txUnlock := btcLikeTxDriver.TxUnlock{LockScript: utxo.Get("scriptPubKey.hex").String()}
+		keyBytes := privateKeys[i]
+
+		txUnlock := btcLikeTxDriver.TxUnlock{
+			LockScript: utxo.Get("scriptPubKey.hex").String(),
+			PrivateKey: keyBytes,
+		}
 		txUnlocks = append(txUnlocks, txUnlock)
 
+
 	}
+
+	//log.Debug("transHash len:", len(transHash))
+	//log.Debug("txUnlocks len:", len(txUnlocks))
 
 	/////////交易单哈希签名
 	sigPub, err = btcLikeTxDriver.SignRawTransactionHash(transHash, txUnlocks)
 	if err != nil {
-		return fmt.Errorf("transaction hash sign failed")
+		return fmt.Errorf("transaction hash sign failed, unexpected error: %v", err)
 	} else {
 		log.Info("transaction hash sign success")
 		//for i, s := range sigPub {

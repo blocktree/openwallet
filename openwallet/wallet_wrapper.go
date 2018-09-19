@@ -288,12 +288,18 @@ func (wrapper *WalletWrapper) CreateAddress(accountID string, count uint64, deco
 
 		publicKey = ""
 
+		newKeys = [][]byte{}
+
 		newIndex := account.AddressIndex + 1
 
 		derivedPath := fmt.Sprintf("%s/%d/%d", account.HDPath, changeIndex, newIndex)
-
+		//log.Debug("account.OwnerKeys:", len(account.OwnerKeys))
 		//通过多个拥有者公钥生成地址
 		for _, pub := range account.OwnerKeys {
+
+			if len(pub) == 0 {
+				continue
+			}
 
 			pubkey, err := owkeychain.OWDecode(pub)
 			if err != nil {
@@ -303,9 +309,10 @@ func (wrapper *WalletWrapper) CreateAddress(accountID string, count uint64, deco
 			start, err := pubkey.GenPublicChild(changeIndex)
 			newKey, err := start.GenPublicChild(uint32(newIndex))
 			newKeys = append(newKeys, newKey.GetPublicKeyBytes())
-		}
 
-		if len(account.OwnerKeys) > 1 {
+		}
+		//log.Debug("newKeys:", newKeys)
+		if len(newKeys) > 1 {
 			address, err = decoder.RedeemScriptToAddress(newKeys, account.Required, isTestNet)
 			if err != nil {
 				return nil, err
@@ -323,7 +330,7 @@ func (wrapper *WalletWrapper) CreateAddress(accountID string, count uint64, deco
 			Address:   address,
 			AccountID: accountID,
 			HDPath:    derivedPath,
-			CreatedAt: time.Now(),
+			CreatedAt: time.Now().Unix(),
 			Symbol:    strings.ToLower(account.Symbol),
 			Index:     uint64(newIndex),
 			WatchOnly: false,

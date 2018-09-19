@@ -245,7 +245,7 @@ func (wm *WalletManager) initBlockScanner() error {
 				key := wm.encodeSourceKey(appID, address.AccountID)
 				scanner.AddAddress(address.Address, key)
 
-				log.Debug("import address:", address, "key:", key, "to block scanner")
+				//log.Debug("import address:", address, "key:", key, "to block scanner")
 			}
 
 		}

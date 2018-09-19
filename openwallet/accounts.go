@@ -48,9 +48,10 @@ type AssetsAccount struct {
 	//Owners          map[string]AccountOwner //拥有者列表, 账户公钥: 拥有者
 	ContractAddress string      `json:"contractAddress"` //多签合约地址
 	Required        uint64      `json:"required"`        //必要签名数
-	Symbol          string      `json:"symbol"`            //资产币种类别
+	Symbol          string      `json:"symbol"`          //资产币种类别
 	AddressIndex    int         `json:"addressCount"`
 	Balance         string      `json:"balance"`
+	IsTrust         bool        `json:"isTrust"` //是否托管密钥
 	core            interface{} //核心账户指针
 }
 

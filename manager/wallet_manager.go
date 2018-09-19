@@ -47,7 +47,7 @@ func (wm *WalletManager) CreateWallet(appID string, wallet *openwallet.Wallet) (
 		if err != nil {
 			return nil, nil, err
 		}
-
+		wallet.Password = "" 			//clear password to save
 		wallet.KeyFile = filePath
 		wallet.WalletID = key.KeyID
 		wallet.RootPath = key.RootPath

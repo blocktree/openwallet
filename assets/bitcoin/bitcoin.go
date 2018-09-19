@@ -538,10 +538,12 @@ func (wm *WalletManager) ImportWatchOnlyAddress(address ...*openwallet.Address) 
 	)
 
 	for i, a := range address {
+		log.Debug("start ImportAddress")
 		err = wm.ImportAddress(a)
 		if err != nil {
 			failedIndex = append(failedIndex, i)
 		}
+		log.Debug("end ImportAddress")
 	}
 
 	//failed, err := wm.ImportMulti(address, nil, true)
