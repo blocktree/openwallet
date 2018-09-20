@@ -60,7 +60,7 @@ func NewClient(url, token string, debug bool) *Client {
 }
 
 // Call calls a remote procedure on another node, specified by the path.
-func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error) {
+func (c *Client) Call(path string, param interface{}) (*gjson.Result, error) {
 
 	if c == nil || c.client == nil {
 		return nil, errors.New("API url is not setup. ")
@@ -68,12 +68,13 @@ func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error)
 
 	url := c.BaseURL + path
 	authHeader := req.Header{"Accept": "application/json"}
-
 	// if c.Debug {
 	// 	log.Std.Info("Start Request API...")
 	// }
 
-	r, err := c.client.Do("POST", url, request, authHeader)
+	// r, err := c.client.Do("POST", url, request, authHeader)
+	r, err := req.Post(url, req.BodyJSON(&param), authHeader)
+	// r, err := c.client.Post(c.BaseURL+path, req.BodyJSON(&body))
 
 	// if c.Debug {
 	// 	log.Std.Info("Request API Completed")
@@ -102,7 +103,7 @@ func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error)
 
 // Call calls a remote procedure on another node, specified by the path.
 // func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error) {
-func (c *Client) Call2(path string, request []interface{}) ([]byte, error) {
+func (c *Client) Call2(path string, param interface{}) ([]byte, error) {
 
 	if c == nil || c.client == nil {
 		return nil, errors.New("API url is not setup. ")
@@ -111,23 +112,15 @@ func (c *Client) Call2(path string, request []interface{}) ([]byte, error) {
 	url := c.BaseURL + path
 	authHeader := req.Header{"Accept": "application/json"}
 
-	// if c.Debug {
-	// 	log.Std.Info("Start Request API...")
-	// }
-
-	r, err := c.client.Do("POST", url, request, authHeader)
-
-	// if c.Debug {
-	// 	log.Std.Info("Request API Completed")
-	// }
-
-	// if c.Debug {
-	// 	log.Std.Info("%+v", r)
-	// }
-
+	r, err := req.Post(url, req.BodyJSON(&param), authHeader)
+	// r, err := c.client.Do("POST", url, request, authHeader)
 	if err != nil {
 		log.Error("Failed: %+v >\n", err)
 		return nil, err
+	}
+
+	if c.Debug {
+		// log.Std.Info("%+v", r)
 	}
 
 	if r.Response().StatusCode != http.StatusOK {
@@ -138,8 +131,4 @@ func (c *Client) Call2(path string, request []interface{}) ([]byte, error) {
 	}
 
 	return r.Bytes(), nil
-
-	// resp := gjson.ParseBytes(r.Bytes())
-
-	// return &resp, nil
 }

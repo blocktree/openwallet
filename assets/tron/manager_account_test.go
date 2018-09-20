@@ -31,7 +31,7 @@ func TestGetAccountNet(t *testing.T) {
 
 func TestCreateAccount(t *testing.T) {
 
-	var owner_address, account_address string = "TUZYMxXwwnX77rQvmP3RMwm3RhfBJ7bovV", "TUZYMxXwwnX77rQvmP3RMwm3RhfBJ7bovV"
+	var owner_address, account_address string = "41d1e7a6bc354106cb410e65ff8b181c600ff14292", "41e552f6487585c2b58bc2c9bb4492bc1f17132cd0"
 
 	if r, err := tw.CreateAccount(owner_address, account_address); err != nil {
 		t.Errorf("CreateAccount failed: %v\n", err)

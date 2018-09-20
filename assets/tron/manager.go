@@ -16,6 +16,8 @@
 package tron
 
 import (
+	"log"
+
 	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/blocktree/OpenWallet/openwallet"
 	// "path/filepath"
@@ -23,6 +25,10 @@ import (
 	// "github.com/pkg/errors"
 	// "github.com/shopspring/decimal"
 )
+
+func init() {
+	log.SetFlags(log.Lshortfile | log.LstdFlags)
+}
 
 type WalletManager struct {
 	Config         *WalletConfig                 //钱包管理配置

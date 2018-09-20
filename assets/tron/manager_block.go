@@ -17,9 +17,10 @@ package tron
 
 import (
 	"errors"
-	"fmt"
 
+	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
+	"github.com/tronprotocol/grpc-gateway/api"
 	"github.com/tronprotocol/grpc-gateway/core"
 )
 
@@ -33,14 +34,17 @@ func (wm *WalletManager) GetNowBlock() (block *core.Block, err error) {
 	if err != nil {
 		return nil, err
 	}
-	// fmt.Println("Result = ", r)
+
+	// fmt.Println("XXX = ", gjson.Valid(string(r)))
+	// fmt.Println("XXX = ", gjson.ValidBytes(r))
 
 	block = &core.Block{}
+	gjson.UnmarshalValidationEnabled(true)
+
 	if err := gjson.Unmarshal(r, block); err != nil {
 		return nil, err
 	}
 
-	// fmt.Println(core.Block)
 	return block, nil
 }
 
@@ -50,18 +54,22 @@ func (wm *WalletManager) GetNowBlock() (block *core.Block, err error) {
 // Parameters：
 // 	Num is the height of the block
 // Return value：specified Block object
-func (wm *WalletManager) GetBlockByNum(num uint64) (block string, error error) {
+func (wm *WalletManager) GetBlockByNum(num uint64) (block *core.Block, error error) {
 
-	request := []interface{}{
-		num,
+	request := req.Param{
+		"num": num,
 	}
-	r, err := wm.WalletClient.Call("/wallet/getblockbynum", request)
+	r, err := wm.WalletClient.Call2("/wallet/getblockbynum", request)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	fmt.Println("Result = ", r)
 
-	return "", nil
+	block = &core.Block{}
+	if err := gjson.Unmarshal(r, block); err != nil {
+		return nil, err
+	}
+
+	return block, nil
 }
 
 // Function：Query block by ID
@@ -69,18 +77,22 @@ func (wm *WalletManager) GetBlockByNum(num uint64) (block string, error error) {
 // 		{“value”: “0000000000038809c59ee8409a3b6c051e369ef1096603c7ee723c16e2376c73”}’
 // Parameters：Block ID.
 // Return value：Block Object
-func (wm *WalletManager) GetBlockByID(blockID string) (block string, err error) {
+func (wm *WalletManager) GetBlockByID(blockID string) (block *core.Block, err error) {
 
-	request := []interface{}{
-		blockID,
+	request := req.Param{
+		"blockID": blockID,
 	}
-	r, err := wm.WalletClient.Call("/wallet/getblockbyid", request)
+	r, err := wm.WalletClient.Call2("/wallet/getblockbyid", request)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	fmt.Println("Result = ", r)
 
-	return "", nil
+	block = &core.Block{}
+	if err := gjson.Unmarshal(r, block); err != nil {
+		return nil, err
+	}
+
+	return block, nil
 }
 
 // Function：Query a range of blocks by block height
@@ -90,19 +102,24 @@ func (wm *WalletManager) GetBlockByID(blockID string) (block string, err error) 
 // 	startNum：Starting block height, including this block
 // 	endNum：Ending block height, excluding that block
 // Return value：A list of Block Objects
-func (wm *WalletManager) GetBlockByLimitNext(startNum, endNum uint64) (blocks []string, err error) {
+func (wm *WalletManager) GetBlockByLimitNext(startNum, endNum uint64) (blocks *api.BlockList, err error) {
 
-	request := []interface{}{
-		startNum,
-		endNum,
+	params := req.Param{
+		"startNum": startNum,
+		"endNum":   endNum,
 	}
-	r, err := wm.WalletClient.Call("/wallet/getblockbylimitnext", request)
+
+	r, err := wm.WalletClient.Call2("/wallet/getblockbylimitnext", params)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Result = ", r)
 
-	return nil, nil
+	blocks = &api.BlockList{}
+	if err := gjson.Unmarshal(r, blocks); err != nil {
+		return nil, err
+	}
+
+	return blocks, nil
 }
 
 // Function：Query the latest blocks
@@ -110,20 +127,24 @@ func (wm *WalletManager) GetBlockByLimitNext(startNum, endNum uint64) (blocks []
 // 		{“num”: 5}’
 // Parameters：The number of blocks to query
 // Return value：A list of Block Objects
-func (wm *WalletManager) GetBlockByLatestNum(num uint64) (blocks []string, err error) {
+func (wm *WalletManager) GetBlockByLatestNum(num uint64) (blocks *api.BlockList, err error) {
 
 	if num >= 1000 {
 		return nil, errors.New("Too large with parameter num to search!")
 	}
 
-	request := []interface{}{
-		num,
+	params := req.Param{
+		"num": num,
 	}
-	r, err := wm.WalletClient.Call("/wallet/getblockbylatestnum", request)
+	r, err := wm.WalletClient.Call2("/wallet/getblockbylatestnum", params)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Result = ", r)
 
-	return nil, nil
+	blocks = &api.BlockList{}
+	if err := gjson.Unmarshal(r, blocks); err != nil {
+		return nil, err
+	}
+
+	return blocks, nil
 }

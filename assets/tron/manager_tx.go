@@ -15,19 +15,29 @@
 
 package tron
 
-import "fmt"
+import (
+	"encoding/hex"
+	"fmt"
+
+	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
+	"github.com/imroc/req"
+	"github.com/tidwall/gjson"
+	"github.com/tronprotocol/grpc-gateway/core"
+)
 
 // Function：Count all transactions (number) on the network
-// 	demo: curl -X POST http://127.0.0.1:8090/wallet/totaltransaction
-// 	Parameters：None Return value：Total number of transactions.
+// demo: curl -X POST http://127.0.0.1:8090/wallet/totaltransaction
+// Parameters：None
+// Return value：
+// 	Total number of transactions.
 func (wm *WalletManager) GetTotalTransaction() (num uint64, err error) {
 
-	r, err := wm.WalletClient.Call("/wallet/totaltransaction", nil)
+	r, err := wm.WalletClient.Call2("/wallet/totaltransaction", nil)
 	if err != nil {
 		return 0, err
 	}
-	num = r.Get("num").Uint()
-
+	num = gjson.ParseBytes(r).Get("num").Uint()
+	// fmt.Println("CCC = ", gjson.ParseBytes(r).Get("num").Uint())
 	return num, nil
 }
 
@@ -36,18 +46,22 @@ func (wm *WalletManager) GetTotalTransaction() (num uint64, err error) {
 // 		{“value”: “d5ec749ecc2a615399d8a6c864ea4c74ff9f523c2be0e341ac9be5d47d7c2d62”}’
 // Parameters：Transaction ID.
 // Return value：Transaction information.
-func (wm *WalletManager) GetTransactionByID(txID string) (s string, err error) {
+func (wm *WalletManager) GetTransactionByID(txID string) (tx *core.Transaction, err error) {
 
-	request := []interface{}{
-		txID,
+	params := req.Param{
+		"value": txID,
 	}
-	r, err := wm.WalletClient.Call("/wallet/gettransactionbyid", request)
+	r, err := wm.WalletClient.Call2("/wallet/gettransactionbyid", params)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	fmt.Println("EEE = ", r)
 
-	return "", nil
+	tx = &core.Transaction{}
+	if err := gjson.Unmarshal(r, tx); err != nil {
+		return nil, err
+	}
+
+	return tx, nil
 }
 
 // Function：Creates a transaction of transfer. If the recipient address does not exist, a corresponding account will be created on the blockchain.
@@ -58,22 +72,30 @@ func (wm *WalletManager) GetTransactionByID(txID string) (s string, err error) {
 // Parameters：
 // 	To_address is the transfer address, converted to a hex string;
 // 	owner_address is the transfer transfer address, converted to a hex string;
-// 	amount is the transfer amount Return value：Transaction contract data
-func (wm *WalletManager) CreateTransaction(to_address, owner_address string, amount uint64) ([]string, error) {
+// 	amount is the transfer amount
+// Return value：
+// 	Transaction contract data
+func (wm *WalletManager) CreateTransaction(to_address, owner_address string, amount uint64) (raw string, err error) {
 
-	request := []interface{}{
-		to_address,
-		owner_address,
-		amount,
+	to_address_bytes, _ := addressEncoder.AddressDecode(to_address, addressEncoder.TRON_mainnetAddress)
+	to_address = hex.EncodeToString(to_address_bytes)
+	owner_address_bytes, _ := addressEncoder.AddressDecode(owner_address, addressEncoder.TRON_mainnetAddress)
+	owner_address = hex.EncodeToString(owner_address_bytes)
+
+	params := req.Param{
+		"to_address":    to_address,
+		"owner_address": owner_address,
+		"amount":        1,
 	}
 
-	r, err := wm.WalletClient.Call("/wallet/createtransaction", request)
+	rawBytes, err := wm.WalletClient.Call2("/wallet/createtransaction", params)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	fmt.Println("EEEE = ", r)
+	fmt.Println("XXX = ", string(rawBytes))
+	raw = hex.EncodeToString(rawBytes)
 
-	return nil, nil
+	return raw, nil
 }
 
 // Function：Sign the transaction, the api has the risk of leaking the private key, please make sure to call the api in a secure environment
@@ -94,20 +116,20 @@ func (wm *WalletManager) CreateTransaction(to_address, owner_address string, amo
 // 	Transaction is a contract created by http api,
 // 	privateKey is the user private key
 // Return value：Signed Transaction contract data
-func (wm *WalletManager) GetTransactionSign(transaction, privateKey string) ([]byte, error) {
+func (wm *WalletManager) GetTransactionSign(transaction, privateKey string) (rawSinged []byte, err error) {
 
-	request := []interface{}{
-		transaction,
-		privateKey,
+	params := req.Param{
+		"transaction": transaction,
+		"privateKey":  privateKey,
 	}
 
-	r, err := wm.WalletClient.Call("/wallet/gettransactionsign", request)
+	r, err := wm.WalletClient.Call2("/wallet/gettransactionsign", params)
 	if err != nil {
 		return nil, err
 	}
 	fmt.Println("EEEE = ", r)
 
-	return nil, nil
+	return rawSinged, nil
 }
 
 // Function：Broadcast the signed transaction
@@ -131,13 +153,13 @@ func (wm *WalletManager) GetTransactionSign(transaction, privateKey string) ([]b
 // Return value：broadcast success or failure
 func (wm *WalletManager) BroadcastTransaction(signature, txID, raw_data string) error {
 
-	request := []interface{}{
-		signature,
-		txID,
-		raw_data,
+	params := req.Param{
+		"signature": signature,
+		"txID":      txID,
+		"raw_data":  raw_data,
 	}
 
-	r, err := wm.WalletClient.Call("/wallet/broadcasttransaction", request)
+	r, err := wm.WalletClient.Call2("/wallet/broadcasttransaction", params)
 	if err != nil {
 		return err
 	}

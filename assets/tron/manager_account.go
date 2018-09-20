@@ -15,7 +15,14 @@
 
 package tron
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/tidwall/gjson"
+
+	"github.com/imroc/req"
+	"github.com/tronprotocol/grpc-gateway/api"
+)
 
 // Function：Query bandwidth information.
 // demo: curl -X POST http://127.0.0.1:8090/wallet/getaccountnet -d ‘
@@ -27,19 +34,25 @@ import "fmt"
 // 	If a field doesn’t appear, then the corresponding value is 0.
 // 	{“freeNetUsed”: 557,”freeNetLimit”: 5000,”NetUsed”: 353,”NetLimit”: 5239157853,”TotalNetLimit”: 43200000000,”TotalNetWeight”: 41228}
 
-func (wm *WalletManager) GetAccountNet(addr string) (block string, err error) {
+func (wm *WalletManager) GetAccountNet(address string) (account *api.AccountNetMessage, err error) {
 
-	request := []interface{}{
-		addr,
+	params := req.Param{
+		// "address": address,
 	}
 
-	r, err := wm.WalletClient.Call("/wallet/getaccountnet", request)
+	r, err := wm.WalletClient.Call2("/wallet/getaccount", params)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	fmt.Println("Result = ", r)
 
-	return "", nil
+	fmt.Println("Result = ", string(r))
+
+	account = &api.AccountNetMessage{}
+	if err := gjson.Unmarshal(r, account); err != nil {
+		return nil, err
+	}
+
+	return account, nil
 }
 
 // Function：Create an account. Uses an already activated account to create a new account
@@ -54,12 +67,12 @@ func (wm *WalletManager) GetAccountNet(addr string) (block string, err error) {
 // Return value：Create account Transaction raw data
 func (wm *WalletManager) CreateAccount(owner_address, account_address string) (txRaw string, err error) {
 
-	request := []interface{}{
-		owner_address,
-		account_address,
+	params := req.Param{
+		"owner_address":   owner_address,
+		"account_address": account_address,
 	}
 
-	r, err := wm.WalletClient.Call("/wallet/createaccount", request)
+	r, err := wm.WalletClient.Call2("/wallet/createaccount", params)
 	if err != nil {
 		return "", err
 	}
@@ -80,12 +93,12 @@ func (wm *WalletManager) CreateAccount(owner_address, account_address string) (t
 // Return value：modified Transaction Object
 func (wm *WalletManager) UpdateAccount(account_name, owner_address string) (tx string, err error) {
 
-	request := []interface{}{
-		account_name,
-		owner_address,
+	params := req.Param{
+		"account_name":  account_name,
+		"owner_address": owner_address,
 	}
 
-	r, err := wm.WalletClient.Call("/wallet/updateaccount", request)
+	r, err := wm.WalletClient.Call2("/wallet/updateaccount", params)
 	if err != nil {
 		return "", err
 	}

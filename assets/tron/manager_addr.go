@@ -15,7 +15,14 @@
 
 package tron
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/tidwall/gjson"
+	"github.com/tronprotocol/grpc-gateway/api"
+
+	"github.com/imroc/req"
+)
 
 // Function: Create address from a specified password string (NOT PRIVATE KEY)
 // Demo: curl -X POST http://127.0.0.1:8090/wallet/createaddress -d ‘
@@ -29,10 +36,10 @@ import "fmt"
 // 	Please control risks when using this API. To ensure environmental security, please do not invoke APIs provided by other or invoke this very API on a public network.
 func (wm *WalletManager) CreateAddress(passValue string) (addr string, err error) {
 
-	request := []interface{}{
-		passValue,
+	params := req.Param{
+		"value": passValue,
 	}
-	r, err := wm.WalletClient.Call("/wallet/createaddress", request)
+	r, err := wm.WalletClient.Call2("/wallet/createaddress", params)
 	if err != nil {
 		return "nil", err
 	}
@@ -51,19 +58,21 @@ func (wm *WalletManager) CreateAddress(passValue string) (addr string, err error
 // Warning:
 // 	Please control risks when using this API.
 // 	To ensure environmental security, please do not invoke APIs provided by other or invoke this very API on a public network.
-func (wm *WalletManager) GenerateAddress() (res map[string]string, err error) {
+func (wm *WalletManager) GenerateAddress() (addr *api.AddressPrKeyPairMessage, err error) {
 
-	res = map[string]string{"addr": "", "privatekey": ""}
+	// res = map[string]string{"addr": "", "privatekey": ""}
 
-	r, err := wm.WalletClient.Call("/wallet/generateaddress", nil)
+	r, err := wm.WalletClient.Call2("/wallet/generateaddress", nil)
 	if err != nil {
 		return nil, err
 	}
 
-	res["address"] = r.Get("address").String()
-	res["privatekey"] = r.Get("privateKey").String()
+	addr = &api.AddressPrKeyPairMessage{}
+	if err := gjson.Unmarshal(r, addr); err != nil {
+		return nil, err
+	}
 
-	return res, nil
+	return addr, nil
 }
 
 // Function：validate address
@@ -74,10 +83,10 @@ func (wm *WalletManager) GenerateAddress() (res map[string]string, err error) {
 // Return value: ture or false
 func (wm *WalletManager) ValidateAddress(address string) (err error) {
 
-	request := []interface{}{
-		address,
+	params := req.Param{
+		"address": address,
 	}
-	r, err := wm.WalletClient.Call("/wallet/validateaddress", request)
+	r, err := wm.WalletClient.Call2("/wallet/validateaddress", params)
 	if err != nil {
 		return err
 	}
