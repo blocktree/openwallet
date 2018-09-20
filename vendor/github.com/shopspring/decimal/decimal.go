@@ -42,7 +42,7 @@ import (
 //     d4 := decimal.NewFromFloat(2).Div(decimal.NewFromFloat(3)
 //     d4.String() // output: "0.667"
 //
-var DivisionPrecision = 16
+var DivisionPrecision = 18
 
 // MarshalJSONWithoutQuotes should be set to true if you want the decimal to
 // be JSON marshaled as a number, instead of as a string.

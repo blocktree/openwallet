@@ -146,8 +146,9 @@ func (w *Wallet) FileName() string {
 
 // openDB 打开钱包数据库
 func (w *Wallet) OpenDB() (*storm.DB, error) {
-	log.Debugf("wallet dbfile:%v", w.DBFile)
-	return storm.Open(w.DBFile)
+	abspath, _ := filepath.Abs(w.DBFile)
+	log.Debugf("wallet dbfile:%v", abspath)
+	return storm.Open(abspath)
 }
 
 //SaveToDB 保存到数据库
@@ -178,8 +179,8 @@ func (w *Wallet) GetAddress(address string) *Address {
 	err = db.One("Address", address, &obj)
 	if err != nil {
 		log.Debugf("get address failed, err=%v", err)
+		return nil
 	}
-	log.Debugf("obj:%v", obj)
 	return &obj
 }
 
