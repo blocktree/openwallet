@@ -22,8 +22,8 @@ import (
 
 func TestWalletManager_RefreshAssetsAccountBalance(t *testing.T) {
 
-	walletID := "WFPHAs2uyeHcfBzKF4vN4NkMpArX8wkCxp"
-	accountID := "Jq9LCP9AkDfi6zqsgwodfFHPQpo9VDxXCBaM6pxRQQYk1Ra1mH"
+	walletID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
+	accountID := "JYCcXtC18vnd1jbcJX47msDFbQMBDNjsq3xbvvK6qCHKAAqoQq"
 	err := tm.RefreshAssetsAccountBalance(testApp, accountID)
 	if err != nil {
 		log.Error("RefreshAssetsAccountBalance failed, unexpected error:", err)
@@ -41,8 +41,8 @@ func TestWalletManager_RefreshAssetsAccountBalance(t *testing.T) {
 
 func TestWalletManager_ImportWatchOnlyAddress(t *testing.T) {
 
-	walletID := "WFPHAs2uyeHcfBzKF4vN4NkMpArX8wkCxp"
-	accountID := "KhJdnr4UJLdbeQcMvZgedyYykRVTdLaMLbsV2mx3GZiMva9Kfb"
+	walletID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
+	accountID := "JYCcXtC18vnd1jbcJX47msDFbQMBDNjsq3xbvvK6qCHKAAqoQq"
 
 	address, err := tm.GetAddressList(testApp, walletID, accountID, 0, -1, true)
 	if err != nil {
