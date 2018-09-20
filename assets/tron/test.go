@@ -14,3 +14,25 @@
  */
 
 package tron
+
+var (
+	tw *WalletManager
+
+	to_address    string = ""
+	owner_address string = ""
+	amount        uint64 = 0
+
+	txID string = "d5ec749ecc2a615399d8a6c864ea4c74ff9f523c2be0e341ac9be5d47d7c2d62"
+)
+
+func init() {
+
+	tw = NewWalletManager()
+
+	// tw.Config.ServerAPI = "http://127.0.0.1:28890"
+	tw.Config.ServerAPI = "http://127.0.0.1:18890"
+	// tw.Config.RpcUser = "walletUser"
+	// tw.Config.RpcPassword = "walletPassword2017"
+	// token := BasicAuth(tw.Config.RpcUser, tw.Config.RpcPassword)
+	tw.WalletClient = NewClient(tw.Config.ServerAPI, "", true)
+}
