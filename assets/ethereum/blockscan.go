@@ -34,6 +34,7 @@ const (
 )
 
 type ETHBlockScanner struct {
+	*openwallet.BlockScannerBase
 	addressInScanning  map[string]string
 	walletInScanning   map[string]*Wallet
 	currentBlockHeight uint64

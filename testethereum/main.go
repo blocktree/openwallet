@@ -52,7 +52,7 @@ func main() {
 	//tech.TestDbInf()
 	//tech.TestBlockScan()
 	//tech.TestBlockScanWhenFork()
-	tech.TestEIP155Signing()
+	//tech.TestEIP155Signing()
 	//tech.TestAddr()
 	//tech.TestOWCrypt_sign()
 	//tech.TestSlice()
@@ -61,5 +61,9 @@ func main() {
 	//tech.TestGetNonce()
 	//tech.TestOfficialVerify()
 
-	fmt.Println("done ... ")
+	//tech.TestFrameWalletManager_CreateWallet()
+	//tech.TestWalletManager_CreateAssetsAccount()
+	//tech.TestFrameWalletManager_CreateAddress()
+	//tech.ListInfoFromDb()
+	tech.TestGetPrivateKey()
 }
