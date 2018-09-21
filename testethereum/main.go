@@ -65,5 +65,9 @@ func main() {
 	//tech.TestWalletManager_CreateAssetsAccount()
 	//tech.TestFrameWalletManager_CreateAddress()
 	//tech.ListInfoFromDb()
-	tech.TestGetPrivateKey()
+	//tech.TestGetPrivateKey()
+
+	//tech.TestSendRawTransactionFromGethAccount()
+	//tech.TestSendRawTransaction()
+	tech.TestFloat()
 }

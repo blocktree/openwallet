@@ -19,7 +19,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"testing"
-	"github.com/blocktree/go-OWCBasedFuncs/btcLikeTxDriver"
+	"github.com/blocktree/OpenWallet/assets/qtum/btcLikeTxDriver"
 	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
 )
 

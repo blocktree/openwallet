@@ -314,11 +314,6 @@ func TestOWCrypt_sign() {
 		return
 	}
 
-	if !crypto.VerifySignature(toPublicKey(&key.PrivateKey.PublicKey), message[:], sig) {
-		fmt.Println("verify error official")
-		return
-	}
-
 	tx, err = tx.WithSignature(signer, sig)
 	if err != nil {
 		fmt.Println("with signature failed, err=", err)
@@ -377,39 +372,6 @@ func TestOfficialVerify() {
 
 	if !crypto.VerifySignature(pubkey, message, sig[0:64]) {
 		fmt.Println("verify error official")
-		return
-	}
-}
-
-func TestEthRawTransaction() {
-	key, _, err := ethereum.CreateAddressForTest("peter3", "987654321", 0)
-	if err != nil {
-		fmt.Println("CreateAddressForTest err=", err)
-		return
-	}
-
-	amount, err := ethereum.ConvertToBigInt("0x56bc75e2d63100000", 16)
-	if err != nil {
-		fmt.Println("amount format error.")
-		return
-	}
-
-	gasPrice, err := ethereum.ConvertToBigInt("0x430e23400", 16)
-	if err != nil {
-		fmt.Println("gas price format error.")
-		return
-	}
-
-	tx := types.NewTransaction(0, ethcommon.HexToAddress("0x2a63b2203955b84fefe52baca3881b3614991b34"),
-		amount, 121000, gasPrice, nil)
-
-	signer := types.NewEIP155Signer(big.NewInt(12))
-	message := signer.Hash(tx)
-	seckey := math.PaddedBigBytes(key.PrivateKey.D, key.PrivateKey.Params().BitSize/8)
-
-	_, ret := ethereum.ETHsignature(seckey, message[:])
-	if ret != owcrypt.SUCCESS {
-		fmt.Println("signature error, ret:", "0x"+strconv.FormatUint(uint64(ret), 16))
 		return
 	}
 }
@@ -477,7 +439,7 @@ func TestEIP155Signing() {
 		return
 	}
 
-	tx, err := types.SignTx(types.NewTransaction(176, ethcommon.HexToAddress("0x2a63b2203955b84fefe52baca3881b3614991b34"),
+	tx, err := types.SignTx(types.NewTransaction(176, ethcommon.HexToAddress("0x2d3a164eD8019d3111b0726399a6a9B10F05a8e6"),
 		amount, 121000, gasPrice, nil), signer, key.PrivateKey)
 	if err != nil {
 		//t.Fatal(err)
@@ -503,4 +465,77 @@ func TestEIP155Signing() {
 	}
 
 	fmt.Println("signature:", common.ToHex(data))
+}
+
+func signEIP155FromGethAccount(from string, password string, to string, nonce uint64) (string, error) {
+	addr := ethcommon.HexToAddress(from)
+
+	signer := types.NewEIP155Signer(big.NewInt(12))
+	fmt.Println("addr:", addr.String())
+
+	ethKeyStore := ethKStore.NewKeyStore(ethereum.EthereumKeyPath, ethKStore.StandardScryptN, ethKStore.StandardScryptP)
+	a := accounts.Account{Address: addr}
+	a, key, err := ethKeyStore.GetDecryptedKeyForOpenWallet(a, password)
+	if err != nil {
+		fmt.Println("get decrypted key failed, err= ", err)
+		return "", err
+	}
+
+	//100个以太币
+	amount, err := ethereum.ConvertToBigInt("0x56bc75e2d63100000", 16)
+	if err != nil {
+		fmt.Println("amount format error.")
+		return "", err
+	}
+
+	gasPrice, err := ethereum.ConvertToBigInt("0x430e23400", 16)
+	if err != nil {
+		fmt.Println("gas price format error.")
+		return "", err
+	}
+
+	tx, err := types.SignTx(types.NewTransaction(nonce, ethcommon.HexToAddress(to),
+		amount, 121000, gasPrice, nil), signer, key.PrivateKey)
+	if err != nil {
+		//t.Fatal(err)
+		fmt.Println("sign tx failed, err = ", err)
+		return "", err
+	}
+
+	toPublicKey := func(pk *ecdsa.PublicKey) []byte {
+		testByteX := pk.X.Bytes() //[]byte(*pk.X)
+		testByteY := pk.Y.Bytes() //[]byte(*pk.X)
+		return append(testByteX, testByteY...)
+	}
+
+	fmt.Println("public key:", common.ToHex(toPublicKey(&key.PrivateKey.PublicKey)))
+
+	//fmt.Println("tx:", tx.data)
+	tx.PrintTransaction()
+
+	data, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		fmt.Println("EncodeToBytes failed, err = ", err)
+		return "", err
+	}
+
+	raw := common.ToHex(data)
+	//fmt.Println("signature:",)
+	return raw, nil
+}
+
+func TestSendRawTransactionFromGethAccount() {
+	raw, err := signEIP155FromGethAccount("0x50068fd632c1a6e6c5bd407b4ccf8861a589e776", "123456",
+		"0x2d3a164eD8019d3111b0726399a6a9B10F05a8e6", 185)
+	if err != nil {
+		log.Error("sign failed, err=", err)
+		return
+	}
+	txid, err := ethereum.EthSendRawTransaction(raw)
+	if err != nil {
+		log.Error("send raw transaction failed, err=", err)
+		return
+	}
+
+	log.Debugf("TXID:%v", txid)
 }

@@ -588,6 +588,10 @@ func SendTransactionToAddr(param map[string]interface{}) (string, error) {
 	return txId, nil
 }
 
+func EthSendRawTransaction(signedTx string) (string, error) {
+	return ethSendRawTransaction(signedTx)
+}
+
 func ethSendRawTransaction(signedTx string) (string, error) {
 	params := []interface{}{
 		signedTx,

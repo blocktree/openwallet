@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/astaxie/beego/config"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/shopspring/decimal"
 )
@@ -84,6 +85,15 @@ func (this *WalletManager) ImportWatchOnlyAddress(address ...*openwallet.Address
 
 //GetAddressWithBalance 获取多个地址余额，使用查账户和单地址
 func (this *WalletManager) GetAddressWithBalance(addresses ...*openwallet.Address) error {
+	for _, addr := range addresses {
+		amount, err := GetAddrBalance(addr.Address)
+		if err != nil {
+			log.Error("get address[", addr.Address, "] balance failed, err=", err)
+			return err
+		}
+		addr.Balance = "0x" + amount.Text(16)
+	}
+
 	return nil
 }
 

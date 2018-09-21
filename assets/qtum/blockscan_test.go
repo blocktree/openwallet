@@ -58,7 +58,7 @@ func TestSaveLocalBlockHeight(t *testing.T) {
 
 func TestGetBlockHash(t *testing.T) {
 	//height := GetLocalBlockHeight()
-	hash, err := tw.GetBlockHash(225100)
+	hash, err := tw.GetBlockHash(229406)
 	if err != nil {
 		t.Errorf("GetBlockHash failed unexpected error: %v\n", err)
 		return
@@ -108,7 +108,7 @@ func TestBTCBlockScanner_scanning(t *testing.T) {
 
 	//bs.DropRechargeRecords(accountID)
 
-	bs.SetRescanBlockHeight(225200)
+	bs.SetRescanBlockHeight(229405)
 	//tw.SaveLocalNewBlock(1355030, "00000000000000125b86abb80b1f94af13a5d9b07340076092eda92dade27686")
 
 	bs.AddAddress(address, accountID)

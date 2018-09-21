@@ -40,6 +40,7 @@ import (
 	"github.com/blocktree/go-OWCrypt"
 	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
 )
 
 var(
@@ -78,7 +79,7 @@ func NewWalletManager() *WalletManager {
 	wm.walletsInSum = make(map[string]*openwallet.Wallet)
 	//区块扫描器
 	wm.blockscanner = NewBTCBlockScanner(&wm)
-	//wm.Decoder = &addressDecoder{}
+	wm.Decoder = &addressDecoder{}
 	wm.TxDecoder = NewTransactionDecoder(&wm)
 	return &wm
 }
@@ -645,13 +646,13 @@ func (wm *WalletManager) GetAddressBalance(walletID, address string) string {
 
 
 //CreateNewPrivateKey 创建私钥，返回私钥wif格式字符串
-func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index uint64) (string, *openwallet.Address, error) {
+func (wm *WalletManager) CreateNewPrivateKey(accountID string, key *owkeychain.ExtendedKey, derivedPath string, index uint64) (string, *openwallet.Address, error) {
 
-	derivedPath := fmt.Sprintf("%s/%d/%d", key.RootPath, start, index)
+	derivedPath = fmt.Sprintf("%s/%d", derivedPath, index)
 	//fmt.Printf("derivedPath = %s\n", derivedPath)
-	wm.config.CurveType = owcrypt.ECC_CURVE_SECP256K1
-
-	childKey, err := key.DerivedKeyWithPath(derivedPath, wm.config.CurveType)
+	//wm.config.CurveType = owcrypt.ECC_CURVE_SECP256K1
+	childKey, err := key.GenPrivateChild(uint32(index))
+	//childKey, err := key.DerivedKeyWithPath(derivedPath, wm.config.CurveType)
 	if err != nil {
 		return "", nil, err
 	}
@@ -661,41 +662,50 @@ func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index
 		return "", nil, err
 	}
 
-	privateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
+	//privateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
+	//
+	//cfg := chaincfg.MainNetParams
+	//if wm.config.isTestNet {
+	//	cfg = chaincfg.TestNet3Params
+	//}
+	//
+	//wif, err := btcutil.NewWIF(privateKey, &cfg, true)
+	//if err != nil {
+	//	return "", nil, err
+	//}
 
-	cfg := chaincfg.MainNetParams
-	if wm.config.isTestNet {
-		cfg = chaincfg.TestNet3Params
-	}
-
-	wif, err := btcutil.NewWIF(privateKey, &cfg, true)
-	if err != nil {
-		return "", nil, err
-	}
+	wif, err := wm.Decoder.PrivateKeyToWIF(keyBytes, wm.config.isTestNet)
 
 	//address, err := childKey.Address(&cfg)
 	//if err != nil {
 	//	return "", nil, err
 	//}
 
-	pubkey, _ := owcrypt.GenPubkey(privateKey.Serialize(), owcrypt.ECC_CURVE_SECP256K1)
+	//pubkey, _ := owcrypt.GenPubkey(privateKey.Serialize(), owcrypt.ECC_CURVE_SECP256K1)
+	//
+	////fmt.Println(hex.EncodeToString(pubkey))
+	//
+	////pubdata := append([]byte{0x04}, pubkey[:]...)
+	//pubdata := owcrypt.PointCompress(pubkey, owcrypt.ECC_CURVE_SECP256K1)
+	//
+	////fmt.Println(hex.EncodeToString(pubdata))
+	//
+	//pubkeyHash := owcrypt.Hash(pubdata, 0, owcrypt.HASH_ALG_HASH160)
+	//
+	////fmt.Println(hex.EncodeToString(pubkeyHash))
+	//
+	//address := addressEncoder.AddressEncode(pubkeyHash, addressEncoder.QTUM_mainnetAddressP2PKH)
 
-	//fmt.Println(hex.EncodeToString(pubkey))
+	publicKey := childKey.GetPublicKeyBytes()
 
-	//pubdata := append([]byte{0x04}, pubkey[:]...)
-	pubdata := owcrypt.PointCompress(pubkey, owcrypt.ECC_CURVE_SECP256K1)
-
-	//fmt.Println(hex.EncodeToString(pubdata))
-
-	pubkeyHash := owcrypt.Hash(pubdata, 0, owcrypt.HASH_ALG_HASH160)
-
-	//fmt.Println(hex.EncodeToString(pubkeyHash))
-
-	address := addressEncoder.AddressEncode(pubkeyHash, addressEncoder.QTUM_mainnetAddressP2PKH)
+	address, err := wm.Decoder.PublicKeyToAddress(publicKey, wm.config.isTestNet)
+	if err != nil {
+		return "", nil, err
+	}
 
 	addr := openwallet.Address{
 		Address:   address,
-		AccountID: key.KeyID,
+		AccountID: accountID,
 		HDPath:    derivedPath,
 		CreatedAt: time.Now().Unix(),
 		Symbol:    wm.config.symbol,
@@ -710,7 +720,7 @@ func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index
 	//	CreatedAt: time.Now(),
 	//}
 
-	return wif.String(), &addr, err
+	return wif, &addr, err
 }
 
 //CreateBatchPrivateKey
@@ -1761,9 +1771,16 @@ func (wm *WalletManager) createAddressWork(k *hdkeystore.HDKey, producer chan<- 
 	runAddress := make([]*openwallet.Address, 0)
 	runWIFs := make([]string, 0)
 
+	derivedPath := fmt.Sprintf("%s/%d", k.RootPath, index)
+	childKey, err := k.DerivedKeyWithPath(derivedPath, wm.config.CurveType)
+	if err != nil {
+		producer <- make([]*openwallet.Address, 0)
+		return
+	}
+
 	for i := start; i < end; i++ {
 		// 生成地址
-		wif, address, errRun := wm.CreateNewPrivateKey(k, index, i)
+		wif, address, errRun := wm.CreateNewPrivateKey(k.KeyID, childKey, derivedPath, i)
 		if errRun != nil {
 			log.Std.Info("Create new privKey failed unexpected error: %v", errRun)
 			continue
@@ -2048,4 +2065,23 @@ func (wm *WalletManager) GetBalance() string {
 	}
 
 	return balance.String()
+}
+
+//ImportAddress 导入地址核心钱包
+func (wm *WalletManager)  ImportAddress(address *openwallet.Address) error {
+
+	request := []interface{}{
+		address.Address,
+		address.AccountID,
+		false,
+	}
+
+	_, err := wm.walletClient.Call("importaddress", request)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+
 }

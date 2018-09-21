@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/blocktree/go-OWCrypt"
+	owcrypt "github.com/blocktree/go-OWCrypt"
 	"github.com/shopspring/decimal"
 )
 
@@ -138,7 +138,7 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	//备份路径
 	c.backupDir = filepath.Join("data", strings.ToLower(c.Symbol), "backup")
 	//钱包服务API
-	c.ServerAPI = "http://127.0.0.1:10000"
+	c.ServerAPI = "http://127.0.0.1:28890"
 	//钱包安装的路径
 	c.NodeInstallPath = ""
 	//钱包数据文件目录
