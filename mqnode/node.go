@@ -312,7 +312,7 @@ func (bitBankNode *BitBankNode) BlockTxExtractDataNotify(account *openwallet.Ass
 }
 
 func (bitBankNode *BitBankNode) CallTarget(params interface{}){
-	bitBankNode.Node.Call(bitBankNode.Config.MerchantNodeID, "pushNotifications", nil, true, func(resp owtp.Response) {
+	bitBankNode.Node.Call(bitBankNode.Config.MerchantNodeID, "pushNotifications", params, true, func(resp owtp.Response) {
 		fmt.Printf("BitBankNode call pushNotifications, params: %s,result: %s\n", params,resp.JsonData())
 	})
 }
