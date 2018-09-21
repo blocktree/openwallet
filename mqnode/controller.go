@@ -847,7 +847,7 @@ func (m *BitBankNode) submitTransaction(ctx *owtp.Context) {
 	}
 
 	transaction, err := ow.SubmitTransaction(appID, walletID, raw.Account.AccountID, raw)
-	if err != nil {d
+	if err != nil {
 		responseError(ctx, err)
 		return
 	}

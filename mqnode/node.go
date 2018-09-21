@@ -152,7 +152,7 @@ func (m *BitBankNode) Run() error {
 
 		m.manager.AddObserver(m)
 
-		<-endRunningd
+		<-endRunning
 	}()
 
 	//节点运行时
