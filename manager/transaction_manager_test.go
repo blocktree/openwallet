@@ -40,9 +40,9 @@ func createTransaction(walletID, accountID, to string) (*openwallet.RawTransacti
 
 func TestWalletManager_CreateTransaction(t *testing.T) {
 
-	walletID := "WFPHAs2uyeHcfBzKF4vN4NkMpArX8wkCxp"
-	accountID := "Jq9LCP9AkDfi6zqsgwodfFHPQpo9VDxXCBaM6pxRQQYk1Ra1mH"
-	to := "mySLanFVyyUL6P2fAsbiwfTuBBh9xf3vhT"
+	walletID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
+	accountID := "JYCcXtC18vnd1jbcJX47msDFbQMBDNjsq3xbvvK6qCHKAAqoQq"
+	to := "QWKHLM7KGAD6jr3gLsDPYCLMuaFbk4Aa7C"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
 
@@ -56,9 +56,9 @@ func TestWalletManager_CreateTransaction(t *testing.T) {
 
 func TestWalletManager_SignTransaction(t *testing.T) {
 
-	walletID := "WFPHAs2uyeHcfBzKF4vN4NkMpArX8wkCxp"
-	accountID := "Jq9LCP9AkDfi6zqsgwodfFHPQpo9VDxXCBaM6pxRQQYk1Ra1mH"
-	to := "mySLanFVyyUL6P2fAsbiwfTuBBh9xf3vhT"
+	walletID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
+	accountID := "JYCcXtC18vnd1jbcJX47msDFbQMBDNjsq3xbvvK6qCHKAAqoQq"
+	to := "QWKHLM7KGAD6jr3gLsDPYCLMuaFbk4Aa7C"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
 	if err != nil {

@@ -27,7 +27,10 @@ func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (s
 	//	return "", err
 	//}
 
-	pkHash := owcrypt.Hash(pub, 0, owcrypt.HASH_ALG_HASH160)
+	//log.Debug("public key:", common.ToHex(pub))
+	publickKey := owcrypt.PointDecompress(pub, owcrypt.ECC_CURVE_SECP256K1)
+	//log.Debug("after encode public key:", common.ToHex(publickKey))
+	pkHash := owcrypt.Hash(publickKey[1:len(publickKey)], 0, owcrypt.HASH_ALG_KECCAK256)
 
 	address := addressEncoder.AddressEncode(pkHash, cfg)
 

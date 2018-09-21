@@ -1,26 +1,9 @@
-/*
- * Copyright 2018 The OpenWallet Authors
- * This file is part of the OpenWallet library.
- *
- * The OpenWallet library is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * The OpenWallet library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Lesser General Public License for more details.
- */
-
-package qtum
+package btcLikeTxDriver
 
 import (
 	"encoding/hex"
 	"fmt"
 	"testing"
-	"github.com/blocktree/OpenWallet/assets/qtum/btcLikeTxDriver"
-	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
 )
 
 //案例一：
@@ -28,15 +11,15 @@ import (
 //from pkh
 //to   pkh
 func Test_case1(t *testing.T) {
-	// 第一个输入 0.097
-	in1 := btcLikeTxDriver.Vin{"83b27c3fd8fa2ffd8770ccfd2e8025c707a93a213ea5499c62c39d8dcb0ea625", uint32(1)}
-	// 第二个输入 0.1
-	in2 := btcLikeTxDriver.Vin{"e1a9c2596c38de005dccb61b737ecde7b5472c7b7791d251ec920c47913c9141", uint32(1)}
+	// 第一个输入 0.01428580
+	in1 := Vin{"6cb0425bb4bb962db8359b8d3cbaa66ed8121091db6cfc9253f5bf1e9cef604f", uint32(0)}
+	// 第二个输入 0.01284902
+	in2 := Vin{"24cf52fb9588acf6a8413cd914532e27b5b376a6ebdbc98150cda76e1ae92b67", uint32(0)}
 
 	// 目标地址与数额
-	// 向 QQfTuAKdRrTawjiPZRcQ6iaK9BgxwMDgXN 发送 0.15
+	// 向 mwmXzRM19gg5AB5Vu16dvfuhWujTq5PzvK 发送 0.02
 	// out 单位为聪
-	out := btcLikeTxDriver.Vout{"QQfTuAKdRrTawjiPZRcQ6iaK9BgxwMDgXN", uint64(15000000)}
+	out := Vout{"mwmXzRM19gg5AB5Vu16dvfuhWujTq5PzvK", uint64(2000000)}
 
 	//锁定时间
 	lockTime := uint32(0)
@@ -45,7 +28,7 @@ func Test_case1(t *testing.T) {
 	replaceable := false
 
 	/////////构建空交易单
-	emptyTrans, err := btcLikeTxDriver.CreateEmptyRawTransaction([]btcLikeTxDriver.Vin{in1, in2}, []btcLikeTxDriver.Vout{out}, lockTime, replaceable)
+	emptyTrans, err := CreateEmptyRawTransaction([]Vin{in1, in2}, []Vout{out}, lockTime, replaceable)
 
 	if err != nil {
 		t.Error("构建空交易单失败")
@@ -56,18 +39,18 @@ func Test_case1(t *testing.T) {
 
 	// 获取in1 和 in2 的锁定脚本
 	// 填充TxUnlock结构体
-	in1Lock := "76a914f0ed48938dfa7dea31c4d12a1461b9f77560500e88ac"
-	in2Lock := "76a914f3ecec22a336e205f6fbcb95ea459b6ed859a04f88ac"
+	in1Lock := "76a914d46043209073ad39879356295562d952cd9dae3a88ac"
+	in2Lock := "76a914d46043209073ad39879356295562d952cd9dae3a88ac"
 
 	address1 := "mzsts8xiVWv8uGEYUrAB6XzKXZPiX9j6jq"
 	address2 := "mzsts8xiVWv8uGEYUrAB6XzKXZPiX9j6jq"
 
 	//针对此类指向公钥哈希地址的UTXO，此处仅需要锁定脚本即可计算待签交易单
-	unlockData1 := btcLikeTxDriver.TxUnlock{nil, in1Lock, "", uint64(0),address1}
-	unlockData2 := btcLikeTxDriver.TxUnlock{nil, in2Lock, "", uint64(0),address2}
+	unlockData1 := TxUnlock{nil, in1Lock, "", uint64(0), address1}
+	unlockData2 := TxUnlock{nil, in2Lock, "", uint64(0), address2}
 
 	////////构建用于签名的交易单哈希
-	transHash, err := btcLikeTxDriver.CreateRawTransactionHashForSig(emptyTrans, []btcLikeTxDriver.TxUnlock{unlockData1, unlockData2})
+	transHash, err := CreateRawTransactionHashForSig(emptyTrans, []TxUnlock{unlockData1, unlockData2})
 	if err != nil {
 		t.Error("获取待签名交易单哈希失败")
 	} else {
@@ -81,25 +64,10 @@ func Test_case1(t *testing.T) {
 	//客户端根据对应地址派生私钥对哈希进行签名
 
 	// 获取私钥
-	// in1 address QiZtY5ssbVis9MntBdqmcYuJWsP5BCGBX3
-	address := "L4QmwiNtobd4xTpvjxhu7mZ4oNuBhrR2kcYsqk8fS5yKZdraUNYv"
-	ret, err := addressEncoder.AddressDecode(address, addressEncoder.QTUM_mainnetPrivateWIFCompressed)
-	if err != nil {
-		t.Error("decode error")
-	} else {
-		fmt.Println(ret)
-	}
-	in1Prikey := ret
-
-	// in2 address Qiqk8a4ezUci9s6xeoBZHMTE1CtyjKJhNq
-	address = "KxRGsMrnSRhcjmKDeajpWQXQi6agP8WiJ19djdGQ8gdWmzAsTFBe"
-	ret2, err := addressEncoder.AddressDecode(address, addressEncoder.QTUM_mainnetPrivateWIFCompressed)
-	if err != nil {
-		t.Error("decode error")
-	} else {
-		fmt.Println(ret2)
-	}
-	in2Prikey := ret2
+	// in1 address mzsts8xiVWv8uGEYUrAB6XzKXZPiX9j6jq
+	in1Prikey := []byte{0x80, 0xbc, 0x39, 0x8d, 0x7c, 0x4a, 0x67, 0x4d, 0xaa, 0x97, 0x75, 0x66, 0xc2, 0xe6, 0xcd, 0x50, 0x40, 0x52, 0x00, 0x27, 0xe5, 0x7f, 0xe8, 0x06, 0xdf, 0xaa, 0x86, 0x8d, 0xf4, 0xcc, 0x43, 0xab}
+	// in2 address mzsts8xiVWv8uGEYUrAB6XzKXZPiX9j6jq
+	in2Prikey := []byte{0x80, 0xbc, 0x39, 0x8d, 0x7c, 0x4a, 0x67, 0x4d, 0xaa, 0x97, 0x75, 0x66, 0xc2, 0xe6, 0xcd, 0x50, 0x40, 0x52, 0x00, 0x27, 0xe5, 0x7f, 0xe8, 0x06, 0xdf, 0xaa, 0x86, 0x8d, 0xf4, 0xcc, 0x43, 0xab}
 
 	//客户端使用私钥填充TxUnlock结构体，并进行签名
 	//仅需要私钥，
@@ -108,7 +76,7 @@ func Test_case1(t *testing.T) {
 	unlockData2.PrivateKey = in2Prikey
 
 	/////////交易单哈希签名
-	sigPub, err := btcLikeTxDriver.SignRawTransactionHash(transHash, []btcLikeTxDriver.TxUnlock{unlockData1, unlockData2})
+	sigPub, err := SignRawTransactionHash(transHash, []TxUnlock{unlockData1, unlockData2})
 
 	if err != nil {
 		t.Error("交易单哈希签名失败")
@@ -127,7 +95,7 @@ func Test_case1(t *testing.T) {
 
 	////////填充签名结果到空交易单
 	//  传入TxUnlock结构体的原因是： 解锁向脚本支付的UTXO时需要对应地址的赎回脚本， 当前案例的对应字段置为 "" 即可
-	signedTrans, err := btcLikeTxDriver.InsertSignatureIntoEmptyTransaction(emptyTrans, sigPub, []btcLikeTxDriver.TxUnlock{unlockData1, unlockData2})
+	signedTrans, err := InsertSignatureIntoEmptyTransaction(emptyTrans, sigPub, []TxUnlock{unlockData1, unlockData2})
 	if err != nil {
 		t.Error("交易单拼接失败")
 	} else {
@@ -137,7 +105,7 @@ func Test_case1(t *testing.T) {
 
 	/////////验证交易单
 	//验证时，对于公钥哈希地址，需要将对应的锁定脚本传入TxUnlock结构体
-	pass := btcLikeTxDriver.VerifyRawTransaction(signedTrans, []btcLikeTxDriver.TxUnlock{unlockData1, unlockData2})
+	pass := VerifyRawTransaction(signedTrans, []TxUnlock{unlockData1, unlockData2})
 	if pass {
 		fmt.Println("验证通过")
 	} else {
@@ -154,14 +122,14 @@ func Test_case1(t *testing.T) {
 // to   PKH
 func Test_case2(t *testing.T) {
 	// 第一个输入
-	in1 := btcLikeTxDriver.Vin{"871b7a30ab16f6bdd1a27de40713249e395bde029796289044a9c26fe16e6e0a", uint32(0)}
+	in1 := Vin{"4318537801136991019cddcee9db07dc7ee1d6cb3960de543eb02fd04cc51d6d", uint32(1)}
 	// 第二个输入
-	in2 := btcLikeTxDriver.Vin{"53c40f36fd44c11cc9381d9eac6b0817678180200b90613131c80b5655754969", uint32(0)}
+	in2 := Vin{"56c16b0875e65012041977750db7832b333a6b7c78e1fd68d817e88b4f798b8d", uint32(1)}
 
 	// 目标地址与数额
-	// 向 QMuCdu2y2tjQw8KtFYiL5zfMDpYZCHSz6k 发送 0.13
+	// 向 mwmXzRM19gg5AB5Vu16dvfuhWujTq5PzvK 发送 0.02
 	// out 单位为聪
-	out := btcLikeTxDriver.Vout{"QMuCdu2y2tjQw8KtFYiL5zfMDpYZCHSz6k", uint64(13000000)}
+	out := Vout{"mwmXzRM19gg5AB5Vu16dvfuhWujTq5PzvK", uint64(22000000)}
 
 	//锁定时间
 	lockTime := uint32(0)
@@ -170,7 +138,7 @@ func Test_case2(t *testing.T) {
 	replaceable := false
 
 	///////构建空交易单
-	emptyTrans, err := btcLikeTxDriver.CreateEmptyRawTransaction([]btcLikeTxDriver.Vin{in1, in2}, []btcLikeTxDriver.Vout{out}, lockTime, replaceable)
+	emptyTrans, err := CreateEmptyRawTransaction([]Vin{in1, in2}, []Vout{out}, lockTime, replaceable)
 
 	if err != nil {
 		t.Error("构建空交易单失败")
@@ -189,15 +157,15 @@ func Test_case2(t *testing.T) {
 	in2Redeem := "001469b6968a3d6917d0e1270b0b21d3605b86f3dee5"
 	in1Amount := uint64(17411199)
 	in2Amount := uint64(5559614)
-	address1 := "mzsts8xiVWv8uGEYUrAB6XzKXZPiX9j6jq"
-	address2 := "mzsts8xiVWv8uGEYUrAB6XzKXZPiX9j6jq"
+	address1 := "2MvLnUoMyYmfxCqSbh7tpGpTxj18UPCvRqb"
+	address2 := "2NCCeHip41kqwNJwopWmwqxrgM3VJiGDCsx"
 
 	//针对此类指向脚本哈希地址的UTXO，此需要锁定脚本、赎回脚本以及该UTXO包含的数额方可计算待签交易单
-	unlockData1 := btcLikeTxDriver.TxUnlock{nil, in1Lock, in1Redeem, in1Amount,address1}
-	unlockData2 := btcLikeTxDriver.TxUnlock{nil, in2Lock, in2Redeem, in2Amount,address2}
+	unlockData1 := TxUnlock{nil, in1Lock, in1Redeem, in1Amount, address1}
+	unlockData2 := TxUnlock{nil, in2Lock, in2Redeem, in2Amount, address2}
 
 	/////////计算待签名交易单哈希
-	transHash, err := btcLikeTxDriver.CreateRawTransactionHashForSig(emptyTrans, []btcLikeTxDriver.TxUnlock{unlockData1, unlockData2})
+	transHash, err := CreateRawTransactionHashForSig(emptyTrans, []TxUnlock{unlockData1, unlockData2})
 	if err != nil {
 		t.Error("创建待签交易单哈希失败")
 	} else {
@@ -224,7 +192,7 @@ func Test_case2(t *testing.T) {
 	unlockData2.PrivateKey = in2Prikey
 
 	/////////交易单哈希签名
-	sigPub, err := btcLikeTxDriver.SignRawTransactionHash(transHash, []btcLikeTxDriver.TxUnlock{unlockData1, unlockData2})
+	sigPub, err := SignRawTransactionHash(transHash, []TxUnlock{unlockData1, unlockData2})
 
 	if err != nil {
 		t.Error("交易单哈希签名失败")
@@ -244,7 +212,7 @@ func Test_case2(t *testing.T) {
 	////////填充签名结果到空交易单
 	//  传入TxUnlock结构体的原因是： 解锁向脚本支付的UTXO时需要对应地址的赎回脚本， 当前案例中需要设置
 	//  前面已经设置，此处不再重复操作
-	signedTrans, err := btcLikeTxDriver.InsertSignatureIntoEmptyTransaction(emptyTrans, sigPub, []btcLikeTxDriver.TxUnlock{unlockData1, unlockData2})
+	signedTrans, err := InsertSignatureIntoEmptyTransaction(emptyTrans, sigPub, []TxUnlock{unlockData1, unlockData2})
 	if err != nil {
 		t.Error("交易单拼接失败")
 	} else {
@@ -255,7 +223,7 @@ func Test_case2(t *testing.T) {
 	//交易单验证
 
 	//验证时，对于公钥哈希地址，需要将对应的锁定脚本传入TxUnlock结构体
-	pass := btcLikeTxDriver.VerifyRawTransaction(signedTrans, []btcLikeTxDriver.TxUnlock{unlockData1, unlockData2})
+	pass := VerifyRawTransaction(signedTrans, []TxUnlock{unlockData1, unlockData2})
 	if pass {
 		fmt.Println("验证通过")
 	} else {
@@ -271,15 +239,15 @@ func Test_case3(t *testing.T) {
 
 	//输入一
 	//指向公钥哈希地址的UTXO
-	in1 := btcLikeTxDriver.Vin{"302759ff352b436db5b9c1700d6a1e5f29c324a9e3d69190b65b3553e05c9308", uint32(0)}
+	in1 := Vin{"302759ff352b436db5b9c1700d6a1e5f29c324a9e3d69190b65b3553e05c9308", uint32(0)}
 	//输入二
 	//指向脚本哈希地址的UTXO
-	in2 := btcLikeTxDriver.Vin{"184d6c95f2d4c394f7ff63ce3388a65e8daa182351f64bd69abd64ac9fc51a23", uint32(1)}
+	in2 := Vin{"184d6c95f2d4c394f7ff63ce3388a65e8daa182351f64bd69abd64ac9fc51a23", uint32(1)}
 
 	//输出
 	// 向 mwmXzRM19gg5AB5Vu16dvfuhWujTq5PzvK 发送 0.673
 	// out 单位为聪
-	out := btcLikeTxDriver.Vout{"mwmXzRM19gg5AB5Vu16dvfuhWujTq5PzvK", uint64(67300000)}
+	out := Vout{"mwmXzRM19gg5AB5Vu16dvfuhWujTq5PzvK", uint64(67300000)}
 
 	//锁定时间
 	lockTime := uint32(0)
@@ -288,7 +256,7 @@ func Test_case3(t *testing.T) {
 	replaceable := false
 
 	///////构建空交易单
-	emptyTrans, err := btcLikeTxDriver.CreateEmptyRawTransaction([]btcLikeTxDriver.Vin{in1, in2}, []btcLikeTxDriver.Vout{out}, lockTime, replaceable)
+	emptyTrans, err := CreateEmptyRawTransaction([]Vin{in1, in2}, []Vout{out}, lockTime, replaceable)
 
 	if err != nil {
 		t.Error("构建空交易单失败")
@@ -308,14 +276,14 @@ func Test_case3(t *testing.T) {
 	in1Amount := uint64(0)
 	in2Amount := uint64(823237)
 	address1 := "mzsts8xiVWv8uGEYUrAB6XzKXZPiX9j6jq"
-	address2 := "mzsts8xiVWv8uGEYUrAB6XzKXZPiX9j6jq"
+	address2 := "2NAWGw3wHZTnHnXRT1GZF2eB6a6DUqqHCu8"
 
 	//针对此类指向脚本哈希地址的UTXO，此需要锁定脚本、赎回脚本以及该UTXO包含的数额方可计算待签交易单
-	unlockData1 := btcLikeTxDriver.TxUnlock{nil, in1Lock, in1Redeem, in1Amount,address1}
-	unlockData2 := btcLikeTxDriver.TxUnlock{nil, in2Lock, in2Redeem, in2Amount,address2}
+	unlockData1 := TxUnlock{nil, in1Lock, in1Redeem, in1Amount, address1}
+	unlockData2 := TxUnlock{nil, in2Lock, in2Redeem, in2Amount, address2}
 
 	/////////计算待签名交易单哈希
-	transHash, err := btcLikeTxDriver.CreateRawTransactionHashForSig(emptyTrans, []btcLikeTxDriver.TxUnlock{unlockData1, unlockData2})
+	transHash, err := CreateRawTransactionHashForSig(emptyTrans, []TxUnlock{unlockData1, unlockData2})
 	if err != nil {
 		t.Error("创建待签交易单哈希失败")
 	} else {
@@ -343,7 +311,7 @@ func Test_case3(t *testing.T) {
 	unlockData2.PrivateKey = in2Prikey
 
 	/////////交易单哈希签名
-	sigPub, err := btcLikeTxDriver.SignRawTransactionHash(transHash, []btcLikeTxDriver.TxUnlock{unlockData1, unlockData2})
+	sigPub, err := SignRawTransactionHash(transHash, []TxUnlock{unlockData1, unlockData2})
 
 	if err != nil {
 		t.Error("交易单哈希签名失败")
@@ -363,7 +331,7 @@ func Test_case3(t *testing.T) {
 	////////填充签名结果到空交易单
 	//  传入TxUnlock结构体的原因是： 解锁向脚本支付的UTXO时需要对应地址的赎回脚本， 当前案例中需要设置
 	//  前面已经设置，此处不再重复操作
-	signedTrans, err := btcLikeTxDriver.InsertSignatureIntoEmptyTransaction(emptyTrans, sigPub, []btcLikeTxDriver.TxUnlock{unlockData1, unlockData2})
+	signedTrans, err := InsertSignatureIntoEmptyTransaction(emptyTrans, sigPub, []TxUnlock{unlockData1, unlockData2})
 	if err != nil {
 		t.Error("交易单拼接失败")
 	} else {
@@ -374,7 +342,7 @@ func Test_case3(t *testing.T) {
 	//交易单验证
 
 	//验证时，对于公钥哈希地址，需要将对应的锁定脚本传入TxUnlock结构体
-	pass := btcLikeTxDriver.VerifyRawTransaction(signedTrans, []btcLikeTxDriver.TxUnlock{unlockData1, unlockData2})
+	pass := VerifyRawTransaction(signedTrans, []TxUnlock{unlockData1, unlockData2})
 	if pass {
 		fmt.Println("验证通过")
 	} else {

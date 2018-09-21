@@ -1,0 +1,15 @@
+@startuml
+
+assets.SymbolInfo <|- ethereum.WalletManager
+manager.WalletManager "1" o-- "*" manager.NotificationObject
+manager.NotificationObject <|-- manager.subscriber
+manager.AssetsManager <|-- ethereum.WalletManager
+
+ethereum.WalletManager "1" o-- "1" hdkeystore.HDKeystore
+ethereum.WalletManager "1" o-- "*" openwallet.Wallet
+ethereum.WalletManager "1" o-- "1" ethereum.ETHBlockScanner
+ethereum.WalletManager "1" o-- "1" openwallet.AddressDecoder
+ethereum.WalletManager "1" o-- "1" openwallet.TransactionDecoder
+
+openwallet.AddressDecoder <|--  ethereum_addressDecoder
+@enduml

@@ -25,5 +25,5 @@ func TestWalletManager_RescanBlockHeight(t *testing.T) {
 
 	sub := subscriber{}
 	tm.AddObserver(&sub)
-	tm.RescanBlockHeight("BTC", 1413485, 1413488)
+	tm.RescanBlockHeight("QTUM", 230763, 230766)
 }

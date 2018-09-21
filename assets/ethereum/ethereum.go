@@ -18,7 +18,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+
+	//"log"
 	"math/big"
 	"path/filepath"
 	"strings"
@@ -27,9 +28,11 @@ import (
 
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/console"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/timer"
 	"github.com/bndr/gotabulate"
+	"github.com/shopspring/decimal"
 )
 
 const (
@@ -55,6 +58,36 @@ const (
 	BLOCK_CHAIN_DB     = "blockchain.db"
 	BLOCK_CHAIN_BUCKET = "blockchain"
 )
+
+func ConvertEthStringToWei(amount string) (*big.Int, error) {
+	log.Debug("amount:", amount)
+	vDecimal, err := decimal.NewFromString(amount)
+	if err != nil {
+		log.Error("convert from string to decimal failed, err=", err)
+		return nil, err
+	}
+
+	ETH, _ := decimal.NewFromString(strings.Replace("1,000,000,000,000,000,000", ",", "", -1))
+	vDecimal = vDecimal.Mul(ETH)
+	rst := new(big.Int)
+	if _, valid := rst.SetString(vDecimal.String(), 10); !valid {
+		log.Error("conver to big.int failed")
+		return nil, errors.New("conver to big.int failed")
+	}
+	return rst, nil
+}
+
+func ConverWeiStringToEthDecimal(amount string) (decimal.Decimal, error) {
+	d, err := decimal.NewFromString(amount)
+	if err != nil {
+		log.Error("convert string to deciaml failed, err=", err)
+		return d, err
+	}
+
+	ETH, _ := decimal.NewFromString(strings.Replace("1,000,000,000,000,000,000", ",", "", -1))
+	d = d.Div(ETH)
+	return d, nil
+}
 
 func toHexBigIntForEtherTrans(value string, base int, unit int64) (*big.Int, error) {
 	amount, err := ConvertToBigInt(value, base)
@@ -246,16 +279,16 @@ func (this *WalletManager) CreateAddressFlow() error {
 		return err
 	}
 
-	log.Printf("Start batch creation\n")
-	log.Printf("-------------------------------------------------\n")
+	log.Info("Start batch creation ")
+	log.Info("-------------------------------------------------")
 
 	err = CreateBatchAddress(account.WalletID, password, count)
 	if err != nil {
 		return err
 	}
 
-	log.Printf("-------------------------------------------------\n")
-	log.Printf("All addresses have created, file path:%s\n", EthereumKeyPath)
+	log.Info("-------------------------------------------------")
+	log.Info("All addresses have created, file path:", EthereumKeyPath)
 
 	return nil
 }

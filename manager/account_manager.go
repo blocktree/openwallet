@@ -45,7 +45,6 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID, password string, a
 		account.Required = 1
 	}
 
-	log.Debugf("found wallet[%v]", wallet.WalletID)
 	symbolInfo, err := assets.GetSymbolInfo(account.Symbol)
 	if err != nil {
 		return nil, err
@@ -86,9 +85,9 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID, password string, a
 
 		//非托管的，创建资产账户的钱包
 		wallet, _, err = wm.CreateWallet(appID, &openwallet.Wallet{
-			Alias: "imported",
+			Alias:    "imported",
 			WalletID: walletID,
-			IsTrust: false,
+			IsTrust:  false,
 		})
 		if err != nil {
 			return nil, err
