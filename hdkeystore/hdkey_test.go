@@ -35,7 +35,7 @@ func TestGenerateSeed(t *testing.T) {
 		}
 
 		t.Logf("[%d] Seed = %s", i, hex.EncodeToString(seed))
-		t.Logf("[%d] Mnemonic = %s", i, key.Mnemonic())
+		//t.Logf("[%d] Mnemonic = %s", i, key.Mnemonic())
 		t.Logf("[%d] KeyID = %s", i, key.KeyID)
 	}
 }
@@ -65,7 +65,7 @@ func TestNewHDKey(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewHDKey failed unexpected error: %v", err)
 		}
-		t.Logf("Key[%d] Mnemonic = %s", i, key.Mnemonic())
+		//t.Logf("Key[%d] Mnemonic = %s", i, key.Mnemonic())
 		t.Logf("Key[%d] address = %s", i, key.KeyID)
 	}
 }
