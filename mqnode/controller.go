@@ -728,6 +728,7 @@ func (m *BitBankNode) createTransaction(ctx *owtp.Context) {
 		| address   | string     | 否       | 地址                            |
 		| feeRate   | string     | 否       | 自定服务费率， fees/K            |
 		| memo      | string     | 是       | 备注                            |
+		| sid      | string     | 是       | 唯一id                            |
 	*/
 
 	appID := ctx.Params().Get("appID").String()
@@ -738,7 +739,7 @@ func (m *BitBankNode) createTransaction(ctx *owtp.Context) {
 	address := ctx.Params().Get("address").String()
 	feeRate := ctx.Params().Get("feeRate").String()
 	memo := ctx.Params().Get("memo").String()
-
+	sid := ctx.Params().Get("sid").String()
 	if len(appID) == 0 {
 		responseError(ctx, errors.New("appID is empty"))
 		return
@@ -783,7 +784,7 @@ func (m *BitBankNode) createTransaction(ctx *owtp.Context) {
 		responseError(ctx, err)
 		return
 	}
-
+	rawTransaction.Sid = sid
 	result := map[string]interface{}{
 		"rawTx": rawTransaction,
 	}
@@ -807,11 +808,16 @@ func (m *BitBankNode) submitTransaction(ctx *owtp.Context) {
 	appID := ctx.Params().Get("appID").String()
 	walletID := ctx.Params().Get("walletID").String()
 	rawTx := ctx.Params().Get("rawTx").Raw
-
+	password := ctx.Params().Get("password").String()
+	sid := ctx.Params().Get("sid").String()
+	appid := ctx.Params().Get("appID").String()
 	if len(appID) == 0 {
 		responseError(ctx, errors.New("appID is empty"))
 		return
 	}
+
+
+
 	var raw *openwallet.RawTransaction
 
 	err := json.Unmarshal([]byte(rawTx), &raw)
@@ -821,14 +827,35 @@ func (m *BitBankNode) submitTransaction(ctx *owtp.Context) {
 	}
 
 	ow := m.manager
+
+	if raw.Account.IsTrust{
+		if len(password) == 0 {
+			responseError(ctx, errors.New("password is empty"))
+			return
+		}
+
+		raw, err = ow.SignTransaction(appID, walletID, raw.Account.AccountID, password, raw)
+		if err != nil {
+			log.Error("SignTransaction failed, unexpected error:", err)
+			return
+		}
+		raw, err = ow.VerifyTransaction(appID, walletID, raw.Account.AccountID, raw)
+		if err != nil {
+			log.Error("VerifyTransaction failed, unexpected error:", err)
+			return
+		}
+	}
+
 	transaction, err := ow.SubmitTransaction(appID, walletID, raw.Account.AccountID, raw)
-	if err != nil {
-		responseError(ctx, errors.New("submitTransaction error"))
+	if err != nil {d
+		responseError(ctx, err)
 		return
 	}
 
 	result := map[string]interface{}{
 		"tx": transaction,
+		"sid":sid,
+		"appID":appid,
 	}
 
 	responseSuccess(ctx, result)

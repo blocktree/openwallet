@@ -23,8 +23,8 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 	"sync"
 	"time"
-	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/manager"
+	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 var (
@@ -126,99 +126,6 @@ func (m *BitBankNode) SaveToDB(data interface{})  error {
 	return db.Save(data)
 }
 
-//GetMerchantWalletByID 获取商户钱包
-func (m *BitBankNode) GetMerchantWalletByID(walletID string) (*openwallet.Wallet, error) {
-
-	db, err := m.OpenDB()
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
-	var wallet openwallet.Wallet
-	err = db.One("WalletID", walletID, &wallet)
-	if err != nil {
-		return nil, err
-	}
-
-	return &wallet, nil
-}
-
-
-//GetMerchantWalletList 获取商户钱包列表
-func (m *BitBankNode) GetMerchantWalletList() ([]*openwallet.Wallet, error) {
-
-	db, err := m.OpenDB()
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
-	var wallets []*openwallet.Wallet
-	err = db.All(&wallets)
-	if err != nil {
-		return nil, err
-	}
-
-	return wallets, nil
-}
-
-
-//GetMerchantAccountByID 获取商户资产账户
-func (m *BitBankNode) GetMerchantAccountByID(accountID string) (*openwallet.AssetsAccount, error) {
-
-	db, err := m.OpenDB()
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
-	var account openwallet.AssetsAccount
-	err = db.One("AccountID", accountID, &account)
-	if err != nil {
-		return nil, err
-	}
-
-	return &account, nil
-}
-
-
-//GetMerchantAccountList 获取商户资产账户列表
-func (m *BitBankNode) GetMerchantAccountList(coin string) ([]*openwallet.AssetsAccount, error) {
-
-	db, err := m.OpenDB()
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
-	var acouunts []*openwallet.AssetsAccount
-	err = db.Find("Symbol", coin, &acouunts)
-	if err != nil {
-		return nil, err
-	}
-
-	return acouunts, nil
-}
-
-//GetMerchantWalletConfig 获取商户钱包配置信息
-func (m *BitBankNode) GetMerchantWalletConfig(coin string, walletID string) (*openwallet.WalletConfig, error) {
-
-	db, err := m.OpenDB()
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
-	var wallet openwallet.WalletConfig
-	err = db.One("Key", coin + "_" + walletID, &wallet)
-	if err != nil {
-		return nil, err
-	}
-
-	return &wallet, nil
-}
-
 //Run 运行商户节点管理
 func (m *BitBankNode) Run() error {
 
@@ -238,6 +145,15 @@ func (m *BitBankNode) Run() error {
 	m.reconnect <- true
 
 	log.Info("Merchant node running now...")
+	go func(){
+		var (
+			endRunning = make(chan bool, 1)
+		)
+
+		m.manager.AddObserver(m)
+
+		<-endRunningd
+	}()
 
 	//节点运行时
 	for {
@@ -337,3 +253,18 @@ func (m *BitBankNode) DeleteAddressVersion(a *AddressVersion) error {
 }
 
 /********** 商户服务相关方法【主动】 **********/
+
+
+
+//BlockScanNotify 新区块扫描完成通知
+func (sub *BitBankNode) BlockScanNotify(header *openwallet.BlockHeader) error {
+	log.Debug("header:", header)
+	return nil
+}
+
+//BlockTxExtractDataNotify 区块提取结果通知
+func (sub *BitBankNode) BlockTxExtractDataNotify(account *openwallet.AssetsAccount, data *openwallet.TxExtractData) error {
+	log.Debug("account:", account)
+	log.Debug("data:", data)
+	return nil
+}

@@ -53,6 +53,7 @@ func TestNewNode(t *testing.T) {
 	}
 	node,_ := NewBitNodeNode(nodeConfig)
 	config := manager.NewConfig()
+	config.EnableBlockScan  = true
 	node.manager = manager.NewWalletManager(config)
 	node.manager.Init()
 	node.Run()
@@ -169,7 +170,7 @@ func TestCreateTransaction(t *testing.T) {
 	var conn *amqp.Connection
 	var channel *amqp.Channel
 	n := time.Now().Unix()
-	json := `{"d":{"accountID":"` +account+ `","amount":"1.08","address":"mgU7H36xabdHWi9RHKvTJu3Nfd1hNTFQhQ","appID":"` +appId+ `","memo":"","feeRate":"0.001","coin":{"isContract":1,"symbol":"BTC","contractID":""},"sid":"239381340338917376"},"m":"createTransaction","n":"`+strconv.FormatInt(n, 10)+`","r":1,"t":1537246627}`
+	json := `{"d":{"accountID":"` +account+ `","amount":"1.08","address":"2NBLrFEi2wjC8nBW9f91HyCYVGA1kYxSWHv","appID":"` +appId+ `","memo":"","feeRate":"0.001","coin":{"isContract":1,"symbol":"BTC","contractID":""},"sid":"239381340338917376"},"m":"createTransaction","n":"`+strconv.FormatInt(n, 10)+`","r":1,"t":1537246627}`
 	conn, _ = amqp.Dial(mqurl)
 	channel, _ = conn.Channel()
 
