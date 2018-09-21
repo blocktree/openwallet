@@ -18,12 +18,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+
+	//"log"
 	"math/big"
+	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/blocktree/OpenWallet/common"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/logger"
 	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
@@ -114,6 +117,58 @@ type TxpoolContent struct {
 	Pending map[string]map[string]BlockTransaction `json:"pending"`
 }
 
+func (this *TxpoolContent) GetSequentTxNonce(addr string) (uint64, uint64, uint64, error) {
+	txpool := this.Pending
+	var target map[string]BlockTransaction
+	/*if _, exist := txpool[addr]; !exist {
+		return 0, 0, 0, nil
+	}
+	if txpool[addr] == nil {
+		return 0, 0, 0, nil
+	}
+
+	if len(txpool[addr]) == 0 {
+		return 0, 0, 0, nil
+	}*/
+	for theAddr, _ := range txpool {
+		if strings.ToLower(theAddr) == strings.ToLower(addr) {
+			target = txpool[theAddr]
+		}
+	}
+
+	nonceList := make([]interface{}, 0)
+	for n, _ := range target {
+		tn, err := strconv.ParseUint(n, 10, 64)
+		if err != nil {
+			log.Error("parse nonce[", n, "] in txpool to uint faile, err=", err)
+			return 0, 0, 0, err
+		}
+		nonceList = append(nonceList, tn)
+	}
+
+	sort.Slice(nonceList, func(i, j int) bool {
+		if nonceList[i].(uint64) < nonceList[j].(uint64) {
+			return true
+		}
+		return false
+	})
+
+	var min, max, count uint64
+	for i := 0; i < len(nonceList); i++ {
+		if i == 0 {
+			min = nonceList[i].(uint64)
+			max = min
+			count++
+		} else if nonceList[i].(uint64) != max+1 {
+			break
+		} else {
+			max++
+			count++
+		}
+	}
+	return min, max, count, nil
+}
+
 func (this *TxpoolContent) GetPendingTxCountForAddr(addr string) int {
 	txpool := this.Pending
 	if _, exist := txpool[addr]; !exist {
@@ -127,7 +182,7 @@ func (this *TxpoolContent) GetPendingTxCountForAddr(addr string) int {
 
 func ethGetTransactionCount(addr string) (uint64, error) {
 	params := []interface{}{
-		addr,
+		appendOxToAddress(addr),
 		"latest",
 	}
 
@@ -170,6 +225,7 @@ func ethGetTxPoolContent() (*TxpoolContent, error) {
 	}
 
 	var txpool TxpoolContent
+
 	err = json.Unmarshal([]byte(result.Raw), &txpool)
 	if err != nil {
 		openwLogger.Log.Errorf("decode json [%v] failed, err=%v", []byte(result.Raw), err)
@@ -393,14 +449,21 @@ func GetAddrBalance(address string) (*big.Int, error) {
 	return balance, nil
 }
 
+func appendOxToAddress(addr string) string {
+	if strings.Index(addr, "0x") == -1 {
+		return "0x" + addr
+	}
+	return addr
+}
+
 func makeSimpleTransactionPara(fromAddr *Address, toAddr string, amount *big.Int, password string, fee *txFeeInfo) map[string]interface{} {
 	paraMap := make(map[string]interface{})
 
 	//use password to unlock the account
 	paraMap["password"] = password
 	//use the following attr to eth_sendTransaction
-	paraMap["from"] = fromAddr.Address
-	paraMap["to"] = toAddr
+	paraMap["from"] = appendOxToAddress(fromAddr.Address)
+	paraMap["to"] = appendOxToAddress(toAddr)
 	paraMap["value"] = "0x" + amount.Text(16)
 	paraMap["gas"] = "0x" + fee.GasLimit.Text(16)
 	paraMap["gasPrice"] = "0x" + fee.GasPrice.Text(16)
@@ -410,8 +473,8 @@ func makeSimpleTransactionPara(fromAddr *Address, toAddr string, amount *big.Int
 func makeSimpleTransactiomnPara2(fromAddr string, toAddr string, amount *big.Int, password string) map[string]interface{} {
 	paraMap := make(map[string]interface{})
 	paraMap["password"] = password
-	paraMap["from"] = fromAddr
-	paraMap["to"] = toAddr
+	paraMap["from"] = appendOxToAddress(fromAddr)
+	paraMap["to"] = appendOxToAddress(toAddr)
 	paraMap["value"] = "0x" + amount.Text(16)
 	return paraMap
 }
@@ -447,8 +510,8 @@ func makeERC20TokenTransData(contractAddr string, toAddr string, amount *big.Int
 
 func makeGasEstimatePara(fromAddr string, toAddr string, value *big.Int, data string) map[string]interface{} {
 	paraMap := make(map[string]interface{})
-	paraMap["from"] = fromAddr
-	paraMap["to"] = toAddr
+	paraMap["from"] = appendOxToAddress(fromAddr)
+	paraMap["to"] = appendOxToAddress(toAddr)
 	if data != "" {
 		paraMap["data"] = data
 	}
@@ -540,8 +603,8 @@ func makeERC20TokenTransactionPara(fromAddr *Address, contractAddr string, data 
 	//use password to unlock the account
 	paraMap["password"] = password
 	//use the following attr to eth_sendTransaction
-	paraMap["from"] = fromAddr.Address
-	paraMap["to"] = contractAddr
+	paraMap["from"] = appendOxToAddress(fromAddr.Address)
+	paraMap["to"] = appendOxToAddress(contractAddr)
 	//paraMap["value"] = "0x" + amount.Text(16)
 	paraMap["gas"] = "0x" + fee.GasLimit.Text(16)
 	paraMap["gasPrice"] = "0x" + fee.GasPrice.Text(16)
@@ -724,17 +787,17 @@ func (c *Client) Call(method string, id int64, params []interface{}) (*gjson.Res
 	body["params"] = params
 
 	if c.Debug {
-		log.Println("Start Request API...")
+		log.Debug("Start Request API...")
 	}
 
 	r, err := req.Post(c.BaseURL, req.BodyJSON(&body), authHeader)
 
 	if c.Debug {
-		log.Println("Request API Completed")
+		log.Debug("Request API Completed")
 	}
 
 	if c.Debug {
-		log.Printf("%+v\n", r)
+		log.Debugf("%+v\n", r)
 	}
 
 	if err != nil {

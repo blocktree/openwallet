@@ -30,7 +30,6 @@ import (
 	"github.com/blocktree/OpenWallet/crypto/sha3"
 	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
 	"github.com/blocktree/go-OWCrypt"
-	"github.com/tyler-smith/go-bip39"
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/scrypt"
 	"io"
@@ -250,10 +249,10 @@ func (k *HDKey) DerivedKeyWithPath(path string, curveType uint32) (*owkeychain.E
 //}
 
 //Mnemonic 密钥助记词
-func (k *HDKey) Mnemonic() string {
-	mnemonic, _ := bip39.NewMnemonic(k.seed)
-	return mnemonic
-}
+//func (k *HDKey) Mnemonic() string {
+//	mnemonic, _ := bip39.NewMnemonic(k.seed)
+//	return mnemonic
+//}
 
 //FileName 文件名
 func (k *HDKey) FileName() string {

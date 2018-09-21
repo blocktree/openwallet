@@ -69,5 +69,10 @@ func main() {
 
 	//tech.TestSendRawTransactionFromGethAccount()
 	//tech.TestSendRawTransaction()
-	tech.TestFloat()
+	//tech.TestFloat()
+
+	//tech.TestWalletManager_CreateTransaction()
+	//tech.TestWalletManager_SignTransaction()
+	//tech.TestWalletManager_VerifyTransaction()
+	tech.TestWalletManager_SubmitTransaction()
 }
