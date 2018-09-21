@@ -52,7 +52,7 @@ func TestNewNode(t *testing.T) {
 		Password    :   "admin",
 	}
 	node,_ := NewBitNodeNode(nodeConfig)
-	config := manager.NewConfig()
+	config := NewConfig()
 	config.EnableBlockScan  = true
 	node.manager = manager.NewWalletManager(config)
 	node.manager.Init()
@@ -100,7 +100,7 @@ func TestCreateWallet(t *testing.T) {
 		Password    :   "admin",
 	}
 	node,_ := NewBitNodeNode(nodeConfig)
-	config := manager.NewConfig()
+	config := NewConfig()
 	node.manager = manager.NewWalletManager(config)
 	node.manager.Init()
 	node.Run()
@@ -130,7 +130,7 @@ func TestCreateAddress(t *testing.T) {
 		Password    :   "admin",
 	}
 	node,_ := NewBitNodeNode(nodeConfig)
-	config := manager.NewConfig()
+	config := NewConfig()
 	node.manager = manager.NewWalletManager(config)
 	node.manager.Init()
 	node.Run()
@@ -160,7 +160,7 @@ func TestCreateAssetsAccount(t *testing.T) {
 		Password    :   "admin",
 	}
 	node,_ := NewBitNodeNode(nodeConfig)
-	config := manager.NewConfig()
+	config := NewConfig()
 	node.manager = manager.NewWalletManager(config)
 	node.manager.Init()
 	node.Run()
@@ -189,9 +189,29 @@ func TestCreateTransaction(t *testing.T) {
 		Password    :   "admin",
 	}
 	node,_ := NewBitNodeNode(nodeConfig)
-	config := manager.NewConfig()
+	config := NewConfig()
 	node.manager = manager.NewWalletManager(config)
 	node.manager.Init()
 	node.manager.RefreshAssetsAccountBalance(walletID, account)
 	node.Run()
+}
+
+func NewConfig() *manager.Config {
+
+	c := manager.Config{}
+	defaultDataDir := filepath.Join(".", "openw_data")
+	//钥匙备份路径
+	c.KeyDir = filepath.Join(defaultDataDir, "key")
+	//本地数据库文件路径
+	c.DBPath = filepath.Join(defaultDataDir, "db")
+	//备份路径
+	c.BackupDir = filepath.Join(defaultDataDir, "backup")
+	//支持资产
+	c.SupportAssets = []string{"BTC", "ETH", "QTUM"}
+	//开启区块扫描
+	c.EnableBlockScan = true
+	//测试网
+	c.IsTestnet = true
+
+	return &c
 }

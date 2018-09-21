@@ -25,6 +25,7 @@ import (
 	"time"
 	"github.com/blocktree/OpenWallet/manager"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"fmt"
 )
 
 var (
@@ -257,14 +258,18 @@ func (m *BitBankNode) DeleteAddressVersion(a *AddressVersion) error {
 
 
 //BlockScanNotify 新区块扫描完成通知
-func (node *BitBankNode) BlockScanNotify(header *openwallet.BlockHeader) error {
+func (bitBankNode *BitBankNode) BlockScanNotify(header *openwallet.BlockHeader) error {
 	log.Debug("header:", header)
 	return nil
 }
 
 //BlockTxExtractDataNotify 区块提取结果通知
-func (node *BitBankNode) BlockTxExtractDataNotify(account *openwallet.AssetsAccount, data *openwallet.TxExtractData) error {
+func (bitBankNode *BitBankNode) BlockTxExtractDataNotify(account *openwallet.AssetsAccount, data *openwallet.TxExtractData) error {
 	log.Debug("account:", account)
 	log.Debug("data:", data)
+	bitBankNode.Node.Call(bitBankNode.Config.MerchantNodeID, "hello", nil, true, func(resp owtp.Response) {
+		fmt.Printf("nodeA call hello, result: %s\n", "charge~")
+	})
+
 	return nil
 }
