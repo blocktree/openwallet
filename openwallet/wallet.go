@@ -147,7 +147,6 @@ func (w *Wallet) FileName() string {
 // openDB 打开钱包数据库
 func (w *Wallet) OpenDB() (*storm.DB, error) {
 	abspath, _ := filepath.Abs(w.DBFile)
-	log.Debugf("wallet dbfile:%v", abspath)
 	return storm.Open(abspath)
 }
 

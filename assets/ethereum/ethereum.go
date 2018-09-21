@@ -60,6 +60,7 @@ const (
 )
 
 func ConvertEthStringToWei(amount string) (*big.Int, error) {
+	log.Debug("amount:", amount)
 	vDecimal, err := decimal.NewFromString(amount)
 	if err != nil {
 		log.Error("convert from string to decimal failed, err=", err)
@@ -74,6 +75,18 @@ func ConvertEthStringToWei(amount string) (*big.Int, error) {
 		return nil, errors.New("conver to big.int failed")
 	}
 	return rst, nil
+}
+
+func ConverWeiStringToEthDecimal(amount string) (decimal.Decimal, error) {
+	d, err := decimal.NewFromString(amount)
+	if err != nil {
+		log.Error("convert string to deciaml failed, err=", err)
+		return d, err
+	}
+
+	ETH, _ := decimal.NewFromString(strings.Replace("1,000,000,000,000,000,000", ",", "", -1))
+	d = d.Div(ETH)
+	return d, nil
 }
 
 func toHexBigIntForEtherTrans(value string, base int, unit int64) (*big.Int, error) {

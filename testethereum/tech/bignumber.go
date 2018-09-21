@@ -29,4 +29,11 @@ func TestFloat() {
 		return
 	}
 	fmt.Println("amount:", amount)
+
+	de, err := ethereum.ConverWeiStringToEthDecimal(amount.String())
+	if err != nil {
+		fmt.Println("conver to eth decimal failed, err=", err)
+		return
+	}
+	fmt.Println("de:", de)
 }

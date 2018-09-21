@@ -127,7 +127,7 @@ func (this *TxpoolContent) GetPendingTxCountForAddr(addr string) int {
 
 func ethGetTransactionCount(addr string) (uint64, error) {
 	params := []interface{}{
-		addr,
+		appendOxToAddress(addr),
 		"latest",
 	}
 
@@ -393,14 +393,21 @@ func GetAddrBalance(address string) (*big.Int, error) {
 	return balance, nil
 }
 
+func appendOxToAddress(addr string) string {
+	if strings.Index(addr, "0x") == -1 {
+		return "0x" + addr
+	}
+	return addr
+}
+
 func makeSimpleTransactionPara(fromAddr *Address, toAddr string, amount *big.Int, password string, fee *txFeeInfo) map[string]interface{} {
 	paraMap := make(map[string]interface{})
 
 	//use password to unlock the account
 	paraMap["password"] = password
 	//use the following attr to eth_sendTransaction
-	paraMap["from"] = fromAddr.Address
-	paraMap["to"] = toAddr
+	paraMap["from"] = appendOxToAddress(fromAddr.Address)
+	paraMap["to"] = appendOxToAddress(toAddr)
 	paraMap["value"] = "0x" + amount.Text(16)
 	paraMap["gas"] = "0x" + fee.GasLimit.Text(16)
 	paraMap["gasPrice"] = "0x" + fee.GasPrice.Text(16)
@@ -410,8 +417,8 @@ func makeSimpleTransactionPara(fromAddr *Address, toAddr string, amount *big.Int
 func makeSimpleTransactiomnPara2(fromAddr string, toAddr string, amount *big.Int, password string) map[string]interface{} {
 	paraMap := make(map[string]interface{})
 	paraMap["password"] = password
-	paraMap["from"] = fromAddr
-	paraMap["to"] = toAddr
+	paraMap["from"] = appendOxToAddress(fromAddr)
+	paraMap["to"] = appendOxToAddress(toAddr)
 	paraMap["value"] = "0x" + amount.Text(16)
 	return paraMap
 }
@@ -447,8 +454,8 @@ func makeERC20TokenTransData(contractAddr string, toAddr string, amount *big.Int
 
 func makeGasEstimatePara(fromAddr string, toAddr string, value *big.Int, data string) map[string]interface{} {
 	paraMap := make(map[string]interface{})
-	paraMap["from"] = fromAddr
-	paraMap["to"] = toAddr
+	paraMap["from"] = appendOxToAddress(fromAddr)
+	paraMap["to"] = appendOxToAddress(toAddr)
 	if data != "" {
 		paraMap["data"] = data
 	}
@@ -540,8 +547,8 @@ func makeERC20TokenTransactionPara(fromAddr *Address, contractAddr string, data 
 	//use password to unlock the account
 	paraMap["password"] = password
 	//use the following attr to eth_sendTransaction
-	paraMap["from"] = fromAddr.Address
-	paraMap["to"] = contractAddr
+	paraMap["from"] = appendOxToAddress(fromAddr.Address)
+	paraMap["to"] = appendOxToAddress(contractAddr)
 	//paraMap["value"] = "0x" + amount.Text(16)
 	paraMap["gas"] = "0x" + fee.GasLimit.Text(16)
 	paraMap["gasPrice"] = "0x" + fee.GasPrice.Text(16)
