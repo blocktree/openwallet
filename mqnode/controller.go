@@ -733,7 +733,7 @@ func (m *BitBankNode) createTransaction(ctx *owtp.Context) {
 
 	appID := ctx.Params().Get("appID").String()
 	walletID := ctx.Params().Get("walletID").String()
-	coin := ctx.Params().Get("coin").Map()
+	coinMap := ctx.Params().Get("coin").Map()
 	accountID := ctx.Params().Get("accountID").String()
 	amount := ctx.Params().Get("amount").String()
 	address := ctx.Params().Get("address").String()
@@ -761,19 +761,19 @@ func (m *BitBankNode) createTransaction(ctx *owtp.Context) {
 		return
 	}
 
-	if coin == nil || len(coin) == 0 {
+	if coinMap == nil || len(coinMap) == 0 {
 		responseError(ctx, errors.New("coin is empty"))
 		return
 	}
-	if _, ok := coin["symbol"]; !ok {
+	if _, ok := coinMap["symbol"]; !ok {
 		responseError(ctx, errors.New("symbol is empty"))
 		return
 	}
-	if _, ok := coin["isContract"]; !ok {
+	if _, ok := coinMap["isContract"]; !ok {
 		responseError(ctx, errors.New("isContract is empty"))
 		return
 	}
-	if _, ok := coin["contractID"]; !ok {
+	if _, ok := coinMap["contractID"]; !ok {
 		responseError(ctx, errors.New("contractID is empty"))
 		return
 	}
@@ -785,6 +785,21 @@ func (m *BitBankNode) createTransaction(ctx *owtp.Context) {
 		return
 	}
 	rawTransaction.Sid = sid
+	isContract := false
+	if coinMap["isContract"].Int() == 1{
+		isContract = true
+	}
+	coin := openwallet.Coin{
+		Symbol:coinMap["symbol"].Str,
+		IsContract:isContract,
+		ContractID:coinMap["contractID"].Str,
+	}
+	rawTransaction.Coin = coin
+	if err != nil {
+		responseError(ctx, errors.New("can't unmarshal to RawTransaction"))
+		return
+	}
+
 	result := map[string]interface{}{
 		"rawTx": rawTransaction,
 	}
@@ -816,8 +831,6 @@ func (m *BitBankNode) submitTransaction(ctx *owtp.Context) {
 		return
 	}
 
-
-
 	var raw *openwallet.RawTransaction
 
 	err := json.Unmarshal([]byte(rawTx), &raw)
@@ -826,9 +839,11 @@ func (m *BitBankNode) submitTransaction(ctx *owtp.Context) {
 		return
 	}
 
+	newCoin := raw.Coin
+
 	ow := m.manager
 
-	if raw.Account.IsTrust{
+	if raw.Account.IsTrust {
 		if len(password) == 0 {
 			responseError(ctx, errors.New("password is empty"))
 			return
@@ -848,14 +863,15 @@ func (m *BitBankNode) submitTransaction(ctx *owtp.Context) {
 
 	transaction, err := ow.SubmitTransaction(appID, walletID, raw.Account.AccountID, raw)
 	if err != nil {
-		responseError(ctx, err)
+     	responseError(ctx, err)
 		return
 	}
+	transaction.Coin = newCoin
 
 	result := map[string]interface{}{
-		"tx": transaction,
-		"sid":sid,
-		"appID":appid,
+		"tx":    transaction,
+		"sid":   sid,
+		"appID": appid,
 	}
 
 	responseSuccess(ctx, result)

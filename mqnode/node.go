@@ -257,13 +257,13 @@ func (m *BitBankNode) DeleteAddressVersion(a *AddressVersion) error {
 
 
 //BlockScanNotify 新区块扫描完成通知
-func (sub *BitBankNode) BlockScanNotify(header *openwallet.BlockHeader) error {
+func (node *BitBankNode) BlockScanNotify(header *openwallet.BlockHeader) error {
 	log.Debug("header:", header)
 	return nil
 }
 
 //BlockTxExtractDataNotify 区块提取结果通知
-func (sub *BitBankNode) BlockTxExtractDataNotify(account *openwallet.AssetsAccount, data *openwallet.TxExtractData) error {
+func (node *BitBankNode) BlockTxExtractDataNotify(account *openwallet.AssetsAccount, data *openwallet.TxExtractData) error {
 	log.Debug("account:", account)
 	log.Debug("data:", data)
 	return nil
