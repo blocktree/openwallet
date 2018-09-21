@@ -52,7 +52,8 @@ func TestNewNode(t *testing.T) {
 		Password    :   "admin",
 	}
 	node,_ := NewBitNodeNode(nodeConfig)
-	config := manager.NewConfig()
+	config := NewConfig()
+	config.EnableBlockScan  = true
 	node.manager = manager.NewWalletManager(config)
 	node.manager.Init()
 	node.Run()
@@ -69,8 +70,8 @@ const (
 
 	mqurl ="amqp://admin:admin@192.168.30.160:5672/"
 	appId = "b4b1962d415d4d30ec71b28769fda585"
-	account = "K6HY1UTM9jzfiXzk9ywioYwhrVJdpQ7JGnzptyhNhsBFkcjdHs"
-	walletID = "W3W8KXx14p4aDE6x9WuwAfw1vAsRKBdCJA"
+	account = "LSLjUtetpKiYBEmnnvhWgsnVCgBqKByy55tuJdJVWWpD9zJB4D"
+	walletID = "WLJAzHCcFU6BMg1yND7SjpYFdY4LHXvEyn"
 )
 
 
@@ -99,7 +100,7 @@ func TestCreateWallet(t *testing.T) {
 		Password    :   "admin",
 	}
 	node,_ := NewBitNodeNode(nodeConfig)
-	config := manager.NewConfig()
+	config := NewConfig()
 	node.manager = manager.NewWalletManager(config)
 	node.manager.Init()
 	node.Run()
@@ -129,7 +130,7 @@ func TestCreateAddress(t *testing.T) {
 		Password    :   "admin",
 	}
 	node,_ := NewBitNodeNode(nodeConfig)
-	config := manager.NewConfig()
+	config := NewConfig()
 	node.manager = manager.NewWalletManager(config)
 	node.manager.Init()
 	node.Run()
@@ -159,7 +160,7 @@ func TestCreateAssetsAccount(t *testing.T) {
 		Password    :   "admin",
 	}
 	node,_ := NewBitNodeNode(nodeConfig)
-	config := manager.NewConfig()
+	config := NewConfig()
 	node.manager = manager.NewWalletManager(config)
 	node.manager.Init()
 	node.Run()
@@ -169,7 +170,7 @@ func TestCreateTransaction(t *testing.T) {
 	var conn *amqp.Connection
 	var channel *amqp.Channel
 	n := time.Now().Unix()
-	json := `{"d":{"accountID":"` +account+ `","amount":"1.08","address":"mgU7H36xabdHWi9RHKvTJu3Nfd1hNTFQhQ","appID":"` +appId+ `","memo":"","feeRate":"0.001","coin":{"isContract":1,"symbol":"BTC","contractID":""},"sid":"239381340338917376"},"m":"createTransaction","n":"`+strconv.FormatInt(n, 10)+`","r":1,"t":1537246627}`
+	json := `{"d":{"accountID":"` +account+ `","amount":"1.08","address":"2NBLrFEi2wjC8nBW9f91HyCYVGA1kYxSWHv","appID":"` +appId+ `","memo":"","feeRate":"0.001","coin":{"isContract":1,"symbol":"BTC","contractID":""},"sid":"239381340338917376"},"m":"createTransaction","n":"`+strconv.FormatInt(n, 10)+`","r":1,"t":1537246627}`
 	conn, _ = amqp.Dial(mqurl)
 	channel, _ = conn.Channel()
 
@@ -188,9 +189,29 @@ func TestCreateTransaction(t *testing.T) {
 		Password    :   "admin",
 	}
 	node,_ := NewBitNodeNode(nodeConfig)
-	config := manager.NewConfig()
+	config := NewConfig()
 	node.manager = manager.NewWalletManager(config)
 	node.manager.Init()
 	node.manager.RefreshAssetsAccountBalance(walletID, account)
 	node.Run()
+}
+
+func NewConfig() *manager.Config {
+
+	c := manager.Config{}
+	defaultDataDir := filepath.Join(".", "openw_data")
+	//钥匙备份路径
+	c.KeyDir = filepath.Join(defaultDataDir, "key")
+	//本地数据库文件路径
+	c.DBPath = filepath.Join(defaultDataDir, "db")
+	//备份路径
+	c.BackupDir = filepath.Join(defaultDataDir, "backup")
+	//支持资产
+	c.SupportAssets = []string{"BTC", "ETH", "QTUM"}
+	//开启区块扫描
+	c.EnableBlockScan = true
+	//测试网
+	c.IsTestnet = true
+
+	return &c
 }
