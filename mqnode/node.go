@@ -267,9 +267,52 @@ func (bitBankNode *BitBankNode) BlockScanNotify(header *openwallet.BlockHeader) 
 func (bitBankNode *BitBankNode) BlockTxExtractDataNotify(account *openwallet.AssetsAccount, data *openwallet.TxExtractData) error {
 	log.Debug("account:", account)
 	log.Debug("data:", data)
-	bitBankNode.Node.Call(bitBankNode.Config.MerchantNodeID, "hello", nil, true, func(resp owtp.Response) {
-		fmt.Printf("nodeA call hello, result: %s\n", "charge~")
-	})
+	if data.Transaction != nil{
+		result := map[string]interface{}{
+			"appID":"",
+			"walletID":account.WalletID,
+			"accountID":account.AccountID,
+			"dataType":2,
+			"content":data.Transaction,
+		}
+		bitBankNode.CallTarget(result)
+	}
+	if data.TxInputs != nil{
+		result := map[string]interface{}{
+			"appID":"",
+			"walletID":account.WalletID,
+			"accountID":account.AccountID,
+			"dataType":4,
+			"content":data.TxInputs,
+		}
+		bitBankNode.CallTarget(result)
+	}
 
+	if data.TxOutputs != nil{
+		result := map[string]interface{}{
+			"appID":"",
+			"walletID":account.WalletID,
+			"accountID":account.AccountID,
+			"dataType":3,
+			"content":data.TxInputs,
+		}
+		bitBankNode.CallTarget(result)
+	}
+
+
+	result := map[string]interface{}{
+		"appID":"",
+		"walletID":account.WalletID,
+		"accountID":account.AccountID,
+		"dataType":1,
+		"content":account.Balance,
+	}
+	bitBankNode.CallTarget(result)
 	return nil
+}
+
+func (bitBankNode *BitBankNode) CallTarget(params interface{}){
+	bitBankNode.Node.Call(bitBankNode.Config.MerchantNodeID, "pushNotifications", nil, true, func(resp owtp.Response) {
+		fmt.Printf("BitBankNode call pushNotifications, params: %s,result: %s\n", params,resp.JsonData())
+	})
 }
