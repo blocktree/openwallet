@@ -117,8 +117,8 @@ func TestWalletManager_SubmitTransaction() {
 		return
 	}
 
-	str, _ := json.MarshalIndent(rawTx, "", " ")
-	log.Info("rawTx:", string(str))
+	//str, _ := json.MarshalIndent(rawTx, "", " ")
+	//log.Info("rawTx:", string(str))
 
 	_, err = tm.SubmitTransaction(testApp, walletID, accountID, rawTx)
 	if err != nil {
@@ -126,6 +126,6 @@ func TestWalletManager_SubmitTransaction() {
 		return
 	}
 
-	str, _ = json.MarshalIndent(rawTx, "", " ")
-	log.Info("rawTx:", string(str))
+	//str, _ = json.MarshalIndent(rawTx, "", " ")
+	//log.Info("rawTx:", string(str))
 }

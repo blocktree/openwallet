@@ -22,7 +22,8 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
+
+	//	"log"
 	"math/big"
 	"os"
 	"os/exec"
@@ -37,6 +38,7 @@ import (
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/blocktree/OpenWallet/keystore"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/btcsuite/btcutil/hdkeychain"
@@ -538,7 +540,7 @@ func CreateAddressForTest(name, password string, count uint64) (*ethKStore.Key, 
 
 	keyCombo, address, err := CreateNewPrivateKey(keyroot, timestamp, count)
 	if err != nil {
-		log.Printf("Create new privKey failed unexpected error: %v\n", err)
+		log.Error("Create new privKey failed unexpected error:", err)
 		return nil, nil, err
 	}
 	return keyCombo, address, nil
@@ -581,7 +583,7 @@ func CreateBatchAddress(name, password string, count uint64) error {
 		// 生成地址
 		keyCombo, address, err := CreateNewPrivateKey(keyroot, timestamp, i)
 		if err != nil {
-			log.Printf("Create new privKey failed unexpected error: %v\n", err)
+			log.Error("Create new privKey failed unexpected error: ", err)
 			errcount++
 			continue
 		}
@@ -595,7 +597,7 @@ func CreateBatchAddress(name, password string, count uint64) error {
 
 		err = tx.Save(address)
 		if err != nil {
-			log.Printf("save address for wallet failed, err=%v\n", err)
+			log.Error("save address for wallet failed, err=", err)
 			errcount++
 			continue
 		}
@@ -967,7 +969,7 @@ func createRawTransaction(from string, to string, value *big.Int, data string) (
 		return nil, err
 	}
 
-	nonce, err := GetNonceForAddress(from)
+	nonce, err := GetNonceForAddress2(from)
 	if err != nil {
 		openwLogger.Log.Errorf("GetNonceForAddress from[%v] failed, err=%v", from, err)
 		return nil, err
@@ -1103,7 +1105,7 @@ func GetAddressesByWallet(wallet *Wallet) ([]*Address, error) {
 }
 
 func ERC20SummaryWallets() {
-	log.Printf("[Summary Wallet Start]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+	log.Info("[Summary Wallet Start]------", common.TimeFormat("2006-01-02 15:04:05"))
 	//读取参与汇总的钱包
 	for _, wallet := range walletsInSum {
 		tokenBalance, err := ERC20GetWalletBalance(wallet)
@@ -1113,22 +1115,22 @@ func ERC20SummaryWallets() {
 		}
 
 		if tokenBalance.Cmp(threshold) > 0 {
-			log.Printf("Summary account[%s]balance = %v \n", wallet.WalletID, tokenBalance)
-			log.Printf("Summary account[%s]Start Send Transaction\n", wallet.WalletID)
+			log.Debugf("Summary account[%s]balance = %v \n", wallet.WalletID, tokenBalance)
+			log.Debugf("Summary account[%s]Start Send Transaction\n", wallet.WalletID)
 
 			txId, err := ERC20SendTransaction(wallet, sumAddress, tokenBalance, wallet.Password, true)
 			if err != nil {
-				log.Printf("Summary account[%s]unexpected error: %v\n", wallet.WalletID, err)
+				log.Debugf("Summary account[%s]unexpected error: %v\n", wallet.WalletID, err)
 				continue
 			} else {
-				log.Printf("Summary account[%s]successfully，Received Address[%s], TXID：%s\n", wallet.WalletID, sumAddress, txId)
+				log.Debugf("Summary account[%s]successfully，Received Address[%s], TXID：%s\n", wallet.WalletID, sumAddress, txId)
 			}
 		}
 	}
 }
 
 func SummaryWallets() {
-	log.Printf("[Summary Wallet Start]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+	log.Debugf("[Summary Wallet Start]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
 	//读取参与汇总的钱包
 	for _, wallet := range walletsInSum {
 		balance, err := GetWalletBalance(wallet)
@@ -1138,20 +1140,20 @@ func SummaryWallets() {
 		}
 
 		if balance.Cmp(threshold) > 0 {
-			log.Printf("Summary account[%s]balance = %v \n", wallet.WalletID, balance)
-			log.Printf("Summary account[%s]Start Send Transaction\n", wallet.WalletID)
+			log.Debugf("Summary account[%s]balance = %v \n", wallet.WalletID, balance)
+			log.Debugf("Summary account[%s]Start Send Transaction\n", wallet.WalletID)
 
 			txId, err := SendTransaction(wallet, sumAddress, balance, wallet.Password, true)
 			if err != nil {
-				log.Printf("Summary account[%s]unexpected error: %v\n", wallet.WalletID, err)
+				log.Debugf("Summary account[%s]unexpected error: %v\n", wallet.WalletID, err)
 				continue
 			} else {
-				log.Printf("Summary account[%s]successfully，Received Address[%s], TXID：%s\n", wallet.WalletID, sumAddress, txId)
+				log.Debugf("Summary account[%s]successfully，Received Address[%s], TXID：%s\n", wallet.WalletID, sumAddress, txId)
 			}
 		}
 	}
 
-	log.Printf("[Summary Wallet end]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+	log.Debugf("[Summary Wallet end]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
 }
 
 //RestoreWallet 恢复钱包
@@ -1289,6 +1291,32 @@ func RestoreWallet(keyFile string, password string) error {
 	}
 
 	return nil
+}
+
+func GetNonceForAddress2(address string) (uint64, error) {
+	txpool, err := ethGetTxPoolContent()
+	if err != nil {
+		openwLogger.Log.Errorf("ethGetTxPoolContent failed, err = %v", err)
+		return 0, err
+	}
+
+	_, max, count, err := txpool.GetSequentTxNonce(address)
+	if err != nil {
+		log.Error("get txpool sequent tx nonce failed, err=%v", err)
+		return 0, err
+	}
+	log.Debugf("sequent max nonce:%v", max)
+	log.Debugf("sequent nonce count:%v", count)
+	txCount, err := ethGetTransactionCount(address)
+	if err != nil {
+		log.Error("ethGetTransactionCount failed, err=", err)
+		return 0, err
+	}
+
+	if count == 0 || max < txCount {
+		return txCount, nil
+	}
+	return max + 1, nil
 }
 
 func GetNonceForAddress(address string) (uint64, error) {
