@@ -490,7 +490,7 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 		success = false
 		//return nil, failedTx, nil
 	} else {
-
+		log.Std.Info("XXXXXXXXXXXXXXXXXXXXXXXXXX")
 		vinout := make([]gjson.Result, 0)
 
 		vin := trx.Get("vin").Array()
@@ -534,7 +534,7 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 			//log.Debug("to:", to, "totalReceived:", totalReceived)
 
 			for _, extractData := range result.extractData {
-				extractData.Transaction = &openwallet.Transaction{
+				tx := &openwallet.Transaction{
 					From: from,
 					To:   to,
 					Fees: totalSpent.Sub(totalReceived).StringFixed(8),
@@ -547,8 +547,11 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 					TxID:        txid,
 					Decimal:     8,
 				}
+				wxID := openwallet.GenTransactionWxID(tx)
+				tx.WxID = wxID
+				extractData.Transaction = tx
 
-				log.Debug("Transaction:", extractData.Transaction)
+				//log.Debug("Transaction:", extractData.Transaction)
 			}
 
 		}
@@ -604,7 +607,7 @@ func (bs *BTCBlockScanner) ExtractTxInput(blockHeight uint64, blockHash string, 
 					IsContract: false,
 				}
 				input.Index = uint64(i)
-				input.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("%s_%d_%s", result.TxID, i, addr))))
+				input.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", result.TxID, i, addr))))
 
 				if blockHeight > 0 {
 					//在哪个区块高度时消费
@@ -671,7 +674,7 @@ func (bs *BTCBlockScanner) ExtractTxOutput(blockHeight uint64, blockHash string,
 					IsContract: false,
 				}
 				outPut.Index = n
-				outPut.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("%s_%d_%s", txid, n, addr))))
+				outPut.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("output_%s_%d_%s", txid, n, addr))))
 
 				if blockHeight > 0 {
 					outPut.BlockHeight = blockHeight
@@ -708,7 +711,7 @@ func (bs *BTCBlockScanner) newExtractDataNotify(height uint64, extractData map[s
 		for key, data := range extractData {
 			err := o.BlockExtractDataNotify(key, data)
 			if err != nil {
-
+				log.Error("BlockExtractDataNotify unexpected error:", err)
 				//记录未扫区块
 				unscanRecord := NewUnscanRecord(height, "", "ExtractData Notify failed.")
 				err = bs.SaveUnscanRecord(unscanRecord)
