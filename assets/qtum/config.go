@@ -23,6 +23,7 @@ import (
 
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/shopspring/decimal"
+	"github.com/blocktree/go-OWCrypt"
 )
 
 /*
@@ -40,6 +41,7 @@ const (
 	//币种
 	Symbol    = "QTUM"
 	 MasterKey = "qtum seed"
+	CurveType = owcrypt.ECC_CURVE_SECP256K1
 )
 
 
@@ -104,6 +106,7 @@ func NewConfig() *WalletConfig {
 	//币种
 	c.symbol = Symbol
 	c.masterKey = MasterKey
+	c.CurveType = CurveType
 
 	//RPC认证账户名
 	c.rpcUser = ""
@@ -147,6 +150,8 @@ func NewConfig() *WalletConfig {
 	c.sumAddress = ""
 	//汇总执行间隔时间
 	c.cycleSeconds = time.Second * 10
+	//小数位长度
+	c.CoinDecimal = decimal.NewFromFloat(100000000)
 
 
 	//默认配置内容

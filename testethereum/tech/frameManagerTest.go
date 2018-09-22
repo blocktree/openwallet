@@ -28,6 +28,10 @@ var (
 	testApp = "openw"
 )
 
+func init() {
+	tm.Init()
+}
+
 func NewEthTestConfig() *manager.Config {
 
 	c := manager.Config{}
@@ -198,7 +202,7 @@ func TestSendRawTransaction() {
 	//pssword:12345678
 	//from:2d3a164eD8019d3111b0726399a6a9B10F05a8e6
 	//to:5813387dE3fAF2012a8D63580A23090Eca337f61
-	raw, err := signOWEIP155("W6EZ35wMPeYG7QJjVTpU6heCE4AxmkVzJd", "12345678", "428cc834ac78043050cf7245dee433aed9d884a8", "0xa82e37fbcc776d010c2535578975fc0ad8083d69", 0)
+	raw, err := signOWEIP155("W6EZ35wMPeYG7QJjVTpU6heCE4AxmkVzJd", "12345678", "428cc834ac78043050cf7245dee433aed9d884a8", "0x584a9ed7f95cd04337df791fac32bed88e13b77a", 4)
 	if err != nil {
 		log.Error("signOWEIP155 failed, err=", err)
 		return
@@ -218,7 +222,8 @@ func signOWEIP155(walletID string, password string, from string, to string, nonc
 		return "", errors.New("GetPrivateKeyInWallet failed")
 	}
 
-	amount, err := ethereum.ConvertToBigInt("0x56bc75e2d63100000", 16)
+	//100- 0x56bc75e2d63100000
+	amount, err := ethereum.ConvertToBigInt("0x1043561a8829300000", 16)
 	if err != nil {
 		fmt.Println("amount format error.")
 		return "", err
@@ -231,7 +236,7 @@ func signOWEIP155(walletID string, password string, from string, to string, nonc
 	}
 
 	tx := types.NewTransaction(nonce, ethcommon.HexToAddress(to),
-		amount, 121000, gasPrice, nil)
+		amount, 21000, gasPrice, nil)
 
 	signer := types.NewEIP155Signer(big.NewInt(12))
 	message := signer.Hash(tx)
@@ -242,19 +247,24 @@ func signOWEIP155(walletID string, password string, from string, to string, nonc
 		fmt.Println("signature error, ret:", "0x"+strconv.FormatUint(uint64(ret), 16))
 		return "", err
 	}*/
-
+	txstr, _ := json.MarshalIndent(tx, "", " ")
+	log.Debug("--txStr:", string(txstr))
+	log.Debug("--message:", common.ToHex(message[:]))
+	log.Debug("--prikeyselfmade:", prikeyselfmade)
 	sig, err := secp256k1.Sign(message[:], common.FromHex(prikeyselfmade))
 	if err != nil {
 		fmt.Println("signature error, err=", err)
 		return "", err
 	}
 
+	log.Debug("--sig:", common.ToHex(sig))
 	tx, err = tx.WithSignature(signer, sig)
 	if err != nil {
 		fmt.Println("with signature failed, err=", err)
 		return "", err
 	}
-
+	txstr, _ = json.MarshalIndent(tx, "", " ")
+	log.Debug("--after signed txStr:", string(txstr))
 	tx.PrintTransaction()
 
 	data, err := rlp.EncodeToBytes(tx)
@@ -263,7 +273,7 @@ func signOWEIP155(walletID string, password string, from string, to string, nonc
 		return "", err
 	}
 
-	fmt.Println("signature:", common.ToHex(data))
+	fmt.Println("--signature:", common.ToHex(data))
 	return common.ToHex(data), nil
 }
 
