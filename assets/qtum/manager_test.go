@@ -164,7 +164,7 @@ func TestCreateReceiverAddress(t *testing.T) {
 }
 
 func TestGetAddressesByAccount(t *testing.T) {
-	addresses, err := tw.GetAddressesByAccount("W8C6dcVGbuPxJJ5imguFQNzK7vMtBhg58J")
+	addresses, err := tw.GetAddressesByAccount("WG8QXeEW7CVmRRbvw7Yb2f9wQf9ufR32M3")
 	if err != nil {
 		t.Errorf("GetAddressesByAccount failed unexpected error: %v\n", err)
 		return
@@ -236,19 +236,26 @@ func TestGetWalletBalance(t *testing.T) {
 		tag  string
 	}{
 		{
-			name: "WJjFgnZucp86LR3s18AbjxT3ju9csXduff",
+			name: "W8C6dcVGbuPxJJ5imguFQNzK7vMtBhg58J",
 			tag:  "first",
 		},
 		{
-			name: "W9rfcpz4jrHUUXZ56xuuXZaJrF23rnYCAV",
+			name: "WK6mWyMEEbMMSLXTT2AiZtcezxUFbjo2oB",
 			tag:  "second",
 		},
 		{
-			name: "",
+			name: "WG8QXeEW7CVmRRbvw7Yb2f9wQf9ufR32M3",
 			tag:  "all",
 		},
 		{
-			name: "sam",
+			name: "WMPJk5bYPFzRQsrpX6C5MvNn1jQnpCKdbk",
+			tag:  "account not exist",
+		},
+		{
+			name: "W2wCjcydDGAYSQyuSTeymHmmQ3GTGdeyUT",
+			tag:  "account not exist",
+		},{
+			name: "WAxpSRGfoEaodp8Mc3ogngMiqzVLRL8JwU",
 			tag:  "account not exist",
 		},
 	}
@@ -499,11 +506,11 @@ func TestSendTransaction(t *testing.T) {
 		"QbaeXvjnutA6vm7yhW4poDiMYqn3fS8vEp",
 	}
 
-	tw.RebuildWalletUnspent("WK6mWyMEEbMMSLXTT2AiZtcezxUFbjo2oB")
+	tw.RebuildWalletUnspent("W8C6dcVGbuPxJJ5imguFQNzK7vMtBhg58J")
 
 	for _, to := range sends {
 
-		txIDs, err := tw.SendTransaction("WK6mWyMEEbMMSLXTT2AiZtcezxUFbjo2oB", to, decimal.NewFromFloat(0.007), "1234qwer", false)
+		txIDs, err := tw.SendTransaction("W8C6dcVGbuPxJJ5imguFQNzK7vMtBhg58J", to, decimal.NewFromFloat(0.043), "1234qwer", false)
 
 		if err != nil {
 			t.Errorf("SendTransaction failed unexpected error: %v\n", err)
