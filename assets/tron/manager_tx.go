@@ -19,15 +19,16 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
 	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
 	"github.com/tronprotocol/grpc-gateway/core"
+	// "github.com/blocktree/OpenWallet/assets/tron"
+	// "github.com/blocktree/OpenWallet/assets/tron/protocol/core"
 )
 
 // Function：Count all transactions (number) on the network
 // demo: curl -X POST http://127.0.0.1:8090/wallet/totaltransaction
-// Parameters：None
+// Parameters：Nones
 // Return value：
 // 	Total number of transactions.
 func (wm *WalletManager) GetTotalTransaction() (num uint64, err error) {
@@ -77,15 +78,35 @@ func (wm *WalletManager) GetTransactionByID(txID string) (tx *core.Transaction, 
 // 	Transaction contract data
 func (wm *WalletManager) CreateTransaction(to_address, owner_address string, amount uint64) (raw string, err error) {
 
-	to_address_bytes, _ := addressEncoder.AddressDecode(to_address, addressEncoder.TRON_mainnetAddress)
-	to_address = hex.EncodeToString(to_address_bytes)
-	owner_address_bytes, _ := addressEncoder.AddressDecode(owner_address, addressEncoder.TRON_mainnetAddress)
-	owner_address = hex.EncodeToString(owner_address_bytes)
+	// to_address_bytes, _ := addressEncoder.AddressDecode(to_address, addressEncoder.TRON_mainnetAddress)
+	// to_address = hex.EncodeToString(to_address_bytes)
+	// owner_address_bytes, _ := addressEncoder.AddressDecode(owner_address, addressEncoder.TRON_mainnetAddress)
+	// owner_address = hex.EncodeToString(owner_address_bytes)
+	// // println("XX1 = ", to_address)
+	// // println("XX2 = ", owner_address)
+
+	// XX1 = b6c1abf9fb31c9077dfb3c25469e6e943ffbfa7a
+	// XX0 = 41e9d79cc47518930bc322d9bf7cddd260a0260a8d
+	// XX3 = 41e6992304ae03e5c6bba7334432b7345bef031c14 19c42503
+
+	// btcAlphabet := "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+	// myAlphabet := base58.NewAlphabet(btcAlphabet)
+
+	// to_address_bytes, err := base58.Decode(to_address, myAlphabet)
+	// to_address = hex.EncodeToString(to_address_bytes) //[1 : len(to_address_bytes)-4]
+
+	// owner_address_bytes, err := base58.Decode(owner_address, myAlphabet)
+	// owner_address = hex.EncodeToString(owner_address_bytes) //[1 : len(owner_address_bytes)-4]
+	// println("XX1 = ", to_address)
+	// println("XX2 = ", owner_address)
+
+	to_address = hex.EncodeToString([]byte(to_address))
+	owner_address = hex.EncodeToString([]byte(owner_address))
 
 	params := req.Param{
 		"to_address":    to_address,
 		"owner_address": owner_address,
-		"amount":        1,
+		"amount":        10,
 	}
 
 	rawBytes, err := wm.WalletClient.Call2("/wallet/createtransaction", params)

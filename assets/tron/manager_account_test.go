@@ -21,6 +21,7 @@ func TestGetAccountNet(t *testing.T) {
 
 	var addr string = "4189139CB1387AF85E3D24E212A008AC974967E561"
 	addr = "TUZYMxXwwnX77rQvmP3RMwm3RhfBJ7bovV"
+	addr = owner_address
 
 	if r, err := tw.GetAccountNet(addr); err != nil {
 		t.Errorf("GetAccountNet failed: %v\n", err)

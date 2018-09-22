@@ -16,12 +16,18 @@
 package tron
 
 import (
+	"encoding/hex"
 	"errors"
+	"fmt"
+	"log"
 
 	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
+
 	"github.com/tronprotocol/grpc-gateway/api"
 	"github.com/tronprotocol/grpc-gateway/core"
+	// "github.com/blocktree/Openwallet/assets/tron/protocol/api"
+	// "github.com/blocktree/Openwallet/assets/tron/protocol/core"
 )
 
 // Function：Query the latest block
@@ -35,13 +41,10 @@ func (wm *WalletManager) GetNowBlock() (block *core.Block, err error) {
 		return nil, err
 	}
 
-	// fmt.Println("XXX = ", gjson.Valid(string(r)))
-	// fmt.Println("XXX = ", gjson.ValidBytes(r))
-
 	block = &core.Block{}
-	gjson.UnmarshalValidationEnabled(true)
 
 	if err := gjson.Unmarshal(r, block); err != nil {
+		log.Println(err)
 		return nil, err
 	}
 
@@ -56,9 +59,7 @@ func (wm *WalletManager) GetNowBlock() (block *core.Block, err error) {
 // Return value：specified Block object
 func (wm *WalletManager) GetBlockByNum(num uint64) (block *core.Block, error error) {
 
-	request := req.Param{
-		"num": num,
-	}
+	request := req.Param{"num": num}
 	r, err := wm.WalletClient.Call2("/wallet/getblockbynum", request)
 	if err != nil {
 		return nil, err
@@ -66,6 +67,7 @@ func (wm *WalletManager) GetBlockByNum(num uint64) (block *core.Block, error err
 
 	block = &core.Block{}
 	if err := gjson.Unmarshal(r, block); err != nil {
+		fmt.Println(err)
 		return nil, err
 	}
 
@@ -79,9 +81,7 @@ func (wm *WalletManager) GetBlockByNum(num uint64) (block *core.Block, error err
 // Return value：Block Object
 func (wm *WalletManager) GetBlockByID(blockID string) (block *core.Block, err error) {
 
-	request := req.Param{
-		"blockID": blockID,
-	}
+	request := req.Param{"blockID": blockID}
 	r, err := wm.WalletClient.Call2("/wallet/getblockbyid", request)
 	if err != nil {
 		return nil, err
@@ -147,4 +147,27 @@ func (wm *WalletManager) GetBlockByLatestNum(num uint64) (blocks *api.BlockList,
 	}
 
 	return blocks, nil
+}
+
+// ----------------------------------- Functions -----------------------------------------------
+func printBlock(block *core.Block) {
+	if block == nil {
+		fmt.Println("Block == nil")
+	}
+
+	fmt.Println("\n------------------------------------------------------------------------------------------------------------------------------")
+	fmt.Println("Block Header:")
+	if block.BlockHeader != nil {
+		fmt.Printf("\tRawData: <Number=%v, ParentHash=%v, TxTrieRoot=%v> \n", block.BlockHeader.RawData.Number, hex.EncodeToString(block.BlockHeader.RawData.ParentHash), hex.EncodeToString(block.BlockHeader.RawData.TxTrieRoot))
+		// fmt.Printf("\t <%+v> \n", block.BlockHeader)
+	}
+
+	fmt.Println("Transactions:")
+	if block.Transactions != nil {
+		for i, tx := range block.Transactions {
+			fmt.Printf("\t tx%2d: <BlockBytes=%v, BlockNum=%v, BlockHash=%+v, Contact=%v, Signature_0=%v>\n", i+1, tx.RawData.RefBlockBytes, tx.RawData.RefBlockNum, hex.EncodeToString(tx.RawData.RefBlockHash), tx.RawData.Contract, hex.EncodeToString(tx.Signature[0]))
+			// fmt.Printf("\t tx%2d=<%v> \n", i+1, tx)
+		}
+	}
+	fmt.Println("------------------------------------------------------------------------------------------------------------------------------")
 }
