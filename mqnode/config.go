@@ -21,10 +21,12 @@ import (
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common/file"
 	"path/filepath"
+	"github.com/blocktree/OpenWallet/manager"
+	"github.com/blocktree/OpenWallet/owtp"
+	"strings"
 )
 
 var (
-
 	//商户资料文件夹
 	merchantDir = filepath.Join("merchant_data")
 	//商户资料缓存
@@ -87,11 +89,72 @@ func loadConfig() (NodeConfig, error) {
 		return configs, errors.New("Config is not setup. Please run 'wmd merchant config -i ' ")
 	}
 
+	/**
+		MerchantNodeID  string
+	LocalPublicKey  string
+	LocalPrivateKey string
+	CacheFile       string
+	MerchantNodeURL string
+	ConnectType     string
+	Exchange       string
+	QueueName       string
+	ReceiveQueueName       string
+	Account       string
+	Password       string
+	 */
 	configs.MerchantNodeID = c.String("merchant_node_id")
 	configs.LocalPrivateKey = c.String("publickey")
 	configs.MerchantNodeURL = c.String("merchant_node_url")
 	configs.LocalPrivateKey = c.String("privatekey")
 	configs.CacheFile = filepath.Join(merchantDir, cacheFile)
+	configs.MerchantNodeURL = c.String("merchant_node_url")
+	configs.ConnectType = owtp.MQ
+	configs.Exchange = c.String("exchange")
+	configs.QueueName = c.String("queue_name")
+	configs.ReceiveQueueName = c.String("receive_queue_name")
+	configs.Account = c.String("account")
+	configs.Password = c.String("password")
+	return configs, nil
+}
 
+//loadConfig 读取配置
+func loadManagerConfig() (manager.Config, error) {
+
+	var (
+		c       config.Configer
+		err     error
+		configs = manager.Config{}
+	)
+
+	//读取配置
+	initConfig()
+	absFile := filepath.Join(merchantDir, configFileName)
+	c, err = config.NewConfig("ini", absFile)
+	if err != nil {
+		return configs, errors.New("Config is not setup. Please run 'wmd merchant config -i ' ")
+	}
+
+	defaultDataDir := filepath.Join(".", "openw_data")
+
+	//钥匙备份路径
+	configs.KeyDir = filepath.Join(defaultDataDir, c.String("key_dir"))
+	//本地数据库文件路径
+	configs.DBPath = filepath.Join(defaultDataDir, c.String("db_path"))
+	//备份路径
+	configs.BackupDir = filepath.Join(defaultDataDir, c.String("backup"))
+
+	//支持资产
+	supportAssetsStr := c.String("support_assets")
+	supportAssets := strings.Split(supportAssetsStr, ",")
+	if supportAssets != nil && len(supportAssets) > 0 {
+		configs.SupportAssets = supportAssets
+	} else if supportAssets != nil && len(supportAssets) == 0 {
+		configs.SupportAssets = []string{supportAssetsStr}
+	}
+
+	//开启区块扫描
+	configs.EnableBlockScan, err = c.Bool("enable_block_scan")
+	//测试网
+	configs.IsTestnet, err = c.Bool("is_test_net")
 	return configs, nil
 }
