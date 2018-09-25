@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
-	"github.com/blocktree/go-OWCBasedFuncs/btcLikeTxDriver"
 	"github.com/shopspring/decimal"
 	"sort"
 	"strings"
+	"github.com/blocktree/OpenWallet/assets/qtum/btcLikeTxDriver"
 )
 
 type TransactionDecoder struct {

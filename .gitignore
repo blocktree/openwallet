@@ -31,3 +31,4 @@ hdkeystore/keys/sogosdfo-VykdgSwVtbEWExc5AdNykKCDqgw8cBKLs2.key
 vendor/github.com/blocktree/go-OWCBasedFuncs/
 mqnode/*
 
+manager/openw_data/

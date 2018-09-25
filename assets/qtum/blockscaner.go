@@ -490,7 +490,7 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 		success = false
 		//return nil, failedTx, nil
 	} else {
-		log.Std.Info("XXXXXXXXXXXXXXXXXXXXXXXXXX")
+
 		vinout := make([]gjson.Result, 0)
 
 		vin := trx.Get("vin").Array()

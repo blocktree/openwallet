@@ -86,6 +86,7 @@ type FullnodeContainerConfig struct {
 	IMAGE            string      // Image that container run from
 	ENCRYPT          []string    // Encrypt wallet fullnode as an option
 	IsTestnetSupport bool        // Is to support Testnet?
+	LOGFIELS         []string
 }
 
 func (nc *FullnodeContainerConfig) isEncrypted() bool {
@@ -227,9 +228,10 @@ testNetDataPath = "/data"
 			ENCRYPT: []string{"litecoind", "-datadir=/data", "-conf=/etc/litecoin.conf", "encryptwallet 1234qwer"},
 		},
 		"tron": &FullnodeContainerConfig{ //
-			PORT:    [][3]string{{"18890/tcp", "18890", "28890"}},
-			RPCPORT: string("18890/tcp"),
-			IMAGE:   string("openw/tron:v3.1.1"),
+			PORT:     [][3]string{{"18890/tcp", "18890", "28890"}},
+			RPCPORT:  string("18890/tcp"),
+			IMAGE:    string("openw/tron:v3.1.1"),
+			LOGFIELS: []string{"logs/tron.log", "logs/tron.log"},
 		},
 	}
 }
