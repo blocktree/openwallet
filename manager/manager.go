@@ -22,11 +22,17 @@ import (
 	"sync"
 	"time"
 
+	"fmt"
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/OpenWallet/timer"
 	"github.com/coreos/bbolt"
+)
+
+var (
+	PeriodOfTask = 5 * time.Second
 )
 
 type NotificationObject interface {
@@ -40,11 +46,12 @@ type NotificationObject interface {
 
 //WalletManager OpenWallet钱包管理器
 type WalletManager struct {
-	appDB       map[string]*openwallet.StormDB
-	cfg         *Config
-	initialized bool
-	mu          sync.RWMutex
-	observers   map[NotificationObject]bool //观察者
+	appDB             map[string]*openwallet.StormDB
+	cfg               *Config
+	initialized       bool
+	mu                sync.RWMutex
+	observers         map[NotificationObject]bool //观察者
+	importAddressTask *timer.TaskTimer
 }
 
 // NewWalletManager
@@ -78,6 +85,11 @@ func (wm *WalletManager) Init() {
 	wm.mu.Unlock()
 
 	wm.initBlockScanner()
+
+	//启动定时导入地址到核心钱包
+	task := timer.NewTask(PeriodOfTask, wm.importNewAddressToCoreWallet)
+	wm.importAddressTask = task
+	wm.importAddressTask.Start()
 
 	log.Info("OpenWallet Manager has been initialized!")
 }
@@ -275,7 +287,7 @@ func (wm *WalletManager) newWalletWrapper(appID, walletID string) (*openwallet.W
 
 		wallet, err := wrapper.GetWalletInfo(walletID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("wallet not exist")
 		}
 
 		keyFile := openwallet.WalletKeyFile(wallet.KeyFile)

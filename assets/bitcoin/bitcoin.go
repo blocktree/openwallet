@@ -537,19 +537,24 @@ func (wm *WalletManager) ImportWatchOnlyAddress(address ...*openwallet.Address) 
 		failedIndex = make([]int, 0)
 	)
 
-	for i, a := range address {
-		log.Debug("start ImportAddress")
-		err = wm.ImportAddress(a)
-		if err != nil {
-			failedIndex = append(failedIndex, i)
-		}
-		log.Debug("end ImportAddress")
+	//for i, a := range address {
+	//	log.Debug("start ImportAddress")
+	//	err = wm.ImportAddress(a)
+	//	if err != nil {
+	//		log.Error("import address failed, unexpected error:", err)
+	//		failedIndex = append(failedIndex, i)
+	//	}
+	//	log.Debug("end ImportAddress")
+	//}
+
+	if len(wm.Config.WalletPassword) > 0 {
+		wm.UnlockWallet(wm.Config.WalletPassword, 600)
 	}
 
-	//failed, err := wm.ImportMulti(address, nil, true)
-	//if err != nil {
-	//	return err
-	//}
+	failedIndex, err = wm.ImportMulti(address, nil, true)
+	if err != nil {
+		return err
+	}
 
 	if len(failedIndex) > 0 {
 		failedReason := ""

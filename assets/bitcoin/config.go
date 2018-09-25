@@ -97,6 +97,8 @@ type WalletConfig struct {
 	CurveType uint32
 	//小数位长度
 	CoinDecimal decimal.Decimal
+	//核心钱包密码，配置有值用于自动解锁钱包
+	WalletPassword string
 }
 
 func NewConfig(symbol string, masterKey string) *WalletConfig {
@@ -152,6 +154,8 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	c.CycleSeconds = time.Second * 10
 	//小数位长度
 	c.CoinDecimal = decimal.NewFromFloat(100000000)
+	//核心钱包密码，配置有值用于自动解锁钱包
+	c.WalletPassword = ""
 
 	//默认配置内容
 	c.DefaultConfig = `
@@ -179,6 +183,8 @@ sumAddress = ""
 threshold = ""
 # summary task timer cycle time, sample: 1m , 30s, 3m20s etc
 cycleSeconds = ""
+# walletPassword use to unlock bitcoin core wallet
+walletPassword = ""
 `
 
 	//创建目录

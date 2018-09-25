@@ -68,3 +68,8 @@ func NewAddress(json gjson.Result) *Address {
 
 	return obj
 }
+
+//ImportAddress 待导入的地址记录
+type ImportAddress struct {
+	Address `storm:"inline"`
+}

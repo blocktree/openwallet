@@ -16,10 +16,10 @@
 package openwallet
 
 import (
-	"github.com/tidwall/gjson"
-	"fmt"
 	"encoding/base64"
+	"fmt"
 	"github.com/blocktree/OpenWallet/crypto"
+	"github.com/tidwall/gjson"
 )
 
 //TransactionDecoder 交易单解析器
@@ -69,7 +69,7 @@ type Transaction struct {
 
 	//openwallet自定义的ID，在不同链可能存在重复的txid，
 	// 所以我们要生成一个全局不重复的
-	WxID      string `json:"wxid" storm:"id"`
+	WxID string `json:"wxid" storm:"id"`
 
 	TxID      string `json:"txid"`
 	AccountID string `json:"accountID"`
@@ -128,6 +128,7 @@ type TxInput struct {
 // TxOutPut 交易输出，则到账记录
 type TxOutPut struct {
 	Recharge `storm:"inline"`
+	ExtParam string //扩展参数，用于记录utxo的解锁字段，json格式
 }
 
 type Withdraw struct {
