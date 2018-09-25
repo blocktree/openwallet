@@ -786,13 +786,13 @@ func (m *BitBankNode) createTransaction(ctx *owtp.Context) {
 	}
 	rawTransaction.Sid = sid
 	isContract := false
-	if coinMap["isContract"].Int() == 1{
+	if coinMap["isContract"].Int() == 1 {
 		isContract = true
 	}
 	coin := openwallet.Coin{
-		Symbol:coinMap["symbol"].Str,
-		IsContract:isContract,
-		ContractID:coinMap["contractID"].Str,
+		Symbol:     coinMap["symbol"].Str,
+		IsContract: isContract,
+		ContractID: coinMap["contractID"].Str,
 	}
 	rawTransaction.Coin = coin
 	if err != nil {
@@ -863,7 +863,7 @@ func (m *BitBankNode) submitTransaction(ctx *owtp.Context) {
 
 	transaction, err := ow.SubmitTransaction(appID, walletID, raw.Account.AccountID, raw)
 	if err != nil {
-     	responseError(ctx, err)
+		responseError(ctx, err)
 		return
 	}
 	transaction.Coin = newCoin
@@ -974,19 +974,18 @@ func (m *BitBankNode) getAssetsAccountBalance(ctx *owtp.Context) {
 		return
 	}
 
-	//config := manager.NewConfig()
-	//ow := manager.NewWalletManager(config)
-	//ow.GetAssetsAccountInfo()
-	//if err != nil{
-	//	responseError(ctx, errors.New("getAssetsAccountBalance error"))
-	//	return
-	//}
-	//
-	//result := map[string]interface{}{
-	//	"tx": transaction,
-	//}
+	account, err := m.manager.GetAssetsAccountInfo(appID, walletID, accountID)
+	if err != nil {
+		responseError(ctx, errors.New("getAssetsAccountBalance error"))
+		return
+	}
+	balance := map[string]interface{}{
+		"balance":   account.Balance,
+		"accountID": account.AccountID,
+		"symbol":    account.Symbol,
+	}
 
-	responseSuccess(ctx, nil)
+	responseSuccess(ctx, balance)
 }
 
 //### 3.16 通过地址获取余额 `getAddressBalance`
@@ -1035,6 +1034,7 @@ func (m *BitBankNode) getAddressBalance(ctx *owtp.Context) {
 	//	return
 	//}
 	//
+
 	//result := map[string]interface{}{
 	//	"tx": transaction,
 	//}
@@ -1183,7 +1183,6 @@ func (m *BitBankNode) getAssetsAccountTokens(ctx *owtp.Context) {
 
 	//config := manager.NewConfig()
 	//ow := manager.NewWalletManager(config)
-
 	responseSuccess(ctx, nil)
 }
 
