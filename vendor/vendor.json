@@ -3555,6 +3555,12 @@
 			"revisionTime": "2018-06-27T19:40:29Z"
 		},
 		{
+			"checksumSHA1": "+JGg/6WNgfL1KlOjUB3Wyt+YkiU=",
+			"path": "google.golang.org/genproto/protobuf/field_mask",
+			"revision": "ff3583edef7de132f219f0efc00e097cabcc0ec0",
+			"revisionTime": "2018-06-27T19:40:29Z"
+		},
+		{
 			"checksumSHA1": "HARrQ8ETvQCyJUzCwO3P1PEqJyk=",
 			"path": "google.golang.org/grpc",
 			"revision": "40a879c23a0dc77234d17e0699d074d5fd151bd0",
