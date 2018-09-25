@@ -55,6 +55,16 @@ func TestSlice() {
 	fmt.Println("slice:", slice, " cap:", cap(slice), " len:", len(slice))
 }
 
+func TestSlice2() {
+	slice := []int{1, 2, 3, 4, 5, 6}
+	newSlice := slice[3:4:4]
+	fmt.Println("slice:", slice)
+	fmt.Println("newslice:", newSlice, " cap:", cap(newSlice))
+	_ = append(newSlice, 7)
+	fmt.Println("after append slice:", slice)
+	fmt.Println("after append new slice:", newSlice, " cap:", cap(newSlice))
+}
+
 func TestMap() {
 
 	type t struct {
