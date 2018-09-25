@@ -23,6 +23,7 @@ import (
 	"github.com/streadway/amqp"
 	"github.com/blocktree/OpenWallet/manager"
 	"strconv"
+	"fmt"
 )
 var mqURL = "192.168.30.160:5672"
 var nodeConfig NodeConfig
@@ -216,3 +217,10 @@ func NewConfig() *manager.Config {
 
 	return &c
 }
+func TestJoinMerchantNodeFlow(t *testing.T) {
+	err := JoinMerchantNodeFlow()
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+

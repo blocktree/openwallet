@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"github.com/astaxie/beego/config"
 	"errors"
+	"github.com/blocktree/OpenWallet/manager"
 )
 
 func init() {
@@ -93,7 +94,11 @@ func JoinMerchantNodeFlow() error {
 	if err != nil {
 		return err
 	}
-
+	config,err := loadManagerConfig()
+	if err != nil {
+		return err
+	}
+	merchantNode.manager = manager.NewWalletManager(config)
 	merchantNode.Run()
 
 	return nil
