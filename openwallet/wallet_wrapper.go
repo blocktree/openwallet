@@ -398,7 +398,7 @@ func (wrapper *WalletWrapper) CreateAddress(accountID string, count uint64, deco
 
 		//记录要导入到核心钱包的地址
 		imported := ImportAddress{
-			*addr,
+			Address: *addr,
 		}
 
 		err = tx.Save(&imported)

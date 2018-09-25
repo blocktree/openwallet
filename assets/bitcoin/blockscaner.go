@@ -648,7 +648,7 @@ func (bs *BTCBlockScanner) ExtractTxOutput(blockHeight uint64, blockHash string,
 	confirmations := trx.Get("confirmations").Int()
 	vout := trx.Get("vout")
 	txid := trx.Get("txid").String()
-
+	//log.Debug("vout:", vout.Array())
 	for _, output := range vout.Array() {
 
 		amount := output.Get("value").String()
@@ -675,6 +675,9 @@ func (bs *BTCBlockScanner) ExtractTxOutput(blockHeight uint64, blockHash string,
 				}
 				outPut.Index = n
 				outPut.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("output_%s_%d_%s", txid, n, addr))))
+
+				//保存utxo到扩展字段
+				outPut.ExtParam = output.Get("scriptPubKey").Raw
 
 				if blockHeight > 0 {
 					outPut.BlockHeight = blockHeight

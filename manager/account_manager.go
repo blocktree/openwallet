@@ -185,12 +185,12 @@ func (wm *WalletManager) RefreshAssetsAccountBalance(appID, accountID string) er
 		return err
 	}
 
-	address, err := wrapper.GetAddressList(0, -1, "AccountID", accountID)
+	addresses, err := wrapper.GetAddressList(0, -1, "AccountID", accountID)
 	if err != nil {
 		return err
 	}
 
-	err = assetsMgr.GetAddressWithBalance(address...)
+	err = assetsMgr.GetAddressWithBalance(addresses...)
 	if err != nil {
 		return err
 	}
@@ -213,11 +213,12 @@ func (wm *WalletManager) RefreshAssetsAccountBalance(appID, accountID string) er
 
 	//批量插入到本地数据库
 	//设置utxo的钱包账户
-	for _, address := range address {
+	for _, address := range addresses {
 
 		amount, _ := decimal.NewFromString(address.Balance)
 		balanceDel = balanceDel.Add(amount)
-
+		log.Debug("address:", address.Address, "amount:", amount)
+		address.Balance = amount.StringFixed(assetsMgr.Decimal())
 		err = tx.Save(address)
 		if err != nil {
 			return err
@@ -393,7 +394,7 @@ func (wm *WalletManager) ImportWatchOnlyAddress(appID, walletID, accountID strin
 
 		//记录要导入到核心钱包的地址
 		imported := openwallet.ImportAddress{
-			*a,
+			Address: *a,
 		}
 
 		err = tx.Save(&imported)
