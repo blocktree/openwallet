@@ -94,7 +94,10 @@ func JoinMerchantNodeFlow() error {
 	if err != nil {
 		return err
 	}
-	config := NewConfig()
+	config,err := loadManagerConfig()
+	if err != nil {
+		return err
+	}
 	merchantNode.manager = manager.NewWalletManager(config)
 	merchantNode.Run()
 
