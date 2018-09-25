@@ -150,6 +150,8 @@ func NewConfig() *WalletConfig {
 	c.sumAddress = ""
 	//汇总执行间隔时间
 	c.cycleSeconds = time.Second * 10
+	//小数位长度
+	c.CoinDecimal = decimal.NewFromFloat(100000000)
 
 
 	//默认配置内容

@@ -15,30 +15,37 @@
 
 package tron
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestGetNowBlock(t *testing.T) {
 
 	if r, err := tw.GetNowBlock(); err != nil {
 		t.Errorf("GetNowBlock failed: %v\n", err)
 	} else {
-		t.Logf("GetNowBlock return: \n\t%+v\n", r.Transactions[0].Signature)
+		t.Logf("GetNowBlock return: \n\t%+v\n", r.Transactions[0])
+
+		printBlock(r)
 	}
 }
 
 func TestGetBlockByNum(t *testing.T) {
-	var num uint64 = 100
+	var num uint64 = 1237157
 
 	if r, err := tw.GetBlockByNum(num); err != nil {
 		t.Errorf("GetBlockByNum failed: %v\n", err)
 	} else {
 		t.Logf("GetBlockByNum return: \n\t%+v\n", r)
+
+		printBlock(r)
 	}
 }
 
 func TestGetBlockByID(t *testing.T) {
 
-	var blockID string = ""
+	var blockID string = "0000000000038809c59ee8409a3b6c051e369ef1096603c7ee723c16e2376c73"
 
 	if r, err := tw.GetBlockByID(blockID); err != nil {
 		t.Errorf("GetBlockByID failed: %v\n", err)
@@ -49,7 +56,7 @@ func TestGetBlockByID(t *testing.T) {
 
 func TestGetBlockByLimitNext(t *testing.T) {
 
-	var startSum, endSum uint64 = 0, 0
+	var startSum, endSum uint64 = 100000, 100001
 
 	if r, err := tw.GetBlockByLimitNext(startSum, endSum); err != nil {
 		t.Errorf("GetBlockByLimitNext failed: %v\n", err)
@@ -60,11 +67,16 @@ func TestGetBlockByLimitNext(t *testing.T) {
 
 func TestGetBlockByLatestNum(t *testing.T) {
 
-	var num uint64 = 0
+	var num uint64 = 3
 
 	if r, err := tw.GetBlockByLatestNum(num); err != nil {
 		t.Errorf("GetBlockByLatestNum failed: %v\n", err)
 	} else {
-		t.Logf("GetBlockByLatestNum return: \n\t%+v\n", r)
+		// t.Logf("GetBlockByLatestNum return: \n\t%+v\n", r)
+		for _, v := range r.Block {
+			// t.Logf("\tGetBlockByLatestNum return: \n\t%+v\n", v)
+			printBlock(v)
+			fmt.Println("")
+		}
 	}
 }

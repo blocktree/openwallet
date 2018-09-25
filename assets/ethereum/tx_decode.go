@@ -73,8 +73,8 @@ func (this *AddressTxStatistic) UpdateTime() {
 
 type EthTransactionDecoder struct {
 	AddrTxStatisMap *sync.Map
-	DecoderLocker   *sync.Mutex    //保护一些全局不可并发的操作, 如对AddrTxStatisMap的初始化
-	wm              *WalletManager //钱包管理者
+	//	DecoderLocker *sync.Mutex    //保护一些全局不可并发的操作, 如对AddrTxStatisMap的初始化
+	wm *WalletManager //钱包管理者
 }
 
 func (this *EthTransactionDecoder) GetTransactionCount2(address string) (*AddressTxStatistic, uint64, error) {
@@ -100,7 +100,7 @@ func (this *EthTransactionDecoder) GetTransactionCount2(address string) (*Addres
 		txStatis.UpdateTime()
 		return &txStatis, *txStatis.TransactionCount, nil
 	}
-	nonce, err := GetNonceForAddress(address)
+	nonce, err := GetNonceForAddress2(appendOxToAddress(address))
 	if err != nil {
 		openwLogger.Log.Errorf("get nonce for address via rpc failed, err=%v", err)
 		return nil, 0, err
@@ -198,7 +198,7 @@ func VerifyRawTransaction(rawTx *openwallet.RawTransaction) error {
 //NewTransactionDecoder 交易单解析器
 func NewTransactionDecoder(wm *WalletManager) *EthTransactionDecoder {
 	decoder := EthTransactionDecoder{}
-	decoder.DecoderLocker = new(sync.Mutex)
+	//	decoder.DecoderLocker = new(sync.Mutex)
 	decoder.wm = wm
 	decoder.AddrTxStatisMap = new(sync.Map)
 	decoder.RunClearAddrStatic()
