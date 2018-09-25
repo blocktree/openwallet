@@ -54,6 +54,7 @@ func TestNewNode(t *testing.T) {
 	node,_ := NewBitNodeNode(nodeConfig)
 	config := NewConfig()
 	config.EnableBlockScan  = true
+	config.IsTestnet = true
 	node.manager = manager.NewWalletManager(config)
 	node.manager.Init()
 	node.Run()

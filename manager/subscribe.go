@@ -22,7 +22,7 @@ import (
 
 //blockScanNotify 区块扫描结果通知
 func (wm *WalletManager) BlockScanNotify(header *openwallet.BlockHeader) error {
-	log.Debug("NewBlock:", header)
+	//log.Debug("NewBlock:", header)
 	if header.Fork {
 
 

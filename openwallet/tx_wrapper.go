@@ -223,7 +223,7 @@ func (wrapper *TransactionWrapper) SaveBlockExtractData(accountID string, data *
 	for _, output := range data.TxOutputs {
 		a, err := wrapper.GetAddress(output.Address)
 		if err != nil {
-
+			continue
 		}
 		output.AccountID = a.AccountID
 		err = tx.Save(output)
