@@ -18,9 +18,10 @@ package tron
 var (
 	tw *WalletManager
 
-	to_address    string = ""
-	owner_address string = ""
-	amount        uint64 = 0
+	to_address    string = "TWzVsJyUvTjVRwDTRNxUsLCjH9KY9gQgk2"
+	owner_address string = "TSdXzXKSQ3RQzQ5Ge8TiYfMQEjofSVQ8ax"
+	privateKey    string = "57ddf47e1b1aaabf244d1429f300a001e16fe407d9d4c9b6e43d19b128b4b442"
+	amount        uint64 = 1
 
 	txID string = "d5ec749ecc2a615399d8a6c864ea4c74ff9f523c2be0e341ac9be5d47d7c2d62"
 )

@@ -138,7 +138,7 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	//备份路径
 	c.backupDir = filepath.Join("data", strings.ToLower(c.Symbol), "backup")
 	//钱包服务API
-	c.ServerAPI = "http://127.0.0.1:28890"
+	c.ServerAPI = ""
 	//钱包安装的路径
 	c.NodeInstallPath = ""
 	//钱包数据文件目录

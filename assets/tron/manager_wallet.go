@@ -15,29 +15,48 @@
 
 package tron
 
-import "fmt"
+import (
+	"github.com/tidwall/gjson"
 
-func (wm *WalletManager) GetWitnesses() ([]string, error) {
+	"github.com/tronprotocol/grpc-gateway/api"
+)
 
-	var (
-		addresses = make([]string, 0)
-	)
+// wallet/listwitnesses Function：Query the list of Super Representatives demo: curl -X POSThttp://127.0.0.1:8090/wallet/listwitnesses Parameters：None Return value：List of all Super Representatives
+func (wm *WalletManager) ListWitnesses() (witnesses *api.WitnessList, err error) {
 
-	request := []interface{}{
-		// walletID,
-	}
-
-	res, err := wm.WalletClient.Call("/wallet/listwitnesses", request)
+	r, err := wm.WalletClient.Call2("/wallet/listwitnesses", nil)
 	if err != nil {
 		return nil, err
 	}
 
-	array := res.Get("witnesses").Array()
-	for _, a := range array {
-		fmt.Println("EEEEE = ", a)
-		addresses = append(addresses, a.String())
+	witnesses = &api.WitnessList{}
+	if err := gjson.Unmarshal(r, witnesses); err != nil {
+		return nil, err
 	}
 
-	return addresses, nil
+	return witnesses, nil
+}
 
+// wallet/listnodes
+// Function：List the nodes which the api fullnode is connecting on the network
+// demo: curl -X POST http://127.0.0.1:8090/wallet/listnodes
+// Parameters：None
+// Return value：List of nodes
+func (wm *WalletManager) ListNodes() (nodes *api.NodeList, err error) {
+
+	// request := []interface{}{
+	// 	// walletID,
+	// }
+
+	r, err := wm.WalletClient.Call2("/wallet/listnodes", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	nodes = &api.NodeList{}
+	if err := gjson.Unmarshal(r, nodes); err != nil {
+		return nil, err
+	}
+
+	return nodes, nil
 }
