@@ -45,9 +45,6 @@ publickey = ""
 # local node privateKey 
 privatekey = ""
 
-# merchant node api url
-merchant_node_url = ""
-
 # mq url
 merchant_node_url = ""
 
