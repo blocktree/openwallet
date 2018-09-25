@@ -18,12 +18,12 @@ package manager
 import "testing"
 
 func init() {
-	tm.Init()
+	//tm.Init()
 }
 
 func TestWalletManager_RescanBlockHeight(t *testing.T) {
 
 	sub := subscriber{}
 	tm.AddObserver(&sub)
-	tm.RescanBlockHeight("QTUM", 230763, 230766)
+	tm.RescanBlockHeight("BTC", 230763, 230766)
 }

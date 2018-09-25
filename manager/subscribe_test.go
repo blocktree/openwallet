@@ -25,7 +25,7 @@ type subscriber struct {
 }
 
 func init() {
-	tm.Init()
+	//tm.Init()
 }
 
 //BlockScanNotify 新区块扫描完成通知

@@ -242,6 +242,51 @@ func (wrapper *WalletWrapper) GetAddressList(offset, limit int, cols ...interfac
 	return addrs, nil
 }
 
+
+// GetImportAddressList 获取待导入
+func (wrapper *WalletWrapper) GetImportAddressList(offset, limit int, cols ...interface{}) ([]*ImportAddress, error) {
+	//打开数据库
+	db, err := wrapper.OpenStormDB()
+	if err != nil {
+		return nil, err
+	}
+	defer wrapper.CloseDB()
+
+	var addrs []*ImportAddress
+
+	query := make([]q.Matcher, 0)
+
+	if len(cols)%2 != 0 {
+		return nil, fmt.Errorf("condition param is not pair")
+	}
+
+	for i := 0; i < len(cols); i = i + 2 {
+		field := common.NewString(cols[i])
+		val := cols[i+1]
+		query = append(query, q.Eq(field.String(), val))
+	}
+
+	if limit > 0 {
+
+		err = db.Select(q.And(
+			query...,
+		)).Limit(limit).Skip(offset).Find(&addrs)
+
+	} else {
+
+		err = db.Select(q.And(
+			query...,
+		)).Skip(offset).Find(&addrs)
+
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("can not find addresses")
+	}
+
+	return addrs, nil
+}
+
 // CreateAddress 创建地址
 //@param accountID	指定账户
 //@param count		创建数量
@@ -347,6 +392,16 @@ func (wrapper *WalletWrapper) CreateAddress(accountID string, count uint64, deco
 		}
 
 		err = tx.Save(addr)
+		if err != nil {
+			return nil, err
+		}
+
+		//记录要导入到核心钱包的地址
+		imported := ImportAddress{
+			*addr,
+		}
+
+		err = tx.Save(&imported)
 		if err != nil {
 			return nil, err
 		}

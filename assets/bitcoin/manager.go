@@ -1872,6 +1872,7 @@ func (wm *WalletManager) LoadConfig() error {
 	wm.Config.RpcPassword = c.String("rpcPassword")
 	wm.Config.NodeInstallPath = c.String("nodeInstallPath")
 	wm.Config.IsTestNet, _ = c.Bool("isTestNet")
+	wm.Config.WalletPassword = c.String("walletPassword")
 	if wm.Config.IsTestNet {
 		wm.Config.WalletDataPath = c.String("testNetDataPath")
 	} else {
