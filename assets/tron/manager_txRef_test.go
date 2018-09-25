@@ -16,13 +16,12 @@
 package tron
 
 import (
-	"fmt"
 	"testing"
 )
 
 func TestCreateTransactionRef(t *testing.T) {
 
-	predictTxRaw := "0a7e0a021031220816b0c1a29ce3387c40e099ad83e02c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a1541b6c1abf9fb31c9077dfb3c25469e6e943ffbfa7a12154199fee02e1ee01189bc41a68e9069b7919ef2ad8218c0843d"
+	// predictTxRaw := "0a7e0a021031220816b0c1a29ce3387c40e099ad83e02c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a1541b6c1abf9fb31c9077dfb3c25469e6e943ffbfa7a12154199fee02e1ee01189bc41a68e9069b7919ef2ad8218c0843d"
 	to_address, owner_address, amount := "TQ1TiUzStbSLdEtACUDmzfMDpWUyo8cyCf", "TSdXzXKSQ3RQzQ5Ge8TiYfMQEjofSVQ8ax", uint64(1)
 
 	if r, err := tw.CreateTransactionRef(to_address, owner_address, amount); err != nil {
@@ -32,8 +31,8 @@ func TestCreateTransactionRef(t *testing.T) {
 		// 	t.Errorf("TestCreateTransaction return invalid RAW!")
 		// }
 		t.Logf("TestCreateTransaction return: \n\t%+v\n", r)
-		fmt.Println("Predict Tx Raw: ", predictTxRaw)
-		fmt.Println("Returns Tx Raw: ", r)
+		// fmt.Println("Predict Tx Raw: ", predictTxRaw)
+		// fmt.Println("Returns Tx Raw: ", r)
 	}
 
 }
