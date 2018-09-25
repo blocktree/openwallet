@@ -81,7 +81,10 @@ func (wm *WalletManager) BlockExtractDataNotify(sourceKey string, data *openwall
 	}
 
 	//更新账户余额
-	wm.RefreshAssetsAccountBalance(appID, accountID)
+	err = wm.RefreshAssetsAccountBalance(appID, accountID)
+	if err != nil {
+		log.Error("RefreshAssetsAccountBalance error:", err)
+	}
 
 	account, err := wrapper.GetAssetsAccountInfo(accountID)
 	if err != nil {
