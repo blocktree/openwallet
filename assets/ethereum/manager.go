@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"sync"
 
 	//	"log"
 	"math/big"
@@ -41,18 +42,12 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/openwallet"
-	"github.com/btcsuite/btcutil/hdkeychain"
+	owcrypt "github.com/blocktree/go-OWCrypt"
 	ethKStore "github.com/ethereum/go-ethereum/accounts/keystore"
-	ethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 const (
 	maxAddresNum = 10000
-)
-
-const (
-	ERC20TOKEN_DB = "erc20Token.db"
 )
 
 const (
@@ -63,16 +58,19 @@ const (
 )
 
 var (
-	// 节点客户端
-	client *Client
-	//秘钥存取
-	storage *keystore.HDKeystore
+// 节点客户端
+//	client *Client
+
+//秘钥存取
+//storage *keystore.HDKeystore
+//全局的manager
+//	g_manager *WalletManager
 )
 
-func init() {
-	storage = keystore.NewHDKeystore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+/*func init() {
+	storage = keystore.NewHDKeystore(KeyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	client = &Client{BaseURL: serverAPI, Debug: true}
-}
+}*/
 
 type WalletManager struct {
 	Storage      *hdkeystore.HDKeystore        //秘钥存取
@@ -82,12 +80,30 @@ type WalletManager struct {
 	Blockscanner *ETHBlockScanner              //区块扫描器
 	Decoder      openwallet.AddressDecoder     //地址编码器
 	TxDecoder    openwallet.TransactionDecoder //交易单编码器
+	//	RootDir        string                        //
+	locker         sync.Mutex //防止并发修改和读取配置, 可能用不上
+	WalletInSumOld map[string]*Wallet
+	StorageOld     *keystore.HDKeystore
 }
 
-func NewWalletManager() *WalletManager {
+func (this *WalletManager) GetConfig() WalletConfig {
+	this.locker.Lock()
+	defer this.locker.Unlock()
+	return *this.Config
+}
+
+func NewWalletManager(rootDir string) *WalletManager {
 	wm := WalletManager{}
-	wm.Config = NewConfig("frame_data", Symbol, MasterKey)
-	storage := hdkeystore.NewHDKeystore(wm.Config.keyDir, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
+	//wm.RootDir = rootDir
+
+	configPath := filepath.Join(rootDir, "eth", "conf")
+	wm.Config = &WalletConfig{}
+	_, err := wm.Config.LoadConfig(configPath, "eth.json", makeEthDefaultConfig(rootDir))
+	if err != nil {
+		log.Error("wm.Config.LoadConfig failed, err=", err)
+		os.Exit(-1)
+	}
+	storage := hdkeystore.NewHDKeystore(wm.Config.KeyDir, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
 	wm.Storage = storage
 	//参与汇总的钱包
 	wm.WalletsInSum = make(map[string]*openwallet.Wallet)
@@ -95,43 +111,71 @@ func NewWalletManager() *WalletManager {
 	wm.Blockscanner = NewETHBlockScanner(&wm)
 	wm.Decoder = &addressDecoder{}
 	wm.TxDecoder = NewTransactionDecoder(&wm)
+
+	wm.StorageOld = keystore.NewHDKeystore(wm.Config.KeyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	wm.WalletInSumOld = make(map[string]*Wallet)
+
+	client := &Client{BaseURL: wm.Config.ServerAPI, Debug: true}
+	wm.WalletClient = client
+	//	g_manager = &wm
 	return &wm
 }
 
-//CreateNewWallet 创建钱包
-func CreateNewWallet(name, password string) (*Wallet, string, error) {
-
+func (this *WalletManager) CreateWallet(name string, password string) (*Wallet, string, error) {
 	//检查钱包名是否存在
-	wallets, err := GetWalletKeys(keyDir)
+	wallets, err := GetWalletKeys(this.GetConfig().KeyDir)
 	if err != nil {
+		log.Error("GetWalletKeys failed, err=", err)
 		return nil, "", errors.New(fmt.Sprintf("get wallet keys failed, err = %v", err))
 	}
 
 	for _, w := range wallets {
 		if w.Alias == name {
+			log.Error("duplicated alias.")
 			return nil, "", errors.New("The wallet's alias is duplicated!")
 		}
 	}
 
-	//fmt.Printf("Verify password in bitcoin-core wallet...\n")
-	seed, err := hdkeychain.GenerateSeed(32)
+	//生成keystore
+	key, filePath, err := hdkeystore.StoreHDKey(this.GetConfig().KeyDir, name, password, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
 	if err != nil {
+		log.Error("create hdkeystore failed, err=", err)
 		return nil, "", err
 	}
 
-	extSeed, err := keystore.GetExtendSeed(seed, MasterKey)
+	// root/n' , 使用强化方案
+	hdPath := fmt.Sprintf("%s/%d'", key.RootPath, 1)
+	childKey, err := key.DerivedKeyWithPath(hdPath, owcrypt.ECC_CURVE_SECP256K1)
 	if err != nil {
+		log.Error("generate child key failed, err=", err)
 		return nil, "", err
 	}
 
-	key, keyFile, err := keystore.StoreHDKeyWithSeed(keyDir, name, password, extSeed, keystore.StandardScryptN, keystore.StandardScryptP)
+	publicKey := childKey.GetPublicKey().OWEncode()
+
+	w := Wallet{
+		WalletID:  key.KeyID,
+		Alias:     key.Alias,
+		RootPath:  key.RootPath,
+		KeyFile:   filePath,
+		HdPath:    hdPath,
+		PublicKey: publicKey,
+	}
+
+	db, err := w.OpenDB(this.GetConfig().DbPath)
 	if err != nil {
+		log.Error("open wallet db[", w.Alias, "] failed, err=")
+		return nil, "", err
+	}
+	defer db.Close()
+
+	err = db.Save(&w)
+	if err != nil {
+		log.Error("save wallet[", w.Alias, "] to db failed, err=", err)
 		return nil, "", err
 	}
 
-	w := Wallet{WalletID: key.RootId, Alias: key.Alias}
-
-	return &w, keyFile, nil
+	return &w, filePath, nil
 }
 
 func GetWalletKey(fileWitoutProfix string) (*Wallet, error) {
@@ -175,9 +219,10 @@ func GetWalletKey(fileWitoutProfix string) (*Wallet, error) {
 }
 
 func GetWalletKeys(dir string) ([]*Wallet, error) {
-	var key struct {
-		Alias  string `json:"alias"`
-		RootId string `json:"rootid"`
+	type keyType struct {
+		Alias    string `json:"alias"`
+		KeyId    string `json:"keyid"`
+		RootPath string `json:"rootpath"`
 	}
 	buf := new(bufio.Reader)
 	wallets := make([]*Wallet, 0)
@@ -193,14 +238,13 @@ func GetWalletKeys(dir string) ([]*Wallet, error) {
 
 		buf.Reset(fd)
 		// Parse the address.
-		key.Alias = ""
-		key.RootId = ""
+		var key keyType
 		err = json.NewDecoder(buf).Decode(&key)
 		if err != nil {
 			return nil
 		}
 
-		return &Wallet{WalletID: key.RootId, Alias: key.Alias}
+		return &Wallet{WalletID: key.KeyId, Alias: key.Alias, RootPath: key.RootPath}
 	}
 
 	//扫描key目录的所有钱包
@@ -220,7 +264,7 @@ func GetWalletKeys(dir string) ([]*Wallet, error) {
 			continue
 		}
 
-		path := filepath.Join(keyDir, fi.Name())
+		path := filepath.Join(dir, fi.Name())
 
 		w := readWallet(path)
 		w.KeyFile = fi.Name()
@@ -245,26 +289,26 @@ func skipKeyFile(fi os.FileInfo) bool {
 	return false
 }
 
-func SaveERC20TokenConfig(config *ERC20Token) error {
-	db, err := OpenDB(dbPath, ERC20TOKEN_DB)
+func (this *WalletManager) SaveERC20TokenConfig(config *ERC20Token) error {
+	db, err := OpenDB(this.GetConfig().DbPath, ERC20TOKEN_DB)
 	defer db.Close()
 	if err != nil {
-		openwLogger.Log.Errorf("open db for path [%v] failed, err = %v", dbPath+"/"+ERC20TOKEN_DB, err)
+		openwLogger.Log.Errorf("open db for path [%v] failed, err = %v", this.GetConfig().DbPath+"/"+ERC20TOKEN_DB, err)
 		return err
 	}
 	err = db.Save(config)
 	if err != nil {
-		openwLogger.Log.Errorf("save db for path [%v] failed, err = %v", dbPath+"/"+ERC20TOKEN_DB, err)
+		openwLogger.Log.Errorf("save db for path [%v] failed, err = %v", this.GetConfig().DbPath+"/"+ERC20TOKEN_DB, err)
 		return err
 	}
 	return nil
 }
 
-func GetERC20TokenList() ([]ERC20Token, error) {
-	db, err := OpenDB(dbPath, ERC20TOKEN_DB)
+func (this *WalletManager) GetERC20TokenList() ([]ERC20Token, error) {
+	db, err := OpenDB(this.GetConfig().DbPath, ERC20TOKEN_DB)
 	defer db.Close()
 	if err != nil {
-		openwLogger.Log.Errorf("open db for path [%v] failed, err = %v", dbPath+"/"+ERC20TOKEN_DB, err)
+		openwLogger.Log.Errorf("open db for path [%v] failed, err = %v", this.GetConfig().DbPath+"/"+ERC20TOKEN_DB, err)
 		return nil, err
 	}
 	tokens := make([]ERC20Token, 0)
@@ -276,8 +320,8 @@ func GetERC20TokenList() ([]ERC20Token, error) {
 	return tokens, nil
 }
 
-func ERC20GetWalletList(erc20Token *ERC20Token) ([]*Wallet, error) {
-	wallets, err := GetWalletKeys(keyDir)
+func (this *WalletManager) ERC20GetWalletList(erc20Token *ERC20Token) ([]*Wallet, error) {
+	wallets, err := GetWalletKeys(this.GetConfig().KeyDir)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +329,7 @@ func ERC20GetWalletList(erc20Token *ERC20Token) ([]*Wallet, error) {
 	for i, _ := range wallets {
 		wallets[i].erc20Token = &ERC20Token{}
 		*wallets[i].erc20Token = *erc20Token
-		tokenBanlance, err := ERC20GetWalletBalance(wallets[i])
+		tokenBanlance, err := this.ERC20GetWalletBalance(wallets[i])
 		if err != nil {
 
 			openwLogger.Log.Errorf(fmt.Sprintf("find wallet balance failed, err=%v\n", err))
@@ -298,7 +342,7 @@ func ERC20GetWalletList(erc20Token *ERC20Token) ([]*Wallet, error) {
 }
 
 //GetWalletList 获取钱包列表
-func GetWalletList() ([]*Wallet, error) {
+func (this *WalletManager) GetLocalWalletList(keyDir string, dbPath string) ([]*Wallet, error) {
 
 	wallets, err := GetWalletKeys(keyDir)
 	if err != nil {
@@ -307,8 +351,13 @@ func GetWalletList() ([]*Wallet, error) {
 
 	//获取钱包余额
 	for i, _ := range wallets {
-		//fmt.Println("loop to wallet balance")
-		balance, err := GetWalletBalance(wallets[i])
+		err = wallets[i].RestoreFromDb(this.GetConfig().DbPath)
+		if err != nil {
+			log.Error("restore wallet[", wallets[i].WalletID, "] from db failed, err=", err)
+			return nil, err
+		}
+
+		balance, err := this.GetWalletBalance(dbPath, wallets[i])
 		if err != nil {
 
 			openwLogger.Log.Errorf(fmt.Sprintf("find wallet balance failed, err=%v\n", err))
@@ -321,8 +370,8 @@ func GetWalletList() ([]*Wallet, error) {
 }
 
 //AddWalletInSummary 添加汇总钱包账户
-func AddWalletInSummary(wid string, wallet *Wallet) {
-	walletsInSum[wid] = wallet
+func (this *WalletManager) AddWalletInSummary(wid string, wallet *Wallet) {
+	this.WalletInSumOld[wid] = wallet
 }
 
 //阻塞式的执行外部shell命令的函数,等待执行完毕并返回标准输出
@@ -340,18 +389,18 @@ func exec_shell(s string) (string, error) {
 	return out.String(), err
 }
 
-func BackupWalletToDefaultPath(wallet *Wallet, password string) (string, error) {
-	newBackupDir := filepath.Join(backupDir, wallet.FileName()+"-"+common.TimeFormat(TIME_POSTFIX))
-	return BackupWallet(newBackupDir, wallet, password)
+func (this *WalletManager) BackupWalletToDefaultPath(wallet *Wallet, password string) (string, error) {
+	newBackupDir := filepath.Join(this.GetConfig().BackupDir, wallet.FileName()+"-"+common.TimeFormat(TIME_POSTFIX))
+	return this.BackupWallet(newBackupDir, wallet, password)
 }
 
-func BackupWallet(newBackupDir string, wallet *Wallet, password string) (string, error) {
+func (this *WalletManager) BackupWallet(newBackupDir string, wallet *Wallet, password string) (string, error) {
 	/*w, err := GetWalletInfo(wallet.WalletID)
 	if err != nil {
 		return "", err
 	}*/
 
-	err := UnlockWallet(wallet, password)
+	err := this.UnlockWallet(wallet, password)
 	if err != nil {
 		openwLogger.Log.Errorf("unlock wallet failed, err=%v", err)
 		return "", err
@@ -361,10 +410,10 @@ func BackupWallet(newBackupDir string, wallet *Wallet, password string) (string,
 	files := make([]string, 0)
 
 	//创建备份文件夹
-	//newBackupDir := filepath.Join(backupDir, w.FileName()+"-"+common.TimeFormat("20060102150405"))
+	//newBackupDir := filepath.Join(BackupDir, w.FileName()+"-"+common.TimeFormat("20060102150405"))
 	file.MkdirAll(newBackupDir)
 
-	addrs, err := GetAddressesByWallet(wallet)
+	addrs, err := this.GetAddressesByWallet(this.GetConfig().DbPath, wallet)
 	if err != nil {
 		openwLogger.Log.Errorf("get addresses by wallet failed, err = %v", err)
 		return "", err
@@ -382,9 +431,9 @@ func BackupWallet(newBackupDir string, wallet *Wallet, password string) (string,
 		fmt.Println("address[", k, "], exist[", v, "]")
 	}*/
 
-	rd, err := ioutil.ReadDir(EthereumKeyPath)
+	rd, err := ioutil.ReadDir(this.GetConfig().EthereumKeyPath)
 	if err != nil {
-		openwLogger.Log.Errorf("open ethereum key path [%v] failed, err=%v", EthereumKeyPath, err)
+		openwLogger.Log.Errorf("open ethereum key path [%v] failed, err=%v", this.GetConfig().EthereumKeyPath, err)
 		return "", err
 	}
 
@@ -423,7 +472,7 @@ func BackupWallet(newBackupDir string, wallet *Wallet, password string) (string,
 
 	//备份该钱包下的所有地址
 	for _, keyfile := range files {
-		err := file.Copy(EthereumKeyPath+"/"+keyfile, newBackupDir+"/")
+		err := file.Copy(this.GetConfig().EthereumKeyPath+"/"+keyfile, newBackupDir+"/")
 		if err != nil {
 			openwLogger.Log.Errorf("backup key faile failed, err = %v", err)
 			return "", err
@@ -431,15 +480,15 @@ func BackupWallet(newBackupDir string, wallet *Wallet, password string) (string,
 	}
 
 	//备份钱包key文件
-	file.Copy(filepath.Join(keyDir, wallet.FileName()+".key"), newBackupDir)
+	file.Copy(filepath.Join(this.GetConfig().KeyDir, wallet.FileName()+".key"), newBackupDir)
 
 	//备份地址数据库
-	file.Copy(filepath.Join(dbPath, wallet.FileName()+".db"), newBackupDir)
+	file.Copy(filepath.Join(this.GetConfig().DbPath, wallet.FileName()+".db"), newBackupDir)
 
 	return newBackupDir, nil
 }
 
-func GetWalletInfo(walletID string) (*Wallet, error) {
+func (this *WalletManager) GetWalletInfo(keyDir string, dbPath string, walletID string) (*Wallet, error) {
 	wallets, err := GetWalletKeys(keyDir)
 	if err != nil {
 		return nil, err
@@ -448,7 +497,12 @@ func GetWalletInfo(walletID string) (*Wallet, error) {
 	//获取钱包余额
 	for _, w := range wallets {
 		if w.WalletID == walletID {
-			balance, err := GetWalletBalance(w)
+			err = w.RestoreFromDb(this.GetConfig().DbPath)
+			if err != nil {
+				log.Error("restore from db failed, err=", err)
+				return nil, err
+			}
+			balance, err := this.GetWalletBalance(dbPath, w)
 			if err != nil {
 				return nil, err
 			}
@@ -512,8 +566,8 @@ func verifyBackupWallet(wallet *Wallet, keyPath string, password string) error {
 	return nil
 }
 
-func UnlockWallet(wallet *Wallet, password string) error {
-	_, err := wallet.HDKey(password, storage)
+func (this *WalletManager) UnlockWallet(wallet *Wallet, password string) error {
+	_, err := wallet.HDKey2(password)
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
 		return err
@@ -521,16 +575,16 @@ func UnlockWallet(wallet *Wallet, password string) error {
 	return nil
 }
 
-func CreateAddressForTest(name, password string, count uint64) (*ethKStore.Key, *Address, error) {
+func (this *WalletManager) CreateAddressForTest(name, password string, count uint64) (*ethKStore.Key, *Address, error) {
 	//读取钱包
-	w, err := GetWalletInfo(name)
+	w, err := this.GetWalletInfo("", "", name)
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("get wallet info, err=%v\n", err))
 		return nil, nil, err
 	}
 
 	//验证钱包
-	keyroot, err := w.HDKey(password, storage)
+	keyroot, err := w.HDKey(password, this.StorageOld)
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
 		return nil, nil, err
@@ -546,16 +600,20 @@ func CreateAddressForTest(name, password string, count uint64) (*ethKStore.Key, 
 	return keyCombo, address, nil
 }
 
-func CreateBatchAddress(name, password string, count uint64) error {
+func (this *WalletManager) CreateAddress() error {
+	return nil
+}
+
+func (this *WalletManager) CreateBatchAddress(name, password string, count uint64) error {
 	//读取钱包
-	w, err := GetWalletInfo(name)
+	w, err := this.GetWalletInfo(this.GetConfig().KeyDir, this.GetConfig().DbPath, name)
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("get wallet info, err=%v\n", err))
 		return err
 	}
 
 	//验证钱包
-	keyroot, err := w.HDKey(password, storage)
+	keyroot, err := w.HDKey(password, this.StorageOld)
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
 		return err
@@ -563,14 +621,14 @@ func CreateBatchAddress(name, password string, count uint64) error {
 
 	timestamp := uint64(time.Now().Unix())
 
-	db, err := w.OpenDB()
+	db, err := w.OpenDB(this.GetConfig().DbPath)
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("open db, err=%v\n", err))
 		return err
 	}
 	defer db.Close()
 
-	ethKeyStore := ethKStore.NewKeyStore(EthereumKeyPath, ethKStore.StandardScryptN, ethKStore.StandardScryptP)
+	ethKeyStore := ethKStore.NewKeyStore(this.GetConfig().EthereumKeyPath, ethKStore.StandardScryptN, ethKStore.StandardScryptP)
 
 	tx, err := db.Begin(true)
 	if err != nil {
@@ -658,14 +716,14 @@ func (this *txFeeInfo) CalcFee() error {
 	return nil
 }
 
-func GetTransactionFeeEstimated(from string, to string, value *big.Int, data string) (*txFeeInfo, error) {
-	gasLimit, err := ethGetGasEstimated(makeGasEstimatePara(from, to, value, data))
+func (this *WalletManager) GetTransactionFeeEstimated(from string, to string, value *big.Int, data string) (*txFeeInfo, error) {
+	gasLimit, err := this.WalletClient.ethGetGasEstimated(makeGasEstimatePara(from, to, value, data))
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("get gas limit failed, err = %v\n", err))
 		return nil, err
 	}
 
-	gasPrice, err := ethGetGasPrice()
+	gasPrice, err := this.WalletClient.ethGetGasPrice()
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("get gas price failed, err = %v\n", err))
 		return nil, err
@@ -684,7 +742,7 @@ func GetTransactionFeeEstimated(from string, to string, value *big.Int, data str
 	return feeInfo, nil
 }
 
-func GetERC20TokenTransactionFeeEstimated(from string, to string, data string) (*txFeeInfo, error) {
+func (this *WalletManager) GetERC20TokenTransactionFeeEstimated(from string, to string, data string) (*txFeeInfo, error) {
 	/*gasLimit, err := ethGetGasEstimated(makeERC20TokenTransGasEstimatePara(from, to, data))
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("get gas limit failed, err = %v\n", err))
@@ -706,10 +764,10 @@ func GetERC20TokenTransactionFeeEstimated(from string, to string, data string) (
 		Fee:      fee,
 	}
 	return feeInfo, nil*/
-	return GetTransactionFeeEstimated(from, to, nil, data)
+	return this.GetTransactionFeeEstimated(from, to, nil, data)
 }
 
-func GetSimpleTransactionFeeEstimated(from string, to string, amount *big.Int) (*txFeeInfo, error) {
+func (this *WalletManager) GetSimpleTransactionFeeEstimated(from string, to string, amount *big.Int) (*txFeeInfo, error) {
 	/*gasLimit, err := ethGetGasEstimated(makeSimpleTransGasEstimatedPara(from, to, amount))
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("get gas limit failed, err = %v\n", err))
@@ -731,19 +789,19 @@ func GetSimpleTransactionFeeEstimated(from string, to string, amount *big.Int) (
 		Fee:      fee,
 	}
 	return feeInfo, nil*/
-	return GetTransactionFeeEstimated(from, to, amount, "")
+	return this.GetTransactionFeeEstimated(from, to, amount, "")
 }
 
-func ERC20SendTransaction(wallet *Wallet, to string, amount *big.Int, password string, feesInSender bool) ([]string, error) {
+func (this *WalletManager) ERC20SendTransaction(wallet *Wallet, to string, amount *big.Int, password string, feesInSender bool) ([]string, error) {
 	var txIds []string
 
-	err := UnlockWallet(wallet, password)
+	err := this.UnlockWallet(wallet, password)
 	if err != nil {
 		openwLogger.Log.Errorf("unlock wallet [%v]. failed, err=%v", wallet.WalletID, err)
 		return nil, err
 	}
 
-	addrs, err := ERC20GetAddressesByWallet(wallet)
+	addrs, err := this.ERC20GetAddressesByWallet(this.GetConfig().DbPath, wallet)
 	if err != nil {
 		openwLogger.Log.Errorf("failed to get addresses from db, err = %v", err)
 		return nil, err
@@ -777,7 +835,7 @@ func ERC20SendTransaction(wallet *Wallet, to string, amount *big.Int, password s
 			openwLogger.Log.Errorf("make token transaction data failed, err=%v", err)
 			return nil, err
 		}
-		fee, err = GetERC20TokenTransactionFeeEstimated(addrs[i].Address, wallet.erc20Token.Address, dataPara)
+		fee, err = this.GetERC20TokenTransactionFeeEstimated(addrs[i].Address, wallet.erc20Token.Address, dataPara)
 		if err != nil {
 			openwLogger.Log.Errorf("get erc token transaction fee estimated failed, err = %v", err)
 			continue
@@ -788,7 +846,7 @@ func ERC20SendTransaction(wallet *Wallet, to string, amount *big.Int, password s
 			continue
 		}
 
-		txid, err := SendTransactionToAddr(makeERC20TokenTransactionPara(addrs[i], wallet.erc20Token.Address, dataPara, password, fee))
+		txid, err := this.SendTransactionToAddr(makeERC20TokenTransactionPara(addrs[i], wallet.erc20Token.Address, dataPara, password, fee))
 		if err != nil {
 			openwLogger.Log.Errorf("SendTransactionToAddr failed, err=%v", err)
 			if txid == "" {
@@ -803,16 +861,16 @@ func ERC20SendTransaction(wallet *Wallet, to string, amount *big.Int, password s
 	return txIds, nil
 }
 
-func SendTransaction(wallet *Wallet, to string, amount *big.Int, password string, feesInSender bool) ([]string, error) {
+func (this *WalletManager) SendTransaction(wallet *Wallet, to string, amount *big.Int, password string, feesInSender bool) ([]string, error) {
 	var txIds []string
 
-	err := UnlockWallet(wallet, password)
+	err := this.UnlockWallet(wallet, password)
 	if err != nil {
 		openwLogger.Log.Errorf("unlock wallet [%v]. failed, err=%v", wallet.WalletID, err)
 		return nil, err
 	}
 
-	addrs, err := GetAddressesByWallet(wallet)
+	addrs, err := this.GetAddressesByWallet(this.GetConfig().DbPath, wallet)
 	if err != nil {
 		openwLogger.Log.Errorf("failed to get addresses from db, err = %v", err)
 		return nil, err
@@ -838,7 +896,7 @@ func SendTransaction(wallet *Wallet, to string, amount *big.Int, password string
 		//如果该地址的余额足够支付转账
 		if addrs[i].balance.Cmp(amount) >= 0 {
 			amountToSend = *amount
-			fee, err = GetSimpleTransactionFeeEstimated(addrs[i].Address, to, &amountToSend)
+			fee, err = this.GetSimpleTransactionFeeEstimated(addrs[i].Address, to, &amountToSend)
 			if err != nil {
 				openwLogger.Log.Errorf("%v", err)
 				continue
@@ -863,7 +921,7 @@ func SendTransaction(wallet *Wallet, to string, amount *big.Int, password string
 
 		} else {
 			amountToSend = *addrs[i].balance
-			fee, err = GetSimpleTransactionFeeEstimated(addrs[i].Address, to, &amountToSend)
+			fee, err = this.GetSimpleTransactionFeeEstimated(addrs[i].Address, to, &amountToSend)
 			if err != nil {
 				openwLogger.Log.Errorf("%v", err)
 				continue
@@ -881,7 +939,7 @@ func SendTransaction(wallet *Wallet, to string, amount *big.Int, password string
 			//fmt.Println("amount to send applied fee, ", amountToSend.String())
 		}
 
-		txid, err := SendTransactionToAddr(makeSimpleTransactionPara(addrs[i], to, &amountToSend, password, fee))
+		txid, err := this.SendTransactionToAddr(makeSimpleTransactionPara(addrs[i], to, &amountToSend, password, fee))
 		if err != nil {
 			openwLogger.Log.Errorf("SendTransactionToAddr failed, err=%v", err)
 			if txid == "" {
@@ -920,14 +978,14 @@ func ConvertToBigInt(value string, base int) (*big.Int, error) {
 	return bigvalue, nil
 }
 
-func UnlockAddr(address string, password string, secs int) error {
+func (this *Client) UnlockAddr(address string, password string, secs int) error {
 	params := []interface{}{
 		address,
 		password,
 		secs,
 	}
 
-	result, err := client.Call("personal_unlockAccount", 1, params)
+	result, err := this.Call("personal_unlockAccount", 1, params)
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("unlock address [%v] faield, err = %v \n", address, err))
 		return err
@@ -941,12 +999,12 @@ func UnlockAddr(address string, password string, secs int) error {
 	return nil
 }
 
-func LockAddr(address string) error {
+func (this *Client) LockAddr(address string) error {
 	params := []interface{}{
 		address,
 	}
 
-	result, err := client.Call("personal_lockAccount", 1, params)
+	result, err := this.Call("personal_lockAccount", 1, params)
 	if err != nil {
 		errInfo := fmt.Sprintf("lock address [%v] faield, err = %v \n", address, err)
 		openwLogger.Log.Errorf(errInfo)
@@ -962,7 +1020,7 @@ func LockAddr(address string) error {
 	return nil
 }
 
-func createRawTransaction(from string, to string, value *big.Int, data string) ([]byte, error) {
+/*func createRawTransaction(from string, to string, value *big.Int, data string) ([]byte, error) {
 	fee, err := GetTransactionFeeEstimated(from, to, value, data)
 	if err != nil {
 		openwLogger.Log.Errorf("GetTransactionFeeEstimated from[%v] -> to[%v] failed, err=%v", from, to, err)
@@ -975,21 +1033,21 @@ func createRawTransaction(from string, to string, value *big.Int, data string) (
 		return nil, err
 	}
 
-	signer := types.NewEIP155Signer(big.NewInt(chainID))
+	signer := types.NewEIP155Signer(big.NewInt(CHAIN_ID))
 
 	tx := types.NewTransaction(nonce, ethcommon.HexToAddress(to),
 		value, fee.GasLimit.Uint64(), fee.GasPrice, []byte(data))
 	msg := signer.Hash(tx)
 	return msg[:], nil
-}
+}*/
 
 func verifyTransaction(nonce uint64, to string, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) error {
 	return nil
 }
 
-func ethGetGasPrice() (*big.Int, error) {
+func (this *Client) ethGetGasPrice() (*big.Int, error) {
 	params := []interface{}{}
-	result, err := client.Call("eth_gasPrice", 1, params)
+	result, err := this.Call("eth_gasPrice", 1, params)
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("get gas price failed, err = %v \n", err))
 		return big.NewInt(0), err
@@ -1009,8 +1067,8 @@ func ethGetGasPrice() (*big.Int, error) {
 	return gasLimit, nil
 }
 
-func ERC20GetWalletBalance(wallet *Wallet) (*big.Int, error) {
-	addrs, err := ERC20GetAddressesByWallet(wallet)
+func (this *WalletManager) ERC20GetWalletBalance(wallet *Wallet) (*big.Int, error) {
+	addrs, err := this.ERC20GetAddressesByWallet(this.GetConfig().DbPath, wallet)
 	if err != nil {
 		openwLogger.Log.Errorf("get address by wallet failed, err = %v", err)
 		return big.NewInt(0), nil
@@ -1026,8 +1084,8 @@ func ERC20GetWalletBalance(wallet *Wallet) (*big.Int, error) {
 }
 
 //金额的单位是wei
-func GetWalletBalance(wallet *Wallet) (*big.Int, error) {
-	addrs, err := GetAddressesByWallet(wallet)
+func (this *WalletManager) GetWalletBalance(dbPath string, wallet *Wallet) (*big.Int, error) {
+	addrs, err := this.GetAddressesByWallet(dbPath, wallet)
 	if err != nil {
 		openwLogger.Log.Errorf("get address by wallet failed, err = %v", err)
 		return big.NewInt(0), nil
@@ -1047,9 +1105,9 @@ func GetWalletBalance(wallet *Wallet) (*big.Int, error) {
 	return balanceTotal, nil
 }
 
-func ERC20GetAddressesByWallet(wallet *Wallet) ([]*Address, error) {
+func (this *WalletManager) ERC20GetAddressesByWallet(dbPath string, wallet *Wallet) ([]*Address, error) {
 	addrs := make([]*Address, 0)
-	db, err := wallet.OpenDB()
+	db, err := wallet.OpenDB(dbPath)
 	if err != nil {
 		return addrs, err
 	}
@@ -1061,13 +1119,13 @@ func ERC20GetAddressesByWallet(wallet *Wallet) ([]*Address, error) {
 	}
 
 	for i, _ := range addrs {
-		tokenBalance, err := ERC20GetAddressBalance(addrs[i].Address, wallet.erc20Token.Address)
+		tokenBalance, err := this.WalletClient.ERC20GetAddressBalance(addrs[i].Address, wallet.erc20Token.Address)
 		if err != nil {
 			openwLogger.Log.Errorf("get address[%v] erc20 token balance failed, err=%v", addrs[i].Address, err)
 			return addrs, err
 		}
 
-		balance, err := GetAddrBalance(addrs[i].Address)
+		balance, err := this.WalletClient.GetAddrBalance(addrs[i].Address)
 		if err != nil {
 			errinfo := fmt.Sprintf("get balance of addr[%v] failed, err=%v", addrs[i].Address, err)
 			return addrs, errors.New(errinfo)
@@ -1078,9 +1136,9 @@ func ERC20GetAddressesByWallet(wallet *Wallet) ([]*Address, error) {
 	return addrs, nil
 }
 
-func GetAddressesByWallet(wallet *Wallet) ([]*Address, error) {
+func (this *WalletManager) GetAddressesByWallet(dbPath string, wallet *Wallet) ([]*Address, error) {
 	addrs := make([]*Address, 0)
-	db, err := wallet.OpenDB()
+	db, err := wallet.OpenDB(dbPath)
 	if err != nil {
 		return addrs, err
 	}
@@ -1092,7 +1150,7 @@ func GetAddressesByWallet(wallet *Wallet) ([]*Address, error) {
 	}
 
 	for i, _ := range addrs {
-		balance, err := GetAddrBalance(addrs[i].Address)
+		balance, err := this.WalletClient.GetAddrBalance(addrs[i].Address)
 		if err != nil {
 			errinfo := fmt.Sprintf("get balance of addr[%v] failed, err=%v", addrs[i].Address, err)
 			return addrs, errors.New(errinfo)
@@ -1104,51 +1162,51 @@ func GetAddressesByWallet(wallet *Wallet) ([]*Address, error) {
 	return addrs, nil
 }
 
-func ERC20SummaryWallets() {
+func (this *WalletManager) ERC20SummaryWallets() {
 	log.Info("[Summary Wallet Start]------", common.TimeFormat("2006-01-02 15:04:05"))
 	//读取参与汇总的钱包
-	for _, wallet := range walletsInSum {
-		tokenBalance, err := ERC20GetWalletBalance(wallet)
+	for _, wallet := range this.WalletInSumOld {
+		tokenBalance, err := this.ERC20GetWalletBalance(wallet)
 		if err != nil {
 			openwLogger.Log.Errorf(fmt.Sprintf("get wallet[%v] ERC20 token balance failed, err = %v", wallet.WalletID, err))
 			continue
 		}
 
-		if tokenBalance.Cmp(threshold) > 0 {
+		if tokenBalance.Cmp(this.GetConfig().Threshold) > 0 {
 			log.Debugf("Summary account[%s]balance = %v \n", wallet.WalletID, tokenBalance)
 			log.Debugf("Summary account[%s]Start Send Transaction\n", wallet.WalletID)
 
-			txId, err := ERC20SendTransaction(wallet, sumAddress, tokenBalance, wallet.Password, true)
+			txId, err := this.ERC20SendTransaction(wallet, this.GetConfig().SumAddress, tokenBalance, wallet.Password, true)
 			if err != nil {
 				log.Debugf("Summary account[%s]unexpected error: %v\n", wallet.WalletID, err)
 				continue
 			} else {
-				log.Debugf("Summary account[%s]successfully，Received Address[%s], TXID：%s\n", wallet.WalletID, sumAddress, txId)
+				log.Debugf("Summary account[%s]successfully，Received Address[%s], TXID：%s\n", wallet.WalletID, this.GetConfig().SumAddress, txId)
 			}
 		}
 	}
 }
 
-func SummaryWallets() {
+func (this *WalletManager) SummaryWallets() {
 	log.Debugf("[Summary Wallet Start]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
 	//读取参与汇总的钱包
-	for _, wallet := range walletsInSum {
-		balance, err := GetWalletBalance(wallet)
+	for _, wallet := range this.WalletInSumOld {
+		balance, err := this.GetWalletBalance(this.GetConfig().DbPath, wallet)
 		if err != nil {
 			openwLogger.Log.Errorf(fmt.Sprintf("get wallet[%v] balance failed, err = %v", wallet.WalletID, err))
 			continue
 		}
 
-		if balance.Cmp(threshold) > 0 {
+		if balance.Cmp(this.GetConfig().Threshold) > 0 {
 			log.Debugf("Summary account[%s]balance = %v \n", wallet.WalletID, balance)
 			log.Debugf("Summary account[%s]Start Send Transaction\n", wallet.WalletID)
 
-			txId, err := SendTransaction(wallet, sumAddress, balance, wallet.Password, true)
+			txId, err := this.SendTransaction(wallet, this.GetConfig().SumAddress, balance, wallet.Password, true)
 			if err != nil {
 				log.Debugf("Summary account[%s]unexpected error: %v\n", wallet.WalletID, err)
 				continue
 			} else {
-				log.Debugf("Summary account[%s]successfully，Received Address[%s], TXID：%s\n", wallet.WalletID, sumAddress, txId)
+				log.Debugf("Summary account[%s]successfully，Received Address[%s], TXID：%s\n", wallet.WalletID, this.GetConfig().SumAddress, txId)
 			}
 		}
 	}
@@ -1157,7 +1215,7 @@ func SummaryWallets() {
 }
 
 //RestoreWallet 恢复钱包
-func RestoreWallet(keyFile string, password string) error {
+func (this *WalletManager) RestoreWallet(keyFile string, password string) error {
 	fmt.Printf("Validating key file... \n")
 
 	finfo, err := os.Stat(keyFile)
@@ -1205,20 +1263,20 @@ func RestoreWallet(keyFile string, password string) error {
 		return err
 	}
 
-	walletexist, err := GetWalletInfo(walletId)
+	walletexist, err := this.GetWalletInfo(this.GetConfig().KeyDir, this.GetConfig().DbPath, walletId)
 	if err != nil && err.Error() != WALLET_NOT_EXIST_ERR {
 		errinfo := fmt.Sprintf("get wallet [%v] info failed, err = %v ", walletId, err)
 		openwLogger.Log.Errorf(errinfo)
 		return errors.New(errinfo)
 	} else if err == nil {
-		err = UnlockWallet(walletexist, password)
+		err = this.UnlockWallet(walletexist, password)
 		if err != nil {
 			openwLogger.Log.Errorf("unlock the existing wallet [%v] password failed, err= %v.", walletKeyBackupPath, err)
 			return err
 		}
 
-		newBackupDir := filepath.Join(backupDir+"/restore", walletexist.FileName()+"-"+common.TimeFormat(TIME_POSTFIX))
-		_, err := BackupWallet(newBackupDir, walletexist, password)
+		newBackupDir := filepath.Join(this.GetConfig().BackupDir+"/restore", walletexist.FileName()+"-"+common.TimeFormat(TIME_POSTFIX))
+		_, err := this.BackupWallet(newBackupDir, walletexist, password)
 		if err != nil {
 			errinfo := fmt.Sprintf("backup wallet[%v] before restore failed,err = %v ", walletexist.WalletID, err)
 			openwLogger.Log.Errorf(errinfo)
@@ -1271,12 +1329,12 @@ func RestoreWallet(keyFile string, password string) error {
 		var dst string
 		//		fmt.Println("src:", src)
 		if filetype == BACKUP_FILE_TYPE_ADDRESS {
-			dst = EthereumKeyPath + "/"
+			dst = this.GetConfig().EthereumKeyPath + "/"
 		} else if filetype == BACKUP_FILE_TYPE_WALLET_DB {
-			dst = dbPath + "/"
+			dst = this.GetConfig().DbPath + "/"
 			//			fmt.Println("db file:", filename)
 		} else if filetype == BACKUP_FILE_TYPE_WALLET_KEY {
-			dst = keyDir + "/"
+			dst = this.GetConfig().KeyDir + "/"
 			//			fmt.Println("key file:", filename)
 		} else {
 			continue
@@ -1293,8 +1351,8 @@ func RestoreWallet(keyFile string, password string) error {
 	return nil
 }
 
-func GetNonceForAddress2(address string) (uint64, error) {
-	txpool, err := ethGetTxPoolContent()
+func (this *WalletManager) GetNonceForAddress2(address string) (uint64, error) {
+	txpool, err := this.WalletClient.ethGetTxPoolContent()
 	if err != nil {
 		openwLogger.Log.Errorf("ethGetTxPoolContent failed, err = %v", err)
 		return 0, err
@@ -1307,7 +1365,7 @@ func GetNonceForAddress2(address string) (uint64, error) {
 	}
 	log.Debugf("sequent max nonce:%v", max)
 	log.Debugf("sequent nonce count:%v", count)
-	txCount, err := ethGetTransactionCount(address)
+	txCount, err := this.WalletClient.ethGetTransactionCount(address)
 	if err != nil {
 		log.Error("ethGetTransactionCount failed, err=", err)
 		return 0, err
@@ -1319,8 +1377,8 @@ func GetNonceForAddress2(address string) (uint64, error) {
 	return max + 1, nil
 }
 
-func GetNonceForAddress(address string) (uint64, error) {
-	txpool, err := ethGetTxPoolContent()
+func (this *WalletManager) GetNonceForAddress(address string) (uint64, error) {
+	txpool, err := this.WalletClient.ethGetTxPoolContent()
 	if err != nil {
 		openwLogger.Log.Errorf("ethGetTxPoolContent failed, err = %v", err)
 		return 0, err
@@ -1330,7 +1388,7 @@ func GetNonceForAddress(address string) (uint64, error) {
 	openwLogger.Log.Infof("address[%v] has %v tx in pending queue of txpool.", address, txCount)
 	for txCount > 0 {
 		time.Sleep(time.Second * 1)
-		txpool, err = ethGetTxPoolContent()
+		txpool, err = this.WalletClient.ethGetTxPoolContent()
 		if err != nil {
 			openwLogger.Log.Errorf("ethGetTxPoolContent failed, err = %v", err)
 			return 0, err
@@ -1340,7 +1398,7 @@ func GetNonceForAddress(address string) (uint64, error) {
 		openwLogger.Log.Infof("address[%v] has %v tx in pending queue of txpool.", address, txCount)
 	}
 
-	nonce, err := ethGetTransactionCount(address)
+	nonce, err := this.WalletClient.ethGetTransactionCount(address)
 	if err != nil {
 		openwLogger.Log.Errorf("ethGetTransactionCount failed, err=%v", err)
 		return 0, err

@@ -54,11 +54,6 @@ const (
 	TRNAS_AMOUNT_UNIT_ETHER        = 7
 )
 
-const (
-	BLOCK_CHAIN_DB     = "blockchain.db"
-	BLOCK_CHAIN_BUCKET = "blockchain"
-)
-
 func ConvertEthStringToWei(amount string) (*big.Int, error) {
 	log.Debug("amount:", amount)
 	vDecimal, err := decimal.NewFromString(amount)
@@ -119,14 +114,19 @@ func toHexBigIntForEtherTrans(value string, base int, unit int64) (*big.Int, err
 
 //初始化配置流程
 func (this *WalletManager) InitConfigFlow() error {
-	file := filepath.Join(configFilePath, configFileName)
+	file := filepath.Join(this.GetConfig().ConfigFilePath, this.GetConfig().ConfigFileName)
 	fmt.Printf("You can run 'vim %s' to edit wallet's config.\n", file)
 	return nil
 }
 
 //查看配置信息
 func (this *WalletManager) ShowConfig() error {
-	return printConfig()
+	cfg := this.GetConfig()
+	cfgstr, _ := json.MarshalIndent(cfg, "", " ")
+	fmt.Printf("-----------------------------------------------------------\n")
+	fmt.Println(cfgstr)
+	fmt.Printf("-----------------------------------------------------------\n")
+	return nil
 }
 
 //创建钱包流程
@@ -147,7 +147,7 @@ func (this *WalletManager) CreateWalletFlow() error {
 		return err
 	}
 
-	_, keyFile, err := CreateNewWallet(name, password)
+	_, keyFile, err := this.CreateWallet(name, password)
 	if err != nil {
 		return err
 	}
@@ -233,7 +233,7 @@ func (this *WalletManager) CreateAddressFlow() error {
 	}
 
 	//查询所有钱包信息
-	wallets, err := GetWalletList()
+	wallets, err := this.GetLocalWalletList(this.GetConfig().KeyDir, this.GetConfig().DbPath)
 	if err != nil {
 		fmt.Printf("The node did not create any wallet!\n")
 		return err
@@ -273,7 +273,7 @@ func (this *WalletManager) CreateAddressFlow() error {
 		return err
 	}
 
-	err = UnlockWallet(account, password)
+	err = this.UnlockWallet(account, password)
 	if err != nil {
 		openwLogger.Log.Errorf("unlock wallet [%v] failed, err = %v", account.WalletID, err)
 		return err
@@ -282,13 +282,13 @@ func (this *WalletManager) CreateAddressFlow() error {
 	log.Info("Start batch creation ")
 	log.Info("-------------------------------------------------")
 
-	err = CreateBatchAddress(account.WalletID, password, count)
+	err = this.CreateBatchAddress(account.WalletID, password, count)
 	if err != nil {
 		return err
 	}
 
 	log.Info("-------------------------------------------------")
-	log.Info("All addresses have created, file path:", EthereumKeyPath)
+	log.Info("All addresses have created, file path:", this.GetConfig().EthereumKeyPath)
 
 	return nil
 }
@@ -302,11 +302,11 @@ func (this *WalletManager) ERC20TokenSummaryFollow() error {
 	}
 
 	//判断汇总地址是否存在
-	if len(sumAddress) == 0 {
+	if len(this.GetConfig().SumAddress) == 0 {
 		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
 	}
 
-	ercTokens, err := GetERC20TokenList()
+	ercTokens, err := this.GetERC20TokenList()
 	if err != nil {
 		openwLogger.Log.Errorf("find tokens failed, err = %v", err)
 		return err
@@ -332,7 +332,7 @@ func (this *WalletManager) ERC20TokenSummaryFollow() error {
 	token := ercTokens[tokenId]
 	fmt.Println("token[", token.Symbol, "] is chosen. ")
 
-	wallets, err := ERC20GetWalletList(&token)
+	wallets, err := this.ERC20GetWalletList(&token)
 	if err != nil {
 		return err
 	}
@@ -365,13 +365,13 @@ func (this *WalletManager) ERC20TokenSummaryFollow() error {
 					return err
 				}
 
-				err = UnlockWallet(w, password)
+				err = this.UnlockWallet(w, password)
 				if err != nil {
 					openwLogger.Log.Errorf("unlock wallet [%v] failed, err = %v", w.WalletID, err)
 					return err
 				}
 				w.Password = password
-				AddWalletInSummary(w.WalletID, w)
+				this.AddWalletInSummary(w.WalletID, w)
 			} else {
 				return errors.New("The input No. out of index! ")
 			}
@@ -380,7 +380,7 @@ func (this *WalletManager) ERC20TokenSummaryFollow() error {
 		}
 	}
 
-	if len(walletsInSum) == 0 {
+	if len(this.WalletInSumOld) == 0 {
 		return errors.New("Not summary wallets to register! ")
 	}
 
@@ -389,7 +389,7 @@ func (this *WalletManager) ERC20TokenSummaryFollow() error {
 	//启动钱包汇总程序
 	//sumTimer := timer.NewTask(cycleSeconds, ERC20SummaryWallets)
 	//sumTimer.Start()
-	go ERC20SummaryWallets()
+	go this.ERC20SummaryWallets()
 
 	<-endRunning
 	return nil
@@ -404,11 +404,11 @@ func (this *WalletManager) SummaryFollow() error {
 	}
 
 	//判断汇总地址是否存在
-	if len(sumAddress) == 0 {
+	if len(this.GetConfig().SumAddress) == 0 {
 		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
 	}
 
-	wallets, err := GetWalletList()
+	wallets, err := this.GetLocalWalletList(this.GetConfig().KeyDir, this.GetConfig().DbPath)
 	if err != nil {
 		return err
 	}
@@ -441,13 +441,13 @@ func (this *WalletManager) SummaryFollow() error {
 					return err
 				}
 
-				err = UnlockWallet(w, password)
+				err = this.UnlockWallet(w, password)
 				if err != nil {
 					openwLogger.Log.Errorf("unlock wallet [%v] failed, err = %v", w.WalletID, err)
 					return err
 				}
 				w.Password = password
-				AddWalletInSummary(w.WalletID, w)
+				this.AddWalletInSummary(w.WalletID, w)
 			} else {
 				return errors.New("The input No. out of index! ")
 			}
@@ -457,14 +457,14 @@ func (this *WalletManager) SummaryFollow() error {
 		}
 	}
 
-	if len(walletsInSum) == 0 {
+	if len(this.WalletInSumOld) == 0 {
 		return errors.New("Not summary wallets to register! ")
 	}
 
 	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", cycleSeconds.Seconds())
 
 	//启动钱包汇总程序
-	sumTimer := timer.NewTask(cycleSeconds, SummaryWallets)
+	sumTimer := timer.NewTask(cycleSeconds, this.SummaryWallets)
 	sumTimer.Start()
 	//go SummaryWallets()
 
@@ -480,11 +480,11 @@ func (this *WalletManager) GetWalletList() error {
 	}
 
 	//判断汇总地址是否存在
-	if len(sumAddress) == 0 {
+	if len(this.GetConfig().SumAddress) == 0 {
 		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
 	}
 
-	wallets, err := GetWalletList()
+	wallets, err := this.GetLocalWalletList(this.GetConfig().KeyDir, this.GetConfig().DbPath)
 	if err != nil {
 		return err
 	}
@@ -501,7 +501,7 @@ func (this *WalletManager) ConfigERC20Token() error {
 		return err
 	}
 
-	ercTokens, err := GetERC20TokenList()
+	ercTokens, err := this.GetERC20TokenList()
 	if err != nil {
 		openwLogger.Log.Errorf("find tokens failed, err = %v", err)
 		return err
@@ -550,13 +550,13 @@ func (this *WalletManager) ConfigERC20Token() error {
 		Decimals: int(tokenDecimal),
 	}
 
-	err = SaveERC20TokenConfig(tokenConfig)
+	err = this.SaveERC20TokenConfig(tokenConfig)
 	if err != nil {
 		openwLogger.Log.Errorf("save token config failed, err = %v", err)
 		return err
 	}
 
-	ercTokens, err = GetERC20TokenList()
+	ercTokens, err = this.GetERC20TokenList()
 	if err != nil {
 		openwLogger.Log.Errorf("find tokens failed, err = %v", err)
 		return err
@@ -579,7 +579,7 @@ func (this *WalletManager) ERC20TokenTransferFlow() error {
 		return err
 	}
 
-	ercTokens, err := GetERC20TokenList()
+	ercTokens, err := this.GetERC20TokenList()
 	if err != nil {
 		openwLogger.Log.Errorf("find tokens failed, err = %v", err)
 		return err
@@ -605,7 +605,7 @@ func (this *WalletManager) ERC20TokenTransferFlow() error {
 	token := ercTokens[tokenId]
 	fmt.Println("token[", token.Symbol, "] is chosen. ")
 
-	list, err := ERC20GetWalletList(&token)
+	list, err := this.ERC20GetWalletList(&token)
 	if err != nil {
 		return err
 	}
@@ -656,7 +656,7 @@ func (this *WalletManager) ERC20TokenTransferFlow() error {
 	}
 
 	//建立交易单
-	txID, err := ERC20SendTransaction(wallet,
+	txID, err := this.ERC20SendTransaction(wallet,
 		receiver, amount, password, true)
 	if err != nil {
 		return err
@@ -675,7 +675,7 @@ func (this *WalletManager) TransferFlow() error {
 		return err
 	}
 
-	list, err := GetWalletList()
+	list, err := this.GetLocalWalletList(this.GetConfig().KeyDir, this.GetConfig().DbPath)
 	if err != nil {
 		return err
 	}
@@ -738,7 +738,7 @@ func (this *WalletManager) TransferFlow() error {
 	}
 
 	//建立交易单
-	txID, err := SendTransaction(wallet,
+	txID, err := this.SendTransaction(wallet,
 		receiver, amountInt, password, true)
 	if err != nil {
 		return err
@@ -757,7 +757,7 @@ func (this *WalletManager) BackupWalletFlow() error {
 		return err
 	}
 
-	wallets, err := GetWalletList()
+	wallets, err := this.GetLocalWalletList(this.GetConfig().KeyDir, this.GetConfig().DbPath)
 	if err != nil {
 		openwLogger.Log.Errorf("get wallet list failed, err = ", err)
 		return err
@@ -787,7 +787,7 @@ func (this *WalletManager) BackupWalletFlow() error {
 		return err
 	}
 
-	backupPath, err := BackupWalletToDefaultPath(wallet, password)
+	backupPath, err := this.BackupWalletToDefaultPath(wallet, password)
 	if err != nil {
 		return err
 	}
@@ -799,7 +799,7 @@ func (this *WalletManager) BackupWalletFlow() error {
 }
 
 func (this *WalletManager) GetLocalBlockHeight() (*big.Int, error) {
-	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
 		openwLogger.Log.Errorf("open db for get local block height failed, err=%v", err)
 		return nil, err
@@ -820,7 +820,7 @@ func (this *WalletManager) GetLocalBlockHeight() (*big.Int, error) {
 }
 
 func (this *WalletManager) UpdateLocalBlockHeight(blockHeight *big.Int) error {
-	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
 		openwLogger.Log.Errorf("open db for update local block height failed, err=%v", err)
 		return err
@@ -838,7 +838,7 @@ func (this *WalletManager) UpdateLocalBlockHeight(blockHeight *big.Int) error {
 }
 
 func (this *WalletManager) RecoverBlockHeader(height *big.Int) (*EthBlock, error) {
-	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
 		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
 		return nil, err
@@ -861,7 +861,7 @@ func (this *WalletManager) RecoverBlockHeader(height *big.Int) (*EthBlock, error
 }
 
 func (this *WalletManager) SaveBlockHeader(block *EthBlock) error {
-	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
 		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
 		return err
@@ -876,7 +876,7 @@ func (this *WalletManager) SaveBlockHeader(block *EthBlock) error {
 }
 
 func (this *WalletManager) SaveBlockHeader2(block *EthBlock) error {
-	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
 		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
 		return err
@@ -907,7 +907,7 @@ func (this *WalletManager) SaveBlockHeader2(block *EthBlock) error {
 }
 
 /*func (this *WalletManager) SaveTransaction(tx *BlockTransaction) error {
-	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+	db, err := OpenDB(DbPath, BLOCK_CHAIN_DB)
 	if err != nil {
 		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
 		return err
@@ -923,7 +923,7 @@ func (this *WalletManager) SaveBlockHeader2(block *EthBlock) error {
 }*/
 
 func (this *WalletManager) GetAllUnscannedTransactions() ([]BlockTransaction, error) {
-	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
 		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
 		return nil, err
@@ -951,7 +951,7 @@ func (this *WalletManager) GetAllUnscannedTransactions() ([]BlockTransaction, er
 }
 
 func (this *WalletManager) DeleteUnscannedTransaction(height *big.Int) error {
-	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
 		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
 		return err
@@ -979,7 +979,7 @@ func (this *WalletManager) DeleteUnscannedTransaction(height *big.Int) error {
 }
 
 func (this *WalletManager) SaveUnscannedTransaction(tx *BlockTransaction, reason string) error {
-	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
 		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
 		return err
@@ -1025,7 +1025,7 @@ func (this *WalletManager) RestoreWalletFlow() error {
 	}
 
 	fmt.Printf("Wallet restoring, please wait a moment...\n")
-	err = RestoreWallet(keyPath, password)
+	err = this.RestoreWallet(keyPath, password)
 	if err != nil {
 		return err
 	}

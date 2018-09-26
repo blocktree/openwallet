@@ -25,10 +25,10 @@ import (
 )
 
 func TestNewWallet(aliaz string, password string) {
-	//manager := &ethereum.WalletManager{}
+	manager := &ethereum.WalletManager{}
 
 	//err := manager.CreateWalletFlow()
-	_, path, err := ethereum.CreateNewWallet(aliaz, password)
+	_, path, err := manager.CreateWallet(aliaz, password)
 	if err != nil {
 		fmt.Println("create wallet failed, err=", err)
 		return
@@ -126,14 +126,14 @@ func PrepareTestForBlockScan() error {
 		return
 	}
 	fmt.Println("pending number is ", pending, " queued number is ", queued)*/
-
+	scanner := &ethereum.ETHBlockScanner{}
 	fromAddrs := make([]string, 0, 2)
 	passwords := make([]string, 0, 2)
 	fromAddrs = append(fromAddrs, "0x50068fd632c1a6e6c5bd407b4ccf8861a589e776")
 	passwords = append(passwords, "123456")
 	fromAddrs = append(fromAddrs, "0x2a63b2203955b84fefe52baca3881b3614991b34")
 	passwords = append(passwords, "123456")
-	_, err := ethereum.PrepareForBlockScanTest(fromAddrs, passwords)
+	_, err := scanner.PrepareForBlockScanTest(fromAddrs, passwords)
 	if err != nil {
 		fmt.Println("prepare for test failed, err=", err)
 		return err
@@ -142,7 +142,8 @@ func PrepareTestForBlockScan() error {
 }
 
 func TestDbInf() error {
-	wallets, err := ethereum.GetWalletList()
+	manager := &ethereum.WalletManager{}
+	wallets, err := manager.GetLocalWalletList(manager.GetConfig().KeyDir, manager.GetConfig().DbPath)
 	if err != nil {
 		fmt.Println("get Wallet list failed, err=", err)
 		return err
@@ -152,14 +153,15 @@ func TestDbInf() error {
 		fmt.Println("no wallet found.")
 		return err
 	}
-	wallets[len(wallets)-1].DumpWalletDB()
-	ethereum.DumpBlockScanDb()
+	wallets[len(wallets)-1].DumpWalletDB(manager.GetConfig().DbPath)
+	manager.DumpBlockScanDb()
 	return nil
 }
 
 func TestBlockScanWhenFork() error {
 	//ethereum.OpenDB(ethereum.)
-	db, err := ethereum.OpenDB("/Users/peter/workspace/bitcoin/wallet/src/github.com/blocktree/OpenWallet/test/data/eth/db", ethereum.BLOCK_CHAIN_DB)
+
+	db, err := ethereum.OpenDB("/Users/peter/workspace/bitcoin/wallet/src/github.com/blocktree/OpenWallet/test/data/eth/db", "blockchain.db")
 	if err != nil {
 		fmt.Println("open eth block scan db failed, err=", err)
 		return err
@@ -194,7 +196,7 @@ func TestBlockScanWhenFork() error {
 
 	manager := &ethereum.WalletManager{}
 	scanner := ethereum.NewETHBlockScanner(manager)
-	wallets, err := ethereum.GetWalletList()
+	wallets, err := manager.GetLocalWalletList(manager.GetConfig().KeyDir, manager.GetConfig().DbPath)
 	if err != nil {
 		fmt.Println("get Wallet list failed, err=", err)
 		return err
@@ -214,27 +216,29 @@ func TestBlockScanWhenFork() error {
 
 	scanner.ScanBlock()
 	fmt.Println("after scan block, show db following:")
-	w.DumpWalletDB()
-	ethereum.DumpBlockScanDb()
+	w.DumpWalletDB(manager.GetConfig().DbPath)
+	manager.DumpBlockScanDb()
 	return nil
 }
 
 func TestBlockScan() error {
+	manager := &ethereum.WalletManager{}
+	scanner := ethereum.NewETHBlockScanner(manager)
 	fromAddrs := make([]string, 0, 2)
 	passwords := make([]string, 0, 2)
 	fromAddrs = append(fromAddrs, "0x50068fd632c1a6e6c5bd407b4ccf8861a589e776")
 	passwords = append(passwords, "123456")
 	fromAddrs = append(fromAddrs, "0x2a63b2203955b84fefe52baca3881b3614991b34")
 	passwords = append(passwords, "123456")
-	beginBlockNum, err := ethereum.PrepareForBlockScanTest(fromAddrs, passwords)
+	beginBlockNum, err := scanner.PrepareForBlockScanTest(fromAddrs, passwords)
 	if err != nil {
 		fmt.Println("PrepareForBlockScanTest failed, err=", err)
 		return err
 	}
 
-	manager := &ethereum.WalletManager{}
-	scanner := ethereum.NewETHBlockScanner(manager)
-	wallets, err := ethereum.GetWalletList()
+	//manager := &ethereum.WalletManager{}
+	//scanner := ethereum.NewETHBlockScanner(manager)
+	wallets, err := manager.GetLocalWalletList("/Users/peter/workspace/bitcoin/wallet/src/github.com/blocktree/OpenWallet/test/data/eth/db", "blockchain.db")
 	if err != nil {
 		fmt.Println("get Wallet list failed, err=", err)
 		return err
@@ -252,14 +256,14 @@ func TestBlockScan() error {
 		return err
 	}
 
-	w.ClearAllTransactions()
+	w.ClearAllTransactions("/Users/peter/workspace/bitcoin/wallet/src/github.com/blocktree/OpenWallet/test/data/eth/db")
 
-	ethereum.ClearBlockScanDb()
+	manager.ClearBlockScanDb()
 	scanner.SetLocalBlock(beginBlockNum)
 	scanner.ScanBlock()
 	fmt.Println("after scan block, show db following:")
-	w.DumpWalletDB()
-	ethereum.DumpBlockScanDb()
+	w.DumpWalletDB("/Users/peter/workspace/bitcoin/wallet/src/github.com/blocktree/OpenWallet/test/data/eth/db")
+	manager.DumpBlockScanDb()
 	return nil
 }
 
@@ -269,7 +273,8 @@ func TestAddr() {
 }
 
 func TestOWCrypt_sign() {
-	ethKeyStore := ethKStore.NewKeyStore(ethereum.EthereumKeyPath, ethKStore.StandardScryptN, ethKStore.StandardScryptP)
+	manager := &ethereum.WalletManager{}
+	ethKeyStore := ethKStore.NewKeyStore(manager.GetConfig().EthereumKeyPath, ethKStore.StandardScryptN, ethKStore.StandardScryptP)
 	from := ethcommon.HexToAddress("0x50068fd632c1a6e6c5bd407b4ccf8861a589e776")
 	a := accounts.Account{Address: from}
 	a, key, err := ethKeyStore.GetDecryptedKeyForOpenWallet(a, "123456")
@@ -344,7 +349,8 @@ func TestOWCrypt_sign() {
 
 func TestGetNonce() {
 	addr := "0x50068fd632c1a6e6c5bd407b4ccf8861a589e776"
-	nonce, err := ethereum.GetNonceForAddress(addr)
+	manager := &ethereum.WalletManager{}
+	nonce, err := manager.GetNonceForAddress(addr)
 	if err != nil {
 		fmt.Printf("get nonce for address[%v] failed, err=%v\n", addr, err)
 		return
@@ -400,7 +406,8 @@ func TestEthereumSigningFunc() {
 //key: "0x50068fd632c1a6e6c5bd407b4ccf8861a589e776" password:"123456"
 func ExportPrivateKeyFromGeth(address string, password string) string {
 	addr := ethcommon.HexToAddress(address)
-	ethKeyStore := ethKStore.NewKeyStore(ethereum.EthereumKeyPath, ethKStore.StandardScryptN, ethKStore.StandardScryptP)
+	manager := &ethereum.WalletManager{}
+	ethKeyStore := ethKStore.NewKeyStore(manager.GetConfig().EthereumKeyPath, ethKStore.StandardScryptN, ethKStore.StandardScryptP)
 	a := accounts.Account{Address: addr}
 	_, key, err := ethKeyStore.GetDecryptedKeyForOpenWallet(a, password)
 	if err != nil {
@@ -421,7 +428,8 @@ func TestEIP155Signing() {
 	signer := types.NewEIP155Signer(big.NewInt(12))
 	fmt.Println("addr:", addr.String())
 
-	ethKeyStore := ethKStore.NewKeyStore(ethereum.EthereumKeyPath, ethKStore.StandardScryptN, ethKStore.StandardScryptP)
+	manager := &ethereum.WalletManager{}
+	ethKeyStore := ethKStore.NewKeyStore(manager.GetConfig().EthereumKeyPath, ethKStore.StandardScryptN, ethKStore.StandardScryptP)
 	a := accounts.Account{Address: addr}
 	a, key, err := ethKeyStore.GetDecryptedKeyForOpenWallet(a, "123456")
 	if err != nil {
@@ -474,8 +482,8 @@ func signEIP155FromGethAccount(from string, password string, to string, nonce ui
 
 	signer := types.NewEIP155Signer(big.NewInt(12))
 	fmt.Println("addr:", addr.String())
-
-	ethKeyStore := ethKStore.NewKeyStore(ethereum.EthereumKeyPath, ethKStore.StandardScryptN, ethKStore.StandardScryptP)
+	manager := &ethereum.WalletManager{}
+	ethKeyStore := ethKStore.NewKeyStore(manager.GetConfig().EthereumKeyPath, ethKStore.StandardScryptN, ethKStore.StandardScryptP)
 	a := accounts.Account{Address: addr}
 	a, key, err := ethKeyStore.GetDecryptedKeyForOpenWallet(a, password)
 	if err != nil {
@@ -533,7 +541,8 @@ func TestSendRawTransactionFromGethAccount() {
 		log.Error("sign failed, err=", err)
 		return
 	}
-	txid, err := ethereum.EthSendRawTransaction(raw)
+	manager := &ethereum.WalletManager{}
+	txid, err := manager.EthSendRawTransaction(raw)
 	if err != nil {
 		log.Error("send raw transaction failed, err=", err)
 		return

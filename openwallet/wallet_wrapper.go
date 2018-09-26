@@ -16,17 +16,18 @@
 package openwallet
 
 import (
+	"encoding/hex"
+	"errors"
 	"fmt"
+	"io/ioutil"
+	"strings"
+	"time"
+
 	"github.com/asdine/storm/q"
 	"github.com/blocktree/OpenWallet/common"
-	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
-	"time"
-	"encoding/hex"
-	"github.com/blocktree/OpenWallet/log"
-	"strings"
 	"github.com/blocktree/OpenWallet/hdkeystore"
-	"io/ioutil"
-	"errors"
+	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
 )
 
 type WalletDBFile WrapperSourceFile
@@ -38,7 +39,7 @@ type WalletWrapper struct {
 	*AppWrapper
 	wallet  *Wallet //需要包装的钱包
 	keyFile string  //钱包密钥文件路径
-	key *hdkeystore.HDKey
+	key     *hdkeystore.HDKey
 }
 
 func NewWalletWrapper(args ...interface{}) *WalletWrapper {
@@ -242,7 +243,6 @@ func (wrapper *WalletWrapper) GetAddressList(offset, limit int, cols ...interfac
 	return addrs, nil
 }
 
-
 // GetImportAddressList 获取待导入
 func (wrapper *WalletWrapper) GetImportAddressList(offset, limit int, cols ...interface{}) ([]*ImportAddress, error) {
 	//打开数据库
@@ -296,9 +296,9 @@ func (wrapper *WalletWrapper) GetImportAddressList(offset, limit int, cols ...in
 func (wrapper *WalletWrapper) CreateAddress(accountID string, count uint64, decoder AddressDecoder, isChange bool, isTestNet bool) ([]*Address, error) {
 
 	var (
-		newKeys = make([][]byte, 0)
-		address string
-		addrs   = make([]*Address, 0)
+		newKeys   = make([][]byte, 0)
+		address   string
+		addrs     = make([]*Address, 0)
 		publicKey string
 	)
 
@@ -418,9 +418,8 @@ func (wrapper *WalletWrapper) CreateAddress(accountID string, count uint64, deco
 	return addrs, nil
 }
 
-
 //ImportWatchOnlyAddress 导入观测地址
-func (wrapper *WalletWrapper)  ImportWatchOnlyAddress(address ...*Address) error {
+func (wrapper *WalletWrapper) ImportWatchOnlyAddress(address ...*Address) error {
 
 	//打开数据库
 	db, err := wrapper.OpenStormDB()

@@ -32,6 +32,7 @@ import (
 	"github.com/blocktree/OpenWallet/assets/litecoin"
 	"github.com/blocktree/OpenWallet/assets/qtum"
 	"github.com/blocktree/OpenWallet/assets/sia"
+	"github.com/blocktree/OpenWallet/assets/stc2345"
 	"github.com/blocktree/OpenWallet/assets/tezos"
 	"github.com/blocktree/OpenWallet/assets/tron"
 )
@@ -122,7 +123,8 @@ func init() {
 	RegWMD(strings.ToLower(bopo.Symbol), &bopo.WalletManager{})
 	RegWMD(strings.ToLower(bitcoincash.Symbol), &bitcoincash.WalletManager{})
 	RegWMD(strings.ToLower(sia.Symbol), &sia.WalletManager{})
-	RegWMD(strings.ToLower(ethereum.Symbol), ethereum.NewWalletManager())
+	RegWMD(strings.ToLower(ethereum.Symbol), ethereum.NewWalletManager("data"))
+	RegWMD(strings.ToLower(stc2345.Symbol), stc2345.NewWalletManager("data"))
 	RegWMD(strings.ToLower(bitcoin.Symbol), bitcoin.NewWalletManager())
 	RegWMD(strings.ToLower(hypercash.Symbol), hypercash.NewWalletManager())
 	RegWMD(strings.ToLower(iota.Symbol), &iota.WalletManager{})

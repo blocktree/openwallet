@@ -15,25 +15,32 @@
 package ethereum
 
 import (
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	"path/filepath"
 	"time"
 
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/blocktree/OpenWallet/keystore"
+	"github.com/blocktree/OpenWallet/hdkeystore"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/logger"
 )
 
 type Wallet struct {
-	WalletID   string   `json:"rootid"`
-	Alias      string   `json:"alias"`
-	balance    *big.Int //string `json:"balance"`
-	erc20Token *ERC20Token
-	Password   string `json:"password"`
-	RootPub    string `json:"rootpub"`
-	KeyFile    string
+	WalletID     string   `json:"rootid" storm:"id"`
+	Alias        string   `json:"alias"`
+	balance      *big.Int //string `json:"balance"`
+	erc20Token   *ERC20Token
+	Password     string `json:"password"`
+	RootPub      string `json:"rootpub"`
+	RootPath     string
+	KeyFile      string
+	HdPath       string
+	PublicKey    string
+	AddressIndex string
 }
 
 type ERC20Token struct {
@@ -87,8 +94,8 @@ type BlockHeader struct {
 	PreviousHash    string `json:"parentHash"`
 }
 
-func (this *Wallet) ClearAllTransactions() {
-	db, err := this.OpenDB()
+func (this *Wallet) ClearAllTransactions(dbPath string) {
+	db, err := this.OpenDB(dbPath)
 	if err != nil {
 		openwLogger.Log.Errorf("open db failed, err = %v", err)
 		return
@@ -112,8 +119,27 @@ func (this *Wallet) ClearAllTransactions() {
 
 }
 
-func (this *Wallet) DumpWalletDB() {
-	db, err := this.OpenDB()
+func (this *Wallet) RestoreFromDb(dbPath string) error {
+	db, err := this.OpenDB(dbPath)
+	if err != nil {
+		openwLogger.Log.Errorf("open db failed, err = %v", err)
+		return err
+	}
+	defer db.Close()
+
+	var w Wallet
+	err = db.One("WalletID", this.WalletID, &w)
+	if err != nil {
+		log.Error("find wallet id[", this.WalletID, "] failed, err=", err)
+		return err
+	}
+
+	*this = w
+	return nil
+}
+
+func (this *Wallet) DumpWalletDB(dbPath string) {
+	db, err := this.OpenDB(dbPath)
 	if err != nil {
 		openwLogger.Log.Errorf("open db failed, err = %v", err)
 		return
@@ -144,8 +170,8 @@ func (this *Wallet) DumpWalletDB() {
 	}
 }
 
-func ClearBlockScanDb() {
-	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+func (this *WalletManager) ClearBlockScanDb() {
+	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
 		openwLogger.Log.Errorf("open db failed, err = %v", err)
 		return
@@ -184,8 +210,8 @@ func ClearBlockScanDb() {
 	}
 }
 
-func DumpBlockScanDb() {
-	db, err := OpenDB(dbPath, BLOCK_CHAIN_DB)
+func (this *WalletManager) DumpBlockScanDb() {
+	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
 		openwLogger.Log.Errorf("open db failed, err = %v", err)
 		return
@@ -224,8 +250,8 @@ func DumpBlockScanDb() {
 	fmt.Println("print block number = ", blockHeightStr)
 }
 
-func (this *Wallet) SaveTransactions(txs []BlockTransaction) error {
-	db, err := this.OpenDB()
+func (this *Wallet) SaveTransactions(dbPath string, txs []BlockTransaction) error {
+	db, err := this.OpenDB(dbPath)
 	if err != nil {
 		openwLogger.Log.Errorf("open db failed, err = %v", err)
 		return err
@@ -250,8 +276,8 @@ func (this *Wallet) SaveTransactions(txs []BlockTransaction) error {
 	return nil
 }
 
-func (this *Wallet) DeleteTransactionByHeight(height *big.Int) error {
-	db, err := this.OpenDB()
+func (this *Wallet) DeleteTransactionByHeight(dbPath string, height *big.Int) error {
+	db, err := this.OpenDB(dbPath)
 	if err != nil {
 		openwLogger.Log.Errorf("open db for delete txs failed, err = %v", err)
 		return err
@@ -288,9 +314,23 @@ func (this *Wallet) DeleteTransactionByHeight(height *big.Int) error {
 }
 
 //HDKey 获取钱包密钥，需要密码
-func (w *Wallet) HDKey(password string, s *keystore.HDKeystore) (*keystore.HDKey, error) {
-	fmt.Println("w.KeyFile:", w.KeyFile)
-	key, err := s.GetKey(w.WalletID, w.KeyFile, password)
+func (this *Wallet) HDKey2(password string) (*hdkeystore.HDKey, error) {
+
+	if len(password) == 0 {
+		log.Error("password of wallet empty.")
+		return nil, fmt.Errorf("password is empty")
+	}
+
+	if len(this.KeyFile) == 0 {
+		log.Error("keyfile empty in wallet.")
+		return nil, errors.New("Wallet key is not exist!")
+	}
+
+	keyjson, err := ioutil.ReadFile(this.KeyFile)
+	if err != nil {
+		return nil, err
+	}
+	key, err := hdkeystore.DecryptHDKey(keyjson, password)
 	if err != nil {
 		return nil, err
 	}
@@ -298,9 +338,9 @@ func (w *Wallet) HDKey(password string, s *keystore.HDKeystore) (*keystore.HDKey
 }
 
 //openDB 打开钱包数据库
-func (w *Wallet) OpenDB() (*storm.DB, error) {
+func (w *Wallet) OpenDB(dbPath string) (*storm.DB, error) {
 	file.MkdirAll(dbPath)
-	file := w.DBFile()
+	file := w.DBFile(dbPath)
 	fmt.Println("dbpath:", dbPath, ", file:", file)
 	return storm.Open(file)
 }
@@ -310,7 +350,7 @@ func (w *Wallet) OpenDbByPath(path string) (*storm.DB, error) {
 }
 
 //DBFile 数据库文件
-func (w *Wallet) DBFile() string {
+func (w *Wallet) DBFile(dbPath string) string {
 	return filepath.Join(dbPath, w.FileName()+".db")
 }
 

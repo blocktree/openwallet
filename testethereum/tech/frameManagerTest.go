@@ -23,15 +23,6 @@ const (
 	FRAME_DEFAULT_DIR = "frame_data/eth"
 )
 
-var (
-	tm      = manager.NewWalletManager(NewEthTestConfig())
-	testApp = "openw"
-)
-
-func init() {
-	tm.Init()
-}
-
 func NewEthTestConfig() *manager.Config {
 
 	c := manager.Config{}
@@ -202,12 +193,13 @@ func TestSendRawTransaction() {
 	//pssword:12345678
 	//from:2d3a164eD8019d3111b0726399a6a9B10F05a8e6
 	//to:5813387dE3fAF2012a8D63580A23090Eca337f61
+	manager := &ethereum.WalletManager{}
 	raw, err := signOWEIP155("W6EZ35wMPeYG7QJjVTpU6heCE4AxmkVzJd", "12345678", "428cc834ac78043050cf7245dee433aed9d884a8", "0x584a9ed7f95cd04337df791fac32bed88e13b77a", 4)
 	if err != nil {
 		log.Error("signOWEIP155 failed, err=", err)
 		return
 	}
-	txid, err := ethereum.EthSendRawTransaction(raw)
+	txid, err := manager.EthSendRawTransaction(raw)
 	if err != nil {
 		log.Debugf("EthSendRawTransaction failed, err = %v", err)
 		return

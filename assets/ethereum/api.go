@@ -180,13 +180,13 @@ func (this *TxpoolContent) GetPendingTxCountForAddr(addr string) int {
 	return len(txpool[addr])
 }
 
-func ethGetTransactionCount(addr string) (uint64, error) {
+func (this *Client) ethGetTransactionCount(addr string) (uint64, error) {
 	params := []interface{}{
 		appendOxToAddress(addr),
 		"latest",
 	}
 
-	result, err := client.Call("eth_getTransactionCount", 1, params)
+	result, err := this.Call("eth_getTransactionCount", 1, params)
 	if err != nil {
 		//errInfo := fmt.Sprintf("get block[%v] failed, err = %v \n", blockNumStr,  err)
 		openwLogger.Log.Errorf("get transaction count failed, err = %v \n", err)
@@ -210,8 +210,8 @@ func ethGetTransactionCount(addr string) (uint64, error) {
 	return nonce, nil
 }
 
-func ethGetTxPoolContent() (*TxpoolContent, error) {
-	result, err := client.Call("txpool_content", 1, nil)
+func (this *Client) ethGetTxPoolContent() (*TxpoolContent, error) {
+	result, err := this.Call("txpool_content", 1, nil)
 	if err != nil {
 		//errInfo := fmt.Sprintf("get block[%v] failed, err = %v \n", blockNumStr,  err)
 		openwLogger.Log.Errorf("get tx pool failed, err = %v \n", err)
@@ -235,14 +235,14 @@ func ethGetTxPoolContent() (*TxpoolContent, error) {
 	return &txpool, nil
 }
 
-func ethGetBlockSpecByHash(blockHash string, showTransactionSpec bool) (*EthBlock, error) {
+func (this *Client) ethGetBlockSpecByHash(blockHash string, showTransactionSpec bool) (*EthBlock, error) {
 	params := []interface{}{
 		blockHash,
 		showTransactionSpec,
 	}
 	var ethBlock EthBlock
 
-	result, err := client.Call("eth_getBlockByHash", 1, params)
+	result, err := this.Call("eth_getBlockByHash", 1, params)
 	if err != nil {
 		//errInfo := fmt.Sprintf("get block[%v] failed, err = %v \n", blockNumStr,  err)
 		openwLogger.Log.Errorf("get block[%v] failed, err = %v \n", blockHash, err)
@@ -269,14 +269,14 @@ func ethGetBlockSpecByHash(blockHash string, showTransactionSpec bool) (*EthBloc
 	return &ethBlock, nil
 }
 
-func ethGetBlockSpecByBlockNum2(blockNum string, showTransactionSpec bool) (*EthBlock, error) {
+func (this *Client) ethGetBlockSpecByBlockNum2(blockNum string, showTransactionSpec bool) (*EthBlock, error) {
 	params := []interface{}{
 		blockNum,
 		showTransactionSpec,
 	}
 	var ethBlock EthBlock
 
-	result, err := client.Call("eth_getBlockByNumber", 1, params)
+	result, err := this.Call("eth_getBlockByNumber", 1, params)
 	if err != nil {
 		//errInfo := fmt.Sprintf("get block[%v] failed, err = %v \n", blockNumStr,  err)
 		openwLogger.Log.Errorf("get block[%v] failed, err = %v \n", blockNum, err)
@@ -297,13 +297,13 @@ func ethGetBlockSpecByBlockNum2(blockNum string, showTransactionSpec bool) (*Eth
 	return &ethBlock, nil
 }
 
-func ethGetBlockSpecByBlockNum(blockNum *big.Int, showTransactionSpec bool) (*EthBlock, error) {
+func (this *Client) ethGetBlockSpecByBlockNum(blockNum *big.Int, showTransactionSpec bool) (*EthBlock, error) {
 	blockNumStr := "0x" + blockNum.Text(16)
-	return ethGetBlockSpecByBlockNum2(blockNumStr, showTransactionSpec)
+	return this.ethGetBlockSpecByBlockNum2(blockNumStr, showTransactionSpec)
 }
 
-func ethGetTxpoolStatus() (uint64, uint64, error) {
-	result, err := client.Call("txpool_status", 1, nil)
+func (this *Client) ethGetTxpoolStatus() (uint64, uint64, error) {
+	result, err := this.Call("txpool_status", 1, nil)
 	if err != nil {
 		//errInfo := fmt.Sprintf("get block[%v] failed, err = %v \n", blockNumStr,  err)
 		openwLogger.Log.Errorf("get block[%v] failed, err = %v \n", err)
@@ -383,7 +383,7 @@ func makeTransactionData(methodId string, params []SolidityParam) (string, error
 	return data, nil
 }
 
-func ERC20GetAddressBalance(address string, contractAddr string) (*big.Int, error) {
+func (this *Client) ERC20GetAddressBalance(address string, contractAddr string) (*big.Int, error) {
 
 	var funcParams []SolidityParam
 	funcParams = append(funcParams, SolidityParam{
@@ -403,7 +403,7 @@ func ERC20GetAddressBalance(address string, contractAddr string) (*big.Int, erro
 		trans,
 		"latest",
 	}
-	result, err := client.Call("eth_call", 1, params)
+	result, err := this.Call("eth_call", 1, params)
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("get addr[%v] erc20 balance failed, err=%v\n", address, err))
 		return big.NewInt(0), err
@@ -423,13 +423,13 @@ func ERC20GetAddressBalance(address string, contractAddr string) (*big.Int, erro
 	return balance, nil
 }
 
-func GetAddrBalance(address string) (*big.Int, error) {
+func (this *Client) GetAddrBalance(address string) (*big.Int, error) {
 
 	params := []interface{}{
 		address,
 		"latest",
 	}
-	result, err := client.Call("eth_getBalance", 1, params)
+	result, err := this.Call("eth_getBalance", 1, params)
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("get addr[%v] balance failed, err=%v\n", address, err))
 		return big.NewInt(0), err
@@ -537,7 +537,7 @@ func makeERC20TokenTransGasEstimatePara(fromAddr string, contractAddr string, da
 	return makeGasEstimatePara(fromAddr, contractAddr, nil, data)
 }
 
-func ethGetGasEstimated(paraMap map[string]interface{}) (*big.Int, error) {
+func (this *Client) ethGetGasEstimated(paraMap map[string]interface{}) (*big.Int, error) {
 	trans := make(map[string]interface{})
 	var temp interface{}
 	var exist bool
@@ -574,7 +574,7 @@ func ethGetGasEstimated(paraMap map[string]interface{}) (*big.Int, error) {
 		trans,
 	}
 
-	result, err := client.Call("eth_estimateGas", 1, params)
+	result, err := this.Call("eth_estimateGas", 1, params)
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("get estimated gas limit from [%v] to [%v] faield, err = %v \n", fromAddr, toAddr, err))
 		return big.NewInt(0), err
@@ -612,7 +612,7 @@ func makeERC20TokenTransactionPara(fromAddr *Address, contractAddr string, data 
 	return paraMap
 }
 
-func SendTransactionToAddr(param map[string]interface{}) (string, error) {
+func (this *WalletManager) SendTransactionToAddr(param map[string]interface{}) (string, error) {
 	//(addr *Address, to string, amount *big.Int, password string, fee *txFeeInfo) (string, error) {
 	var exist bool
 	var temp interface{}
@@ -630,19 +630,19 @@ func SendTransactionToAddr(param map[string]interface{}) (string, error) {
 
 	password := temp.(string)
 
-	err := UnlockAddr(fromAddr, password, 300)
+	err := this.WalletClient.UnlockAddr(fromAddr, password, 300)
 	if err != nil {
 		openwLogger.Log.Errorf("unlock addr failed, err = %v", err)
 		return "", err
 	}
 
-	txId, err := ethSendTransaction(param)
+	txId, err := this.WalletClient.ethSendTransaction(param)
 	if err != nil {
 		openwLogger.Log.Errorf("ethSendTransaction failed, err = %v", err)
 		return "", err
 	}
 
-	err = LockAddr(fromAddr)
+	err = this.WalletClient.LockAddr(fromAddr)
 	if err != nil {
 		openwLogger.Log.Errorf("lock addr failed, err = %v", err)
 		return txId, err
@@ -651,16 +651,16 @@ func SendTransactionToAddr(param map[string]interface{}) (string, error) {
 	return txId, nil
 }
 
-func EthSendRawTransaction(signedTx string) (string, error) {
-	return ethSendRawTransaction(signedTx)
+func (this *WalletManager) EthSendRawTransaction(signedTx string) (string, error) {
+	return this.WalletClient.ethSendRawTransaction(signedTx)
 }
 
-func ethSendRawTransaction(signedTx string) (string, error) {
+func (this *Client) ethSendRawTransaction(signedTx string) (string, error) {
 	params := []interface{}{
 		signedTx,
 	}
 
-	result, err := client.Call("eth_sendRawTransaction", 1, params)
+	result, err := this.Call("eth_sendRawTransaction", 1, params)
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("start raw transaction faield, err = %v \n", err))
 		return "", err
@@ -673,7 +673,7 @@ func ethSendRawTransaction(signedTx string) (string, error) {
 	return result.String(), nil
 }
 
-func ethSendTransaction(paraMap map[string]interface{}) (string, error) {
+func (this *Client) ethSendTransaction(paraMap map[string]interface{}) (string, error) {
 	//(fromAddr string, toAddr string, amount *big.Int, fee *txFeeInfo) (string, error) {
 	trans := make(map[string]interface{})
 	var temp interface{}
@@ -721,7 +721,7 @@ func ethSendTransaction(paraMap map[string]interface{}) (string, error) {
 		trans,
 	}
 
-	result, err := client.Call("eth_sendTransaction", 1, params)
+	result, err := this.Call("eth_sendTransaction", 1, params)
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("start transaction from [%v] to [%v] faield, err = %v \n", fromAddr, toAddr, err))
 		return "", err
@@ -734,10 +734,10 @@ func ethSendTransaction(paraMap map[string]interface{}) (string, error) {
 	return result.String(), nil
 }
 
-func ethGetAccounts() ([]string, error) {
+func (this *Client) ethGetAccounts() ([]string, error) {
 	param := make([]interface{}, 0)
 	accounts := make([]string, 0)
-	result, err := client.Call("eth_accounts", 1, param)
+	result, err := this.Call("eth_accounts", 1, param)
 	if err != nil {
 		openwLogger.Log.Errorf("get eth accounts faield, err = %v \n", err)
 		return nil, err
@@ -753,9 +753,9 @@ func ethGetAccounts() ([]string, error) {
 	return accounts, nil
 }
 
-func ethGetBlockNumber() (*big.Int, error) {
+func (this *Client) ethGetBlockNumber() (*big.Int, error) {
 	param := make([]interface{}, 0)
-	result, err := client.Call("eth_blockNumber", 1, param)
+	result, err := this.Call("eth_blockNumber", 1, param)
 	if err != nil {
 		openwLogger.Log.Errorf("get block number faield, err = %v \n", err)
 		return nil, err

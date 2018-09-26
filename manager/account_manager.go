@@ -416,7 +416,7 @@ func (wm *WalletManager) ImportWatchOnlyAddress(appID, walletID, accountID strin
 // importNewAddressToCoreWallet 导入新地址到核心钱包
 func (wm *WalletManager) importNewAddressToCoreWallet() {
 
-	log.Notice("import new address to core wallet start")
+	//log.Notice("import new address to core wallet start")
 
 	var (
 		importAddressMap map[string][]*openwallet.Address
@@ -502,7 +502,7 @@ func (wm *WalletManager) importNewAddressToCoreWallet() {
 
 	}
 
-	log.Notice("import new address to core wallet end")
+	//log.Notice("import new address to core wallet end")
 
 	return
 }
