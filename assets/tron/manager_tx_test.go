@@ -38,7 +38,7 @@ func TestGetTransactionByID(t *testing.T) {
 func TestCreateTransaction(t *testing.T) {
 	// RAW_expect := "0a7e0a0231d422084246e99b0394a3da40b0b4d2b0df2c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a1541b6c1abf9fb31c9077dfb3c25469e6e943ffbfa7a121541e6992304ae03e5c6bba7334432b7345bef031c1418c0843d"
 
-	if r, err := tw.CreateTransaction(to_address, owner_address, amount); err != nil {
+	if r, err := tw.CreateTransaction(TOADDRESS, OWNERADDRESS, AMOUNT); err != nil {
 		t.Errorf("TestCreateTransaction failed: %v\n", err)
 	} else {
 		// if strings.Join(r[:], "") != RAW_expect {
@@ -51,7 +51,7 @@ func TestCreateTransaction(t *testing.T) {
 
 func TestGetTransactoinSign(t *testing.T) {
 	var transaction string = ""
-	if r, err := tw.GetTransactionSign(transaction, privateKey); err != nil {
+	if r, err := tw.GetTransactionSign(transaction, PRIVATEKEY); err != nil {
 		t.Errorf("TestCreateTransaction failed: %v\n", err)
 	} else {
 		t.Logf("TestCreateTransaction return: \n\t%+v\n", r)

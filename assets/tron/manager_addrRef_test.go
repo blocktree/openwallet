@@ -22,8 +22,10 @@ import (
 
 func TestCreateAddressRef(t *testing.T) {
 
-	var privateKeyValue string = "9e9fa25c9d70fecc91c90d23b55daffa2f5f23ffa9eeca823260e50e544cf7be"
-	var predictedAddr string = "TQ1TiUzStbSLdEtACUDmzfMDpWUyo8cyCf"
+	var privateKeyValue, predictedAddr string
+
+	privateKeyValue = "9e9fa25c9d70fecc91c90d23b55daffa2f5f23ffa9eeca823260e50e544cf7be"
+	predictedAddr = "TQ1TiUzStbSLdEtACUDmzfMDpWUyo8cyCf"
 
 	if r, err := tw.CreateAddressRef(privateKeyValue); err != nil {
 		t.Errorf("CreateAddressRef failed: %v\n", err)
@@ -39,9 +41,11 @@ func TestCreateAddressRef(t *testing.T) {
 
 func TestValidateAddressRef(t *testing.T) {
 
-	var address string = "TQ1TiUzStbSLdEtACUDmzfMDpWUyo8cyCf"
+	var addr string
+	addr = "TQ1TiUzStbSLdEtACUDmzfMDpWUyo8cyCf"
+	addr = OWNERADDRESS
 
-	if err := tw.ValidateAddressRef(address); err != nil {
+	if err := tw.ValidateAddressRef(addr); err != nil {
 		t.Errorf("ValidateAddressRef failed: \n\t%+v\n", err)
 	} else {
 		fmt.Printf("CreateAddressRef return: \n\tSuccess!\n")
