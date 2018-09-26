@@ -436,6 +436,7 @@ func (wm *WalletManager) RestoreWalletFlow() error {
 	fmt.Printf("Wallet restoring, please wait a moment...\n")
 	err = wm.RestoreWallet(keyFile, dbFile, datFile, password)
 	if err != nil {
+		fmt.Println("Restore wallet unsuccessfully, please copy the wallet.db to the path: /home/zbuser/.qtum/")
 		return err
 	}
 
