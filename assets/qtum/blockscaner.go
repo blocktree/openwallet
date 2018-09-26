@@ -827,6 +827,12 @@ func (bs *BTCBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, err
 	return &openwallet.BlockHeader{Height: blockHeight, Hash: hash}, nil
 }
 
+//GetScannedBlockHeight 获取已扫区块高度
+func (bs *BTCBlockScanner) GetScannedBlockHeight() uint64 {
+	localHeight, _ := bs.wm.GetLocalNewBlock()
+	return localHeight
+}
+
 //DropRechargeRecords 清楚钱包的全部充值记录
 //func (bs *BTCBlockScanner) DropRechargeRecords(accountID string) error {
 //	bs.mu.RLock()

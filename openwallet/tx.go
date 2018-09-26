@@ -39,30 +39,29 @@ type TransactionDecoder interface {
 
 //RawTransaction 原始交易单
 type RawTransaction struct {
-	Coin   Coin   //区块链类型标识
-	TxID   string //交易单ID，广播后会生成
-	Sid    string //业务订单号，保证业务不重复交易而用
-	RawHex string //区块链协议构造的交易原生数据
-	//Amount      string                    //转账数量
-	FeeRate     string                     //自定义费率
-	To          map[string]string          //目的地址:转账数量
-	Account     *AssetsAccount             //创建交易单的账户
-	Signatures  map[string][]*KeySignature //拥有者accountID: []未花签名
-	Required    uint64                     //必要签名
-	IsBuilt     bool                       //是否完成构建建议单
-	IsCompleted bool                       //是否完成所有签名
-	IsSubmit    bool                       //是否已广播
-	Change      *Address                   //找零地址
-	ExtParam    string                     //扩展参数，用于调用智能合约，json结构
+	Coin        Coin                       `json:"coin"`       //区块链类型标识
+	TxID        string                     `json:"txID"`       //交易单ID，广播后会生成
+	Sid         string                     `json:"sid"`        //业务订单号，保证业务不重复交易而用
+	RawHex      string                     `json:"rawHex"`     //区块链协议构造的交易原生数据
+	FeeRate     string                     `json:"feeRate"`    //自定义费率
+	To          map[string]string          `json:"to"`         //目的地址:转账数量
+	Account     *AssetsAccount             `json:"account"`    //创建交易单的账户
+	Signatures  map[string][]*KeySignature `json:"sigParts"`   //拥有者accountID: []未花签名
+	Required    uint64                     `json:"reqSigs"`    //必要签名
+	IsBuilt     bool                       `json:"isBuilt"`    //是否完成构建建议单
+	IsCompleted bool                       `json:"isComplete"` //是否完成所有签名
+	IsSubmit    bool                       `json:"isSubmit"`   //是否已广播
+	Change      *Address                   `json:"change"`     //找零地址
+	ExtParam    string                     `json:"extParam"`   //扩展参数，用于调用智能合约，json结构
 }
 
 //KeySignature 签名信息
 type KeySignature struct {
-	EccType   uint32 //曲线类型
-	Nonce     string
-	Address   *Address //提供签名的地址
-	Signature string   //未花签名
-	Message   string   //被签消息
+	EccType   uint32   `json:"eccType"` //曲线类型
+	Nonce     string   `json:"nonce"`
+	Address   *Address `json:"address"` //提供签名的地址
+	Signature string   `json:"signed"`  //未花签名
+	Message   string   `json:"msg"`     //被签消息
 }
 
 type Transaction struct {

@@ -15,7 +15,10 @@
 
 package manager
 
-import "testing"
+import (
+	"testing"
+	"github.com/blocktree/OpenWallet/log"
+)
 
 func init() {
 	//tm.Init()
@@ -26,4 +29,16 @@ func TestWalletManager_RescanBlockHeight(t *testing.T) {
 	sub := subscriber{}
 	tm.AddObserver(&sub)
 	tm.RescanBlockHeight("BTC", 230763, 230766)
+}
+
+
+func TestWalletManager_GetNewBlockHeight(t *testing.T) {
+	currentHeight, scannedHeight, err := tm.GetNewBlockHeight("BTC")
+	if err != nil {
+		log.Error("unexpected error:", err)
+		return
+	}
+
+	log.Debug("currentHeight:", currentHeight)
+	log.Debug("scannedHeight:", scannedHeight)
 }

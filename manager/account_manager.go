@@ -27,18 +27,18 @@ import (
 )
 
 // CreateAssetsAccount
-func (wm *WalletManager) CreateAssetsAccount(appID, walletID, password string, account *openwallet.AssetsAccount, otherOwnerKeys []string) (*openwallet.AssetsAccount, error) {
+func (wm *WalletManager) CreateAssetsAccount(appID, walletID, password string, account *openwallet.AssetsAccount, otherOwnerKeys []string) (*openwallet.AssetsAccount, *openwallet.Address, error) {
 
 	var (
 		wallet *openwallet.Wallet
 	)
 
 	if len(account.Alias) == 0 {
-		return nil, fmt.Errorf("account alias is empty")
+		return nil, nil, fmt.Errorf("account alias is empty")
 	}
 
 	if len(account.Symbol) == 0 {
-		return nil, fmt.Errorf("account symbol is empty")
+		return nil, nil, fmt.Errorf("account symbol is empty")
 	}
 
 	if account.Required == 0 {
@@ -47,23 +47,23 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID, password string, a
 
 	symbolInfo, err := assets.GetSymbolInfo(account.Symbol)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
+	wrapper, err := wm.newWalletWrapper(appID, walletID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	wallet = wrapper.GetWallet()
+
 	if account.IsTrust {
-
-		wrapper, err := wm.newWalletWrapper(appID, walletID)
-		if err != nil {
-			return nil, err
-		}
-
-		wallet = wrapper.GetWallet()
 
 		log.Debugf("wallet[%v] is trusted", wallet.WalletID)
 		//使用私钥创建子账户
 		key, err := wrapper.HDKey(password)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		newAccIndex := wallet.AccountIndex + 1
@@ -73,7 +73,7 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID, password string, a
 
 		childKey, err := key.DerivedKeyWithPath(account.HDPath, symbolInfo.CurveType())
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		account.PublicKey = childKey.GetPublicKey().OWEncode()
@@ -83,16 +83,20 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID, password string, a
 		wallet.AccountIndex = newAccIndex
 	} else {
 
-		//非托管的，创建资产账户的钱包
-		wallet, _, err = wm.CreateWallet(appID, &openwallet.Wallet{
-			Alias:    "imported",
-			WalletID: walletID,
-			IsTrust:  false,
-		})
-		if err != nil {
-			return nil, err
+		if wallet == nil {
+
+			//非托管的，创建资产账户的钱包
+			wallet, _, err = wm.CreateWallet(appID, &openwallet.Wallet{
+				Alias:    "imported",
+				WalletID: walletID,
+				IsTrust:  false,
+			})
+			if err != nil {
+				return nil, nil, err
+			}
 		}
 
+		wallet.AccountIndex = int(account.Index)
 	}
 
 	account.AddressIndex = -1
@@ -109,18 +113,18 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID, password string, a
 	}
 
 	if len(account.PublicKey) == 0 {
-		return nil, fmt.Errorf("account publicKey is empty")
+		return nil, nil, fmt.Errorf("account publicKey is empty")
 	}
 
 	//保存钱包到本地应用数据库
 	db, err := wm.OpenDB(appID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	tx, err := db.Begin(true)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	defer tx.Rollback()
@@ -128,27 +132,33 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID, password string, a
 	err = tx.Save(wallet)
 	if err != nil {
 
-		return nil, err
+		return nil, nil, err
 	}
 
 	err = tx.Save(account)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	log.Debug("new account create success:", account.AccountID)
 
-	_, err = wm.CreateAddress(appID, walletID, account.GetAccountID(), 1)
+	addresses, err := wm.CreateAddress(appID, walletID, account.GetAccountID(), 1)
 	if err != nil {
 		log.Debug("new address create failed, unexpected error:", err)
 	}
 
-	return account, nil
+	var addr *openwallet.Address
+	if len(addresses) > 0 {
+		addr = addresses[0]
+		account.AddressIndex++
+	}
+
+	return account, addr, nil
 }
 
 // GetAssetsAccountInfo
@@ -217,7 +227,7 @@ func (wm *WalletManager) RefreshAssetsAccountBalance(appID, accountID string) er
 
 		amount, _ := decimal.NewFromString(address.Balance)
 		balanceDel = balanceDel.Add(amount)
-		log.Debug("address:", address.Address, "amount:", amount)
+		//log.Debug("address:", address.Address, "amount:", amount)
 		address.Balance = amount.StringFixed(assetsMgr.Decimal())
 		err = tx.Save(address)
 		if err != nil {
@@ -327,6 +337,31 @@ func (wm *WalletManager) GetAddressList(appID, walletID, accountID string, offse
 	return addrs, nil
 }
 
+
+// GetAddress 获取单个地址信息
+func (wm *WalletManager) GetAddress(appID, walletID, accountID, address string) (*openwallet.Address, error) {
+
+	wrapper, err := wm.newWalletWrapper(appID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	addr, err := wrapper.GetAddress(address)
+	if err != nil {
+		return nil, err
+	}
+
+	//var addrs []*openwallet.Address
+	//err = db.Find("AccountID", accountID, &addrs, storm.Limit(limit), storm.Skip(offset))
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	return addr, nil
+}
+
+
+
 // ImportWatchOnlyAddress
 func (wm *WalletManager) ImportWatchOnlyAddress(appID, walletID, accountID string, addresses []*openwallet.Address) error {
 
@@ -417,7 +452,7 @@ func (wm *WalletManager) ImportWatchOnlyAddress(appID, walletID, accountID strin
 // importNewAddressToCoreWallet 导入新地址到核心钱包
 func (wm *WalletManager) importNewAddressToCoreWallet() {
 
-	log.Notice("import new address to core wallet start")
+	//log.Notice("import new address to core wallet start")
 
 	var (
 		importAddressMap map[string][]*openwallet.Address
@@ -431,19 +466,20 @@ func (wm *WalletManager) importNewAddressToCoreWallet() {
 	}
 
 	//处理所有App待导入地址，导入到核心钱包
+	LoopApp:
 	for _, appID := range appIDs {
 
 		importAddressMap = make(map[string][]*openwallet.Address)
 
 		wrapper, err := wm.newWalletWrapper(appID, "")
 		if err != nil {
-			continue
+			continue LoopApp
 		}
 
 		//获取应用所有待导入的地址
 		addresses, err := wrapper.GetImportAddressList(0, limit)
 		if err != nil {
-			continue
+			continue LoopApp
 		}
 
 		for _, a := range addresses {
@@ -459,12 +495,12 @@ func (wm *WalletManager) importNewAddressToCoreWallet() {
 
 		db, err := wm.OpenDB(appID)
 		if err != nil {
-			continue
+			continue LoopApp
 		}
 
 		tx, err := db.Begin(true)
 		if err != nil {
-			continue
+			continue LoopApp
 		}
 
 		defer tx.Rollback()
@@ -473,13 +509,14 @@ func (wm *WalletManager) importNewAddressToCoreWallet() {
 
 			assetsMgr, err := GetAssetsManager(symbol)
 			if err != nil {
-				continue
+				continue LoopApp
 			}
 
 			//导入地址到核心钱包中
 			err = assetsMgr.ImportWatchOnlyAddress(importeds...)
 			if err != nil {
-				continue
+				log.Error("ImportWatchOnlyAddress failed unexpected error:", err)
+				continue LoopApp
 			}
 
 
@@ -503,7 +540,7 @@ func (wm *WalletManager) importNewAddressToCoreWallet() {
 
 	}
 
-	log.Notice("import new address to core wallet end")
+	//log.Notice("import new address to core wallet end")
 
 	return
 }

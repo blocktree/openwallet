@@ -27,6 +27,7 @@ import (
 	"github.com/tidwall/gjson"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 const (
@@ -576,6 +577,7 @@ func (bs *BTCBlockScanner) ExtractTxInput(blockHeight uint64, blockHash string, 
 		totalAmount = decimal.Zero
 	)
 
+	createAt := time.Now().Unix()
 	for i, output := range vinout {
 
 		in := vin[i]
@@ -608,7 +610,7 @@ func (bs *BTCBlockScanner) ExtractTxInput(blockHeight uint64, blockHash string, 
 				}
 				input.Index = uint64(i)
 				input.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", result.TxID, i, addr))))
-
+				input.CreateAt = createAt
 				if blockHeight > 0 {
 					//在哪个区块高度时消费
 					input.BlockHeight = blockHeight
@@ -649,6 +651,7 @@ func (bs *BTCBlockScanner) ExtractTxOutput(blockHeight uint64, blockHash string,
 	vout := trx.Get("vout")
 	txid := trx.Get("txid").String()
 	//log.Debug("vout:", vout.Array())
+	createAt := time.Now().Unix()
 	for _, output := range vout.Array() {
 
 		amount := output.Get("value").String()
@@ -678,7 +681,7 @@ func (bs *BTCBlockScanner) ExtractTxOutput(blockHeight uint64, blockHash string,
 
 				//保存utxo到扩展字段
 				outPut.ExtParam = output.Get("scriptPubKey").Raw
-
+				outPut.CreateAt = createAt
 				if blockHeight > 0 {
 					outPut.BlockHeight = blockHeight
 					outPut.BlockHash = blockHash
@@ -828,6 +831,20 @@ func (bs *BTCBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, err
 	}
 
 	return &openwallet.BlockHeader{Height: blockHeight, Hash: hash}, nil
+}
+
+//GetScannedBlockHeight 获取已扫区块高度
+func (bs *BTCBlockScanner) GetScannedBlockHeight() uint64 {
+	localHeight, _ := bs.wm.GetLocalNewBlock()
+	return localHeight
+}
+
+func (bs *BTCBlockScanner) ExtractTransactionData(txid string) (map[string]*openwallet.TxExtractData, error) {
+	result := bs.ExtractTransaction(0, "", txid)
+	if !result.Success {
+		return nil, fmt.Errorf("extract transaction failed")
+	}
+	return result.extractData, nil
 }
 
 //DropRechargeRecords 清楚钱包的全部充值记录

@@ -24,6 +24,8 @@ import (
 	"github.com/blocktree/OpenWallet/manager"
 	"strconv"
 	"fmt"
+	"github.com/blocktree/OpenWallet/log"
+	"strings"
 )
 var mqURL = "192.168.30.160:5672"
 var nodeConfig NodeConfig
@@ -224,3 +226,36 @@ func TestJoinMerchantNodeFlow(t *testing.T) {
 	}
 }
 
+
+func TestWalletManager_ClearInvaildAddressList(t *testing.T) {
+
+	tc := NewConfig()
+	tc.IsTestnet = true
+	tc.EnableBlockScan = true
+	tm := manager.NewWalletManager(tc)
+
+	walletID := "W6UT2YyBb2uo7LgPQ46YG1emPsDwZJXVSP"
+	accountID := "KHWkP2HwdmqCmdGXHMKxNj85Ek8SFviRYWXxkf52tNbaGJ4KWS"
+	list, err := tm.GetAddressList(appId, walletID, accountID, 0, -1, false)
+	if err != nil {
+		log.Error("unexpected error:", err)
+		return
+	}
+
+	//打开数据库
+	db, err := tm.OpenDB(appId)
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	for i, w := range list {
+		log.Info("address[", i, "] :", w)
+		if strings.HasPrefix(w.Address, "1") {
+			db.DeleteStruct(w)
+		}
+	}
+	log.Info("address count:", len(list))
+
+	//tm.CloseDB(testApp)
+}
