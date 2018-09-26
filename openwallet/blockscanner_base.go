@@ -229,6 +229,15 @@ func (bs *BlockScannerBase) GetCurrentBlockHeader() (*BlockHeader, error) {
 	return nil, nil
 }
 
+//GetScannedBlockHeight 获取已扫区块高度
+func (bs *BlockScannerBase) GetScannedBlockHeight() uint64 {
+	return 0
+}
+
+func (bs *BlockScannerBase) ExtractTransactionData(txid string) (map[string]*TxExtractData, error) {
+	return nil, nil
+}
+
 //GetWalletByAddress 获取地址对应的钱包
 //func (bs *BlockScannerBase) GetWalletWrapperByAddress(address string) (*WalletWrapper, bool) {
 //	bs.Mu.RLock()

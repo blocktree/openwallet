@@ -16,12 +16,12 @@
 package mqnode
 
 import (
+	"encoding/json"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/owtp"
 	"github.com/pkg/errors"
 	"strconv"
-	"encoding/json"
 )
 
 const (
@@ -77,12 +77,12 @@ func (m *BitBankNode) subscribe(ctx *owtp.Context) {
 	log.Info("params:", ctx.Params())
 
 	/*
-	| 参数名称 | 类型   | 是否可空 | 描述                                                                         |
-	|----------|--------|----------|------------------------------------------------------------------------------|
-	| type     | int    | 否       | 订阅类型，1：钱包余额，2：交易记录，3：充值记录(未花交易)，4：提现记录（未花消费记录） |
-	| symbol   | string | 否       | 订阅的币种钱包类型                                                           |
-	| appID    | string | 否       | 钱包应用id                                                                   |
-	| walletID | string | 否       | 钱包id                                                                       |
+		| 参数名称 | 类型   | 是否可空 | 描述                                                                         |
+		|----------|--------|----------|------------------------------------------------------------------------------|
+		| type     | int    | 否       | 订阅类型，1：钱包余额，2：交易记录，3：充值记录(未花交易)，4：提现记录（未花消费记录） |
+		| symbol   | string | 否       | 订阅的币种钱包类型                                                           |
+		| appID    | string | 否       | 钱包应用id                                                                   |
+		| walletID | string | 否       | 钱包id                                                                       |
 	*/
 
 	var (
@@ -202,18 +202,18 @@ func (m *BitBankNode) createWallet(ctx *owtp.Context) {
 	log.Info("params:", ctx.Params())
 
 	/*
-		| 参数名称                       | 类型   | 是否可空 | 描述                                          |
-	|--------------------------------|--------|----------|-----------------------------------------------|
-	| appID                          | string | 否       | 钱包应用id                                    |
-	| alias                          | string | 否       | 钱包别名                                      |
-	| isTrust                      | int    | 否       | 是否托管密钥，0：否，1：是               |
-	| **isTrust = 1，以下字段必填** |        |          |                                               |
-	| passwordType                   | int    | 否       | 0：自定义密码，1：协商密码                       |
-	| password                       | string | 是       | 自定义密码                                    |
-	| authKey                        | string | 是       | 授权公钥                                      |
-	| **isTrust = 0，以下字段必填** |        |          |                                               |
-	| walletID                       | string | 是       | 钱包ID，由钱包种子哈希，openwallet钱包地址编码， |
-	| rootPath                       | string | 是       | 钱包HD账户根路径，如：m/44'/88'                 |
+			| 参数名称                       | 类型   | 是否可空 | 描述                                          |
+		|--------------------------------|--------|----------|-----------------------------------------------|
+		| appID                          | string | 否       | 钱包应用id                                    |
+		| alias                          | string | 否       | 钱包别名                                      |
+		| isTrust                      | int    | 否       | 是否托管密钥，0：否，1：是               |
+		| **isTrust = 1，以下字段必填** |        |          |                                               |
+		| passwordType                   | int    | 否       | 0：自定义密码，1：协商密码                       |
+		| password                       | string | 是       | 自定义密码                                    |
+		| authKey                        | string | 是       | 授权公钥                                      |
+		| **isTrust = 0，以下字段必填** |        |          |                                               |
+		| walletID                       | string | 是       | 钱包ID，由钱包种子哈希，openwallet钱包地址编码， |
+		| rootPath                       | string | 是       | 钱包HD账户根路径，如：m/44'/88'                 |
 	*/
 
 	appID := ctx.Params().Get("appID").String()
@@ -368,7 +368,9 @@ func (m *BitBankNode) createAssetsAccount(ctx *owtp.Context) {
 	symbol := ctx.Params().Get("symbol").String()
 	isTrustStr := ctx.Params().Get("isTrust").String()
 	otherOwnerKeys := ctx.Params().Get("otherOwnerKeys").Array()
-	//reqSigs := ctx.Params().Get("reqSigs").Int()
+	accountID := ctx.Params().Get("accountID").String()
+	hdPath := ctx.Params().Get("hdPath").String()
+	reqSigs := ctx.Params().Get("reqSigs").Uint()
 
 	if len(appID) == 0 {
 		responseError(ctx, errors.New("appID is empty"))
@@ -399,7 +401,7 @@ func (m *BitBankNode) createAssetsAccount(ctx *owtp.Context) {
 
 	password := ""
 	publicKey := ""
-	var accountIndex uint64
+	var accountIndex int64
 
 	//isTrust 转换
 	var isTrustBool bool
@@ -418,11 +420,22 @@ func (m *BitBankNode) createAssetsAccount(ctx *owtp.Context) {
 			responseError(ctx, errors.New("publicKey is empty"))
 			return
 		}
-		accountIndex = ctx.Params().Get("accountIndex").Uint()
-		if accountIndex == 0 {
+		accountIndex = ctx.Params().Get("accountIndex").Int()
+		if accountIndex == -1 { //accountIndex要大于-1
 			responseError(ctx, errors.New("accountIndex is empty"))
 			return
 		}
+
+		if len(accountID) == 0 {
+			responseError(ctx, errors.New("accountID is empty"))
+			return
+		}
+
+		if len(hdPath) == 0 {
+			responseError(ctx, errors.New("hdPath is empty"))
+			return
+		}
+
 	} else {
 		responseError(ctx, errors.New("isTrust must be a 1 or 0"))
 		return
@@ -438,26 +451,30 @@ func (m *BitBankNode) createAssetsAccount(ctx *owtp.Context) {
 	ow := m.manager
 	//创建 assetsAccount
 	assetsAccount := &openwallet.AssetsAccount{
+		AccountID: accountID,
+		HDPath:    hdPath,
 		WalletID:  walletID,
 		Alias:     alias,
-		Index:     accountIndex,
+		Index:     uint64(accountIndex),
 		PublicKey: publicKey,
 		OwnerKeys: otherOwnerKeysList,
 		Symbol:    symbol,
 		IsTrust:   isTrustBool,
+		Required:  reqSigs,
 	}
 
-	newAssetsAccount, err := ow.CreateAssetsAccount(appID, walletID, password, assetsAccount, otherOwnerKeysList)
+	newAssetsAccount, newAddress, err := ow.CreateAssetsAccount(appID, walletID, password, assetsAccount, otherOwnerKeysList)
 
 	if err != nil {
 		responseError(ctx, err)
 		return
 	}
-	//result := map[string]interface{}{
-	//	"wallet": newAssetsAccount,
-	//}
+	result := map[string]interface{}{
+		"account": newAssetsAccount,
+		"address": newAddress,
+	}
 
-	responseSuccess(ctx, newAssetsAccount)
+	responseSuccess(ctx, result)
 }
 
 // ### 3.7 获取资产账户 `getAssetsAccountInfo`
@@ -467,11 +484,11 @@ func (m *BitBankNode) getAssetsAccountInfo(ctx *owtp.Context) {
 	log.Info("params:", ctx.Params())
 
 	/*
-	| 参数名称  | 类型   | 是否可空 | 描述                                         |
-	|-----------|--------|----------|----------------------------------------------|
-	| appID     | string | 否       | 钱包应用id                                   |
-	| walletID  | string | 否       | 钱包ID，由钱包种子哈希，openwallet钱包地址编码 |
-	| accountID | string | 否       | 资产账户ID                                   |
+		| 参数名称  | 类型   | 是否可空 | 描述                                         |
+		|-----------|--------|----------|----------------------------------------------|
+		| appID     | string | 否       | 钱包应用id                                   |
+		| walletID  | string | 否       | 钱包ID，由钱包种子哈希，openwallet钱包地址编码 |
+		| accountID | string | 否       | 资产账户ID                                   |
 	*/
 
 	appID := ctx.Params().Get("appID").String()
@@ -625,11 +642,11 @@ func (m *BitBankNode) getWalletList(ctx *owtp.Context) {
 	log.Info("params:", ctx.Params())
 
 	/*
-	| 参数名称  | 类型   | 是否可空 | 描述                                         |
-	|-----------|--------|----------|----------------------------------------------|
-	| appID    | string | 否       | 钱包应用id |
-	| offset   | int    | 是       | 从0开始    |
-	| limit    | int    | 是       | 查询条数   |
+		| 参数名称  | 类型   | 是否可空 | 描述                                         |
+		|-----------|--------|----------|----------------------------------------------|
+		| appID    | string | 否       | 钱包应用id |
+		| offset   | int    | 是       | 从0开始    |
+		| limit    | int    | 是       | 查询条数   |
 	*/
 
 	appID := ctx.Params().Get("appID").String()
@@ -756,10 +773,10 @@ func (m *BitBankNode) createTransaction(ctx *owtp.Context) {
 		responseError(ctx, errors.New("address is empty"))
 		return
 	}
-	if len(feeRate) == 0 {
-		responseError(ctx, errors.New("feeRate is empty"))
-		return
-	}
+	//if len(feeRate) == 0 {
+	//	responseError(ctx, errors.New("feeRate is empty"))
+	//	return
+	//}
 
 	if coinMap == nil || len(coinMap) == 0 {
 		responseError(ctx, errors.New("coin is empty"))
@@ -789,19 +806,54 @@ func (m *BitBankNode) createTransaction(ctx *owtp.Context) {
 	if coinMap["isContract"].Int() == 1 {
 		isContract = true
 	}
-	coin := openwallet.Coin{
-		Symbol:     coinMap["symbol"].Str,
-		IsContract: isContract,
-		ContractID: coinMap["contractID"].Str,
+	coin := map[string]interface{}{
+		"symbol":     coinMap["symbol"].String(),
+		"isContract": isContract,
+		"contractID": coinMap["contractID"].String(),
 	}
-	rawTransaction.Coin = coin
-	if err != nil {
-		responseError(ctx, errors.New("can't unmarshal to RawTransaction"))
-		return
+	//rawTransaction.Coin = coin
+	//if err != nil {
+	//	responseError(ctx, errors.New("can't unmarshal to RawTransaction"))
+	//	return
+	//}
+
+	sigParts := make(map[string]interface{})
+
+	for aid, sigs := range rawTransaction.Signatures {
+		keysig := make([]interface{}, 0)
+		for i, sig := range sigs {
+
+			acc, err := m.manager.GetAssetsAccountInfo(appID, "", sig.Address.AccountID)
+			if err != nil {
+				responseError(ctx, err)
+				return
+			}
+
+			keysig = append(keysig, map[string]interface{}{
+				"eccType": sig.EccType,
+				"msg": sig.Message,
+				"walletID": acc.WalletID,
+				"derivedPath": sig.Address.HDPath,
+				"address": sig.Address.Address,
+				"signed": "",
+				"inputIndex": i,
+			})
+		}
+		sigParts[aid] = keysig
+	}
+
+	rawTx := map[string]interface{}{
+		"coin": coin,
+		"accountID": rawTransaction.Account.AccountID,
+		"sid": rawTransaction.Sid,
+		"rawHex": rawTransaction.RawHex,
+		"reqSigs": rawTransaction.Required,
+		"sigCount": 0,
+		"sigParts": sigParts,
 	}
 
 	result := map[string]interface{}{
-		"rawTx": rawTransaction,
+		"rawTx": rawTx,
 	}
 
 	responseSuccess(ctx, result)
@@ -822,22 +874,70 @@ func (m *BitBankNode) submitTransaction(ctx *owtp.Context) {
 
 	appID := ctx.Params().Get("appID").String()
 	walletID := ctx.Params().Get("walletID").String()
-	rawTx := ctx.Params().Get("rawTx").Raw
+	rawTx := ctx.Params().Get("rawTx")
 	password := ctx.Params().Get("password").String()
 	sid := ctx.Params().Get("sid").String()
 	appid := ctx.Params().Get("appID").String()
+	accountID := rawTx.Get("accountID").String()
 	if len(appID) == 0 {
 		responseError(ctx, errors.New("appID is empty"))
 		return
 	}
 
-	var raw *openwallet.RawTransaction
-
-	err := json.Unmarshal([]byte(rawTx), &raw)
+	account, err := m.manager.GetAssetsAccountInfo(appID, "", accountID)
 	if err != nil {
-		responseError(ctx, errors.New("can't unmarshal to RawTransaction"))
+		responseError(ctx, err)
 		return
 	}
+
+	//装配签名
+
+	signatures := make(map[string][]*openwallet.KeySignature)
+
+	for aid, sigs := range rawTx.Get("sigParts").Map() {
+		keySigs := make([]*openwallet.KeySignature, 0)
+		for _, sig := range sigs.Array() {
+
+			address := sig.Get("address").String()
+			addr, err := m.manager.GetAddress(appID, walletID, accountID, address)
+			if err != nil {
+				responseError(ctx, err)
+				return
+			}
+
+			keySigs = append(keySigs,
+				&openwallet.KeySignature{
+					EccType: uint32(sig.Get("eccType").Uint()),
+					Message: sig.Get("msg").String(),
+					Signature: sig.Get("signed").String(),
+					Nonce: sig.Get("nonce").String(),
+					Address: addr,
+				})
+		}
+		signatures[aid] = keySigs
+	}
+
+	raw := &openwallet.RawTransaction {
+		Coin: openwallet.Coin{
+			Symbol: rawTx.Get("coin.symbol").String(),
+			IsContract: rawTx.Get("coin.isContract").Bool(),
+			ContractID: rawTx.Get("coin.contractID").String(),
+		},
+		TxID: "",
+		Sid: rawTx.Get("sid").String(),
+		RawHex: rawTx.Get("rawHex").String(),
+		Account: account,
+		Required: rawTx.Get("reqSigs").Uint(),
+		IsBuilt: true,
+		ExtParam: rawTx.Get("ExtParam").String(),
+		Signatures: signatures,
+	}
+
+	//err := json.Unmarshal([]byte(rawTx), &raw)
+	//if err != nil {
+	//	responseError(ctx, errors.New("can't unmarshal to RawTransaction"))
+	//	return
+	//}
 
 	newCoin := raw.Coin
 
@@ -852,13 +952,16 @@ func (m *BitBankNode) submitTransaction(ctx *owtp.Context) {
 		raw, err = ow.SignTransaction(appID, walletID, raw.Account.AccountID, password, raw)
 		if err != nil {
 			log.Error("SignTransaction failed, unexpected error:", err)
+			responseError(ctx, err)
 			return
 		}
-		raw, err = ow.VerifyTransaction(appID, walletID, raw.Account.AccountID, raw)
-		if err != nil {
-			log.Error("VerifyTransaction failed, unexpected error:", err)
-			return
-		}
+	}
+
+	raw, err = ow.VerifyTransaction(appID, walletID, raw.Account.AccountID, raw)
+	if err != nil {
+		log.Error("VerifyTransaction failed, unexpected error:", err)
+		responseError(ctx, err)
+		return
 	}
 
 	transaction, err := ow.SubmitTransaction(appID, walletID, raw.Account.AccountID, raw)
@@ -1090,27 +1193,27 @@ func (m *BitBankNode) pushNotifications(ctx *owtp.Context) {
 	log.Info("params:", ctx.Params())
 
 	/*
-| 参数名称  | 类型                            | 是否可空 | 描述                                      |
-|-----------|---------------------------------|----------|-------------------------------------------|
-| appID     | string                          | 否       | 钱包应用id，bitbank是一个App               |
-| walletID  | string                          | 否       | 钱包ID                                    |
-| accountID | string                          | 否       | 账户ID                                    |
-| dataType  | int                             | 否       | 数据类型：1：钱包余额，2：交易记录，3：充值记录(未花交易)，4：提现记录（未花消费记录） |
-| content   | [Transaction]/Balance/[Unspent] | 否       | 根据数据类型，返回数据主体                 |
+	| 参数名称  | 类型                            | 是否可空 | 描述                                      |
+	|-----------|---------------------------------|----------|-------------------------------------------|
+	| appID     | string                          | 否       | 钱包应用id，bitbank是一个App               |
+	| walletID  | string                          | 否       | 钱包ID                                    |
+	| accountID | string                          | 否       | 账户ID                                    |
+	| dataType  | int                             | 否       | 数据类型：1：钱包余额，2：交易记录，3：充值记录(未花交易)，4：提现记录（未花消费记录） |
+	| content   | [Transaction]/Balance/[Unspent] | 否       | 根据数据类型，返回数据主体                 |
 
-#### 未花交易 `Unspent`
+	#### 未花交易 `Unspent`
 
-| 参数名称      | 类型   | 是否可空 | 描述                      |
-|---------------|--------|----------|---------------------------|
-| txid          | string | 否       | 唯一交易单号              |
-| symbol        | string | 否       | 币种类型                  |
-| vout          | int    | 否       | 输出位置                  |
-| accountID     | string | 否       | 资产账户ID                |
-| address       | string | 否       | 地址                      |
-| amount        | string | 否       | 未花数量                  |
-| confirmations | int    | 否       | 确认次数                  |
-| spendable     | int    | 否       | 是否可用， 0：不可用，1：可用 |
-| confirmTime   | int    | 否       | 确认时间                  |
+	| 参数名称      | 类型   | 是否可空 | 描述                      |
+	|---------------|--------|----------|---------------------------|
+	| txid          | string | 否       | 唯一交易单号              |
+	| symbol        | string | 否       | 币种类型                  |
+	| vout          | int    | 否       | 输出位置                  |
+	| accountID     | string | 否       | 资产账户ID                |
+	| address       | string | 否       | 地址                      |
+	| amount        | string | 否       | 未花数量                  |
+	| confirmations | int    | 否       | 确认次数                  |
+	| spendable     | int    | 否       | 是否可用， 0：不可用，1：可用 |
+	| confirmTime   | int    | 否       | 确认时间                  |
 	*/
 
 	appID := ctx.Params().Get("appID").String()

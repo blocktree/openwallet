@@ -64,6 +64,11 @@ type BlockScanner interface {
 	//IsExistAddress 指定地址是否已登记扫描
 	IsExistAddress(address string) bool
 
+	//GetScannedBlockHeight 获取已扫区块高度
+	GetScannedBlockHeight() uint64
+
+	//ExtractTransactionData 提取交易单数据
+	ExtractTransactionData(txid string) (map[string]*TxExtractData, error)
 	//IsExistWallet 指定账户的钱包是否已登记扫描
 	//IsExistWallet(accountID string) bool
 }
