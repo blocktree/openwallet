@@ -17,9 +17,9 @@ package manager
 
 import (
 	"fmt"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"time"
-	"github.com/blocktree/OpenWallet/log"
 )
 
 // CreateTransaction
@@ -86,7 +86,7 @@ func (wm *WalletManager) SignTransaction(appID, walletID, accountID, password st
 	}
 
 	//解锁钱包
-	err = wrapper.UnlockWallet(password, 5 * time.Second)
+	err = wrapper.UnlockWallet(password, 5*time.Second)
 	if err != nil {
 		return nil, err
 	}
@@ -166,21 +166,62 @@ func (wm *WalletManager) SubmitTransaction(appID, walletID, accountID string, ra
 
 	des := make([]string, 0)
 
-	for to, _ := range rawTx.To  {
+	for to, _ := range rawTx.To {
 		des = append(des, to)
 	}
 
 	tx := &openwallet.Transaction{
-		To:   des,
-		Coin: rawTx.Coin,
-		TxID:        rawTx.TxID,
-		Decimal:     assetsMgr.Decimal(),
+		To:        des,
+		Coin:      rawTx.Coin,
+		TxID:      rawTx.TxID,
+		Decimal:   assetsMgr.Decimal(),
 		AccountID: rawTx.Account.AccountID,
 	}
 
 	tx.WxID = openwallet.GenTransactionWxID(tx)
 
-	return tx, nil
+	//提取交易单
+	scanner := assetsMgr.GetBlockScanner()
+	if scanner == nil {
+		log.Std.Error("[%s] is not block scan", account.Symbol)
+		return tx, nil
+	}
+
+	extractData, err := scanner.ExtractTransactionData(rawTx.TxID)
+	if err != nil {
+		log.Error("ExtractTransactionData failed, unexpected error:", err)
+		return tx, nil
+	}
+
+	accountTxData, ok := extractData[wm.encodeSourceKey(appID, accountID)]
+	if !ok {
+		return tx, nil
+	}
+
+	txWrapper := openwallet.NewTransactionWrapper(wrapper)
+	err = txWrapper.SaveBlockExtractData(accountID, accountTxData)
+	if err != nil {
+		log.Error("SaveBlockExtractData failed, unexpected error:", err)
+		return tx, err
+	}
+
+	log.Error("Save new transaction data successfully")
+
+	//更新账户余额
+	err = wm.RefreshAssetsAccountBalance(appID, accountID)
+	if err != nil {
+		log.Error("RefreshAssetsAccountBalance error:", err)
+	}
+
+	perfectTx, err := wm.GetTransactionByWxID(appID, tx.WxID)
+	if err != nil {
+		log.Error("GetTransactionByTxID failed, unexpected error:", err)
+		return tx, err
+	}
+
+	//log.Error("perfectTx:", perfectTx)
+
+	return perfectTx, nil
 }
 
 //GetTransactions
@@ -200,10 +241,21 @@ func (wm *WalletManager) GetTransactions(appID string, offset, limit int, cols .
 	return trx, nil
 }
 
-//GetTransaction 通过TxID获取交易单
-func (wm *WalletManager) GetTransactionByTxID(appID, txID string) (*openwallet.Transaction, error) {
+//GetTransactionByWxID 通过WxID获取交易单
+func (wm *WalletManager) GetTransactionByWxID(appID, wxID string) (*openwallet.Transaction, error) {
 
-	return nil, nil
+	wrapper, err := wm.newWalletWrapper(appID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	txWrapper := openwallet.NewTransactionWrapper(wrapper)
+	trx, err := txWrapper.GetTransactions(0, -1,"WxID", wxID)
+	if err != nil || len(trx) == 0 {
+		return nil, err
+	}
+
+	return trx[0], nil
 }
 
 //GetTxUnspent

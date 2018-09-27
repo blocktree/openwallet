@@ -117,13 +117,14 @@ func TestWalletManager_CreateAssetsAccount(t *testing.T) {
 
 	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
 	account := &openwallet.AssetsAccount{Alias: "Tim", WalletID: walletID, Required: 1, Symbol: "BTC", IsTrust: true}
-	account, err := tm.CreateAssetsAccount(testApp, walletID, "12345678", account, nil)
+	account, address, err := tm.CreateAssetsAccount(testApp, walletID, "12345678", account, nil)
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
 	log.Info("account:", account)
+	log.Info("address:", address)
 
 	tm.CloseDB(testApp)
 }
