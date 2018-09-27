@@ -79,7 +79,7 @@ func NewWalletManager() *WalletManager {
 	wm.walletsInSum = make(map[string]*openwallet.Wallet)
 	//区块扫描器
 	wm.blockscanner = NewBTCBlockScanner(&wm)
-	wm.Decoder = &addressDecoder{}
+	wm.Decoder = NewAddressDecoder(&wm)
 	wm.TxDecoder = NewTransactionDecoder(&wm)
 	return &wm
 }

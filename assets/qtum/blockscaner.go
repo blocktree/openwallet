@@ -105,6 +105,7 @@ func (bs *BTCBlockScanner) ScanBlockTask() {
 	blockHeader, err := bs.GetCurrentBlockHeader()
 	if err != nil {
 		log.Std.Info("block scanner can not get new block height; unexpected error: %v", err)
+		return
 	}
 
 	currentHeight := blockHeader.Height

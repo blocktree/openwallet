@@ -259,3 +259,27 @@ func TestWalletManager_ClearInvaildAddressList(t *testing.T) {
 
 	//tm.CloseDB(testApp)
 }
+
+
+func TestWalletManager_GetAddressList(t *testing.T) {
+
+	tc := NewConfig()
+	tc.IsTestnet = true
+	tc.EnableBlockScan = false
+	tm := manager.NewWalletManager(tc)
+
+	walletID := ""
+	accountID := "KHWkP2HwdmqCmdGXHMKxNj85Ek8SFviRYWXxkf52tNbaGJ4KWS"
+	list, err := tm.GetAddressList(appId, walletID, accountID, 0, -1, false)
+	if err != nil {
+		log.Error("unexpected error:", err)
+		return
+	}
+
+	for i, w := range list {
+		log.Info("address[", i, "] :", w)
+	}
+	log.Info("address count:", len(list))
+
+	//tm.CloseDB(testApp)
+}
