@@ -117,4 +117,33 @@ var (
 		Usage: "print debug log info",
 	}
 
+	MQUrl = cli.StringFlag{
+		Name: "mqu, mqurl",
+		Usage: "config mq's url",
+	}
+
+	MQAccount = cli.StringFlag{
+		Name: "mqa, mqaccount",
+		Usage: "config mq's account",
+	}
+
+	MQPassword = cli.StringFlag{
+		Name: "mqp, mqpassword",
+		Usage: "config mq's password",
+	}
+
+	MQExchange = cli.StringFlag{
+		Name: "mqe, mqexchange",
+		Usage: "config mq's exchange",
+	}
+
+	EnableBlockScan = cli.StringFlag{
+		Name: "EnableBlockScan",
+		Usage: "start the block scan",
+	}
+
+	ISTestNet = cli.StringFlag{
+		Name: "is_test_net",
+		Usage: "start the test net",
+	}
 )

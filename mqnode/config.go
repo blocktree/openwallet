@@ -30,14 +30,14 @@ var (
 	//商户资料文件夹
 	merchantDir = filepath.Join("merchant_data")
 	//商户资料缓存
-	cacheFile = "merchant.db"
+	cacheFile = "openw_cache.db"
 	//配置文件名
-	configFileName = "merchant.ini"
+	configFileName = "openw_ini.ini"
 	//默认配置内容
 	defaultConfig = `
 
-# merchant node ID
-merchant_node_id = "testnode"
+# openw node ID
+server_node_id = "testnode"
 
 # local node publicKey 
 publickey = ""
@@ -52,7 +52,7 @@ merchant_node_url = ""
 exchange = "DEFAULT_EXCHANGE"
 
 # mq sendQueueName
-queue_name = "Test"
+send_queue_name = "Test"
 
 # mq receiveQueueName
 receive_queue_name = "Test"
@@ -123,10 +123,10 @@ func loadConfig() (NodeConfig, error) {
 	absFile := filepath.Join(merchantDir, configFileName)
 	c, err = config.NewConfig("ini", absFile)
 	if err != nil {
-		return configs, errors.New("Config is not setup. Please run 'wmd merchant config -i ' ")
+		return configs, errors.New("Config is not setup. Please run ' openw server config -i ' ")
 	}
 	//节点id
-	configs.MerchantNodeID = c.String("merchant_node_id")
+	configs.MerchantNodeID = c.String("server_node_id")
 	//本地公钥
 	configs.LocalPublicKey = c.String("publickey")
 	//本地私钥
@@ -140,7 +140,7 @@ func loadConfig() (NodeConfig, error) {
 	//exchange
 	configs.Exchange = c.String("exchange")
 	//发送队列名
-	configs.QueueName = c.String("queue_name")
+	configs.QueueName = c.String("send_queue_name")
 	//接收队列名
 	configs.ReceiveQueueName = c.String("receive_queue_name")
 	//mq账户
@@ -164,7 +164,7 @@ func loadManagerConfig() (*manager.Config, error) {
 	absFile := filepath.Join(merchantDir, configFileName)
 	c, err = config.NewConfig("ini", absFile)
 	if err != nil {
-		return nil, errors.New("Config is not setup. Please run 'wmd merchant config -i ' ")
+		return nil, errors.New("Config is not setup. Please run ' openw server config -i ' ")
 	}
 
 	defaultDataDir := filepath.Join(".", "openw_data")

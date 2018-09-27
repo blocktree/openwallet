@@ -223,7 +223,7 @@ func NewConfig() *manager.Config {
 
 
 func TestJoinMerchantNodeFlow(t *testing.T) {
-	err := JoinMerchantNodeFlow()
+	err := RunServer()
 	if err != nil {
 		fmt.Println(err)
 	}

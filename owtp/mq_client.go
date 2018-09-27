@@ -250,7 +250,6 @@ func (c *MQClient) write(mt int, message []byte) error {
 	}
 	exchange := c.config["exchange"]
 	queueName := c.config["queueName"]
-	fmt.Println("queueName:",queueName,",exchange",exchange,"message:",message)
 	err := c.channel.Publish(exchange, queueName, false, false, amqp.Publishing{
 		ContentType: "text/plain",
 		Body:        []byte(message),
@@ -266,7 +265,6 @@ func (c *MQClient) readPump() {
 
 	queueName := c.config["receiveQueueName"]
 
-	fmt.Println("receiveQueueName:",queueName)
 	msgs, err := c.channel.Consume(queueName, "", true, false, false, false, nil)
 
 	if err!=nil{

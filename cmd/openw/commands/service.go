@@ -24,10 +24,10 @@ import (
 )
 
 var (
-	// 钱包命令
-	CmdMerchant = cli.Command{
-		Name:      "node",
-		Usage:     "Manage mqnode node",
+	// 服务命令
+	CmdServer = cli.Command{
+		Name:      "server",
+		Usage:     "Manage mqnode server",
 		ArgsUsage: "",
 		Category:  "Application COMMANDS",
 		Description: `
@@ -38,9 +38,9 @@ Use mqnode commands to join mqnode server
 			{
 				//创建或查看本地通信密钥对
 				Name:      "keychain",
-				Usage:     "create or see node keychain",
+				Usage:     "create or see server keychain",
 				ArgsUsage: "<init>",
-				Action:    getMerchantKeychain,
+				Action:    serviceKeychain,
 				Category:  "mqnode COMMANDS",
 				Flags: []cli.Flag{
 					utils.InitFlag,
@@ -49,32 +49,38 @@ Use mqnode commands to join mqnode server
 	openw mqnode keychain [-ri]
 
 This command will show the local publicKey and mqnode publicKey.
-
-	`,
-
-
-			},
-			{
-				//加入并连接到商户节点
-				Name:      "server",
-				Usage:     "server [-s symbol,i -init,-p path ,-debug,-logdir]",
-				Action:    joinMerchantNode,
-				ArgsUsage: "<init>",
-				Category:  "mqnode COMMANDS",
-				Description: `
-	openw mqnode sercer
-
-This command will connect and join mqnode node.
-
 	`,
 			},
 
 			{
-				//配置商户
+				//配置服务
 				Name:      "config",
 				Usage:     "Start a timer to sum wallet balance",
 				ArgsUsage: "<init>",
-				Action:    configMerchantNode,
+				Action:    configServiceNode,
+				Category:  "mqnode COMMANDS",
+				Flags: []cli.Flag{
+					utils.InitFlag,
+					utils.SymbolFlag,
+					utils.MQUrl,
+					utils.MQAccount,
+					utils.MQPassword,
+					utils.MQExchange,
+					utils.EnableBlockScan,
+					utils.ISTestNet,
+				},
+				Description: `
+	openw wallet config [i]
+
+	`,
+			},
+
+			{
+				//启动服务
+				Name:      "run",
+				Usage:     "Start a timer to sum wallet balance",
+				ArgsUsage: "<init>",
+				Action:    run,
 				Category:  "mqnode COMMANDS",
 				Flags: []cli.Flag{
 					utils.InitFlag,
@@ -88,7 +94,7 @@ This command will connect and join mqnode node.
 	}
 )
 
-func getMerchantKeychain(c *cli.Context) error {
+func serviceKeychain(c *cli.Context) error {
 
 	var (
 		err error
@@ -97,12 +103,12 @@ func getMerchantKeychain(c *cli.Context) error {
 	isInit := c.Bool("init")
 
 	if isInit {
-		flag, err := console.Stdin.PromptConfirm("Create a new node will cover the existing node data and reinitialize a new one, please backup the existing node key first. Continue to create?")
+		flag, err := console.Stdin.PromptConfirm("Create a new server will cover the existing server data and reinitialize a new one, please backup the existing server key first. Continue to create?")
 		if err != nil {
 			return err
 		}
 		if flag {
-			err = mqnode.InitMerchantKeychainFlow()
+			err = mqnode.InitServiceKeychain()
 		}
 	} else {
 		err = mqnode.GetMerchantKeychain()
@@ -115,34 +121,31 @@ func getMerchantKeychain(c *cli.Context) error {
 	return err
 }
 
-func joinMerchantNode(c *cli.Context) error {
+
+
+func configServiceNode(c *cli.Context) error {
 	var (
 		err error
 	)
+	symbol := c.String("s")
 
-
-	logDir := c.GlobalString("logdir")
-	debug := c.GlobalBool("debug")
-	utils.SetupLog(logDir, "mqnode.log", debug)
-
-	err = mqnode.JoinMerchantNodeFlow()
-	if err != nil {
-		log.Error("unexpected error: ", err)
+	if len(symbol) != 0 {
+		if symbol != "" {
+			err = mqnode.SetSymbolAssests(symbol)
+			if err != nil {
+				log.Error("unexpected error: ", err)
+			}
+		} else {
+			log.Error("symbol can't be null ")
+		}
 	}
-	return err
-}
-
-func configMerchantNode(c *cli.Context) error {
-	var (
-		err error
-	)
 
 	isInit := c.Bool("init")
 
 	if isInit {
-		err = mqnode.ConfigMerchantFlow()
+		err = mqnode.ConfigService()
 	} else {
-		err = mqnode.ShowMechantConfig()
+		err = mqnode.ShowServiceConfig()
 	}
 
 	if err != nil {
@@ -151,4 +154,19 @@ func configMerchantNode(c *cli.Context) error {
 	return err
 }
 
+
+
+func run(c *cli.Context) error {
+	var (
+		err error
+	)
+	logDir := c.GlobalString("logdir")
+	debug := c.GlobalBool("debug")
+	utils.SetupLog(logDir, "openw.log", debug)
+	err = mqnode.RunServer()
+	if err != nil {
+		log.Error("unexpected error: ", err)
+	}
+	return err
+}
 
