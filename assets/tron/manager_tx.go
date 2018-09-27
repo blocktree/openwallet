@@ -76,7 +76,7 @@ func (wm *WalletManager) GetTransactionByID(txID string) (tx *core.Transaction, 
 // 	amount is the transfer amount
 // Return value：
 // 	Transaction contract data
-func (wm *WalletManager) CreateTransaction(to_address, owner_address string, amount uint64) (raw string, err error) {
+func (wm *WalletManager) CreateTransaction(to_address, owner_address string, amount int64) (raw string, err error) {
 
 	// to_address_bytes, _ := addressEncoder.AddressDecode(to_address, addressEncoder.TRON_mainnetAddress)
 	// to_address = hex.EncodeToString(to_address_bytes)

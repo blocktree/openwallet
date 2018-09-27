@@ -78,8 +78,8 @@ func (wm *WalletManager) GetAccountNet(address string) (account *api.AccountNetM
 		"address": address_srctohex,
 	}
 
-	// r, err = wm.WalletClient.Call2("/wallet/getaccount", params)
-	r, err = wm.WalletClient.Call2("/wallet/getbalance", params)
+	r, err = wm.WalletClient.Call2("/wallet/getaccount", params)
+	// r, err = wm.WalletClient.Call2("/wallet/getbalance", params)
 	// r, err = wm.WalletClient.Call2("/wallet/listaccounts", params)
 
 	if err != nil {

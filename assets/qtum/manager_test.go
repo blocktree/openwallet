@@ -176,7 +176,7 @@ func TestGetAddressesByAccount(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	_, _, err := tw.CreateBatchAddress("WK6mWyMEEbMMSLXTT2AiZtcezxUFbjo2oB", "1234qwer", 10)
+	_, _, err := tw.CreateBatchAddress("WG8QXeEW7CVmRRbvw7Yb2f9wQf9ufR32M3", "1234qwer", 1000)
 	if err != nil {
 		t.Errorf("CreateBatchAddress failed unexpected error: %v\n", err)
 		return
@@ -428,7 +428,7 @@ func TestListUnspent(t *testing.T) {
 }
 
 func TestGetAddressesFromLocalDB(t *testing.T) {
-	addresses, err := tw.GetAddressesFromLocalDB("WG8QXeEW7CVmRRbvw7Yb2f9wQf9ufR32M3", 0, -1)
+	addresses, err := tw.GetAddressesFromLocalDB("W8C6dcVGbuPxJJ5imguFQNzK7vMtBhg58J", 0, -1)
 	if err != nil {
 		t.Errorf("GetAddressesFromLocalDB failed unexpected error: %v\n", err)
 		return
@@ -503,14 +503,14 @@ func TestEstimateFee(t *testing.T) {
 func TestSendTransaction(t *testing.T) {
 
 	sends := []string{
-		"QbaeXvjnutA6vm7yhW4poDiMYqn3fS8vEp",
+		"QftFg667gmjvQeDjDHZf9dAJjm5Cm9Xxwi",
 	}
 
 	tw.RebuildWalletUnspent("W8C6dcVGbuPxJJ5imguFQNzK7vMtBhg58J")
 
 	for _, to := range sends {
 
-		txIDs, err := tw.SendTransaction("W8C6dcVGbuPxJJ5imguFQNzK7vMtBhg58J", to, decimal.NewFromFloat(0.043), "1234qwer", false)
+		txIDs, err := tw.SendTransaction("W8C6dcVGbuPxJJ5imguFQNzK7vMtBhg58J", to, decimal.NewFromFloat(0.05), "1234qwer", false)
 
 		if err != nil {
 			t.Errorf("SendTransaction failed unexpected error: %v\n", err)
@@ -601,8 +601,8 @@ func TestSendFrom(t *testing.T) {
 }
 
 func TestSendToAddress(t *testing.T){
-	address := "QbnGtCNvjhqfBirjs2cqK1ENxC7asEMbtv"
-	txIDs, err := tw.SendToAddress(address, "0.006","", false,"1234qwer")
+	address := "QNbVphMtFDD6VZj9SbFKKrCWtynqQ2rRNz"
+	txIDs, err := tw.SendToAddress(address, "0.015","", false,"1234qwer")
 
 	if err != nil {
 		t.Errorf("SendTransaction failed unexpected error: %v\n", err)
