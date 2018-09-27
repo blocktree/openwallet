@@ -28,7 +28,7 @@ import (
 
 var (
 	//商户资料文件夹
-	merchantDir = filepath.Join("merchant_data")
+	merchantDir = filepath.Join("ow_data")
 	//商户资料缓存
 	cacheFile = "openw_cache.db"
 	//配置文件名
