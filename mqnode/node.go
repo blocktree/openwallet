@@ -234,7 +234,7 @@ func (m *BitBankNode) StopTimerTask() {
 	log.Info("Merchant timer task stop...")
 
 	//停止地址订阅任务
-	m.subscribeAddressTask.Pause()
+	//m.subscribeAddressTask.Pause()
 	//停止交易记录订阅任务
 
 }
