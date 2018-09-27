@@ -27,12 +27,13 @@ import (
 	"github.com/tidwall/gjson"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 const (
 	blockchainBucket = "blockchain" //区块链数据集合
 	//periodOfTask      = 5 * time.Second //定时任务执行隔间
-	maxExtractingSize = 20 //并发的扫描线程数
+	maxExtractingSize = 15 //并发的扫描线程数
 )
 
 //BTCBlockScanner bitcoin的区块链扫描器
@@ -104,6 +105,7 @@ func (bs *BTCBlockScanner) ScanBlockTask() {
 	blockHeader, err := bs.GetCurrentBlockHeader()
 	if err != nil {
 		log.Std.Info("block scanner can not get new block height; unexpected error: %v", err)
+		return
 	}
 
 	currentHeight := blockHeader.Height
@@ -576,6 +578,7 @@ func (bs *BTCBlockScanner) ExtractTxInput(blockHeight uint64, blockHash string, 
 		totalAmount = decimal.Zero
 	)
 
+	createAt := time.Now().Unix()
 	for i, output := range vinout {
 
 		in := vin[i]
@@ -608,7 +611,7 @@ func (bs *BTCBlockScanner) ExtractTxInput(blockHeight uint64, blockHash string, 
 				}
 				input.Index = uint64(i)
 				input.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", result.TxID, i, addr))))
-
+				input.CreateAt = createAt
 				if blockHeight > 0 {
 					//在哪个区块高度时消费
 					input.BlockHeight = blockHeight
@@ -648,7 +651,8 @@ func (bs *BTCBlockScanner) ExtractTxOutput(blockHeight uint64, blockHash string,
 	confirmations := trx.Get("confirmations").Int()
 	vout := trx.Get("vout")
 	txid := trx.Get("txid").String()
-
+	//log.Debug("vout:", vout.Array())
+	createAt := time.Now().Unix()
 	for _, output := range vout.Array() {
 
 		amount := output.Get("value").String()
@@ -676,6 +680,9 @@ func (bs *BTCBlockScanner) ExtractTxOutput(blockHeight uint64, blockHash string,
 				outPut.Index = n
 				outPut.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("output_%s_%d_%s", txid, n, addr))))
 
+				//保存utxo到扩展字段
+				outPut.ExtParam = output.Get("scriptPubKey").Raw
+				outPut.CreateAt = createAt
 				if blockHeight > 0 {
 					outPut.BlockHeight = blockHeight
 					outPut.BlockHash = blockHash
@@ -831,6 +838,14 @@ func (bs *BTCBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, err
 func (bs *BTCBlockScanner) GetScannedBlockHeight() uint64 {
 	localHeight, _ := bs.wm.GetLocalNewBlock()
 	return localHeight
+}
+
+func (bs *BTCBlockScanner) ExtractTransactionData(txid string) (map[string]*openwallet.TxExtractData, error) {
+	result := bs.ExtractTransaction(0, "", txid)
+	if !result.Success {
+		return nil, fmt.Errorf("extract transaction failed")
+	}
+	return result.extractData, nil
 }
 
 //DropRechargeRecords 清楚钱包的全部充值记录
