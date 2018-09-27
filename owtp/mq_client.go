@@ -264,7 +264,9 @@ func (c *MQClient) readPump() {
 	}
 
 	queueName := c.config["receiveQueueName"]
-
+	exchange := c.config["exchange"]
+	c.channel.QueueDeclare(queueName,true,false,false,false,nil)
+	c.channel.QueueBind(queueName,queueName,exchange,false,nil)
 	msgs, err := c.channel.Consume(queueName, "", true, false, false, false, nil)
 
 	if err!=nil{

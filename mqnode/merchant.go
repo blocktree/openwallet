@@ -69,8 +69,8 @@ func InitServiceKeychain() error {
 	}
 
 	//创建收发通道
-	sendQueueName := id+"_GO"
-	receiveQueueName := "OW_RPC_JAVA"
+	sendQueueName := "OW_RPC_GO"
+	receiveQueueName :=  id+"_JAVA"
 
 	c.Set("server_node_id", id)
 	c.Set("privatekey", priv)
