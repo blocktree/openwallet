@@ -469,9 +469,17 @@ func (m *BitBankNode) createAssetsAccount(ctx *owtp.Context) {
 		responseError(ctx, err)
 		return
 	}
+
+	wallet, err := ow.GetWalletInfo(appID, walletID)
+	if err != nil {
+		responseError(ctx, errors.New("getWalletInfo error"))
+		return
+	}
+
 	result := map[string]interface{}{
 		"account": newAssetsAccount,
 		"address": newAddress,
+		"wallet": wallet,
 	}
 
 	responseSuccess(ctx, result)

@@ -51,13 +51,15 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID, password string, a
 	}
 
 	wrapper, err := wm.newWalletWrapper(appID, walletID)
-	if err != nil {
-		return nil, nil, err
+	if err == nil {
+		wallet = wrapper.GetWallet()
 	}
 
-	wallet = wrapper.GetWallet()
-
 	if account.IsTrust {
+
+		if wallet == nil {
+			return nil, nil, fmt.Errorf("wallet not exist")
+		}
 
 		log.Debugf("wallet[%v] is trusted", wallet.WalletID)
 		//使用私钥创建子账户
