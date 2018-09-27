@@ -26,10 +26,9 @@ import (
 
 	"github.com/tronprotocol/grpc-gateway/api"
 	"github.com/tronprotocol/grpc-gateway/core"
-	// "github.com/blocktree/Openwallet/assets/tron/protocol/api"
-	// "github.com/blocktree/Openwallet/assets/tron/protocol/core"
 )
 
+// Done
 // Function：Query the latest block
 // 	demo: curl -X POST http://127.0.0.1:8090/wallet/getnowblock
 // Parameters：None
@@ -42,7 +41,6 @@ func (wm *WalletManager) GetNowBlock() (block *core.Block, err error) {
 	}
 
 	block = &core.Block{}
-
 	if err := gjson.Unmarshal(r, block); err != nil {
 		log.Println(err)
 		return nil, err
@@ -51,6 +49,7 @@ func (wm *WalletManager) GetNowBlock() (block *core.Block, err error) {
 	return block, nil
 }
 
+// Done
 // Function：Query block by height
 // 	demo: curl -X POST http://127.0.0.1:8090/wallet/getblockbynum -d ‘
 // 		{“num” : 100}’
@@ -74,6 +73,7 @@ func (wm *WalletManager) GetBlockByNum(num uint64) (block *core.Block, error err
 	return block, nil
 }
 
+// Done
 // Function：Query block by ID
 // 	demo: curl -X POST http://127.0.0.1:8090/wallet/getblockbyid -d ‘
 // 		{“value”: “0000000000038809c59ee8409a3b6c051e369ef1096603c7ee723c16e2376c73”}’
@@ -95,6 +95,7 @@ func (wm *WalletManager) GetBlockByID(blockID string) (block *core.Block, err er
 	return block, nil
 }
 
+// Done
 // Function：Query a range of blocks by block height
 // 	demo: curl -X POST http://127.0.0.1:8090/wallet/getblockbylimitnext -d ‘
 // 		{“startNum”: 1, “endNum”: 2}’
@@ -122,6 +123,7 @@ func (wm *WalletManager) GetBlockByLimitNext(startNum, endNum uint64) (blocks *a
 	return blocks, nil
 }
 
+// Done
 // Function：Query the latest blocks
 // 	demo: curl -X POST http://127.0.0.1:8090/wallet/getblockbylatestnum -d ‘
 // 		{“num”: 5}’

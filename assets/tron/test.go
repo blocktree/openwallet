@@ -18,10 +18,13 @@ package tron
 var (
 	tw *WalletManager
 
-	to_address    string = "TWzVsJyUvTjVRwDTRNxUsLCjH9KY9gQgk2"
-	owner_address string = "TSdXzXKSQ3RQzQ5Ge8TiYfMQEjofSVQ8ax"
-	privateKey    string = "57ddf47e1b1aaabf244d1429f300a001e16fe407d9d4c9b6e43d19b128b4b442"
-	amount        uint64 = 1
+	// to_address    string = "TWzVsJyUvTjVRwDTRNxUsLCjH9KY9gQgk2"
+	TOADDRESS    string = "TWVRXXN5tsggjUCDmqbJ4KxPdJKQiynaG6"
+	OWNERADDRESS string = "TQ1TiUzStbSLdEtACUDmzfMDpWUyo8cyCf"
+	PRIVATEKEY   string = "9e9fa25c9d70fecc91c90d23b55daffa2f5f23ffa9eeca823260e50e544cf7be"
+	AMOUNT       int64  = 1
+	TXRAW        string = "0a7e0a02d5842208a43b6160eaa543f840f8ffb4a9e12c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d"
+	TXSIGNED     string = "0a7e0a02d5842208a43b6160eaa543f840f8ffb4a9e12c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d1241915254f565f20a327047e59327bf7f0b9e5600c09a321e6da45de4be4158f1f14bbf520ac1a0d71da10696ee80dfa5860086a6e470c96e7a275c4433616b8beb00"
 
 	txID string = "d5ec749ecc2a615399d8a6c864ea4c74ff9f523c2be0e341ac9be5d47d7c2d62"
 )
@@ -31,7 +34,8 @@ func init() {
 	tw = NewWalletManager()
 
 	// tw.Config.ServerAPI = "http://127.0.0.1:28890"
-	tw.Config.ServerAPI = "http://127.0.0.1:18890"
+	// tw.Config.ServerAPI = "http://127.0.0.1:18890"
+	tw.Config.ServerAPI = "http://192.168.2.194:18890"
 	// tw.Config.RpcUser = "walletUser"
 	// tw.Config.RpcPassword = "walletPassword2017"
 	// token := BasicAuth(tw.Config.RpcUser, tw.Config.RpcPassword)
