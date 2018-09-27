@@ -219,6 +219,9 @@ func NewConfig() *manager.Config {
 
 	return &c
 }
+
+
+
 func TestJoinMerchantNodeFlow(t *testing.T) {
 	err := JoinMerchantNodeFlow()
 	if err != nil {
@@ -259,3 +262,13 @@ func TestWalletManager_ClearInvaildAddressList(t *testing.T) {
 
 	//tm.CloseDB(testApp)
 }
+
+
+func TestGetAddress(t *testing.T) {
+
+	config := manager.NewConfig()
+	ow := manager.NewWalletManager(config)
+	o,_ := ow.GetAddress("b4b1962d415d4d30ec71b28769fda585","W6UT2YyBb2uo7LgPQ46YG1emPsDwZJXVSP","KHWkP2HwdmqCmdGXHMKxNj85Ek8SFviRYWXxkf52tNbaGJ4KWS","n4Ghgf1NwaN2bBzBXWwKBMSPTiQz4ajQZ3")
+	log.Info("address count:",o)
+}
+

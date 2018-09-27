@@ -36,13 +36,13 @@ func GetMerchantKeychain() error {
 	absFile := filepath.Join(merchantDir, configFileName)
 	c, err := config.NewConfig("ini", absFile)
 	if err != nil {
-		return errors.New("Config is not setup. Please run 'wmd merchant config -i ' ")
+		return errors.New("Config is not setup. Please run 'openw node config -i ' ")
 	}
 
 	priv := c.String("privatekey")
 	pub := c.String("publickey")
-
-	printKeychain(priv, pub)
+	id := c.String("merchant_node_id")
+	printKeychain(id,priv, pub)
 
 	return nil
 }
@@ -57,22 +57,23 @@ func InitMerchantKeychainFlow() error {
 	}
 
 	priv, pub := cert.KeyPair()
-
+	id := cert.ID()
 	//写入到配置文件
 	initConfig()
 	absFile := filepath.Join(merchantDir, configFileName)
 	c, err := config.NewConfig("ini", absFile)
 	if err != nil {
-		return errors.New("Config is not setup. Please run 'wmd merchant config -i ' ")
+		return errors.New("Config is not setup. Please run 'openw node config -i ' ")
 	}
-
+	c.Set("merchant_node_id", id)
 	c.Set("privatekey", priv)
 	c.Set("publickey", pub)
+
 	c.SaveConfigFile(absFile)
 
 	log.Info("Create keychain successfully.")
 
-	printKeychain(priv, pub)
+	printKeychain(id,priv, pub)
 
 	return nil
 }
@@ -115,7 +116,7 @@ func ShowMechantConfig() error {
 }
 
 //printKeychain 打印证书钥匙串
-func printKeychain(priv string, pub string) {
+func printKeychain(id ,priv,pub string) {
 
 	if len(priv) == 0 {
 		priv = "nothing"
@@ -126,6 +127,8 @@ func printKeychain(priv string, pub string) {
 	}
 
 	//打印证书信息
+	log.Notice("--------------- ID ---------------")
+	log.Notice(id)
 	log.Notice("--------------- PRIVATE KEY ---------------")
 	log.Notice(priv)
 	fmt.Println()

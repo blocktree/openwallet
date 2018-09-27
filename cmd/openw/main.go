@@ -63,6 +63,7 @@ func init() {
 	app.Commands = []cli.Command{
 		commands.CmdNew,
 		commands.CmdRun,
+		commands.CmdMerchant,
 	}
 
 	sort.Sort(cli.CommandsByName(app.Commands))
