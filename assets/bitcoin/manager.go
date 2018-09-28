@@ -18,6 +18,12 @@ package bitcoin
 import (
 	"errors"
 	"fmt"
+	"math"
+	"path/filepath"
+	"sort"
+	"strings"
+	"time"
+
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
 	"github.com/astaxie/beego/config"
@@ -26,6 +32,7 @@ import (
 	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
 	"github.com/bndr/gotabulate"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -33,12 +40,6 @@ import (
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/codeskyblue/go-sh"
 	"github.com/shopspring/decimal"
-	"math"
-	"path/filepath"
-	"sort"
-	"strings"
-	"time"
-	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
 )
 
 const (
@@ -46,11 +47,11 @@ const (
 )
 
 type WalletManager struct {
-	Storage      *hdkeystore.HDKeystore         //秘钥存取
-	WalletClient *Client                        // 节点客户端
-	Config       *WalletConfig                  //钱包管理配置
-	WalletsInSum map[string]*openwallet.Wallet  //参与汇总的钱包
-	Blockscanner *BTCBlockScanner               //区块扫描器
+	Storage      *hdkeystore.HDKeystore        //秘钥存取
+	WalletClient *Client                       // 节点客户端
+	Config       *WalletConfig                 //钱包管理配置
+	WalletsInSum map[string]*openwallet.Wallet //参与汇总的钱包
+	Blockscanner *BTCBlockScanner              //区块扫描器
 	Decoder      openwallet.AddressDecoder     //地址编码器
 	TxDecoder    openwallet.TransactionDecoder //交易单编码器
 }
@@ -143,7 +144,7 @@ func (wm *WalletManager) ImportPrivKey(wif, walletID string) error {
 }
 
 //ImportAddress 导入地址核心钱包
-func (wm *WalletManager)  ImportAddress(address *openwallet.Address) error {
+func (wm *WalletManager) ImportAddress(address *openwallet.Address) error {
 
 	request := []interface{}{
 		address.Address,

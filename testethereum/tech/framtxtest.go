@@ -17,7 +17,7 @@ func createTransaction(walletID, accountID, to string) (*openwallet.RawTransacti
 		return nil, err
 	}
 
-	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "5", to, "", "")
+	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "1", to, "", "")
 	if err != nil {
 		log.Error("CreateTransaction failed, unexpected error:", err)
 		return nil, err

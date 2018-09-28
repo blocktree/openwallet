@@ -5,16 +5,16 @@ import (
 	owcrypt "github.com/blocktree/go-OWCrypt"
 )
 
-type addressDecoder struct{}
+type AddressDecoder struct{}
 
 //PrivateKeyToWIF 私钥转WIF
-func (decoder *addressDecoder) PrivateKeyToWIF(priv []byte, isTestnet bool) (string, error) {
+func (decoder *AddressDecoder) PrivateKeyToWIF(priv []byte, isTestnet bool) (string, error) {
 	return "", nil
 
 }
 
 //PublicKeyToAddress 公钥转地址
-func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (string, error) {
+func (decoder *AddressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (string, error) {
 
 	cfg := addressEncoder.ETH_mainnetPublicAddress
 	if isTestnet {
@@ -39,13 +39,13 @@ func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (s
 }
 
 //RedeemScriptToAddress 多重签名赎回脚本转地址
-func (decoder *addressDecoder) RedeemScriptToAddress(pubs [][]byte, required uint64, isTestnet bool) (string, error) {
+func (decoder *AddressDecoder) RedeemScriptToAddress(pubs [][]byte, required uint64, isTestnet bool) (string, error) {
 	return "", nil
 
 }
 
 //WIFToPrivateKey WIF转私钥
-func (decoder *addressDecoder) WIFToPrivateKey(wif string, isTestnet bool) ([]byte, error) {
+func (decoder *AddressDecoder) WIFToPrivateKey(wif string, isTestnet bool) ([]byte, error) {
 	return nil, nil
 
 }

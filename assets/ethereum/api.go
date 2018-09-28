@@ -25,9 +25,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/blocktree/OpenWallet/common"
+	tool "github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/logger"
+	"github.com/bytom/common"
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto/secp256k1"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
 )
@@ -358,7 +363,7 @@ func makeTransactionData(methodId string, params []SolidityParam) (string, error
 		if params[i].ParamType == SOLIDITY_TYPE_ADDRESS {
 			param = strings.ToLower(params[i].ParamValue.(string))
 			if strings.Index(param, "0x") != -1 {
-				param = common.Substr(param, 2, len(param))
+				param = tool.Substr(param, 2, len(param))
 			}
 
 			if len(param) != 40 {
@@ -426,8 +431,8 @@ func (this *Client) ERC20GetAddressBalance(address string, contractAddr string) 
 func (this *Client) GetAddrBalance(address string) (*big.Int, error) {
 
 	params := []interface{}{
-		address,
-		"latest",
+		appendOxToAddress(address),
+		"pending",
 	}
 	result, err := this.Call("eth_getBalance", 1, params)
 	if err != nil {
@@ -454,6 +459,44 @@ func appendOxToAddress(addr string) string {
 		return "0x" + addr
 	}
 	return addr
+}
+
+func signEthTransaction(priKey []byte, toAddr string, amount *big.Int, nonce uint64, data string, fee *txFeeInfo, chainId uint64) (string, error) {
+	var err error
+	signer := types.NewEIP155Signer(big.NewInt(int64(chainId)))
+	tx := types.NewTransaction(nonce, ethcommon.HexToAddress(toAddr),
+		amount, fee.GasLimit.Uint64(), fee.GasPrice, []byte(data))
+	msg := signer.Hash(tx)
+
+	sig, err := secp256k1.Sign(msg[:], priKey)
+	if err != nil {
+		log.Error("secp256k1.Sign failed, err=", err)
+		return "", err
+	}
+	/*sig, ret := owcrypt.ETHsignature(priKey, msg[:])
+	if ret != owcrypt.SUCCESS {
+		errdesc := fmt.Sprintln("signature error, ret:", "0x"+strconv.FormatUint(uint64(ret), 16))
+		log.Error(errdesc)
+		return "", errors.New(errdesc)
+	}*/
+
+	tx, err = tx.WithSignature(signer, sig)
+	if err != nil {
+		openwLogger.Log.Errorf("tx with signature failed, err=%v ", err)
+		return "", err
+	}
+
+	jsonStr, _ := json.MarshalIndent(tx, "", " ")
+	log.Info("tx after sign:", string(jsonStr))
+
+	rawTxPara, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		openwLogger.Log.Errorf("encode tx to rlp failed, err=%v ", err)
+		return "", err
+	}
+
+	log.Info("rawTxPara:", common.ToHex(rawTxPara))
+	return common.ToHex(rawTxPara), nil
 }
 
 func makeSimpleTransactionPara(fromAddr *Address, toAddr string, amount *big.Int, password string, fee *txFeeInfo) map[string]interface{} {

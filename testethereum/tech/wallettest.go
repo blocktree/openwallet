@@ -24,28 +24,20 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-func TestNewWallet(aliaz string, password string) {
-	manager := &ethereum.WalletManager{}
-
-	//err := manager.CreateWalletFlow()
-	_, path, err := manager.CreateWallet(aliaz, password)
+func TestNewWallet() {
+	manager, _ := GetEthWalletManager()
+	err := manager.CreateWalletFlow()
 	if err != nil {
-		fmt.Println("create wallet failed, err=", err)
-		return
+		log.Error("create wallet failed, err=", err)
 	}
-
-	fmt.Println("wallet path:", path)
 }
 
 func TestBatchCreateAddr() {
-	manager := &ethereum.WalletManager{}
-
+	manager, _ := GetEthWalletManager()
 	err := manager.CreateAddressFlow()
 	if err != nil {
-		fmt.Println("CreateAddressFlow failed, err=", err)
+		log.Error("create wallet failed, err=", err)
 	}
-
-	//ethereum.GetWalletList()
 }
 
 func TestBitInt() {
@@ -57,8 +49,7 @@ func TestBitInt() {
 }
 
 func TestTransferFlow() {
-	manager := &ethereum.WalletManager{}
-
+	manager, _ := GetEthWalletManager()
 	err := manager.TransferFlow()
 	if err != nil {
 		log.Debugf("transfer flow failed, err = ", err)
@@ -66,7 +57,7 @@ func TestTransferFlow() {
 }
 
 func TestSummaryFlow() {
-	manager := &ethereum.WalletManager{}
+	manager, _ := GetEthWalletManager()
 
 	err := manager.SummaryFollow()
 	if err != nil {
@@ -75,7 +66,7 @@ func TestSummaryFlow() {
 }
 
 func TestBackupWallet() {
-	manager := &ethereum.WalletManager{}
+	manager, _ := GetEthWalletManager() //manager := &ethereum.WalletManager{}
 
 	err := manager.BackupWalletFlow()
 	if err != nil {
@@ -84,7 +75,7 @@ func TestBackupWallet() {
 }
 
 func TestRestoreWallet() {
-	manager := &ethereum.WalletManager{}
+	manager, _ := GetEthWalletManager()
 
 	err := manager.RestoreWalletFlow()
 	if err != nil {
@@ -423,7 +414,7 @@ func ExportPrivateKeyFromGeth(address string, password string) string {
 func TestEIP155Signing() {
 	//key, _ := crypto.GenerateKey()
 	//addr := crypto.PubkeyToAddress(key.PublicKey)
-	addr := ethcommon.HexToAddress("0x50068fd632c1a6e6c5bd407b4ccf8861a589e776")
+	addr := ethcommon.HexToAddress("0x24de55281e65b8ac88ec0f06e50c325f1b7fb25c")
 
 	signer := types.NewEIP155Signer(big.NewInt(12))
 	fmt.Println("addr:", addr.String())
@@ -437,7 +428,7 @@ func TestEIP155Signing() {
 		return
 	}
 
-	amount, err := ethereum.ConvertToBigInt("0x56bc75e2d63100000", 16)
+	amount, err := ethereum.ConvertToBigInt("0xde0b6b3a7640000", 16)
 	if err != nil {
 		fmt.Println("amount format error.")
 		return
@@ -449,7 +440,7 @@ func TestEIP155Signing() {
 		return
 	}
 
-	tx, err := types.SignTx(types.NewTransaction(176, ethcommon.HexToAddress("0x2d3a164eD8019d3111b0726399a6a9B10F05a8e6"),
+	tx, err := types.SignTx(types.NewTransaction(0, ethcommon.HexToAddress("0xfcca397e8c94fa147d5c423be55444333c8b9010"),
 		amount, 121000, gasPrice, nil), signer, key.PrivateKey)
 	if err != nil {
 		//t.Fatal(err)

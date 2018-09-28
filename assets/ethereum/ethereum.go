@@ -210,8 +210,10 @@ func printWalletList(list []*Wallet) {
 
 	for i, w := range list {
 
+		balance, _ := ConverWeiStringToEthDecimal(w.balance.String())
+
 		tableInfo = append(tableInfo, []interface{}{
-			i, w.WalletID, w.Alias, w.balance,
+			i, w.WalletID, w.Alias, balance,
 		})
 	}
 
@@ -282,7 +284,7 @@ func (this *WalletManager) CreateAddressFlow() error {
 	log.Info("Start batch creation ")
 	log.Info("-------------------------------------------------")
 
-	err = this.CreateBatchAddress(account.WalletID, password, count)
+	err = this.CreateBatchAddress2(account.WalletID, password, count)
 	if err != nil {
 		return err
 	}
@@ -738,7 +740,7 @@ func (this *WalletManager) TransferFlow() error {
 	}
 
 	//建立交易单
-	txID, err := this.SendTransaction(wallet,
+	txID, err := this.SendTransaction2(wallet,
 		receiver, amountInt, password, true)
 	if err != nil {
 		return err
@@ -1025,7 +1027,7 @@ func (this *WalletManager) RestoreWalletFlow() error {
 	}
 
 	fmt.Printf("Wallet restoring, please wait a moment...\n")
-	err = this.RestoreWallet(keyPath, password)
+	err = this.RestoreWallet2(keyPath, password)
 	if err != nil {
 		return err
 	}

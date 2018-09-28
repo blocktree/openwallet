@@ -346,7 +346,7 @@ func (this *EthTransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 		return err
 	}
 
-	signer := types.NewEIP155Signer(big.NewInt(CHAIN_ID))
+	signer := types.NewEIP155Signer(big.NewInt(int64(this.wm.GetConfig().ChainID)))
 	tx := types.NewTransaction(nonce, ethcommon.HexToAddress(to),
 		amount, fee.GasLimit.Uint64(), fee.GasPrice, []byte(data))
 
@@ -444,8 +444,9 @@ func (this *EthTransactionDecoder) SignRawTransaction(wrapper *openwallet.Wallet
 	}*/
 	sig, ret := owcrypt.ETHsignature(keyBytes, message)
 	if ret != owcrypt.SUCCESS {
-		fmt.Println("signature error, ret:", "0x"+strconv.FormatUint(uint64(ret), 16))
-		return err
+		errdesc := fmt.Sprintln("signature error, ret:", "0x"+strconv.FormatUint(uint64(ret), 16))
+		log.Error(errdesc)
+		return errors.New(errdesc)
 	}
 
 	signnode.Signature = common.ToHex(sig)

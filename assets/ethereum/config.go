@@ -39,7 +39,8 @@ const (
 	MasterKey    = "Ethereum seed"
 	TIME_POSTFIX = "20060102150405"
 	CurveType    = owcrypt.ECC_CURVE_SECP256K1
-	CHAIN_ID     = 12
+
+//	CHAIN_ID     = 922337203685 //12
 )
 
 type WalletConfig struct {
@@ -96,10 +97,12 @@ type WalletConfig struct {
 	//小数位长度
 	//	CoinDecimal decimal.Decimal `json:"-"`
 	EthereumKeyPath string
+	//是否完全依靠本地维护nonce
+	LocalNonce bool
+	ChainID    uint64
 }
 
 func (this *WalletConfig) LoadConfig2() (*WalletConfig, error) {
-	log.Debug("in Loadonfig2...")
 	return this.LoadConfig(this.ConfigFilePath, this.ConfigFileName, nil)
 }
 
@@ -139,6 +142,10 @@ func makeEthDefaultConfig(rootDir string) *WalletConfig {
 	conf.CycleSeconds = 10
 	//	this.ChainId = 12
 	conf.EthereumKeyPath = "/Users/peter/workspace/bitcoin/wallet/src/github.com/ethereum/go-ethereum/chain/keystore"
+	//每次都向节点查询nonce
+	conf.LocalNonce = false
+	//区块链ID
+	conf.ChainID = 12
 	return conf
 }
 

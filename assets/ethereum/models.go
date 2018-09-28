@@ -27,6 +27,8 @@ import (
 	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/logger"
+	owcrypt "github.com/blocktree/go-OWCrypt"
+	"github.com/bytom/common"
 )
 
 type Wallet struct {
@@ -40,7 +42,7 @@ type Wallet struct {
 	KeyFile      string
 	HdPath       string
 	PublicKey    string
-	AddressIndex string
+	AddressCount uint64
 }
 
 type ERC20Token struct {
@@ -52,12 +54,33 @@ type ERC20Token struct {
 }
 
 type Address struct {
-	Address      string   `json:"address" storm:"id"`
-	Account      string   `json:"account" storm:"index"`
-	HDPath       string   `json:"hdpath"`
+	Address      string `json:"address" storm:"id"`
+	Account      string `json:"account" storm:"index"`
+	HDPath       string `json:"hdpath"`
+	Index        int
+	PublicKey    string
 	balance      *big.Int //string `json:"balance"`
 	tokenBalance *big.Int
+	TxCount      uint64
 	CreatedAt    time.Time
+}
+
+func (this *Address) CalcPrivKey(masterKey *hdkeystore.HDKey) ([]byte, error) {
+	childKey, _ := masterKey.DerivedKeyWithPath(this.HDPath, owcrypt.ECC_CURVE_SECP256K1)
+	keyBytes, err := childKey.GetPrivateKeyBytes()
+	if err != nil {
+		log.Error("get private key bytes, err=", err)
+		return nil, err
+	}
+	return keyBytes, nil
+}
+
+func (this *Address) CalcHexPrivKey(masterKey *hdkeystore.HDKey) (string, error) {
+	prikey, err := this.CalcPrivKey(masterKey)
+	if err != nil {
+		return "", err
+	}
+	return common.ToHex(prikey), nil
 }
 
 type UnscanTransaction struct {
@@ -92,6 +115,17 @@ type BlockHeader struct {
 	Difficulty      string `json:"difficulty"`
 	TotalDifficulty string `json:"totalDifficulty"`
 	PreviousHash    string `json:"parentHash"`
+}
+
+func (this *Wallet) SaveAddress(dbpath string, addr *Address) error {
+	db, err := this.OpenDB(dbpath)
+	if err != nil {
+		openwLogger.Log.Errorf("open db failed, err = %v", err)
+		return err
+	}
+	defer db.Close()
+
+	return db.Save(addr)
 }
 
 func (this *Wallet) ClearAllTransactions(dbPath string) {
@@ -341,7 +375,7 @@ func (this *Wallet) HDKey2(password string) (*hdkeystore.HDKey, error) {
 func (w *Wallet) OpenDB(dbPath string) (*storm.DB, error) {
 	file.MkdirAll(dbPath)
 	file := w.DBFile(dbPath)
-	fmt.Println("dbpath:", dbPath, ", file:", file)
+	//	fmt.Println("dbpath:", dbPath, ", file:", file)
 	return storm.Open(file)
 }
 
@@ -361,6 +395,6 @@ func (w *Wallet) FileName() string {
 
 func OpenDB(dbPath string, dbName string) (*storm.DB, error) {
 	file.MkdirAll(dbPath)
-	fmt.Println("OpenDB dbpath:", dbPath+"/"+dbName)
+	//	fmt.Println("OpenDB dbpath:", dbPath+"/"+dbName)
 	return storm.Open(dbPath + "/" + dbName)
 }
