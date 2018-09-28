@@ -19,9 +19,8 @@ import "testing"
 
 func TestGetAccountNet(t *testing.T) {
 
-	var addr string = "4189139CB1387AF85E3D24E212A008AC974967E561"
-	addr = "TUZYMxXwwnX77rQvmP3RMwm3RhfBJ7bovV"
-	addr = owner_address
+	var addr string
+	addr = OWNERADDRESS
 
 	if r, err := tw.GetAccountNet(addr); err != nil {
 		t.Errorf("GetAccountNet failed: %v\n", err)
@@ -32,7 +31,7 @@ func TestGetAccountNet(t *testing.T) {
 
 func TestCreateAccount(t *testing.T) {
 
-	var owner_address, account_address string = "41d1e7a6bc354106cb410e65ff8b181c600ff14292", "41e552f6487585c2b58bc2c9bb4492bc1f17132cd0"
+	var owner_address, account_address string = OWNERADDRESS, OWNERADDRESS
 
 	if r, err := tw.CreateAccount(owner_address, account_address); err != nil {
 		t.Errorf("CreateAccount failed: %v\n", err)
@@ -43,8 +42,7 @@ func TestCreateAccount(t *testing.T) {
 
 func TestUpdateAccount(t *testing.T) {
 
-	var account_name, owner_address string = "", "4189139CB1387AF85E3D24E212A008AC974967E561"
-	// addr = "TUZYMxXwwnX77rQvmP3RMwm3RhfBJ7bovV"
+	var account_name, owner_address string = "XX2", OWNERADDRESS
 
 	if r, err := tw.UpdateAccount(account_name, owner_address); err != nil {
 		t.Errorf("UpdateAccount failed: %v\n", err)

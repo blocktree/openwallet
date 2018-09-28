@@ -163,7 +163,7 @@ func TestCreateReceiverAddress(t *testing.T) {
 }
 
 func TestGetAddressesByAccount(t *testing.T) {
-	addresses, err := tw.GetAddressesByAccount("KjCuFxiTQhMQe955XptJ2WRrj3UgaGf4Ft6fkn78gQwdeMv99K")
+	addresses, err := tw.GetAddressesByAccount("4Nu5FJT4q8RZFadkmuQC3RAhWRHuddu85AxXPF4EW9gu")
 	if err != nil {
 		t.Errorf("GetAddressesByAccount failed unexpected error: %v\n", err)
 		return
@@ -175,7 +175,7 @@ func TestGetAddressesByAccount(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	_, _, err := tw.CreateBatchAddress("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek", "1234qwer", 1)
+	_, _, err := tw.CreateBatchAddress("WDHupMjR3cR2wm97iDtKajxSPCYEEddoek", "1234qwer", 12500)
 	if err != nil {
 		t.Errorf("CreateBatchAddress failed unexpected error: %v\n", err)
 		return
@@ -404,7 +404,9 @@ func TestGetBlockChainInfo(t *testing.T) {
 }
 
 func TestListUnspent(t *testing.T) {
-	utxos, err := tw.ListUnspent(0)
+	//msHemmfSZ3au6h9S1annGcTGrTVryRbSFV
+	//mtHT3JkeKnJZCejqp6nxScxxvbW6Wn8e92
+	utxos, err := tw.ListUnspent(0, "msHemmfSZ3au6h9S1annGcTGrTVryRbSFV")
 	if err != nil {
 		t.Errorf("ListUnspent failed unexpected error: %v\n", err)
 		return

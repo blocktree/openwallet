@@ -16,15 +16,15 @@
 package openwallet
 
 type BlockHeader struct {
-	Hash              string
-	Confirmations     uint64
-	Merkleroot        string
-	Previousblockhash string
-	Height            uint64
-	Version           uint64
-	Time              uint64
-	Fork              bool
-	Symbol            string
+	Hash              string `json:"hash"`
+	Confirmations     uint64 `json:"confirmations"`
+	Merkleroot        string `json:"merkleroot"`
+	Previousblockhash string `json:"previousblockhash"`
+	Height            uint64 `json:"height"`
+	Version           uint64 `json:"version"`
+	Time              uint64 `json:"time"`
+	Fork              bool   `json:"fork"`
+	Symbol            string `json:"symbol"`
 }
 
 //BlockScanNotify 新区块扫描完成通知

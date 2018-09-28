@@ -45,3 +45,51 @@ func (wm *WalletManager) RescanBlockHeight(symbol string, startHeight uint64, en
 
 	return nil
 }
+
+//SetRescanBlockHeight 重置区块高度起扫描
+func (wm *WalletManager) SetRescanBlockHeight(symbol string, height uint64) error {
+
+	assetsMgr, err := GetAssetsManager(symbol)
+	if err != nil {
+		return err
+	}
+
+	scanner := assetsMgr.GetBlockScanner()
+
+	if scanner == nil {
+		return fmt.Errorf("%s is not support block scan", symbol)
+	}
+
+	err = scanner.SetRescanBlockHeight(height)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+
+//GetNewBlockHeight 获取区块高度，（最新高度，已扫描高度）
+func (wm *WalletManager) GetNewBlockHeight(symbol string) (uint64, uint64, error) {
+
+	assetsMgr, err := GetAssetsManager(symbol)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	scanner := assetsMgr.GetBlockScanner()
+
+	if scanner == nil {
+		return 0, 0, fmt.Errorf("%s is not support block scan", symbol)
+	}
+
+	header, err := scanner.GetCurrentBlockHeader()
+	if err != nil {
+		return 0, 0, err
+	}
+
+	scannedHeight := scanner.GetScannedBlockHeight()
+
+
+	return header.Height, scannedHeight, nil
+}

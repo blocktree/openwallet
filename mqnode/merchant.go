@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"github.com/astaxie/beego/config"
 	"errors"
+	"github.com/blocktree/OpenWallet/manager"
 )
 
 func init() {
@@ -35,18 +36,20 @@ func GetMerchantKeychain() error {
 	absFile := filepath.Join(merchantDir, configFileName)
 	c, err := config.NewConfig("ini", absFile)
 	if err != nil {
-		return errors.New("Config is not setup. Please run 'wmd merchant config -i ' ")
+		return errors.New("Config is not setup. Please run 'openw node config -i ' ")
 	}
 
 	priv := c.String("privatekey")
 	pub := c.String("publickey")
-
-	printKeychain(priv, pub)
+	id := c.String("server_node_id")
+	sendQueueName := c.String("send_queue_name")
+	receiveQueueName := c.String("receive_queue_name")
+	printKeychain(id,priv, pub,sendQueueName,receiveQueueName)
 
 	return nil
 }
 
-func InitMerchantKeychainFlow() error {
+func InitServiceKeychain() error {
 
 	//随机创建证书
 	cert := owtp.NewRandomCertificate("")
@@ -56,28 +59,35 @@ func InitMerchantKeychainFlow() error {
 	}
 
 	priv, pub := cert.KeyPair()
-
+	id := cert.ID()
 	//写入到配置文件
 	initConfig()
 	absFile := filepath.Join(merchantDir, configFileName)
 	c, err := config.NewConfig("ini", absFile)
 	if err != nil {
-		return errors.New("Config is not setup. Please run 'wmd merchant config -i ' ")
+		return errors.New("Config is not setup. Please run 'openw node config -i ' ")
 	}
 
+	//创建收发通道
+	sendQueueName := "OW_RPC_GO"
+	receiveQueueName :=  id+"_JAVA"
+
+	c.Set("server_node_id", id)
 	c.Set("privatekey", priv)
 	c.Set("publickey", pub)
+	c.Set("send_queue_name",sendQueueName )
+	c.Set("receive_queue_name",receiveQueueName )
 	c.SaveConfigFile(absFile)
 
 	log.Info("Create keychain successfully.")
 
-	printKeychain(priv, pub)
+	printKeychain(id,priv, pub,sendQueueName,receiveQueueName)
 
 	return nil
 }
 
-//JoinMerchantNodeFlow 连接商户服务节点
-func JoinMerchantNodeFlow() error {
+//RunServer 连接服务服务节点
+func RunServer() error {
 
 	var (
 		err error
@@ -93,24 +103,28 @@ func JoinMerchantNodeFlow() error {
 	if err != nil {
 		return err
 	}
-
+	config,err := loadManagerConfig()
+	if err != nil {
+		return err
+	}
+	merchantNode.manager = manager.NewWalletManager(config)
 	merchantNode.Run()
 
 	return nil
 }
 
-func ConfigMerchantFlow() error {
+func ConfigService() error {
 	initConfig()
 	return nil
 }
 
-func ShowMechantConfig() error {
+func ShowServiceConfig() error {
 	printConfig()
 	return nil
 }
 
 //printKeychain 打印证书钥匙串
-func printKeychain(priv string, pub string) {
+func printKeychain(id ,priv,pub,sendQueueName,receiveQueueName string) {
 
 	if len(priv) == 0 {
 		priv = "nothing"
@@ -121,10 +135,83 @@ func printKeychain(priv string, pub string) {
 	}
 
 	//打印证书信息
+	log.Notice("--------------- ID ---------------")
+	log.Notice(id)
+	fmt.Println()
 	log.Notice("--------------- PRIVATE KEY ---------------")
 	log.Notice(priv)
 	fmt.Println()
 	log.Notice("--------------- PUBLIC KEY ---------------")
 	log.Notice(pub)
 	fmt.Println()
+	log.Notice("--------------- SEND QUEUE NAME ---------------")
+	log.Notice(sendQueueName)
+	fmt.Println()
+	log.Notice("--------------- RECEIVE QUEUE NAME ---------------")
+	log.Notice(receiveQueueName)
+	fmt.Println()
+}
+
+func SetSymbolAssests(s string) error {
+
+	//读取配置
+	initConfig()
+	absFile := filepath.Join(merchantDir, configFileName)
+	c, err := config.NewConfig("ini", absFile)
+	if err != nil {
+		return errors.New("Config is not setup. Please run 'openw node config -i ' ")
+	}
+
+	c.Set("support_assets",s)
+	c.SaveConfigFile(absFile)
+
+	return nil
+}
+
+func SetMQUrl(url string) error {
+
+	//读取配置
+	initConfig()
+	absFile := filepath.Join(merchantDir, configFileName)
+	c, err := config.NewConfig("ini", absFile)
+	if err != nil {
+		return errors.New("Config is not setup. Please run 'openw node config -i ' ")
+	}
+
+	c.Set("merchant_node_url",url)
+	c.SaveConfigFile(absFile)
+
+	return nil
+}
+
+func SetMQAccount(account string) error {
+
+	//读取配置
+	initConfig()
+	absFile := filepath.Join(merchantDir, configFileName)
+	c, err := config.NewConfig("ini", absFile)
+	if err != nil {
+		return errors.New("Config is not setup. Please run 'openw node config -i ' ")
+	}
+
+	c.Set("account",account)
+	c.SaveConfigFile(absFile)
+
+	return nil
+}
+
+func SetMQPassword(account string) error {
+
+	//读取配置
+	initConfig()
+	absFile := filepath.Join(merchantDir, configFileName)
+	c, err := config.NewConfig("ini", absFile)
+	if err != nil {
+		return errors.New("Config is not setup. Please run 'openw node config -i ' ")
+	}
+
+	c.Set("account",account)
+	c.SaveConfigFile(absFile)
+
+	return nil
 }

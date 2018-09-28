@@ -49,7 +49,7 @@ type AssetsAccount struct {
 	ContractAddress string      `json:"contractAddress"` //多签合约地址
 	Required        uint64      `json:"required"`        //必要签名数
 	Symbol          string      `json:"symbol"`          //资产币种类别
-	AddressIndex    int         `json:"addressCount"`
+	AddressIndex    int         `json:"addressIndex"`
 	Balance         string      `json:"balance"`
 	IsTrust         bool        `json:"isTrust"` //是否托管密钥
 	core            interface{} //核心账户指针
@@ -82,11 +82,11 @@ func (a *AssetsAccount) GetAccountID() string {
 		return ""
 	}
 
-	//seed 通过hmac-sha256 两次 RIPEMD160 一次 得到keyID
+	//seed Keccak256 两次得到keyID
 	hash := crypto.Keccak256(pub.GetPublicKeyBytes())
 	hash = crypto.Keccak256(hash)
 
-	a.AccountID = owkeychain.Base58checkEncode(hash, AccountIDVer)
+	a.AccountID = owkeychain.Encode(hash, owkeychain.BitcoinAlphabet)
 
 	return a.AccountID
 }

@@ -32,3 +32,4 @@ vendor/github.com/blocktree/go-OWCBasedFuncs/
 mqnode/*
 
 manager/openw_data/
+openw-linux-amd64

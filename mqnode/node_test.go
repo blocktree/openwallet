@@ -23,6 +23,9 @@ import (
 	"github.com/streadway/amqp"
 	"github.com/blocktree/OpenWallet/manager"
 	"strconv"
+	"fmt"
+	"github.com/blocktree/OpenWallet/log"
+	"strings"
 )
 var mqURL = "192.168.30.160:5672"
 var nodeConfig NodeConfig
@@ -215,4 +218,79 @@ func NewConfig() *manager.Config {
 	c.IsTestnet = true
 
 	return &c
+}
+
+
+
+func TestJoinMerchantNodeFlow(t *testing.T) {
+	err := RunServer()
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+
+func TestWalletManager_ClearInvaildAddressList(t *testing.T) {
+
+	tc := NewConfig()
+	tc.IsTestnet = true
+	tc.EnableBlockScan = true
+	tm := manager.NewWalletManager(tc)
+
+	walletID := "W6UT2YyBb2uo7LgPQ46YG1emPsDwZJXVSP"
+	accountID := "KHWkP2HwdmqCmdGXHMKxNj85Ek8SFviRYWXxkf52tNbaGJ4KWS"
+	list, err := tm.GetAddressList(appId, walletID, accountID, 0, -1, false)
+	if err != nil {
+		log.Error("unexpected error:", err)
+		return
+	}
+
+	//打开数据库
+	db, err := tm.OpenDB(appId)
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	for i, w := range list {
+		log.Info("address[", i, "] :", w)
+		if strings.HasPrefix(w.Address, "1") {
+			db.DeleteStruct(w)
+		}
+	}
+	log.Info("address count:", len(list))
+
+	//tm.CloseDB(testApp)
+}
+
+
+func TestGetAddress(t *testing.T) {
+
+	config := manager.NewConfig()
+	ow := manager.NewWalletManager(config)
+	o,_ := ow.GetAddress("b4b1962d415d4d30ec71b28769fda585","W6UT2YyBb2uo7LgPQ46YG1emPsDwZJXVSP","KHWkP2HwdmqCmdGXHMKxNj85Ek8SFviRYWXxkf52tNbaGJ4KWS","n4Ghgf1NwaN2bBzBXWwKBMSPTiQz4ajQZ3")
+	log.Info("address count:",o)
+}
+
+func TestWalletManager_GetAddressList(t *testing.T) {
+
+	tc := NewConfig()
+	tc.IsTestnet = true
+	tc.EnableBlockScan = false
+	tm := manager.NewWalletManager(tc)
+
+	walletID := ""
+	accountID := "KHWkP2HwdmqCmdGXHMKxNj85Ek8SFviRYWXxkf52tNbaGJ4KWS"
+	list, err := tm.GetAddressList(appId, walletID, accountID, 0, -1, false)
+	if err != nil {
+		log.Error("unexpected error:", err)
+		return
+	}
+
+	for i, w := range list {
+		log.Info("address[", i, "] :", w)
+	}
+	log.Info("address count:", len(list))
+
+	//tm.CloseDB(testApp)
 }

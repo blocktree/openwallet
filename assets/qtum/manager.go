@@ -79,7 +79,7 @@ func NewWalletManager() *WalletManager {
 	wm.walletsInSum = make(map[string]*openwallet.Wallet)
 	//区块扫描器
 	wm.blockscanner = NewBTCBlockScanner(&wm)
-	wm.Decoder = &addressDecoder{}
+	wm.Decoder = NewAddressDecoder(&wm)
 	wm.TxDecoder = NewTransactionDecoder(&wm)
 	return &wm
 }
@@ -821,7 +821,7 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, datFile, password string
 	//检查密码是否可以解析种子文件，是否可以解锁钱包。
 	key, err = wm.storage.GetKey("", keyFile, password)
 	if err != nil {
-		return errors.New("Passowrd is incorrect!")
+		return err
 	}
 
 	//钱包当前的dat文件

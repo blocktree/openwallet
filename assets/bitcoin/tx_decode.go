@@ -485,3 +485,5 @@ func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper *openwallet.Wall
 
 	return nil
 }
+
+

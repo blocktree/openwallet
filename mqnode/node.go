@@ -234,7 +234,7 @@ func (m *BitBankNode) StopTimerTask() {
 	log.Info("Merchant timer task stop...")
 
 	//停止地址订阅任务
-	m.subscribeAddressTask.Pause()
+	//m.subscribeAddressTask.Pause()
 	//停止交易记录订阅任务
 
 }
@@ -260,6 +260,7 @@ func (m *BitBankNode) DeleteAddressVersion(a *AddressVersion) error {
 //BlockScanNotify 新区块扫描完成通知
 func (bitBankNode *BitBankNode) BlockScanNotify(header *openwallet.BlockHeader) error {
 	log.Debug("header:", header)
+	bitBankNode.CallTarget("pushNewBlock",header)
 	return nil
 }
 
@@ -275,7 +276,7 @@ func (bitBankNode *BitBankNode) BlockTxExtractDataNotify(account *openwallet.Ass
 			"dataType":2,
 			"content":data.Transaction,
 		}
-		bitBankNode.CallTarget(result)
+		bitBankNode.CallTarget("pushNotifications",result)
 	}
 	if data.TxInputs != nil{
 		result := map[string]interface{}{
@@ -285,7 +286,7 @@ func (bitBankNode *BitBankNode) BlockTxExtractDataNotify(account *openwallet.Ass
 			"dataType":4,
 			"content":data.TxInputs,
 		}
-		bitBankNode.CallTarget(result)
+		bitBankNode.CallTarget("pushNotifications",result)
 	}
 
 	if data.TxOutputs != nil{
@@ -296,7 +297,7 @@ func (bitBankNode *BitBankNode) BlockTxExtractDataNotify(account *openwallet.Ass
 			"dataType":3,
 			"content":data.TxInputs,
 		}
-		bitBankNode.CallTarget(result)
+		bitBankNode.CallTarget("pushNotifications",result)
 	}
 
 
@@ -307,12 +308,12 @@ func (bitBankNode *BitBankNode) BlockTxExtractDataNotify(account *openwallet.Ass
 		"dataType":1,
 		"content":account.Balance,
 	}
-	bitBankNode.CallTarget(result)
+	bitBankNode.CallTarget("pushNotifications",result)
 	return nil
 }
 
-func (bitBankNode *BitBankNode) CallTarget(params interface{}){
-	bitBankNode.Node.Call(bitBankNode.Config.MerchantNodeID, "pushNotifications", params, true, func(resp owtp.Response) {
+func (bitBankNode *BitBankNode) CallTarget(method string,params interface{}){
+	bitBankNode.Node.Call(bitBankNode.Config.MerchantNodeID, method, params, true, func(resp owtp.Response) {
 		fmt.Printf("BitBankNode call pushNotifications, params: %s,result: %s\n", params,resp.JsonData())
 	})
 }
