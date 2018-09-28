@@ -18,10 +18,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	//"log"
 	"math/big"
-	"path/filepath"
 	"strings"
 
 	"github.com/asdine/storm"
@@ -112,7 +112,7 @@ func toHexBigIntForEtherTrans(value string, base int, unit int64) (*big.Int, err
 	return amount, nil
 }
 
-//初始化配置流程
+/*//初始化配置流程
 func (this *WalletManager) InitConfigFlow() error {
 	file := filepath.Join(this.GetConfig().ConfigFilePath, this.GetConfig().ConfigFileName)
 	fmt.Printf("You can run 'vim %s' to edit wallet's config.\n", file)
@@ -127,12 +127,12 @@ func (this *WalletManager) ShowConfig() error {
 	fmt.Println(cfgstr)
 	fmt.Printf("-----------------------------------------------------------\n")
 	return nil
-}
+}*/
 
 //创建钱包流程
 func (this *WalletManager) CreateWalletFlow() error {
 	//先加载是否有配置文件
-	err := loadConfig()
+	err := this.loadConfig()
 	if err != nil {
 		return err
 	}
@@ -161,7 +161,7 @@ func (this *WalletManager) CreateWalletFlow() error {
 /*
 type ERC20Token struct {
 	Address  string `json:"address" storm:"id"`
-	Symbol   string `json:"symbol" storm:"index"`
+	SymbolID   string `json:"symbol" storm:"index"`
 	Name     string `json:"name"`
 	Decimals int    `json:"decimals"`
 	Valid    int    `json:"valid"`
@@ -179,7 +179,7 @@ func printTokenAvailable(list []ERC20Token) {
 	}
 	t := gotabulate.Create(tableInfo)
 	// Set Headers
-	t.SetHeaders([]string{"No.", "Symbol", "Name", "Contract Address", "Decimals"})
+	t.SetHeaders([]string{"No.", "SymbolID", "Name", "Contract Address", "Decimals"})
 
 	//打印信息
 	fmt.Println(t.Render("simple"))
@@ -197,7 +197,7 @@ func printTokenWalletList(list []*Wallet) {
 
 	t := gotabulate.Create(tableInfo)
 	// Set Headers
-	t.SetHeaders([]string{"No.", "ID", "Name", "Symbol", "Balance"})
+	t.SetHeaders([]string{"No.", "ID", "Name", "SymbolID", "Balance"})
 
 	//打印信息
 	fmt.Println(t.Render("simple"))
@@ -229,7 +229,7 @@ func printWalletList(list []*Wallet) {
 //创建地址流程
 func (this *WalletManager) CreateAddressFlow() error {
 	//先加载是否有配置文件
-	err := loadConfig()
+	err := this.loadConfig()
 	if err != nil {
 		return err
 	}
@@ -298,7 +298,7 @@ func (this *WalletManager) CreateAddressFlow() error {
 func (this *WalletManager) ERC20TokenSummaryFollow() error {
 	endRunning := make(chan bool, 1)
 	//先加载是否有配置文件
-	err := loadConfig()
+	err := this.loadConfig()
 	if err != nil {
 		return err
 	}
@@ -386,7 +386,7 @@ func (this *WalletManager) ERC20TokenSummaryFollow() error {
 		return errors.New("Not summary wallets to register! ")
 	}
 
-	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", cycleSeconds.Seconds())
+	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", this.GetConfig().CycleSeconds)
 
 	//启动钱包汇总程序
 	//sumTimer := timer.NewTask(cycleSeconds, ERC20SummaryWallets)
@@ -400,7 +400,7 @@ func (this *WalletManager) ERC20TokenSummaryFollow() error {
 //汇总钱包流程
 func (this *WalletManager) SummaryFollow() error {
 	endRunning := make(chan bool, 1)
-	err := loadConfig()
+	err := this.loadConfig()
 	if err != nil {
 		return err
 	}
@@ -463,10 +463,10 @@ func (this *WalletManager) SummaryFollow() error {
 		return errors.New("Not summary wallets to register! ")
 	}
 
-	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", cycleSeconds.Seconds())
+	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", this.GetConfig().CycleSeconds)
 
 	//启动钱包汇总程序
-	sumTimer := timer.NewTask(cycleSeconds, this.SummaryWallets)
+	sumTimer := timer.NewTask(time.Second*time.Duration(this.GetConfig().CycleSeconds), this.SummaryWallets)
 	sumTimer.Start()
 	//go SummaryWallets()
 
@@ -476,7 +476,7 @@ func (this *WalletManager) SummaryFollow() error {
 
 //查看钱包列表，显示信息
 func (this *WalletManager) GetWalletList() error {
-	err := loadConfig()
+	err := this.loadConfig()
 	if err != nil {
 		return err
 	}
@@ -498,7 +498,7 @@ func (this *WalletManager) GetWalletList() error {
 
 func (this *WalletManager) ConfigERC20Token() error {
 	//先加载是否有配置文件
-	err := loadConfig()
+	err := this.loadConfig()
 	if err != nil {
 		return err
 	}
@@ -520,7 +520,7 @@ func (this *WalletManager) ConfigERC20Token() error {
 		return err
 	}
 
-	tokenSymbol, err := console.InputText("Enter Token Symbol. : ", true)
+	tokenSymbol, err := console.InputText("Enter Token SymbolID. : ", true)
 	if err != nil {
 		return err
 	}
@@ -576,7 +576,7 @@ func (this *WalletManager) ConfigERC20Token() error {
 
 func (this *WalletManager) ERC20TokenTransferFlow() error {
 	//先加载是否有配置文件
-	err := loadConfig()
+	err := this.loadConfig()
 	if err != nil {
 		return err
 	}
@@ -672,7 +672,7 @@ func (this *WalletManager) ERC20TokenTransferFlow() error {
 //发送交易
 func (this *WalletManager) TransferFlow() error {
 	//先加载是否有配置文件
-	err := loadConfig()
+	err := this.loadConfig()
 	if err != nil {
 		return err
 	}
@@ -754,7 +754,7 @@ func (this *WalletManager) TransferFlow() error {
 //备份钱包流程
 func (this *WalletManager) BackupWalletFlow() error {
 	//先加载是否有配置文件
-	err := loadConfig()
+	err := this.loadConfig()
 	if err != nil {
 		return err
 	}
@@ -1008,7 +1008,7 @@ func (this *WalletManager) SaveUnscannedTransaction(tx *BlockTransaction, reason
 //恢复钱包
 func (this *WalletManager) RestoreWalletFlow() error {
 	//先加载是否有配置文件
-	err := loadConfig()
+	err := this.loadConfig()
 	if err != nil {
 		return err
 	}

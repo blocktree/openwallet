@@ -5,57 +5,6 @@ import (
 	"github.com/blocktree/OpenWallet/openwallet"
 )
 
-//loadConfig 读取配置
-func (this *WalletManager) LoadConfig() error {
-
-	/*var (
-		c   config.Configer
-		err error
-	)
-
-	//读取配置
-
-	//fmt.Println("config file path:", this.Config.ConfigFilePath)
-	//fmt.Println("config file name:", this.Config.ConfigFileName)
-	absFile := filepath.Join(this.Config.ConfigFilePath, this.Config.ConfigFileName)
-	c, err = config.NewConfig("ini", absFile)
-	if err != nil {
-		return errors.New("Config is not setup. Please run 'wmd Config -s <symbol>' ")
-	}
-
-	this.Config.ServerAPI = c.String("serverAPI")
-	this.Config.Threshold, _ = decimal.NewFromString(c.String("threshold"))
-	this.Config.SumAddress = c.String("sumAddress")
-	//	this.Config.RpcUser = c.String("rpcUser")
-	//	this.Config.RpcPassword = c.String("rpcPassword")
-	//	this.Config.NodeInstallPath = c.String("nodeInstallPath")
-	this.Config.IsTestNet, _ = c.Bool("isTestNet")
-	//	if this.Config.IsTestNet {
-	//		this.Config.WalletDataPath = c.String("testNetDataPath")
-	//	} else {
-	//		this.Config.WalletDataPath = c.String("mainNetDataPath")
-	//	}
-
-	cyclesec := c.String("cycleSeconds")
-	if cyclesec == "" {
-		return errors.New(fmt.Sprintf(" cycleSeconds is not set, sample: 1m , 30s, 3m20s etc... Please set it in './conf/%s.ini' \n", Symbol))
-	}
-
-	this.Config.CycleSeconds, _ = time.ParseDuration(cyclesec)*/
-
-	//token := BasicAuth(wm.Config.RpcUser, wm.Config.RpcPassword)
-
-	//wm.WalletClient = NewClient(wm.Config.ServerAPI, token, false)
-
-	_, err := this.Config.LoadConfig2()
-	if err != nil {
-		log.Error("load wallet config fail failed, err=", err)
-		return err
-	}
-
-	return nil
-}
-
 //GetAddressDecode 地址解析器
 func (this *WalletManager) GetAddressDecode() openwallet.AddressDecoder {
 	return this.Decoder
@@ -69,7 +18,7 @@ func (this *WalletManager) GetTransactionDecoder() openwallet.TransactionDecoder
 //GetBlockScanner 获取区块链
 func (this *WalletManager) GetBlockScanner() openwallet.BlockScanner {
 	//先加载是否有配置文件
-	err := this.LoadConfig()
+	err := this.loadConfig()
 	if err != nil {
 		return nil
 	}
@@ -114,7 +63,7 @@ func (this *WalletManager) FullName() string {
 	return "Ethereum"
 }
 
-//Symbol 币种标识
+//SymbolID 币种标识
 func (this *WalletManager) Symbol() string {
 	return this.Config.Symbol
 }
