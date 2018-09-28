@@ -264,7 +264,7 @@ func GetWalletKeys(dir string) ([]*Wallet, error) {
 
 		w := readWallet(path)
 		w.KeyFile = fi.Name()
-		fmt.Println("absolute path:", absPath)
+		//fmt.Println("absolute path:", absPath)
 		wallets = append(wallets, w)
 
 	}

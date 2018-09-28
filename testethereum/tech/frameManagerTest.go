@@ -62,7 +62,7 @@ func TestWalletManager_CreateAssetsAccount() {
 	//account := &openwallet.AssetsAccount{Alias: "Tim", WalletID: walletID, Required: 1, Symbol: "BTC", IsTrust: true}
 	//account, err := tm.CreateAssetsAccount(testApp, walletID, "12345678", account, nil)
 	account := &openwallet.AssetsAccount{Alias: "Alice", WalletID: walletID, Required: 1, Symbol: "ETH", IsTrust: true}
-	account, err := tm.CreateAssetsAccount(testApp, walletID, "12345678", account, nil)
+	account,_, err := tm.CreateAssetsAccount(testApp, walletID, "12345678", account, nil)
 	if err != nil {
 		log.Error(err)
 		return
