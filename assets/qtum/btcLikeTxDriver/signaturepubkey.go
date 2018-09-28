@@ -58,9 +58,25 @@ func (sp SignaturePubkey) encodeToScript(sigType byte) []byte {
 
 	if r[0]&0x80 == 0x80 {
 		r = append([]byte{0x00}, r...)
+	} else {
+		for i := 0; i < 32; i++ {
+			if r[i] == 0 {
+				r = r[1:]
+			} else {
+				break
+			}
+		}
 	}
 	if s[0]&0x80 == 0x80 {
 		s = append([]byte{0}, s...)
+	} else {
+		for i := 0; i < 32; i++ {
+			if s[i] == 0 {
+				s = s[1:]
+			} else {
+				break
+			}
+		}
 	}
 
 	r = append([]byte{byte(len(r))}, r...)
@@ -122,6 +138,9 @@ func decodeFromScriptBytes(script []byte) (*SignaturePubkey, error) {
 	rLen := script[index]
 	index++
 
+	if rLen > 0x21 {
+		return nil, errors.New("Invalid r length!")
+	}
 	if rLen == 0x21 {
 		if index+2 > limit {
 			return nil, errors.New("Invalid script data!")
@@ -129,14 +148,21 @@ func decodeFromScriptBytes(script []byte) (*SignaturePubkey, error) {
 		if script[index] != 0x00 && (script[index+1]&0x80 != 0x80) {
 			return nil, errors.New("Invalid signature data!")
 		}
-		index++
 	}
 
-	if index+32 > limit {
+	if index+int(rLen) > limit {
 		return nil, errors.New("Invalid script data!")
 	}
-	ret.Signature = script[index : index+32]
-	index += 32
+	ret.Signature = script[index : index+int(rLen)]
+	if rLen == 0x21 {
+		ret.Signature = ret.Signature[1:]
+	}
+	if rLen < 0x20 {
+		for i := 0; i < 0x20-int(rLen); i++ {
+			ret.Signature = append([]byte{0x00}, ret.Signature...)
+		}
+	}
+	index += int(rLen)
 
 	if index+1 > limit {
 		return nil, errors.New("Invalid script data!")
@@ -152,6 +178,9 @@ func decodeFromScriptBytes(script []byte) (*SignaturePubkey, error) {
 	sLen := script[index]
 	index++
 
+	if sLen > 0x21 {
+		return nil, errors.New("Invalid s length!")
+	}
 	if sLen == 0x21 {
 		if index+2 > limit {
 			return nil, errors.New("Invalid script data!")
@@ -159,14 +188,23 @@ func decodeFromScriptBytes(script []byte) (*SignaturePubkey, error) {
 		if script[index] != 0x00 && (script[index+1]&0x80 != 0x80) {
 			return nil, errors.New("Invalid signature data!")
 		}
-		index++
 	}
 
-	if index+32 > limit {
+	if index+int(sLen) > limit {
 		return nil, errors.New("Invalid script data!")
 	}
-	ret.Signature = append(ret.Signature, script[index:index+32]...)
-	index += 32
+	sdata := script[index : index+int(sLen)]
+	if sLen == 0x21 {
+		sdata = sdata[1:]
+	}
+	if sLen < 0x20 {
+		for i := 0; i < 0x20-int(sLen); i++ {
+			sdata = append([]byte{0x00}, sdata...)
+		}
+	}
+	ret.Signature = append(ret.Signature, sdata...)
+
+	index += int(sLen)
 
 	if index+1 > limit {
 		return nil, errors.New("Invalid script data!")

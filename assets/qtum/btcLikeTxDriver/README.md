@@ -4,6 +4,8 @@
         Test_case1    : from 公钥哈希地址 to  公钥哈希地址
         Test_case2    : from 脚本哈希地址 to  公钥哈希地址
         Test_case3    : from 混合地址    to  公钥哈希地址 
+        Test_case4    : from bech32地址  to  公钥哈希地址 
+        Test_case5    : from multisig地址  to  公钥哈希地址 
 ```
 ## 其他类比特币验证须知
 ```
@@ -20,12 +22,13 @@
         支持P2PKH类型目标地址
         支持P2SH类型目标地址
         支持P2PKH和P2SH混合类型目标地址
+        支持Bech32新型地址
         默认启用隔离认证
+        从multisig地址进行支付
 ```
 ## TODO
 ```
-        多签
-        隔离认证
+        stuff
 ```
 ## 用法：
 ### 创建空交易单 `CreateEmptyRawTransaction`

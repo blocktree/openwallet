@@ -7,6 +7,12 @@ import (
 	"github.com/blocktree/go-OWCrypt"
 )
 
+const (
+	TypeP2PKH  = 0
+	TypeP2SH   = 1
+	TypeBech32 = 2
+)
+
 type Transaction struct {
 	Version  []byte
 	Vins     []TxIn
@@ -47,50 +53,95 @@ func (t Transaction) encodeToBytes() ([]byte, error) {
 	}
 
 	ret := []byte{}
-
 	ret = append(ret, t.Version...)
-	if t.Witness != nil {
+	if t.isMultiSig() {
+		if t.Witness == nil {
+			return nil, errors.New("No witness data for a multisig transaction!")
+		}
 		ret = append(ret, SegWitSymbol, SegWitVersion)
-	}
-
-	ret = append(ret, byte(len(t.Vins)))
-
-	for _, in := range t.Vins {
-		if in.TxID == nil || len(in.TxID) != 32 || in.Vout == nil || len(in.Vout) != 4 {
-			return nil, errors.New("Invalid transaction input!")
+		ret = append(ret, byte(len(t.Vins)))
+		for _, in := range t.Vins {
+			if in.TxID == nil || len(in.TxID) != 32 || in.Vout == nil || len(in.Vout) != 4 {
+				return nil, errors.New("Invalid transaction input!")
+			}
+			ret = append(ret, in.TxID...)
+			ret = append(ret, in.Vout...)
+			redeemHash := calcRedeemHash(in.ScriptPubkeySignature)
+			ret = append(ret, byte(len(redeemHash)))
+			ret = append(ret, redeemHash...)
+			ret = append(ret, in.Sequence...)
 		}
-		ret = append(ret, in.TxID...)
-		ret = append(ret, in.Vout...)
-		if in.ScriptPubkeySignature == nil {
-			ret = append(ret, 0x00)
-		} else {
-			ret = append(ret, byte(len(in.ScriptPubkeySignature)))
-			ret = append(ret, in.ScriptPubkeySignature...)
+		ret = append(ret, byte(len(t.Vouts)))
+
+		for _, out := range t.Vouts {
+			if out.amount == nil || len(out.amount) != 8 || out.lockScript == nil {
+				return nil, errors.New("Invalid transaction output!")
+			}
+			ret = append(ret, out.amount...)
+			ret = append(ret, byte(len(out.lockScript)))
+			ret = append(ret, out.lockScript...)
 		}
-		ret = append(ret, in.Sequence...)
-	}
 
-	ret = append(ret, byte(len(t.Vouts)))
-
-	for _, out := range t.Vouts {
-		if out.amount == nil || len(out.amount) != 8 || out.lockScript == nil {
-			return nil, errors.New("Invalid transaction output!")
-		}
-		ret = append(ret, out.amount...)
-		ret = append(ret, byte(len(out.lockScript)))
-		ret = append(ret, out.lockScript...)
-	}
-
-	if t.Witness != nil {
+		ret = append(ret, byte(0x04), 0x00)
 		for _, w := range t.Witness {
 			if w.Signature == nil {
-				ret = append(ret, byte(0x00))
+				return nil, errors.New("Miss signature data for a multisig transaction!")
 			} else {
-				ret = append(ret, byte(0x02))
-				ret = append(ret, w.encodeToScript(SigHashAll)...)
+				sig := w.encodeToScript(SigHashAll)
+				sig = sig[:len(sig)-34]
+				ret = append(ret, sig...)
+			}
+		}
+
+		ret = append(ret, byte(len(t.Vins[0].ScriptPubkeySignature)))
+
+		ret = append(ret, t.Vins[0].ScriptPubkeySignature...)
+	} else {
+
+		if t.Witness != nil {
+			ret = append(ret, SegWitSymbol, SegWitVersion)
+		}
+
+		ret = append(ret, byte(len(t.Vins)))
+
+		for _, in := range t.Vins {
+			if in.TxID == nil || len(in.TxID) != 32 || in.Vout == nil || len(in.Vout) != 4 {
+				return nil, errors.New("Invalid transaction input!")
+			}
+			ret = append(ret, in.TxID...)
+			ret = append(ret, in.Vout...)
+			if in.ScriptPubkeySignature == nil {
+				ret = append(ret, 0x00)
+			} else {
+				ret = append(ret, byte(len(in.ScriptPubkeySignature)))
+				ret = append(ret, in.ScriptPubkeySignature...)
+			}
+			ret = append(ret, in.Sequence...)
+		}
+
+		ret = append(ret, byte(len(t.Vouts)))
+
+		for _, out := range t.Vouts {
+			if out.amount == nil || len(out.amount) != 8 || out.lockScript == nil {
+				return nil, errors.New("Invalid transaction output!")
+			}
+			ret = append(ret, out.amount...)
+			ret = append(ret, byte(len(out.lockScript)))
+			ret = append(ret, out.lockScript...)
+		}
+
+		if t.Witness != nil {
+			for _, w := range t.Witness {
+				if w.Signature == nil {
+					ret = append(ret, byte(0x00))
+				} else {
+					ret = append(ret, byte(0x02))
+					ret = append(ret, w.encodeToScript(SigHashAll)...)
+				}
 			}
 		}
 	}
+
 	ret = append(ret, t.LockTime...)
 	return ret, nil
 }
@@ -245,6 +296,18 @@ func isScriptHash(script []byte) bool {
 	return true
 }
 
+func checkScriptType(script []byte) int {
+	if script[0] == OpCodeDup && script[1] == OpCodeHash160 && script[2] == 0x14 && script[23] == OpCodeEqualVerify && script[24] == OpCodeCheckSig {
+		return TypeP2PKH
+	} else if script[0] == OpCodeHash160 && script[1] == 0x14 && script[22] == OpCodeEqual {
+		return TypeP2SH
+	} else if script[0] == 0x00 && script[1] == 0x14 {
+		return TypeBech32
+	} else {
+		return -1
+	}
+}
+
 func calcSegwitHash(tx Transaction) ([]byte, []byte, []byte, error) {
 	hashPrevouts := []byte{}
 	hashSequence := []byte{}
@@ -287,12 +350,13 @@ func genScriptCodeFromRedeemScript(redeem string) ([]byte, error) {
 	} else {
 		//TODO
 		//for multi sig
+		ret = redeemBytes
 	}
 
 	return ret, nil
 }
 
-func (tx Transaction) calcSegwitHashForSig(unlockData TxUnlock, txid, vout, sequence []byte) ([]byte, error) {
+func (tx Transaction) calcSegwitBytesForSig(unlockData TxUnlock, txid, vout, sequence []byte) ([]byte, error) {
 	sigBytes := []byte{}
 
 	sigBytes = append(sigBytes, tx.Version...)
@@ -338,13 +402,21 @@ func (t Transaction) getHashesForSig(unlockData []TxUnlock) ([][]byte, error) {
 		if err != nil {
 			return nil, errors.New("Invalid lockscript!")
 		}
-		if isScriptHash(lockBytes) {
-			sigBytes, err = t.calcSegwitHashForSig(unlockData[i], t.Vins[i].TxID, t.Vins[i].Vout, t.Vins[i].Sequence)
+
+		if lockBytes == nil || len(lockBytes) == 0 || (len(lockBytes) != 22 && len(lockBytes) != 23 && len(lockBytes) != 25) {
+			return nil, errors.New("Check the lockscript data!")
+		}
+
+		scriptType := checkScriptType(lockBytes)
+		if scriptType == TypeP2SH || scriptType == TypeBech32 {
+			if scriptType == TypeBech32 {
+				unlockData[i].RedeemScript = unlockData[i].LockScript
+			}
+			sigBytes, err = t.calcSegwitBytesForSig(unlockData[i], t.Vins[i].TxID, t.Vins[i].Vout, t.Vins[i].Sequence)
 			if err != nil {
 				return nil, err
 			}
-
-		} else {
+		} else if scriptType == TypeP2PKH {
 			t.Vins[i].ScriptPubkeySignature = lockBytes
 
 			sigBytes, err = t.encodeToBytes()
@@ -352,10 +424,13 @@ func (t Transaction) getHashesForSig(unlockData []TxUnlock) ([][]byte, error) {
 				return nil, err
 			}
 
+		} else {
+			return nil, errors.New("Unknown type of lockscript!")
 		}
+
 		sigBytes = append(sigBytes, uint32ToLittleEndianBytes(DefaultHashType)...)
 
-		hash := owcrypt.Hash(sigBytes, 0, owcrypt.HASH_ALG_SHA256)
+		hash := owcrypt.Hash(sigBytes, 0, owcrypt.HASh_ALG_DOUBLE_SHA256)
 
 		hashes = append(hashes, hash)
 	}

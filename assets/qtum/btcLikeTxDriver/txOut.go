@@ -1,6 +1,9 @@
 package btcLikeTxDriver
 
-import "errors"
+import (
+	"errors"
+	"strings"
+)
 
 type TxOut struct {
 	amount     []byte
@@ -11,11 +14,24 @@ func newTxOutForEmptyTrans(vout []Vout) ([]TxOut, error) {
 	var ret []TxOut
 
 	for _, v := range vout {
+		amount := uint64ToLittleEndianBytes(v.Amount)
+
+		if strings.Index(v.Address, Bech32Prefix) == 0 {
+			redeem, err := Bech32Decode(v.Address)
+			if err != nil {
+				return nil, errors.New("Invalid bech32 type address!")
+			}
+
+			redeem = append([]byte{byte(len(redeem))}, redeem...)
+			redeem = append([]byte{0x00}, redeem...)
+
+			ret = append(ret, TxOut{amount, redeem})
+		}
+
 		prefix, hash, err := DecodeCheck(v.Address)
 		if err != nil {
 			return nil, errors.New("Invalid address to send!")
 		}
-		amount := uint64ToLittleEndianBytes(v.Amount)
 
 		if len(hash) != 0x14 {
 			return nil, errors.New("Invalid address to send!")
