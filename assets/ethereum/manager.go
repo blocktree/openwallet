@@ -86,6 +86,10 @@ type WalletManager struct {
 	locker         sync.Mutex //防止并发修改和读取配置, 可能用不上
 	WalletInSumOld map[string]*Wallet
 	StorageOld     *keystore.HDKeystore
+	ConfigPath     string
+	RootPath       string
+	DefaultConfig  string
+	SymbolID       string
 }
 
 func (this *WalletManager) GetConfig() WalletConfig {
@@ -94,19 +98,14 @@ func (this *WalletManager) GetConfig() WalletConfig {
 	return *this.Config
 }
 
-func NewWalletManager(rootDir string) *WalletManager {
+func NewWalletManager() *WalletManager {
 	wm := WalletManager{}
-	//wm.RootDir = rootDir
-
-	configPath := filepath.Join(rootDir, "eth", "conf")
+	wm.RootPath = "data"
+	wm.ConfigPath = "conf"
+	wm.SymbolID = Symbol
 	wm.Config = &WalletConfig{}
-	_, err := wm.Config.LoadConfig(configPath, "eth.json", makeEthDefaultConfig(rootDir))
-	if err != nil {
-		log.Error("wm.Config.LoadConfig failed, err=", err)
-		os.Exit(-1)
-	}
-	storage := hdkeystore.NewHDKeystore(wm.Config.KeyDir, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
-	wm.Storage = storage
+	wm.DefaultConfig = makeEthDefaultConfig(wm.ConfigPath)
+
 	//参与汇总的钱包
 	wm.WalletsInSum = make(map[string]*openwallet.Wallet)
 	//区块扫描器
@@ -114,12 +113,7 @@ func NewWalletManager(rootDir string) *WalletManager {
 	wm.Decoder = &AddressDecoder{}
 	wm.TxDecoder = NewTransactionDecoder(&wm)
 
-	wm.StorageOld = keystore.NewHDKeystore(wm.Config.KeyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	wm.WalletInSumOld = make(map[string]*Wallet)
-
-	client := &Client{BaseURL: wm.Config.ServerAPI, Debug: true}
-	wm.WalletClient = client
-	//	g_manager = &wm
 	return &wm
 }
 
@@ -1000,6 +994,22 @@ func (this *WalletManager) SendTransaction2(wallet *Wallet, to string,
 		if err != nil {
 			openwLogger.Log.Errorf("SendTransactionToAddr failed, err=%v", err)
 			if txid == "" {
+				if this.GetConfig().LocalNonce {
+					txCount, err := this.WalletClient.ethGetTransactionCount(addrs[i].Address)
+					if err != nil {
+						log.Error("ethGetTransactionCount failed, err=", err)
+						continue
+					}
+
+					if nonce < txCount {
+						addrs[i].TxCount = txCount
+						err = wallet.SaveAddress(this.GetConfig().DbPath, addrs[i])
+						if err != nil {
+							log.Error("update address[", addrs[i].Address, "] tx count to ", addrs[i].TxCount, " failed, err=", err)
+						}
+						continue
+					}
+				}
 				return txIds, err //continue //txIds = append(txIds, txid)
 			}
 		}
@@ -1212,17 +1222,51 @@ func (this *WalletManager) GetAddressesByWallet(dbPath string, wallet *Wallet) (
 		return addrs, err
 	}
 
-	for i, _ := range addrs {
-		balance, err := this.WalletClient.GetAddrBalance(addrs[i].Address)
+	count := len(addrs)
+
+	queryBalanceChan := make(chan int, 20)
+	resultChan := make(chan *Address, 100)
+	done := make(chan int, 1)
+
+	queryBalance := func(theAddr *Address) {
+		queryBalanceChan <- 1
+		var paddr *Address
+		defer func() {
+			resultChan <- paddr
+			<-queryBalanceChan
+		}()
+		balance, err := this.WalletClient.GetAddrBalance(theAddr.Address)
 		if err != nil {
-			errinfo := fmt.Sprintf("get balance of addr[%v] failed, err=%v", addrs[i].Address, err)
-			return addrs, errors.New(errinfo)
+			errinfo := fmt.Sprintf("get balance of addr[%v] failed, err=%v", theAddr.Address, err)
+			log.Error(errinfo)
+			return
 		}
 
-		addrs[i].balance = balance
+		theAddr.balance = balance
+		paddr = theAddr
 	}
 
-	return addrs, nil
+	var addrResults []*Address
+	go func() {
+		for i := 0; i < count; i++ {
+			paddr := <-resultChan
+			if paddr != nil {
+				addrResults = append(addrResults, paddr)
+			}
+		}
+		done <- 1
+	}()
+
+	for i, _ := range addrs {
+		go queryBalance(addrs[i])
+	}
+	<-done
+
+	if len(addrResults) != count {
+		log.Error("get address balance failed in this wallet.")
+		return make([]*Address, 0), errors.New("get address balance failed in this wallet.")
+	}
+	return addrResults, nil
 }
 
 func (this *WalletManager) ERC20SummaryWallets() {

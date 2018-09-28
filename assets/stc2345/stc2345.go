@@ -1,14 +1,9 @@
 package stc2345
 
 import (
-	"math/big"
-	"os"
-	"path/filepath"
+	"fmt"
 
 	"github.com/blocktree/OpenWallet/assets/ethereum"
-	"github.com/blocktree/OpenWallet/hdkeystore"
-	"github.com/blocktree/OpenWallet/keystore"
-	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	owcrypt "github.com/blocktree/go-OWCrypt"
 )
@@ -24,9 +19,9 @@ type WalletManager struct {
 	ethereum.WalletManager
 }
 
-func makeStc2345DefaultConfig(rootDir string) *ethereum.WalletConfig {
-	conf := &ethereum.WalletConfig{}
-	conf.Symbol = Symbol
+func makeStc2345DefaultConfig() string {
+	/*conf := &ethereum.WalletConfig{}
+	conf.SymbolID = SymbolID
 	conf.MasterKey = MasterKey
 	conf.CurveType = CurveType
 	conf.RootDir = rootDir
@@ -35,11 +30,11 @@ func makeStc2345DefaultConfig(rootDir string) *ethereum.WalletConfig {
 	//地址导出路径
 	conf.AddressDir = filepath.Join(rootDir, "stc2345", "address")
 	//区块链数据
-	//blockchainDir = filepath.Join(rootDir, strings.ToLower(Symbol), "blockchain")
+	//blockchainDir = filepath.Join(rootDir, strings.ToLower(SymbolID), "blockchain")
 	//配置文件路径
-	conf.ConfigFilePath = filepath.Join(rootDir, "stc2345", "conf") //filepath.Join("conf")
+	conf.ConfigFilePath = configFilePath //filepath.Join(rootDir, "stc2345", "conf") //filepath.Join("conf")
 	//配置文件名
-	conf.ConfigFileName = "stc2345.json"
+	conf.ConfigFileName = "stc2345.ini"
 	//区块链数据文件
 	conf.BlockchainFile = "blockchain.db"
 	//是否测试网络
@@ -60,36 +55,61 @@ func makeStc2345DefaultConfig(rootDir string) *ethereum.WalletConfig {
 	conf.CycleSeconds = 10
 	//本地维护nonce
 	conf.LocalNonce = true
-	conf.ChainID = 922337203685
-	//conf.EthereumKeyPath = "/Users/peter/workspace/bitcoin/wallet/src/github.com/ethereum/go-ethereum/chain/keystore"
-	return conf
+	conf.ChainID = 922337203685*/
+	defaultConfigStr := `
+SymbolID = "ETH"
+MasterKey = "Ethereum seed"
+CurveType = %v
+RootDir = "data"
+#key file path
+KeyDir = "data/stc2345/key"
+#key export path
+AddressDir = "data/stc2345/address"
+#config file path
+ConfigFilePath = "conf"
+#config file name
+ConfigFileName = "stc2345.ini"
+#block chain db name
+BlockchainFile = "blockchain.db"
+#check if it's test net
+IsTestNet = true
+#db file path
+DbPath = "data/stc2345/db" 
+#wallet backup path
+BackupDir = "data/stc2345/backup" 
+#wallet api url
+ServerAPI = "https://jfx.alliancechain.net"
+#wallet summary threshold
+Threshold = 5 
+#summary address
+SumAddress = ""
+#summary time interval
+CycleSeconds = 10
+#eth node default key store path	
+EthereumKeyPath = ""
+#whether check txpool to find nonce
+LocalNonce = true
+#block chain ID
+ChainID = 922337203685
+`
+	return fmt.Sprintf(defaultConfigStr, CurveType)
 }
 
-func NewWalletManager(rootDir string) *WalletManager {
+func NewWalletManager() *WalletManager {
 	wm := WalletManager{}
 	//wm.RootDir = rootDir
+	//configPath := filepath.Join(rootDir, "stc2345", "conf")
+	wm.RootPath = "data"
+	wm.ConfigPath = "conf"
+	wm.SymbolID = Symbol
 
-	configPath := filepath.Join(rootDir, "stc2345", "conf")
-	wm.Config = &ethereum.WalletConfig{}
-	_, err := wm.Config.LoadConfig(configPath, "stc2345.json", makeStc2345DefaultConfig(rootDir))
-	if err != nil {
-		log.Error("wm.Config.LoadConfig failed, err=", err)
-		os.Exit(-1)
-	}
-	storage := hdkeystore.NewHDKeystore(wm.Config.KeyDir, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
-	wm.Storage = storage
+	wm.DefaultConfig = makeStc2345DefaultConfig()
 	//参与汇总的钱包
 	wm.WalletsInSum = make(map[string]*openwallet.Wallet)
 	//区块扫描器
 	wm.Blockscanner = ethereum.NewETHBlockScanner(&wm.WalletManager)
 	wm.Decoder = &ethereum.AddressDecoder{}
 	wm.TxDecoder = ethereum.NewTransactionDecoder(&wm.WalletManager)
-
-	wm.StorageOld = keystore.NewHDKeystore(wm.Config.KeyDir, keystore.StandardScryptN, keystore.StandardScryptP)
-	wm.WalletInSumOld = make(map[string]*ethereum.Wallet)
-
-	client := &ethereum.Client{BaseURL: wm.Config.ServerAPI, Debug: false}
-	wm.WalletClient = client
 	//	g_manager = &wm
 	return &wm
 }

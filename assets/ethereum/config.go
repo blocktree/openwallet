@@ -15,15 +15,17 @@
 package ethereum
 
 import (
-	"io/ioutil"
+	"errors"
+	"fmt"
 	"math/big"
 	"path/filepath"
-	"time"
 
 	//	"github.com/astaxie/beego/config"
-	"encoding/json"
 
+	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common/file"
+	"github.com/blocktree/OpenWallet/hdkeystore"
+	"github.com/blocktree/OpenWallet/keystore"
 	"github.com/blocktree/OpenWallet/log"
 	owcrypt "github.com/blocktree/go-OWCrypt"
 )
@@ -84,8 +86,8 @@ type WalletConfig struct {
 	//钱包数据文件目录
 	//WalletDataPath string
 	//汇总阀值
-	ThreaholdStr string
-	Threshold    *big.Int `json:"-"`
+	//ThreaholdStr string
+	Threshold *big.Int `json:"-"`
 	//汇总地址
 	SumAddress string
 	//汇总执行间隔时间
@@ -102,13 +104,9 @@ type WalletConfig struct {
 	ChainID    uint64
 }
 
-func (this *WalletConfig) LoadConfig2() (*WalletConfig, error) {
-	return this.LoadConfig(this.ConfigFilePath, this.ConfigFileName, nil)
-}
-
-func makeEthDefaultConfig(rootDir string) *WalletConfig {
-	conf := &WalletConfig{}
-	conf.Symbol = Symbol
+func makeEthDefaultConfig(ConfigFilePath string) string {
+	/*conf := &WalletConfig{}
+	conf.SymbolID = SymbolID
 	conf.MasterKey = MasterKey
 	conf.CurveType = CurveType
 	conf.RootDir = rootDir
@@ -117,11 +115,11 @@ func makeEthDefaultConfig(rootDir string) *WalletConfig {
 	//地址导出路径
 	conf.AddressDir = filepath.Join(rootDir, "eth", "address")
 	//区块链数据
-	//blockchainDir = filepath.Join(rootDir, strings.ToLower(Symbol), "blockchain")
+	//blockchainDir = filepath.Join(rootDir, strings.ToLower(SymbolID), "blockchain")
 	//配置文件路径
-	conf.ConfigFilePath = filepath.Join(rootDir, "eth", "conf") //filepath.Join("conf")
+	conf.ConfigFilePath = ConfigFilePath //filepath.Join(rootDir, "eth", "conf") //filepath.Join("conf")
 	//配置文件名
-	conf.ConfigFileName = "eth.json"
+	conf.ConfigFileName = "eth.ini"
 	//区块链数据文件
 	conf.BlockchainFile = "blockchain.db"
 	//是否测试网络
@@ -135,69 +133,139 @@ func makeEthDefaultConfig(rootDir string) *WalletConfig {
 	conf.ServerAPI = "http://127.0.0.1:8545"
 
 	conf.Threshold = big.NewInt(5) //decimal.NewFromFloat(5)
-	conf.ThreaholdStr = "5"
+
 	//汇总地址
 	conf.SumAddress = ""
 	//汇总执行间隔时间
 	conf.CycleSeconds = 10
-	//	this.ChainId = 12
+	//
 	conf.EthereumKeyPath = "/Users/peter/workspace/bitcoin/wallet/src/github.com/ethereum/go-ethereum/chain/keystore"
 	//每次都向节点查询nonce
 	conf.LocalNonce = false
 	//区块链ID
-	conf.ChainID = 12
-	return conf
+	conf.ChainID = 12*/
+
+	defaultConfigStr := `
+SymbolID = "ETH"
+MasterKey = "Ethereum seed"
+CurveType = %v
+#key file path
+KeyDir = "data/eth/key"
+#key export path
+AddressDir = "data/eth/address"
+#config file name
+ConfigFileName = "eth.ini"
+#block chain db name
+BlockchainFile = "blockchain.db"
+#check if it's test net
+IsTestNet = true
+#db file path
+DbPath = "data/eth/db" 
+#wallet backup path
+BackupDir = "data/eth/backup" 
+#wallet api url
+ServerAPI = "http://127.0.0.1:8545"
+#wallet summary threshold
+Threshold = 5 
+#summary address
+SumAddress = ""
+#summary time interval
+CycleSeconds = 10
+#eth node default key store path	
+EthereumKeyPath = "/Users/peter/workspace/bitcoin/wallet/src/github.com/ethereum/go-ethereum/chain/keystore"
+#whether check txpool to find nonce
+LocalNonce = false
+#block chain ID
+ChainID = 12
+`
+	return fmt.Sprintf(defaultConfigStr, CurveType)
 }
 
-func (this *WalletConfig) LoadConfig(configFilePath string, configFileName string, defaultConf *WalletConfig) (*WalletConfig, error) {
+func (this *WalletConfig) LoadConfig(configFilePath string, configFileName string) (*WalletConfig, error) {
 	absFile := filepath.Join(configFilePath, configFileName)
-	dat, err := ioutil.ReadFile(absFile)
-	if err != nil && defaultConf == nil {
-		log.Error("read config file[", configFilePath, "/", configFileName, "] failed, err=", err)
-		return nil, err
-	} else if err != nil {
-		log.Info("cannot find the config file[", configFilePath, "/", configFileName, "] , set config to default. ")
-		*this = *defaultConf
-
-		//创建目录
-		file.MkdirAll(this.RootDir)
-		file.MkdirAll(configFilePath)
-		file.MkdirAll(this.DbPath)
-		file.MkdirAll(this.BackupDir)
-		file.MkdirAll(this.KeyDir)
-
-		configStr, _ := json.MarshalIndent(this, "", " ")
-		err = ioutil.WriteFile(absFile, configStr, 0644)
-		if err != nil {
-			log.Error("write to config file failed, err=", err)
-			return nil, err
-		}
-
-		return this, nil
-	}
-
-	err = json.Unmarshal(dat, this)
+	fmt.Println("config path:", absFile)
+	c, err := config.NewConfig("ini", absFile)
 	if err != nil {
-		log.Error("decode config fail from json failed, err=", err)
-		return nil, err
+		return nil, errors.New("Config is not setup. Please run 'wmd Config -s <symbol>' ")
 	}
 
-	this.Threshold, err = ConvertEthStringToWei(this.ThreaholdStr)
+	this.Symbol = c.String("SymbolID")     //SymbolID
+	this.MasterKey = c.String("MasterKey") //MasterKey
+	curveType, err := c.Int64("CurveType") //CurveType
 	if err != nil {
-		log.Error("convert threshold to big.int failed, err=%v", err)
+		log.Error("curve type failed, err=", err)
 		return nil, err
 	}
 
-	configStr, _ := json.MarshalIndent(this, "", " ")
-	log.Debug("load ", this.Symbol, " config :", string(configStr))
-	return nil, nil
+	this.CurveType = uint32(curveType) //CurveType
+	this.RootDir = c.String("RootDir") //rootDir
+	//钥匙备份路径
+	this.KeyDir = c.String("KeyDir") //filepath.Join(rootDir, "eth", "key")
+	//地址导出路径
+	this.AddressDir = c.String("AddressDir") //filepath.Join(rootDir, "eth", "address")
+	//区块链数据
+	//blockchainDir = filepath.Join(rootDir, strings.ToLower(SymbolID), "blockchain")
+	//配置文件路径
+	this.ConfigFilePath = c.String("ConfigFilePath") //ConfigFilePath //filepath.Join(rootDir, "eth", "conf") //filepath.Join("conf")
+	//配置文件名
+	this.ConfigFileName = c.String("ConfigFileName") //"eth.ini"
+	//区块链数据文件
+	this.BlockchainFile = c.String("BlockchainFile") //"blockchain.db"
+	//是否测试网络
+	isTestNet, err := c.Bool("isTestNet")
+	if err != nil {
+		log.Error("isTestNet error, err=", err)
+		return nil, err
+	}
+	this.IsTestNet = isTestNet //true
+
+	//本地数据库文件路径
+	this.DbPath = c.String("DbPath") //filepath.Join(rootDir, "eth", "db")
+	//备份路径
+	this.BackupDir = c.String("BackupDir") //filepath.Join(rootDir, "eth", "backup")
+	//钱包服务API
+	this.ServerAPI = c.String("ServerAPI") //"http://127.0.0.1:8545"
+
+	threshold, err := c.Int64("Threshold")
+	if err != nil {
+		log.Error("Threshold error, err=", err)
+		return nil, err
+	}
+	this.Threshold = big.NewInt(threshold) //decimal.NewFromFloat(5)
+	//this.ThreaholdStr = "5"
+	//汇总地址
+	this.SumAddress = c.String("SumAddress") //""
+	//汇总执行间隔时间
+	cycleSeconds, err := c.Int64("CycleSeconds")
+	if err != nil {
+		log.Error("CycleSeconds error, err=", err)
+		return nil, err
+	}
+	this.CycleSeconds = uint64(cycleSeconds) //c.Int64("CycleSeconds")
+	//	this.ChainId = 12
+	this.EthereumKeyPath = c.String("EthereumKeyPath") //"/Users/peter/workspace/bitcoin/wallet/src/github.com/ethereum/go-ethereum/chain/keystore"
+	//每次都向节点查询nonce
+	localnonce, err := c.Bool("LocalNonce")
+	if err != nil {
+		log.Error("LocalNonce error, err=", err)
+		return nil, err
+	}
+	this.LocalNonce = localnonce //c.Bool("LocalNonce")
+	//区块链ID
+	chainId, err := c.Int64("ChainID")
+	if err != nil {
+		log.Error("ChainID error, err=", err)
+		return nil, err
+	}
+	this.ChainID = uint64(chainId) //c.Int64("ChainID") //12
+	return this, nil
 }
 
 /*func NewConfig(rootDir string, symbol string, masterKey string) *WalletConfig {
 	c := WalletConfig{}
 
 	//币种
-	c.Symbol = symbol
+	c.SymbolID = symbol
 	c.MasterKey = masterKey
 	c.CurveType = CurveType
 
@@ -206,17 +274,17 @@ func (this *WalletConfig) LoadConfig(configFilePath string, configFileName strin
 	//RPC认证账户密码
 	//c.RpcPassword = ""
 	//证书目录
-	//c.CertsDir = filepath.Join(rootDir, strings.ToLower(c.Symbol), "certs")
+	//c.CertsDir = filepath.Join(rootDir, strings.ToLower(c.SymbolID), "certs")
 	//钥匙备份路径
-	c.KeyDir = filepath.Join(rootDir, strings.ToLower(c.Symbol), "key")
+	c.KeyDir = filepath.Join(rootDir, strings.ToLower(c.SymbolID), "key")
 	//地址导出路径
-	c.AddressDir = filepath.Join(rootDir, strings.ToLower(c.Symbol), "address")
+	c.AddressDir = filepath.Join(rootDir, strings.ToLower(c.SymbolID), "address")
 	//区块链数据
-	//blockchainDir = filepath.Join(rootDir, strings.ToLower(Symbol), "blockchain")
+	//blockchainDir = filepath.Join(rootDir, strings.ToLower(SymbolID), "blockchain")
 	//配置文件路径
 	c.ConfigFilePath = filepath.Join("conf")
 	//配置文件名
-	c.ConfigFileName = c.Symbol + ".ini"
+	c.ConfigFileName = c.SymbolID + ".ini"
 	//rpc证书
 	//c.CertFileName = "rpc.cert"
 	//区块链数据文件
@@ -228,9 +296,9 @@ func (this *WalletConfig) LoadConfig(configFilePath string, configFileName strin
 	//最大的输入数量
 	//c.MaxTxInputs = 50
 	//本地数据库文件路径
-	c.DbPath = filepath.Join(rootDir, strings.ToLower(c.Symbol), "db")
+	c.DbPath = filepath.Join(rootDir, strings.ToLower(c.SymbolID), "db")
 	//备份路径
-	c.BackupDir = filepath.Join(rootDir, strings.ToLower(c.Symbol), "backup")
+	c.BackupDir = filepath.Join(rootDir, strings.ToLower(c.SymbolID), "backup")
 	//钱包服务API
 	c.ServerAPI = "http://127.0.0.1:8545"
 	//钱包安装的路径
@@ -282,64 +350,20 @@ cycleSeconds = ""
 	return &c
 }*/
 
-var (
-	//	dataDir = filepath.Join("data", strings.ToLower(Symbol))
-	//钥匙备份路径
-	//	KeyDir = filepath.Join(dataDir, "key")
-	//地址导出路径
-	//	AddressDir = filepath.Join(dataDir, "address")
-	//配置文件路径
-	//ConfigFilePath = filepath.Join("conf")
-	//配置文件名
-	//	ConfigFileName = Symbol + ".ini"
-	//备份路径
-	//	BackupDir = filepath.Join(dataDir, "backup")
-	//钱包数据文件目录
-	//	walletDataPath = ""
-	//本地数据库文件路径
-	//DbPath = filepath.Join(dataDir, "db")
-	//钱包安装的路径
-	//nodeInstallPath = ""
-	//参与汇总的钱包
-	//	walletsInSum = make(map[string]*Wallet)
-	//钱包服务API
-	//serverAPI = "http://127.0.0.1:8545"
-	//汇总阀值 ???--这个要设置成什么
-	//threshold = big.NewInt(0) //decimal.Decimal = decimal.NewFromFloat(5)
-	//汇总地址
-	//	sumAddress = "0x2a63b2203955b84fefe52baca3881b3614991b34"
-	//是否测试网络
-	//	isTestNet = true
-	//网络号
-	//	chainID int64 = 12
-	//ethereum key存放路径
-	//	EthereumKeyPath = "/Users/peter/workspace/bitcoin/wallet/src/github.com/ethereum/go-ethereum/chain/keystore"
-	//钱包下keystore默认密码
-	//DefaultPasswordForEthKey = "yjHFlngdBDl12"
-	//汇总执行间隔时间
-	cycleSeconds = time.Second * 10
-	//默认配置内容
-	defaultConfig = `
-# start node command
-startNodeCMD = ""
-# stop node command
-stopNodeCMD = ""
-# node install path
-nodeInstallPath = ""
-# when wallet's balance is over this value, the wallet will send money to [sumAddress]
-threshold = ""
-# node api url
-apiURL = ""
-# the safe address that wallet send money to.
-sumAddress = ""
-# Auth password
-rpcPassword = ""
-# wallet data path for backup
-walletDataPath = ""
-`
-)
-
-func loadConfig() error {
+func (this *WalletManager) loadConfig() error {
+	if this.Config == nil {
+		this.Config = &WalletConfig{}
+	}
+	_, err := this.Config.LoadConfig(this.ConfigPath, this.SymbolID+".ini")
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	this.StorageOld = keystore.NewHDKeystore(this.Config.KeyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	storage := hdkeystore.NewHDKeystore(this.Config.KeyDir, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
+	this.Storage = storage
+	client := &Client{BaseURL: this.Config.ServerAPI, Debug: false}
+	this.WalletClient = client
 	return nil
 }
 
@@ -420,13 +444,39 @@ func loadConfig() error {
 
 }*/
 
-/*func printConfig() error {
-	initConfig()
+func (this *WalletManager) PrintConfig() error {
+	this.InitConfig()
 	//读取配置
-	absFile := filepath.Join(ConfigFilePath, ConfigFileName)
+	absFile := filepath.Join(this.ConfigPath, this.SymbolID+".ini")
 	fmt.Printf("-----------------------------------------------------------\n")
 	file.PrintFile(absFile)
 	fmt.Printf("-----------------------------------------------------------\n")
 	return nil
 
-}*/
+}
+
+//initConfig 初始化配置文件
+func (this *WalletManager) InitConfig() {
+
+	//读取配置
+	absFile := filepath.Join(this.ConfigPath, this.SymbolID+".ini")
+	if !file.Exists(absFile) {
+		file.MkdirAll(this.ConfigPath)
+		file.WriteFile(absFile, []byte(this.DefaultConfig), false)
+	}
+
+}
+
+//初始化配置流程
+func (this *WalletManager) InitConfigFlow() error {
+
+	this.InitConfig()
+	file := filepath.Join(this.ConfigPath, this.SymbolID+".ini")
+	fmt.Printf("You can run 'vim %s' to edit wallet's Config.\n", file)
+	return nil
+}
+
+//查看配置信息
+func (wm *WalletManager) ShowConfig() error {
+	return wm.PrintConfig()
+}
