@@ -543,30 +543,49 @@ func (this *WalletManager) CreateAddressForTest(name, password string, count uin
 	return keyCombo, address, nil
 }
 
-func (this *WalletManager) CreateBatchAddress2(name, password string, count uint64) error {
+//exportAddressToFile 导出地址到文件中
+func (this *WalletManager) exportAddressToFile(addrs []*Address, filePath string) error {
+
+	var content string
+
+	for _, a := range addrs {
+
+		log.Std.Info("Export: %s ", a.Address)
+
+		content = content + a.Address + "\n"
+	}
+
+	file.MkdirAll(this.GetConfig().AddressDir)
+	if !file.WriteFile(filePath, []byte(content), true) {
+		return errors.New("export address to file failed.")
+	}
+	return nil
+}
+
+func (this *WalletManager) CreateBatchAddress2(name, password string, count uint64) (string, error) {
 	//读取钱包
 	w, err := this.GetWalletInfo(this.GetConfig().KeyDir, this.GetConfig().DbPath, name)
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("get wallet info, err=%v\n", err))
-		return err
+		return "", err
 	}
 
 	_, err = w.HDKey2(password)
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
-		return err
+		return "", err
 	}
 
 	db, err := w.OpenDB(this.GetConfig().DbPath)
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("open db, err=%v\n", err))
-		return err
+		return "", err
 	}
 	defer db.Close()
 
 	tx, err := db.Begin(true)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer tx.Rollback()
 
@@ -574,7 +593,7 @@ func (this *WalletManager) CreateBatchAddress2(name, password string, count uint
 	pubkey, err := owkeychain.OWDecode(w.PublicKey)
 	if err != nil {
 		log.Error("owkeychain.OWDecode failed, err=", err)
-		return err
+		return "", err
 	}
 
 	errcount := uint64(0)
@@ -622,6 +641,7 @@ func (this *WalletManager) CreateBatchAddress2(name, password string, count uint
 		}
 	}
 
+	var addressList []*Address
 	go func() {
 		for j := uint64(0); j < count; j++ {
 			addr := <-addressChan
@@ -634,6 +654,7 @@ func (this *WalletManager) CreateBatchAddress2(name, password string, count uint
 				log.Error("save address to db failed, err=", err)
 				errcount++
 			}
+			addressList = append(addressList, addr)
 		}
 		done <- 1
 	}()
@@ -681,21 +702,25 @@ func (this *WalletManager) CreateBatchAddress2(name, password string, count uint
 
 	if errcount > 0 {
 		log.Error("errors ocurred exceed the maximum. ")
-		return errors.New("errors ocurred exceed the maximum. ")
+		return "", errors.New("errors ocurred exceed the maximum. ")
 	}
 
 	w.AddressCount = addressIndex
 	err = tx.Save(w)
 	if err != nil {
 		log.Error("save wallet to db failed, err=", err)
-		return err
+		return "", err
 	}
 	err = tx.Commit()
 	if err != nil {
 		log.Error("commit address failed, err=", err)
-		return err
+		return "", err
 	}
-	return nil
+
+	filename := "address-" + common.TimeFormat("20060102150405", time.Now()) + ".txt"
+	filePath := filepath.Join(this.GetConfig().AddressDir, filename)
+	this.exportAddressToFile(addressList, filePath)
+	return filePath, nil
 }
 
 type AddrVec struct {

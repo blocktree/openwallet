@@ -284,13 +284,13 @@ func (this *WalletManager) CreateAddressFlow() error {
 	log.Info("Start batch creation ")
 	log.Info("-------------------------------------------------")
 
-	err = this.CreateBatchAddress2(account.WalletID, password, count)
+	filepath, err := this.CreateBatchAddress2(account.WalletID, password, count)
 	if err != nil {
 		return err
 	}
 
 	log.Info("-------------------------------------------------")
-	log.Info("All addresses have created, file path:", this.GetConfig().EthereumKeyPath)
+	log.Info("All addresses have created, file path:", filepath)
 
 	return nil
 }
@@ -715,25 +715,30 @@ func (this *WalletManager) TransferFlow() error {
 
 	fmt.Println("receiver: ", receiver)
 
-	fmt.Println("Choose the unit for the transaction:")
-	fmt.Println(TRANS_AMOUNT_UNIT_LIST)
-	unit, err := console.InputNumber("Index of the unit: ", true)
-	if err != nil {
-		return err
-	}
+	//fmt.Println("Choose the unit for the transaction:")
+	//fmt.Println(TRANS_AMOUNT_UNIT_LIST)
+	//unit, err := console.InputNumber("Index of the unit: ", true)
+	//if err != nil {
+	//	return err
+	//}
 
 	amount, err := console.InputRealNumber("Enter amount to send : ", true)
 	if err != nil {
 		return err
 	}
 
-	amountInt, err := toHexBigIntForEtherTrans(amount, 10, int64(unit))
+	amountInt, err := ConvertEthStringToWei(amount) //toHexBigIntForEtherTrans(amount, 10, int64(unit))
 	if err != nil {
 		openwLogger.Log.Errorf("wrong amount inputed. ")
 		return err
 	}
 
-	fmt.Println("amount input:", amountInt.String())
+	amountDecimal, err := ConverWeiStringToEthDecimal(amountInt.String())
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("amount input:", amountDecimal)
 
 	if wallet.balance.Cmp(amountInt) < 0 {
 		return errors.New("Input amount is greater than balance! ")
