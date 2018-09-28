@@ -1676,7 +1676,7 @@ func (wm *WalletManager) EstimateFee(inputs, outputs int64, feeRate decimal.Deci
 //EstimateFeeRate 预估的没KB手续费率
 func (wm *WalletManager) EstimateFeeRate() (decimal.Decimal, error) {
 
-	defaultRate, _ := decimal.NewFromString("0.0001")
+	defaultRate, _ := decimal.NewFromString("0.004")
 
 	//估算交易大小 手续费
 	request := []interface{}{
