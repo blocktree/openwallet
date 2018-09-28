@@ -2734,11 +2734,10 @@
 			"revisionTime": "2018-05-08T23:20:20Z"
 		},
 		{
-			"checksumSHA1": "28UVHMmHx0iqO0XiJsjx+fwILyI=",
-			"origin": "github.com/ethereum/go-ethereum/vendor/github.com/rjeczalik/notify",
+			"checksumSHA1": "CnvImYwD5jNLT4zMkOTN0ivaGA8=",
 			"path": "github.com/rjeczalik/notify",
-			"revision": "c60f6f62147048f80a0e092b483318af88b5d78b",
-			"revisionTime": "2018-05-08T23:20:20Z"
+			"revision": "69d839f37b13a8cb7a78366f7633a4071cb43be7",
+			"revisionTime": "2018-09-27T01:59:48Z"
 		},
 		{
 			"checksumSHA1": "5uqO4ITTDMklKi3uNaE/D9LQ5nM=",
