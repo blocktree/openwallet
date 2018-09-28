@@ -187,6 +187,9 @@ walletDataPath = ""
 # summary task timer cycle time, sample: 1h, 1h1m , 2m, 30s, 3m20s etc...
 cycleSeconds = ""
 `
+	file.MkdirAll(c.dbPath)
+	file.MkdirAll(c.backupDir)
+	file.MkdirAll(c.keyDir)
 
 	return &c
 }
