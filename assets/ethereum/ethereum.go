@@ -419,13 +419,13 @@ func (this *WalletManager) SummaryFollow() error {
 		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", this.SymbolID))
 	}
 
-	wallets, err := this.GetLocalWalletList(this.GetConfig().KeyDir, this.GetConfig().DbPath, true)
+	wallets, err := this.GetLocalWalletList(this.GetConfig().KeyDir, this.GetConfig().DbPath, false)
 	if err != nil {
 		return err
 	}
 
 	//打印钱包列表
-	printWalletList(wallets, true)
+	printWalletList(wallets, false)
 
 	fmt.Printf("[Please select the wallet to summary, and enter the numbers split by ','." +
 		" For example: 0,1,2,3] \n")

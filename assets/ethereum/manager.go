@@ -1321,7 +1321,7 @@ func (this *WalletManager) ERC20SummaryWallets() {
 }
 
 func (this *WalletManager) SummaryWallets() {
-	log.Error(fmt.Sprintf("[Summary Wallet Start]------%v\n", common.TimeFormat("2006-01-02 15:04:05")))
+	log.Debug(fmt.Sprintf("[Summary Wallet Start]------%v\n", common.TimeFormat("2006-01-02 15:04:05")))
 	//读取参与汇总的钱包
 	for _, wallet := range this.WalletInSumOld {
 		balance, err := this.GetWalletBalance(this.GetConfig().DbPath, wallet)
@@ -1331,20 +1331,20 @@ func (this *WalletManager) SummaryWallets() {
 		}
 
 		if balance.Cmp(this.GetConfig().Threshold) > 0 {
-			log.Error(fmt.Sprintf("Summary account[%v]balance = %v \n", wallet.WalletID, balance))
-			log.Error(fmt.Sprintf("Summary account[%v]Start Send Transaction\n", wallet.WalletID))
+			log.Debug(fmt.Sprintf("Summary account[%v]balance = %v \n", wallet.WalletID, balance))
+			log.Debug(fmt.Sprintf("Summary account[%v]Start Send Transaction\n", wallet.WalletID))
 
 			txId, err := this.SendTransaction2(wallet, this.GetConfig().SumAddress, balance, wallet.Password, true)
 			if err != nil {
-				log.Error(fmt.Sprintf("Summary account[%v]unexpected error: %v\n", wallet.WalletID, err))
+				log.Debug(fmt.Sprintf("Summary account[%v]unexpected error: %v\n", wallet.WalletID, err))
 				continue
 			} else {
-				log.Error(fmt.Sprintf("Summary account[%v]successfully，Received Address[%v], TXID：%v\n", wallet.WalletID, this.GetConfig().SumAddress, txId))
+				log.Debug(fmt.Sprintf("Summary account[%v]successfully，Received Address[%v], TXID：%v\n", wallet.WalletID, this.GetConfig().SumAddress, txId))
 			}
 		}
 	}
 
-	log.Error(fmt.Sprintf("[Summary Wallet end]------%v\n", common.TimeFormat("2006-01-02 15:04:05")))
+	log.Debug(fmt.Sprintf("[Summary Wallet end]------%v\n", common.TimeFormat("2006-01-02 15:04:05")))
 }
 
 func (this *WalletManager) RestoreWallet2(backupPath string, password string) error {
