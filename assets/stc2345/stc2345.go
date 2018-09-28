@@ -57,8 +57,8 @@ func makeStc2345DefaultConfig() string {
 	conf.LocalNonce = true
 	conf.ChainID = 922337203685*/
 	defaultConfigStr := `
-SymbolID = "ETH"
-MasterKey = "Ethereum seed"
+SymbolID = "STC2345"
+MasterKey = "STC2345 seed"
 CurveType = %v
 RootDir = "data"
 #key file path

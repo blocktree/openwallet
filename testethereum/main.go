@@ -36,7 +36,7 @@ func main() {
 
 	//fmt.Println("change dir err:",err)
 	//tech.TestNewWallet()
-	tech.TestBatchCreateAddr()
+	//tech.TestBatchCreateAddr()
 	//tech.TestBitInt()
 	//tech.TestTransferFlow()
 	//tech.TestSummaryFlow()
@@ -82,4 +82,5 @@ func main() {
 	//tech.TestBatchCreateAddr2345()
 	//tech.DumpEtc2345WalletDb()
 	//tech.TestTransferFlow2345()
+	tech.TestInitCongfig2345()
 }

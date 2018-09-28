@@ -18,10 +18,10 @@ func (this *WalletManager) GetTransactionDecoder() openwallet.TransactionDecoder
 //GetBlockScanner 获取区块链
 func (this *WalletManager) GetBlockScanner() openwallet.BlockScanner {
 	//先加载是否有配置文件
-	err := this.loadConfig()
+	/*err := this.loadConfig()
 	if err != nil {
 		return nil
-	}
+	}*/
 
 	return nil //this.Blockscanner.
 }

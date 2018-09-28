@@ -85,6 +85,15 @@ func TestTransferFlow2345() {
 	}
 }
 
+func TestInitCongfig2345() {
+	manager, _ := Getetc2345WalletManager()
+	log.Debug("manager:", manager.SymbolID)
+	err := manager.InitConfigFlow()
+	if err != nil {
+		log.Debugf("init config failed, err = ", err)
+	}
+}
+
 func TestSummaryFlow2345() {
 	manager, _ := Getetc2345WalletManager()
 
