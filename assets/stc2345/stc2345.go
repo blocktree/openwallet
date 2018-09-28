@@ -110,6 +110,7 @@ func NewWalletManager() *WalletManager {
 	wm.Blockscanner = ethereum.NewETHBlockScanner(&wm.WalletManager)
 	wm.Decoder = &ethereum.AddressDecoder{}
 	wm.TxDecoder = ethereum.NewTransactionDecoder(&wm.WalletManager)
+	wm.WalletInSumOld = make(map[string]*ethereum.Wallet)
 	//	g_manager = &wm
 	return &wm
 }

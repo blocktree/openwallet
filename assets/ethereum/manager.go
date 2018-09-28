@@ -553,7 +553,7 @@ func (this *WalletManager) exportAddressToFile(addrs []*Address, filePath string
 
 	for _, a := range addrs {
 		//log.Std.Info("Export: %s ", a.Address)
-		content = content + a.Address + "\n"
+		content = content + appendOxToAddress(a.Address) + "\n"
 	}
 
 	file.MkdirAll(this.GetConfig().AddressDir)
@@ -868,9 +868,9 @@ func (this *WalletManager) ERC20SendTransaction(wallet *Wallet, to string, amoun
 
 	sort.Sort(&TokenAddrVec{addrs: addrs})
 	//检查下地址排序是否正确, 仅用于测试
-	for _, theAddr := range addrs {
+	/*for _, theAddr := range addrs {
 		fmt.Println("theAddr[", theAddr.Address, "]:", theAddr.tokenBalance)
-	}
+	}*/
 
 	for i := len(addrs) - 1; i >= 0 && amount.Cmp(big.NewInt(0)) > 0; i-- {
 		var fee *txFeeInfo
@@ -938,9 +938,9 @@ func (this *WalletManager) SendTransaction2(wallet *Wallet, to string,
 
 	sort.Sort(&AddrVec{addrs: addrs})
 	//检查下地址排序是否正确, 仅用于测试
-	for _, theAddr := range addrs {
+	/*for _, theAddr := range addrs {
 		fmt.Println("theAddr[", theAddr.Address, "]:", theAddr.balance)
-	}
+	}*/
 	//amountLeft := *amount
 	for i := len(addrs) - 1; i >= 0 && amount.Cmp(big.NewInt(0)) > 0; i-- {
 		var amountToSend big.Int
@@ -1321,7 +1321,7 @@ func (this *WalletManager) ERC20SummaryWallets() {
 }
 
 func (this *WalletManager) SummaryWallets() {
-	log.Debugf("[Summary Wallet Start]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+	log.Error(fmt.Sprintf("[Summary Wallet Start]------%v\n", common.TimeFormat("2006-01-02 15:04:05")))
 	//读取参与汇总的钱包
 	for _, wallet := range this.WalletInSumOld {
 		balance, err := this.GetWalletBalance(this.GetConfig().DbPath, wallet)
@@ -1331,20 +1331,20 @@ func (this *WalletManager) SummaryWallets() {
 		}
 
 		if balance.Cmp(this.GetConfig().Threshold) > 0 {
-			log.Debugf("Summary account[%s]balance = %v \n", wallet.WalletID, balance)
-			log.Debugf("Summary account[%s]Start Send Transaction\n", wallet.WalletID)
+			log.Error(fmt.Sprintf("Summary account[%v]balance = %v \n", wallet.WalletID, balance))
+			log.Error(fmt.Sprintf("Summary account[%v]Start Send Transaction\n", wallet.WalletID))
 
 			txId, err := this.SendTransaction2(wallet, this.GetConfig().SumAddress, balance, wallet.Password, true)
 			if err != nil {
-				log.Debugf("Summary account[%s]unexpected error: %v\n", wallet.WalletID, err)
+				log.Error(fmt.Sprintf("Summary account[%v]unexpected error: %v\n", wallet.WalletID, err))
 				continue
 			} else {
-				log.Debugf("Summary account[%s]successfully，Received Address[%s], TXID：%s\n", wallet.WalletID, this.GetConfig().SumAddress, txId)
+				log.Error(fmt.Sprintf("Summary account[%v]successfully，Received Address[%v], TXID：%v\n", wallet.WalletID, this.GetConfig().SumAddress, txId)
 			}
 		}
 	}
 
-	log.Debugf("[Summary Wallet end]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+	log.Error(fmt.Sprintf("[Summary Wallet end]------%v\n", common.TimeFormat("2006-01-02 15:04:05")))
 }
 
 func (this *WalletManager) RestoreWallet2(backupPath string, password string) error {
