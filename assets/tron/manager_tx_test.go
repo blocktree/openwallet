@@ -60,10 +60,10 @@ func TestGetTransactoinSign(t *testing.T) {
 }
 
 func TestBroadcastTransaction(t *testing.T) {
-	var signature string = ""
-	var txID string = ""
+	// var signature string = ""
+	// var txID string = ""
 	var raw_data = ""
-	if err := tw.BroadcastTransaction(signature, txID, raw_data); err != nil {
+	if err := tw.BroadcastTransaction(raw_data); err != nil {
 		t.Errorf("TestCreateTransaction failed: %v\n", err)
 	} else {
 		t.Logf("TestCreateTransaction return: \n\t%+v\n", "Success!")
