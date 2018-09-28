@@ -79,8 +79,8 @@ func main() {
 	//tech.TestSlice2()
 
 	//tech.TestCreateWallet2345()
-	//tech.TestBatchCreateAddr2345()
+	tech.TestBatchCreateAddr2345()
 	//tech.DumpEtc2345WalletDb()
-	tech.TestTransferFlow2345()
+	//tech.TestTransferFlow2345()
 	//tech.TestInitCongfig2345()
 }

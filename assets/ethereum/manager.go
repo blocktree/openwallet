@@ -553,7 +553,7 @@ func (this *WalletManager) exportAddressToFile(addrs []*Address, filePath string
 
 	for _, a := range addrs {
 		//log.Std.Info("Export: %s ", a.Address)
-		content = content + a.Address + "\n"
+		content = content + appendOxToAddress(a.Address) + "\n"
 	}
 
 	file.MkdirAll(this.GetConfig().AddressDir)
@@ -868,9 +868,9 @@ func (this *WalletManager) ERC20SendTransaction(wallet *Wallet, to string, amoun
 
 	sort.Sort(&TokenAddrVec{addrs: addrs})
 	//检查下地址排序是否正确, 仅用于测试
-	for _, theAddr := range addrs {
+	/*for _, theAddr := range addrs {
 		fmt.Println("theAddr[", theAddr.Address, "]:", theAddr.tokenBalance)
-	}
+	}*/
 
 	for i := len(addrs) - 1; i >= 0 && amount.Cmp(big.NewInt(0)) > 0; i-- {
 		var fee *txFeeInfo
@@ -938,9 +938,9 @@ func (this *WalletManager) SendTransaction2(wallet *Wallet, to string,
 
 	sort.Sort(&AddrVec{addrs: addrs})
 	//检查下地址排序是否正确, 仅用于测试
-	for _, theAddr := range addrs {
+	/*for _, theAddr := range addrs {
 		fmt.Println("theAddr[", theAddr.Address, "]:", theAddr.balance)
-	}
+	}*/
 	//amountLeft := *amount
 	for i := len(addrs) - 1; i >= 0 && amount.Cmp(big.NewInt(0)) > 0; i-- {
 		var amountToSend big.Int
