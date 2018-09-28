@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"fmt"
+
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/log"
@@ -229,7 +230,7 @@ func (wm *WalletManager) initBlockScanner() error {
 			log.Error(symbol, "is not support")
 			continue
 		}
-		log.Debug("already got scanner:", assetsMgr)
+		//log.Debug("already got scanner:", assetsMgr)
 		scanner := assetsMgr.GetBlockScanner()
 
 		if scanner == nil {
