@@ -39,7 +39,7 @@ func init() {
 	tw.config.serverAPI = "http://120.78.220.105:3889"
 	tw.config.rpcUser = "test"
 	tw.config.rpcPassword = "test1234"
-	//tw.config.serverAPI = "http://192.168.2.194:10006"
+	//tw.config.serverAPI = "http://192.168.2.194:10031"
 	//tw.config.rpcUser = "wallet"
 	//tw.config.rpcPassword = "walletPassword2017"
 	token := basicAuth(tw.config.rpcUser, tw.config.rpcPassword)
