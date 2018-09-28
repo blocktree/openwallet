@@ -1339,7 +1339,7 @@ func (this *WalletManager) SummaryWallets() {
 				log.Error(fmt.Sprintf("Summary account[%v]unexpected error: %v\n", wallet.WalletID, err))
 				continue
 			} else {
-				log.Error(fmt.Sprintf("Summary account[%v]successfully，Received Address[%v], TXID：%v\n", wallet.WalletID, this.GetConfig().SumAddress, txId)
+				log.Error(fmt.Sprintf("Summary account[%v]successfully，Received Address[%v], TXID：%v\n", wallet.WalletID, this.GetConfig().SumAddress, txId))
 			}
 		}
 	}
