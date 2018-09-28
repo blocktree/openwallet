@@ -49,7 +49,7 @@ import (
 )
 
 const (
-	maxAddresNum = 10000
+	maxAddresNum = 1000000
 )
 
 const (
@@ -338,7 +338,7 @@ func (this *WalletManager) ERC20GetWalletList(erc20Token *ERC20Token) ([]*Wallet
 }
 
 //GetWalletList 获取钱包列表
-func (this *WalletManager) GetLocalWalletList(keyDir string, dbPath string) ([]*Wallet, error) {
+func (this *WalletManager) GetLocalWalletList(keyDir string, dbPath string, showBalance bool) ([]*Wallet, error) {
 
 	wallets, err := GetWalletKeys(keyDir)
 	if err != nil {
@@ -353,13 +353,16 @@ func (this *WalletManager) GetLocalWalletList(keyDir string, dbPath string) ([]*
 			return nil, err
 		}
 
-		balance, err := this.GetWalletBalance(dbPath, wallets[i])
-		if err != nil {
+		var balance *big.Int
+		if showBalance {
+			balance, err = this.GetWalletBalance(dbPath, wallets[i])
+			if err != nil {
 
-			openwLogger.Log.Errorf(fmt.Sprintf("find wallet balance failed, err=%v\n", err))
-			return nil, err
+				openwLogger.Log.Errorf(fmt.Sprintf("find wallet balance failed, err=%v\n", err))
+				return nil, err
+			}
+			wallets[i].balance = balance
 		}
-		wallets[i].balance = balance
 	}
 
 	return wallets, nil
@@ -549,9 +552,7 @@ func (this *WalletManager) exportAddressToFile(addrs []*Address, filePath string
 	var content string
 
 	for _, a := range addrs {
-
-		log.Std.Info("Export: %s ", a.Address)
-
+		//log.Std.Info("Export: %s ", a.Address)
 		content = content + a.Address + "\n"
 	}
 
