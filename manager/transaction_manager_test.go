@@ -29,7 +29,7 @@ func createTransaction(walletID, accountID, to string) (*openwallet.RawTransacti
 		return nil, err
 	}
 
-	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "0.15", to, "", "")
+	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "0.01", to, "", "")
 	if err != nil {
 		log.Error("CreateTransaction failed, unexpected error:", err)
 		return nil, err
@@ -108,7 +108,7 @@ func TestWalletManager_SubmitTransaction(t *testing.T) {
 
 	walletID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
 	accountID := "JYCcXtC18vnd1jbcJX47msDFbQMBDNjsq3xbvvK6qCHKAAqoQq"
-	to := "QfELSUidT97HY4SS5iYkdZdB36doeqmmq6"
+	to := "QjcVLQmNBX45icPZ1jQMRSfb4PbLNLws86"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
 	if err != nil {

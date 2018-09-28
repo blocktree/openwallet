@@ -3,6 +3,7 @@ package btcLikeTxDriver
 import (
 	"encoding/hex"
 	"errors"
+	"strings"
 )
 
 type Vin struct {
@@ -91,13 +92,21 @@ func SignEmptyRawTransaction(txHex string, unlockData []TxUnlock) (string, error
 		if err != nil {
 			return "", errors.New("Invalid lock script or redeem script!")
 		}
-		if isScriptHash(lockBytes) {
-			redeemScript, err := hex.DecodeString(unlockData[i].RedeemScript)
-			if err != nil {
-				return "", errors.New("Invalid redeem script!")
+
+		scriptType := checkScriptType(lockBytes)
+		//if isScriptHash(lockBytes) {
+		if scriptType == TypeP2SH || scriptType == TypeBech32 {
+
+			if scriptType == TypeBech32 {
+				emptyTrans.Vins[i].ScriptPubkeySignature = nil
+			} else {
+				redeemScript, err := hex.DecodeString(unlockData[i].RedeemScript)
+				if err != nil {
+					return "", errors.New("Invalid redeem script!")
+				}
+				redeemScript = append([]byte{byte(len(redeemScript))}, redeemScript...)
+				emptyTrans.Vins[i].ScriptPubkeySignature = redeemScript
 			}
-			redeemScript = append([]byte{byte(len(redeemScript))}, redeemScript...)
-			emptyTrans.Vins[i].ScriptPubkeySignature = redeemScript
 
 			if emptyTrans.Witness == nil {
 				for j := 0; j < i; j++ {
@@ -145,42 +154,63 @@ func InsertSignatureIntoEmptyTransaction(txHex string, sigPub []SignaturePubkey,
 		return "", err
 	}
 
-	if len(emptyTrans.Vins) != len(sigPub) {
-		return "", errors.New("The number of transaction inputs and the signature data are not match!")
+	if len(emptyTrans.Vins) != len(unlockData) {
+		return "", errors.New("The number of transaction inputs and the unlock data are not match!")
 	}
-	for i := 0; i < len(sigPub); i++ {
 
-		if sigPub[i].Signature == nil || len(sigPub[i].Signature) != 64 {
-			return "", errors.New("Invalid signature data!")
+	if isMultiSig(unlockData[0].LockScript, unlockData[0].RedeemScript) {
+		redeemBytes, _ := hex.DecodeString(unlockData[0].RedeemScript)
+		emptyTrans.Vins[0].ScriptPubkeySignature = redeemBytes
+		for i := 0; i < len(sigPub); i++ {
+			emptyTrans.Witness = append(emptyTrans.Witness, TxWitness{sigPub[i].Signature, sigPub[i].Pubkey})
 		}
-		if sigPub[i].Pubkey == nil || len(sigPub[i].Pubkey) != 33 {
-			return "", errors.New("Invalid pubkey data!")
-		}
+	} else {
+		for i := 0; i < len(emptyTrans.Vins); i++ {
 
-		if unlockData[i].RedeemScript == "" {
-
-			emptyTrans.Vins[i].ScriptPubkeySignature = sigPub[i].encodeToScript(SigHashAll)
-			if emptyTrans.Witness != nil {
-				emptyTrans.Witness = append(emptyTrans.Witness, TxWitness{})
+			if sigPub[i].Signature == nil || len(sigPub[i].Signature) != 64 {
+				return "", errors.New("Invalid signature data!")
 			}
-		} else {
-			if emptyTrans.Witness == nil {
-				for j := 0; j < i; j++ {
+			if sigPub[i].Pubkey == nil || len(sigPub[i].Pubkey) != 33 {
+				return "", errors.New("Invalid pubkey data!")
+			}
+
+			// bech32 branch
+			if unlockData[i].RedeemScript == "" && strings.Index(unlockData[i].LockScript, "0014") == 0 {
+				unlockData[i].RedeemScript = unlockData[i].LockScript
+				unlockData[i].LockScript = "00"
+			}
+
+			if unlockData[i].RedeemScript == "" {
+
+				emptyTrans.Vins[i].ScriptPubkeySignature = sigPub[i].encodeToScript(SigHashAll)
+				if emptyTrans.Witness != nil {
 					emptyTrans.Witness = append(emptyTrans.Witness, TxWitness{})
 				}
+			} else {
+				if emptyTrans.Witness == nil {
+					for j := 0; j < i; j++ {
+						emptyTrans.Witness = append(emptyTrans.Witness, TxWitness{})
+					}
+				}
+				emptyTrans.Witness = append(emptyTrans.Witness, TxWitness{sigPub[i].Signature, sigPub[i].Pubkey})
+				if unlockData[i].RedeemScript == "" {
+					return "", errors.New("Missing redeem script for a P2SH input!")
+				}
+
+				if unlockData[i].LockScript == "00" {
+					emptyTrans.Vins[i].ScriptPubkeySignature = nil
+				} else {
+					redeem, err := hex.DecodeString(unlockData[i].RedeemScript)
+					if err != nil {
+						return "", errors.New("Invlalid redeem script!")
+					}
+					redeem = append([]byte{byte(len(redeem))}, redeem...)
+					emptyTrans.Vins[i].ScriptPubkeySignature = redeem
+				}
 			}
-			emptyTrans.Witness = append(emptyTrans.Witness, TxWitness{sigPub[i].Signature, sigPub[i].Pubkey})
-			if unlockData[i].RedeemScript == "" {
-				return "", errors.New("Missing redeem script for a P2SH input!")
-			}
-			redeem, err := hex.DecodeString(unlockData[i].RedeemScript)
-			if err != nil {
-				return "", errors.New("Invlalid redeem script!")
-			}
-			redeem = append([]byte{byte(len(redeem))}, redeem...)
-			emptyTrans.Vins[i].ScriptPubkeySignature = redeem
 		}
 	}
+
 	txBytes, err = emptyTrans.encodeToBytes()
 	if err != nil {
 		return "", err
@@ -222,6 +252,9 @@ func VerifyRawTransaction(txHex string, unlockData []TxUnlock) bool {
 				sigAndPub = append(sigAndPub, *tmp)
 			} else {
 				sigAndPub = append(sigAndPub, SignaturePubkey{signedTrans.Witness[i].Signature, signedTrans.Witness[i].Pubkey})
+				if strings.Index(unlockData[i].LockScript, "0014") == 0 {
+					continue
+				}
 				unlockData[i].RedeemScript = hex.EncodeToString(signedTrans.Vins[i].ScriptPubkeySignature[1:])
 			}
 		}
