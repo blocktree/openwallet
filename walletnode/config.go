@@ -250,11 +250,13 @@ testNetDataPath = "/data"
 		// 	APIPORT: []string{"12010/tcp"},
 		// 	IMAGE:   string("openwallet/hc:2.0.3dev"),
 		// },
-		"ltc": &FullnodeContainerConfig{ // litecoin
-			PORT:    [][3]string{{"9360/tcp", "10061", "20061"}},
-			APIPORT: []string{"9360/tcp"},
-			IMAGE:   string("openw/litecoin:v0.16.0"),
-			ENCRYPT: []string{"litecoind", "-datadir=/data", "-conf=/etc/litecoin.conf", "encryptwallet 1234qwer"},
+		"ltc": &FullnodeContainerConfig{ // Release0929
+			PORT:     [][3]string{{"9360/tcp", "10061", "20061"}},
+			APIPORT:  []string{"9360/tcp"},
+			IMAGE:    string("openw/litecoin:v0.16.0"),
+			ENCRYPT:  []string{"litecoin-cli", "-datadir=/data", "-conf=/etc/litecoin.conf", "encryptwallet 1234qwer"},
+			STOPCMD:  []string{"litecoin-cli", "-datadir=/data", "-conf=/etc/litecoin.conf", "stop"},
+			LOGFIELS: [2]string{"debug.log", "testnet4/debug.log"},
 		},
 		"tron": &FullnodeContainerConfig{ // Release0929
 			PORT:     [][3]string{{"9360/tcp", "18890", "28890"}},
