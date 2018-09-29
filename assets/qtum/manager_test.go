@@ -503,14 +503,14 @@ func TestEstimateFee(t *testing.T) {
 func TestSendTransaction(t *testing.T) {
 
 	sends := []string{
-		"QftFg667gmjvQeDjDHZf9dAJjm5Cm9Xxwi",
+		"QjmAVaLPhZxFeWPmz9mwPTZVzMeua4MG82",
 	}
 
 	tw.RebuildWalletUnspent("W8C6dcVGbuPxJJ5imguFQNzK7vMtBhg58J")
 
 	for _, to := range sends {
 
-		txIDs, err := tw.SendTransaction("W8C6dcVGbuPxJJ5imguFQNzK7vMtBhg58J", to, decimal.NewFromFloat(0.05), "1234qwer", false)
+		txIDs, err := tw.SendTransaction("W8C6dcVGbuPxJJ5imguFQNzK7vMtBhg58J", to, decimal.NewFromFloat(0.1), "1234qwer", false)
 
 		if err != nil {
 			t.Errorf("SendTransaction failed unexpected error: %v\n", err)
@@ -588,9 +588,9 @@ func TestRestoreWallet(t *testing.T) {
 }
 
 func TestSendFrom(t *testing.T) {
-	fromaccount := "WJjFgnZucp86LR3s18AbjxT3ju9csXduff"
-	toaddress := "QPcbo42y1YwAtzg9zeJpY72sqaun4TSUiV"
-	txIDs, err := tw.SendFrom(fromaccount, toaddress, "0.199", "1234qwer")
+	fromaccount := "W8C6dcVGbuPxJJ5imguFQNzK7vMtBhg58J"
+	toaddress := "QjmAVaLPhZxFeWPmz9mwPTZVzMeua4MG82"
+	txIDs, err := tw.SendFrom(fromaccount, toaddress, "0.04", "1234qwer")
 
 	if err != nil {
 		t.Errorf("SendTransaction failed unexpected error: %v\n", err)
@@ -601,8 +601,8 @@ func TestSendFrom(t *testing.T) {
 }
 
 func TestSendToAddress(t *testing.T){
-	address := "QNbVphMtFDD6VZj9SbFKKrCWtynqQ2rRNz"
-	txIDs, err := tw.SendToAddress(address, "0.015","", false,"1234qwer")
+	address := "QjmAVaLPhZxFeWPmz9mwPTZVzMeua4MG82"
+	txIDs, err := tw.SendToAddress(address, "0.002","", false,"1234qwer")
 
 	if err != nil {
 		t.Errorf("SendTransaction failed unexpected error: %v\n", err)
