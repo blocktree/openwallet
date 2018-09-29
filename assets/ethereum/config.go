@@ -315,6 +315,7 @@ func (this *WalletManager) NewConfig(rootDir string, masterKey string) *WalletCo
 	c.CycleSeconds = 10
 	//小数位长度
 	//c.CoinDecimal = decimal.NewFromFloat(100000000)
+	c.EthereumKeyPath = "/Users/peter/workspace/bitcoin/wallet/src/github.com/ethereum/go-ethereum/chain/keystore"
 	this.Config = &c
 	//创建目录
 	file.MkdirAll(c.DbPath)
@@ -328,6 +329,7 @@ func (this *WalletManager) loadConfig() error {
 	if this.Config == nil {
 		this.Config = &WalletConfig{}
 	}
+	log.Debug("symbol:", this.SymbolID+".ini")
 	_, err := this.Config.LoadConfig(this.ConfigPath, this.SymbolID+".ini")
 	if err != nil {
 		log.Error(err)

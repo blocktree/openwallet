@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	FRAME_DEFAULT_DIR = "frame_data/eth"
+	FRAME_DEFAULT_DIR = "data/eth"
 )
 
 func NewEthTestConfig() *manager.Config {
@@ -44,7 +44,7 @@ func NewEthTestConfig() *manager.Config {
 }
 
 func TestFrameWalletManager_CreateWallet() {
-	w := &openwallet.Wallet{Alias: "MAI", IsTrust: true, Password: "12345678"}
+	w := &openwallet.Wallet{Alias: "framepeter", IsTrust: true, Password: "12345678"}
 	nw, key, err := tm.CreateWallet(testApp, w)
 	if err != nil {
 		log.Error(err)
@@ -57,12 +57,12 @@ func TestFrameWalletManager_CreateWallet() {
 
 func TestWalletManager_CreateAssetsAccount() {
 
-	walletID := "W6EZ35wMPeYG7QJjVTpU6heCE4AxmkVzJd" //"WFPHAs2uyeHcfBzKF4vN4NkMpArX8wkCxp"
+	walletID := "W9cRnfgyZ7T4imjbQuiafz6Ca5aUf8qJRJ" //"WFPHAs2uyeHcfBzKF4vN4NkMpArX8wkCxp"
 
 	//account := &openwallet.AssetsAccount{Alias: "Tim", WalletID: walletID, Required: 1, Symbol: "BTC", IsTrust: true}
 	//account, err := tm.CreateAssetsAccount(testApp, walletID, "12345678", account, nil)
 	account := &openwallet.AssetsAccount{Alias: "Alice", WalletID: walletID, Required: 1, Symbol: "ETH", IsTrust: true}
-	account,_, err := tm.CreateAssetsAccount(testApp, walletID, "12345678", account, nil)
+	account, _, err := tm.CreateAssetsAccount(testApp, walletID, "12345678", account, nil)
 	if err != nil {
 		log.Error(err)
 		return
@@ -74,9 +74,9 @@ func TestWalletManager_CreateAssetsAccount() {
 }
 
 func TestFrameWalletManager_CreateAddress() {
-	walletID := "W6EZ35wMPeYG7QJjVTpU6heCE4AxmkVzJd" //"WFPHAs2uyeHcfBzKF4vN4NkMpArX8wkCxp"
+	walletID := "W9cRnfgyZ7T4imjbQuiafz6Ca5aUf8qJRJ" //"WFPHAs2uyeHcfBzKF4vN4NkMpArX8wkCxp"
 	//accountID := "KhJdnr4UJLdbeQcMvZgedyYykRVTdLaMLbsV2mx3GZiMva9Kfb"
-	accountID := "KaszkQZb2xsaNuW5UoAukhM5MhzAqtPBWYTwkk4m2QhtDYN9E8" //"L77QWWMRhsKMiArgaMTiVaxa6knz2Wo2eNk5F3Bw764XeDyq3T"
+	accountID := "4mNzv15wSPeUgqfw2Y4UieRJzUoJJMS9DM1L136gxFMZ" //"L77QWWMRhsKMiArgaMTiVaxa6knz2Wo2eNk5F3Bw764XeDyq3T"
 	address, err := tm.CreateAddress(testApp, walletID, accountID, 1)
 	if err != nil {
 		log.Error(err)
@@ -193,8 +193,8 @@ func TestSendRawTransaction() {
 	//pssword:12345678
 	//from:2d3a164eD8019d3111b0726399a6a9B10F05a8e6
 	//to:5813387dE3fAF2012a8D63580A23090Eca337f61
-	manager := &ethereum.WalletManager{}
-	raw, err := signOWEIP155("W6EZ35wMPeYG7QJjVTpU6heCE4AxmkVzJd", "12345678", "428cc834ac78043050cf7245dee433aed9d884a8", "0x584a9ed7f95cd04337df791fac32bed88e13b77a", 4)
+	manager, _ := GetEthWalletManager()
+	raw, err := signOWEIP155("W9wpMYxZNB1tRc64dHFuGswBh6NavpJMg8", "12345678", "31ab40e917f646581be5f0d3112d2b06366ce8ce", "0x584a9ed7f95cd04337df791fac32bed88e13b77a", 0)
 	if err != nil {
 		log.Error("signOWEIP155 failed, err=", err)
 		return

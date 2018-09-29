@@ -103,7 +103,7 @@ func NewWalletManager() *WalletManager {
 	wm.RootPath = "data"
 	wm.ConfigPath = "conf"
 	wm.SymbolID = Symbol
-	wm.Config = &WalletConfig{}
+	//wm.Config = &WalletConfig{}
 	wm.DefaultConfig = makeEthDefaultConfig(wm.ConfigPath)
 
 	//参与汇总的钱包

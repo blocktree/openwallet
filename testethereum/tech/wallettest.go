@@ -473,7 +473,7 @@ func signEIP155FromGethAccount(from string, password string, to string, nonce ui
 
 	signer := types.NewEIP155Signer(big.NewInt(12))
 	fmt.Println("addr:", addr.String())
-	manager := &ethereum.WalletManager{}
+	manager, _ := GetEthWalletManager()
 	ethKeyStore := ethKStore.NewKeyStore(manager.GetConfig().EthereumKeyPath, ethKStore.StandardScryptN, ethKStore.StandardScryptP)
 	a := accounts.Account{Address: addr}
 	a, key, err := ethKeyStore.GetDecryptedKeyForOpenWallet(a, password)
@@ -526,13 +526,13 @@ func signEIP155FromGethAccount(from string, password string, to string, nonce ui
 }
 
 func TestSendRawTransactionFromGethAccount() {
-	raw, err := signEIP155FromGethAccount("0x50068fd632c1a6e6c5bd407b4ccf8861a589e776", "123456",
-		"0x2d3a164eD8019d3111b0726399a6a9B10F05a8e6", 185)
+	raw, err := signEIP155FromGethAccount("0x2a63b2203955b84fefe52baca3881b3614991b34", "123456",
+		"0xf68f4713AD430b030668aD9DceEEF3591bD9660e", 113)
 	if err != nil {
 		log.Error("sign failed, err=", err)
 		return
 	}
-	manager := &ethereum.WalletManager{}
+	manager, _ := GetEthWalletManager()
 	txid, err := manager.EthSendRawTransaction(raw)
 	if err != nil {
 		log.Error("send raw transaction failed, err=", err)
