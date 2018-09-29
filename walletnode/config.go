@@ -87,13 +87,13 @@ func (wc WalletnodeConfig) isTestNetCheck() bool {
 
 type FullnodeContainerConfig struct {
 	//CMD      [2][]string // Commands to run fullnode wallet ex: {{"/bin/sh", "mainnet"}, {"/bin/sh", "testnet"}}
-	PORT     [][3]string // Which ports need to be mapped, ex: {{innerPort, mainNetPort, testNetPort}, ...}
-	APIPORT  []string    // Port of default fullnode API(within container), from PORT
-	IMAGE    string      // Image that container run from
-	ENCRYPT  []string    // Encrypt wallet fullnode as an option
-	STOPCMD  []string    // Use CMD to stop service
-	TESTNET  bool        // Is to support Testnet?
-	LOGFIELS [2]string   // [2]string{mainnet, testnet}
+	PORT      [][3]string // Which ports need to be mapped, ex: {{innerPort, mainNetPort, testNetPort}, ...}
+	APIPORT   []string    // Port of default fullnode API(within container), from PORT
+	IMAGE     string      // Image that container run from
+	ENCRYPT   []string    // Encrypt wallet fullnode as an option
+	STOPCMD   []string    // Use CMD to stop service
+	NOTESTNET bool        // Is to support Testnet?
+	LOGFIELS  [2]string   // [2]string{mainnet, testnet}
 }
 
 func (nc *FullnodeContainerConfig) isEncrypted() bool {
@@ -192,7 +192,7 @@ testNetDataPath = "/data"
 	}
 
 	FullnodeContainerConfigs = map[string]*FullnodeContainerConfig{
-		"btc": &FullnodeContainerConfig{ // Btc
+		"btc": &FullnodeContainerConfig{ // Release0929
 			PORT:     [][3]string{{"9360/tcp", "10001", "20001"}},
 			APIPORT:  []string{"9360/tcp"},
 			IMAGE:    string("openw/btc:v0.15.1"),
@@ -200,10 +200,13 @@ testNetDataPath = "/data"
 			STOPCMD:  []string{"bitcoin-cli", "-datadir=/data", "-conf=/etc/bitcoin.conf", "stop"},
 			LOGFIELS: [2]string{"debug.log", "testnet3/debug.log"},
 		},
-		"qtum": &FullnodeContainerConfig{ // Qtum
-			PORT:    [][3]string{{"9360/tcp", "10031", "20031"}},
-			APIPORT: []string{"9360/tcp"},
-			IMAGE:   string("openw/qtum:v0.15.3"),
+		"qtum": &FullnodeContainerConfig{ // Release0929
+			PORT:     [][3]string{{"9360/tcp", "10031", "20031"}},
+			APIPORT:  []string{"9360/tcp"},
+			IMAGE:    string("openw/qtum:v0.15.3"),
+			ENCRYPT:  []string{"qtum-cli", "-datadir=/data", "-conf=/etc/qtum.conf", "encryptwallet 1234qwer"},
+			STOPCMD:  []string{"qtum-cli", "-datadir=/data", "-conf=/etc/qtum.conf", "stop"},
+			LOGFIELS: [2]string{"debug.log", "testnet3/debug.log"},
 		},
 		"eth": &FullnodeContainerConfig{ // Eth
 			PORT:    [][3]string{{"8545/tcp", "10002", "20002"}},
@@ -211,9 +214,10 @@ testNetDataPath = "/data"
 			IMAGE:   string("openw/eth:geth-v1.8.15"),
 		},
 		"eos": &FullnodeContainerConfig{
-			PORT:    [][3]string{{"8888/tcp", "10003", "20003"}},
-			APIPORT: []string{"8888/tcp"},
-			IMAGE:   string("openw/eos:v1.2.5"),
+			PORT:      [][3]string{{"8888/tcp", "10003", "20003"}},
+			APIPORT:   []string{"8888/tcp"},
+			IMAGE:     string("openw/eos:v1.2.5"),
+			NOTESTNET: true,
 		},
 		// "iota": &FullnodeContainerConfig{
 		// 	PORT:    [][3]string{{"18265/tcp", "10004", "20004"}},
@@ -226,11 +230,12 @@ testNetDataPath = "/data"
 		// 	APIPORT: []string{"18335/tcp"},
 		// 	IMAGE:   string("openwallet/bch:0.17.1"),
 		// },
-		"bopo": &FullnodeContainerConfig{ // Bopo
-			PORT:    [][3]string{{"9360/tcp", "10021", "20021"}},
-			APIPORT: []string{"9360/tcp"},
-			IMAGE:   string("openw/bopo:latest"),
-			TESTNET: false,
+		"bopo": &FullnodeContainerConfig{ // Release0929
+			PORT:      [][3]string{{"9360/tcp", "10021", "20021"}},
+			APIPORT:   []string{"9360/tcp"},
+			IMAGE:     string("openw/bopo:latest"),
+			NOTESTNET: true,
+			LOGFIELS:  [2]string{"run.log", "run.log"},
 		},
 		"sc": &FullnodeContainerConfig{ // Siadcoin
 			PORT:    [][3]string{{"9980/tcp", "10041", "20041"}, {"9981/tcp", "10042", "20042"}},
@@ -251,9 +256,9 @@ testNetDataPath = "/data"
 			IMAGE:   string("openw/litecoin:v0.16.0"),
 			ENCRYPT: []string{"litecoind", "-datadir=/data", "-conf=/etc/litecoin.conf", "encryptwallet 1234qwer"},
 		},
-		"tron": &FullnodeContainerConfig{ //
-			PORT:     [][3]string{{"18890/tcp", "18890", "28890"}},
-			APIPORT:  []string{"18890/tcp"},
+		"tron": &FullnodeContainerConfig{ // Release0929
+			PORT:     [][3]string{{"9360/tcp", "18890", "28890"}},
+			APIPORT:  []string{"9360/tcp"},
 			IMAGE:    string("openw/tron:v3.1.1"),
 			LOGFIELS: [2]string{"logs/tron.log", "logs/tron.log"},
 		},
