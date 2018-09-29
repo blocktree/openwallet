@@ -16,29 +16,29 @@
 package litecoin
 
 import (
-	"github.com/shopspring/decimal"
-	"testing"
-	"github.com/blocktree/OpenWallet/keystore"
-	"github.com/btcsuite/btcutil"
 	"fmt"
-	"path/filepath"
-	"github.com/codeskyblue/go-sh"
 	"math"
-	"github.com/blocktree/OpenWallet/assets/bitcoin"
-	"github.com/btcsuite/btcd/chaincfg"
+	"path/filepath"
+	"testing"
 	"time"
+
+	"github.com/blocktree/OpenWallet/assets/bitcoin"
+	"github.com/blocktree/OpenWallet/keystore"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil"
+	"github.com/codeskyblue/go-sh"
+	"github.com/shopspring/decimal"
 )
 
 var (
 	tw *WalletManager
 )
 
-
 func init() {
 
 	tw = NewWalletManager()
 
-	tw.Config.ServerAPI = "http://192.168.2.192:10004"
+	tw.Config.ServerAPI = "http://192.168.2.194:10061"
 	tw.Config.RpcUser = "walletUser"
 	tw.Config.RpcPassword = "walletPassword2017"
 	tw.Config.IsTestNet = false
