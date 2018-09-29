@@ -316,6 +316,7 @@ func (this *WalletManager) NewConfig(rootDir string, masterKey string) *WalletCo
 	//小数位长度
 	//c.CoinDecimal = decimal.NewFromFloat(100000000)
 	c.EthereumKeyPath = "/Users/peter/workspace/bitcoin/wallet/src/github.com/ethereum/go-ethereum/chain/keystore"
+	c.ChainID = 12
 	this.Config = &c
 	//创建目录
 	file.MkdirAll(c.DbPath)
