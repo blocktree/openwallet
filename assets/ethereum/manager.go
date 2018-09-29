@@ -113,6 +113,14 @@ func NewWalletManager() *WalletManager {
 	wm.Decoder = &AddressDecoder{}
 	wm.TxDecoder = NewTransactionDecoder(&wm)
 
+	wm.NewConfig(wm.RootPath, MasterKey)
+
+	wm.StorageOld = keystore.NewHDKeystore(wm.Config.KeyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	storage := hdkeystore.NewHDKeystore(wm.Config.KeyDir, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
+	wm.Storage = storage
+	client := &Client{BaseURL: wm.Config.ServerAPI, Debug: false}
+	wm.WalletClient = client
+
 	wm.WalletInSumOld = make(map[string]*Wallet)
 	return &wm
 }
