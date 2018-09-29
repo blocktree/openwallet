@@ -18,5 +18,5 @@ package litecoin
 
 //FullName 币种全名
 func (wm *WalletManager) FullName() string {
-	return "Bitcoin"
+	return "Litecoin"
 }
