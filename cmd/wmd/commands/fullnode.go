@@ -120,6 +120,21 @@ var (
 			
 				`,
 			},
+			{
+				Name:     "logs",
+				Usage:    "show logs of fullnode server",
+				Action:   logsNode,
+				Category: "FULLNODE COMMANDS",
+				Flags: []cli.Flag{
+					utils.SymbolFlag,
+				},
+				Description: `
+				wmd node logs -s <symbol>
+			
+			Remove a container
+			
+				`,
+			},
 			//			{
 			//				//节点配置
 			//				Name:     "initNodeConfig",
@@ -289,6 +304,23 @@ func removeNode(c *cli.Context) error {
 	}
 	err := m.RemoveNodeFlow(symbol)
 	if err != nil {
+		log.Error("unexpected error: ", err)
+	}
+	return nil
+}
+
+func logsNode(c *cli.Context) error {
+	symbol := c.String("symbol")
+	if len(symbol) == 0 {
+		log.Error("Argument -s <symbol> is missing")
+		return nil
+	}
+	m := assets.NodeManager(&wn.NodeManager{})
+	if m == nil {
+		log.Error(symbol, " walletnode manager did not load")
+		return nil
+	}
+	if err := m.LogsNodeFlow(symbol); err != nil {
 		log.Error("unexpected error: ", err)
 	}
 	return nil

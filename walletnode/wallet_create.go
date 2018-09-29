@@ -138,7 +138,7 @@ func CheckAndCreateConfig(symbol string) error {
 		// console.InputText("Please edit <stopnodecmd/startnodecmd> in Symbol.ini before use wallet [yes]: ", false)
 	}
 
-	if cnf := GetFullnodeConfig(symbol); cnf != nil {
+	if cnf := getFullnodeConfig(symbol); cnf != nil {
 		if cnf.isEncrypted() {
 			fmt.Println("** Wallet fullnode need to be encrypted, and will encrypt within starting! **")
 		}
