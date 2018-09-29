@@ -37,20 +37,18 @@ func (w *WalletnodeManager) LogsWalletnode(symbol string) error {
 	}
 
 	cnf := getFullnodeConfig(symbol)
-	if cnf != nil {
-		if cnf.isEncrypted() {
-			fmt.Println("** Wallet fullnode need to be encrypted, and will encrypt within starting! **")
-		}
-	}
-
-	host := ""
-	if WNConfig.walletnodeServerType == "docker" {
-		host = fmt.Sprintf("-H %s:%s", WNConfig.walletnodeServerAddr, WNConfig.walletnodeServerPort)
+	if cnf == nil {
+		return errors.New("Wallet fullnode configs can not found!")
 	}
 
 	logfile := cnf.getLogFile()
 	if logfile == "" {
 		return errors.New("Logfile no found!")
+	}
+
+	host := ""
+	if WNConfig.walletnodeServerType == "docker" {
+		host = fmt.Sprintf("-H %s:%s", WNConfig.walletnodeServerAddr, WNConfig.walletnodeServerPort)
 	}
 
 	cmd := fmt.Sprintf("docker %s exec %s tail -f /data/%s", host, cName, logfile)

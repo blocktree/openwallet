@@ -37,7 +37,7 @@ func init() {
 
 	tw = &WalletManager{}
 	tw.config = NewWalletConfig()
-	tw.config.walletURL = "http://192.168.2.194:17280"
+	tw.config.walletURL = "http://192.168.2.194:10021"
 	tw.fullnodeClient = NewClient(tw.config.walletURL, true)
 
 	testWallet = &openwallet.Wallet{
