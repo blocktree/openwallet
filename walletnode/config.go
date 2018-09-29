@@ -78,15 +78,21 @@ func (wc WalletnodeConfig) getDataDir() (string, error) {
 	}
 }
 
+func (wc WalletnodeConfig) isTestNetCheck() bool {
+	if wc.isTestNet == "true" {
+		return true
+	}
+	return false
+}
+
 type FullnodeContainerConfig struct {
-	// WORKPATH    string
-	CMD              [2][]string // Commands to run fullnode wallet ex: {{"/bin/sh", "mainnet"}, {"/bin/sh", "testnet"}}
-	PORT             [][3]string // Which ports need to be mapped, ex: {{innerPort, mainNetPort, testNetPort}, ...}
-	RPCPORT          string      // Port of default fullnode API(within container), from PORT
-	IMAGE            string      // Image that container run from
-	ENCRYPT          []string    // Encrypt wallet fullnode as an option
-	IsTestnetSupport bool        // Is to support Testnet?
-	LOGFIELS         []string
+	//CMD      [2][]string // Commands to run fullnode wallet ex: {{"/bin/sh", "mainnet"}, {"/bin/sh", "testnet"}}
+	PORT     [][3]string // Which ports need to be mapped, ex: {{innerPort, mainNetPort, testNetPort}, ...}
+	APIPORT  []string    // Port of default fullnode API(within container), from PORT
+	IMAGE    string      // Image that container run from
+	ENCRYPT  []string    // Encrypt wallet fullnode as an option
+	TESTNET  bool        // Is to support Testnet?
+	LOGFIELS [2]string   // [2]string{mainnet, testnet}
 }
 
 func (nc *FullnodeContainerConfig) isEncrypted() bool {
@@ -97,7 +103,25 @@ func (nc *FullnodeContainerConfig) isEncrypted() bool {
 	}
 }
 
-func GetFullnodeConfig(symbol string) *FullnodeContainerConfig {
+func (nc *FullnodeContainerConfig) getLogFile() string {
+	// is testnet?
+
+	// have configs of LOG?
+	if nc.LOGFIELS == [2]string{} {
+		return ""
+	} else if nc.LOGFIELS[0] == "" || nc.LOGFIELS[1] == "" {
+		log.Println("FullnodeContainerConfig:LOGFILES invalid!")
+		return ""
+	}
+
+	if WNConfig.isTestNetCheck() {
+		return nc.LOGFIELS[1]
+	} else {
+		return nc.LOGFIELS[0]
+	}
+}
+
+func getFullnodeConfig(symbol string) *FullnodeContainerConfig {
 	if v, exist := FullnodeContainerConfigs[strings.ToLower(symbol)]; exist {
 		return v
 	} else {
@@ -168,70 +192,68 @@ testNetDataPath = "/data"
 
 	FullnodeContainerConfigs = map[string]*FullnodeContainerConfig{
 		"btc": &FullnodeContainerConfig{ // Btc
-			PORT:    [][3]string{{"18332/tcp", "10001", "20001"}},
-			RPCPORT: string("18332/tcp"),
-			IMAGE:   string("openw/btc:v0.15.1"),
-			ENCRYPT: []string{"bitcoin-cli", "-datadir=/data", "-conf=/etc/litecoin.conf", "encryptwallet 1234qwer"},
+			PORT:     [][3]string{{"18332/tcp", "10001", "20001"}},
+			APIPORT:  []string{"18332/tcp"},
+			IMAGE:    string("openw/btc:v0.15.1"),
+			ENCRYPT:  []string{"bitcoin-cli", "-datadir=/data", "-conf=/etc/litecoin.conf", "encryptwallet 1234qwer"},
+			LOGFIELS: [2]string{"debug.log", "testnet3/debug.log"},
 		},
 		"eth": &FullnodeContainerConfig{ // Eth
 			PORT:    [][3]string{{"8545/tcp", "10002", "20002"}},
-			RPCPORT: string("8545/tcp"),
+			APIPORT: []string{"8545/tcp"},
 			IMAGE:   string("openw/eth:geth-v1.8.15"),
 		},
 		"eos": &FullnodeContainerConfig{
 			PORT:    [][3]string{{"8888/tcp", "10003", "20003"}},
-			RPCPORT: string("8888/tcp"),
+			APIPORT: []string{"8888/tcp"},
 			IMAGE:   string("openw/eos:v1.2.5"),
 		},
 		// "iota": &FullnodeContainerConfig{
-		// 	CMD:     [2][]string{{"/bin/bash", "-c", "while sleep 1; do date; done"}, {}},
 		// 	PORT:    [][3]string{{"18265/tcp", "10004", "20004"}},
-		// 	RPCPORT: string("18265/tcp"),
+		// 	APIPORT: []string{"18265/tcp"},
 		// 	IMAGE:   string("openwallet/iota:latest"),
 		// },
 
-		"bch": &FullnodeContainerConfig{
-			CMD: [2][]string{{"/usr/bin/bitcoind", "-datadir=/openwallet/data", "-conf=/etc/bitcoin.conf"},
-				{"/usr/bin/bitcoind", "-datadir=/openwallet/testdata", "-conf=/etc/bitcoin-test.conf"}},
-			PORT:    [][3]string{{"18335/tcp", "10011", "20011"}},
-			RPCPORT: string("18335/tcp"),
-			IMAGE:   string("openwallet/bch:0.17.1"),
-		},
+		// "bch": &FullnodeContainerConfig{
+		// 	PORT:    [][3]string{{"18335/tcp", "10011", "20011"}},
+		// 	APIPORT: []string{"18335/tcp"},
+		// 	IMAGE:   string("openwallet/bch:0.17.1"),
+		// },
 		"bopo": &FullnodeContainerConfig{ // Bopo
-			PORT:             [][3]string{{"9360/tcp", "10021", "20021"}},
-			RPCPORT:          string("9360/tcp"),
-			IMAGE:            string("openw/bopo:latest"),
-			IsTestnetSupport: false,
+			PORT:    [][3]string{{"9360/tcp", "10021", "20021"}},
+			APIPORT: []string{"9360/tcp"},
+			IMAGE:   string("openw/bopo:latest"),
+			TESTNET: false,
 		},
 		"qtum": &FullnodeContainerConfig{ // Qtum
 			PORT:    [][3]string{{"9360/tcp", "10031", "20031"}},
-			RPCPORT: string("9360/tcp"),
+			APIPORT: []string{"9360/tcp"},
 			IMAGE:   string("openw/qtum:v0.15.3"),
 		},
 		"sc": &FullnodeContainerConfig{ // Siadcoin
 			PORT:    [][3]string{{"9980/tcp", "10041", "20041"}, {"9981/tcp", "10042", "20042"}},
-			RPCPORT: string("9980/tcp"),
+			APIPORT: []string{"9980/tcp"},
 			IMAGE:   string("openw/siacoin:v1.3.4"),
 		},
-		"hc": &FullnodeContainerConfig{
-			CMD: [2][]string{
-				{"/bin/bash", "-c", "/usr/local/hypercash/bin/hcd --datadir=/openwallet/data --logdir=/openwallet/data --rpcuser=wallet --rpcpass=walletPassword2017 --txindex --rpclisten=0.0.0.0:14009 && /usr/local/hypercash/bin/hcwallet --rpcconnect=127.0.0.1:14009 --username=wallet --password=walletPassword2017 --rpclisten=0.0.0.0:12010"},
-				{"/bin/bash", "-c", "/usr/local/hypercash/bin/hcd --datadir=/openwallet/testdata --logdir=/openwallet/testdata --rpcuser=wallet --rpcpass=walletPassword2017 --txindex --rpclisten=0.0.0.0:14009 --testnet && /usr/local/hypercash/bin/hcwallet --testnet --rpcconnect=127.0.0.1:14009 --username=wallet --password=walletPassword2017 --rpclisten=0.0.0.0:12010"}},
-			PORT:    [][3]string{{"12010/tcp", "10051", "20051"}, {"14009/tcp", "14009", "24009"}},
-			RPCPORT: string("12010/tcp"),
-			IMAGE:   string("openwallet/hc:2.0.3dev"),
-		},
+		// "hc": &FullnodeContainerConfig{
+		// 	CMD: [2][]string{
+		// 		{"/bin/bash", "-c", "/usr/local/hypercash/bin/hcd --datadir=/openwallet/data --logdir=/openwallet/data --rpcuser=wallet --rpcpass=walletPassword2017 --txindex --rpclisten=0.0.0.0:14009 && /usr/local/hypercash/bin/hcwallet --rpcconnect=127.0.0.1:14009 --username=wallet --password=walletPassword2017 --rpclisten=0.0.0.0:12010"},
+		// 		{"/bin/bash", "-c", "/usr/local/hypercash/bin/hcd --datadir=/openwallet/testdata --logdir=/openwallet/testdata --rpcuser=wallet --rpcpass=walletPassword2017 --txindex --rpclisten=0.0.0.0:14009 --testnet && /usr/local/hypercash/bin/hcwallet --testnet --rpcconnect=127.0.0.1:14009 --username=wallet --password=walletPassword2017 --rpclisten=0.0.0.0:12010"}},
+		// 	PORT:    [][3]string{{"12010/tcp", "10051", "20051"}, {"14009/tcp", "14009", "24009"}},
+		// 	APIPORT: []string{"12010/tcp"},
+		// 	IMAGE:   string("openwallet/hc:2.0.3dev"),
+		// },
 		"ltc": &FullnodeContainerConfig{ // litecoin
 			PORT:    [][3]string{{"9360/tcp", "10061", "20061"}},
-			RPCPORT: string("9360/tcp"),
+			APIPORT: []string{"9360/tcp"},
 			IMAGE:   string("openw/litecoin:v0.16.0"),
 			ENCRYPT: []string{"litecoind", "-datadir=/data", "-conf=/etc/litecoin.conf", "encryptwallet 1234qwer"},
 		},
 		"tron": &FullnodeContainerConfig{ //
 			PORT:     [][3]string{{"18890/tcp", "18890", "28890"}},
-			RPCPORT:  string("18890/tcp"),
+			APIPORT:  []string{"18890/tcp"},
 			IMAGE:    string("openw/tron:v3.1.1"),
-			LOGFIELS: []string{"logs/tron.log", "logs/tron.log"},
+			LOGFIELS: [2]string{"logs/tron.log", "logs/tron.log"},
 		},
 	}
 }
