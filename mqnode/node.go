@@ -26,6 +26,8 @@ import (
 	"github.com/blocktree/OpenWallet/manager"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"fmt"
+	"encoding/json"
+	"github.com/tidwall/gjson"
 )
 
 var (
@@ -259,15 +261,15 @@ func (m *BitBankNode) DeleteAddressVersion(a *AddressVersion) error {
 
 //BlockScanNotify 新区块扫描完成通知
 func (bitBankNode *BitBankNode) BlockScanNotify(header *openwallet.BlockHeader) error {
-	log.Debug("header:", header)
+	log.Info("header:", header)
 	bitBankNode.CallTarget("pushNewBlock",header)
 	return nil
 }
 
 //BlockTxExtractDataNotify 区块提取结果通知
 func (bitBankNode *BitBankNode) BlockTxExtractDataNotify(account *openwallet.AssetsAccount, data *openwallet.TxExtractData) error {
-	log.Debug("account:", account)
-	log.Debug("data:", data)
+	log.Info("account:", account)
+	log.Info("data:", data)
 	if data.Transaction != nil{
 		result := map[string]interface{}{
 			"appID":"",
@@ -275,6 +277,10 @@ func (bitBankNode *BitBankNode) BlockTxExtractDataNotify(account *openwallet.Ass
 			"accountID":account.AccountID,
 			"dataType":2,
 			"content":data.Transaction,
+		}
+		inbs, err := json.Marshal(result)
+		if err == nil {
+			log.Error("result:",gjson.ParseBytes(inbs))
 		}
 		bitBankNode.CallTarget("pushNotifications",result)
 	}
@@ -285,6 +291,10 @@ func (bitBankNode *BitBankNode) BlockTxExtractDataNotify(account *openwallet.Ass
 			"accountID":account.AccountID,
 			"dataType":4,
 			"content":data.TxInputs,
+		}
+		inbs, err := json.Marshal(result)
+		if err == nil {
+			log.Error("result:",gjson.ParseBytes(inbs))
 		}
 		bitBankNode.CallTarget("pushNotifications",result)
 	}
@@ -297,6 +307,10 @@ func (bitBankNode *BitBankNode) BlockTxExtractDataNotify(account *openwallet.Ass
 			"dataType":3,
 			"content":data.TxInputs,
 		}
+		inbs, err := json.Marshal(result)
+		if err == nil {
+			log.Error("result:",gjson.ParseBytes(inbs))
+		}
 		bitBankNode.CallTarget("pushNotifications",result)
 	}
 
@@ -308,12 +322,16 @@ func (bitBankNode *BitBankNode) BlockTxExtractDataNotify(account *openwallet.Ass
 		"dataType":1,
 		"content":account.Balance,
 	}
+	inbs, err := json.Marshal(result)
+	if err == nil {
+		log.Error("result:",gjson.ParseBytes(inbs))
+	}
 	bitBankNode.CallTarget("pushNotifications",result)
 	return nil
 }
 
 func (bitBankNode *BitBankNode) CallTarget(method string,params interface{}){
-	bitBankNode.Node.Call(bitBankNode.Config.MerchantNodeID, method, params, true, func(resp owtp.Response) {
+	bitBankNode.Node.Call(bitBankNode.Config.MerchantNodeID, method, params, false, func(resp owtp.Response) {
 		fmt.Printf("BitBankNode call pushNotifications, params: %s,result: %s\n", params,resp.JsonData())
 	})
 }

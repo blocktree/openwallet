@@ -615,13 +615,11 @@ func TestSendToAddress(t *testing.T){
 //func TestSummaryWallets(t *testing.T){
 //	a := &openwallet.Wallet{}
 //	a.Password = "1234qwer"
-//
 //	//password := "1234qwer"
 //	sumAddress = "QcbPCgJJtGkvSYPVubji2JLdYjDyeqDsLA"
 //	threshold = decimal.NewFromFloat(0.1).Mul(coinDecimal)
 //	//最小转账额度
 //	//添加汇总钱包的账户
 //	tw.AddWalletInSummary("", a)
-//
 //	tw.SummaryWallets()
 //}
