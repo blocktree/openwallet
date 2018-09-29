@@ -17,7 +17,12 @@ package walletnode
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"log"
 	"time"
+
+	"docker.io/go-docker/api/types"
 )
 
 func (w *WalletnodeManager) StopWalletnode(symbol string) error {
@@ -37,11 +42,44 @@ func (w *WalletnodeManager) StopWalletnode(symbol string) error {
 		return err
 	}
 
-	d := time.Duration(3000)
-	err = c.ContainerStop(context.Background(), cName, &d)
-	if err != nil {
+	cnf := getFullnodeConfig(symbol)
+	if cnf == nil {
+		return errors.New("Fullnode config no found!")
+	}
 
-		return err
+	if cnf.STOPCMD == nil {
+		fmt.Printf("\n> Stop container by Docker signal(Docker Signal)... \n\n")
+
+		d := time.Duration(3000)
+		err = c.ContainerStop(context.Background(), cName, &d)
+		if err != nil {
+			return err
+		}
+
+	} else {
+		fmt.Printf("\n> Stop container by Command from Service(Stop Command)... \n\n")
+
+		exec := types.ExecConfig{Cmd: cnf.STOPCMD, AttachStderr: true, AttachStdin: true, AttachStdout: true}
+		if res, err := c.ContainerExecCreate(context.Background(), cName, exec); err != nil {
+			log.Println(err)
+			return err
+		} else {
+			if err := c.ContainerExecStart(context.Background(), res.ID, types.ExecStartCheck{}); err != nil {
+				log.Println(err)
+				return err
+			}
+
+			time.Sleep(time.Second * 10)
+
+			if status, err := w.GetWalletnodeStatus(symbol); err != nil {
+				log.Println(err)
+			} else {
+				fmt.Printf("\nStop container finished, check current container status: %s\n", status)
+				if status == "running" {
+					fmt.Printf("\n!!!May wait for more seconds, and please check <wmd node logs> returns to confirm finally!\n\n")
+				}
+			}
+		}
 	}
 	return nil
 }

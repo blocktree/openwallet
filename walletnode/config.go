@@ -91,6 +91,7 @@ type FullnodeContainerConfig struct {
 	APIPORT  []string    // Port of default fullnode API(within container), from PORT
 	IMAGE    string      // Image that container run from
 	ENCRYPT  []string    // Encrypt wallet fullnode as an option
+	STOPCMD  []string    // Use CMD to stop service
 	TESTNET  bool        // Is to support Testnet?
 	LOGFIELS [2]string   // [2]string{mainnet, testnet}
 }
@@ -195,7 +196,8 @@ testNetDataPath = "/data"
 			PORT:     [][3]string{{"18332/tcp", "10001", "20001"}},
 			APIPORT:  []string{"18332/tcp"},
 			IMAGE:    string("openw/btc:v0.15.1"),
-			ENCRYPT:  []string{"bitcoin-cli", "-datadir=/data", "-conf=/etc/litecoin.conf", "encryptwallet 1234qwer"},
+			ENCRYPT:  []string{"bitcoin-cli", "-datadir=/data", "-conf=/etc/bitcoin.conf", "encryptwallet 1234qwer"},
+			STOPCMD:  []string{"bitcoin-cli", "-datadir=/data", "-conf=/etc/bitcoin.conf", "stop"},
 			LOGFIELS: [2]string{"debug.log", "testnet3/debug.log"},
 		},
 		"eth": &FullnodeContainerConfig{ // Eth
