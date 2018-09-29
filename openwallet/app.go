@@ -15,54 +15,12 @@
 
 package openwallet
 
-import (
-	"net/http"
-)
-
 const (
 	defaultAppName = "openw"
 )
 
-var (
-	// BeeApp is an application instance
-	OpenWalletApp *App
-)
-
-func init() {
-	// create beego application
-	OpenWalletApp = NewApp()
-}
-
-// App defines beego application with a new PatternServeMux.
+// App
 type App struct {
-	Handlers *AssetsRegister
-	Server   *http.Server
-}
-
-// NewApp returns a new beego application.
-func NewApp() *App {
-	cr := NewAssetsRegister()
-	app := &App{Handlers: cr, Server: &http.Server{}}
-	return app
-}
-
-// Run beego application.
-func (app *App) Run() {
-
-	var (
-		//err        error
-		//l          net.Listener
-		endRunning = make(chan bool, 1)
-	)
-	<-endRunning
-}
-
-// Router adds a patterned controller handler to OpenWallet.
-// it's an alias method of App.Router.
-// usage:
-//  simple router
-//  openw.Router("ethereum", &assets.EthereumAssets{})
-func Router(name string, a AssetsInferface, mappingMethods ...string) *App {
-	OpenWalletApp.Handlers.Add(name, a)
-	return OpenWalletApp
+	AppID   string `json:"appID"`
+	AppName string `json:"appID"`
 }

@@ -464,7 +464,6 @@ func (this *WalletManager) InitConfig() {
 		file.MkdirAll(this.ConfigPath)
 		file.WriteFile(absFile, []byte(this.DefaultConfig), false)
 	}
-
 }
 
 //初始化配置流程
