@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"math/big"
 	"path/filepath"
+	"strings"
 
 	//	"github.com/astaxie/beego/config"
 
@@ -261,11 +262,11 @@ func (this *WalletConfig) LoadConfig(configFilePath string, configFileName strin
 	return this, nil
 }
 
-/*func NewConfig(rootDir string, symbol string, masterKey string) *WalletConfig {
+func (this *WalletManager) NewConfig(rootDir string, masterKey string) *WalletConfig {
 	c := WalletConfig{}
 
 	//币种
-	c.SymbolID = symbol
+	c.Symbol = this.SymbolID
 	c.MasterKey = masterKey
 	c.CurveType = CurveType
 
@@ -276,15 +277,16 @@ func (this *WalletConfig) LoadConfig(configFilePath string, configFileName strin
 	//证书目录
 	//c.CertsDir = filepath.Join(rootDir, strings.ToLower(c.SymbolID), "certs")
 	//钥匙备份路径
-	c.KeyDir = filepath.Join(rootDir, strings.ToLower(c.SymbolID), "key")
+	c.RootDir = rootDir
+	c.KeyDir = filepath.Join(rootDir, strings.ToLower(c.Symbol), "key")
 	//地址导出路径
-	c.AddressDir = filepath.Join(rootDir, strings.ToLower(c.SymbolID), "address")
+	c.AddressDir = filepath.Join(rootDir, strings.ToLower(c.Symbol), "address")
 	//区块链数据
 	//blockchainDir = filepath.Join(rootDir, strings.ToLower(SymbolID), "blockchain")
 	//配置文件路径
 	c.ConfigFilePath = filepath.Join("conf")
 	//配置文件名
-	c.ConfigFileName = c.SymbolID + ".ini"
+	c.ConfigFileName = c.Symbol + ".ini"
 	//rpc证书
 	//c.CertFileName = "rpc.cert"
 	//区块链数据文件
@@ -296,9 +298,9 @@ func (this *WalletConfig) LoadConfig(configFilePath string, configFileName strin
 	//最大的输入数量
 	//c.MaxTxInputs = 50
 	//本地数据库文件路径
-	c.DbPath = filepath.Join(rootDir, strings.ToLower(c.SymbolID), "db")
+	c.DbPath = filepath.Join(rootDir, strings.ToLower(c.Symbol), "db")
 	//备份路径
-	c.BackupDir = filepath.Join(rootDir, strings.ToLower(c.SymbolID), "backup")
+	c.BackupDir = filepath.Join(rootDir, strings.ToLower(c.Symbol), "backup")
 	//钱包服务API
 	c.ServerAPI = "http://127.0.0.1:8545"
 	//钱包安装的路径
@@ -306,54 +308,29 @@ func (this *WalletConfig) LoadConfig(configFilePath string, configFileName strin
 	//钱包数据文件目录
 	//c.WalletDataPath = ""
 	//汇总阀值
-	c.Threshold = decimal.NewFromFloat(5)
+	c.Threshold = big.NewInt(5) //decimal.NewFromFloat(5)
 	//汇总地址
 	c.SumAddress = ""
 	//汇总执行间隔时间
-	c.CycleSeconds = time.Second * 10
+	c.CycleSeconds = 10
 	//小数位长度
-	c.CoinDecimal = decimal.NewFromFloat(100000000)
-
-	//默认配置内容
-	c.DefaultConfig = `
-# start node command
-startNodeCMD = ""
-# stop node command
-stopNodeCMD = ""
-# node install path
-nodeInstallPath = ""
-# mainnet data path
-mainNetDataPath = ""
-# testnet data path
-testNetDataPath = ""
-# RPC api url
-serverAPI = ""
-# RPC Authentication Username
-rpcUser = ""
-# RPC Authentication Password
-rpcPassword = ""
-# Is network test?
-isTestNet = false
-# the safe address that wallet send money to.
-sumAddress = ""
-# when wallet's balance is over this value, the wallet willl send money to [sumAddress]
-threshold = ""
-# summary task timer cycle time, sample: 1m , 30s, 3m20s etc
-cycleSeconds = ""
-`
-
+	//c.CoinDecimal = decimal.NewFromFloat(100000000)
+	c.EthereumKeyPath = "/Users/peter/workspace/bitcoin/wallet/src/github.com/ethereum/go-ethereum/chain/keystore"
+	c.ChainID = 12
+	this.Config = &c
 	//创建目录
 	file.MkdirAll(c.DbPath)
 	file.MkdirAll(c.BackupDir)
 	file.MkdirAll(c.KeyDir)
 
 	return &c
-}*/
+}
 
 func (this *WalletManager) loadConfig() error {
 	if this.Config == nil {
 		this.Config = &WalletConfig{}
 	}
+	log.Debug("symbol:", this.SymbolID+".ini")
 	_, err := this.Config.LoadConfig(this.ConfigPath, this.SymbolID+".ini")
 	if err != nil {
 		log.Error(err)

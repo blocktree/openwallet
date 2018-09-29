@@ -17,6 +17,7 @@ package tron
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -191,6 +192,17 @@ func (wm *WalletManager) BroadcastTransaction(raw_data string) error {
 	for _, s := range tx.GetSignature() {
 		signs = append(signs, hex.EncodeToString(s))
 	}
+
+	// xx, err := proto.Marshal(tx.GetRawData())
+	txHash, err := GetTxHash(tx)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	txID := hex.EncodeToString(txHash)
+
+	tt, err := json.Marshal(tx.GetRawData())
+	raw_data = hex.EncodeToString(tt)
 
 	params := req.Param{
 		"signature": signs,

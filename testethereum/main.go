@@ -74,12 +74,12 @@ func main() {
 	//tech.TestWalletManager_CreateTransaction()
 	//tech.TestWalletManager_SignTransaction()
 	//tech.TestWalletManager_VerifyTransaction()
-	//tech.TestWalletManager_SubmitTransaction()
+	tech.TestWalletManager_SubmitTransaction()
 
 	//tech.TestSlice2()
 
 	//tech.TestCreateWallet2345()
-	tech.TestBatchCreateAddr2345()
+	//tech.TestBatchCreateAddr2345()
 	//tech.DumpEtc2345WalletDb()
 	//tech.TestTransferFlow2345()
 	//tech.TestInitCongfig2345()

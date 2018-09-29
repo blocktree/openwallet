@@ -103,7 +103,7 @@ func NewWalletManager() *WalletManager {
 	wm.RootPath = "data"
 	wm.ConfigPath = "conf"
 	wm.SymbolID = Symbol
-	wm.Config = &WalletConfig{}
+	//wm.Config = &WalletConfig{}
 	wm.DefaultConfig = makeEthDefaultConfig(wm.ConfigPath)
 
 	//参与汇总的钱包
@@ -112,6 +112,14 @@ func NewWalletManager() *WalletManager {
 	wm.Blockscanner = NewETHBlockScanner(&wm)
 	wm.Decoder = &AddressDecoder{}
 	wm.TxDecoder = NewTransactionDecoder(&wm)
+
+	wm.NewConfig(wm.RootPath, MasterKey)
+
+	wm.StorageOld = keystore.NewHDKeystore(wm.Config.KeyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	storage := hdkeystore.NewHDKeystore(wm.Config.KeyDir, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
+	wm.Storage = storage
+	client := &Client{BaseURL: wm.Config.ServerAPI, Debug: false}
+	wm.WalletClient = client
 
 	wm.WalletInSumOld = make(map[string]*Wallet)
 	return &wm
@@ -1250,7 +1258,7 @@ func (this *WalletManager) GetAddressesByWallet(dbPath string, wallet *Wallet) (
 
 	count := len(addrs)
 
-	queryBalanceChan := make(chan int, 1)
+	queryBalanceChan := make(chan int, 20)
 	resultChan := make(chan *Address, 100)
 	done := make(chan int, 1)
 

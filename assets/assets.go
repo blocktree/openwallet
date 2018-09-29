@@ -73,6 +73,8 @@ type NodeManager interface {
 	RestartNodeFlow(string) error
 	// RemoveNodeFlow 移除节点
 	RemoveNodeFlow(string) error
+	// LogsNodeFlow 日志
+	LogsNodeFlow(string) error
 
 	// //InstallNode 安装节点
 	// InstallNodeFlow() error
