@@ -56,6 +56,8 @@ func (w *WalletnodeManager) StopWalletnode(symbol string) error {
 			return err
 		}
 
+		time.Sleep(time.Second * 3)
+
 	} else {
 		fmt.Printf("\n> Stop container by Command from Service(Stop Command)... \n\n")
 
@@ -71,15 +73,17 @@ func (w *WalletnodeManager) StopWalletnode(symbol string) error {
 
 			time.Sleep(time.Second * 10)
 
-			if status, err := w.GetWalletnodeStatus(symbol); err != nil {
-				log.Println(err)
-			} else {
-				fmt.Printf("\nStop container finished, check current container status: %s\n", status)
-				if status == "running" {
-					fmt.Printf("\n!!!May wait for more seconds, and please check <wmd node logs> returns to confirm finally!\n\n")
-				}
-			}
 		}
 	}
+
+	if status, err := w.GetWalletnodeStatus(symbol); err != nil {
+		log.Println(err)
+	} else {
+		fmt.Printf("\nStop container finished, check current container status: %s\n", status)
+		if status == "running" {
+			fmt.Printf("\n!!!May wait for more seconds, and please check <wmd node logs> returns to confirm finally!\n\n")
+		}
+	}
+
 	return nil
 }

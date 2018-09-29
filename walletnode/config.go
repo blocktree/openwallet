@@ -193,12 +193,17 @@ testNetDataPath = "/data"
 
 	FullnodeContainerConfigs = map[string]*FullnodeContainerConfig{
 		"btc": &FullnodeContainerConfig{ // Btc
-			PORT:     [][3]string{{"18332/tcp", "10001", "20001"}},
-			APIPORT:  []string{"18332/tcp"},
+			PORT:     [][3]string{{"9360/tcp", "10001", "20001"}},
+			APIPORT:  []string{"9360/tcp"},
 			IMAGE:    string("openw/btc:v0.15.1"),
 			ENCRYPT:  []string{"bitcoin-cli", "-datadir=/data", "-conf=/etc/bitcoin.conf", "encryptwallet 1234qwer"},
 			STOPCMD:  []string{"bitcoin-cli", "-datadir=/data", "-conf=/etc/bitcoin.conf", "stop"},
 			LOGFIELS: [2]string{"debug.log", "testnet3/debug.log"},
+		},
+		"qtum": &FullnodeContainerConfig{ // Qtum
+			PORT:    [][3]string{{"9360/tcp", "10031", "20031"}},
+			APIPORT: []string{"9360/tcp"},
+			IMAGE:   string("openw/qtum:v0.15.3"),
 		},
 		"eth": &FullnodeContainerConfig{ // Eth
 			PORT:    [][3]string{{"8545/tcp", "10002", "20002"}},
@@ -226,11 +231,6 @@ testNetDataPath = "/data"
 			APIPORT: []string{"9360/tcp"},
 			IMAGE:   string("openw/bopo:latest"),
 			TESTNET: false,
-		},
-		"qtum": &FullnodeContainerConfig{ // Qtum
-			PORT:    [][3]string{{"9360/tcp", "10031", "20031"}},
-			APIPORT: []string{"9360/tcp"},
-			IMAGE:   string("openw/qtum:v0.15.3"),
 		},
 		"sc": &FullnodeContainerConfig{ // Siadcoin
 			PORT:    [][3]string{{"9980/tcp", "10041", "20041"}, {"9981/tcp", "10042", "20042"}},
