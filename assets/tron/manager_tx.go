@@ -18,7 +18,9 @@ package tron
 import (
 	"encoding/hex"
 	"fmt"
+	"log"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
 	"github.com/tronprotocol/grpc-gateway/core"
@@ -172,10 +174,26 @@ func (wm *WalletManager) GetTransactionSign(transaction, privateKey string) (raw
 // 		}’
 // Parameters：Signed Transaction contract data
 // Return value：broadcast success or failure
-func (wm *WalletManager) BroadcastTransaction(signature, txID, raw_data string) error {
+func (wm *WalletManager) BroadcastTransaction(raw_data string) error {
+
+	tx := &core.Transaction{}
+	if txBytes, err := hex.DecodeString(raw_data); err != nil {
+		log.Println(err)
+		return err
+	} else {
+		if err := proto.Unmarshal(txBytes, tx); err != nil {
+			log.Println(err)
+			return err
+		}
+	}
+
+	signs := []string{}
+	for _, s := range tx.GetSignature() {
+		signs = append(signs, hex.EncodeToString(s))
+	}
 
 	params := req.Param{
-		"signature": signature,
+		"signature": signs,
 		"txID":      txID,
 		"raw_data":  raw_data,
 	}

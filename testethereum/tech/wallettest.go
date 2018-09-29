@@ -134,7 +134,7 @@ func PrepareTestForBlockScan() error {
 
 func TestDbInf() error {
 	manager := &ethereum.WalletManager{}
-	wallets, err := manager.GetLocalWalletList(manager.GetConfig().KeyDir, manager.GetConfig().DbPath)
+	wallets, err := manager.GetLocalWalletList(manager.GetConfig().KeyDir, manager.GetConfig().DbPath, true)
 	if err != nil {
 		fmt.Println("get Wallet list failed, err=", err)
 		return err
@@ -187,7 +187,7 @@ func TestBlockScanWhenFork() error {
 
 	manager := &ethereum.WalletManager{}
 	scanner := ethereum.NewETHBlockScanner(manager)
-	wallets, err := manager.GetLocalWalletList(manager.GetConfig().KeyDir, manager.GetConfig().DbPath)
+	wallets, err := manager.GetLocalWalletList(manager.GetConfig().KeyDir, manager.GetConfig().DbPath, true)
 	if err != nil {
 		fmt.Println("get Wallet list failed, err=", err)
 		return err
@@ -229,7 +229,7 @@ func TestBlockScan() error {
 
 	//manager := &ethereum.WalletManager{}
 	//scanner := ethereum.NewETHBlockScanner(manager)
-	wallets, err := manager.GetLocalWalletList("/Users/peter/workspace/bitcoin/wallet/src/github.com/blocktree/OpenWallet/test/data/eth/db", "blockchain.db")
+	wallets, err := manager.GetLocalWalletList("/Users/peter/workspace/bitcoin/wallet/src/github.com/blocktree/OpenWallet/test/data/eth/db", "blockchain.db", true)
 	if err != nil {
 		fmt.Println("get Wallet list failed, err=", err)
 		return err

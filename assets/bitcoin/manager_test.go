@@ -40,7 +40,7 @@ func init() {
 	tw.Config.RpcUser = "walletUser"
 	tw.Config.RpcPassword = "walletPassword2017"
 	token := BasicAuth(tw.Config.RpcUser, tw.Config.RpcPassword)
-	tw.WalletClient = NewClient(tw.Config.ServerAPI, token, true)
+	tw.WalletClient = NewClient(tw.Config.ServerAPI, token, false)
 }
 
 func TestImportPrivKey(t *testing.T) {

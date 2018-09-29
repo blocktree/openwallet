@@ -49,7 +49,7 @@ import (
 )
 
 const (
-	maxAddresNum = 10000
+	maxAddresNum = 1000000
 )
 
 const (
@@ -264,7 +264,7 @@ func GetWalletKeys(dir string) ([]*Wallet, error) {
 
 		w := readWallet(path)
 		w.KeyFile = fi.Name()
-		fmt.Println("absolute path:", absPath)
+		//fmt.Println("absolute path:", absPath)
 		wallets = append(wallets, w)
 
 	}
@@ -338,7 +338,7 @@ func (this *WalletManager) ERC20GetWalletList(erc20Token *ERC20Token) ([]*Wallet
 }
 
 //GetWalletList 获取钱包列表
-func (this *WalletManager) GetLocalWalletList(keyDir string, dbPath string) ([]*Wallet, error) {
+func (this *WalletManager) GetLocalWalletList(keyDir string, dbPath string, showBalance bool) ([]*Wallet, error) {
 
 	wallets, err := GetWalletKeys(keyDir)
 	if err != nil {
@@ -353,13 +353,16 @@ func (this *WalletManager) GetLocalWalletList(keyDir string, dbPath string) ([]*
 			return nil, err
 		}
 
-		balance, err := this.GetWalletBalance(dbPath, wallets[i])
-		if err != nil {
+		var balance *big.Int
+		if showBalance {
+			balance, err = this.GetWalletBalance(dbPath, wallets[i])
+			if err != nil {
 
-			openwLogger.Log.Errorf(fmt.Sprintf("find wallet balance failed, err=%v\n", err))
-			return nil, err
+				openwLogger.Log.Errorf(fmt.Sprintf("find wallet balance failed, err=%v\n", err))
+				return nil, err
+			}
+			wallets[i].balance = balance
 		}
-		wallets[i].balance = balance
 	}
 
 	return wallets, nil
@@ -543,30 +546,47 @@ func (this *WalletManager) CreateAddressForTest(name, password string, count uin
 	return keyCombo, address, nil
 }
 
-func (this *WalletManager) CreateBatchAddress2(name, password string, count uint64) error {
+//exportAddressToFile 导出地址到文件中
+func (this *WalletManager) exportAddressToFile(addrs []*Address, filePath string) error {
+
+	var content string
+
+	for _, a := range addrs {
+		//log.Std.Info("Export: %s ", a.Address)
+		content = content + appendOxToAddress(a.Address) + "\n"
+	}
+
+	file.MkdirAll(this.GetConfig().AddressDir)
+	if !file.WriteFile(filePath, []byte(content), true) {
+		return errors.New("export address to file failed.")
+	}
+	return nil
+}
+
+func (this *WalletManager) CreateBatchAddress2(name, password string, count uint64) (string, error) {
 	//读取钱包
 	w, err := this.GetWalletInfo(this.GetConfig().KeyDir, this.GetConfig().DbPath, name)
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("get wallet info, err=%v\n", err))
-		return err
+		return "", err
 	}
 
 	_, err = w.HDKey2(password)
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
-		return err
+		return "", err
 	}
 
 	db, err := w.OpenDB(this.GetConfig().DbPath)
 	if err != nil {
 		openwLogger.Log.Errorf(fmt.Sprintf("open db, err=%v\n", err))
-		return err
+		return "", err
 	}
 	defer db.Close()
 
 	tx, err := db.Begin(true)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer tx.Rollback()
 
@@ -574,7 +594,7 @@ func (this *WalletManager) CreateBatchAddress2(name, password string, count uint
 	pubkey, err := owkeychain.OWDecode(w.PublicKey)
 	if err != nil {
 		log.Error("owkeychain.OWDecode failed, err=", err)
-		return err
+		return "", err
 	}
 
 	errcount := uint64(0)
@@ -622,6 +642,7 @@ func (this *WalletManager) CreateBatchAddress2(name, password string, count uint
 		}
 	}
 
+	var addressList []*Address
 	go func() {
 		for j := uint64(0); j < count; j++ {
 			addr := <-addressChan
@@ -634,6 +655,7 @@ func (this *WalletManager) CreateBatchAddress2(name, password string, count uint
 				log.Error("save address to db failed, err=", err)
 				errcount++
 			}
+			addressList = append(addressList, addr)
 		}
 		done <- 1
 	}()
@@ -681,21 +703,25 @@ func (this *WalletManager) CreateBatchAddress2(name, password string, count uint
 
 	if errcount > 0 {
 		log.Error("errors ocurred exceed the maximum. ")
-		return errors.New("errors ocurred exceed the maximum. ")
+		return "", errors.New("errors ocurred exceed the maximum. ")
 	}
 
 	w.AddressCount = addressIndex
 	err = tx.Save(w)
 	if err != nil {
 		log.Error("save wallet to db failed, err=", err)
-		return err
+		return "", err
 	}
 	err = tx.Commit()
 	if err != nil {
 		log.Error("commit address failed, err=", err)
-		return err
+		return "", err
 	}
-	return nil
+
+	filename := "address-" + common.TimeFormat("20060102150405", time.Now()) + ".txt"
+	filePath := filepath.Join(this.GetConfig().AddressDir, filename)
+	this.exportAddressToFile(addressList, filePath)
+	return filePath, nil
 }
 
 type AddrVec struct {
@@ -842,9 +868,9 @@ func (this *WalletManager) ERC20SendTransaction(wallet *Wallet, to string, amoun
 
 	sort.Sort(&TokenAddrVec{addrs: addrs})
 	//检查下地址排序是否正确, 仅用于测试
-	for _, theAddr := range addrs {
+	/*for _, theAddr := range addrs {
 		fmt.Println("theAddr[", theAddr.Address, "]:", theAddr.tokenBalance)
-	}
+	}*/
 
 	for i := len(addrs) - 1; i >= 0 && amount.Cmp(big.NewInt(0)) > 0; i-- {
 		var fee *txFeeInfo
@@ -912,9 +938,9 @@ func (this *WalletManager) SendTransaction2(wallet *Wallet, to string,
 
 	sort.Sort(&AddrVec{addrs: addrs})
 	//检查下地址排序是否正确, 仅用于测试
-	for _, theAddr := range addrs {
+	/*for _, theAddr := range addrs {
 		fmt.Println("theAddr[", theAddr.Address, "]:", theAddr.balance)
-	}
+	}*/
 	//amountLeft := *amount
 	for i := len(addrs) - 1; i >= 0 && amount.Cmp(big.NewInt(0)) > 0; i-- {
 		var amountToSend big.Int
@@ -1224,7 +1250,7 @@ func (this *WalletManager) GetAddressesByWallet(dbPath string, wallet *Wallet) (
 
 	count := len(addrs)
 
-	queryBalanceChan := make(chan int, 20)
+	queryBalanceChan := make(chan int, 1)
 	resultChan := make(chan *Address, 100)
 	done := make(chan int, 1)
 
@@ -1295,7 +1321,7 @@ func (this *WalletManager) ERC20SummaryWallets() {
 }
 
 func (this *WalletManager) SummaryWallets() {
-	log.Debugf("[Summary Wallet Start]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+	log.Debug(fmt.Sprintf("[Summary Wallet Start]------%v\n", common.TimeFormat("2006-01-02 15:04:05")))
 	//读取参与汇总的钱包
 	for _, wallet := range this.WalletInSumOld {
 		balance, err := this.GetWalletBalance(this.GetConfig().DbPath, wallet)
@@ -1305,20 +1331,20 @@ func (this *WalletManager) SummaryWallets() {
 		}
 
 		if balance.Cmp(this.GetConfig().Threshold) > 0 {
-			log.Debugf("Summary account[%s]balance = %v \n", wallet.WalletID, balance)
-			log.Debugf("Summary account[%s]Start Send Transaction\n", wallet.WalletID)
+			log.Debug(fmt.Sprintf("Summary account[%v]balance = %v \n", wallet.WalletID, balance))
+			log.Debug(fmt.Sprintf("Summary account[%v]Start Send Transaction\n", wallet.WalletID))
 
 			txId, err := this.SendTransaction2(wallet, this.GetConfig().SumAddress, balance, wallet.Password, true)
 			if err != nil {
-				log.Debugf("Summary account[%s]unexpected error: %v\n", wallet.WalletID, err)
+				log.Debug(fmt.Sprintf("Summary account[%v]unexpected error: %v\n", wallet.WalletID, err))
 				continue
 			} else {
-				log.Debugf("Summary account[%s]successfully，Received Address[%s], TXID：%s\n", wallet.WalletID, this.GetConfig().SumAddress, txId)
+				log.Debug(fmt.Sprintf("Summary account[%v]successfully，Received Address[%v], TXID：%v\n", wallet.WalletID, this.GetConfig().SumAddress, txId))
 			}
 		}
 	}
 
-	log.Debugf("[Summary Wallet end]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+	log.Debug(fmt.Sprintf("[Summary Wallet end]------%v\n", common.TimeFormat("2006-01-02 15:04:05")))
 }
 
 func (this *WalletManager) RestoreWallet2(backupPath string, password string) error {

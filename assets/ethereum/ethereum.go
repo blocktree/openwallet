@@ -204,22 +204,31 @@ func printTokenWalletList(list []*Wallet) {
 }
 
 //打印钱包列表
-func printWalletList(list []*Wallet) {
+func printWalletList(list []*Wallet, showBalance bool) {
 
 	tableInfo := make([][]interface{}, 0)
 
 	for i, w := range list {
+		if showBalance {
+			balance, _ := ConverWeiStringToEthDecimal(w.balance.String())
+			tableInfo = append(tableInfo, []interface{}{
+				i, w.WalletID, w.Alias, balance,
+			})
+		} else {
+			tableInfo = append(tableInfo, []interface{}{
+				i, w.WalletID, w.Alias,
+			})
+		}
 
-		balance, _ := ConverWeiStringToEthDecimal(w.balance.String())
-
-		tableInfo = append(tableInfo, []interface{}{
-			i, w.WalletID, w.Alias, balance,
-		})
 	}
 
 	t := gotabulate.Create(tableInfo)
 	// Set Headers
-	t.SetHeaders([]string{"No.", "ID", "Name", "Balance"})
+	if showBalance {
+		t.SetHeaders([]string{"No.", "ID", "Name", "Balance"})
+	} else {
+		t.SetHeaders([]string{"No.", "ID", "Name"})
+	}
 
 	//打印信息
 	fmt.Println(t.Render("simple"))
@@ -235,14 +244,14 @@ func (this *WalletManager) CreateAddressFlow() error {
 	}
 
 	//查询所有钱包信息
-	wallets, err := this.GetLocalWalletList(this.GetConfig().KeyDir, this.GetConfig().DbPath)
+	wallets, err := this.GetLocalWalletList(this.GetConfig().KeyDir, this.GetConfig().DbPath, false)
 	if err != nil {
 		fmt.Printf("The node did not create any wallet!\n")
 		return err
 	}
 
 	//打印钱包
-	printWalletList(wallets)
+	printWalletList(wallets, false)
 
 	fmt.Printf("[Please select a wallet account to create address] \n")
 
@@ -284,13 +293,13 @@ func (this *WalletManager) CreateAddressFlow() error {
 	log.Info("Start batch creation ")
 	log.Info("-------------------------------------------------")
 
-	err = this.CreateBatchAddress2(account.WalletID, password, count)
+	filepath, err := this.CreateBatchAddress2(account.WalletID, password, count)
 	if err != nil {
 		return err
 	}
 
 	log.Info("-------------------------------------------------")
-	log.Info("All addresses have created, file path:", this.GetConfig().EthereumKeyPath)
+	log.Info("all ", count, " addresses have created, file path:", filepath)
 
 	return nil
 }
@@ -305,7 +314,7 @@ func (this *WalletManager) ERC20TokenSummaryFollow() error {
 
 	//判断汇总地址是否存在
 	if len(this.GetConfig().SumAddress) == 0 {
-		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
+		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", this.SymbolID))
 	}
 
 	ercTokens, err := this.GetERC20TokenList()
@@ -407,16 +416,16 @@ func (this *WalletManager) SummaryFollow() error {
 
 	//判断汇总地址是否存在
 	if len(this.GetConfig().SumAddress) == 0 {
-		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
+		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", this.SymbolID))
 	}
 
-	wallets, err := this.GetLocalWalletList(this.GetConfig().KeyDir, this.GetConfig().DbPath)
+	wallets, err := this.GetLocalWalletList(this.GetConfig().KeyDir, this.GetConfig().DbPath, false)
 	if err != nil {
 		return err
 	}
 
 	//打印钱包列表
-	printWalletList(wallets)
+	printWalletList(wallets, false)
 
 	fmt.Printf("[Please select the wallet to summary, and enter the numbers split by ','." +
 		" For example: 0,1,2,3] \n")
@@ -483,16 +492,16 @@ func (this *WalletManager) GetWalletList() error {
 
 	//判断汇总地址是否存在
 	if len(this.GetConfig().SumAddress) == 0 {
-		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
+		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", this.SymbolID))
 	}
 
-	wallets, err := this.GetLocalWalletList(this.GetConfig().KeyDir, this.GetConfig().DbPath)
+	wallets, err := this.GetLocalWalletList(this.GetConfig().KeyDir, this.GetConfig().DbPath, true)
 	if err != nil {
 		return err
 	}
 
 	//打印钱包列表
-	printWalletList(wallets)
+	printWalletList(wallets, true)
 	return nil
 }
 
@@ -677,13 +686,13 @@ func (this *WalletManager) TransferFlow() error {
 		return err
 	}
 
-	list, err := this.GetLocalWalletList(this.GetConfig().KeyDir, this.GetConfig().DbPath)
+	list, err := this.GetLocalWalletList(this.GetConfig().KeyDir, this.GetConfig().DbPath, true)
 	if err != nil {
 		return err
 	}
 
 	//打印钱包列表
-	printWalletList(list)
+	printWalletList(list, true)
 
 	fmt.Printf("[Please select a wallet to send transaction] \n")
 
@@ -715,25 +724,30 @@ func (this *WalletManager) TransferFlow() error {
 
 	fmt.Println("receiver: ", receiver)
 
-	fmt.Println("Choose the unit for the transaction:")
-	fmt.Println(TRANS_AMOUNT_UNIT_LIST)
-	unit, err := console.InputNumber("Index of the unit: ", true)
-	if err != nil {
-		return err
-	}
+	//fmt.Println("Choose the unit for the transaction:")
+	//fmt.Println(TRANS_AMOUNT_UNIT_LIST)
+	//unit, err := console.InputNumber("Index of the unit: ", true)
+	//if err != nil {
+	//	return err
+	//}
 
 	amount, err := console.InputRealNumber("Enter amount to send : ", true)
 	if err != nil {
 		return err
 	}
 
-	amountInt, err := toHexBigIntForEtherTrans(amount, 10, int64(unit))
+	amountInt, err := ConvertEthStringToWei(amount) //toHexBigIntForEtherTrans(amount, 10, int64(unit))
 	if err != nil {
 		openwLogger.Log.Errorf("wrong amount inputed. ")
 		return err
 	}
 
-	fmt.Println("amount input:", amountInt.String())
+	amountDecimal, err := ConverWeiStringToEthDecimal(amountInt.String())
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("amount input:", amountDecimal)
 
 	if wallet.balance.Cmp(amountInt) < 0 {
 		return errors.New("Input amount is greater than balance! ")
@@ -759,14 +773,14 @@ func (this *WalletManager) BackupWalletFlow() error {
 		return err
 	}
 
-	wallets, err := this.GetLocalWalletList(this.GetConfig().KeyDir, this.GetConfig().DbPath)
+	wallets, err := this.GetLocalWalletList(this.GetConfig().KeyDir, this.GetConfig().DbPath, true)
 	if err != nil {
 		openwLogger.Log.Errorf("get wallet list failed, err = ", err)
 		return err
 	}
 
 	//打印钱包列表
-	printWalletList(wallets)
+	printWalletList(wallets, true)
 
 	fmt.Printf("[Please select a wallet to backup] \n")
 

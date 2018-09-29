@@ -486,8 +486,8 @@ func signEthTransaction(priKey []byte, toAddr string, amount *big.Int, nonce uin
 		return "", err
 	}
 
-	jsonStr, _ := json.MarshalIndent(tx, "", " ")
-	log.Info("tx after sign:", string(jsonStr))
+	//jsonStr, _ := json.MarshalIndent(tx, "", " ")
+	//log.Info("tx after sign:", string(jsonStr))
 
 	rawTxPara, err := rlp.EncodeToBytes(tx)
 	if err != nil {
@@ -495,7 +495,7 @@ func signEthTransaction(priKey []byte, toAddr string, amount *big.Int, nonce uin
 		return "", err
 	}
 
-	log.Info("rawTxPara:", common.ToHex(rawTxPara))
+	//log.Info("rawTxPara:", common.ToHex(rawTxPara))
 	return common.ToHex(rawTxPara), nil
 }
 
