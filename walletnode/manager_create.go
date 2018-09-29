@@ -16,6 +16,7 @@ package walletnode
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	s "strings"
@@ -109,6 +110,10 @@ func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 	ctn_config, ok := FullnodeContainerConfigs[s.ToLower(symbol)]
 	if !ok {
 		return nil
+	}
+
+	if WNConfig.isTestNetCheck() == true && ctn_config.NOTESTNET == true {
+		return errors.New("!!!Fullnode does not support Testnet now!")
 	}
 
 	portBindings = map[nat.Port][]nat.PortBinding{}
