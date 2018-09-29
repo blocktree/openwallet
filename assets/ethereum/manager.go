@@ -1250,7 +1250,7 @@ func (this *WalletManager) GetAddressesByWallet(dbPath string, wallet *Wallet) (
 
 	count := len(addrs)
 
-	queryBalanceChan := make(chan int, 1)
+	queryBalanceChan := make(chan int, 20)
 	resultChan := make(chan *Address, 100)
 	done := make(chan int, 1)
 
