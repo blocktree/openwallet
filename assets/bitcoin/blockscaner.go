@@ -171,8 +171,23 @@ func (bs *BTCBlockScanner) ScanBlockTask() {
 
 			localBlock, err := bs.wm.GetLocalBlock(currentHeight)
 			if err != nil {
-				log.Std.Info("block scanner can not get local block; unexpected error: %v", err)
-				break
+				log.Std.Error("block scanner can not get local block; unexpected error: %v", err)
+
+				//查找core钱包的RPC
+				log.Info("block scanner prev block height:", currentHeight)
+
+				prevHash, err := bs.wm.GetBlockHash(currentHeight)
+				if err != nil {
+					log.Std.Error("block scanner can not get prev block; unexpected error: %v", err)
+					break
+				}
+
+				localBlock, err = bs.wm.GetBlock(prevHash)
+				if err != nil {
+					log.Std.Error("block scanner can not get prev block; unexpected error: %v", err)
+					break
+				}
+				
 			}
 
 			//重置当前区块的hash

@@ -122,6 +122,13 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 		}
 	} else {
 		feesRate, _ = decimal.NewFromString(rawTx.FeeRate)
+		relayfee := decimal.NewFromFloat(0.004)
+		if feesRate.LessThan(relayfee) {
+			feesRate, err = decoder.wm.EstimateFeeRate()
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	log.Info("Calculating wallet unspent record to build transaction...")

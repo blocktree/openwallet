@@ -95,7 +95,7 @@ func (l *owtpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Just to make sure.
 	//defer peer.Close()
 
-	log.Debug("NewClient successfully")
+	log.Error("NewClient successfully")
 
 	select {
 	case l.incoming <- peer:
@@ -103,7 +103,7 @@ func (l *owtpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		//peer.Close()
 		return
 	case <-cnCh:
-		log.Debug("http CloseNotify")
+		log.Error("http CloseNotify")
 		return
 	}
 
@@ -116,7 +116,7 @@ func (l *owtpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		//log.Debug("peer 2:", peer.PID(), "closed")
 		peer.Close()
 	case <-cnCh:
-		log.Debug("http CloseNotify")
+		log.Error("http CloseNotify")
 		return
 	}
 

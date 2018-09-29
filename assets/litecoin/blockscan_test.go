@@ -123,13 +123,13 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 	)
 
 	accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
-	//address := "mpkUFiXonEZriywHUhig6PTDQXKzT6S5in"
+	address := "mpkUFiXonEZriywHUhig6PTDQXKzT6S5in"
 
-	wallet, err := tw.GetWalletInfo(accountID)
-	if err != nil {
-		t.Errorf("BTCBlockScanner_Run failed unexpected error: %v\n", err)
-		return
-	}
+	//wallet, err := tw.GetWalletInfo(accountID)
+	//if err != nil {
+	//	t.Errorf("BTCBlockScanner_Run failed unexpected error: %v\n", err)
+	//	return
+	//}
 
 	bs := tw.Blockscanner
 
@@ -137,7 +137,7 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 
 	bs.SetRescanBlockHeight(1384586)
 
-	bs.AddWallet(accountID, wallet.WalletWrapper())
+	bs.AddAddress(address, accountID)
 
 	bs.Run()
 

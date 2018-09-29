@@ -116,13 +116,13 @@ func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 		if WNConfig.isTestNet == "true" {
 			portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{HostIP: DockerAllowed, HostPort: v[2]}}
 			//exposedPorts[nat.Port(v[0])] = struct{}{}
-			if v[0] == ctn_config.RPCPORT {
+			if v[0] == ctn_config.APIPORT[0] {
 				RPCPort = v[2]
 			}
 		} else {
 			portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{HostIP: DockerAllowed, HostPort: v[1]}}
 			// exposedPorts[nat.Port(v[0])] = struct{}{}
-			if v[0] == ctn_config.RPCPORT {
+			if v[0] == ctn_config.APIPORT[0] {
 				RPCPort = v[1]
 			}
 		}

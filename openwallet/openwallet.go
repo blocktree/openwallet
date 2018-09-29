@@ -31,14 +31,3 @@ var (
 	hooks = make([]hookfunc, 0) //hook function slice to store the hookfunc
 )
 
-// AddAPPStartHook is used to register the hookfunc
-// The hookfuncs will run in beego.Run()
-// such as sessionInit, middlerware start, buildtemplate, admin start
-func AddAPPStartHook(hf hookfunc) {
-	hooks = append(hooks, hf)
-}
-
-//Run 运行应用
-func Run(params ...string) {
-	OpenWalletApp.Run()
-}

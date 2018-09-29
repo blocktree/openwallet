@@ -16,7 +16,11 @@
 package tron
 
 import (
+	"encoding/hex"
+	"fmt"
 	"testing"
+
+	"github.com/golang/protobuf/proto"
 )
 
 func TestGetNowBlock(t *testing.T) {
@@ -26,6 +30,9 @@ func TestGetNowBlock(t *testing.T) {
 	} else {
 		t.Logf("GetNowBlock return: \n\t%+v\n", r.GetBlockHeader().GetRawData().GetNumber())
 
+		xx, _ := proto.Marshal(r)
+
+		fmt.Println(hex.EncodeToString(xx))
 		// printBlock(r)
 	}
 }
