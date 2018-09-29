@@ -94,9 +94,13 @@ func TestWalletManager_VerifyTransaction() {
 
 func TestWalletManager_SubmitTransaction() {
 
-	walletID := "W9cRnfgyZ7T4imjbQuiafz6Ca5aUf8qJRJ"
-	accountID := "4mNzv15wSPeUgqfw2Y4UieRJzUoJJMS9DM1L136gxFMZ"
-	to := "0xE1B74B188284A4323a1Cb95B130B00445628113e"
+	//walletID := "W9cRnfgyZ7T4imjbQuiafz6Ca5aUf8qJRJ"
+	//accountID := "4mNzv15wSPeUgqfw2Y4UieRJzUoJJMS9DM1L136gxFMZ"
+	//to := "0xE1B74B188284A4323a1Cb95B130B00445628113e"
+
+	walletID := "W6EZ35wMPeYG7QJjVTpU6heCE4AxmkVzJd"
+	accountID := "KaszkQZb2xsaNuW5UoAukhM5MhzAqtPBWYTwkk4m2QhtDYN9E8"
+	to := "0x584a9Ed7f95Cd04337df791Fac32bED88E13b77a"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
 	if err != nil {

@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	FRAME_DEFAULT_DIR = "data/eth"
+	FRAME_DEFAULT_DIR = "frame_data/eth"
 )
 
 func NewEthTestConfig() *manager.Config {
