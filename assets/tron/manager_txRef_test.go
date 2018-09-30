@@ -68,12 +68,14 @@ func TestValidSignedTransactionRef(t *testing.T) {
 }
 
 func TestSuiteTx(t *testing.T) {
+
+	println("Start testsuit...\n")
+
 	var (
 		txRaw, txSignedRaw string
 		err                error
 	)
 
-	println("Start testsuit...\n")
 	txRaw, err = tw.CreateTransactionRef(TOADDRESS, OWNERADDRESS, AMOUNT)
 	if err != nil {
 		t.Errorf("TestCreateTransaction failed: %v\n", err)
@@ -81,7 +83,7 @@ func TestSuiteTx(t *testing.T) {
 	println("txRaw: ", txRaw)
 	println("------------------------------------------------------------------- Create Done! \n")
 
-	txRaw = "0a7e0a02adcd220873bf2dfd044f459440e0d4d2f8e12c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d"
+	// txRaw = "0a7e0a02adcd220873bf2dfd044f459440e0d4d2f8e12c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d"
 	txSignedRaw, err = tw.SignTransactionRef(txRaw, PRIVATEKEY)
 	if err != nil {
 		t.Errorf("GetTransactionSignRef failed: %v\n", err)
@@ -89,7 +91,7 @@ func TestSuiteTx(t *testing.T) {
 	println("txSignedRaw: ", txSignedRaw)
 	println("------------------------------------------------------------------- Sign Done! \n")
 
-	txSignedRaw = "0a7e0a02adcd220873bf2dfd044f459440e0d4d2f8e12c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d1241f5b8eaac6034f590b54d7d1e2fcd588c56573c113ec7e98aac4a393747ae290e55f1bc2e861cc9dde18ac48e9594054632f4a1da2491bf091c2fe813f4e373d201"
+	// txSignedRaw = "0a7e0a02adcd220873bf2dfd044f459440e0d4d2f8e12c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d1241f5b8eaac6034f590b54d7d1e2fcd588c56573c113ec7e98aac4a393747ae290e55f1bc2e861cc9dde18ac48e9594054632f4a1da2491bf091c2fe813f4e373d201"
 	err = tw.ValidSignedTransactionRef(txSignedRaw)
 	if err != nil {
 		t.Errorf("ValidSignedTransactionRef: %v\n", err)
