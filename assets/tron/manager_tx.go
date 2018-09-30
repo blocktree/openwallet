@@ -25,6 +25,7 @@ import (
 	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
 	"github.com/tronprotocol/grpc-gateway/core"
+	// "github.com/tronprotocol/grpc-gateway/api"
 	// "github.com/blocktree/OpenWallet/assets/tron"
 	// "github.com/blocktree/OpenWallet/assets/tron/protocol/core"
 )
@@ -36,10 +37,11 @@ import (
 // 	Total number of transactions.
 func (wm *WalletManager) GetTotalTransaction() (num uint64, err error) {
 
-	r, err := wm.WalletClient.Call2("/wallet/totaltransaction", nil)
+	r, err := wm.WalletClient.Call("/wallet/totaltransaction", nil)
 	if err != nil {
 		return 0, err
 	}
+
 	num = gjson.ParseBytes(r).Get("num").Uint()
 	// fmt.Println("CCC = ", gjson.ParseBytes(r).Get("num").Uint())
 	return num, nil
@@ -52,10 +54,8 @@ func (wm *WalletManager) GetTotalTransaction() (num uint64, err error) {
 // Return value：Transaction information.
 func (wm *WalletManager) GetTransactionByID(txID string) (tx *core.Transaction, err error) {
 
-	params := req.Param{
-		"value": txID,
-	}
-	r, err := wm.WalletClient.Call2("/wallet/gettransactionbyid", params)
+	params := req.Param{"value": txID}
+	r, err := wm.WalletClient.Call("/wallet/gettransactionbyid", params)
 	if err != nil {
 		return nil, err
 	}
@@ -103,8 +103,10 @@ func (wm *WalletManager) CreateTransaction(to_address, owner_address string, amo
 	// println("XX1 = ", to_address)
 	// println("XX2 = ", owner_address)
 
-	to_address = hex.EncodeToString([]byte(to_address))
-	owner_address = hex.EncodeToString([]byte(owner_address))
+	// to_address = hex.EncodeToString([]byte(to_address))
+	// owner_address = hex.EncodeToString([]byte(owner_address))
+	to_address = getAddrtoBase64(to_address)
+	owner_address = getAddrtoBase64(owner_address)
 
 	params := req.Param{
 		"to_address":    to_address,
@@ -112,11 +114,20 @@ func (wm *WalletManager) CreateTransaction(to_address, owner_address string, amo
 		"amount":        10,
 	}
 
-	rawBytes, err := wm.WalletClient.Call2("/wallet/createtransaction", params)
+	r, err := wm.WalletClient.Call("/wallet/createtransaction", params)
 	if err != nil {
 		return "", err
 	}
-	fmt.Println("XXX = ", string(rawBytes))
+
+	tx := &core.Transaction{}
+	if err := proto.Unmarshal(r, tx); err != nil {
+		log.Println(err)
+		return "", err
+	} else {
+		fmt.Println("tx = ", tx)
+	}
+	// fmt.Println("XXX = ", string(rawBytes))
+	rawBytes, err := proto.Marshal(tx.GetRawData())
 	raw = hex.EncodeToString(rawBytes)
 
 	return raw, nil
@@ -147,7 +158,7 @@ func (wm *WalletManager) GetTransactionSign(transaction, privateKey string) (raw
 		"privateKey":  privateKey,
 	}
 
-	r, err := wm.WalletClient.Call2("/wallet/gettransactionsign", params)
+	r, err := wm.WalletClient.Call("/wallet/gettransactionsign", params)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +221,7 @@ func (wm *WalletManager) BroadcastTransaction(raw_data string) error {
 		"raw_data":  raw_data,
 	}
 
-	r, err := wm.WalletClient.Call2("/wallet/broadcasttransaction", params)
+	r, err := wm.WalletClient.Call("/wallet/broadcasttransaction", params)
 	if err != nil {
 		return err
 	}

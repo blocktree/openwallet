@@ -27,13 +27,12 @@ import (
 	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
 	"github.com/blocktree/go-OWCrypt"
 
-	// "github.com/gogo/protobuf/proto"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/tronprotocol/grpc-gateway/core"
 )
 
-func GetTxHash(tx *core.Transaction) (txHash []byte, err error) {
+func getTxHash(tx *core.Transaction) (txHash []byte, err error) {
 
 	txRaw, err := proto.Marshal(tx.GetRawData())
 	if err != nil {
@@ -43,9 +42,21 @@ func GetTxHash(tx *core.Transaction) (txHash []byte, err error) {
 	return txHash, err
 }
 
+func getBlockHash(raw string) string {
+	block := &core.Block{}
+	x, _ := hex.DecodeString(raw)
+	proto.Unmarshal(x, block)
+
+	blockHeaderRaw, _ := proto.Marshal(block.GetBlockHeader().GetRawData())
+	blockHashBytes := owcrypt.Hash(blockHeaderRaw, 0, owcrypt.HASH_ALG_SHA256)
+
+	return hex.EncodeToString(blockHashBytes)
+}
+
 // Done
 // Function: Create a transaction
 //
+// Java Reference:
 // public static Transaction setReference(Transaction transaction, Block newestBlock) {
 // 	long blockHeight = newestBlock.getBlockHeader().getRawData().getNumber();
 // 	byte[] blockHash = getBlockHash(newestBlock).getBytes();
@@ -93,9 +104,6 @@ func (wm *WalletManager) CreateTransactionRef(to_address, owner_address string, 
 		return "", err
 	} else {
 		to_address_bytes = append([]byte{0x41}, to_address_bytes...)
-
-		// to_address_bytes, err = base58.Decode(to_address, base58.BitcoinAlphabet)
-		// to_address_bytes = to_address_bytes[:len(to_address_bytes)-4]
 	}
 
 	owner_address_bytes, err := addressEncoder.AddressDecode(owner_address, addressEncoder.TRON_mainnetAddress)
@@ -104,8 +112,6 @@ func (wm *WalletManager) CreateTransactionRef(to_address, owner_address string, 
 	} else {
 		owner_address_bytes = append([]byte{0x41}, owner_address_bytes...)
 	}
-	// fmt.Println("to_address = ", hex.EncodeToString(to_address_bytes))
-	// fmt.Println("owner_addr = ", hex.EncodeToString(owner_address_bytes))
 
 	// --------------------- Generate TX Contract ------------------------
 
@@ -133,37 +139,18 @@ func (wm *WalletManager) CreateTransactionRef(to_address, owner_address string, 
 		return txRawHex, err
 	}
 
-	blockHight := block.GetBlockHeader().GetRawData().GetNumber()
+	blockHight := block.GetBlockHeader().GetRawData().GetNumber() - 1
 	blockHightBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(blockHightBytes, uint64(blockHight))
+	refBlockBytes := blockHightBytes[6:8]
 
 	blockHeaderRaw, err := proto.Marshal(block.GetBlockHeader().GetRawData())
 	if err != nil {
 		return "", err
 	}
 	blockHashBytes := owcrypt.Hash(blockHeaderRaw, 0, owcrypt.HASH_ALG_SHA256)
-
-	refBlockBytes := blockHightBytes[6:8]
 	refBlockHash := blockHashBytes[8:16]
-
-	// // refBlockHash2 := []byte(base64.StdEncoding.EncodeToString(blockHashBytes))
-	// // refBlockHash2 := []byte(base64.StdEncoding.EncodeToString([]byte(hex.EncodeToString(blockHashBytes)[8:16])))
-	// fmt.Println("\tBlockHight Bytes: ", blockHightBytes, "Len: ", len(blockHightBytes))
-	// fmt.Println("\tBlockHight Hex  : ", hex.EncodeToString(blockHightBytes), "Len: ", len(hex.EncodeToString(blockHightBytes)))
-	// fmt.Println("\trefBlockBytes:    ", refBlockBytes, "Len: ", len(refBlockBytes))
-	// fmt.Println("\trefBlockBytes Hex:", hex.EncodeToString(refBlockBytes), "Len: ", len(hex.EncodeToString(refBlockBytes)))
-	// fmt.Println("")
-	// // block.GetBlockHeader()
-	// bparentHashBytes := block.GetBlockHeader().GetRawData().GetParentHash()
-	// fmt.Println("\tBlock Prt Bytes: ", bparentHashBytes, "Len: ", len(bparentHashBytes))
-	// fmt.Println("\tBlockHash Bytes: ", blockHashBytes, "Len: ", len(blockHashBytes))
-	// fmt.Println("\tBlockHash Hex:   ", hex.EncodeToString(blockHashBytes), "Len: ", len(hex.EncodeToString(blockHashBytes)))
-	// fmt.Println("\trefBlockHash:    ", refBlockHash, "Len: ", len(refBlockHash))
-	// fmt.Println("\trefBlockHash Hex:", hex.EncodeToString(refBlockHash), "Len: ", len(hex.EncodeToString(refBlockHash)))
-	// // fmt.Println("\trefBlockHash2:    ", refBlockHash2, "Len: ", len(refBlockHash2))
-	// // fmt.Println("\trefBlockHash2 Hex:", hex.EncodeToString(refBlockHash2), "Len: ", len(hex.EncodeToString(refBlockHash2)))
-	// // fmt.Println("\tBlockHash Hex:   ", hex.EncodeToString(blockHashBytes), "Len: ", len(blockHashBytes))
-	// // fmt.Println("\tBlockHash refBlockBytes Hex: ", hex.EncodeToString(refBlockBytes))
+	refBlockHash = block.GetBlockHeader().GetRawData().GetParentHash()[8:16]
 
 	// -------------------- Set timestamp --------------------
 	/*
@@ -181,10 +168,9 @@ func (wm *WalletManager) CreateTransactionRef(to_address, owner_address string, 
 	txRaw := &core.TransactionRaw{
 		RefBlockBytes: refBlockBytes,
 		RefBlockHash:  refBlockHash,
-		// RefBlockNum:   int64(0),
-		Contract: []*core.Transaction_Contract{txContact},
-		// Timestamp:     int64(0), //  timestamp,
-		Expiration: timestamp + 10*60*60,
+		Contract:      []*core.Transaction_Contract{txContact},
+		Timestamp:     timestamp,
+		Expiration:    timestamp + 10*60*60,
 	}
 	tx := &core.Transaction{
 		RawData: txRaw,
@@ -229,8 +215,9 @@ func (wm *WalletManager) SignTransactionRef(txRawhex string, privateKey string) 
 			return signedTxRaw, err
 		}
 	}
+	tx.GetRawData().GetRefBlockBytes()
 
-	txHash, err := GetTxHash(tx)
+	txHash, err := getTxHash(tx)
 	if err != nil {
 		return signedTxRaw, err
 	}
@@ -317,7 +304,7 @@ func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
 	listContracts := tx.RawData.GetContract()
 	countSignature := len(tx.Signature)
 
-	txHash, err := GetTxHash(tx)
+	txHash, err := getTxHash(tx)
 	if err != nil {
 		return err
 	}
@@ -348,7 +335,7 @@ func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
 		// fmt.Println("  publickey = ", hex.EncodeToString(pkBytes))
 		// fmt.Println("  Tx_txHash = ", hex.EncodeToString(txHash))
 
-		pkgen_address_bytes, err := CreateAddressByPkRef(pkBytes)
+		pkgen_address_bytes, err := createAddressByPkRef(pkBytes)
 		if err != nil {
 			log.Println(err)
 			return err
@@ -386,7 +373,7 @@ func debugPrintTx(txRawhex string) {
 
 	fmt.Println("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv Print Test vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv")
 
-	txHash, err := GetTxHash(tx)
+	txHash, err := getTxHash(tx)
 	if err != nil {
 		fmt.Println(err)
 	}

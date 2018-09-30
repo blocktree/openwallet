@@ -280,7 +280,7 @@ func (bitBankNode *BitBankNode) BlockTxExtractDataNotify(account *openwallet.Ass
 		}
 		inbs, err := json.Marshal(result)
 		if err == nil {
-			log.Error("result:",gjson.ParseBytes(inbs))
+			log.Info("result:",gjson.ParseBytes(inbs))
 		}
 		bitBankNode.CallTarget("pushNotifications",result)
 	}
@@ -294,7 +294,7 @@ func (bitBankNode *BitBankNode) BlockTxExtractDataNotify(account *openwallet.Ass
 		}
 		inbs, err := json.Marshal(result)
 		if err == nil {
-			log.Error("result:",gjson.ParseBytes(inbs))
+			log.Info("result:",gjson.ParseBytes(inbs))
 		}
 		bitBankNode.CallTarget("pushNotifications",result)
 	}
@@ -309,7 +309,7 @@ func (bitBankNode *BitBankNode) BlockTxExtractDataNotify(account *openwallet.Ass
 		}
 		inbs, err := json.Marshal(result)
 		if err == nil {
-			log.Error("result:",gjson.ParseBytes(inbs))
+			log.Info("result:",gjson.ParseBytes(inbs))
 		}
 		bitBankNode.CallTarget("pushNotifications",result)
 	}
@@ -324,7 +324,7 @@ func (bitBankNode *BitBankNode) BlockTxExtractDataNotify(account *openwallet.Ass
 	}
 	inbs, err := json.Marshal(result)
 	if err == nil {
-		log.Error("result:",gjson.ParseBytes(inbs))
+		log.Info("result:",gjson.ParseBytes(inbs))
 	}
 	bitBankNode.CallTarget("pushNotifications",result)
 	return nil

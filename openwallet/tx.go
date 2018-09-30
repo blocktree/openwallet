@@ -25,7 +25,6 @@ import (
 
 //TransactionDecoder 交易单解析器
 type TransactionDecoder interface {
-
 	//SendRawTransaction 广播交易单
 	//SendTransaction func(amount, feeRate string, to []string, wallet *Wallet, account *AssetsAccount) (*RawTransaction, error)
 	//CreateRawTransaction 创建交易单
@@ -66,7 +65,6 @@ type KeySignature struct {
 }
 
 type Transaction struct {
-
 	//openwallet自定义的ID，在不同链可能存在重复的txid，
 	// 所以我们要生成一个全局不重复的
 	WxID string `json:"wxid" storm:"id"`
@@ -74,21 +72,21 @@ type Transaction struct {
 	TxID      string `json:"txid"`
 	AccountID string `json:"accountID"`
 	//Address     string   `json:"address"`
-	Coin        Coin     //区块链类型标识
+	Coin        Coin     `json:"coin"` //区块链类型标识
 	From        []string `json:"from"`
 	To          []string `json:"to"`
 	Amount      string   `json:"amount"`
 	Decimal     int32    `json:"decimal"`
 	TxType      uint64
-	Confirm     int64  `json:"confirm"`
-	BlockHash   string `json:"blockHash"`
-	BlockHeight uint64 `json:"blockHeight"`
-	IsMemo      bool   `json:"isMemo"`
-	Memo        string `json:"memo"`
-	Fees        string
-	Received    bool
-	SubmitTime  int64
-	ConfirmTime int64
+	Confirm     int64    `json:"confirm"`
+	BlockHash   string   `json:"blockHash"`
+	BlockHeight uint64   `json:"blockHeight"`
+	IsMemo      bool     `json:"isMemo"`
+	Memo        string   `json:"memo"`
+	Fees        string   `json:"fees"`
+	Received    bool     `json:"received"`
+	SubmitTime  int64    `json:"submitTime"`
+	ConfirmTime int64    `json:"confirmTime"`
 }
 
 //GenTransactionWxID 生成交易单的WxID，格式为 base64(sha1(tx_{txID}_{symbol_contractID}))
@@ -107,7 +105,7 @@ type Recharge struct {
 	AccountID   string `json:"accountID"`
 	Address     string `json:"address"`
 	Symbol      string `json:"symbol"` //Deprecated: use Coin
-	Coin        Coin   //区块链类型标识
+	Coin        Coin                   //区块链类型标识
 	Amount      string `json:"amount"`
 	Confirm     int64  `json:"confirm"`
 	BlockHash   string `json:"blockHash"`
@@ -116,7 +114,7 @@ type Recharge struct {
 	Memo        string `json:"memo"`
 	Index       uint64 `json:"index"`
 	Received    bool
-	CreateAt    int64 `json:"createdAt"`
+	CreateAt    int64  `json:"createdAt"`
 	Delete      bool
 }
 
@@ -124,7 +122,7 @@ type Recharge struct {
 type TxInput struct {
 	SourceTxID  string //源交易单ID
 	SourceIndex uint64 //源交易单输出所因为
-	Recharge    `storm:"inline"`
+	Recharge `storm:"inline"`
 }
 
 // TxOutPut 交易输出，则到账记录
