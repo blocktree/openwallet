@@ -38,7 +38,7 @@ func init() {
 
 	tw = NewWalletManager()
 
-	tw.Config.ServerAPI = "http://192.168.2.192:10004"
+	tw.Config.ServerAPI = "http://192.168.2.194:20061"
 	tw.Config.RpcUser = "walletUser"
 	tw.Config.RpcPassword = "walletPassword2017"
 	tw.Config.IsTestNet = false
@@ -412,7 +412,7 @@ func TestGetBlockChainInfo(t *testing.T) {
 }
 
 func TestListUnspent(t *testing.T) {
-	utxos, err := tw.ListUnspent(0)
+	utxos, err := tw.ListUnspent(0, "mwmTjMeYCAu7423TSGsJVsEaUDrNkbLAqi")
 	if err != nil {
 		t.Errorf("ListUnspent failed unexpected error: %v\n", err)
 		return

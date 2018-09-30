@@ -29,7 +29,7 @@ func createTransaction(walletID, accountID, to string) (*openwallet.RawTransacti
 		return nil, err
 	}
 
-	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "0.005", to, "0.002", "")
+	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "0.05", to, "0.002", "")
 	if err != nil {
 		log.Error("CreateTransaction failed, unexpected error:", err)
 		return nil, err
@@ -77,9 +77,9 @@ func TestWalletManager_SignTransaction(t *testing.T) {
 
 func TestWalletManager_VerifyTransaction(t *testing.T) {
 
-	walletID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
-	accountID := "JYCcXtC18vnd1jbcJX47msDFbQMBDNjsq3xbvvK6qCHKAAqoQq"
-	to := "QjPGf82YKxygtr7H2Tm9A8P7ETBsWG2ih9"
+	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
+	accountID := "EuXSRD56cwdYSSrF11YX4sCYz3LHxdwqXAa5hzgYMxKn"
+	to := "mrVEuAf3S1SZHYodB3K2DKhZbT7mqXMhDR"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
 	if err != nil {
@@ -106,9 +106,9 @@ func TestWalletManager_VerifyTransaction(t *testing.T) {
 
 func TestWalletManager_SubmitTransaction(t *testing.T) {
 
-	walletID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
-	accountID := "JYCcXtC18vnd1jbcJX47msDFbQMBDNjsq3xbvvK6qCHKAAqoQq"
-	to := "QWM5VccpAt5BwGFsxq7aVwFshQvADhvkDm"
+	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
+	accountID := "EuXSRD56cwdYSSrF11YX4sCYz3LHxdwqXAa5hzgYMxKn"
+	to := "mrVEuAf3S1SZHYodB3K2DKhZbT7mqXMhDR"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
 	if err != nil {
@@ -133,12 +133,12 @@ func TestWalletManager_SubmitTransaction(t *testing.T) {
 
 	log.Info("rawTx signed:", rawTx.RawHex)
 
-	_, err = tm.SubmitTransaction(testApp, walletID, accountID, rawTx)
+	tx, err := tm.SubmitTransaction(testApp, walletID, accountID, rawTx)
 	if err != nil {
 		log.Error("SubmitTransaction failed, unexpected error:", err)
 		return
 	}
-
+	log.Info("wxID:", tx.WxID)
 	log.Info("txID:", rawTx.TxID)
 }
 
@@ -195,4 +195,23 @@ func TestWalletManager_ExtractUTXO(t *testing.T) {
 		log.Info("ExtractUTXO[", i, "] :", tx)
 	}
 
+}
+
+func TestWalletManager_GetTransactionByWxID(t *testing.T) {
+	wxID := openwallet.GenTransactionWxID(&openwallet.Transaction{
+		TxID: "bfa6febb33c8ddde9f7f7b4d93043956cce7e0f4e95da259a78dc9068d178fee",
+		Coin: openwallet.Coin{
+			Symbol: "LTC",
+			IsContract: false,
+			ContractID: "",
+		},
+	})
+	log.Info("wxID:", wxID)
+	//"D0+rxcKSqEsFMfGesVzBdf6RloM="
+	tx, err := tm.GetTransactionByWxID(testApp, wxID)
+	if err != nil {
+		log.Error("GetTransactionByTxID failed, unexpected error:", err)
+		return
+	}
+	log.Info("tx:", tx)
 }
