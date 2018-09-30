@@ -27,6 +27,7 @@ import (
 	// "github.com/tronprotocol/grpc-gateway/api"
 	// "github.com/blocktree/OpenWallet/assets/tron"
 	// "github.com/blocktree/OpenWallet/assets/tron/protocol/core"
+	"encoding/json"
 )
 
 // Function：Count all transactions (number) on the network
@@ -204,27 +205,27 @@ func (wm *WalletManager) BroadcastTransaction(raw_data string) error {
 	}
 
 	// xx, err := proto.Marshal(tx.GetRawData())
-	//txHash, err := GetTxHash(tx)
-	//if err != nil {
-	//	log.Println(err)
-	//	return err
-	//}
-	//txID := hex.EncodeToString(txHash)
-	//
-	//tt, err := json.Marshal(tx.GetRawData())
-	//raw_data = hex.EncodeToString(tt)
-	//
-	//params := req.Param{
-	//	"signature": signs,
-	//	"txID":      txID,
-	//	"raw_data":  raw_data,
-	//}
-	//
-	//r, err := wm.WalletClient.Call("/wallet/broadcasttransaction", params)
-	//if err != nil {
-	//	return err
-	//}
-	//fmt.Println("EEEE = ", r)
+	txHash, err := getTxHash(tx)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	txID := hex.EncodeToString(txHash)
+
+	tt, err := json.Marshal(tx.GetRawData())
+	raw_data = hex.EncodeToString(tt)
+
+	params := req.Param{
+		"signature": signs,
+		"txID":      txID,
+		"raw_data":  raw_data,
+	}
+
+	r, err := wm.WalletClient.Call("/wallet/broadcasttransaction", params)
+	if err != nil {
+		return err
+	}
+	fmt.Println("EEEE = ", r)
 
 	return nil
 }
