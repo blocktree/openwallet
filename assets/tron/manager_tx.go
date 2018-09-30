@@ -17,7 +17,6 @@ package tron
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"log"
 
@@ -205,27 +204,27 @@ func (wm *WalletManager) BroadcastTransaction(raw_data string) error {
 	}
 
 	// xx, err := proto.Marshal(tx.GetRawData())
-	txHash, err := GetTxHash(tx)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	txID := hex.EncodeToString(txHash)
-
-	tt, err := json.Marshal(tx.GetRawData())
-	raw_data = hex.EncodeToString(tt)
-
-	params := req.Param{
-		"signature": signs,
-		"txID":      txID,
-		"raw_data":  raw_data,
-	}
-
-	r, err := wm.WalletClient.Call("/wallet/broadcasttransaction", params)
-	if err != nil {
-		return err
-	}
-	fmt.Println("EEEE = ", r)
+	//txHash, err := GetTxHash(tx)
+	//if err != nil {
+	//	log.Println(err)
+	//	return err
+	//}
+	//txID := hex.EncodeToString(txHash)
+	//
+	//tt, err := json.Marshal(tx.GetRawData())
+	//raw_data = hex.EncodeToString(tt)
+	//
+	//params := req.Param{
+	//	"signature": signs,
+	//	"txID":      txID,
+	//	"raw_data":  raw_data,
+	//}
+	//
+	//r, err := wm.WalletClient.Call("/wallet/broadcasttransaction", params)
+	//if err != nil {
+	//	return err
+	//}
+	//fmt.Println("EEEE = ", r)
 
 	return nil
 }
