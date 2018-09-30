@@ -49,8 +49,8 @@ func TestSubscribe(t *testing.T) {
 
 	sub := subscriber{}
 	tm.AddObserver(&sub)
-	tm.SetRescanBlockHeight("QTUM", 236098)
-
+	//tm.SetRescanBlockHeight("QTUM", 236098)
+	log.Debug("SupportAssets:", tm.cfg.SupportAssets)
 	<-endRunning
 }
 

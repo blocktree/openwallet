@@ -35,6 +35,7 @@ var (
 func init() {
 	tc.IsTestnet = true
 	tc.EnableBlockScan = true
+	tc.SupportAssets = []string{"BTC", "QTUM", "LTC"}
 	tm = NewWalletManager(tc)
 	//tm.Init()
 }
@@ -116,7 +117,7 @@ func TestWalletManager_GetWalletList(t *testing.T) {
 func TestWalletManager_CreateAssetsAccount(t *testing.T) {
 
 	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
-	account := &openwallet.AssetsAccount{Alias: "Tim", WalletID: walletID, Required: 1, Symbol: "BTC", IsTrust: true}
+	account := &openwallet.AssetsAccount{Alias: "Tim", WalletID: walletID, Required: 1, Symbol: "LTC", IsTrust: true}
 	account, address, err := tm.CreateAssetsAccount(testApp, walletID, "12345678", account, nil)
 	if err != nil {
 		log.Error(err)
@@ -166,7 +167,7 @@ func TestWalletManager_CreateAddress(t *testing.T) {
 
 func TestWalletManager_GetAddressList(t *testing.T) {
 	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
-	accountID := "LLjgXvQqkiRBLsGJwHMdunrDt4YrVZu7n3cqtcBueEjtAcCbHp"
+	accountID := "EuXSRD56cwdYSSrF11YX4sCYz3LHxdwqXAa5hzgYMxKn"
 	list, err := tm.GetAddressList(testApp, walletID, accountID, 0, -1, false)
 	if err != nil {
 		log.Error("unexpected error:", err)

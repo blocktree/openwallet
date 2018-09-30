@@ -1673,12 +1673,12 @@ func (wm *WalletManager) EstimateFeeRate() (decimal.Decimal, error) {
 		2,
 	}
 
-	result, err := wm.WalletClient.Call("estimatefee", request)
+	result, err := wm.WalletClient.Call("estimatesmartfee", request)
 	if err != nil {
 		return decimal.New(0, 0), err
 	}
 
-	feeRate, _ := decimal.NewFromString(result.String())
+	feeRate, _ := decimal.NewFromString(result.Get("feerate").String())
 
 	if feeRate.LessThan(defaultRate) {
 		feeRate = defaultRate
@@ -1861,6 +1861,7 @@ func (wm *WalletManager) LoadConfig() error {
 
 	//读取配置
 	absFile := filepath.Join(wm.Config.configFilePath, wm.Config.configFileName)
+
 	c, err = config.NewConfig("ini", absFile)
 	if err != nil {
 		return errors.New("Config is not setup. Please run 'wmd Config -s <symbol>' ")
