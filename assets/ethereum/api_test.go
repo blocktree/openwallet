@@ -13,25 +13,20 @@
  * GNU Lesser General Public License for more details.
  */
 
-package litecoin
+package ethereum
 
-import (
-	"github.com/blocktree/OpenWallet/assets/bitcoin"
-)
+import "testing"
 
-const (
-	maxAddresNum = 10000
-)
+func TestEthGetBlockNumber(t *testing.T) {
 
-type WalletManager struct {
-	bitcoin.WalletManager
-}
+	tw := Client{
+		BaseURL: "http://192.168.2.194:10002",
+		Debug:   true,
+	}
 
-
-func NewWalletManager() *WalletManager {
-	wm := WalletManager{}
-	wm.WalletManager = *bitcoin.NewWalletManager()
-	wm.Config = bitcoin.NewConfig(Symbol, MasterKey)
-	wm.Decoder = NewAddressDecoder(&wm)
-	return &wm
+	if r, err := tw.ethGetBlockNumber(); err != nil {
+		t.Errorf("GetAccountNet failed: %v\n", err)
+	} else {
+		t.Logf("GetAccountNet return: \n\t%+v\n", r)
+	}
 }
