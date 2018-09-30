@@ -84,10 +84,10 @@ type Transaction struct {
 	BlockHeight uint64 `json:"blockHeight"`
 	IsMemo      bool   `json:"isMemo"`
 	Memo        string `json:"memo"`
-	Fees        string
-	Received    bool
-	SubmitTime  int64
-	ConfirmTime int64
+	Fees        string `json:"fees"`
+	Received    bool    `json:"received"`
+	SubmitTime  int64  `json:"submitTime"`
+	ConfirmTime int64  `json:"confirmTime"`
 }
 
 //GenTransactionWxID 生成交易单的WxID，格式为 base64(sha1(tx_{txID}_{symbol_contractID}))
