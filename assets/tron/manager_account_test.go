@@ -29,6 +29,18 @@ func TestGetAccountNet(t *testing.T) {
 	}
 }
 
+func TestGetAccount(t *testing.T) {
+
+	var addr string
+	addr = OWNERADDRESS
+
+	if r, err := tw.GetAccount(addr); err != nil {
+		t.Errorf("GetAccount failed: %v\n", err)
+	} else {
+		t.Logf("GetAccount return: \n\t%+v\n", r)
+	}
+}
+
 func TestCreateAccount(t *testing.T) {
 
 	var owner_address, account_address string = OWNERADDRESS, OWNERADDRESS

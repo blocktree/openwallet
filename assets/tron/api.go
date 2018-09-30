@@ -33,16 +33,7 @@ type Client struct {
 	// AccessToken string
 	Debug  bool
 	client *req.Req
-	//Client *req.Req
 }
-
-// type Response struct {
-// 	Code    int         `json:"code,omitempty"`
-// 	Error   interface{} `json:"error,omitempty"`
-// 	Result  interface{} `json:"result,omitempty"`
-// 	Message string      `json:"message,omitempty"`
-// 	Id      string      `json:"id,omitempty"`
-// }
 
 func NewClient(url, token string, debug bool) *Client {
 	c := Client{
@@ -73,6 +64,8 @@ func NewClient(url, token string, debug bool) *Client {
 // 	// }
 
 // 	// r, err := c.client.Do("POST", url, request, authHeader)
+// 	// param = req.Param{"num": 100}
+
 // 	r, err := req.Post(url, req.BodyJSON(&param), authHeader)
 // 	// r, err := c.client.Post(c.BaseURL+path, req.BodyJSON(&body))
 
@@ -103,7 +96,7 @@ func NewClient(url, token string, debug bool) *Client {
 
 // Call calls a remote procedure on another node, specified by the path.
 // func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error) {
-func (c *Client) Call2(path string, param interface{}) ([]byte, error) {
+func (c *Client) Call(path string, param interface{}) ([]byte, error) {
 
 	if c == nil || c.client == nil {
 		return nil, errors.New("API url is not setup. ")
@@ -120,7 +113,7 @@ func (c *Client) Call2(path string, param interface{}) ([]byte, error) {
 	}
 
 	if c.Debug {
-		// log.Std.Info("%+v", r)
+		log.Std.Info("%+v", r)
 	}
 
 	if r.Response().StatusCode != http.StatusOK {

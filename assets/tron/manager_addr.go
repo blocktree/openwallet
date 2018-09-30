@@ -25,6 +25,7 @@ import (
 	"github.com/imroc/req"
 )
 
+// Writing! API not found, may service not updated but office docs updated.
 // Function: Create address from a specified password string (NOT PRIVATE KEY)
 // Demo: curl -X POST http://127.0.0.1:8090/wallet/createaddress -d ‘
 // 	{“value”: “7465737470617373776f7264” }’
@@ -37,10 +38,8 @@ import (
 // 	Please control risks when using this API. To ensure environmental security, please do not invoke APIs provided by other or invoke this very API on a public network.
 func (wm *WalletManager) CreateAddress(passValue string) (addr string, err error) {
 
-	params := req.Param{
-		"value": passValue,
-	}
-	r, err := wm.WalletClient.Call2("/wallet/createaddress", params)
+	params := req.Param{"value": passValue}
+	r, err := wm.WalletClient.Call("/wallet/createaddress", params)
 	if err != nil {
 		return "nil", err
 	}
@@ -49,6 +48,7 @@ func (wm *WalletManager) CreateAddress(passValue string) (addr string, err error
 	return "", nil
 }
 
+// Done
 // Function: Generates a random private key and address pair
 // Demo：curl -X POST -k http://127.0.0.1:8090/wallet/generateaddress
 // Parameters:
@@ -63,7 +63,7 @@ func (wm *WalletManager) GenerateAddress() (addr *api.AddressPrKeyPairMessage, e
 
 	// res = map[string]string{"addr": "", "privatekey": ""}
 
-	r, err := wm.WalletClient.Call2("/wallet/generateaddress", nil)
+	r, err := wm.WalletClient.Call("/wallet/generateaddress", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -76,6 +76,7 @@ func (wm *WalletManager) GenerateAddress() (addr *api.AddressPrKeyPairMessage, e
 	return addr, nil
 }
 
+// Writing! Api not found, may service not updated but office docs updated.
 // Function：validate address
 // Demo: curl -X POST http://127.0.0.1:8090/wallet/validateaddress -d ‘
 // 	{“address”: “4189139CB1387AF85E3D24E212A008AC974967E561”}’
@@ -87,7 +88,7 @@ func (wm *WalletManager) ValidateAddress(address string) (err error) {
 	params := req.Param{
 		"address": address,
 	}
-	r, err := wm.WalletClient.Call2("/wallet/validateaddress", params)
+	r, err := wm.WalletClient.Call("/wallet/validateaddress", params)
 	if err != nil {
 		return err
 	}

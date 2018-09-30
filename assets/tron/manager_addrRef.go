@@ -24,7 +24,7 @@ import (
 	"github.com/shengdoushi/base58"
 )
 
-func CreateAddressByPkRef(pubKey []byte) (addrBytes []byte, err error) {
+func createAddressByPkRef(pubKey []byte) (addrBytes []byte, err error) {
 	// First: calculate sha3-256 of PublicKey, get Hash as pkHash
 	pkHash := owcrypt.Hash(pubKey, 0, owcrypt.HASH_ALG_KECCAK256)[12:32]
 	// Second: expend 0x41 as prefix of pkHash to mark Tron
@@ -54,7 +54,7 @@ func (wm *WalletManager) CreateAddressRef(privateKey string) (addrBase58 string,
 		return "", err
 	}
 
-	if address, err := CreateAddressByPkRef(pubKey); err != nil {
+	if address, err := createAddressByPkRef(pubKey); err != nil {
 		return "", err
 	} else {
 		// Last: encoding with Base58(alphabet use BitcoinAlphabet)

@@ -35,7 +35,7 @@ import (
 // Return value：Latest block on full node
 func (wm *WalletManager) GetNowBlock() (block *core.Block, err error) {
 
-	r, err := wm.WalletClient.Call2("/wallet/getnowblock", nil)
+	r, err := wm.WalletClient.Call("/wallet/getnowblock", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (wm *WalletManager) GetNowBlock() (block *core.Block, err error) {
 func (wm *WalletManager) GetBlockByNum(num uint64) (block *core.Block, error error) {
 
 	request := req.Param{"num": num}
-	r, err := wm.WalletClient.Call2("/wallet/getblockbynum", request)
+	r, err := wm.WalletClient.Call("/wallet/getblockbynum", request)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (wm *WalletManager) GetBlockByNum(num uint64) (block *core.Block, error err
 	return block, nil
 }
 
-// Done
+// Writing! Always return none?
 // Function：Query block by ID
 // 	demo: curl -X POST http://127.0.0.1:8090/wallet/getblockbyid -d ‘
 // 		{“value”: “0000000000038809c59ee8409a3b6c051e369ef1096603c7ee723c16e2376c73”}’
@@ -81,8 +81,9 @@ func (wm *WalletManager) GetBlockByNum(num uint64) (block *core.Block, error err
 // Return value：Block Object
 func (wm *WalletManager) GetBlockByID(blockID string) (block *core.Block, err error) {
 
-	request := req.Param{"blockID": blockID}
-	r, err := wm.WalletClient.Call2("/wallet/getblockbyid", request)
+	// request := req.Param{"value": base64.StdEncoding.EncodeToString([]byte(blockID))}
+	request := req.Param{"value": blockID}
+	r, err := wm.WalletClient.Call("/wallet/getblockbyid", request)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +111,7 @@ func (wm *WalletManager) GetBlockByLimitNext(startNum, endNum uint64) (blocks *a
 		"endNum":   endNum,
 	}
 
-	r, err := wm.WalletClient.Call2("/wallet/getblockbylimitnext", params)
+	r, err := wm.WalletClient.Call("/wallet/getblockbylimitnext", params)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +139,7 @@ func (wm *WalletManager) GetBlockByLatestNum(num uint64) (blocks *api.BlockList,
 	params := req.Param{
 		"num": num,
 	}
-	r, err := wm.WalletClient.Call2("/wallet/getblockbylatestnum", params)
+	r, err := wm.WalletClient.Call("/wallet/getblockbylatestnum", params)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +158,7 @@ func printBlock(block *core.Block) {
 		fmt.Println("Block == nil")
 	}
 
-	fmt.Println("\n------------------------------------------------------------------------------------------------------------------------------")
+	fmt.Println("\nvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv")
 	fmt.Println("Block Header:")
 	if block.BlockHeader != nil {
 		fmt.Printf("\tRawData: <Number=%v, ParentHash=%v, TxTrieRoot=%v> \n", block.BlockHeader.RawData.Number, hex.EncodeToString(block.BlockHeader.RawData.ParentHash), hex.EncodeToString(block.BlockHeader.RawData.TxTrieRoot))
@@ -167,9 +168,13 @@ func printBlock(block *core.Block) {
 	fmt.Println("Transactions:")
 	if block.Transactions != nil {
 		for i, tx := range block.Transactions {
-			fmt.Printf("\t tx%2d: <BlockBytes=%v, BlockNum=%v, BlockHash=%+v, Contact=%v, Signature_0=%v>\n", i+1, tx.RawData.RefBlockBytes, tx.RawData.RefBlockNum, hex.EncodeToString(tx.RawData.RefBlockHash), tx.RawData.Contract, hex.EncodeToString(tx.Signature[0]))
+			sign0 := ""
+			if tx.Signature != nil {
+				sign0 = hex.EncodeToString(tx.Signature[0])
+			}
+			fmt.Printf("\t tx%2d: <BlockBytes=%v, BlockNum=%v, BlockHash=%+v, Contact=%v, Signature_0=%v>\n", i+1, tx.RawData.RefBlockBytes, tx.RawData.RefBlockNum, hex.EncodeToString(tx.RawData.RefBlockHash), tx.RawData.Contract, sign0)
 			// fmt.Printf("\t tx%2d=<%v> \n", i+1, tx)
 		}
 	}
-	fmt.Println("------------------------------------------------------------------------------------------------------------------------------")
+	fmt.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 }
