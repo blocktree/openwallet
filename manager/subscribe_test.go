@@ -49,7 +49,7 @@ func TestSubscribe(t *testing.T) {
 
 	sub := subscriber{}
 	tm.AddObserver(&sub)
-	tm.SetRescanBlockHeight("QTUM", 235000)
+	tm.SetRescanBlockHeight("QTUM", 236098)
 
 	<-endRunning
 }
