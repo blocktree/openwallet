@@ -48,17 +48,6 @@ $ export GO15VENDOREXPERIMENT=1
 
 ## 源码编译跨平台工具
 
-### 安装gox（无法跨平台编译C代码，弃用）
-
-```shell
-
-$ go get github.com/mitchellh/gox
-...
-$ gox -h
-...
-
-```
-
 ### 安装xgo（支持跨平台编译C代码）
 
 [官方github](https://github.com/karalabe/xgo)
