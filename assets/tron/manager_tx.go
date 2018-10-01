@@ -17,6 +17,7 @@ package tron
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -24,12 +25,9 @@ import (
 	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
 	"github.com/tronprotocol/grpc-gateway/core"
-	// "github.com/tronprotocol/grpc-gateway/api"
-	// "github.com/blocktree/OpenWallet/assets/tron"
-	// "github.com/blocktree/OpenWallet/assets/tron/protocol/core"
-	"encoding/json"
 )
 
+// Done
 // Function：Count all transactions (number) on the network
 // demo: curl -X POST http://127.0.0.1:8090/wallet/totaltransaction
 // Parameters：Nones
@@ -43,10 +41,10 @@ func (wm *WalletManager) GetTotalTransaction() (num uint64, err error) {
 	}
 
 	num = gjson.ParseBytes(r).Get("num").Uint()
-	// fmt.Println("CCC = ", gjson.ParseBytes(r).Get("num").Uint())
 	return num, nil
 }
 
+// Writing!
 // Function：Query transaction by ID
 // 	demo: curl -X POST http://127.0.0.1:8090/wallet/gettransactionbyid -d ‘
 // 		{“value”: “d5ec749ecc2a615399d8a6c864ea4c74ff9f523c2be0e341ac9be5d47d7c2d62”}’
@@ -68,6 +66,7 @@ func (wm *WalletManager) GetTransactionByID(txID string) (tx *core.Transaction, 
 	return tx, nil
 }
 
+// Writing! Unmarshal can not get all data?
 // Function：Creates a transaction of transfer. If the recipient address does not exist, a corresponding account will be created on the blockchain.
 // demo: curl -X POST http://127.0.0.1:8090/wallet/createtransaction -d ‘
 // 	{“to_address”: “41e9d79cc47518930bc322d9bf7cddd260a0260a8d”,
@@ -81,37 +80,13 @@ func (wm *WalletManager) GetTransactionByID(txID string) (tx *core.Transaction, 
 // 	Transaction contract data
 func (wm *WalletManager) CreateTransaction(to_address, owner_address string, amount int64) (raw string, err error) {
 
-	// to_address_bytes, _ := addressEncoder.AddressDecode(to_address, addressEncoder.TRON_mainnetAddress)
-	// to_address = hex.EncodeToString(to_address_bytes)
-	// owner_address_bytes, _ := addressEncoder.AddressDecode(owner_address, addressEncoder.TRON_mainnetAddress)
-	// owner_address = hex.EncodeToString(owner_address_bytes)
-	// // println("XX1 = ", to_address)
-	// // println("XX2 = ", owner_address)
-
-	// XX1 = b6c1abf9fb31c9077dfb3c25469e6e943ffbfa7a
-	// XX0 = 41e9d79cc47518930bc322d9bf7cddd260a0260a8d
-	// XX3 = 41e6992304ae03e5c6bba7334432b7345bef031c14 19c42503
-
-	// btcAlphabet := "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-	// myAlphabet := base58.NewAlphabet(btcAlphabet)
-
-	// to_address_bytes, err := base58.Decode(to_address, myAlphabet)
-	// to_address = hex.EncodeToString(to_address_bytes) //[1 : len(to_address_bytes)-4]
-
-	// owner_address_bytes, err := base58.Decode(owner_address, myAlphabet)
-	// owner_address = hex.EncodeToString(owner_address_bytes) //[1 : len(owner_address_bytes)-4]
-	// println("XX1 = ", to_address)
-	// println("XX2 = ", owner_address)
-
-	// to_address = hex.EncodeToString([]byte(to_address))
-	// owner_address = hex.EncodeToString([]byte(owner_address))
 	to_address = getAddrtoBase64(to_address)
 	owner_address = getAddrtoBase64(owner_address)
 
 	params := req.Param{
 		"to_address":    to_address,
 		"owner_address": owner_address,
-		"amount":        10,
+		"amount":        amount * 1000000,
 	}
 
 	r, err := wm.WalletClient.Call("/wallet/createtransaction", params)
@@ -120,19 +95,23 @@ func (wm *WalletManager) CreateTransaction(to_address, owner_address string, amo
 	}
 
 	tx := &core.Transaction{}
-	if err := proto.Unmarshal(r, tx); err != nil {
-		log.Println(err)
+	if err := gjson.Unmarshal(r, tx); err != nil {
+		log.Println("Proto Unmarshal: ", err)
 		return "", err
-	} else {
-		fmt.Println("tx = ", tx)
 	}
-	// fmt.Println("XXX = ", string(rawBytes))
-	rawBytes, err := proto.Marshal(tx.GetRawData())
+	fmt.Println("\ntx = ", tx)
+
+	rawBytes, err := proto.Marshal(tx)
+	if err != nil {
+		log.Println("Proto Marshal: ", err)
+		return "", err
+	}
 	raw = hex.EncodeToString(rawBytes)
 
 	return raw, nil
 }
 
+// Writing! No used!
 // Function：Sign the transaction, the api has the risk of leaking the private key, please make sure to call the api in a secure environment
 // 	demo: curl -X POST http://127.0.0.1:8090/wallet/gettransactionsign -d ‘
 // 		{ “transaction” : {“txID”:”454f156bf1256587ff6ccdbc56e64ad0c51e4f8efea5490dcbc720ee606bc7b8”,
@@ -162,11 +141,12 @@ func (wm *WalletManager) GetTransactionSign(transaction, privateKey string) (raw
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("EEEE = ", r)
+	fmt.Println("Test = ", r)
 
 	return rawSinged, nil
 }
 
+// Writing!
 // Function：Broadcast the signed transaction
 // 	demo：curl -X POST http://127.0.0.1:8090/wallet/broadcasttransaction -d ‘
 // 		{“signature”:[“97c825b41c77de2a8bd65b3df55cd4c0df59c307c0187e42321dcc1cc455ddba583dd9502e17cfec5945b34cad0511985a6165999092a6dec84c2bdd97e649fc01”],
@@ -225,7 +205,7 @@ func (wm *WalletManager) BroadcastTransaction(raw_data string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("EEEE = ", r)
+	fmt.Println("Test = ", r)
 
 	return nil
 }
