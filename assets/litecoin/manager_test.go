@@ -38,7 +38,7 @@ func init() {
 
 	tw = NewWalletManager()
 
-	tw.Config.ServerAPI = "http://192.168.2.194:10061"
+	tw.Config.ServerAPI = "http://192.168.2.194:20061"
 	tw.Config.RpcUser = "walletUser"
 	tw.Config.RpcPassword = "walletPassword2017"
 	tw.Config.IsTestNet = false

@@ -45,6 +45,7 @@ type Wallet struct {
 	WatchOnly    bool   `json:"watchOnly"`    //创建watchonly的钱包，没有私钥文件，只有db文件
 	IsTrust      bool   `json:"isTrust"`      //是否托管密钥
 	AccountIndex int    `json:"accountIndex"` //账户索引数，-1代表未创建账户
+	ExtParam     string `json:"extParam"`     //扩展参数，用于调用智能合约，json结构
 
 	key      *hdkeystore.HDKey
 	fileName string              //钱包文件命名，所有与钱包相关的都以这个filename命名
