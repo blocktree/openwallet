@@ -31,7 +31,21 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
+	"time"
 )
+
+//WalletDAI 钱包数据访问接口
+type WalletDAI interface{
+	GetWallet() *Wallet
+	GetWalletByID(walletID string) (*Wallet, error)
+	GetAssetsAccountInfo(accountID string) (*AssetsAccount, error)
+	GetAssetsAccountList(offset, limit int, cols ...interface{}) ([]*AssetsAccount, error)
+	GetAssetsAccountByAddress(address string) (*AssetsAccount, error)
+	GetAddress(address string) (*Address, error)
+	GetAddressList(offset, limit int, cols ...interface{}) ([]*Address, error)
+	UnlockWallet(password string, time time.Duration) error
+	HDKey(password ...string) (*hdkeystore.HDKey, error)
+}
 
 type Wallet struct {
 	AppID        string `json:"appID"`
