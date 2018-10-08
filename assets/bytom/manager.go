@@ -488,6 +488,7 @@ func BuildTransaction(from, to, assetsID string, amount, fees uint64) (string, e
 		Actions         []map[string]interface{} `json:"actions"`
 		TTL             uint64                   `json:"ttl"`
 		TimeRange       uint64                   `json:"time_range"`
+		UseUnconfirmed  bool                     `json:"use_unconfirmed"`
 	}{nil,
 		[]map[string]interface{}{
 			map[string]interface{}{
@@ -505,7 +506,7 @@ func BuildTransaction(from, to, assetsID string, amount, fees uint64) (string, e
 				//},
 				"type": "control_address",
 			},
-		}, 1, 0}
+		}, 1, 0, false}
 
 	result, err := client.Call("build-transaction", request)
 	if err != nil {
@@ -612,7 +613,7 @@ func SendTransaction(accountID, to, assetsID string, amount uint64, password str
 	}
 
 	//添加手续重新建立交易单
-	txAddFees, err := BuildTransaction(accountID, to, assetsID, amount, totalFees)
+	txAddFees, err := BuildTransaction(accountID, to, assetsID, amount, totalFees * 2)
 	if err != nil {
 		return "", err
 	}
@@ -880,16 +881,15 @@ func loadNodeConfig() error {
 		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
 	}
 
-	hostPort         = c.String("hostPort")
-	hostDatadir      = c.String("hostDatadir")
-	dockerDatadir    = c.String("dockerDatadir")
-	containerName    = c.String("containerName")
-	imageName        = c.String("imageName")
-	dockerfilePath   = c.String("dockerfilePath")
+	hostPort = c.String("hostPort")
+	hostDatadir = c.String("hostDatadir")
+	dockerDatadir = c.String("dockerDatadir")
+	containerName = c.String("containerName")
+	imageName = c.String("imageName")
+	dockerfilePath = c.String("dockerfilePath")
 
 	return nil
 }
-
 
 //打印钱包列表
 func printWalletList(list []*AccountBalance) {
