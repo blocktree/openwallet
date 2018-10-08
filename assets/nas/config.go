@@ -127,7 +127,7 @@ startNodeCMD = ""
 stopNodeCMD = ""
 # node install path
 nodeInstallPath = ""
-# node api url
+# node api url; mainnet：https://mainnet.nebulas.io,testnet：https://testnet.nebulas.io
 apiUrl = "http://"
 # gas limit, unit is NAS, 0.000000000002NAS default
 gasLimit = "0.000000000002"
