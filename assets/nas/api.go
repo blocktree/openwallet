@@ -93,10 +93,10 @@ func (c *Client) CheckNonce(key *Key) uint64{
 	//如果本地nonce_local > 链上nonce,采用本地nonce,否则采用链上nonce
 	if nonce_db > nonce_chain{
 		Nonce = nonce_db + 1
-		log.Std.Info("%s nonce_db=%d > nonce_chain=%d,Use nonce_db+1...",key.Address,nonce_db,nonce_chain)
+		//log.Std.Info("%s nonce_db=%d > nonce_chain=%d,Use nonce_db+1...",key.Address,nonce_db,nonce_chain)
 	}else{
 		Nonce = nonce_chain + 1
-		log.Std.Info("%s nonce_db=%d <= nonce_chain=%d,Use nonce_chain+1...",key.Address,nonce_db,nonce_chain)
+		//log.Std.Info("%s nonce_db=%d <= nonce_chain=%d,Use nonce_chain+1...",key.Address,nonce_db,nonce_chain)
 	}
 
 	return uint64(Nonce)

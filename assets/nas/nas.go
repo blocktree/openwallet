@@ -392,12 +392,11 @@ func (wm *WalletManager) TransferFlow() error {
 		for _, send := range sends {
 
 			txid, err := wm.Transfer(send.sednKeys, receiver, "2000000",send.amount.String())
-			log.Std.Info("transfer address:%s, to address:%s, amount:%s, txid:%s", send.sednKeys.Address, receiver, send.amount.String(), txid)
+		//	log.Std.Info("transfer address:%s, to address:%s, amount:%s, txid:%s", send.sednKeys.Address, receiver, send.amount.String(), txid)
 			if err != nil{
 				log.Std.Info("Transfer Fail!",)
 			}else{
 					log.Std.Info("Transfer Success! txid=%s",txid)
-
 					err := NotenonceInDB(send.sednKeys,db)
 					if err != nil {
 						log.Std.Info("NotenonceInDB error")

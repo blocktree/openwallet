@@ -815,14 +815,14 @@ func (wm *WalletManager) summaryWallet(wallet *openwallet.Wallet, password strin
 		balance_safe := balance_decimal.Sub(balance_leave)
 
 		//读取config的值 单位Wei
-		log.Std.Info("Threshold:%v", wm.Config.Threshold.String())
-		log.Std.Info("balance_safe=%v",balance_safe)
+		//log.Std.Info("Threshold:%v", wm.Config.Threshold.String())
+		//log.Std.Info("balance_safe=%v",balance_safe)
 
 		if balance_safe.GreaterThan(wm.Config.Threshold) {
 
 			txid, err := wm.Transfer(k, wm.Config.SumAddress, wm.Config.GasLimit.String(),
 				balance_safe.String())
-			log.Std.Info("summary form address:%s, to address:%s, amount:%s, txid:%s", k.Address, wm.Config.SumAddress, balance_safe.String(), txid)
+			//log.Std.Info("summary form address:%s, to address:%s, amount:%s, txid:%s", k.Address, wm.Config.SumAddress, balance_safe.String(), txid)
 
 			if err != nil{
 				log.Std.Info("Transfer Fail!\n",)
@@ -843,14 +843,14 @@ func (wm *WalletManager) summaryWallet(wallet *openwallet.Wallet, password strin
 
 //汇总钱包
 func (wm *WalletManager) SummaryWallets() {
-	log.Std.Info("[Summary Wallet Start]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+	log.Std.Info("[Summary Wallet Start]------%s", common.TimeFormat("2006-01-02 15:04:05"))
 
 	//读取参与汇总的钱包
 	for _, wallet := range wm.WalletsInSum {
 		wm.summaryWallet(wallet, wallet.Password)
 	}
 
-	log.Std.Info("[Summary Wallet end]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+	log.Std.Info("[Summary Wallet end]------%s", common.TimeFormat("2006-01-02 15:04:05"))
 }
 
 //exportAddressToFile 导出地址到文件中
@@ -860,7 +860,7 @@ func (wm *WalletManager) exportAddressToFile(addrs []*openwallet.Address, filePa
 	)
 
 	for _, a := range addrs {
-		log.Std.Info("Export: %s ", a.Address)
+		//log.Std.Info("Export: %s ", a.Address)
 		content = content + a.Address + "\n"
 	}
 
