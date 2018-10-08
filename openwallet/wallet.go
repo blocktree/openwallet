@@ -31,7 +31,21 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
+	"time"
 )
+
+//WalletDAI 钱包数据访问接口
+type WalletDAI interface{
+	GetWallet() *Wallet
+	GetWalletByID(walletID string) (*Wallet, error)
+	GetAssetsAccountInfo(accountID string) (*AssetsAccount, error)
+	GetAssetsAccountList(offset, limit int, cols ...interface{}) ([]*AssetsAccount, error)
+	GetAssetsAccountByAddress(address string) (*AssetsAccount, error)
+	GetAddress(address string) (*Address, error)
+	GetAddressList(offset, limit int, cols ...interface{}) ([]*Address, error)
+	UnlockWallet(password string, time time.Duration) error
+	HDKey(password ...string) (*hdkeystore.HDKey, error)
+}
 
 type Wallet struct {
 	AppID        string `json:"appID"`
@@ -45,6 +59,7 @@ type Wallet struct {
 	WatchOnly    bool   `json:"watchOnly"`    //创建watchonly的钱包，没有私钥文件，只有db文件
 	IsTrust      bool   `json:"isTrust"`      //是否托管密钥
 	AccountIndex int    `json:"accountIndex"` //账户索引数，-1代表未创建账户
+	ExtParam     string `json:"extParam"`     //扩展参数，用于调用智能合约，json结构
 
 	key      *hdkeystore.HDKey
 	fileName string              //钱包文件命名，所有与钱包相关的都以这个filename命名

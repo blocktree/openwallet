@@ -13,12 +13,7 @@
  * GNU Lesser General Public License for more details.
  */
 
-package assets
-
-import (
-	"fmt"
-	"strings"
-)
+package openwallet
 
 type SymbolInfo interface {
 
@@ -33,13 +28,4 @@ type SymbolInfo interface {
 
 	//小数位精度
 	Decimal() int32
-}
-
-// GetSymbolInfo 获取资产的币种信息
-func GetSymbolInfo(symbol string) (SymbolInfo, error) {
-	manager, ok := Managers[strings.ToLower(symbol)].(SymbolInfo)
-	if !ok {
-		return nil, fmt.Errorf("assets: %s is not support", symbol)
-	}
-	return manager, nil
 }
