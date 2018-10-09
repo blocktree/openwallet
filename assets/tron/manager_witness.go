@@ -24,7 +24,7 @@ import (
 // wallet/listwitnesses Function：Query the list of Super Representatives demo: curl -X POSThttp://127.0.0.1:8090/wallet/listwitnesses Parameters：None Return value：List of all Super Representatives
 func (wm *WalletManager) ListWitnesses() (witnesses *api.WitnessList, err error) {
 
-	r, err := wm.WalletClient.Call2("/wallet/listwitnesses", nil)
+	r, err := wm.WalletClient.Call("/wallet/listwitnesses", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (wm *WalletManager) ListNodes() (nodes *api.NodeList, err error) {
 	// 	// walletID,
 	// }
 
-	r, err := wm.WalletClient.Call2("/wallet/listnodes", nil)
+	r, err := wm.WalletClient.Call("/wallet/listnodes", nil)
 	if err != nil {
 		return nil, err
 	}

@@ -24,14 +24,14 @@ const (
 )
 
 type WalletManager struct {
-	bitcoin.WalletManager
+	*bitcoin.WalletManager
 }
 
 
 func NewWalletManager() *WalletManager {
 	wm := WalletManager{}
-	wm.WalletManager = *bitcoin.NewWalletManager()
+	wm.WalletManager = bitcoin.NewWalletManager()
 	wm.Config = bitcoin.NewConfig(Symbol, MasterKey)
-	wm.Decoder = &addressDecoder{}
+	wm.Decoder = NewAddressDecoder(&wm)
 	return &wm
 }

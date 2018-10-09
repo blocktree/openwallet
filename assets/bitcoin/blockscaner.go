@@ -72,7 +72,7 @@ func NewBTCBlockScanner(wm *WalletManager) *BTCBlockScanner {
 
 	bs.extractingCH = make(chan struct{}, maxExtractingSize)
 	bs.wm = wm
-	bs.IsScanMemPool = false
+	bs.IsScanMemPool = true
 	bs.RescanLastBlockCount = 0
 
 	//设置扫描任务
@@ -510,7 +510,7 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 		vinout := make([]gjson.Result, 0)
 
 		vin := trx.Get("vin").Array()
-
+		blocktime := trx.Get("blocktime").Int()
 		for _, input := range vin {
 
 			if input.Get("coinbase").Exists() {
@@ -562,6 +562,7 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 					BlockHeight: blockHeight,
 					TxID:        txid,
 					Decimal:     8,
+					ConfirmTime: blocktime,
 				}
 				wxID := openwallet.GenTransactionWxID(tx)
 				tx.WxID = wxID

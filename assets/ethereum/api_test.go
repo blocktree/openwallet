@@ -13,28 +13,20 @@
  * GNU Lesser General Public License for more details.
  */
 
-package openwallet
+package ethereum
 
-//Coin 币种信息
-type Coin struct {
-	Symbol     string `json:"symbol"`
-	IsContract bool   `json:"isContract"`
-	ContractID string `json:"contractID"`
-}
+import "testing"
 
-// AssetsAdapter 资产适配器接口
-// 适配OpenWallet钱包体系的抽象接口
-type AssetsAdapter interface {
+func TestEthGetBlockNumber(t *testing.T) {
 
-	//币种信息
-	SymbolInfo
+	tw := Client{
+		BaseURL: "http://192.168.2.194:10002",
+		Debug:   true,
+	}
 
-	//GetAddressDecode 地址解析器
-	GetAddressDecode() AddressDecoder
-
-	//GetTransactionDecoder 交易单解析器
-	GetTransactionDecoder() TransactionDecoder
-
-	//GetBlockScanner 获取区块链扫描器
-	GetBlockScanner() BlockScanner
+	if r, err := tw.ethGetBlockNumber(); err != nil {
+		t.Errorf("GetAccountNet failed: %v\n", err)
+	} else {
+		t.Logf("GetAccountNet return: \n\t%+v\n", r)
+	}
 }

@@ -20,7 +20,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blocktree/OpenWallet/assets"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/shopspring/decimal"
@@ -45,7 +44,7 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID, password string, a
 		account.Required = 1
 	}
 
-	symbolInfo, err := assets.GetSymbolInfo(account.Symbol)
+	symbolInfo, err := GetSymbolInfo(account.Symbol)
 	if err != nil {
 		return nil, nil, err
 	}

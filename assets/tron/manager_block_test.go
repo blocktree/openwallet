@@ -16,11 +16,7 @@
 package tron
 
 import (
-	"encoding/hex"
-	"fmt"
 	"testing"
-
-	"github.com/golang/protobuf/proto"
 )
 
 func TestGetNowBlock(t *testing.T) {
@@ -28,17 +24,15 @@ func TestGetNowBlock(t *testing.T) {
 	if r, err := tw.GetNowBlock(); err != nil {
 		t.Errorf("GetNowBlock failed: %v\n", err)
 	} else {
-		t.Logf("GetNowBlock return: \n\t%+v\n", r.GetBlockHeader().GetRawData().GetNumber())
+		// t.Logf("GetNowBlock return: \n\t%+v\n", r.GetBlockHeader().GetRawData().GetNumber())
+		t.Logf("GetNowBlock return: \n\t%+v\n", r)
 
-		xx, _ := proto.Marshal(r)
-
-		fmt.Println(hex.EncodeToString(xx))
-		// printBlock(r)
+		printBlock(r)
 	}
 }
 
 func TestGetBlockByNum(t *testing.T) {
-	var num uint64 = 2674188
+	var num uint64 = 237 * 10000
 
 	if r, err := tw.GetBlockByNum(num); err != nil {
 		t.Errorf("GetBlockByNum failed: %v\n", err)
@@ -57,12 +51,14 @@ func TestGetBlockByID(t *testing.T) {
 		t.Errorf("GetBlockByID failed: %v\n", err)
 	} else {
 		t.Logf("GetBlockByID return: \n\t%+v\n", r)
+
+		printBlock(r)
 	}
 }
 
 func TestGetBlockByLimitNext(t *testing.T) {
 
-	var startSum, endSum uint64 = 100000, 100003
+	var startSum, endSum uint64 = 11 * 10000, 11*10000 + 3
 
 	if r, err := tw.GetBlockByLimitNext(startSum, endSum); err != nil {
 		t.Errorf("GetBlockByLimitNext failed: %v\n", err)

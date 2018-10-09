@@ -24,16 +24,8 @@ import (
 )
 
 type AssetsManager interface {
-	assets.SymbolInfo
 
-	//GetAddressDecode 地址解析器
-	GetAddressDecode() openwallet.AddressDecoder
-
-	//GetTransactionDecoder 交易单解析器
-	GetTransactionDecoder() openwallet.TransactionDecoder
-
-	//GetBlockScanner 获取区块链
-	GetBlockScanner() openwallet.BlockScanner
+	openwallet.AssetsAdapter
 
 	//ImportWatchOnlyAddress 导入观测地址
 	ImportWatchOnlyAddress(address ...*openwallet.Address) error
@@ -41,8 +33,18 @@ type AssetsManager interface {
 	//GetAddressWithBalance 获取多个地址余额，使用查账户和单地址
 	GetAddressWithBalance(address ...*openwallet.Address) error
 
-	//GetAssetsAccountTransactions(wrapper *openwallet.WalletWrapper, account *openwallet.AssetsAccount) (txs []*openwallet.Transaction, err error)
 }
+
+
+// GetSymbolInfo 获取资产的币种信息
+func GetSymbolInfo(symbol string) (openwallet.SymbolInfo, error) {
+	manager, ok := assets.Managers[strings.ToLower(symbol)].(openwallet.SymbolInfo)
+	if !ok {
+		return nil, fmt.Errorf("assets: %s is not support", symbol)
+	}
+	return manager, nil
+}
+
 
 // GetAssetsController 获取资产控制器
 func GetAssetsManager(symbol string) (AssetsManager, error) {

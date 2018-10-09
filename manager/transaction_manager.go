@@ -41,6 +41,11 @@ func (wm *WalletManager) CreateTransaction(appID, walletID, accountID, amount, a
 	}
 
 	rawTx := openwallet.RawTransaction{
+		Coin: openwallet.Coin{
+			Symbol:     account.Symbol,
+			ContractID: "",
+			IsContract: false,
+		},
 		Account:  account,
 		FeeRate:  feeRate,
 		To:       map[string]string{address: amount},
@@ -250,7 +255,7 @@ func (wm *WalletManager) GetTransactionByWxID(appID, wxID string) (*openwallet.T
 	}
 
 	txWrapper := openwallet.NewTransactionWrapper(wrapper)
-	trx, err := txWrapper.GetTransactions(0, -1,"WxID", wxID)
+	trx, err := txWrapper.GetTransactions(0, -1, "WxID", wxID)
 	if err != nil || len(trx) == 0 {
 		return nil, err
 	}

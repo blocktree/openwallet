@@ -34,3 +34,6 @@ mqnode/*
 manager/openw_data/
 openw-linux-amd64
 openw-qtum
+openw-btc
+openw-qtum1
+openw-*
