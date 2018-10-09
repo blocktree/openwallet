@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"strconv"
 	"sync"
 
 	//	"log"
@@ -79,7 +80,7 @@ type WalletManager struct {
 	WalletClient *Client                       // 节点客户端
 	Config       *WalletConfig                 //钱包管理配置
 	WalletsInSum map[string]*openwallet.Wallet //参与汇总的钱包
-	Blockscanner *ETHBlockScanner              //区块扫描器
+	Blockscanner *ETHBLockScanner              //区块扫描器
 	Decoder      openwallet.AddressDecoder     //地址编码器
 	TxDecoder    openwallet.TransactionDecoder //交易单编码器
 	//	RootDir        string                        //
@@ -608,8 +609,11 @@ func (this *WalletManager) CreateBatchAddress2(name, password string, count uint
 	errcount := uint64(0)
 	errMaximum := uint64(15)
 	threadControl := make(chan int, 20)
+	defer close(threadControl)
 	addressChan := make(chan *Address, 100)
+	defer close(addressChan)
 	done := make(chan int, 1)
+	defer close(done)
 
 	generateAddress := func(addressIndex uint64) {
 		threadControl <- 1
@@ -1069,6 +1073,20 @@ func removeOxFromHex(value string) string {
 	return result
 }
 
+func ConvertToUint64(value string, base int) (uint64, error) {
+	v := value
+	if base == 16 {
+		v = removeOxFromHex(v)
+	}
+
+	rst, err := strconv.ParseUint(v, base, 64)
+	if err != nil {
+		log.Errorf("convert string[%v] to int failed, err = %v", value, err)
+		return 0, err
+	}
+	return rst, nil
+}
+
 func ConvertToBigInt(value string, base int) (*big.Int, error) {
 	bigvalue := new(big.Int)
 	var success bool
@@ -1259,8 +1277,11 @@ func (this *WalletManager) GetAddressesByWallet(dbPath string, wallet *Wallet) (
 	count := len(addrs)
 
 	queryBalanceChan := make(chan int, 20)
+	defer close(queryBalanceChan)
 	resultChan := make(chan *Address, 100)
+	defer close(resultChan)
 	done := make(chan int, 1)
+	defer close(done)
 
 	queryBalance := func(theAddr *Address) {
 		queryBalanceChan <- 1

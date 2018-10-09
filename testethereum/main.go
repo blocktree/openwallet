@@ -83,4 +83,6 @@ func main() {
 	//tech.DumpEtc2345WalletDb()
 	//tech.TestTransferFlow2345()
 	//tech.TestInitCongfig2345()
+
+	//tech.TestWalletLog()
 }

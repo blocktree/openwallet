@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"math/big"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/asdine/storm"
@@ -101,9 +102,12 @@ type BlockTransaction struct {
 	Gas              string `json:"gas"`
 	GasPrice         string `json:"gasPrice"`
 	Value            string `json:"value"`
-	Data             string `json:"data"`
+	Data             string `json:"input"`
 	TransactionIndex string `json:"transactionIndex"`
 	Timestamp        string `json:"timestamp"`
+	FromAccountId    string  //transaction scanning 的时候对其进行赋值
+	BlockHeight      uint64  //transaction scanning 的时候对其进行赋值
+    ToAccountId      string  //transaction scanning 的时候对其进行赋值
 }
 
 type BlockHeader struct {
@@ -310,7 +314,7 @@ func (this *Wallet) SaveTransactions(dbPath string, txs []BlockTransaction) erro
 	return nil
 }
 
-func (this *Wallet) DeleteTransactionByHeight(dbPath string, height *big.Int) error {
+func (this *Wallet) DeleteTransactionByHeight(dbPath string, height uint64) error {
 	db, err := this.OpenDB(dbPath)
 	if err != nil {
 		openwLogger.Log.Errorf("open db for delete txs failed, err = %v", err)
@@ -320,12 +324,12 @@ func (this *Wallet) DeleteTransactionByHeight(dbPath string, height *big.Int) er
 
 	var txs []BlockTransaction
 
-	err = db.Find("BlockNumber", "0x"+height.Text(16), &txs)
+	err = db.Find("BlockNumber", "0x"+strconv.FormatUint(height, 16), &txs)
 	if err != nil && err != storm.ErrNotFound {
-		openwLogger.Log.Errorf("get transactions from block[%v] failed, err=%v", "0x"+height.Text(16), err)
+		openwLogger.Log.Errorf("get transactions from block[%v] failed, err=%v", "0x"+strconv.FormatUint(height, 16), err)
 		return err
 	} else if err == storm.ErrNotFound {
-		openwLogger.Log.Infof("no transactions found in block[%v] ", "0x"+height.Text(16))
+		openwLogger.Log.Infof("no transactions found in block[%v] ", "0x"+strconv.FormatUint(height, 16))
 		return nil
 	}
 

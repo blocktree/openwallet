@@ -25,9 +25,12 @@ import (
 	"strconv"
 	"strings"
 
+	"time"
+
 	tool "github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/logger"
+	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/bytom/common"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -105,12 +108,22 @@ const (
 type EthBlock struct {
 	BlockHeader
 	Transactions []BlockTransaction `json:"transactions"`
-	blockHeight  *big.Int
+	blockHeight  uint64             //RecoverBlockHeader的时候进行初始化
+}
+
+func (this *EthBlock) CreateOpenWalletBlockHeader() *openwallet.BlockHeader {
+	header := &openwallet.BlockHeader{
+		Hash:              this.BlockHash,
+		Previousblockhash: this.PreviousHash,
+		Height:            this.blockHeight,
+		Time:              uint64(time.Now().Unix()),
+	}
+	return header
 }
 
 func (this *EthBlock) Init() error {
 	var err error
-	this.blockHeight, err = ConvertToBigInt(this.BlockNumber, 16) //strconv.ParseUint(this.BlockNumber, 16, 64)
+	this.blockHeight, err = strconv.ParseUint(this.BlockNumber, 16, 64) //ConvertToBigInt(this.BlockNumber, 16) //
 	if err != nil {
 		openwLogger.Log.Errorf("init blockheight failed, err=%v", err)
 		return err
@@ -302,8 +315,8 @@ func (this *Client) ethGetBlockSpecByBlockNum2(blockNum string, showTransactionS
 	return &ethBlock, nil
 }
 
-func (this *Client) ethGetBlockSpecByBlockNum(blockNum *big.Int, showTransactionSpec bool) (*EthBlock, error) {
-	blockNumStr := "0x" + blockNum.Text(16)
+func (this *Client) ethGetBlockSpecByBlockNum(blockNum uint64, showTransactionSpec bool) (*EthBlock, error) {
+	blockNumStr := "0x" + strconv.FormatUint(blockNum, 16)
 	return this.ethGetBlockSpecByBlockNum2(blockNumStr, showTransactionSpec)
 }
 
@@ -796,23 +809,23 @@ func (this *Client) ethGetAccounts() ([]string, error) {
 	return accounts, nil
 }
 
-func (this *Client) ethGetBlockNumber() (*big.Int, error) {
+func (this *Client) ethGetBlockNumber() (uint64, error) {
 	param := make([]interface{}, 0)
 	result, err := this.Call("eth_blockNumber", 1, param)
 	if err != nil {
 		openwLogger.Log.Errorf("get block number faield, err = %v \n", err)
-		return nil, err
+		return 0, err
 	}
 
 	if result.Type != gjson.String {
 		openwLogger.Log.Errorf("result of block number type error")
-		return nil, errors.New("result of block number type error")
+		return 0, errors.New("result of block number type error")
 	}
 
-	blockNum, err := ConvertToBigInt(result.String(), 16)
+	blockNum, err := ConvertToUint64(result.String(), 16)
 	if err != nil {
 		openwLogger.Log.Errorf("parse block number to big.Int failed, err=%v", err)
-		return nil, err
+		return 0, err
 	}
 
 	return blockNum, nil

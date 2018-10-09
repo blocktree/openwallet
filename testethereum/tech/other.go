@@ -5,6 +5,8 @@ import (
 	"math/big"
 	"runtime"
 	"strings"
+
+	"github.com/blocktree/OpenWallet/log"
 )
 
 //big.Int不能复制
@@ -66,7 +68,6 @@ func TestSlice2() {
 }
 
 func TestMap() {
-
 	type t struct {
 		a string
 		b int
@@ -88,4 +89,18 @@ func TestMap() {
 	}
 
 	fmt.Println(tmap)
+}
+
+func TestWalletLog() {
+	log.Debugf("debug in TestWalletLog.")
+	log.Debugf("debug testlog [%v] ", "testwallet")
+
+	log.Infof("info in TestWalletLog.")
+	log.Infof("info testlog [%v] ", "testwallet")
+
+	log.Warningf("warning in TestWalletLog.")
+	log.Warningf("warning testlog [%v] ", "testwallet")
+
+	log.Errorf("error in TestWalletLog.")
+	log.Errorf("error testlog [%v] ", "testwallet")
 }
