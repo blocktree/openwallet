@@ -34,7 +34,6 @@ import (
 	"github.com/bytom/common"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
@@ -438,17 +437,17 @@ func (this *EthTransactionDecoder) SignRawTransaction(wrapper *openwallet.Wallet
 	message := common.FromHex(signnode.Message)
 	//seckey := math.PaddedBigBytes(key.PrivateKey.D, key.PrivateKey.Params().BitSize/8)
 
-	sig, err := secp256k1.Sign(message, keyBytes)
+	/*sig, err := secp256k1.Sign(message, keyBytes)
 	if err != nil {
 		log.Error("secp256k1.Sign failed, err=", err)
 		return err
-	}
-	/*sig, ret := owcrypt.ETHsignature(keyBytes, message)
+	}*/
+	sig, ret := owcrypt.ETHsignature(keyBytes, message)
 	if ret != owcrypt.SUCCESS {
 		errdesc := fmt.Sprintln("signature error, ret:", "0x"+strconv.FormatUint(uint64(ret), 16))
 		log.Error(errdesc)
 		return errors.New(errdesc)
-	}*/
+	}
 
 	signnode.Signature = common.ToHex(sig)
 
@@ -569,6 +568,7 @@ func (this *EthTransactionDecoder) SubmitRawTransaction(wrapper *openwallet.Wall
 		txStatis.UpdateTime()
 		(*txStatis.TransactionCount)++
 
+		log.Debug("transaction[", txid, "] has been sent out.")
 		return nil
 	}()
 

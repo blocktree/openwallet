@@ -16,14 +16,14 @@ package ethereum
 
 import (
 	"fmt"
-	"math/big"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/asdine/storm"
 
-	"github.com/blocktree/OpenWallet/logger"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/OpenWallet/timer"
 )
@@ -33,7 +33,7 @@ const (
 	periodOfTask      = 5 * time.Second //定时任务执行隔间
 )
 
-type ETHBlockScanner struct {
+type ETHBlockScan struct {
 	*openwallet.BlockScannerBase
 	addressInScanning  map[string]string
 	walletInScanning   map[string]*Wallet
@@ -46,8 +46,8 @@ type ETHBlockScanner struct {
 	wmanager           *WalletManager
 }
 
-func NewETHBlockScanner(wm *WalletManager) *ETHBlockScanner {
-	bs := &ETHBlockScanner{}
+func NewETHBlockScannerOld(wm *WalletManager) *ETHBlockScan {
+	bs := &ETHBlockScan{}
 	bs.addressInScanning = make(map[string]string)
 	bs.walletInScanning = make(map[string]*Wallet)
 	bs.observers = make(map[openwallet.BlockScanNotificationObject]bool)
@@ -55,7 +55,7 @@ func NewETHBlockScanner(wm *WalletManager) *ETHBlockScanner {
 	return bs
 }
 
-func (this *ETHBlockScanner) AddAddress(address string, accountID string,
+func (this *ETHBlockScan) AddAddress(address string, accountID string,
 	wallet *Wallet) {
 	this.mu.Lock()
 	defer this.mu.Unlock()
@@ -67,17 +67,17 @@ func (this *ETHBlockScanner) AddAddress(address string, accountID string,
 	this.walletInScanning[accountID] = wallet
 }
 
-func (this *ETHBlockScanner) AddWallet(accountId string, wallet *Wallet) error {
+func (this *ETHBlockScan) AddWallet(accountId string, wallet *Wallet) error {
 	addrs, err := this.wmanager.GetAddressesByWallet(this.wmanager.GetConfig().DbPath, wallet)
 	if err != nil {
-		openwLogger.Log.Errorf("get addresses by wallet[%v] failed, err = %v", accountId, err)
+		log.Errorf("get addresses by wallet[%v] failed, err = %v", accountId, err)
 		return err
 	}
 	this.addWallet(accountId, addrs, wallet)
 	return nil
 }
 
-func (this *ETHBlockScanner) RetrieveWallet(accountID string) *Wallet {
+func (this *ETHBlockScan) RetrieveWallet(accountID string) *Wallet {
 	this.mu.RLock()
 	defer this.mu.RUnlock()
 	var w *Wallet
@@ -85,13 +85,13 @@ func (this *ETHBlockScanner) RetrieveWallet(accountID string) *Wallet {
 	return w
 }
 
-func (this *ETHBlockScanner) addWallet(accountID string, addrs []*Address,
+func (this *ETHBlockScan) addWallet(accountID string, addrs []*Address,
 	wallet *Wallet) {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 
 	if _, exist := this.walletInScanning[accountID]; exist {
-		openwLogger.Log.Infof("account[%v] already exist wallets of eth scanner", accountID)
+		log.Infof("account[%v] already exist wallets of eth scanner", accountID)
 		return
 	}
 
@@ -102,21 +102,21 @@ func (this *ETHBlockScanner) addWallet(accountID string, addrs []*Address,
 	}
 }
 
-func (this *ETHBlockScanner) IsExistAddress(address string) bool {
+func (this *ETHBlockScan) IsExistAddress(address string) bool {
 	this.mu.RLock()
 	defer this.mu.RUnlock()
 	_, exist := this.addressInScanning[strings.ToLower(address)]
 	return exist
 }
 
-func (this *ETHBlockScanner) IsExistWallet(accountId string) bool {
+func (this *ETHBlockScan) IsExistWallet(accountId string) bool {
 	this.mu.RLock()
 	defer this.mu.RUnlock()
 	_, exist := this.walletInScanning[accountId]
 	return exist
 }
 
-func (this *ETHBlockScanner) AddObserver(obj openwallet.BlockScanNotificationObject) {
+func (this *ETHBlockScan) AddObserver(obj openwallet.BlockScanNotificationObject) {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 	if _, exist := this.observers[obj]; exist {
@@ -125,20 +125,20 @@ func (this *ETHBlockScanner) AddObserver(obj openwallet.BlockScanNotificationObj
 	this.observers[obj] = true
 }
 
-func (this *ETHBlockScanner) RemoveObserver(obj openwallet.BlockScanNotificationObject) {
+func (this *ETHBlockScan) RemoveObserver(obj openwallet.BlockScanNotificationObject) {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 	delete(this.observers, obj)
 }
 
-func (this *ETHBlockScanner) Clear() {
+func (this *ETHBlockScan) Clear() {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 	this.walletInScanning = make(map[string]*Wallet)
 	this.addressInScanning = make(map[string]string)
 }
 
-func (this *ETHBlockScanner) Run() {
+func (this *ETHBlockScan) Run() {
 	if this.scanning {
 		return
 	}
@@ -152,7 +152,7 @@ func (this *ETHBlockScanner) Run() {
 	this.scanTask.Start()
 }
 
-func (this *ETHBlockScanner) GetWalletByAddress(address string) (*Wallet, bool) {
+func (this *ETHBlockScan) GetWalletByAddress(address string) (*Wallet, bool) {
 	this.mu.RLock()
 	defer this.mu.RUnlock()
 	account, ok := this.addressInScanning[strings.ToLower(address)]
@@ -165,22 +165,22 @@ func (this *ETHBlockScanner) GetWalletByAddress(address string) (*Wallet, bool) 
 	}
 }
 
-func (this *ETHBlockScanner) RescanFailedTransactions() (map[string][]BlockTransaction, error) {
+func (this *ETHBlockScan) RescanFailedTransactions() (map[string][]BlockTransaction, error) {
 	txs, err := this.wmanager.GetAllUnscannedTransactions()
 	if err != nil {
-		openwLogger.Log.Errorf("GetAllUnscannedTransactions failed. err=%v", err)
+		log.Errorf("GetAllUnscannedTransactions failed. err=%v", err)
 		return nil, err
 	}
 	return this.TransactionScanning(txs)
 }
 
-func (this *ETHBlockScanner) TransactionScanning(transactions []BlockTransaction) (map[string][]BlockTransaction, error) {
+func (this *ETHBlockScan) TransactionScanning(transactions []BlockTransaction) (map[string][]BlockTransaction, error) {
 	txToNotify := make(map[string][]BlockTransaction)
 	for _, tx := range transactions {
 		var fromWalletId string
 		var toWalletId string
 		if this.IsExistAddress(tx.From) {
-			openwLogger.Log.Debugf("found a transaction [%v] whose from account belong to scanning wallet.", tx.Hash)
+			log.Debugf("found a transaction [%v] whose from account belong to scanning wallet.", tx.Hash)
 			if w, exist := this.GetWalletByAddress(tx.From); !exist {
 				panic(22)
 			} else {
@@ -193,11 +193,11 @@ func (this *ETHBlockScanner) TransactionScanning(transactions []BlockTransaction
 			}
 
 		} else {
-			openwLogger.Log.Debugf("tx.from[%v] not found in scanning address.", tx.From)
+			log.Debugf("tx.from[%v] not found in scanning address.", tx.From)
 		}
 
 		if this.IsExistAddress(tx.To) {
-			openwLogger.Log.Debugf("found a transaction [%v] whose to account belong to scanning wallet.", tx.Hash)
+			log.Debugf("found a transaction [%v] whose to account belong to scanning wallet.", tx.Hash)
 			if w, exist := this.GetWalletByAddress(tx.To); !exist {
 				panic(22)
 			} else {
@@ -213,7 +213,7 @@ func (this *ETHBlockScanner) TransactionScanning(transactions []BlockTransaction
 			}
 
 		} else {
-			openwLogger.Log.Debugf("tx.to[%v] not found in scanning address.", tx.To)
+			log.Debugf("tx.to[%v] not found in scanning address.", tx.To)
 		}
 	}
 
@@ -221,115 +221,116 @@ func (this *ETHBlockScanner) TransactionScanning(transactions []BlockTransaction
 		wallet := this.RetrieveWallet(walletId)
 		err := wallet.SaveTransactions(this.wmanager.GetConfig().DbPath, txToNotify[walletId])
 		if err != nil {
-			openwLogger.Log.Errorf("save wallet[%v] transaction failed, err=%v", walletId, err)
+			log.Errorf("save wallet[%v] transaction failed, err=%v", walletId, err)
 			return txToNotify, err
 		}
 	}
 
 	if len(transactions) > 0 {
-		openwLogger.Log.Debugf("transactions in block:%v", transactions)
-		openwLogger.Log.Debugf("txToNotify:%v", txToNotify)
+		log.Debugf("transactions in block:%v", transactions)
+		log.Debugf("txToNotify:%v", txToNotify)
 	}
 	return txToNotify, nil
 }
 
-func (this *ETHBlockScanner) ExtractTransactions(block *EthBlock) (map[string][]BlockTransaction, error) {
+func (this *ETHBlockScan) ExtractTransactions(block *EthBlock) (map[string][]BlockTransaction, error) {
 	return this.TransactionScanning(block.Transactions)
 }
 
-func (this *ETHBlockScanner) DeleteTransactionsByHeight(height *big.Int) error {
+func (this *ETHBlockScan) DeleteTransactionsByHeight(height uint64) error {
 	this.mu.RLock()
 	defer this.mu.RUnlock()
 	for _, w := range this.walletInScanning {
 		err := w.DeleteTransactionByHeight(this.wmanager.GetConfig().DbPath, height)
 		if err != nil {
-			openwLogger.Log.Errorf("delete wallet[%v] transaction for block height[%v] failed, err= %v", w.WalletID, height, err)
+			log.Errorf("delete wallet[%v] transaction for block height[%v] failed, err= %v", w.WalletID, height, err)
 			return err
 		}
 	}
 	return nil
 }
 
-func (this *ETHBlockScanner) ScanBlock() {
+func (this *ETHBlockScan) ScanBlock() {
 	curBlock, err := this.GetCurrentBlock()
 	if err != nil {
-		openwLogger.Log.Errorf("get block height from db failed, err=%v", err)
+		log.Errorf("get block height from db failed, err=%v", err)
 		return
 	}
 
-	openwLogger.Log.Infof("get current block:%v", curBlock)
-	previousHeight := big.NewInt(0)
+	log.Infof("get current block:%v", curBlock)
+	var previousHeight uint64 = 0
 	for {
 		curBlockHeight := curBlock.blockHeight
 		curBlockHash := curBlock.BlockHash
 
 		maxBlockHeight, err := this.wmanager.WalletClient.ethGetBlockNumber()
 		if err != nil {
-			openwLogger.Log.Errorf("block scanner cannot get block height through RPC, err=%v", err)
+			log.Errorf("block scanner cannot get block height through RPC, err=%v", err)
 			break
 		}
 
-		fmt.Println("current block height:", "0x"+curBlockHeight.Text(16), " maxBlockHeight:", "0x"+maxBlockHeight.Text(16))
-		if curBlockHeight.Cmp(maxBlockHeight) == 0 {
-			openwLogger.Log.Infof("block scanner has done with scan. current height:%v", "0x"+maxBlockHeight.Text(16))
+		fmt.Println("current block height:", "0x"+strconv.FormatUint(curBlockHeight, 16), " maxBlockHeight:", "0x"+strconv.FormatUint(maxBlockHeight, 16))
+		if curBlockHeight == maxBlockHeight {
+			log.Infof("block scanner has done with scan. current height:%v", "0x"+strconv.FormatUint(maxBlockHeight, 16))
 			break
 		}
 
 		//扫描下一个区块
-		curBlockHeight = curBlockHeight.Add(curBlockHeight, big.NewInt(1))
+		//curBlockHeight = curBlockHeight.Add(curBlockHeight, big.NewInt(1))
+		curBlockHeight += 1
 
-		openwLogger.Log.Infof("block scanner try to scan block No.%v", curBlockHeight)
+		log.Infof("block scanner try to scan block No.%v", curBlockHeight)
 
 		curBlock, err = this.wmanager.WalletClient.ethGetBlockSpecByBlockNum(curBlockHeight, true)
 		if err != nil {
-			openwLogger.Log.Errorf("ethGetBlockSpecByBlockNum failed, err = %v", err)
+			log.Errorf("ethGetBlockSpecByBlockNum failed, err = %v", err)
 			break
 		}
 
 		if curBlock.PreviousHash != curBlockHash {
-			previousHeight = previousHeight.Sub(curBlockHeight, big.NewInt(1))
-			openwLogger.Log.Infof("block has been fork on height: %v.", "0x"+curBlockHeight.Text(16))
-			openwLogger.Log.Infof("block height: %v local hash = %v ", "0x"+previousHeight.Text(16), curBlockHash)
-			openwLogger.Log.Infof("block height: %v mainnet hash = %v ", "0x"+previousHeight.Text(16), curBlock.PreviousHash)
+			previousHeight = curBlockHeight- 1 //previousHeight.Sub(curBlockHeight, big.NewInt(1))
+			log.Infof("block has been fork on height: %v.", "0x"+strconv.FormatUint(curBlockHeight, 16))
+			log.Infof("block height: %v local hash = %v ", "0x"+strconv.FormatUint(previousHeight, 16), curBlockHash)
+			log.Infof("block height: %v mainnet hash = %v ", "0x"+strconv.FormatUint(previousHeight, 16), curBlock.PreviousHash)
 
-			openwLogger.Log.Infof("delete recharge records on block height: %v.", "0x"+previousHeight.Text(16))
+			log.Infof("delete recharge records on block height: %v.", "0x"+strconv.FormatUint(previousHeight, 16))
 			err = this.DeleteTransactionsByHeight(previousHeight)
 			if err != nil {
-				openwLogger.Log.Errorf("DeleteTransactionsByHeight failed, height=%v, err=%v", "0x"+previousHeight.Text(16), err)
+				log.Errorf("DeleteTransactionsByHeight failed, height=%v, err=%v", "0x"+strconv.FormatUint(previousHeight, 16), err)
 				break
 			}
 
 			err = this.wmanager.DeleteUnscannedTransaction(previousHeight)
 			if err != nil {
-				openwLogger.Log.Errorf("DeleteUnscannedTransaction failed, height=%v, err=%v", "0x"+previousHeight.Text(16), err)
+				log.Errorf("DeleteUnscannedTransaction failed, height=%v, err=%v", "0x"+strconv.FormatUint(previousHeight, 16), err)
 				break
 			}
 
-			curBlockHeight.Sub(previousHeight, big.NewInt(1))
+			curBlockHeight = previousHeight - 1 //curBlockHeight.Sub(previousHeight, big.NewInt(1))
 
 			curBlock, err = this.wmanager.RecoverBlockHeader(curBlockHeight)
 			if err != nil {
-				openwLogger.Log.Errorf("RecoverBlockHeader failed, block number=%v, err=%v", "0x"+curBlockHeight.Text(16), err)
+				log.Errorf("RecoverBlockHeader failed, block number=%v, err=%v", "0x"+strconv.FormatUint(curBlockHeight, 16), err)
 				break
 			}
 
-			openwLogger.Log.Infof("rescan block on height: %v, hash: %v .", curBlock.BlockNumber, curBlock.BlockHash)
+			log.Infof("rescan block on height: %v, hash: %v .", curBlock.BlockNumber, curBlock.BlockHash)
 			err = this.wmanager.UpdateLocalBlockHeight(curBlockHeight)
 			if err != nil {
-				openwLogger.Log.Errorf("update local block height failed, err=%v", err)
+				log.Errorf("update local block height failed, err=%v", err)
 				break
 			}
 
 		} else {
 			txToNotify, err := this.ExtractTransactions(curBlock)
 			if err != nil {
-				openwLogger.Log.Errorf("extract transactions failed, err=%v", err)
+				log.Errorf("extract transactions failed, err=%v", err)
 				break
 			}
 
 			err = this.wmanager.SaveBlockHeader2(curBlock)
 			if err != nil {
-				openwLogger.Log.Errorf("save block failed, err=%v", err)
+				log.Errorf("save block failed, err=%v", err)
 				break
 			}
 			this.Notify(txToNotify)
@@ -338,32 +339,32 @@ func (this *ETHBlockScanner) ScanBlock() {
 
 }
 
-func (this *ETHBlockScanner) Notify(txs interface{}) {
+func (this *ETHBlockScan) Notify(txs interface{}) {
 
 }
 
-func (this *ETHBlockScanner) GetCurrentBlock() (*EthBlock, error) {
+func (this *ETHBlockScan) GetCurrentBlock() (*EthBlock, error) {
 	blockHeight, err := this.wmanager.GetLocalBlockHeight()
 	var block *EthBlock
 	if err != nil && err != storm.ErrNotFound {
-		openwLogger.Log.Errorf("GetLocalBlockHeight faield, err=%v", err)
+		log.Errorf("GetLocalBlockHeight faield, err=%v", err)
 		return nil, err
 	} else if err == storm.ErrNotFound {
 		blockHeight, err = this.wmanager.WalletClient.ethGetBlockNumber()
 		if err != nil {
-			openwLogger.Log.Errorf("get block height failed, err=%v", err)
+			log.Errorf("get block height failed, err=%v", err)
 			return nil, err
 		}
-		blockHeight = blockHeight.Sub(blockHeight, big.NewInt(1))
+		blockHeight -= 1 //blockHeight = blockHeight.Sub(blockHeight, big.NewInt(1))
 		block, err = this.wmanager.WalletClient.ethGetBlockSpecByBlockNum(blockHeight, false)
 		if err != nil {
-			openwLogger.Log.Errorf("ethGetBlockSpecByBlockNum failed, err=%v", err)
+			log.Errorf("ethGetBlockSpecByBlockNum failed, err=%v", err)
 			return nil, err
 		}
 	} else {
 		block, err = this.wmanager.RecoverBlockHeader(blockHeight)
 		if err != nil {
-			openwLogger.Log.Errorf("RecoverBlockHeader failed, block number=%v, err=%v", blockHeight, err)
+			log.Errorf("RecoverBlockHeader failed, block number=%v, err=%v", blockHeight, err)
 			return nil, err
 		}
 	}
@@ -371,47 +372,47 @@ func (this *ETHBlockScanner) GetCurrentBlock() (*EthBlock, error) {
 	return block, nil
 }
 
-func (this *ETHBlockScanner) SetLocalBlock(blockheight string) error {
+func (this *ETHBlockScan) SetLocalBlock(blockheight string) error {
 
 	block, err := this.wmanager.WalletClient.ethGetBlockSpecByBlockNum2(blockheight, false)
 	if err != nil {
-		openwLogger.Log.Errorf("get spec of block [%v] failed, err=%v", blockheight, err)
+		log.Errorf("get spec of block [%v] failed, err=%v", blockheight, err)
 		return err
 	}
 
 	err = this.wmanager.SaveBlockHeader(block)
 	if err != nil {
-		openwLogger.Log.Errorf("save block header, err = %v", err)
+		log.Errorf("save block header, err = %v", err)
 		return err
 	}
 
 	err = this.wmanager.UpdateLocalBlockHeight(block.blockHeight)
 	if err != nil {
-		openwLogger.Log.Errorf("update local block height failed, err=%v", err)
+		log.Errorf("update local block height failed, err=%v", err)
 		return err
 	}
 	return nil
 }
 
-func (this *ETHBlockScanner) PrepareForBlockScanTest(fromAddr []string, passwords []string) (string, error) {
+func (this *ETHBlockScan) PrepareForBlockScanTest(fromAddr []string, passwords []string) (string, error) {
 
 	beforeBlockNum, err := this.wmanager.WalletClient.ethGetBlockNumber()
 	if err != nil {
-		openwLogger.Log.Errorf("get block number failed, err=%v", err)
+		log.Errorf("get block number failed, err=%v", err)
 		return "", err
 	}
 
-	openwLogger.Log.Debugf("get block number[%v] before transactions made.", "0x"+beforeBlockNum.Text(16))
+	log.Debugf("get block number[%v] before transactions made.", "0x"+strconv.FormatUint(beforeBlockNum, 16))
 
 	accounts, err := this.wmanager.WalletClient.ethGetAccounts()
 	if err != nil {
-		openwLogger.Log.Errorf("get accounts failed, err=%v", err)
+		log.Errorf("get accounts failed, err=%v", err)
 		return "", err
 	}
 
 	value, err := toHexBigIntForEtherTrans("0x1", 16, TRNAS_AMOUNT_UNIT_ETHER)
 	if err != nil {
-		openwLogger.Log.Errorf("toHexBigIntForEtherTrans failed, err = %v", err)
+		log.Errorf("toHexBigIntForEtherTrans failed, err = %v", err)
 		return "", err
 	}
 
@@ -421,10 +422,10 @@ func (this *ETHBlockScanner) PrepareForBlockScanTest(fromAddr []string, password
 			if from != to {
 				tx, err := this.wmanager.SendTransactionToAddr(makeSimpleTransactiomnPara2(from, to, value, passwords[i]))
 				if err != nil {
-					openwLogger.Log.Errorf("send transaction from [%v] to [%v] failed, err=%v", from, to, err)
+					log.Errorf("send transaction from [%v] to [%v] failed, err=%v", from, to, err)
 					return "", err
 				}
-				//openwLogger.Log.Infof("done with transaction %v", tx)
+				//log.Infof("done with transaction %v", tx)
 				txs = append(txs, tx)
 			}
 		}
@@ -433,7 +434,7 @@ func (this *ETHBlockScanner) PrepareForBlockScanTest(fromAddr []string, password
 	for {
 		pendingNum, _, err := this.wmanager.WalletClient.ethGetTxpoolStatus()
 		if err != nil {
-			openwLogger.Log.Errorf("get txpool statusl failed, err=%v", err)
+			log.Errorf("get txpool statusl failed, err=%v", err)
 			break
 		}
 		if pendingNum != 0 {
@@ -446,27 +447,27 @@ func (this *ETHBlockScanner) PrepareForBlockScanTest(fromAddr []string, password
 	walletmanage := &WalletManager{}
 	err = walletmanage.UpdateLocalBlockHeight(beforeBlockNum)
 	if err != nil {
-		openwLogger.Log.Errorf("update local block height failed, err = %v", err)
+		log.Errorf("update local block height failed, err = %v", err)
 		return "", err
 	}
 
 	blockNum, err := walletmanage.GetLocalBlockHeight()
 	if err != nil {
-		openwLogger.Log.Errorf("get current block number failed, err= %v", err)
+		log.Errorf("get current block number failed, err= %v", err)
 		return "", err
 	}
 
-	openwLogger.Log.Debugf("transactions [%v] have been sent. ", txs)
-	//openwLogger.Log.Debugf("current local block number is %v", "0x"+blockNum.Text(16))
+	log.Debugf("transactions [%v] have been sent. ", txs)
+	//log.Debugf("current local block number is %v", "0x"+blockNum.Text(16))
 	block, err := this.wmanager.WalletClient.ethGetBlockSpecByBlockNum(blockNum, false)
 	if err != nil {
-		openwLogger.Log.Errorf("get spec of block [%v] failed, err=%v", "0x"+blockNum.Text(16), err)
+		log.Errorf("get spec of block [%v] failed, err=%v", "0x"+strconv.FormatUint(blockNum, 16), err)
 		return "", err
 	}
 
 	err = walletmanage.SaveBlockHeader(block)
 	if err != nil {
-		openwLogger.Log.Errorf("save block header, err = %v", err)
+		log.Errorf("save block header, err = %v", err)
 		return "", err
 	}
 	//DumpBlockScanDb()

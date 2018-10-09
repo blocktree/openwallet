@@ -117,7 +117,7 @@ func PrepareTestForBlockScan() error {
 		return
 	}
 	fmt.Println("pending number is ", pending, " queued number is ", queued)*/
-	scanner := &ethereum.ETHBlockScanner{}
+	scanner := &ethereum.ETHBlockScan{}
 	fromAddrs := make([]string, 0, 2)
 	passwords := make([]string, 0, 2)
 	fromAddrs = append(fromAddrs, "0x50068fd632c1a6e6c5bd407b4ccf8861a589e776")
@@ -186,7 +186,7 @@ func TestBlockScanWhenFork() error {
 	db.Close()
 
 	manager := &ethereum.WalletManager{}
-	scanner := ethereum.NewETHBlockScanner(manager)
+	scanner := ethereum.NewETHBlockScannerOld(manager)
 	wallets, err := manager.GetLocalWalletList(manager.GetConfig().KeyDir, manager.GetConfig().DbPath, true)
 	if err != nil {
 		fmt.Println("get Wallet list failed, err=", err)
@@ -214,7 +214,7 @@ func TestBlockScanWhenFork() error {
 
 func TestBlockScan() error {
 	manager := &ethereum.WalletManager{}
-	scanner := ethereum.NewETHBlockScanner(manager)
+	scanner := ethereum.NewETHBlockScannerOld(manager)
 	fromAddrs := make([]string, 0, 2)
 	passwords := make([]string, 0, 2)
 	fromAddrs = append(fromAddrs, "0x50068fd632c1a6e6c5bd407b4ccf8861a589e776")
@@ -228,7 +228,7 @@ func TestBlockScan() error {
 	}
 
 	//manager := &ethereum.WalletManager{}
-	//scanner := ethereum.NewETHBlockScanner(manager)
+	//scanner := ethereum.NewETHBlockScannerOld(manager)
 	wallets, err := manager.GetLocalWalletList("/Users/peter/workspace/bitcoin/wallet/src/github.com/blocktree/OpenWallet/test/data/eth/db", "blockchain.db", true)
 	if err != nil {
 		fmt.Println("get Wallet list failed, err=", err)
