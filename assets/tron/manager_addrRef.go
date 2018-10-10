@@ -23,6 +23,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/asdine/storm/q"
+
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/hdkeystore"
@@ -47,19 +49,20 @@ func createAddressByPkRef(pubKey []byte) (addrBytes []byte, err error) {
 
 // Done
 // Function: Create address from a specified private key string
-func (wm *WalletManager) CreateAddressRef(privateKey string) (addrBase58 string, err error) {
+func (wm *WalletManager) CreateAddressRef(key []byte, isPrivate bool) (addrBase58 string, err error) {
 
-	privateKeyBytes, err := hex.DecodeString(privateKey)
-	if err != nil {
-		log.Println(err)
-		return "", err
-	}
+	var pubKey []byte
 
-	pubKey, res := owcrypt.GenPubkey(privateKeyBytes, owcrypt.ECC_CURVE_SECP256K1)
-	if res != owcrypt.SUCCESS {
-		err := errors.New("Error from owcrypt.GenPubkey: failed!")
-		log.Println(err)
-		return "", err
+	if isPrivate {
+		if r, res := owcrypt.GenPubkey(key, owcrypt.ECC_CURVE_SECP256K1); res != owcrypt.SUCCESS {
+			err := errors.New("Error from owcrypt.GenPubkey: failed!")
+			log.Println(err)
+			return "", err
+		} else {
+			pubKey = r
+		}
+	} else {
+		pubKey = key
 	}
 
 	if address, err := createAddressByPkRef(pubKey); err != nil {
@@ -248,19 +251,29 @@ func (wm *WalletManager) createAddressWork(k *hdkeystore.HDKey, producer chan<- 
 
 	// Generate address
 	for i := start; i < end; i++ {
-		childKey, err := childKey.GenPrivateChild(uint32(i))
+		// childKey, err := childKey.GenPrivateChild(uint32(i))
+		// if err != nil {
+		// 	log.Println(err)
+		// 	return
+		// }
+
+		// keyBytes, err := childKey.GetPrivateKeyBytes()
+		// if err != nil {
+		// 	log.Println(err)
+		// 	return
+		// }
+
+		// childKey, err := childKey.GenPrivateChild(uint32(i))
+		// priKeyBytes, err := childKey.GetPrivateKeyBytes()
+
+		childKey, err := childKey.GenPublicChild(uint32(i))
 		if err != nil {
 			log.Println(err)
 			return
 		}
+		pubKeyBytes := childKey.GetPublicKeyBytes()
 
-		keyBytes, err := childKey.GetPrivateKeyBytes()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
-		addrBase58, err := wm.CreateAddressRef(hex.EncodeToString(keyBytes))
+		addrBase58, err := wm.CreateAddressRef(pubKeyBytes, false)
 		if err != nil {
 			log.Println(err)
 			return
@@ -283,40 +296,6 @@ func (wm *WalletManager) createAddressWork(k *hdkeystore.HDKey, producer chan<- 
 	producer <- runAddress
 
 	fmt.Println("Producer done!")
-}
-
-//GetAddressesFromLocalDB 从本地数据库
-func (wm *WalletManager) GetAddressesFromLocalDB(walletID string, offset, limit int) ([]*openwallet.Address, error) {
-
-	wallet, err := wm.GetWalletInfo(walletID)
-	if err != nil {
-		return nil, err
-	}
-
-	db, err := wallet.OpenDB()
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
-	var addresses []*openwallet.Address
-	//err = db.Find("WalletID", walletID, &addresses)
-	if limit > 0 {
-		// err = db.Find("AccountID", walletID, &addresses, storm.Limit(limit), storm.Skip(offset))
-		query := db.Select().Limit(limit).Skip(offset).OrderBy("Index", "HDPath")
-		err = query.Find(&addresses)
-	} else {
-		// err = db.Find("AccountID", walletID, &addresses, storm.Skip(offset))
-		query := db.Select().Limit(-1).Skip(0).Reverse().OrderBy("Index", "HDPath")
-		err = query.Find(&addresses)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return addresses, nil
-
 }
 
 //exportAddressToFile 导出地址到文件中
@@ -360,27 +339,41 @@ func (wm *WalletManager) saveAddressToDB(addrs []*openwallet.Address, wallet *op
 	return tx.Commit()
 }
 
-/* -------------------------------------------------------------------------------------------------------------- */
-// type Address struct {
-// 	AccountID string `json:"accountID" storm:"index"` //钱包ID
-// 	Address   string `json:"address" storm:"id"`      //地址字符串
-// 	PublicKey string `json:"publicKey"`               //地址公钥/赎回脚本
-// 	Alias     string `json:"alias"`                   //地址别名，可绑定用户
-// 	Tag       string `json:"tag"`                     //标签
-// 	Index     uint64 `json:"index"`                   //账户ID，索引位
-// 	HDPath    string `json:"hdPath"`                  //地址公钥根路径
-// 	WatchOnly bool   `json:"watchOnly"`               //是否观察地址，true的时候，Index，RootPath，Alias都没有。
-// 	Symbol    string `json:"symbol"`                  //币种类别
-// 	Balance   string `json:"balance"`                 //余额
-// 	IsMemo    bool   `json:"isMemo"`                  //是否备注
-// 	Memo      string `json:"memo"`                    //备注
-// 	CreatedAt int64  `json:"createdAt"`               //创建时间
-// 	IsChange  bool   `json:"isChange"`                //是否找零地址
-// 	ExtParam  string `json:"extParam"`                //扩展参数，用于调用智能合约，json结构
+//GetAddressesFromLocalDB 从本地数据库
+func (wm *WalletManager) GetAddressesFromLocalDB(walletID string, offset, limit int) ([]*openwallet.Address, error) {
 
-// 	//核心地址指针
-// 	Core interface{}
-// }
+	wallet, err := wm.GetWalletInfo(walletID)
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := wallet.OpenDB()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	var addresses []*openwallet.Address
+	//err = db.Find("WalletID", walletID, &addresses)
+	if limit > 0 {
+		// err = db.Find("AccountID", walletID, &addresses, storm.Limit(limit), storm.Skip(offset))
+		query := db.Select(q.Eq("AccountID", walletID)).Limit(limit).Skip(offset).OrderBy("Index", "HDPath")
+		err = query.Find(&addresses)
+	} else {
+		// err = db.Find("AccountID", walletID, &addresses, storm.Skip(offset))
+		query := db.Select(q.Eq("AccountID", walletID)).Reverse().OrderBy("Index", "HDPath")
+		err = query.Find(&addresses)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return addresses, nil
+
+}
+
+/* -------------------------------------------------------------------------------------------------------------- */
 
 //打印地址列表
 func (wm *WalletManager) printAddressList(list []*openwallet.Address) {
@@ -390,13 +383,13 @@ func (wm *WalletManager) printAddressList(list []*openwallet.Address) {
 	for i, w := range list {
 		// a.Balance = wm.GetWalletBalance(a.AccountID)  ?500
 		tableInfo = append(tableInfo, []interface{}{
-			i, w.AccountID, w.Address, w.Alias, w.PublicKey, w.Index, w.Memo, w.HDPath, w.IsChange, w.ExtParam,
+			i, w.AccountID, w.Address, w.Index, w.HDPath, w.IsChange, w.ExtParam,
 		})
 	}
 
 	t := gotabulate.Create(tableInfo)
 	// Set Headers
-	t.SetHeaders([]string{"No.", "AccountID", "Address", "Alias", "PublicKey", "Index", "Momo", "HDPath", "IsChange", "Extparam"})
+	t.SetHeaders([]string{"No.", "AccountID", "Address", "Index", "HDPath", "IsChange", "Extparam"})
 
 	//打印信息
 	fmt.Println(t.Render("simple"))

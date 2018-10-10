@@ -16,6 +16,7 @@
 package tron
 
 import (
+	"encoding/hex"
 	"fmt"
 	"testing"
 )
@@ -32,7 +33,9 @@ func TestGetPrivateKeyRef(t *testing.T) {
 		t.Errorf("CreateAddressRef failed: %v\n", err)
 	} else {
 
-		if addr, err := tw.CreateAddressRef(r); err != nil {
+		h, _ := hex.DecodeString(r)
+
+		if addr, err := tw.CreateAddressRef(h, true); err != nil {
 			t.Errorf("CreateAddressRef failed: %v\n", err)
 		} else {
 			fmt.Println("Address = ", addr)

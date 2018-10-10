@@ -18,8 +18,8 @@ package commands
 import (
 	"github.com/blocktree/OpenWallet/assets"
 	"github.com/blocktree/OpenWallet/cmd/utils"
-	"gopkg.in/urfave/cli.v1"
 	"github.com/blocktree/OpenWallet/log"
+	"gopkg.in/urfave/cli.v1"
 )
 
 var (
@@ -172,7 +172,7 @@ func walletConfig(c *cli.Context) error {
 	}
 	m, ok := assets.GetWMD(symbol).(assets.WalletManager)
 	if !ok {
-		log.Error(symbol, " wallet manager is not register")
+		log.Error(symbol, " wallet manager is not registered!")
 		return nil
 	}
 
@@ -194,7 +194,7 @@ func createNewWallet(c *cli.Context) error {
 	}
 	m, ok := assets.GetWMD(symbol).(assets.WalletManager)
 	if !ok {
-		log.Error(symbol, " wallet manager is not register")
+		log.Error(symbol, " wallet manager is not registered!")
 		return nil
 	}
 
@@ -215,7 +215,7 @@ func batchAddress(c *cli.Context) error {
 	}
 	m, ok := assets.GetWMD(symbol).(assets.WalletManager)
 	if !ok {
-		log.Error(symbol, " wallet manager is not register")
+		log.Error(symbol, " wallet manager is not registered!")
 		return nil
 	}
 	//为钱包创建批量地址
@@ -236,7 +236,7 @@ func startSummary(c *cli.Context) error {
 	}
 	m, ok := assets.GetWMD(symbol).(assets.WalletManager)
 	if !ok {
-		log.Error(symbol, " wallet manager is not register")
+		log.Error(symbol, " wallet manager is not registered!")
 		return nil
 	}
 	err := m.SummaryFollow()
@@ -256,7 +256,7 @@ func backupWalletKey(c *cli.Context) error {
 	}
 	m, ok := assets.GetWMD(symbol).(assets.WalletManager)
 	if !ok {
-		log.Error(symbol, " wallet manager is not register")
+		log.Error(symbol, " wallet manager is not registered!")
 		return nil
 	}
 	err := m.BackupWalletFlow()
@@ -275,7 +275,7 @@ func getWalletList(c *cli.Context) error {
 	}
 	m, ok := assets.GetWMD(symbol).(assets.WalletManager)
 	if !ok {
-		log.Error(symbol, " wallet manager is not register")
+		log.Error(symbol, " wallet manager is not registered!")
 		return nil
 	}
 	err := m.GetWalletList()
@@ -294,7 +294,7 @@ func sendTransaction(c *cli.Context) error {
 	}
 	m, ok := assets.GetWMD(symbol).(assets.WalletManager)
 	if !ok {
-		log.Error(symbol, " wallet manager is not register")
+		log.Error(symbol, " wallet manager is not registered!")
 		return nil
 	}
 	err := m.TransferFlow()
@@ -313,7 +313,7 @@ func restoreWallet(c *cli.Context) error {
 	}
 	m, ok := assets.GetWMD(symbol).(assets.WalletManager)
 	if !ok {
-		log.Error(symbol, " wallet manager is not register")
+		log.Error(symbol, " wallet manager is not registered!")
 		return nil
 	}
 	err := m.RestoreWalletFlow()

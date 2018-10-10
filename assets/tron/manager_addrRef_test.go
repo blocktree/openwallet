@@ -16,6 +16,7 @@
 package tron
 
 import (
+	"encoding/hex"
 	"fmt"
 	"testing"
 )
@@ -27,7 +28,9 @@ func TestCreateAddressRef(t *testing.T) {
 	privateKeyValue = "9e9fa25c9d70fecc91c90d23b55daffa2f5f23ffa9eeca823260e50e544cf7be"
 	predictedAddr = "TQ1TiUzStbSLdEtACUDmzfMDpWUyo8cyCf"
 
-	if r, err := tw.CreateAddressRef(privateKeyValue); err != nil {
+	priKeyBytes, _ := hex.DecodeString(privateKeyValue)
+
+	if r, err := tw.CreateAddressRef(priKeyBytes, true); err != nil {
 		t.Errorf("CreateAddressRef failed: %v\n", err)
 	} else {
 		if r != predictedAddr {
@@ -57,7 +60,7 @@ func TestCreateBatchAddress(t *testing.T) {
 	var (
 		walletID string = "W4Hv5qiUb3R7GVQ9wgmX8MfhZ1GVR6dqL7"
 		password string = "1234qwer"
-		count    uint64 = 10000
+		count    uint64 = 1000
 	)
 	if s, r, err := tw.CreateBatchAddress(walletID, password, count); err != nil {
 		t.Errorf("CreateBatchAddress failed: \n\t%+v\n", err)
