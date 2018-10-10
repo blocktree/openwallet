@@ -51,3 +51,39 @@ func TestValidateAddressRef(t *testing.T) {
 		fmt.Printf("CreateAddressRef return: \n\tSuccess!\n")
 	}
 }
+
+func TestCreateBatchAddress(t *testing.T) {
+
+	var (
+		walletID string = "W4Hv5qiUb3R7GVQ9wgmX8MfhZ1GVR6dqL7"
+		password string = "1234qwer"
+		count    uint64 = 10000
+	)
+	if s, r, err := tw.CreateBatchAddress(walletID, password, count); err != nil {
+		t.Errorf("CreateBatchAddress failed: \n\t%+v\n", err)
+	} else {
+		_, _ = s, r
+		// fmt.Printf("CreateBatchAddress return: \n\t%+v\n", r)
+		tw.printAddressList(r)
+	}
+}
+
+func TestGetAddressesFromLocalDB(t *testing.T) {
+
+	var (
+		walletID string = "W4Hv5qiUb3R7GVQ9wgmX8MfhZ1GVR6dqL7"
+		offset   int    = 0
+		limit    int    = -1
+	)
+	if r, err := tw.GetAddressesFromLocalDB(walletID, offset, limit); err != nil {
+		t.Errorf("GetAddressesFromLocalDB failed: \n\t%+v\n", err)
+	} else {
+		fmt.Printf("GetAddressesFromLocalDB return: \n\t%+v\n", r)
+
+		// for i, a := range r {
+		// 	t.Logf("GetAddressesFromLocalDB address[%d] = %v\n", i, a)
+		// }
+
+		tw.printAddressList(r)
+	}
+}
