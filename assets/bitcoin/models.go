@@ -321,6 +321,7 @@ func newTxVinByCore(json *gjson.Result) *Vin {
 	//解析json
 	obj.TxID = gjson.Get(json.Raw, "txid").String()
 	obj.Vout = gjson.Get(json.Raw, "vout").Uint()
+	obj.Coinbase = gjson.Get(json.Raw, "coinbase").String()
 	//obj.Addr = gjson.Get(json.Raw, "addr").String()
 	//obj.Value = gjson.Get(json.Raw, "value").String()
 

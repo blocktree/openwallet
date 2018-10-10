@@ -61,9 +61,18 @@ func TestListUnspentByExplorer(t *testing.T) {
 func TestGetTransactionByExplorer(t *testing.T) {
 	raw, err := tw.getTransactionByExplorer("6595e0d9f21800849360837b85a7933aeec344a89f5c54cf5db97b79c803c462")
 	if err != nil {
-		t.Errorf("GetTransaction failed unexpected error: %v\n", err)
+		t.Errorf("getTransactionByExplorer failed unexpected error: %v\n", err)
 		return
 	}
-	t.Logf("GetTransaction = %v \n", raw)
+	t.Logf("getTransactionByExplorer = %v \n", raw)
+}
+
+func TestGetBalanceByExplorer(t *testing.T) {
+	raw, err := tw.getBalanceByExplorer("2N1GguXdTZb7fG2axJnAMUsy3ueWL7YSPHM ")
+	if err != nil {
+		t.Errorf("getBalanceByExplorer failed unexpected error: %v\n", err)
+		return
+	}
+	t.Logf("getBalanceByExplorer = %v \n", raw)
 }
 

@@ -19,7 +19,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/imroc/req"
+	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
 	"strings"
 )
@@ -331,6 +333,7 @@ func newTxVinByExplorer(json *gjson.Result) *Vin {
 	obj.N = gjson.Get(json.Raw, "n").Uint()
 	obj.Addr = gjson.Get(json.Raw, "addr").String()
 	obj.Value = gjson.Get(json.Raw, "value").String()
+	obj.Coinbase = gjson.Get(json.Raw, "coinbase").String()
 
 	return &obj
 }
@@ -364,6 +367,51 @@ func newTxVoutByExplorer(json *gjson.Result) *Vout {
 	}
 
 	obj.Type = gjson.Get(json.Raw, "scriptPubKey.type").String()
+
+	return &obj
+}
+
+//getBalanceByExplorer 获取地址余额
+func (wm *WalletManager) getBalanceByExplorer(address string) (*openwallet.Balance, error) {
+
+
+	path := fmt.Sprintf("addr/%s?noTxList=1", address)
+
+	result, err := wm.ExplorerClient.Call(path, nil, "GET")
+	if err != nil {
+		return nil, err
+	}
+
+	return newBalanceByExplorer(result), nil
+}
+
+func newBalanceByExplorer(json *gjson.Result) *openwallet.Balance {
+
+	/*
+
+	{
+		"addrStr": "mnMSQs3HZ5zhJrCEKbqGvcDLjAAxvDJDCd",
+		"balance": 3136.82244887,
+		"balanceSat": 313682244887,
+		"totalReceived": 3136.82244887,
+		"totalReceivedSat": 313682244887,
+		"totalSent": 0,
+		"totalSentSat": 0,
+		"unconfirmedBalance": 0,
+		"unconfirmedBalanceSat": 0,
+		"unconfirmedTxApperances": 0,
+		"txApperances": 3909
+	}
+
+	*/
+	obj := openwallet.Balance{}
+	//解析json
+	obj.Address = gjson.Get(json.Raw, "addrStr").String()
+	obj.Balance = gjson.Get(json.Raw, "balance").String()
+	obj.UnconfirmBalance = gjson.Get(json.Raw, "unconfirmedBalance").String()
+	u, _ := decimal.NewFromString(obj.UnconfirmBalance)
+	b, _ := decimal.NewFromString(obj.UnconfirmBalance)
+	obj.ConfirmBalance = b.Sub(u).StringFixed(8)
 
 	return &obj
 }

@@ -33,7 +33,10 @@ import (
 const (
 	blockchainBucket = "blockchain" //区块链数据集合
 	//periodOfTask      = 5 * time.Second //定时任务执行隔间
-	maxExtractingSize = 15 //并发的扫描线程数
+	maxExtractingSize = 20 //并发的扫描线程数
+
+	RPCServerCore     = 1 //RPC服务，bitcoin核心钱包
+	RPCServerExplorer = 2 //RPC服务，insight-API
 )
 
 //BTCBlockScanner bitcoin的区块链扫描器
@@ -45,7 +48,7 @@ type BTCBlockScanner struct {
 	wm                   *WalletManager //钱包管理者
 	IsScanMemPool        bool           //是否扫描交易池
 	RescanLastBlockCount uint64         //重扫上N个区块数量
-	UseExplorer          bool
+	RPCServer            int
 }
 
 //ExtractResult 扫描完成的提取结果
@@ -75,6 +78,7 @@ func NewBTCBlockScanner(wm *WalletManager) *BTCBlockScanner {
 	bs.wm = wm
 	bs.IsScanMemPool = true
 	bs.RescanLastBlockCount = 0
+	bs.RPCServer = RPCServerExplorer
 
 	//设置扫描任务
 	bs.SetTask(bs.ScanBlockTask)
@@ -508,42 +512,50 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 		//return nil, failedTx, nil
 	} else {
 
-		vinout := make([]gjson.Result, 0)
+		//vinout := make([]*Vout, 0)
 
-		vin := trx.Get("vin").Array()
-		blocktime := trx.Get("blocktime").Int()
+		vin := trx.Vins
+		blocktime := trx.Blocktime
 		for _, input := range vin {
 
-			if input.Get("coinbase").Exists() {
+			if len(input.Coinbase) > 0 {
 				//coinbase skip
 				success = true
 				break
 			}
 
-			intxid := input.Get("txid").String()
-			vout := input.Get("vout").Uint()
+			//如果input中没有地址和数量，需要查上一笔交易的output提取
+			if len(input.Addr) == 0 && len(input.Value) == 0 {
 
-			preTx, err := bs.wm.GetTransaction(intxid)
-			if err != nil {
-				success = false
-				break
-			} else {
-				output := preTx.Get("vout").Array()
-				if len(output) > int(vout) {
+				intxid := input.TxID
+				vout := input.Vout
 
-					vinout = append(vinout, output[vout])
-					success = true
+				preTx, err := bs.wm.GetTransaction(intxid)
+				if err != nil {
+					success = false
+					break
+				} else {
+					preVouts := preTx.Vouts
+					if len(preVouts) > int(vout) {
+						preOut := preVouts[vout]
+						input.Addr = preOut.Addr
+						input.Value = preOut.Value
+						//vinout = append(vinout, output[vout])
+						success = true
 
-					//log.Debug("GetTxOut:", output[vout])
+						//log.Debug("GetTxOut:", output[vout])
 
+					}
 				}
+
 			}
+
 		}
 
 		if success {
 
 			//提取出账部分记录
-			from, totalSpent := bs.ExtractTxInput(blockHeight, blockHash, vin, vinout, &result)
+			from, totalSpent := bs.ExtractTxInput(blockHeight, blockHash, trx, &result)
 			//log.Debug("from:", from, "totalSpent:", totalSpent)
 
 			//提取入账部分记录
@@ -585,7 +597,7 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 }
 
 //ExtractTxInput 提取交易单输入部分
-func (bs *BTCBlockScanner) ExtractTxInput(blockHeight uint64, blockHash string, vin, vinout []gjson.Result, result *ExtractResult) ([]string, decimal.Decimal) {
+func (bs *BTCBlockScanner) ExtractTxInput(blockHeight uint64, blockHash string, trx *Transaction, result *ExtractResult) ([]string, decimal.Decimal) {
 
 	//vin := trx.Get("vin")
 
@@ -595,132 +607,125 @@ func (bs *BTCBlockScanner) ExtractTxInput(blockHeight uint64, blockHash string, 
 	)
 
 	createAt := time.Now().Unix()
-	for i, output := range vinout {
+	for i, output := range trx.Vins {
 
-		in := vin[i]
+		//in := vin[i]
 
-		txid := in.Get("txid").String()
-		vout := in.Get("vout").Uint()
+		txid := output.TxID
+		vout := output.Vout
 		//
 		//output, err := bs.wm.GetTxOut(txid, vout)
 		//if err != nil {
 		//	return err
 		//}
 
-		amount := output.Get("value").String()
-		addresses := output.Get("scriptPubKey.addresses").Array()
-		if len(addresses) > 0 {
-			addr := addresses[0].String()
-			sourceKey, ok := bs.GetSourceKeyByAddress(addr)
-			if ok {
-
-				input := openwallet.TxInput{}
-				input.SourceTxID = txid
-				input.SourceIndex = vout
-				input.TxID = result.TxID
-				input.Address = addr
-				//transaction.AccountID = a.AccountID
-				input.Amount = amount
-				input.Coin = openwallet.Coin{
-					Symbol:     bs.wm.Symbol(),
-					IsContract: false,
-				}
-				input.Index = uint64(i)
-				input.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", result.TxID, i, addr))))
-				input.CreateAt = createAt
-				if blockHeight > 0 {
-					//在哪个区块高度时消费
-					input.BlockHeight = blockHeight
-					input.BlockHash = blockHash
-					//outPut.Confirm = confirmations
-				}
-
-				//transactions = append(transactions, &transaction)
-
-				ed := result.extractData[sourceKey]
-				if ed == nil {
-					ed = openwallet.NewBlockExtractData()
-					result.extractData[sourceKey] = ed
-				}
-
-				ed.TxInputs = append(ed.TxInputs, &input)
-
+		amount := output.Value
+		addr := output.Addr
+		sourceKey, ok := bs.GetSourceKeyByAddress(addr)
+		if ok {
+			input := openwallet.TxInput{}
+			input.SourceTxID = txid
+			input.SourceIndex = vout
+			input.TxID = result.TxID
+			input.Address = addr
+			//transaction.AccountID = a.AccountID
+			input.Amount = amount
+			input.Coin = openwallet.Coin{
+				Symbol:     bs.wm.Symbol(),
+				IsContract: false,
+			}
+			input.Index = output.N
+			input.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", result.TxID, i, addr))))
+			input.CreateAt = createAt
+			if blockHeight > 0 {
+				//在哪个区块高度时消费
+				input.BlockHeight = blockHeight
+				input.BlockHash = blockHash
+				//outPut.Confirm = confirmations
 			}
 
-			from = append(from, addr)
-			dAmount, _ := decimal.NewFromString(amount)
-			totalAmount = totalAmount.Add(dAmount)
+			//transactions = append(transactions, &transaction)
+
+			ed := result.extractData[sourceKey]
+			if ed == nil {
+				ed = openwallet.NewBlockExtractData()
+				result.extractData[sourceKey] = ed
+			}
+
+			ed.TxInputs = append(ed.TxInputs, &input)
+
 		}
+
+		from = append(from, addr)
+		dAmount, _ := decimal.NewFromString(amount)
+		totalAmount = totalAmount.Add(dAmount)
 
 	}
 	return from, totalAmount
 }
 
 //ExtractTxInput 提取交易单输入部分
-func (bs *BTCBlockScanner) ExtractTxOutput(blockHeight uint64, blockHash string, trx *gjson.Result, result *ExtractResult) ([]string, decimal.Decimal) {
+func (bs *BTCBlockScanner) ExtractTxOutput(blockHeight uint64, blockHash string, trx *Transaction, result *ExtractResult) ([]string, decimal.Decimal) {
 
 	var (
 		to          = make([]string, 0)
 		totalAmount = decimal.Zero
 	)
 
-	confirmations := trx.Get("confirmations").Int()
-	vout := trx.Get("vout")
-	txid := trx.Get("txid").String()
+	confirmations := trx.Confirmations
+	vout := trx.Vouts
+	txid := trx.TxID
 	//log.Debug("vout:", vout.Array())
 	createAt := time.Now().Unix()
-	for _, output := range vout.Array() {
+	for _, output := range vout {
 
-		amount := output.Get("value").String()
-		n := output.Get("n").Uint()
-		addresses := output.Get("scriptPubKey.addresses").Array()
-		if len(addresses) > 0 {
-			addr := addresses[0].String()
-			sourceKey, ok := bs.GetSourceKeyByAddress(addr)
-			if ok {
+		amount := output.Value
+		n := output.N
+		addr := output.Addr
+		sourceKey, ok := bs.GetSourceKeyByAddress(addr)
+		if ok {
 
-				//a := wallet.GetAddress(addr)
-				//if a == nil {
-				//	continue
-				//}
+			//a := wallet.GetAddress(addr)
+			//if a == nil {
+			//	continue
+			//}
 
-				outPut := openwallet.TxOutPut{}
-				outPut.TxID = txid
-				outPut.Address = addr
-				//transaction.AccountID = a.AccountID
-				outPut.Amount = amount
-				outPut.Coin = openwallet.Coin{
-					Symbol:     bs.wm.Symbol(),
-					IsContract: false,
-				}
-				outPut.Index = n
-				outPut.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("output_%s_%d_%s", txid, n, addr))))
+			outPut := openwallet.TxOutPut{}
+			outPut.TxID = txid
+			outPut.Address = addr
+			//transaction.AccountID = a.AccountID
+			outPut.Amount = amount
+			outPut.Coin = openwallet.Coin{
+				Symbol:     bs.wm.Symbol(),
+				IsContract: false,
+			}
+			outPut.Index = n
+			outPut.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("output_%s_%d_%s", txid, n, addr))))
 
-				//保存utxo到扩展字段
-				outPut.ExtParam = output.Get("scriptPubKey").Raw
-				outPut.CreateAt = createAt
-				if blockHeight > 0 {
-					outPut.BlockHeight = blockHeight
-					outPut.BlockHash = blockHash
-					outPut.Confirm = confirmations
-				}
-
-				//transactions = append(transactions, &transaction)
-
-				ed := result.extractData[sourceKey]
-				if ed == nil {
-					ed = openwallet.NewBlockExtractData()
-					result.extractData[sourceKey] = ed
-				}
-
-				ed.TxOutputs = append(ed.TxOutputs, &outPut)
-
+			//保存utxo到扩展字段
+			outPut.ExtParam = output.ScriptPubKey
+			outPut.CreateAt = createAt
+			if blockHeight > 0 {
+				outPut.BlockHeight = blockHeight
+				outPut.BlockHash = blockHash
+				outPut.Confirm = int64(confirmations)
 			}
 
-			to = append(to, addr)
-			dAmount, _ := decimal.NewFromString(amount)
-			totalAmount = totalAmount.Add(dAmount)
+			//transactions = append(transactions, &transaction)
+
+			ed := result.extractData[sourceKey]
+			if ed == nil {
+				ed = openwallet.NewBlockExtractData()
+				result.extractData[sourceKey] = ed
+			}
+
+			ed.TxOutputs = append(ed.TxOutputs, &outPut)
+
 		}
+
+		to = append(to, addr)
+		dAmount, _ := decimal.NewFromString(amount)
+		totalAmount = totalAmount.Add(dAmount)
 
 	}
 
@@ -964,7 +969,7 @@ func (bs *BTCBlockScanner) GetSourceKeyByAddress(address string) (string, bool) 
 //GetBlockHeight 获取区块链高度
 func (wm *WalletManager) GetBlockHeight() (uint64, error) {
 
-	if wm.Blockscanner.UseExplorer {
+	if wm.Blockscanner.RPCServer == RPCServerExplorer {
 		return wm.getBlockHeightByExplorer()
 	} else {
 		return wm.getBlockHeightByCore()
@@ -1032,7 +1037,7 @@ func (wm *WalletManager) SaveLocalBlock(block *Block) {
 //GetBlockHash 根据区块高度获得区块hash
 func (wm *WalletManager) GetBlockHash(height uint64) (string, error) {
 
-	if wm.Blockscanner.UseExplorer {
+	if wm.Blockscanner.RPCServer == RPCServerExplorer {
 		return wm.getBlockHashByExplorer(height)
 	} else {
 		return wm.getBlockHashByCore(height)
@@ -1078,7 +1083,7 @@ func (wm *WalletManager) GetLocalBlock(height uint64) (*Block, error) {
 //GetBlock 获取区块数据
 func (wm *WalletManager) GetBlock(hash string) (*Block, error) {
 
-	if wm.Blockscanner.UseExplorer {
+	if wm.Blockscanner.RPCServer == RPCServerExplorer {
 		return wm.getBlockByExplorer(hash)
 	} else {
 		return wm.getBlockByCore(hash)
@@ -1124,28 +1129,27 @@ func (wm *WalletManager) GetTxIDsInMemPool() ([]string, error) {
 }
 
 //GetTransaction 获取交易单
-func (wm *WalletManager) GetTransaction(txid string) (*gjson.Result, error) {
+func (wm *WalletManager) GetTransaction(txid string) (*Transaction, error) {
 
-	request := []interface{}{
-		txid,
-		true,
-	}
-
-	result, err := wm.WalletClient.Call("getrawtransaction", request)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
-
-	//if wm.Blockscanner.UseExplorer {
-	//	return wm.getTransactionByExplorer(txid)
-	//} else {
-	//	return wm.getTransactionByCore(txid)
+	//request := []interface{}{
+	//	txid,
+	//	true,
 	//}
+	//
+	//result, err := wm.WalletClient.Call("getrawtransaction", request)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//return result, nil
+
+	if wm.Blockscanner.RPCServer == RPCServerExplorer {
+		return wm.getTransactionByExplorer(txid)
+	} else {
+		return wm.getTransactionByCore(txid)
+	}
 
 }
-
 
 //getTransactionByCore 获取交易单
 func (wm *WalletManager) getTransactionByCore(txid string) (*Transaction, error) {
@@ -1160,7 +1164,7 @@ func (wm *WalletManager) getTransactionByCore(txid string) (*Transaction, error)
 		return nil, err
 	}
 
-	return result, nil
+	return newTxByCore(result), nil
 }
 
 //GetTxOut 获取交易单输出信息，用于追溯交易单输入源头
@@ -1234,4 +1238,39 @@ func (wm *WalletManager) DeleteUnscanRecord(height uint64) error {
 	}
 
 	return nil
+}
+
+
+//GetAssetsAccountBalanceByAddress 查询账户相关地址的交易记录
+func (bs *BTCBlockScanner) GetBalanceByAddress(address ...*openwallet.Address) ([]*openwallet.Balance, error) {
+
+	if bs.RPCServer != RPCServerExplorer {
+		return nil, nil
+	}
+
+	addrsBalance := make([]*openwallet.Balance, 0)
+
+	for _, a := range address {
+		balance, err := bs.wm.getBalanceByExplorer(a.Address)
+		if err != nil {
+			return nil, err
+		}
+
+		addrsBalance = append(addrsBalance, balance)
+	}
+
+	return addrsBalance, nil
+}
+
+//GetTokenBalanceByAddress 查询地址token余额列表
+func (bs *BTCBlockScanner) GetTokenBalanceByAddress(address ...*openwallet.Address) ([]*openwallet.TokenBalance, error) {
+	return nil, nil
+}
+
+//GetAssetsAccountTransactionsByAddress 查询账户相关地址的交易记录
+func (bs *BTCBlockScanner) GetTransactionsByAddress(offset, limit int, coin *openwallet.Coin, address ...*openwallet.Address) ([]*openwallet.Transaction, error) {
+
+
+
+	return nil, nil
 }
