@@ -165,14 +165,14 @@ func (c *Client) CallGetaccountstate( address string ,query string) (string, err
 
 
 //查询区块链chain_id，testnet:	mainnet:
-func (c *Client) CallGetchain_id() uint32 {
+func (c *Client) CallGetnebstate( query string) (*gjson.Result, error) {
 	url := c.BaseURL + "/v1/user/nebstate"
 	param := make(req.QueryParam, 0)
 
 	r, err := c.Client.Get(url, param)
 	if err != nil {
 		log.Info(err)
-		return 0
+		return nil,err
 	}
 
 	//	return r.Bytes()
@@ -185,17 +185,21 @@ func (c *Client) CallGetchain_id() uint32 {
 	}
 
 	if err != nil {
-		return 0
+		return nil,err
 	}
 
 	resp := gjson.ParseBytes(r.Bytes())
 	err = isError(&resp)
 	if err != nil {
-		return 0
+		return nil,err
 	}
 
-	result := resp.Get("result.chain_id")
-	return uint32(result.Num)
+//	result := resp.Get("result.chain_id")
+
+	dst := "result." + query
+	result := resp.Get(dst)
+
+	return &result, nil
 }
 
 
@@ -312,4 +316,82 @@ func isError(result *gjson.Result) error {
 	return err
 }
 
+//发送广播签名后的交易单数据
+func (c *Client) CallgetBlockByHeight( height uint64 ) (*gjson.Result, error) {
 
+	url := c.BaseURL + "/v1/user/getBlockByHeight"
+
+	var (
+		body = make(map[string]interface{}, 0)
+	)
+
+	if c.Client == nil {
+		return nil, errors.New("API url is not setup. ")
+	}
+
+	authHeader := req.Header{
+		"Accept":        "application/json",
+		"Authorization": "Basic " ,
+	}
+
+	//json-rpc
+	//	body["jsonrpc"] = "2.0"
+	//	body["id"] = "1"
+	//	body["method"] = path
+	//	body["params"] = request
+	body["height"] = height
+	body["full_fill_transaction"] = true
+
+	if c.Debug {
+		log.Info("Start Request API...")
+	}
+
+	r, err := c.Client.Post(url, req.BodyJSON(&body), authHeader)
+
+	if c.Debug {
+		log.Info("Request API Completed")
+	}
+
+	if c.Debug {
+		log.Std.Info("%+v", r)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp := gjson.ParseBytes(r.Bytes())
+	err = isError(&resp)
+	if err != nil {
+		return nil, err
+	}
+	/*
+	{
+    "result": {
+        "hash": "95480cc637d0782c60f321b3600200074f468444c1399ae7bba0fc0f8007a410",
+        "parent_hash": "59f927c87d5d4ca6f7d3c2827c42f8ec60f0057146ae371cdfa1fba8d0514f5e",
+        "height": "8989",
+        "nonce": "0",
+        "coinbase": "n1NM2eETQG5Es7cCc7sh29NJr9cP94QZcXR",
+        "timestamp": "1539161640",
+        "chain_id": 100,
+        "state_root": "39643466944ad6d31c9ffe9df8ae4d30b29abed91a285d293711fa548c4930ba",
+        "txs_root": "702ff2561aead08ac7eb64e1aea5845d4517329a74738c3c830fe2670ee4c9ea",
+        "events_root": "57aebd702400deec492a455144011f8abe42355a42f4323e380194b088363a16",
+        "consensus_root": {
+            "timestamp": "1539161640",
+            "proposer": "GVcH+WT/SVMkY18ix7SG4F1+Z8evXJoA35c=",
+            "dynasty_root": "GZDY8fY8Utgqftr+PUdJgtP82AybM9+4H6UFvJf/jAg="
+        },
+        "miner": "n1FF1nz6tarkDVwWQkMnnwFPuPKUaQTdptE",
+        "randomSeed": "f13e03ea259581ef5c93353b8ee34cdbefc387466fa343cb27f088506ac93d07",
+        "randomProof": "cf8f6f1f0d4ec7560eb9640da06989ed1849edcf1e3a167f58870594a087939e1bfe08c6419b316add5cd11b8a5b491415cc1e62dc0cb6b85f8096f3792b3cfc0425fa00842ca9e00558944f3797b42e4fea8b9d5dea4a6743b72e0fedf6633cdfa10f52f65b552668c3fae6d9da7df0d306841c2dbe03c01027fd63bc64fd7e8e",
+        "is_finality": false,
+        "transactions": []
+    	}
+	}
+	*/
+	//返回整个数据
+	result := resp.Get("result")
+	return &result, nil
+}

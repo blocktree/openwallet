@@ -53,7 +53,9 @@ func TestApi(t *testing.T) {
 //	GasPrice := wm.WalletClient.CallGetGasPrice()
 //	fmt.Printf("GasPrice=%s\n",GasPrice)
 
-	chain_id := wm.WalletClient.CallGetchain_id()
+	chain_id_result,_ := wm.WalletClient.CallGetnebstate("chain_id")
+
+	chain_id := uint32(chain_id_result.Uint())
 	fmt.Printf("chain_id=%v\n",chain_id)
 
 //	wm.WalletClient.CallTestJson()
@@ -105,7 +107,7 @@ func TestWalletConfig_PrintConfig(t *testing.T) {
 
 func TestWalletManager_CreateBatchAddress(t *testing.T) {
 	var addrs []*openwallet.Address
-	fpath, addrs, err := wm.CreateBatchAddress("VyLvGy6TZa5kL6C5rXsw3ud3SDADQhAKaE", "123456789", 26)
+	fpath, addrs, err := wm.CreateBatchAddress("W55KaGZNka3uesGoYopCY2FoW9CaJskTUb", "123456789", 26)
 	if err != nil {
 		t.Error(err.Error())
 		return
@@ -143,7 +145,7 @@ func TestGetAddreses(t *testing.T) {
 //查询指定钱包余额
 func TestWalletManager_getBanlance(t *testing.T) {
 	//w, err := wm.GetWalletByID("WEY5DDuXbvHrBUa5UBKmVpwLCwP69bieeB")
-	w, err := wm.GetWalletByID("VyLvGy6TZa5kL6C5rXsw3ud3SDADQhAKaE")
+	w, err := wm.GetWalletByID("W55KaGZNka3uesGoYopCY2FoW9CaJskTUb")
 	if err != nil {
 		t.Error("get wallet by id error")
 		return

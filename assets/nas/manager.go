@@ -163,7 +163,7 @@ func (wm *WalletManager) SignTranscation(key *Key, to, gasLimit, value string) (
 
 	nonce := wm.WalletClient.CheckNonce(key)
 	gasPrice := wm.WalletClient.CallGetGasPrice()
-	chainID := wm.WalletClient.CallGetchain_id()
+	chainID,_ := wm.GetChainID()
 	timestamp := time.Now().Unix()
 	address_from ,err := NasAddrTobyte(key.Address)
 	if err != nil{
@@ -411,6 +411,7 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 	//每个线程内循环的数量，以synCount个线程并行处理
 	runCount := count / synCount
 	otherCount := count % synCount
+	//fmt.Printf("count=%v,runCount=%v,otherCount=%v\n",count,runCount,otherCount)
 
 	if runCount > 0 {
 		for i := 0; i < synCount; i++ {
@@ -483,12 +484,32 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 			values = values[1:]
 		case <-quit:
 			//退出
-			log.Std.Info("wallet %s get all addresses's balance finished", wallet.Alias)
+			//log.Std.Info("wallet %s get all addresses's balance finished", wallet.Alias)
 			return balance.Div(coinDecimal), outputAddress, nil
 		}
 	}
 
 	return balance.Div(coinDecimal), outputAddress, nil
+}
+
+
+//冒泡算法，对一个钱包下面的所有地址进行从大到小排序后供转账使用，提高效率
+func SortAddrFromBalance(MixAddr []*openwallet.Address) []*openwallet.Address {
+
+	var BigTosmall []*openwallet.Address
+	num := len(MixAddr)
+	//冒泡排序
+	for i := 0; i < num; i++ {
+		for j := i + 1; j < num; j++ {
+
+			if decimal.RequireFromString(MixAddr[i].Balance).LessThanOrEqual(decimal.RequireFromString(MixAddr[j].Balance)) {
+				MixAddr[i], MixAddr[j] = MixAddr[j], MixAddr[i]
+			}
+		}
+		BigTosmall = append(BigTosmall,MixAddr[i])
+		//log.Std.Info("BigTosmall[%d],addr=%v,balance=%v",i,BigTosmall[i].Address,BigTosmall[i].Balance)
+	}
+	return BigTosmall
 }
 
 //打印钱包列表
@@ -498,14 +519,15 @@ func (wm *WalletManager) printWalletList(list []*openwallet.Wallet, getBalance b
 	for i, w := range list {
 		if getBalance {
 			balance, addr, _ := wm.getWalletBalance(w)
+			addr_sort := SortAddrFromBalance(addr)
 			tableInfo = append(tableInfo, []interface{}{
 				i, w.WalletID, w.Alias, w.DBFile, balance,
 			})
 
-			addrs = append(addrs, addr)
-			//休眠5秒是因为http请求会导致下一个钱包获取余额API请求失败
+			addrs = append(addrs, addr_sort)
+			//休眠2秒是因为http请求会导致下一个钱包获取余额API请求失败
 			if i != (len(list) - 1) {
-				time.Sleep(time.Second * 5)
+				time.Sleep(time.Second * 2)
 			}
 		} else {
 			tableInfo = append(tableInfo, []interface{}{
@@ -817,7 +839,6 @@ func (wm *WalletManager) summaryWallet(wallet *openwallet.Wallet, password strin
 		//读取config的值 单位Wei
 		//log.Std.Info("Threshold:%v", wm.Config.Threshold.String())
 		//log.Std.Info("balance_safe=%v",balance_safe)
-
 		if balance_safe.GreaterThan(wm.Config.Threshold) {
 
 			txid, err := wm.Transfer(k, wm.Config.SumAddress, wm.Config.GasLimit.String(),
@@ -924,6 +945,10 @@ func (wm *WalletManager) LoadConfig() error {
 	}
 
 	wm.Config.ServerAPI = c.String("apiUrl")
+
+	if  c.String("threshold") == ""{
+		return errors.New(fmt.Sprintf(" threshold is not set, uint is NAS... Please set it in './conf/%s.ini' \n", Symbol))
+	}
 	wm.Config.Threshold = (decimal.RequireFromString(c.String("threshold"))).Mul(coinDecimal)
 	wm.Config.SumAddress = c.String("sumAddress")
 	wm.Config.GasLimit = (decimal.RequireFromString(c.String("gasLimit"))).Mul(coinDecimal)
@@ -932,9 +957,7 @@ func (wm *WalletManager) LoadConfig() error {
 	if cyclesec == "" {
 		return errors.New(fmt.Sprintf(" cycleSeconds is not set, sample: 1m , 30s, 3m20s etc... Please set it in './conf/%s.ini' \n", Symbol))
 	}
-
 	wm.Config.CycleSeconds, _ = time.ParseDuration(cyclesec)
-
 	wm.WalletClient = NewClient(wm.Config.ServerAPI,false)
 
 	return nil
@@ -1004,6 +1027,17 @@ func (wm *WalletManager) getKeys(key *hdkeystore.HDKey, a *openwallet.Address) (
 	//k := &Key{a.Address,pk,prikey}
 
 	return k, nil
+}
+
+//GetBlockHeight 获取区块链高度
+func (wm *WalletManager) GetChainID() (uint32, error) {
+
+	result, err := wm.WalletClient.CallGetnebstate("chain_id")
+	if err != nil {
+		return 0, err
+	}
+
+	return uint32(result.Uint()), nil
 }
 
 //将签名成功广播出去后的nonce值记录在对应address的DB中
