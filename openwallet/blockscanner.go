@@ -23,21 +23,14 @@ import (
 	"time"
 )
 
+// BlockScanner 区块扫描器
+// 负责扫描新区块，给观察者推送订阅地址的新交易单。
 type BlockScanner interface {
-
-	//AddAddress 添加扫描地址，账户ID，其钱包指针
-	//AddAddress(address, accountID string, wallet *Wallet)
-
-	//AddWallet 添加扫描账户及其钱包指针
-	//AddWallet(accountID string, wallet *Wallet)
 
 	//AddWallet 添加扫描地址
 	//@param address 地址
 	//@param sourceKey 数据源标识，可以是地址所属的应用钱包的唯一标识，资产账户唯一标识
 	AddAddress(address, sourceKey string) error
-
-	//AddWallet 添加扫描账户及其钱包指针
-	//AddWallet(sourceKey string, wrapper *WalletWrapper)
 
 	//AddObserver 添加观测者
 	AddObserver(obj BlockScanNotificationObject) error
@@ -81,9 +74,12 @@ type BlockScanner interface {
 	//GetBalanceByAddress 查询地址余额
 	GetBalanceByAddress(address ...*Address) ([]*Balance, error)
 
+	//GetTokenBalanceByAddress 查询地址token余额列表
+	GetTokenBalanceByAddress(address ...*Address) ([]*TokenBalance, error)
+
 	//GetTransactionsByAddress 查询基于账户的交易记录，通过账户关系的地址
 	//返回的交易记录以资产账户为集合的结果，转账数量以基于账户来计算
-	GetTransactionsByAddress(offset, limit int, address ...*Address) ([]*Transaction, error)
+	GetTransactionsByAddress(offset, limit int, coin *Coin, address ...*Address) ([]*Transaction, error)
 }
 
 //BlockScanNotificationObject 扫描被通知对象
@@ -292,7 +288,12 @@ func (bs *BlockScannerBase) GetBalanceByAddress(address ...*Address) ([]*Balance
 	return nil, nil
 }
 
+//GetTokenBalanceByAddress 查询地址token余额列表
+func (bs *BlockScannerBase) GetTokenBalanceByAddress(address ...*Address) ([]*TokenBalance, error) {
+	return nil, nil
+}
+
 //GetAssetsAccountTransactionsByAddress 查询账户相关地址的交易记录
-func (bs *BlockScannerBase) GetTransactionsByAddress(offset, limit int, address ...*Address) ([]*Transaction, error) {
+func (bs *BlockScannerBase) GetTransactionsByAddress(offset, limit int, coin *Coin, address ...*Address) ([]*Transaction, error) {
 	return nil, nil
 }
