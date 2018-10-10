@@ -76,6 +76,7 @@ func (c *Client) CallTestJson() (){
 		"1222",
 		nil,
 		nil,
+		nil,
 		"",
 	}
 	fmt.Printf("tx=%v\n",tx)
