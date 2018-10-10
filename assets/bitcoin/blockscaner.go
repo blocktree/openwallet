@@ -45,6 +45,7 @@ type BTCBlockScanner struct {
 	wm                   *WalletManager //钱包管理者
 	IsScanMemPool        bool           //是否扫描交易池
 	RescanLastBlockCount uint64         //重扫上N个区块数量
+	UseExplorer          bool
 }
 
 //ExtractResult 扫描完成的提取结果
@@ -187,7 +188,7 @@ func (bs *BTCBlockScanner) ScanBlockTask() {
 					log.Std.Error("block scanner can not get prev block; unexpected error: %v", err)
 					break
 				}
-				
+
 			}
 
 			//重置当前区块的hash
@@ -963,6 +964,16 @@ func (bs *BTCBlockScanner) GetSourceKeyByAddress(address string) (string, bool) 
 //GetBlockHeight 获取区块链高度
 func (wm *WalletManager) GetBlockHeight() (uint64, error) {
 
+	if wm.Blockscanner.UseExplorer {
+		return wm.getBlockHeightByExplorer()
+	} else {
+		return wm.getBlockHeightByCore()
+	}
+}
+
+//getBlockHeightByCore 获取区块链高度
+func (wm *WalletManager) getBlockHeightByCore() (uint64, error) {
+
 	result, err := wm.WalletClient.Call("getblockcount", nil)
 	if err != nil {
 		return 0, err
@@ -1021,6 +1032,16 @@ func (wm *WalletManager) SaveLocalBlock(block *Block) {
 //GetBlockHash 根据区块高度获得区块hash
 func (wm *WalletManager) GetBlockHash(height uint64) (string, error) {
 
+	if wm.Blockscanner.UseExplorer {
+		return wm.getBlockHashByExplorer(height)
+	} else {
+		return wm.getBlockHashByCore(height)
+	}
+}
+
+//getBlockHashByCore 根据区块高度获得区块hash
+func (wm *WalletManager) getBlockHashByCore(height uint64) (string, error) {
+
 	request := []interface{}{
 		height,
 	}
@@ -1056,6 +1077,16 @@ func (wm *WalletManager) GetLocalBlock(height uint64) (*Block, error) {
 
 //GetBlock 获取区块数据
 func (wm *WalletManager) GetBlock(hash string) (*Block, error) {
+
+	if wm.Blockscanner.UseExplorer {
+		return wm.getBlockByExplorer(hash)
+	} else {
+		return wm.getBlockByCore(hash)
+	}
+}
+
+//getBlockByCore 获取区块数据
+func (wm *WalletManager) getBlockByCore(hash string) (*Block, error) {
 
 	request := []interface{}{
 		hash,
@@ -1107,6 +1138,29 @@ func (wm *WalletManager) GetTransaction(txid string) (*gjson.Result, error) {
 
 	return result, nil
 
+	//if wm.Blockscanner.UseExplorer {
+	//	return wm.getTransactionByExplorer(txid)
+	//} else {
+	//	return wm.getTransactionByCore(txid)
+	//}
+
+}
+
+
+//getTransactionByCore 获取交易单
+func (wm *WalletManager) getTransactionByCore(txid string) (*Transaction, error) {
+
+	request := []interface{}{
+		txid,
+		true,
+	}
+
+	result, err := wm.WalletClient.Call("getrawtransaction", request)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 //GetTxOut 获取交易单输出信息，用于追溯交易单输入源头

@@ -23,21 +23,14 @@ import (
 	"time"
 )
 
+// BlockScanner 区块扫描器
+// 负责扫描新区块，给观察者推送订阅地址的新交易单。
 type BlockScanner interface {
-
-	//AddAddress 添加扫描地址，账户ID，其钱包指针
-	//AddAddress(address, accountID string, wallet *Wallet)
-
-	//AddWallet 添加扫描账户及其钱包指针
-	//AddWallet(accountID string, wallet *Wallet)
 
 	//AddWallet 添加扫描地址
 	//@param address 地址
 	//@param sourceKey 数据源标识，可以是地址所属的应用钱包的唯一标识，资产账户唯一标识
 	AddAddress(address, sourceKey string) error
-
-	//AddWallet 添加扫描账户及其钱包指针
-	//AddWallet(sourceKey string, wrapper *WalletWrapper)
 
 	//AddObserver 添加观测者
 	AddObserver(obj BlockScanNotificationObject) error
