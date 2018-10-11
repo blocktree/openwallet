@@ -18,7 +18,6 @@ package tron
 var (
 	tw *WalletManager
 
-	// to_address    string = "TWzVsJyUvTjVRwDTRNxUsLCjH9KY9gQgk2"
 	TOADDRESS    string = "TWVRXXN5tsggjUCDmqbJ4KxPdJKQiynaG6"
 	OWNERADDRESS string = "TQ1TiUzStbSLdEtACUDmzfMDpWUyo8cyCf"
 	PRIVATEKEY   string = "9e9fa25c9d70fecc91c90d23b55daffa2f5f23ffa9eeca823260e50e544cf7be"

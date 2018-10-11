@@ -134,7 +134,7 @@ func (wm *WalletManager) CreateTransactionRef(to_address, owner_address string, 
 	}
 
 	// ----------------------- Get Reference Block ----------------------
-	block, err := tw.GetNowBlock()
+	block, err := wm.GetNowBlock()
 	if err != nil {
 		return txRawHex, err
 	}
