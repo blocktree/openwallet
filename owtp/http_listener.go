@@ -16,12 +16,12 @@
 package owtp
 
 import (
+	"context"
 	"fmt"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/pkg/errors"
 	"net"
 	"net/http"
-	"context"
 )
 
 //owtp监听器
@@ -70,8 +70,8 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var auth *OWTPAuth
 	var err error
 
-
 	if len(header.Get("a")) == 0 {
+
 		//临时通过
 		cert, err := NewCertificate(RandomPrivateKey(), "")
 		if err != nil {
@@ -79,19 +79,17 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to NewCertificate", 400)
 			return
 		}
-		auth, err = NewOWTPAuthWithCertificate(cert)
-		if err != nil {
-			log.Debug("NewOWTPAuthWithCertificate unexpected error:", err)
-			http.Error(w, "Failed to NewOWTPAuthWithCertificate", 400)
-			return
-		}
-	} else {
-		auth, err = NewOWTPAuthWithHTTPHeader(r.Header)
-		if err != nil {
-			log.Debug("NewOWTPAuth unexpected error:", err)
-			http.Error(w, "Failed to upgrade http", 400)
-			return
-		}
+
+		pub, _ := cert.KeyPair()
+
+		header.Set("a", pub)
+	}
+
+	auth, err = NewOWTPAuthWithHTTPHeader(header)
+	if err != nil {
+		log.Debug("NewOWTPAuth unexpected error:", err)
+		http.Error(w, "Failed to upgrade http", 400)
+		return
 	}
 
 	log.Debug("NewOWTPAuth successfully")

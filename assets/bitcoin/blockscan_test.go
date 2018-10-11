@@ -16,6 +16,7 @@
 package bitcoin
 
 import (
+	"github.com/blocktree/OpenWallet/openwallet"
 	"testing"
 	"github.com/pborman/uuid"
 )
@@ -175,7 +176,7 @@ func TestBTCBlockScanner_ExtractTransaction(t *testing.T) {
 	bs.ExtractTransaction(
 		1435497,
 		"00000000e271b8234ed2271cb80f1cf2701469a4e02b0536fdce4f4306ff7852",
-		"c550ae3ffafdda46c13217797dd0aa8ee870727d3e8cab1551d6a3f5e3f7ace0")
+		"c550ae3ffafdda46c13217797dd0aa8ee870727d3e8cab1551d6a3f5e3f7ace0", bs.GetSourceKeyByAddress)
 
 }
 
@@ -228,4 +229,21 @@ func TestFullAddress (t *testing.T) {
 	for i := 0;i<20000000;i++ {
 		dic[uuid.NewUUID().String()] = uuid.NewUUID().String()
 	}
+}
+
+func TestBTCBlockScanner_GetTransactionsByAddress(t *testing.T) {
+	coin := openwallet.Coin{
+		Symbol: "BTC",
+		IsContract: false,
+	}
+	txExtractDatas, err := tw.Blockscanner.GetTransactionsByAddress(0, 50, coin, "2N7Mh6PLX39japSF76r2MAf7wT7WKU5TdpK")
+	if err != nil {
+		t.Errorf("GetTransactionsByAddress failed unexpected error: %v\n", err)
+		return
+	}
+
+	for _, ted := range txExtractDatas {
+		t.Logf("tx = %v", ted.Transaction)
+	}
+
 }

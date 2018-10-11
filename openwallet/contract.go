@@ -22,5 +22,5 @@ type SmartContract struct {
 	Token      string
 	Protocol   string
 	Name       string
-	decimals   uint64
+	Decimals   uint64
 }
