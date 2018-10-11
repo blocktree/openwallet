@@ -76,7 +76,7 @@ func TestGetBlock(t *testing.T) {
 }
 
 func TestGetTransaction(t *testing.T) {
-	raw, err := tw.GetTransaction("6595e0d9f21800849360837b85a7933aeec344a89f5c54cf5db97b79c803c462")
+	raw, err := tw.GetTransaction("908cd40e34795ef8fb898eb322dbbaf8eb12ce72ba65b7cfa353d07b3c70f5e8")
 	if err != nil {
 		t.Errorf("GetTransaction failed unexpected error: %v\n", err)
 		return
@@ -168,14 +168,14 @@ func TestBTCBlockScanner_ScanBlock(t *testing.T) {
 func TestBTCBlockScanner_ExtractTransaction(t *testing.T) {
 
 	accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
-	address := "msnYsBdBXQZqYYqNNJZsjShzwCx9fJVSin"
+	address := "msHemmfSZ3au6h9S1annGcTGrTVryRbSFV"
 
 	bs := tw.Blockscanner
 	bs.AddAddress(address, accountID)
 	bs.ExtractTransaction(
-		1384961,
-		"000000000000001d2f5750ebdeddc17f39c6365c6c9243b0a7c2f79e4b34b39e",
-		"a5866d27379bf4fb446c71e18d0822bfb9c676e9388310389b7eb4d44c44f7a6")
+		1435497,
+		"00000000e271b8234ed2271cb80f1cf2701469a4e02b0536fdce4f4306ff7852",
+		"c550ae3ffafdda46c13217797dd0aa8ee870727d3e8cab1551d6a3f5e3f7ace0")
 
 }
 

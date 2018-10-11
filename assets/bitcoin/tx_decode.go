@@ -484,13 +484,3 @@ func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper *openwallet.Wall
 
 	return nil
 }
-
-//GetAssetsAccountBalanceByAddress 查询账户相关地址的交易记录
-func (decoder *TransactionDecoder) GetBalanceByAddress(address ...*openwallet.Address) ([]*openwallet.Balance, error) {
-	return nil, nil
-}
-
-//GetAssetsAccountTransactionsByAddress 查询账户相关地址的交易记录
-func (decoder *TransactionDecoder) GetTransactionsByAddress(offset, limit int, address ...*openwallet.Address) ([]*openwallet.Transaction, error) {
-	return nil, nil
-}

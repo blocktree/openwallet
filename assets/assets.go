@@ -35,6 +35,7 @@ import (
 	"github.com/blocktree/OpenWallet/assets/stc2345"
 	"github.com/blocktree/OpenWallet/assets/tezos"
 	"github.com/blocktree/OpenWallet/assets/tron"
+	"github.com/blocktree/OpenWallet/assets/nas"
 )
 
 //WalletManager 钱包管理器
@@ -135,4 +136,5 @@ func init() {
 	RegWMD(strings.ToLower(qtum.Symbol), qtum.NewWalletManager())
 	RegWMD(strings.ToLower(decred.Symbol), decred.NewWalletManager())
 	RegWMD(strings.ToLower(tron.Symbol), tron.NewWalletManager())
+	RegWMD(strings.ToLower(nas.Symbol), nas.NewWalletManager())
 }
