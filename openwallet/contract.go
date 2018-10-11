@@ -16,8 +16,11 @@
 package openwallet
 
 type SmartContract struct {
-	Symbol string
-	ContractAddress string
-	Token string
-	Protocol string
+	ContractID string //计算ID：base64(sha256({symbol}_{address}))
+	Symbol     string
+	Address    string
+	Token      string
+	Protocol   string
+	Name       string
+	decimals   uint64
 }
