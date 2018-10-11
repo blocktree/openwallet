@@ -13,7 +13,7 @@
  * GNU Lesser General Public License for more details.
  */
 
-package nas
+package nebulasio
 
 import (
 	//wjq
