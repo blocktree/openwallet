@@ -291,8 +291,11 @@ func TestDecimal(t *testing.T) {
 	//func (d Decimal) Coefficient() *big.Int
 	//func (d Decimal) Div(d2 Decimal) Decimal
 
-	balance_decimal := decimal.RequireFromString("1800000000000000000")
+	balance_decimal := decimal.RequireFromString("18123343455453221")
 	var coinDecimal decimal.Decimal = decimal.NewFromFloat(1000000000000000000)
+
+	balance_int := balance_decimal.IntPart()
+	fmt.Printf("balance_int=%v\n",balance_int)
 
 	balance_string := balance_decimal.String()
 	fmt.Printf("balance_string=%v\n",balance_string)

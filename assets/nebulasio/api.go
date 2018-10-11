@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/imroc/req"
+	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
 	"strconv"
 
@@ -316,14 +317,27 @@ func isError(result *gjson.Result) error {
 	return err
 }
 
-//发送广播签名后的交易单数据
-func (c *Client) CallgetBlockByHeight( height uint64 ) (*gjson.Result, error) {
+//根据区块高度获取区块信息
+//
+func (c *Client) CallgetBlockByHeightOrHash( input string ,heightOrhash int) (*gjson.Result, error) {
 
-	url := c.BaseURL + "/v1/user/getBlockByHeight"
-
+	var url_index string
 	var (
 		body = make(map[string]interface{}, 0)
 	)
+	body["full_fill_transaction"] = true
+
+	if heightOrhash == byHeight{
+		url_index = "/v1/user/getBlockByHeight"
+		body["height"] = decimal.RequireFromString(input).IntPart()
+	}else if heightOrhash == byHash{
+		url_index = "/v1/user/getBlockByHash"
+		body["hash"] = input
+	}else{
+		return nil, errors.New("input value invalid,please check !")
+	}
+
+	url := c.BaseURL + url_index
 
 	if c.Client == nil {
 		return nil, errors.New("API url is not setup. ")
@@ -333,14 +347,6 @@ func (c *Client) CallgetBlockByHeight( height uint64 ) (*gjson.Result, error) {
 		"Accept":        "application/json",
 		"Authorization": "Basic " ,
 	}
-
-	//json-rpc
-	//	body["jsonrpc"] = "2.0"
-	//	body["id"] = "1"
-	//	body["method"] = path
-	//	body["params"] = request
-	body["height"] = height
-	body["full_fill_transaction"] = true
 
 	if c.Debug {
 		log.Info("Start Request API...")
