@@ -479,11 +479,9 @@ func (wm *WalletManager) GetWalletList() error {
 	k, _ := wm.getKeys(key, addr)
 
 	fmt.Printf("Public key:%s\n", k.PublicKey)
-	fmt.Print("Private key:")
-	for _, i := range k.PrivateKey {
-		fmt.Printf(" %d", i)
-	}
-	fmt.Print("\n")
+	sk := base58checkEncode(k.PrivateKey, prefix["edsk2"])
+	fmt.Printf("Private key: %s\n", sk)
+	
 	return nil
 }
 
