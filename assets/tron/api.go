@@ -106,15 +106,11 @@ func (c *Client) Call(path string, param interface{}) ([]byte, error) {
 	authHeader := req.Header{"Accept": "application/json"}
 
 	r, err := req.Post(url, req.BodyJSON(&param), authHeader)
-	// r, err := c.client.Do("POST", url, request, authHeader)
 	if err != nil {
 		log.Error("Failed: %+v >\n", err)
 		return nil, err
 	}
-
-	if c.Debug {
-		log.Std.Info("%+v", r)
-	}
+	// log.Std.Info("%+v", r)
 
 	if r.Response().StatusCode != http.StatusOK {
 		message := gjson.ParseBytes(r.Bytes()).String()
@@ -122,7 +118,6 @@ func (c *Client) Call(path string, param interface{}) ([]byte, error) {
 		log.Error(message)
 		return nil, errors.New(message)
 	}
-	// fmt.Println("XXXX = ", r)
-	// r.Request().GetBody()
+
 	return r.Bytes(), nil
 }

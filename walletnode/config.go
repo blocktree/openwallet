@@ -208,7 +208,7 @@ testNetDataPath = "/data"
 			STOPCMD:  []string{"qtum-cli", "-datadir=/data", "-conf=/etc/qtum.conf", "stop"},
 			LOGFIELS: [2]string{"debug.log", "testnet3/debug.log"},
 		},
-		"eth": &FullnodeContainerConfig{ // Eth
+		"eth": &FullnodeContainerConfig{ // Release0929
 			PORT:     [][3]string{{"8545/tcp", "10002", "20002"}},
 			APIPORT:  []string{"8545/tcp"},
 			IMAGE:    string("openw/eth:geth-v1.8.15"),
@@ -263,6 +263,8 @@ testNetDataPath = "/data"
 			PORT:     [][3]string{{"9360/tcp", "18890", "28890"}},
 			APIPORT:  []string{"9360/tcp"},
 			IMAGE:    string("openw/tron:v3.1.1"),
+			ENCRYPT:  nil,
+			STOPCMD:  nil,
 			LOGFIELS: [2]string{"logs/tron.log", "logs/tron.log"},
 		},
 	}
