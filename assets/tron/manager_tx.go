@@ -156,7 +156,7 @@ func (wm *WalletManager) GetTransactionSign(transaction, privateKey string) (raw
 // 			 				“parameter”:{
 // 								“value”:{“amount”:1000,
 // 									   ”owner_address”:”41e552f6487585c2b58bc2c9bb4492bc1f17132cd0”,
-// 									   ”to_address”:”41d1e7a6bc354106cb410e65ff8b181c600ff14292”},
+// 									   ”to_address”:   ”41d1e7a6bc354106cb410e65ff8b181c600ff14292”},
 // 								”type_url”:”type.googleapis.com/protocol.TransferContract”},
 // 							”type”:”TransferContract”
 // 						}],
@@ -234,7 +234,7 @@ func (wm *WalletManager) BroadcastTransaction(raw string) error {
 	)
 
 	for _, x := range tx.GetSignature() {
-		signature = append(signature, base64.StdEncoding.EncodeToString(x))
+		signature = append(signature, base64.StdEncoding.EncodeToString(x)) // base64
 	}
 
 	if txHash, err := getTxHash(tx); err != nil {
@@ -258,19 +258,13 @@ func (wm *WalletManager) BroadcastTransaction(raw string) error {
 		contract := map[string]interface{}{
 			"type": c.GetType().String(),
 			"parameter": map[string]interface{}{
-				"@type": c.GetParameter().GetTypeUrl(),
-				// "type_url": c.GetParameter().GetTypeUrl(),
-				"value": base64.StdEncoding.EncodeToString(any),
-				// "value": map[string]interface{}{
-				// 	"amount":        tc.Amount,
-				// 	"owner_address": base64.StdEncoding.EncodeToString(tc.GetOwnerAddress()),
-				// 	"to_address":    base64.StdEncoding.EncodeToString(tc.GetToAddress()),
-				// },
-				// "value": map[string]interface{}{
-				// 	"amount":        tc.Amount,
-				// 	"owner_address": hex.EncodeToString(tc.GetOwnerAddress()),
-				// 	"to_address":    hex.EncodeToString(tc.GetToAddress()),
-				// },
+				"@type":    c.GetParameter().GetTypeUrl(),
+				"type_url": c.GetParameter().GetTypeUrl(),
+				"value": map[string]interface{}{
+					"amount":        tc.Amount,
+					"owner_address": base64.StdEncoding.EncodeToString(tc.GetOwnerAddress()),
+					"to_address":    base64.StdEncoding.EncodeToString(tc.GetToAddress()),
+				},
 			},
 		}
 		contracts = append(contracts, contract)
@@ -287,9 +281,6 @@ func (wm *WalletManager) BroadcastTransaction(raw string) error {
 		"txID":      txID,
 		"raw_data":  raw_data,
 	}
-	_ = txID
-	_ = raw_data
-	_ = signature
 
 	// Call api
 	r, err := wm.WalletClient.Call("/wallet/broadcasttransaction", params)
@@ -297,11 +288,21 @@ func (wm *WalletManager) BroadcastTransaction(raw string) error {
 		log.Error(err)
 		return err
 	} else {
-		log.Infof("Test = %+v\n", gjson.ParseBytes(r))
+		log.Debugf("Test = %+v\n", gjson.ParseBytes(r))
 
 		res := gjson.ParseBytes(r)
 		if res.Get("code").String() != "SUCCESS" {
-			err := errors.New(fmt.Sprintf("BroadcastTransaction return: %+v", res))
+
+			var err error
+
+			if res.Get("message").String() != "" {
+				msg, _ := base64.StdEncoding.DecodeString(res.Get("message").String())
+				err = errors.New(fmt.Sprintf("BroadcastTransaction error message: %+v", string(msg)))
+			} else {
+				err = errors.New(fmt.Sprintf("BroadcastTransaction return error: %+v", res))
+			}
+			log.Error(err)
+
 			return err
 		}
 	}

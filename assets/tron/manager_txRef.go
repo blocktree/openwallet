@@ -331,9 +331,6 @@ func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
 			log.Println(err)
 			return err
 		}
-		// fmt.Println("  signature = ", hex.EncodeToString(tx.Signature[i]))
-		// fmt.Println("  publickey = ", hex.EncodeToString(pkBytes))
-		// fmt.Println("  Tx_txHash = ", hex.EncodeToString(txHash))
 
 		pkgen_address_bytes, err := createAddressByPkRef(pkBytes)
 		if err != nil {
@@ -341,10 +338,6 @@ func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
 			return err
 		}
 		pkgen_address_hex := hex.EncodeToString(pkgen_address_bytes[:len(pkgen_address_bytes)-4])
-
-		// fmt.Println("")
-		// fmt.Println("  owner_address = ", owner_address_hex)
-		// fmt.Println("  pk_to_address = ", pkgen_address_hex)
 
 		// Check whether the address is equal between signature generating and contract owner pointed
 		if pkgen_address_hex != owner_address_hex {
