@@ -77,8 +77,8 @@ type NodeManager interface {
 	// LogsNodeFlow 日志
 	LogsNodeFlow(string) error
 
-	// //InstallNode 安装节点
-	// InstallNodeFlow() error
+	// //LoginNode 登陆节点
+	// LoginNode() error
 	// //ShowNodeInfo 显示节点信息
 	// ShowNodeInfo() error
 }

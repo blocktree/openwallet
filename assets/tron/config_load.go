@@ -17,9 +17,7 @@ package tron
 
 import (
 	"errors"
-	"fmt"
 	"path/filepath"
-	"time"
 
 	"github.com/astaxie/beego/config"
 	"github.com/shopspring/decimal"
@@ -56,15 +54,6 @@ func (wm *WalletManager) LoadConfig() error {
 	} else {
 		wm.Config.WalletDataPath = c.String("mainNetDataPath")
 	}
-
-	cyclesec := c.String("cycleSeconds")
-	if cyclesec == "" {
-		return errors.New(fmt.Sprintf(" cycleSeconds is not set, sample: 1m , 30s, 3m20s etc... Please set it in './conf/%s.ini' \n", Symbol))
-	}
-
-	wm.Config.CycleSeconds, _ = time.ParseDuration(cyclesec)
-
-	// token := BasicAuth(wm.Config.RpcUser, wm.Config.RpcPassword)
 
 	wm.WalletClient = NewClient(wm.Config.ServerAPI, "", false)
 

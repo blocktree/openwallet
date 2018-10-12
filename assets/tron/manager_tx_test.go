@@ -63,13 +63,12 @@ func TestGetTransactoinSign(t *testing.T) {
 }
 
 func TestBroadcastTransaction(t *testing.T) {
-	// var signature string = ""
-	// var txID string = ""
-	var raw_data = ""
-	if err := tw.BroadcastTransaction(raw_data); err != nil {
-		t.Errorf("TestCreateTransaction failed: %v\n", err)
+	var raw string
+	raw = "0a7e0a0265912208acca59b1293334d640d88cee90e62c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d12414f7008a14665d7acbb65da8aca558a12f3c7bb668bca700536fa46adf49501d7dd312207bca0788940379f7eaa5ced8131b8945a3aa664fe0b8fa86e5ae0eab501"
+	raw = "0a7e0a026eb322085cbf523e9a1e5ca340c8999a94e62c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d124132719426f230a76af1e4505018808adbc4a47957da27938566e355d4e4d4de3e76df1c8149457eff128502a75a68beb2cf653aa777c95316c57138e8a1e8d7be00"
+	if err := tw.BroadcastTransaction(raw); err != nil {
+		t.Errorf("BroadcastTransaction failed: %v\n", err)
 	} else {
-		t.Logf("TestCreateTransaction return: \n\t%+v\n", "Success!")
+		t.Logf("BroadcastTransaction return: \n\t%+v\n", "Success!")
 	}
-
 }

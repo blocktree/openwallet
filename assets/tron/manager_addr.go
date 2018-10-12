@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	// "github.com/blocktree/OpenWallet/assets/tron/protocol/api"
+
 	"github.com/tidwall/gjson"
 	"github.com/tronprotocol/grpc-gateway/api"
 
@@ -96,3 +97,19 @@ func (wm *WalletManager) ValidateAddress(address string) (err error) {
 
 	return nil
 }
+
+// //CreateReceiverAddress 给指定账户创建地址
+// func (wm *WalletManager) CreateReceiverAddress(account string) (string, error) {
+
+// 	request := []interface{}{
+// 		account,
+// 	}
+
+// 	result, err := wm.WalletClient.Call("getnewaddress", request)
+// 	if err != nil {
+// 		return "", err
+// 	}
+
+// 	return result.String(), err
+
+// }
