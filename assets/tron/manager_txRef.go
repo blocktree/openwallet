@@ -169,8 +169,8 @@ func (wm *WalletManager) CreateTransactionRef(to_address, owner_address string, 
 		RefBlockBytes: refBlockBytes,
 		RefBlockHash:  refBlockHash,
 		Contract:      []*core.Transaction_Contract{txContact},
-		Timestamp:     timestamp,
-		Expiration:    timestamp + 10*60*60,
+		Expiration:    timestamp + 10*60*60*60,
+		// Timestamp:     timestamp,
 	}
 	tx := &core.Transaction{
 		RawData: txRaw,
