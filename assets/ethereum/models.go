@@ -54,6 +54,74 @@ type ERC20Token struct {
 	balance  *big.Int
 }
 
+type EthEvent struct {
+	Address string   `json:"address"`
+	Topics  []string `json:"topics"`
+	Data    string   `josn:"data"`
+	//BlockNumber string
+	LogIndex string `json:"logIndex"`
+	Removed  bool   `json:"removed"`
+}
+
+type EthTransactionReceipt struct {
+	Logs []EthEvent
+}
+
+type TransferEvent struct {
+	TokenFrom     string
+	TokenTo       string
+	Value         string
+	FromSourceKey string //transaction scanning 的时候对其进行赋值
+	ToSourceKey   string //transaction scanning 的时候对其进行赋值
+}
+
+func (this *EthTransactionReceipt) ParseTransferEvent() *TransferEvent {
+	var transferEvent TransferEvent
+	removePrefix0 := func(num string) string {
+		num = removeOxFromHex(num)
+		array := []byte(num)
+		i := 0
+
+		for i, _ = range num {
+			if num[i] != '0' {
+				break
+			}
+		}
+
+		return string(array[i:len(num)])
+	}
+
+	for i, _ := range this.Logs {
+		if len(this.Logs[i].Topics) != 3 {
+			continue
+		}
+
+		if this.Logs[i].Topics[0] != ETH_TRANSFER_EVENT_ID {
+			continue
+		}
+
+		if len(this.Logs[i].Data) != 66 {
+			continue
+		}
+
+		prefix := string([]byte(this.Logs[i].Topics[1])[0:26:26])
+		if prefix != "0x000000000000000000000000" {
+			continue
+		}
+
+		prefix = string([]byte(this.Logs[i].Topics[2])[0:26:26])
+		if prefix != "0x000000000000000000000000" {
+			continue
+		}
+
+		transferEvent.TokenFrom = string([]byte(this.Logs[i].Topics[1])[26:66:66])
+		transferEvent.TokenTo = string([]byte(this.Logs[i].Topics[2])[26:66:66])
+		transferEvent.Value = removePrefix0(this.Logs[i].Data)
+		return &transferEvent
+	}
+	return nil
+}
+
 type Address struct {
 	Address      string `json:"address" storm:"id"`
 	Account      string `json:"account" storm:"index"`
@@ -105,9 +173,12 @@ type BlockTransaction struct {
 	Data             string `json:"input"`
 	TransactionIndex string `json:"transactionIndex"`
 	Timestamp        string `json:"timestamp"`
-	FromAccountId    string  //transaction scanning 的时候对其进行赋值
-	BlockHeight      uint64  //transaction scanning 的时候对其进行赋值
-    ToAccountId      string  //transaction scanning 的时候对其进行赋值
+	FromSourceKey    string //transaction scanning 的时候对其进行赋值
+	BlockHeight      uint64 //transaction scanning 的时候对其进行赋值
+	ToSourceKey      string //transaction scanning 的时候对其进行赋值
+	TokenFrom        string //transaction scanning 的时候对其进行赋值, erc20代币转账有效
+	TokenTo          string //transaction scanning 的时候对其进行赋值, erc20代币转账有效
+	TokenValue       string //transaction scanning 的时候对其进行赋值, erc20代币转账有效
 }
 
 type BlockHeader struct {

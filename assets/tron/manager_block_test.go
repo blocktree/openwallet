@@ -58,12 +58,12 @@ func TestGetBlockByID(t *testing.T) {
 
 func TestGetBlockByLimitNext(t *testing.T) {
 
-	var startSum, endSum uint64 = 11 * 10000, 11*10000 + 3
+	var startSum, endSum uint64 = 120 * 10000, 120*10000 + 3
 
 	if r, err := tw.GetBlockByLimitNext(startSum, endSum); err != nil {
 		t.Errorf("GetBlockByLimitNext failed: %v\n", err)
 	} else {
-		t.Logf("GetBlockByLimitNext return: \n\t%+v\n", r)
+		// t.Logf("GetBlockByLimitNext return: \n\t%+v\n", r)
 
 		for _, v := range r.Block {
 			printBlock(v)

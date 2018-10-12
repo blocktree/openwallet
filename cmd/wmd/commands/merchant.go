@@ -16,10 +16,10 @@
 package commands
 
 import (
-	"gopkg.in/urfave/cli.v1"
 	"github.com/blocktree/OpenWallet/cmd/utils"
-	"github.com/blocktree/OpenWallet/merchant"
 	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/OpenWallet/merchant"
+	"gopkg.in/urfave/cli.v1"
 )
 
 var (
@@ -53,10 +53,10 @@ This command will show the local publicKey and merchant publicKey.
 			},
 			{
 				//加入并连接到商户节点
-				Name:      "join",
-				Usage:     "Join and connect merchant node",
-				Action:    joinMerchantNode,
-				Category:  "MERCHANT COMMANDS",
+				Name:     "join",
+				Usage:    "Join and connect merchant node",
+				Action:   joinMerchantNode,
+				Category: "MERCHANT COMMANDS",
 				Description: `
 	wmd merchant join
 
@@ -110,7 +110,6 @@ func joinMerchantNode(c *cli.Context) error {
 		err error
 	)
 
-
 	logDir := c.GlobalString("logdir")
 	debug := c.GlobalBool("debug")
 	utils.SetupLog(logDir, "merchant.log", debug)
@@ -140,5 +139,3 @@ func configMerchantNode(c *cli.Context) error {
 	}
 	return err
 }
-
-
