@@ -24,9 +24,6 @@ import (
 	"context"
 )
 
-
-
-
 //owtp监听器
 type httpListener struct {
 	net.Listener
@@ -63,16 +60,43 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		cnCh = cn.CloseNotify()
 	}
 
-	auth, err := NewOWTPAuthWithHTTPHeader(r.Header)
-	if err != nil {
-		log.Debug("NewOWTPAuth unexpected error:", err)
-		http.Error(w, "Failed to upgrade websocket", 400)
+	header := r.Header
+	if header == nil {
+		log.Debug("header is nil")
+		http.Error(w, "Header is nil", 400)
 		return
+	}
+
+	var auth *OWTPAuth
+	var err error
+
+
+	if len(header.Get("a")) == 0 {
+		//临时通过
+		cert, err := NewCertificate(RandomPrivateKey(), "")
+		if err != nil {
+			log.Debug("NewCertificate unexpected error:", err)
+			http.Error(w, "Failed to NewCertificate", 400)
+			return
+		}
+		auth, err = NewOWTPAuthWithCertificate(cert)
+		if err != nil {
+			log.Debug("NewOWTPAuthWithCertificate unexpected error:", err)
+			http.Error(w, "Failed to NewOWTPAuthWithCertificate", 400)
+			return
+		}
+	} else {
+		auth, err = NewOWTPAuthWithHTTPHeader(r.Header)
+		if err != nil {
+			log.Debug("NewOWTPAuth unexpected error:", err)
+			http.Error(w, "Failed to upgrade http", 400)
+			return
+		}
 	}
 
 	log.Debug("NewOWTPAuth successfully")
 
-	peer, err := NewHTTPClient(auth.RemotePID(), w,r, l.handler, auth, cancel)
+	peer, err := NewHTTPClient(auth.RemotePID(), w, r, l.handler, auth, cancel)
 	if err != nil {
 		log.Debug("NewClient unexpected error:", err)
 		http.Error(w, "authorization not passed", 401)
@@ -95,7 +119,7 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// wait until conn gets closed, otherwise the handler closes it early
 	select {
-	case <-ctx.Done():	//收到节点关闭的通知
+	case <-ctx.Done(): //收到节点关闭的通知
 		//log.Debug("peer 1:", peer.PID(), "closed")
 		return
 	case <-l.closed:
