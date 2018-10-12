@@ -327,6 +327,51 @@ func (this *ETHBLockScanner) GetTxPoolPendingTxs() ([]BlockTransaction, error) {
 	return txs, nil
 }
 
+func (this *ETHBLockScanner) InitEthTokenExtractResult(tx *BlockTransaction, tokenEvent *TransferEvent, result *ExtractResult, isFromAccount bool) {
+	txExtractData := &openwallet.TxExtractData{}
+	transx := &openwallet.Transaction{
+		//From: tx.From,
+		//To:   tx.To,
+		Fees: tx.GasPrice, //totalSpent.Sub(totalReceived).StringFixed(8),
+		Coin: openwallet.Coin{
+			Symbol:     this.wm.Symbol(),
+			IsContract: true,
+		},
+		BlockHash:   tx.BlockHash,
+		BlockHeight: tx.BlockHeight,
+		TxID:        tx.Hash,
+		Decimal:     18,
+	}
+	transx.From = append(transx.From, tx.From)
+	transx.To = append(transx.To, tx.To)
+	wxID := openwallet.GenTransactionWxID(transx)
+	transx.WxID = wxID
+	txExtractData.Transaction = transx
+
+	var sourceKey string
+	if isFromAccount {
+		sourceKey = tokenEvent.FromSourceKey
+	} else {
+		sourceKey = tokenEvent.ToSourceKey
+	}
+
+	txInput := &openwallet.TxInput{
+		SourceTxID: tx.Hash,
+	}
+	txInput.Recharge.Address = tokenEvent.TokenFrom
+	txInput.Recharge.Amount = tokenEvent.Value
+	txInput.Recharge.BlockHash = tx.BlockHash
+	txInput.Recharge.BlockHeight = tx.BlockHeight
+	txExtractData.TxInputs = append(txExtractData.TxInputs, txInput)
+	txOutput := &openwallet.TxOutPut{}
+	txOutput.Recharge.Address = tokenEvent.TokenTo
+	txOutput.Recharge.Amount = tokenEvent.Value
+	txOutput.Recharge.BlockHash = tx.BlockHash
+	txOutput.Recharge.BlockHeight = tx.BlockHeight
+	txExtractData.TxOutputs = append(txExtractData.TxOutputs, txOutput)
+	result.extractData[sourceKey] = txExtractData
+}
+
 func (this *ETHBLockScanner) InitEthExtractResult(tx *BlockTransaction, result *ExtractResult, isFromAccount bool) {
 	txExtractData := &openwallet.TxExtractData{}
 	transx := &openwallet.Transaction{
@@ -342,19 +387,36 @@ func (this *ETHBLockScanner) InitEthExtractResult(tx *BlockTransaction, result *
 		TxID:        tx.Hash,
 		Decimal:     18,
 	}
-	if tx.Data != "0x" && tx.Data != "" {
-		transx.Coin.IsContract = true
-	}
 	transx.From = append(transx.From, tx.From)
 	transx.To = append(transx.To, tx.To)
 	wxID := openwallet.GenTransactionWxID(transx)
 	transx.WxID = wxID
 	txExtractData.Transaction = transx
 	if isFromAccount {
-		result.extractData[tx.FromAccountId] = txExtractData
+		result.extractData[tx.FromSourceKey] = txExtractData
 	} else {
-		result.extractData[tx.ToAccountId] = txExtractData
+		result.extractData[tx.ToSourceKey] = txExtractData
 	}
+}
+
+func (this *ETHBLockScanner) GetErc20TokenEvent(tx *BlockTransaction, extractResult *ExtractResult) (*TransferEvent, error) {
+	//非合约交易或未打包交易跳过
+	if tx.Data == "0x" || tx.Data != "" || tx.BlockHeight == 0 || tx.BlockHash == "" {
+		return nil, nil
+	}
+
+	receipt, err := this.wm.WalletClient.ethGetTransactionReceipt(tx.Hash)
+	if err != nil {
+		log.Errorf("get transaction receipt failed, err=%v", err)
+		return nil, err
+	}
+
+	transEvent := receipt.ParseTransferEvent()
+	if transEvent == nil {
+		return nil, nil
+	}
+
+	return transEvent, nil
 }
 
 func (this *ETHBLockScanner) TransactionScanning(tx *BlockTransaction) (*ExtractResult, error) {
@@ -372,24 +434,47 @@ func (this *ETHBLockScanner) TransactionScanning(tx *BlockTransaction) (*Extract
 		TxID:        tx.BlockHash,
 		extractData: make(map[string]*openwallet.TxExtractData),
 	}
-	if this.IsExistAddress(tx.From) {
+
+	tokenEvent, err := this.GetErc20TokenEvent(tx, &result)
+	if err != nil {
+		log.Errorf("GetErc20TokenEvent failed, err=%v", err)
+		return nil, err
+	}
+
+	// 普通交易, from地址在监听地址中
+	if this.IsExistAddress(tx.From) && tokenEvent == nil {
 		log.Debugf("tx.from found in transaction [%v] .", tx.Hash)
-		if accountId, exist := this.GetSourceKeyByAddress(tx.From); exist {
-			tx.FromAccountId = accountId
+		if sourceKey, exist := this.GetSourceKeyByAddress(tx.From); exist {
+			tx.FromSourceKey = sourceKey
 			this.InitEthExtractResult(tx, &result, true)
 		} else {
 			return nil, errors.New("tx.from unexpected error.")
 		}
+	} else if tokenEvent != nil && this.IsExistAddress(tokenEvent.TokenFrom) {
+		//erc20 token交易, from地址在监听地址中
+		if sourceKey, exist := this.GetSourceKeyByAddress(tokenEvent.TokenFrom); exist {
+			tokenEvent.FromSourceKey = sourceKey
+			this.InitEthTokenExtractResult(tx, tokenEvent, &result, true)
+		}
+
 	} else {
 		log.Debugf("tx.from[%v] not found in scanning address.", tx.From)
 	}
 
-	if this.IsExistAddress(tx.To) {
+	if this.IsExistAddress(tx.To) && tokenEvent == nil {
 		log.Debugf("tx.to found in transaction [%v].", tx.Hash)
-		if accountId, exist := this.GetSourceKeyByAddress(tx.To); exist {
-			if _, exist = result.extractData[accountId]; !exist {
-				tx.ToAccountId = accountId
+		if sourceKey, exist := this.GetSourceKeyByAddress(tx.To); exist {
+			if _, exist = result.extractData[sourceKey]; !exist {
+				tx.ToSourceKey = sourceKey
 				this.InitEthExtractResult(tx, &result, false)
+			}
+
+		} else if tokenEvent != nil && this.IsExistAddress(tokenEvent.TokenTo) {
+			if sourceKey, exist := this.GetSourceKeyByAddress(tokenEvent.TokenTo); exist {
+				if _, exist = result.extractData[sourceKey]; !exist {
+					tokenEvent.ToSourceKey = sourceKey
+					this.InitEthTokenExtractResult(tx, tokenEvent, &result, false)
+				}
 			}
 
 		} else {

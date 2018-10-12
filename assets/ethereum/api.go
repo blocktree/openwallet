@@ -51,17 +51,6 @@ type Response struct {
 	Result  interface{} `json:"result"`
 }
 
-const (
-	ETH_GET_TOKEN_BALANCE_METHOD      = "0x70a08231"
-	ETH_TRANSFER_TOKEN_BALANCE_METHOD = "0xa9059cbb"
-)
-
-const (
-	SOLIDITY_TYPE_ADDRESS = "address"
-	SOLIDITY_TYPE_UINT256 = "uint256"
-	SOLIDITY_TYPE_UINT160 = "uint160"
-)
-
 /*
 1. eth block example
    "result": {
@@ -251,6 +240,35 @@ func (this *Client) ethGetTxPoolContent() (*TxpoolContent, error) {
 	}
 
 	return &txpool, nil
+}
+
+func (this *Client) ethGetTransactionReceipt(transactionId string) (*EthTransactionReceipt, error) {
+	params := []interface{}{
+		transactionId,
+	}
+
+	var txReceipt EthTransactionReceipt
+	result, err := this.Call("eth_getTransactionReceipt", 1, params)
+	if err != nil {
+		//errInfo := fmt.Sprintf("get block[%v] failed, err = %v \n", blockNumStr,  err)
+		log.Errorf("get tx[%v] receipt failed, err = %v \n", transactionId, err)
+		return nil, err
+	}
+
+	if result.Type != gjson.JSON {
+		errInfo := fmt.Sprintf("get tx[%v] receipt result type failed, result type is %v", transactionId, result.Type)
+		log.Errorf(errInfo)
+		return nil, errors.New(errInfo)
+	}
+
+	err = json.Unmarshal([]byte(result.Raw), &txReceipt)
+	if err != nil {
+		log.Errorf("decode json [%v] failed, err=%v", []byte(result.Raw), err)
+		return nil, err
+	}
+
+	return &txReceipt, nil
+
 }
 
 func (this *Client) ethGetBlockSpecByHash(blockHash string, showTransactionSpec bool) (*EthBlock, error) {
