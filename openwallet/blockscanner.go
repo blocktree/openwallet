@@ -23,6 +23,10 @@ import (
 	"time"
 )
 
+// BlockScanAddressFunc 扫描地址是否存在算法
+// @return 地址所属源标识，是否存在
+type BlockScanAddressFunc func(address string) (string, bool)
+
 // BlockScanner 区块扫描器
 // 负责扫描新区块，给观察者推送订阅地址的新交易单。
 type BlockScanner interface {
@@ -72,14 +76,14 @@ type BlockScanner interface {
 	ExtractTransactionData(txid string) (map[string]*TxExtractData, error)
 
 	//GetBalanceByAddress 查询地址余额
-	GetBalanceByAddress(address ...*Address) ([]*Balance, error)
+	GetBalanceByAddress(address ...string) ([]*Balance, error)
 
 	//GetTokenBalanceByAddress 查询地址token余额列表
-	GetTokenBalanceByAddress(address ...*Address) ([]*TokenBalance, error)
+	GetTokenBalanceByAddress(address ...string) ([]*TokenBalance, error)
 
 	//GetTransactionsByAddress 查询基于账户的交易记录，通过账户关系的地址
 	//返回的交易记录以资产账户为集合的结果，转账数量以基于账户来计算
-	GetTransactionsByAddress(offset, limit int, coin *Coin, address ...*Address) ([]*Transaction, error)
+	GetTransactionsByAddress(offset, limit int, coin Coin, address ...string) ([]*TxExtractData, error)
 }
 
 //BlockScanNotificationObject 扫描被通知对象
@@ -92,13 +96,13 @@ type BlockScanNotificationObject interface {
 	BlockExtractDataNotify(sourceKey string, data *TxExtractData) error
 }
 
-//TxExtractData 区块扫描后的交易单提取结果
+//TxExtractData 区块扫描后的交易单提取结果，每笔交易单
 type TxExtractData struct {
 
-	//充值记录
+	//消费记录，交易单输入部分
 	TxInputs []*TxInput
 
-	//充值记录
+	//充值记录，交易单输出部分
 	TxOutputs []*TxOutPut
 
 	//交易记录
@@ -283,17 +287,18 @@ func (bs *BlockScannerBase) ExtractTransactionData(txid string) (map[string]*TxE
 	return nil, nil
 }
 
-//GetAssetsAccountBalanceByAddress 查询账户相关地址的交易记录
-func (bs *BlockScannerBase) GetBalanceByAddress(address ...*Address) ([]*Balance, error) {
+//GetBalanceByAddress 查询地址余额
+func (bs *BlockScannerBase) GetBalanceByAddress(address ...string) ([]*Balance, error) {
 	return nil, nil
 }
 
 //GetTokenBalanceByAddress 查询地址token余额列表
-func (bs *BlockScannerBase) GetTokenBalanceByAddress(address ...*Address) ([]*TokenBalance, error) {
+func (bs *BlockScannerBase) GetTokenBalanceByAddress(address ...string) ([]*TokenBalance, error) {
 	return nil, nil
 }
 
-//GetAssetsAccountTransactionsByAddress 查询账户相关地址的交易记录
-func (bs *BlockScannerBase) GetTransactionsByAddress(offset, limit int, coin *Coin, address ...*Address) ([]*Transaction, error) {
+//GetTransactionsByAddress 查询基于账户的交易记录，通过账户关系的地址
+//返回的交易记录以资产账户为集合的结果，转账数量以基于账户来计算
+func (bs *BlockScannerBase) GetTransactionsByAddress(offset, limit int, coin Coin, address ...string) ([]*TxExtractData, error) {
 	return nil, nil
 }

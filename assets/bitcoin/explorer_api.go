@@ -23,6 +23,7 @@ import (
 	"github.com/imroc/req"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
+	"net/http"
 	"strings"
 )
 
@@ -70,6 +71,10 @@ func (b *Explorer) Call(path string, request interface{}, method string) (*gjson
 
 	if b.Debug {
 		log.Std.Debug("%+v", r)
+	}
+
+	if r.Response().StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%s", r.Response().Status)
 	}
 
 	if err != nil {
@@ -251,7 +256,7 @@ func newBlockByExplorer(json *gjson.Result) *Block {
 	obj.tx = txs
 	obj.Previousblockhash = gjson.Get(json.Raw, "previousblockhash").String()
 	obj.Height = gjson.Get(json.Raw, "height").Uint()
-	obj.Version = gjson.Get(json.Raw, "version").Uint()
+	//obj.Version = gjson.Get(json.Raw, "version").String()
 	obj.Time = gjson.Get(json.Raw, "time").Uint()
 
 	return obj
@@ -374,7 +379,6 @@ func newTxVoutByExplorer(json *gjson.Result) *Vout {
 //getBalanceByExplorer 获取地址余额
 func (wm *WalletManager) getBalanceByExplorer(address string) (*openwallet.Balance, error) {
 
-
 	path := fmt.Sprintf("addr/%s?noTxList=1", address)
 
 	result, err := wm.ExplorerClient.Call(path, nil, "GET")
@@ -389,19 +393,19 @@ func newBalanceByExplorer(json *gjson.Result) *openwallet.Balance {
 
 	/*
 
-	{
-		"addrStr": "mnMSQs3HZ5zhJrCEKbqGvcDLjAAxvDJDCd",
-		"balance": 3136.82244887,
-		"balanceSat": 313682244887,
-		"totalReceived": 3136.82244887,
-		"totalReceivedSat": 313682244887,
-		"totalSent": 0,
-		"totalSentSat": 0,
-		"unconfirmedBalance": 0,
-		"unconfirmedBalanceSat": 0,
-		"unconfirmedTxApperances": 0,
-		"txApperances": 3909
-	}
+		{
+			"addrStr": "mnMSQs3HZ5zhJrCEKbqGvcDLjAAxvDJDCd",
+			"balance": 3136.82244887,
+			"balanceSat": 313682244887,
+			"totalReceived": 3136.82244887,
+			"totalReceivedSat": 313682244887,
+			"totalSent": 0,
+			"totalSentSat": 0,
+			"unconfirmedBalance": 0,
+			"unconfirmedBalanceSat": 0,
+			"unconfirmedTxApperances": 0,
+			"txApperances": 3909
+		}
 
 	*/
 	obj := openwallet.Balance{}
@@ -414,4 +418,36 @@ func newBalanceByExplorer(json *gjson.Result) *openwallet.Balance {
 	obj.ConfirmBalance = b.Sub(u).StringFixed(8)
 
 	return &obj
+}
+
+//getMultiAddrTransactionsByExplorer 获取多个地址的交易单数组
+func (wm *WalletManager) getMultiAddrTransactionsByExplorer(offset, limit int, address ...string) ([]*Transaction, error) {
+
+	var (
+		trxs = make([]*Transaction, 0)
+	)
+
+	addrs := strings.Join(address, ",")
+
+	request := req.Param{
+		"addrs": addrs,
+		"from":  offset,
+		"to":    offset + limit,
+	}
+
+	path := fmt.Sprintf("addrs/txs")
+
+	result, err := wm.ExplorerClient.Call(path, request, "POST")
+	if err != nil {
+		return nil, err
+	}
+
+	if items := result.Get("items"); items.IsArray() {
+		for _, obj := range items.Array() {
+			tx := newTxByExplorer(&obj)
+			trxs = append(trxs, tx)
+		}
+	}
+
+	return trxs, nil
 }

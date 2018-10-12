@@ -13,7 +13,7 @@
  * GNU Lesser General Public License for more details.
  */
 
-package nas
+package nebulasio
 
 import (
 	//wjq
@@ -133,8 +133,7 @@ apiUrl = "http://"
 gasLimit = "0.000000000002"
 # the safe address that wallet send money to.
 sumAddress = ""
-# when wallet's balance is over this value, the wallet willl send money to [sumAddress]
-#threshold, unit is NAS， recommend 0.05 NAS
+# threshold,unit is NAS,recommend 1 NAS,when wallet's balance is over this value, the wallet willl send money to [sumAddress]
 threshold = ""
 # summary task timer cycle time, sample: 1h, 1h1m , 2m, 30s, 3m20s etc...
 cycleSeconds = ""
