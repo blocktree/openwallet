@@ -477,7 +477,7 @@ func (wm *WalletManager) GetWalletList() error {
 	}
 
 	k, _ := wm.getKeys(key, addr)
-	fmt.Printf("Public key:%s\n", k.PublicKey)
+	fmt.Printf("Public key:%s\nPrivate key: %s\n", k.PublicKey, k.PrivateKey)
 
 	return nil
 }
