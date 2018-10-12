@@ -16,7 +16,10 @@
 package bitcoin
 
 import (
+	"github.com/asdine/storm"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"path/filepath"
 	"testing"
 	"github.com/pborman/uuid"
 )
@@ -246,4 +249,20 @@ func TestBTCBlockScanner_GetTransactionsByAddress(t *testing.T) {
 		t.Logf("tx = %v", ted.Transaction)
 	}
 
+}
+
+func TestGetLocalBlock(t *testing.T) {
+	db, err := storm.Open(filepath.Join(tw.Config.dbPath, tw.Config.BlockchainFile))
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	var blocks []*Block
+	err = db.All(&blocks)
+	if err != nil {
+		log.Error("no find")
+		return
+	}
+	log.Info("blocks = ", len(blocks))
 }

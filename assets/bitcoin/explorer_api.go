@@ -256,7 +256,7 @@ func newBlockByExplorer(json *gjson.Result) *Block {
 	obj.tx = txs
 	obj.Previousblockhash = gjson.Get(json.Raw, "previousblockhash").String()
 	obj.Height = gjson.Get(json.Raw, "height").Uint()
-	obj.Version = gjson.Get(json.Raw, "version").Uint()
+	//obj.Version = gjson.Get(json.Raw, "version").String()
 	obj.Time = gjson.Get(json.Raw, "time").Uint()
 
 	return obj
