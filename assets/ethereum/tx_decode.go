@@ -314,7 +314,7 @@ func (this *EthTransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 					Balance:   addresses[addrsBalanceList[i].index].Balance,
 					IsMemo:    addresses[addrsBalanceList[i].index].IsMemo,
 					Memo:      addresses[addrsBalanceList[i].index].Memo,
-					CreatedAt: addresses[addrsBalanceList[i].index].CreatedAt,
+					CreatedTime: addresses[addrsBalanceList[i].index].CreatedTime,
 				}
 
 				keySignList = append(keySignList, &openwallet.KeySignature{

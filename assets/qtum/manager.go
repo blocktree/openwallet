@@ -707,7 +707,7 @@ func (wm *WalletManager) CreateNewPrivateKey(accountID string, key *owkeychain.E
 		Address:   address,
 		AccountID: accountID,
 		HDPath:    derivedPath,
-		CreatedAt: time.Now().Unix(),
+		CreatedTime: time.Now().Unix(),
 		Symbol:    wm.config.symbol,
 		Index:     index,
 		WatchOnly: false,
