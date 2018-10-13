@@ -409,7 +409,7 @@ func makeTransactionData(methodId string, params []SolidityParam) (string, error
 				return "", errors.New("integer overflow.")
 			}
 			param = makeRepeatString("0", uint(64-l)) + param
-			fmt.Println("makeTransactionData intParam:", intParam.String(), " param:", param)
+			//fmt.Println("makeTransactionData intParam:", intParam.String(), " param:", param)
 		} else {
 			return "", errors.New("not support solidity type")
 		}
@@ -496,9 +496,9 @@ func signEthTransaction(priKey []byte, toAddr string, amount *big.Int, nonce uin
 	var err error
 	signer := types.NewEIP155Signer(big.NewInt(int64(chainId)))
 	tx := types.NewTransaction(nonce, ethcommon.HexToAddress(toAddr),
-		amount, fee.GasLimit.Uint64(), fee.GasPrice, []byte(data))
-	msg := signer.Hash(tx)
+		amount, fee.GasLimit.Uint64(), fee.GasPrice, common.FromHex(data))
 
+	msg := signer.Hash(tx)
 	sig, err := secp256k1.Sign(msg[:], priKey)
 	if err != nil {
 		log.Error("secp256k1.Sign failed, err=", err)
@@ -579,6 +579,7 @@ func makeERC20TokenTransData(contractAddr string, toAddr string, amount *big.Int
 		openwLogger.Log.Errorf("make transaction data failed, err = %v", err)
 		return "", err
 	}
+	log.Debugf("data:%v", data)
 	return data, nil
 }
 

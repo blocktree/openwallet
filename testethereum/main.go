@@ -36,15 +36,15 @@ func main() {
 
 	//fmt.Println("change dir err:",err)
 	//tech.TestNewWallet()
-	//tech.TestBatchCreateAddr()
+	//tech.TestBatchCreateAddr()p
 	//tech.TestBitInt()
 	//tech.TestTransferFlow()
 	//tech.TestSummaryFlow()
 	//tech.TestBackupWallet()
 	//tech.TestRestoreWallet()
 	//tech.TestConfigErcToken()
-	//tech.TestERC20TokenTransfer()
-	//tech.TestERC20TokenSummary()
+	tech.TestERC20TokenTransfer()
+	//tech.TestERC20TokenSummary()p
 	//tech.TestBigInt()
 	//tech.TestDiffer()
 	//tech.TestGetFuncAndFileName()
@@ -74,7 +74,7 @@ func main() {
 	//tech.TestWalletManager_CreateTransaction()
 	//tech.TestWalletManager_SignTransaction()
 	//tech.TestWalletManager_VerifyTransaction()
-	tech.TestWalletManager_SubmitTransaction()
+	//tech.TestWalletManager_SubmitTransaction()
 
 	//tech.TestSlice2()
 

@@ -668,7 +668,7 @@ func (this *WalletManager) ERC20TokenTransferFlow() error {
 	}
 
 	//建立交易单
-	txID, err := this.ERC20SendTransaction(wallet,
+	txID, err := this.ERC20SendTransaction2(wallet,
 		receiver, amount, password, true)
 	if err != nil {
 		return err
@@ -836,7 +836,7 @@ func (this *WalletManager) GetLocalBlockHeight() (uint64, error) {
 	return blockHeight, nil
 }
 
-func (this *WalletManager)SaveLocalBlockScanned(blockHeight uint64, blockHash string) error{
+func (this *WalletManager) SaveLocalBlockScanned(blockHeight uint64, blockHash string) error {
 	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
 		openwLogger.Log.Errorf("open db for update local block height failed, err=%v", err)
@@ -863,7 +863,6 @@ func (this *WalletManager)SaveLocalBlockScanned(blockHeight uint64, blockHash st
 		openwLogger.Log.Errorf("update block height failed, err= %v", err)
 		return err
 	}
-
 
 	tx.Commit()
 	return nil

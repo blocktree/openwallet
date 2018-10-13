@@ -52,7 +52,7 @@ func TestTransferFlow() {
 	manager, _ := GetEthWalletManager()
 	err := manager.TransferFlow()
 	if err != nil {
-		log.Debugf("transfer flow failed, err = ", err)
+		log.Debug("transfer flow failed, err = ", err)
 	}
 }
 
@@ -61,7 +61,7 @@ func TestSummaryFlow() {
 
 	err := manager.SummaryFollow()
 	if err != nil {
-		log.Debugf("summary flow failed, err = ", err)
+		log.Debug("summary flow failed, err = ", err)
 	}
 }
 
@@ -70,7 +70,7 @@ func TestBackupWallet() {
 
 	err := manager.BackupWalletFlow()
 	if err != nil {
-		log.Debugf("backup wallet flow failed, err = ", err)
+		log.Debug("backup wallet flow failed, err = ", err)
 	}
 }
 
@@ -79,25 +79,25 @@ func TestRestoreWallet() {
 
 	err := manager.RestoreWalletFlow()
 	if err != nil {
-		log.Debugf("restore wallet flow failed, err = ", err)
+		log.Debug("restore wallet flow failed, err = ", err)
 	}
 }
 
 func TestConfigErcToken() {
-	manager := &ethereum.WalletManager{}
+	manager, _ := GetEthWalletManager()
 
 	err := manager.ConfigERC20Token()
 	if err != nil {
-		log.Debugf("config erc20 token failed, err = ", err)
+		log.Debug("config erc20 token failed, err = ", err)
 	}
 }
 
 func TestERC20TokenTransfer() {
-	manager := &ethereum.WalletManager{}
+	manager, _ := GetEthWalletManager()
 
 	err := manager.ERC20TokenTransferFlow()
 	if err != nil {
-		log.Debugf("transfer erc20 token failed, err = ", err)
+		log.Debug("transfer erc20 token failed, err = ", err)
 	}
 }
 
@@ -106,7 +106,7 @@ func TestERC20TokenSummary() {
 
 	err := manager.ERC20TokenSummaryFollow()
 	if err != nil {
-		log.Debugf("summary erc20 token failed, err = ", err)
+		log.Debug("summary erc20 token failed, err = ", err)
 	}
 }
 

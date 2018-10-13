@@ -15,6 +15,7 @@
 package ethereum
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -243,6 +244,8 @@ func (this *Wallet) RestoreFromDb(dbPath string) error {
 		return err
 	}
 
+	wstr, _ := json.MarshalIndent(w, "", " ")
+	log.Debugf("wallet:%v", string(wstr))
 	*this = w
 	return nil
 }
