@@ -15,7 +15,12 @@
 
 package bitcoin
 
-import "testing"
+import (
+	"github.com/blocktree/OpenWallet/log"
+	"github.com/graarh/golang-socketio"
+	"github.com/graarh/golang-socketio/transport"
+	"testing"
+)
 
 //http://192.168.32.107:20003/insight-api/
 
@@ -76,3 +81,61 @@ func TestGetBalanceByExplorer(t *testing.T) {
 	t.Logf("getBalanceByExplorer = %v \n", raw)
 }
 
+func TestGetMultiAddrTransactionsByExplorer(t *testing.T) {
+	list, err := tw.getMultiAddrTransactionsByExplorer(0, 15, "2N7Mh6PLX39japSF76r2MAf7wT7WKU5TdpK")
+	if err != nil {
+		t.Errorf("getMultiAddrTransactionsByExplorer failed unexpected error: %v\n", err)
+		return
+	}
+	for i, tx := range list {
+		t.Logf("getMultiAddrTransactionsByExplorer[%d] = %v \n", i, tx)
+	}
+
+}
+
+
+func TestSocketIO(t *testing.T) {
+
+	var (
+		room = "inv"
+		endRunning = make(chan bool, 1)
+	)
+
+	c, err := gosocketio.Dial(
+		gosocketio.GetUrl("192.168.32.107", 20003, false),
+		transport.GetDefaultWebsocketTransport())
+	if err != nil {
+		return
+	}
+
+	err = c.On("tx", func(h *gosocketio.Channel, args interface{}) {
+		log.Info("New transaction received: ", args)
+	})
+	if err != nil {
+		return
+	}
+
+	err = c.On("block", func(h *gosocketio.Channel, args interface{}) {
+		log.Info("New block received: ", args)
+	})
+	if err != nil {
+		return
+	}
+
+	err = c.On(gosocketio.OnDisconnection, func(h *gosocketio.Channel) {
+		log.Info("Disconnected")
+	})
+	if err != nil {
+		return
+	}
+
+	err = c.On(gosocketio.OnConnection, func(h *gosocketio.Channel) {
+		log.Info("Connected")
+		h.Emit("subscribe", room)
+	})
+	if err != nil {
+		return
+	}
+
+	<- endRunning
+}
