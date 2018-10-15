@@ -71,7 +71,7 @@ func (w *WalletnodeManager) StopWalletnode(symbol string) error {
 				return err
 			}
 
-			time.Sleep(time.Second * 15)
+			time.Sleep(time.Second * 16)
 
 		}
 	}

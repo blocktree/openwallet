@@ -86,6 +86,7 @@ func (wc WalletnodeConfig) isTestNetCheck() bool {
 }
 
 type FullnodeContainerConfig struct {
+	NAME string
 	//CMD      [2][]string // Commands to run fullnode wallet ex: {{"/bin/sh", "mainnet"}, {"/bin/sh", "testnet"}}
 	PORT      [][3]string // Which ports need to be mapped, ex: {{innerPort, mainNetPort, testNetPort}, ...}
 	APIPORT   []string    // Port of default fullnode API(within container), from PORT
@@ -260,12 +261,20 @@ testNetDataPath = "/data"
 			LOGFIELS: [2]string{"debug.log", "testnet4/debug.log"},
 		},
 		"tron": &FullnodeContainerConfig{ // Release0929
-			PORT:     [][3]string{{"9360/tcp", "18890", "28890"}},
-			APIPORT:  []string{"9360/tcp"},
-			IMAGE:    string("openw/tron:v3.1.1"),
-			ENCRYPT:  nil,
-			STOPCMD:  nil,
+			PORT:     [][3]string{{"8090/tcp", "18090", "28090"}},
+			APIPORT:  []string{"8090/tcp"},
+			IMAGE:    string("openw/tron:v3.1.2"),
+			STOPCMD:  []string{"bash", "-c", "kill -15 $(ps -ef | grep java-tron.jar | grep -v grep | awk '{print $2}') > /data/xxxx.txt"},
 			LOGFIELS: [2]string{"logs/tron.log", "logs/tron.log"},
+		},
+		"nas": &FullnodeContainerConfig{ //
+			NAME:    "NebulasIO",
+			PORT:    [][3]string{{"9360/tcp", "18890", "28890"}},
+			APIPORT: []string{"9360/tcp"},
+			IMAGE:   string("openw/nas:v3.1.1"),
+			// ENCRYPT:  nil,
+			// STOPCMD:  nil,
+			LOGFIELS: [2]string{"logs/run.log", "logs/run.log"},
 		},
 	}
 }
