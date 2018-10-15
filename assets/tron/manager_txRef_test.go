@@ -27,29 +27,21 @@ var (
 
 func TestCreateTransactionRef(t *testing.T) {
 
-	var to_address, owner_address string
-	var amount int64
-
-	// predictTxRaw := "0a7e0a021031220816b0c1a29ce3387c40e099ad83e02c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a1541b6c1abf9fb31c9077dfb3c25469e6e943ffbfa7a12154199fee02e1ee01189bc41a68e9069b7919ef2ad8218c0843d"
-	// to_address, owner_address, amount = "TQ1TiUzStbSLdEtACUDmzfMDpWUyo8cyCf", "TSdXzXKSQ3RQzQ5Ge8TiYfMQEjofSVQ8ax", uint64(1)
-	to_address, owner_address, amount = TOADDRESS, OWNERADDRESS, AMOUNT
-
-	if r, err := tw.CreateTransactionRef(to_address, owner_address, amount); err != nil {
+	if r, err := tw.CreateTransactionRef(TOADDRESS, OWNERADDRESS, AMOUNT); err != nil {
 		t.Errorf("TestCreateTransaction failed: %v\n", err)
 	} else {
-		t.Logf("TestCreateTransaction return: \n%+v\n", r)
+		t.Logf("TestCreateTransaction return: \n%+v\n", "Success!")
 
 		fmt.Println("")
-		fmt.Println("APP: 0a7e0a02adcd220873bf2dfd044f459440e0d4d2f8e12c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d")
-		fmt.Printf("Ref: %+v\n\n", r)
+		fmt.Printf("APP Generated: %+v\n", "0a7e0a02adcd220873bf2dfd044f459440e0d4d2f8e12c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d")
+		fmt.Printf("Ref Generated: %+v\n\n", r)
 	}
 }
 
 func TestSignTransactoinRef(t *testing.T) {
 
 	var txRaw string
-	txRaw = "0a7e0a02a46f22084257d74387c4c4074090e9f1b1e62c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d"
-	txRaw = "0a7e0a0222c32208d584f987611b830a40e1bfa8b2e62c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d"
+	txRaw = "0a7e0a02055122080d595b1696607c7e40f8baf4b3e72c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d"
 	if r, err := tw.SignTransactionRef(txRaw, PRIVATEKEY); err != nil {
 		t.Errorf("SignTransactionRef failed: %v\n", err)
 	} else {
