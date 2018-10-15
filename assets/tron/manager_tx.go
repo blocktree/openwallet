@@ -16,7 +16,6 @@
 package tron
 
 import (
-	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -25,6 +24,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
+	"github.com/tronprotocol/grpc-gateway/api"
 	"github.com/tronprotocol/grpc-gateway/core"
 )
 
@@ -81,8 +81,20 @@ func (wm *WalletManager) GetTransactionByID(txID string) (tx *core.Transaction, 
 // 	Transaction contract data
 func (wm *WalletManager) CreateTransaction(to_address, owner_address string, amount int64) (raw string, err error) {
 
-	to_address = getAddrtoBase64(to_address)
-	owner_address = getAddrtoBase64(owner_address)
+	// to_address_bytes, err := addressEncoder.AddressDecode(to_address, addressEncoder.TRON_mainnetAddress)
+	// if err != nil {
+	// 	return "", err
+	// } else {
+	// 	to_address = hex.EncodeToString(to_address_bytes)
+	// }
+	// owner_address_bytes, err := addressEncoder.AddressDecode(owner_address, addressEncoder.TRON_mainnetAddress)
+	// if err != nil {
+	// 	return "", err
+	// } else {
+	// 	owner_address = hex.EncodeToString(owner_address_bytes)
+	// }
+	// // to_address = getAddrtoBase64(to_address)
+	// // owner_address = getAddrtoBase64(owner_address)
 
 	params := req.Param{
 		"to_address":    to_address,
@@ -95,19 +107,26 @@ func (wm *WalletManager) CreateTransaction(to_address, owner_address string, amo
 		return "", err
 	}
 
-	tx := &core.Transaction{}
+	// fmt.Println("CCC = ", r)
+	// tx := &core.Transaction{}
+	// tx := &core.TransferContract{}
+	tx := &core.Transaction_Contract{}
+	// api.Transaction_Contract{}
+	// tx := &core.TransactionRaw{}
+	fmt.Println(api.AccountNetMessage{})
 	if err := gjson.Unmarshal(r, tx); err != nil {
 		log.Errorf("Proto Unmarshal: ", err)
 		return "", err
 	}
 	fmt.Println("\ntx = ", tx)
+	// proto.Unmarshal(r, tx)
 
-	rawBytes, err := proto.Marshal(tx)
-	if err != nil {
-		log.Errorf("Proto Marshal: ", err)
-		return "", err
-	}
-	raw = hex.EncodeToString(rawBytes)
+	// rawBytes, err := proto.Marshal(tx)
+	// if err != nil {
+	// 	log.Errorf("Proto Marshal: ", err)
+	// 	return "", err
+	// }
+	raw = hex.EncodeToString(r)
 
 	return raw, nil
 }
@@ -184,6 +203,20 @@ func (wm *WalletManager) GetTransactionSign(transaction, privateKey string) (raw
 		"signature":["ac5263e340062a8c73810008c3fe2ad31bb96bde43a3a6d03b177eb2285bc0cbae8c44f2de371eb31bdd74373ad415b57b5bd217644451af19c0be865cc21ec301"],
 		"txID":"cd7c87063da22470f199264db6ae0e95fc1124f2ef8198caa1e8cc1633727f0a"}
 
+curl -X POST  http://127.0.0.1:8090/wallet/broadcasttransaction -d
+'{
+	"signature":["97c825b41c77de2a8bd65b3df55cd4c0df59c307c0187e42321dcc1cc455ddba583dd9502e17cfec5945b34cad0511985a6165999092a6dec84c2bdd97e649fc01"],
+	"txID":"454f156bf1256587ff6ccdbc56e64ad0c51e4f8efea5490dcbc720ee606bc7b8",
+	"raw_data":{"contract":[
+		{"parameter":{
+			"value":{"amount":1000,"owner_address":"41e552f6487585c2b58bc2c9bb4492bc1f17132cd0","to_address":"41d1e7a6bc354106cb410e65ff8b181c600ff14292"},
+			"type_url":"type.googleapis.com/protocol.TransferContract"},
+		"type":"TransferContract"}],
+		"ref_block_bytes":"267e",
+		"ref_block_hash":"9a447d222e8de9f2",
+		"expiration":1530893064000,
+		"timestamp":1530893006233}}'
+
 type TransactionRaw struct {
 	RefBlockBytes []byte       `protobuf:"bytes,1,opt,name=ref_block_bytes,json=refBlockBytes,proto3" json:"ref_block_bytes,omitempty"`
 	RefBlockNum   int64        `protobuf:"varint,3,opt,name=ref_block_num,json=refBlockNum,proto3" json:"ref_block_num,omitempty"`
@@ -210,6 +243,7 @@ type Transaction_Contract struct {
 	XXX_unrecognized     []byte                            `json:"-"`
 	XXX_sizecache        int32                             `json:"-"`
 }
+Parameters：Signed Transaction contract data
 */
 func (wm *WalletManager) BroadcastTransaction(raw string) error {
 
@@ -234,7 +268,7 @@ func (wm *WalletManager) BroadcastTransaction(raw string) error {
 	)
 
 	for _, x := range tx.GetSignature() {
-		signature = append(signature, base64.StdEncoding.EncodeToString(x)) // base64
+		signature = append(signature, hex.EncodeToString(x)) // base64
 	}
 
 	if txHash, err := getTxHash(tx); err != nil {
@@ -258,20 +292,19 @@ func (wm *WalletManager) BroadcastTransaction(raw string) error {
 		contract := map[string]interface{}{
 			"type": c.GetType().String(),
 			"parameter": map[string]interface{}{
-				"@type":    c.GetParameter().GetTypeUrl(),
 				"type_url": c.GetParameter().GetTypeUrl(),
 				"value": map[string]interface{}{
 					"amount":        tc.Amount,
-					"owner_address": base64.StdEncoding.EncodeToString(tc.GetOwnerAddress()),
-					"to_address":    base64.StdEncoding.EncodeToString(tc.GetToAddress()),
+					"owner_address": hex.EncodeToString(tc.GetOwnerAddress()),
+					"to_address":    hex.EncodeToString(tc.GetToAddress()),
 				},
 			},
 		}
 		contracts = append(contracts, contract)
 	}
 	raw_data = map[string]interface{}{
-		"ref_block_bytes": base64.StdEncoding.EncodeToString(rawData.GetRefBlockBytes()),
-		"ref_block_hash":  base64.StdEncoding.EncodeToString(rawData.GetRefBlockHash()),
+		"ref_block_bytes": hex.EncodeToString(rawData.GetRefBlockBytes()),
+		"ref_block_hash":  hex.EncodeToString(rawData.GetRefBlockHash()),
 		"expiration":      rawData.GetExpiration(),
 		"timestamp":       rawData.GetTimestamp(),
 		"contract":        contracts,
@@ -291,12 +324,12 @@ func (wm *WalletManager) BroadcastTransaction(raw string) error {
 		log.Debugf("Test = %+v\n", gjson.ParseBytes(r))
 
 		res := gjson.ParseBytes(r)
-		if res.Get("code").String() != "SUCCESS" {
+		if res.Get("result").Bool() != true {
 
 			var err error
 
 			if res.Get("message").String() != "" {
-				msg, _ := base64.StdEncoding.DecodeString(res.Get("message").String())
+				msg, _ := hex.DecodeString(res.Get("message").String())
 				err = errors.New(fmt.Sprintf("BroadcastTransaction error message: %+v", string(msg)))
 			} else {
 				err = errors.New(fmt.Sprintf("BroadcastTransaction return error: %+v", res))
