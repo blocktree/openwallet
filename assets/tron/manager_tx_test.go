@@ -29,7 +29,7 @@ func TestGetTotalTransaction(t *testing.T) {
 
 func TestGetTransactionByID(t *testing.T) {
 
-	var txID string = "d5ec749ecc2a615399d8a6c864ea4c74ff9f523c2be0e341ac9be5d47d7c2d62"
+	var txID string = "952c585391b658f72cd952e7efbd332991e923146dc755338208b1e80ca48386"
 
 	if r, err := tw.GetTransactionByID(txID); err != nil {
 		t.Errorf("TestGetTransactionByID failed: %v\n", err)
@@ -53,8 +53,10 @@ func TestCreateTransaction(t *testing.T) {
 }
 
 func TestGetTransactoinSign(t *testing.T) {
-	var transaction string = ""
-	if r, err := tw.GetTransactionSign(transaction, PRIVATEKEY); err != nil {
+
+	var txRaw string = ""
+
+	if r, err := tw.GetTransactionSign(txRaw, PRIVATEKEY); err != nil {
 		t.Errorf("TestCreateTransaction failed: %v\n", err)
 	} else {
 		t.Logf("TestCreateTransaction return: \n\t%+v\n", r)
@@ -63,9 +65,9 @@ func TestGetTransactoinSign(t *testing.T) {
 }
 
 func TestBroadcastTransaction(t *testing.T) {
-	var raw string
-	raw = "0a7e0a0265912208acca59b1293334d640d88cee90e62c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d12414f7008a14665d7acbb65da8aca558a12f3c7bb668bca700536fa46adf49501d7dd312207bca0788940379f7eaa5ced8131b8945a3aa664fe0b8fa86e5ae0eab501"
-	raw = "0a7e0a026eb322085cbf523e9a1e5ca340c8999a94e62c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d124132719426f230a76af1e4505018808adbc4a47957da27938566e355d4e4d4de3e76df1c8149457eff128502a75a68beb2cf653aa777c95316c57138e8a1e8d7be00"
+
+	var raw string = "0a7e0a02055122080d595b1696607c7e40f8baf4b3e72c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d1241620c83de3336a903bd73b2717ee2645c02a885b1be163592861d026be26c891d19c75bfa5d58ef868a4d9c7be4e6a2e1b30f6171c7c567c4e94cfa74cce9c1b701"
+
 	if err := tw.BroadcastTransaction(raw); err != nil {
 		t.Errorf("BroadcastTransaction failed: %v\n", err)
 	} else {
