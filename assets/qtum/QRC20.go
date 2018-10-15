@@ -17,27 +17,29 @@ func AddressToArg(address string) ([]byte, error) {
 	return to32bytesArg, nil
 }
 
-func (wm *WalletManager)GetUnspentByAddress(contractAddress, address string) (error) {
+func (wm *WalletManager)GetUnspentByAddress(contractAddress, address string) (*QRC20Unspent,error) {
 
-	//to32bytesArg, err := AddressToArg(address)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//combineString := append([]byte{0x70, 0xa0, 0x82, 0x31}, to32bytesArg[:]...)
-	//fmt.Printf("combineString: %s\n",hex.EncodeToString(combineString))
-	//
-	//request := []interface{}{
-	//	contractAddress,
-	//	combineString,
-	//}
-	//
-	//result, err := wm.walletClient.Call("callcontract", request)
-	//if err != nil {
-	//	return  err
-	//}
-	//
+	to32bytesArg, err := AddressToArg(address)
+	if err != nil {
+		return nil, err
+	}
 
+	combineString := hex.EncodeToString(append([]byte{0x70, 0xa0, 0x82, 0x31}, to32bytesArg[:]...))
+	fmt.Printf("combineString: %s\n",combineString)
 
-	return nil
+	request := []interface{}{
+		contractAddress,
+		combineString,
+	}
+
+	result, err := wm.walletClient.Call("callcontract", request)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("Callcontract result: %s", result.String())
+
+	QRC20Utox := NewQRC20Unspent(result)
+
+	return QRC20Utox, nil
 }
