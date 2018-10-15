@@ -283,7 +283,7 @@ func (wm *WalletManager) createAddressWork(k *hdkeystore.HDKey, producer chan<- 
 			Address:   addrBase58,
 			AccountID: k.KeyID,
 			HDPath:    fmt.Sprintf("%s/%d", derivedPath, i),
-			CreatedAt: time.Now().Unix(),
+			CreatedTime: time.Now().Unix(),
 			Symbol:    wm.Config.Symbol,
 			Index:     index,
 			WatchOnly: false,

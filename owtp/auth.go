@@ -161,6 +161,7 @@ func NewOWTPAuthWithHTTPHeader(header http.Header) (*OWTPAuth, error) {
 
 	var (
 		enable bool
+		tmpPubkey []byte
 	)
 
 	log.Debug("header:", header)
@@ -190,9 +191,12 @@ func NewOWTPAuthWithHTTPHeader(header http.Header) (*OWTPAuth, error) {
 		return nil, err
 	}
 
-	tmpPubkey, err := base58.Decode(p)
-	if err != nil {
-		return nil, err
+	if enable {
+		//开启协商密码才加载临时公钥
+		tmpPubkey, err = base58.Decode(p)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	auth := &OWTPAuth{

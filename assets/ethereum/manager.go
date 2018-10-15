@@ -332,11 +332,16 @@ func (this *WalletManager) ERC20GetWalletList(erc20Token *ERC20Token) ([]*Wallet
 	}
 
 	for i, _ := range wallets {
+		err = wallets[i].RestoreFromDb(this.GetConfig().DbPath)
+		if err != nil {
+			log.Error("restore wallet[", wallets[i].WalletID, "] from db failed, err=", err)
+			return nil, err
+		}
+
 		wallets[i].erc20Token = &ERC20Token{}
 		*wallets[i].erc20Token = *erc20Token
 		tokenBanlance, err := this.ERC20GetWalletBalance(wallets[i])
 		if err != nil {
-
 			openwLogger.Log.Errorf(fmt.Sprintf("find wallet balance failed, err=%v\n", err))
 			return nil, err
 		}
@@ -863,12 +868,12 @@ func (this *WalletManager) GetSimpleTransactionFeeEstimated(from string, to stri
 	return this.GetTransactionFeeEstimated(from, to, amount, "")
 }
 
-func (this *WalletManager) ERC20SendTransaction(wallet *Wallet, to string, amount *big.Int, password string, feesInSender bool) ([]string, error) {
+func (this *WalletManager) ERC20SendTransaction2(wallet *Wallet, to string, amount *big.Int, password string,
+	feesInSender bool) ([]string, error) {
 	var txIds []string
-
-	err := this.UnlockWallet(wallet, password)
+	masterKey, err := wallet.HDKey2(password)
 	if err != nil {
-		openwLogger.Log.Errorf("unlock wallet [%v]. failed, err=%v", wallet.WalletID, err)
+		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
 		return nil, err
 	}
 
@@ -879,20 +884,11 @@ func (this *WalletManager) ERC20SendTransaction(wallet *Wallet, to string, amoun
 	}
 
 	sort.Sort(&TokenAddrVec{addrs: addrs})
-	//检查下地址排序是否正确, 仅用于测试
-	/*for _, theAddr := range addrs {
-		fmt.Println("theAddr[", theAddr.Address, "]:", theAddr.tokenBalance)
-	}*/
 
 	for i := len(addrs) - 1; i >= 0 && amount.Cmp(big.NewInt(0)) > 0; i-- {
 		var fee *txFeeInfo
 		var amountToSend big.Int
 		fmt.Println("amount remained:", amount.String())
-		//空的token账户直接跳过
-		//if addrs[i].tokenBalance.Cmp(big.NewInt(0)) == 0 {
-		//	openwLogger.Log.Infof("skip the address[%v] with 0 balance. ", addrs[i].Address)
-		//	continue
-		//}
 
 		if addrs[i].tokenBalance.Cmp(amount) >= 0 {
 			amountToSend = *amount
@@ -906,6 +902,7 @@ func (this *WalletManager) ERC20SendTransaction(wallet *Wallet, to string, amoun
 			openwLogger.Log.Errorf("make token transaction data failed, err=%v", err)
 			return nil, err
 		}
+
 		fee, err = this.GetERC20TokenTransactionFeeEstimated(addrs[i].Address, wallet.erc20Token.Address, dataPara)
 		if err != nil {
 			openwLogger.Log.Errorf("get erc token transaction fee estimated failed, err = %v", err)
@@ -917,18 +914,60 @@ func (this *WalletManager) ERC20SendTransaction(wallet *Wallet, to string, amoun
 			continue
 		}
 
-		txid, err := this.SendTransactionToAddr(makeERC20TokenTransactionPara(addrs[i], wallet.erc20Token.Address, dataPara, password, fee))
+		priKey, err := addrs[i].CalcPrivKey(masterKey)
 		if err != nil {
-			openwLogger.Log.Errorf("SendTransactionToAddr failed, err=%v", err)
-			if txid == "" {
-				continue //txIds = append(txIds, txid)
+			log.Error("calc private key failed, err=", err)
+			continue
+		}
+
+		nonce := addrs[i].TxCount
+		if !this.GetConfig().LocalNonce {
+			nonce, err = this.GetNonceForAddress2(addrs[i].Address)
+			if err != nil {
+				log.Error("get nonce failed, err=", err)
+				continue
 			}
 		}
 
+		raw, err := signEthTransaction(priKey, wallet.erc20Token.Address, big.NewInt(0), nonce, dataPara, fee, this.GetConfig().ChainID)
+		if err != nil {
+			log.Error("signEthTransaction failed, err=", err)
+			continue
+		}
+
+		txid, err := this.WalletClient.ethSendRawTransaction(raw)
+		if err != nil {
+			openwLogger.Log.Errorf("SendTransactionToAddr failed, err=%v", err)
+			if txid == "" {
+				if this.GetConfig().LocalNonce {
+					txCount, err := this.WalletClient.ethGetTransactionCount(addrs[i].Address)
+					if err != nil {
+						log.Error("ethGetTransactionCount failed, err=", err)
+						continue
+					}
+
+					if nonce < txCount {
+						addrs[i].TxCount = txCount
+						err = wallet.SaveAddress(this.GetConfig().DbPath, addrs[i])
+						if err != nil {
+							log.Error("update address[", addrs[i].Address, "] tx count to ", addrs[i].TxCount, " failed, err=", err)
+						}
+						continue
+					}
+				}
+				return txIds, err //continue //txIds = append(txIds, txid)
+			}
+		}
+
+		addrs[i].TxCount = nonce + 1
+		err = wallet.SaveAddress(this.GetConfig().DbPath, addrs[i])
+		if err != nil {
+			log.Error("update address[", addrs[i].Address, "] tx count to ", addrs[i].TxCount, " failed, err=", err)
+			continue
+		}
 		txIds = append(txIds, txid)
 		amount.Sub(amount, &amountToSend)
 	}
-
 	return txIds, nil
 }
 
@@ -1243,7 +1282,58 @@ func (this *WalletManager) ERC20GetAddressesByWallet(dbPath string, wallet *Wall
 		return addrs, err
 	}
 
+	count := len(addrs)
+
+	queryBalanceChan := make(chan int, 20)
+	defer close(queryBalanceChan)
+	resultChan := make(chan *Address, 100)
+	defer close(resultChan)
+	done := make(chan int, 1)
+	defer close(done)
+
+	queryBalance := func(theAddr *Address) {
+		queryBalanceChan <- 1
+		var paddr *Address
+		defer func() {
+			resultChan <- paddr
+			<-queryBalanceChan
+		}()
+
+		tokenBalance, err := this.WalletClient.ERC20GetAddressBalance(theAddr.Address, wallet.erc20Token.Address)
+		if err != nil {
+			log.Errorf("get address[%v] erc20 token balance failed, err=%v", theAddr.Address, err)
+			return
+		}
+
+		balance, err := this.WalletClient.GetAddrBalance(theAddr.Address)
+		if err != nil {
+			errinfo := fmt.Sprintf("get balance of addr[%v] failed, err=%v", theAddr.Address, err)
+			log.Error(errinfo)
+			return
+		}
+
+		theAddr.balance = balance
+		theAddr.tokenBalance = tokenBalance
+		paddr = theAddr
+	}
+
+	var addrResults []*Address
+	go func() {
+		for i := 0; i < count; i++ {
+			paddr := <-resultChan
+			if paddr != nil {
+				addrResults = append(addrResults, paddr)
+			}
+		}
+		done <- 1
+	}()
+
 	for i, _ := range addrs {
+		go queryBalance(addrs[i])
+	}
+	<-done
+
+	/*for i, _ := range addrs {
 		tokenBalance, err := this.WalletClient.ERC20GetAddressBalance(addrs[i].Address, wallet.erc20Token.Address)
 		if err != nil {
 			openwLogger.Log.Errorf("get address[%v] erc20 token balance failed, err=%v", addrs[i].Address, err)
@@ -1257,8 +1347,12 @@ func (this *WalletManager) ERC20GetAddressesByWallet(dbPath string, wallet *Wall
 		}
 		addrs[i].tokenBalance = tokenBalance
 		addrs[i].balance = balance
+	}*/
+	if len(addrResults) != count {
+		log.Error("get address balance failed in this wallet.")
+		return make([]*Address, 0), errors.New("get address balance failed in this wallet.")
 	}
-	return addrs, nil
+	return addrResults, nil
 }
 
 func (this *WalletManager) GetAddressesByWallet(dbPath string, wallet *Wallet) ([]*Address, error) {
