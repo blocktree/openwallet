@@ -49,7 +49,7 @@ func (wm *WalletManager) GetNowBlock() (block *core.Block, err error) {
 
 	timestamp := block.GetBlockHeader().GetRawData().GetTimestamp() // Unit: ms
 	currstamp := time.Now().UnixNano() / (1000 * 1000)              // Unit: ms
-	if timestamp < currstamp-(3*1000) {
+	if timestamp < currstamp-(5*1000) {
 		log.Error(fmt.Sprintf("Now block timestamp: %d [%+v]", timestamp, time.Unix(timestamp/1000, 0)))
 		log.Error(fmt.Sprintf("Current d timestamp: %d [%+v]", currstamp, time.Unix(currstamp/1000, 0)))
 		log.Error(fmt.Sprintf("Now block height: %d", block.GetBlockHeader().GetRawData().GetNumber()))
