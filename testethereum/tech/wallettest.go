@@ -2,6 +2,7 @@ package tech
 
 import (
 	"crypto/ecdsa"
+	"encoding/json"
 	"fmt"
 
 	//"log"
@@ -102,12 +103,27 @@ func TestERC20TokenTransfer() {
 }
 
 func TestERC20TokenSummary() {
-	manager := &ethereum.WalletManager{}
+	manager, _ := GetEthWalletManager()
 
 	err := manager.ERC20TokenSummaryFollow()
 	if err != nil {
 		log.Debug("summary erc20 token failed, err = ", err)
 	}
+}
+
+func TestErc20GetEventLog() {
+	manager, _ := GetEthWalletManager()
+
+	//0x2090475a6ab5b302dffa07239543cd6b4262a0df85b40ce1a75dd1dca83f0431
+	//0x05ca0b5078926148ccb7bea73cffb56dc310a3fdb66fdd71274f9309beec9921
+	event, err := manager.GetErc20TokenEvent("0x2090475a6ab5b302dffa07239543cd6b4262a0df85b40ce1a75dd1dca83f0431")
+	if err != nil {
+		log.Error("Get erc20 event failed, err = ", err)
+		return
+	}
+
+	eventStr, _ := json.MarshalIndent(event, "", " ")
+	log.Debugf("event:%v", string(eventStr))
 }
 
 func PrepareTestForBlockScan() error {
@@ -117,18 +133,54 @@ func PrepareTestForBlockScan() error {
 		return
 	}
 	fmt.Println("pending number is ", pending, " queued number is ", queued)*/
-	scanner := &ethereum.ETHBlockScan{}
-	fromAddrs := make([]string, 0, 2)
-	passwords := make([]string, 0, 2)
-	fromAddrs = append(fromAddrs, "0x50068fd632c1a6e6c5bd407b4ccf8861a589e776")
-	passwords = append(passwords, "123456")
-	fromAddrs = append(fromAddrs, "0x2a63b2203955b84fefe52baca3881b3614991b34")
-	passwords = append(passwords, "123456")
-	_, err := scanner.PrepareForBlockScanTest(fromAddrs, passwords)
-	if err != nil {
-		fmt.Println("prepare for test failed, err=", err)
-		return err
+	manager, _ := GetEthWalletManager()
+	type txsample struct {
+		From            string
+		To              string
+		ContractAddress string
 	}
+
+	//DumpWalletDB("data/eth/db", "peter2-W4WUFawFp6FbzunjztXDDaN4nsdW8U4PrN.db")
+	simpleTxs := []txsample{
+		{
+			From: "0xe7134824df22750a42726483e64047ef652d6194",
+			To:   "0xf1320dcbe77711745554a18a572418537328d5b4",
+		},
+	}
+
+	tokenTxs := []txsample{
+		{
+			From:            "0xe7134824df22750a42726483e64047ef652d6194",
+			To:              "0xf1320dcbe77711745554a18a572418537328d5b4",
+			ContractAddress: "0x8847E5F841458ace82dbb0692C97115799fe28d3",
+		},
+	}
+
+	var txs []string
+	for i, _ := range simpleTxs {
+		tx, err := manager.SimpleSendEthTransaction(simpleTxs[i].From, simpleTxs[i].To, "1",
+			"data/eth/db/peter2-W4WUFawFp6FbzunjztXDDaN4nsdW8U4PrN.db", "12345678", 12)
+		if err != nil {
+			log.Errorf("send tx failed, err=%v", err)
+			continue
+		}
+		txs = append(txs, tx)
+		log.Infof("sent tx[%v] successfully.", tx)
+	}
+
+	for i, _ := range tokenTxs {
+		tx, err := manager.SimpleSendEthTokenTransaction(simpleTxs[i].From, simpleTxs[i].To, "1",
+			"data/eth/db/peter2-W4WUFawFp6FbzunjztXDDaN4nsdW8U4PrN.db", "12345678", 12, "0x8847E5F841458ace82dbb0692C97115799fe28d3")
+		if err != nil {
+			log.Errorf("send token tx failed, err=%v", err)
+			continue
+		}
+		txs = append(txs, tx)
+		log.Infof("sent token tx[%v] successfully.", tx)
+	}
+	manager.WaitTxpoolPendingEmpty()
+	log.Info("transaction sent out. txs:", txs)
+
 	return nil
 }
 

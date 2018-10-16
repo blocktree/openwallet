@@ -288,7 +288,7 @@ func (this *ETHBlockScan) ScanBlock() {
 		}
 
 		if curBlock.PreviousHash != curBlockHash {
-			previousHeight = curBlockHeight- 1 //previousHeight.Sub(curBlockHeight, big.NewInt(1))
+			previousHeight = curBlockHeight - 1 //previousHeight.Sub(curBlockHeight, big.NewInt(1))
 			log.Infof("block has been fork on height: %v.", "0x"+strconv.FormatUint(curBlockHeight, 16))
 			log.Infof("block height: %v local hash = %v ", "0x"+strconv.FormatUint(previousHeight, 16), curBlockHash)
 			log.Infof("block height: %v mainnet hash = %v ", "0x"+strconv.FormatUint(previousHeight, 16), curBlock.PreviousHash)
@@ -392,6 +392,21 @@ func (this *ETHBlockScan) SetLocalBlock(blockheight string) error {
 		return err
 	}
 	return nil
+}
+
+func (this *WalletManager) WaitTxpoolPendingEmpty() {
+	for {
+		pendingNum, _, err := this.WalletClient.ethGetTxpoolStatus()
+		if err != nil {
+			log.Errorf("get txpool statusl failed, err=%v", err)
+			break
+		}
+		if pendingNum != 0 {
+			time.Sleep(time.Second * 3)
+		} else {
+			break
+		}
+	}
 }
 
 func (this *ETHBlockScan) PrepareForBlockScanTest(fromAddr []string, passwords []string) (string, error) {

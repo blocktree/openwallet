@@ -43,12 +43,13 @@ func main() {
 	//tech.TestBackupWallet()
 	//tech.TestRestoreWallet()
 	//tech.TestConfigErcToken()
-	tech.TestERC20TokenTransfer()
-	//tech.TestERC20TokenSummary()p
+	//tech.TestERC20TokenTransfer()
+	//tech.TestERC20TokenSummary()
 	//tech.TestBigInt()
 	//tech.TestDiffer()
 	//tech.TestGetFuncAndFileName()
 	//tech.PrepareTestForBlockScan()
+	//tech.TestErc20GetEventLog()
 	//tech.TestDbInf()
 	//tech.TestBlockScan()
 	//tech.TestBlockScanWhenFork()
@@ -77,6 +78,7 @@ func main() {
 	//tech.TestWalletManager_SubmitTransaction()
 
 	//tech.TestSlice2()
+	tech.TestStringAndSlice()
 
 	//tech.TestCreateWallet2345()
 	//tech.TestBatchCreateAddr2345()
