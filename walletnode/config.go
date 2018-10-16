@@ -253,6 +253,7 @@ testNetDataPath = "/data"
 		// 	IMAGE:   string("openwallet/hc:2.0.3dev"),
 		// },
 		"ltc": &FullnodeContainerConfig{ // Release0929
+			NAME:     "Litecoin",
 			PORT:     [][3]string{{"9360/tcp", "10061", "20061"}},
 			APIPORT:  []string{"9360/tcp"},
 			IMAGE:    string("openw/litecoin:v0.16.0"),
@@ -261,20 +262,21 @@ testNetDataPath = "/data"
 			LOGFIELS: [2]string{"debug.log", "testnet4/debug.log"},
 		},
 		"tron": &FullnodeContainerConfig{ // Release0929
+			NAME:     "Tron Network",
 			PORT:     [][3]string{{"8090/tcp", "18090", "28090"}},
 			APIPORT:  []string{"8090/tcp"},
 			IMAGE:    string("openw/tron:v3.1.2"),
 			STOPCMD:  []string{"bash", "-c", "kill -15 $(ps -ef | grep java-tron.jar | grep -v grep | awk '{print $2}') > /data/xxxx.txt"},
 			LOGFIELS: [2]string{"logs/tron.log", "logs/tron.log"},
 		},
-		"nas": &FullnodeContainerConfig{ //
+		"nas": &FullnodeContainerConfig{ // Release0929
 			NAME:    "NebulasIO",
-			PORT:    [][3]string{{"9360/tcp", "18890", "28890"}},
-			APIPORT: []string{"9360/tcp"},
-			IMAGE:   string("openw/nas:v3.1.1"),
+			PORT:    [][3]string{{"8685/tcp", "18685", "28685"}},
+			APIPORT: []string{"8685/tcp"},
+			IMAGE:   string("openw/nebulasio:v1.0.8"),
 			// ENCRYPT:  nil,
 			// STOPCMD:  nil,
-			LOGFIELS: [2]string{"logs/run.log", "logs/run.log"},
+			LOGFIELS: [2]string{"logs/neb.log", "logs/neb.log"},
 		},
 	}
 }

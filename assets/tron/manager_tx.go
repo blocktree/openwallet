@@ -166,7 +166,7 @@ func (wm *WalletManager) GetTransactionSign(transaction, privateKey string) (raw
 	return rawSinged, nil
 }
 
-// Writing!
+// Done
 // Function：Broadcast the signed transaction
 // 	demo：curl -X POST http://127.0.0.1:8090/wallet/broadcasttransaction -d ‘
 // 		{“signature”:[“97c825b41c77de2a8bd65b3df55cd4c0df59c307c0187e42321dcc1cc455ddba583dd9502e17cfec5945b34cad0511985a6165999092a6dec84c2bdd97e649fc01”],
@@ -186,65 +186,6 @@ func (wm *WalletManager) GetTransactionSign(transaction, privateKey string) (raw
 // 		}’
 // Parameters：Signed Transaction contract data
 // Return value：broadcast success or failure
-/*
-		{"raw_data":{"contract":[{
-							"parameter":{
-								"type_url":"type.googleapis.com/protocol.TransferContract",
-								"value":{"amount":1010000,
-									   "owner_address":"4199fee02e1ee01189bc41a68e9069b7919ef2ad82",
-									   "to_address":"41e11973395042ba3c0b52b4cdf4e15ea77818f275"}
-							},
-							"type":"TransferContract"
-						}],
-				 "expiration":1539228288000,
-				 "ref_block_bytes":"50c6",
-				 "ref_block_hash":"3036a9624907d6c6",
-				 "timestamp":0},
-		"signature":["ac5263e340062a8c73810008c3fe2ad31bb96bde43a3a6d03b177eb2285bc0cbae8c44f2de371eb31bdd74373ad415b57b5bd217644451af19c0be865cc21ec301"],
-		"txID":"cd7c87063da22470f199264db6ae0e95fc1124f2ef8198caa1e8cc1633727f0a"}
-
-curl -X POST  http://127.0.0.1:8090/wallet/broadcasttransaction -d
-'{
-	"signature":["97c825b41c77de2a8bd65b3df55cd4c0df59c307c0187e42321dcc1cc455ddba583dd9502e17cfec5945b34cad0511985a6165999092a6dec84c2bdd97e649fc01"],
-	"txID":"454f156bf1256587ff6ccdbc56e64ad0c51e4f8efea5490dcbc720ee606bc7b8",
-	"raw_data":{"contract":[
-		{"parameter":{
-			"value":{"amount":1000,"owner_address":"41e552f6487585c2b58bc2c9bb4492bc1f17132cd0","to_address":"41d1e7a6bc354106cb410e65ff8b181c600ff14292"},
-			"type_url":"type.googleapis.com/protocol.TransferContract"},
-		"type":"TransferContract"}],
-		"ref_block_bytes":"267e",
-		"ref_block_hash":"9a447d222e8de9f2",
-		"expiration":1530893064000,
-		"timestamp":1530893006233}}'
-
-type TransactionRaw struct {
-	RefBlockBytes []byte       `protobuf:"bytes,1,opt,name=ref_block_bytes,json=refBlockBytes,proto3" json:"ref_block_bytes,omitempty"`
-	RefBlockNum   int64        `protobuf:"varint,3,opt,name=ref_block_num,json=refBlockNum,proto3" json:"ref_block_num,omitempty"`
-	RefBlockHash  []byte       `protobuf:"bytes,4,opt,name=ref_block_hash,json=refBlockHash,proto3" json:"ref_block_hash,omitempty"`
-	Expiration    int64        `protobuf:"varint,8,opt,name=expiration,proto3" json:"expiration,omitempty"`
-	Auths         []*Acuthrity `protobuf:"bytes,9,rep,name=auths,proto3" json:"auths,omitempty"`
-	// data not used
-	Data []byte `protobuf:"bytes,10,opt,name=data,proto3" json:"data,omitempty"`
-	// only support size = 1,  repeated list here for extension
-	Contract []*Transaction_Contract `protobuf:"bytes,11,rep,name=contract,proto3" json:"contract,omitempty"`
-	// scripts not used
-	Scripts              []byte   `protobuf:"bytes,12,opt,name=scripts,proto3" json:"scripts,omitempty"`
-	Timestamp            int64    `protobuf:"varint,14,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-type Transaction_Contract struct {
-	Type                 Transaction_Contract_ContractType `protobuf:"varint,1,opt,name=type,proto3,enum=protocol.Transaction_Contract_ContractType" json:"type,omitempty"`
-	Parameter            *any.Any                          `protobuf:"bytes,2,opt,name=parameter,proto3" json:"parameter,omitempty"`
-	Provider             []byte                            `protobuf:"bytes,3,opt,name=provider,proto3" json:"provider,omitempty"`
-	ContractName         []byte                            `protobuf:"bytes,4,opt,name=ContractName,proto3" json:"ContractName,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                          `json:"-"`
-	XXX_unrecognized     []byte                            `json:"-"`
-	XXX_sizecache        int32                             `json:"-"`
-}
-Parameters：Signed Transaction contract data
-*/
 func (wm *WalletManager) BroadcastTransaction(raw string) error {
 
 	tx := &core.Transaction{}
@@ -272,7 +213,7 @@ func (wm *WalletManager) BroadcastTransaction(raw string) error {
 	}
 
 	if txHash, err := getTxHash(tx); err != nil {
-		// log.Errorf(err)
+		log.Error(err)
 		return err
 	} else {
 		txID = hex.EncodeToString(txHash)
