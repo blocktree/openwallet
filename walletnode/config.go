@@ -210,7 +210,7 @@ testNetDataPath = "/data"
 			LOGFIELS: [2]string{"debug.log", "testnet3/debug.log"},
 		},
 		"eth": &FullnodeContainerConfig{ // Release0929
-			PORT:     [][3]string{{"8545/tcp", "10002", "20002"}},
+			PORT:     [][3]string{{"8545/tcp", "18545", "28545"}},
 			APIPORT:  []string{"8545/tcp"},
 			IMAGE:    string("openw/eth:geth-v1.8.15"),
 			LOGFIELS: [2]string{"run.log", "run.log"},
