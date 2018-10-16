@@ -19,8 +19,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/blocktree/OpenWallet/crypto"
-	"github.com/tidwall/gjson"
 	"github.com/blocktree/OpenWallet/log"
+	"github.com/tidwall/gjson"
 )
 
 //TransactionDecoder 交易单解析器
@@ -35,6 +35,37 @@ type TransactionDecoder interface {
 	SubmitRawTransaction(wrapper *WalletWrapper, rawTx *RawTransaction) error
 	//VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
 	VerifyRawTransaction(wrapper *WalletWrapper, rawTx *RawTransaction) error
+	//GetRawTransactionFeeRate 获取交易单的费率
+	GetRawTransactionFeeRate() (feeRate string, unit string, err error)
+}
+
+//TransactionDecoderBase 实现TransactionDecoder的基类
+type TransactionDecoderBase struct {
+}
+
+//CreateRawTransaction 创建交易单
+func (decoder *TransactionDecoderBase) CreateRawTransaction(wrapper *WalletWrapper, rawTx *RawTransaction) error {
+	return fmt.Errorf("not implement")
+}
+
+//SignRawTransaction 签名交易单
+func (decoder *TransactionDecoderBase) SignRawTransaction(wrapper *WalletWrapper, rawTx *RawTransaction) error {
+	return fmt.Errorf("not implement")
+}
+
+//SendRawTransaction 广播交易单
+func (decoder *TransactionDecoderBase) SubmitRawTransaction(wrapper *WalletWrapper, rawTx *RawTransaction) error {
+	return fmt.Errorf("not implement")
+}
+
+//VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
+func (decoder *TransactionDecoderBase) VerifyRawTransaction(wrapper *WalletWrapper, rawTx *RawTransaction) error {
+	return fmt.Errorf("not implement")
+}
+
+//GetRawTransactionFeeRate 获取交易单的费率
+func (decoder *TransactionDecoderBase) GetRawTransactionFeeRate() (feeRate string, unit string, err error) {
+	return "", "", fmt.Errorf("not implement")
 }
 
 //RawTransaction 原始交易单
@@ -53,6 +84,7 @@ type RawTransaction struct {
 	IsSubmit    bool                       `json:"isSubmit"`   //是否已广播
 	Change      *Address                   `json:"change"`     //找零地址
 	ExtParam    string                     `json:"extParam"`   //扩展参数，用于调用智能合约，json结构
+	Fees        string                     `json:"fees"`       //后续费
 }
 
 //KeySignature 签名信息
@@ -78,15 +110,15 @@ type Transaction struct {
 	Amount      string   `json:"amount"`
 	Decimal     int32    `json:"decimal"`
 	TxType      uint64
-	Confirm     int64    `json:"confirm"`
-	BlockHash   string   `json:"blockHash"`
-	BlockHeight uint64   `json:"blockHeight"`
-	IsMemo      bool     `json:"isMemo"`
-	Memo        string   `json:"memo"`
-	Fees        string   `json:"fees"`
-	Received    bool     `json:"received"`
-	SubmitTime  int64    `json:"submitTime"`
-	ConfirmTime int64    `json:"confirmTime"`
+	Confirm     int64  `json:"confirm"`
+	BlockHash   string `json:"blockHash"`
+	BlockHeight uint64 `json:"blockHeight"`
+	IsMemo      bool   `json:"isMemo"`
+	Memo        string `json:"memo"`
+	Fees        string `json:"fees"`
+	Received    bool   `json:"received"`
+	SubmitTime  int64  `json:"submitTime"`
+	ConfirmTime int64  `json:"confirmTime"`
 }
 
 //GenTransactionWxID 生成交易单的WxID，格式为 base64(sha1(tx_{txID}_{symbol_contractID}))
@@ -105,7 +137,7 @@ type Recharge struct {
 	AccountID   string `json:"accountID"`
 	Address     string `json:"address"`
 	Symbol      string `json:"symbol"` //Deprecated: use Coin
-	Coin        Coin                   //区块链类型标识
+	Coin        Coin   //区块链类型标识
 	Amount      string `json:"amount"`
 	Confirm     int64  `json:"confirm"`
 	BlockHash   string `json:"blockHash"`
@@ -114,7 +146,7 @@ type Recharge struct {
 	Memo        string `json:"memo"`
 	Index       uint64 `json:"index"`
 	Received    bool
-	CreateAt    int64  `json:"createdAt"`
+	CreateAt    int64 `json:"createdAt"`
 	Delete      bool
 }
 
@@ -122,7 +154,7 @@ type Recharge struct {
 type TxInput struct {
 	SourceTxID  string //源交易单ID
 	SourceIndex uint64 //源交易单输出所因为
-	Recharge `storm:"inline"`
+	Recharge    `storm:"inline"`
 }
 
 // TxOutPut 交易输出，则到账记录

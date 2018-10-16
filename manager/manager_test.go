@@ -167,7 +167,7 @@ func TestWalletManager_CreateAddress(t *testing.T) {
 
 func TestWalletManager_GetAddressList(t *testing.T) {
 	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
-	accountID := "EuXSRD56cwdYSSrF11YX4sCYz3LHxdwqXAa5hzgYMxKn"
+	accountID := "LLjgXvQqkiRBLsGJwHMdunrDt4YrVZu7n3cqtcBueEjtAcCbHp"
 	list, err := tm.GetAddressList(testApp, walletID, accountID, 0, -1, false)
 	if err != nil {
 		log.Error("unexpected error:", err)

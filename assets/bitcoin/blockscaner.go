@@ -76,7 +76,7 @@ func NewBTCBlockScanner(wm *WalletManager) *BTCBlockScanner {
 	bs.wm = wm
 	bs.IsScanMemPool = true
 	bs.RescanLastBlockCount = 0
-	bs.RPCServer = RPCServerExplorer
+	bs.RPCServer = RPCServerCore
 
 	//设置扫描任务
 	bs.SetTask(bs.ScanBlockTask)

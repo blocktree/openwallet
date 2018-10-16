@@ -210,7 +210,7 @@ func (wm *WalletManager) SubmitTransaction(appID, walletID, accountID string, ra
 		return tx, err
 	}
 
-	log.Error("Save new transaction data successfully")
+	log.Info("Save new transaction data successfully")
 
 	//更新账户余额
 	err = wm.RefreshAssetsAccountBalance(appID, accountID)
