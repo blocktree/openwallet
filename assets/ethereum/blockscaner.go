@@ -399,13 +399,8 @@ func (this *ETHBLockScanner) InitEthExtractResult(tx *BlockTransaction, result *
 	}
 }
 
-func (this *ETHBLockScanner) GetErc20TokenEvent(tx *BlockTransaction, extractResult *ExtractResult) (*TransferEvent, error) {
-	//非合约交易或未打包交易跳过
-	if tx.Data == "0x" || tx.Data != "" || tx.BlockHeight == 0 || tx.BlockHash == "" {
-		return nil, nil
-	}
-
-	receipt, err := this.wm.WalletClient.ethGetTransactionReceipt(tx.Hash)
+func (this *WalletManager) GetErc20TokenEvent(transactionID string) (*TransferEvent, error) {
+	receipt, err := this.WalletClient.ethGetTransactionReceipt(transactionID)
 	if err != nil {
 		log.Errorf("get transaction receipt failed, err=%v", err)
 		return nil, err
@@ -417,6 +412,15 @@ func (this *ETHBLockScanner) GetErc20TokenEvent(tx *BlockTransaction, extractRes
 	}
 
 	return transEvent, nil
+}
+
+func (this *ETHBLockScanner) GetErc20TokenEvent(tx *BlockTransaction) (*TransferEvent, error) {
+	//非合约交易或未打包交易跳过
+	if tx.Data == "0x" || tx.Data != "" || tx.BlockHeight == 0 || tx.BlockHash == "" {
+		return nil, nil
+	}
+
+	return this.wm.GetErc20TokenEvent(tx.Hash)
 }
 
 func (this *ETHBLockScanner) TransactionScanning(tx *BlockTransaction) (*ExtractResult, error) {
@@ -435,7 +439,7 @@ func (this *ETHBLockScanner) TransactionScanning(tx *BlockTransaction) (*Extract
 		extractData: make(map[string]*openwallet.TxExtractData),
 	}
 
-	tokenEvent, err := this.GetErc20TokenEvent(tx, &result)
+	tokenEvent, err := this.GetErc20TokenEvent(tx)
 	if err != nil {
 		log.Errorf("GetErc20TokenEvent failed, err=%v", err)
 		return nil, err
