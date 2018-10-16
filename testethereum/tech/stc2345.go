@@ -28,6 +28,13 @@ func DumpWalletDB(dbPath string, dbfile string) {
 	jsonStr, _ := json.MarshalIndent(wallets, "", " ")
 	log.Debugf("wallets : %v", string(jsonStr))
 
+	var addr ethereum.Address
+	err = db.One("Address", "e7134824df22750a42726483e64047ef652d6194", &addr)
+	if err != nil {
+		log.Errorf("find W4WUFawFp6FbzunjztXDDaN4nsdW8U4PrN walletID failed, err = %v", err)
+		return
+	}
+
 	var addresses []ethereum.Address
 	err = db.All(&addresses)
 	if err != nil {
@@ -36,7 +43,7 @@ func DumpWalletDB(dbPath string, dbfile string) {
 	}
 
 	jsonStr, _ = json.MarshalIndent(addresses, "", " ")
-	log.Debugf("wallets : %v", string(jsonStr))
+	log.Debugf("address : %v", string(jsonStr))
 }
 
 func DumpEtc2345WalletDb() {

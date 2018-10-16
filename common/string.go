@@ -342,5 +342,5 @@ func Substr(str string, start int, end int) string {
 		panic("end is wrong")
 	}
 
-	return string(rs[start:end])
+	return string(rs[start:end:end])
 }

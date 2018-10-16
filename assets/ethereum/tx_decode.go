@@ -302,18 +302,18 @@ func (this *EthTransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 			if addrsBalanceList[i].balance.Cmp(totalAmount) > 0 {
 				//fromAddr = addrsBalanceList[i].address
 				fromAddr := &openwallet.Address{
-					AccountID: addresses[addrsBalanceList[i].index].AccountID,
-					Address:   addresses[addrsBalanceList[i].index].Address,
-					PublicKey: addresses[addrsBalanceList[i].index].PublicKey,
-					Alias:     addresses[addrsBalanceList[i].index].Alias,
-					Tag:       addresses[addrsBalanceList[i].index].Tag,
-					Index:     addresses[addrsBalanceList[i].index].Index,
-					HDPath:    addresses[addrsBalanceList[i].index].HDPath,
-					WatchOnly: addresses[addrsBalanceList[i].index].WatchOnly,
-					Symbol:    addresses[addrsBalanceList[i].index].Symbol,
-					Balance:   addresses[addrsBalanceList[i].index].Balance,
-					IsMemo:    addresses[addrsBalanceList[i].index].IsMemo,
-					Memo:      addresses[addrsBalanceList[i].index].Memo,
+					AccountID:   addresses[addrsBalanceList[i].index].AccountID,
+					Address:     addresses[addrsBalanceList[i].index].Address,
+					PublicKey:   addresses[addrsBalanceList[i].index].PublicKey,
+					Alias:       addresses[addrsBalanceList[i].index].Alias,
+					Tag:         addresses[addrsBalanceList[i].index].Tag,
+					Index:       addresses[addrsBalanceList[i].index].Index,
+					HDPath:      addresses[addrsBalanceList[i].index].HDPath,
+					WatchOnly:   addresses[addrsBalanceList[i].index].WatchOnly,
+					Symbol:      addresses[addrsBalanceList[i].index].Symbol,
+					Balance:     addresses[addrsBalanceList[i].index].Balance,
+					IsMemo:      addresses[addrsBalanceList[i].index].IsMemo,
+					Memo:        addresses[addrsBalanceList[i].index].Memo,
 					CreatedTime: addresses[addrsBalanceList[i].index].CreatedTime,
 				}
 
@@ -573,7 +573,7 @@ func (this *EthTransactionDecoder) SubmitRawTransaction(wrapper *openwallet.Wall
 	}()
 
 	if err != nil {
-		openwLogger.Log.Errorf("send raw transaction failed, err= %v", err)
+		log.Errorf("send raw transaction failed, err= %v", err)
 		return err
 	}
 

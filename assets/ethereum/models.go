@@ -115,9 +115,9 @@ func (this *EthTransactionReceipt) ParseTransferEvent() *TransferEvent {
 			continue
 		}
 
-		transferEvent.TokenFrom = string([]byte(this.Logs[i].Topics[1])[26:66:66])
-		transferEvent.TokenTo = string([]byte(this.Logs[i].Topics[2])[26:66:66])
-		transferEvent.Value = removePrefix0(this.Logs[i].Data)
+		transferEvent.TokenFrom = "0x" + string([]byte(this.Logs[i].Topics[1])[26:66:66])
+		transferEvent.TokenTo = "0x" + string([]byte(this.Logs[i].Topics[2])[26:66:66])
+		transferEvent.Value = "0x" + removePrefix0(this.Logs[i].Data)
 		return &transferEvent
 	}
 	return nil
