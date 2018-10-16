@@ -41,6 +41,7 @@ import (
 	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
+	"encoding/hex"
 )
 
 var(
@@ -1987,19 +1988,19 @@ func (wm *WalletManager) GenQtumAddress() (string, error){
 
 	pubkey, _ := owcrypt.GenPubkey(prikey[:], owcrypt.ECC_CURVE_SECP256K1)
 
-	//fmt.Println(hex.EncodeToString(pubkey))
+	fmt.Printf("pubkey: %s\n",hex.EncodeToString(pubkey))
 
 	pubdata := append([]byte{0x04}, pubkey[:]...)
 
-	//fmt.Println(hex.EncodeToString(pubdata))
+	fmt.Printf("pubdata: %s\n",hex.EncodeToString(pubdata))
 
 	pubkeyHash := owcrypt.Hash(pubdata, 0, owcrypt.HASH_ALG_HASH160)
 
-	//fmt.Println(hex.EncodeToString(pubkeyHash))
+	fmt.Printf("pubkeyHash: %s\n",hex.EncodeToString(pubkeyHash))
 
 	address := addressEncoder.AddressEncode(pubkeyHash, addressEncoder.QTUM_mainnetAddressP2PKH)
 
-	fmt.Println(address)
+	fmt.Printf("address: %s\n",address)
 
 	return address, nil
 }
