@@ -34,7 +34,7 @@ func init() {
 //	}
 //)
 
-type addressDecoder struct{
+type addressDecoder struct {
 	wm *WalletManager //钱包管理者
 }
 
@@ -132,24 +132,21 @@ func ScriptPubKeyToBech32Address(scriptPubKey []byte, isTestnet bool) (string, e
 		hash []byte
 	)
 
-
 	cfg := addressEncoder.BTC_mainnetAddressBech32V0
 	if isTestnet {
 		cfg = addressEncoder.BTC_testnetAddressBech32V0
 	}
 
-	if len(scriptPubKey) == 22 {
+	if len(scriptPubKey) == 22 || len(scriptPubKey) == 34 {
 
-	} else if len(scriptPubKey) == 34 {
+		hash = scriptPubKey[2:]
+
+		address := addressEncoder.AddressEncode(hash, cfg)
+
+		return address, nil
 
 	} else {
 		return "", fmt.Errorf("scriptPubKey length is invalid")
 	}
-
-	hash = scriptPubKey[2:]
-
-	address := addressEncoder.AddressEncode(hash, cfg)
-
-	return address, nil
 
 }
