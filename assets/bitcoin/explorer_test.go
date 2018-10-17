@@ -16,9 +16,11 @@
 package bitcoin
 
 import (
+	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/graarh/golang-socketio"
 	"github.com/graarh/golang-socketio/transport"
+	"net/url"
 	"testing"
 )
 
@@ -64,7 +66,7 @@ func TestListUnspentByExplorer(t *testing.T) {
 }
 
 func TestGetTransactionByExplorer(t *testing.T) {
-	raw, err := tw.getTransactionByExplorer("6595e0d9f21800849360837b85a7933aeec344a89f5c54cf5db97b79c803c462")
+	raw, err := tw.getTransactionByExplorer("363d0901dea159acbba535b20e300148cb712d99684da0541e0832b60fb10250")
 	if err != nil {
 		t.Errorf("getTransactionByExplorer failed unexpected error: %v\n", err)
 		return
@@ -138,4 +140,22 @@ func TestSocketIO(t *testing.T) {
 	}
 
 	<- endRunning
+}
+
+func TestEstimateFeeRateByExplorer(t *testing.T) {
+	feeRate, _ := tw.estimateFeeRateByExplorer()
+	t.Logf("EstimateFee feeRate = %s\n", feeRate.StringFixed(8))
+	fees, _ := tw.EstimateFee(10, 2, feeRate)
+	t.Logf("EstimateFee fees = %s\n", fees.StringFixed(8))
+}
+
+func TestURLParse(t *testing.T) {
+	apiUrl, err := url.Parse("http://192.168.32.107:20003/insight-api/")
+	if err != nil {
+		t.Errorf("url.Parse failed unexpected error: %v\n", err)
+		return
+	}
+	domain := apiUrl.Hostname()
+	port := common.NewString(apiUrl.Port()).Int()
+	t.Logf("%s : %d", domain, port)
 }
