@@ -16,11 +16,19 @@
 package openwallet
 
 type SmartContract struct {
-	ContractID string //计算ID：base64(sha256({symbol}_{address}))
-	Symbol     string
-	Address    string
-	Token      string
-	Protocol   string
-	Name       string
-	Decimals   uint64
+	ContractID string `json:"contractID" storm:"id"` //计算ID：base64(sha256({symbol}_{address}))
+	Symbol     string `json:"symbol"`
+	Address    string `json:"address"`
+	Token      string `json:"token"`
+	Protocol   string `json:"protocol"`
+	Name       string `json:"name"`
+	Decimals   uint64 `json:"decimals"`
+}
+
+//SmartContractDecoder 智能合约解析器
+type SmartContractDecoder interface {
+
+	//GetTokenBalanceByAddress 查询地址token余额列表
+	GetTokenBalanceByAddress(contract SmartContract, address ...string) ([]*TokenBalance, error)
+
 }

@@ -17,9 +17,10 @@ package openwallet
 
 //Coin 币种信息
 type Coin struct {
-	Symbol     string `json:"symbol"`
-	IsContract bool   `json:"isContract"`
-	ContractID string `json:"contractID"`
+	Symbol     string        `json:"symbol"`
+	IsContract bool          `json:"isContract"`
+	ContractID string        `json:"contractID"`
+	Contract   SmartContract `json:"contract"`
 }
 
 // AssetsAdapter 资产适配器接口

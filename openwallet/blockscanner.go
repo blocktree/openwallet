@@ -79,7 +79,7 @@ type BlockScanner interface {
 	GetBalanceByAddress(address ...string) ([]*Balance, error)
 
 	//GetTokenBalanceByAddress 查询地址token余额列表
-	GetTokenBalanceByAddress(address ...string) ([]*TokenBalance, error)
+	//GetTokenBalanceByAddress(address ...string) ([]*TokenBalance, error)
 
 	//GetTransactionsByAddress 查询基于账户的交易记录，通过账户关系的地址
 	//返回的交易记录以资产账户为集合的结果，转账数量以基于账户来计算
@@ -293,9 +293,9 @@ func (bs *BlockScannerBase) GetBalanceByAddress(address ...string) ([]*Balance, 
 }
 
 //GetTokenBalanceByAddress 查询地址token余额列表
-func (bs *BlockScannerBase) GetTokenBalanceByAddress(address ...string) ([]*TokenBalance, error) {
-	return nil, nil
-}
+//func (bs *BlockScannerBase) GetTokenBalanceByAddress(address ...string) ([]*TokenBalance, error) {
+//	return nil, nil
+//}
 
 //GetTransactionsByAddress 查询基于账户的交易记录，通过账户关系的地址
 //返回的交易记录以资产账户为集合的结果，转账数量以基于账户来计算

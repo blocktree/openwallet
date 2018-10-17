@@ -71,6 +71,7 @@ func (this *AddressTxStatistic) UpdateTime() {
 }
 
 type EthTransactionDecoder struct {
+	openwallet.TransactionDecoderBase
 	AddrTxStatisMap *sync.Map
 	//	DecoderLocker *sync.Mutex    //保护一些全局不可并发的操作, 如对AddrTxStatisMap的初始化
 	wm *WalletManager //钱包管理者
