@@ -964,6 +964,16 @@ func (wm *WalletManager) GetBlockChainInfo() (*BlockchainInfo, error) {
 //ListUnspent 获取未花记录
 func (wm *WalletManager) ListUnspent(min uint64, addresses ...string) ([]*Unspent, error) {
 
+	if wm.Config.RPCServerType == RPCServerExplorer {
+		return wm.listUnspentByExplorer(addresses...)
+	} else {
+		return wm.getListUnspentByCore(min, addresses...)
+	}
+}
+
+//getTransactionByCore 获取交易单
+func (wm *WalletManager) getListUnspentByCore(min uint64, addresses ...string) ([]*Unspent, error) {
+
 	var (
 		utxos = make([]*Unspent, 0)
 	)
@@ -988,7 +998,6 @@ func (wm *WalletManager) ListUnspent(min uint64, addresses ...string) ([]*Unspen
 	}
 
 	return utxos, nil
-
 }
 
 //RebuildWalletUnspent 批量插入未花记录到本地
@@ -1211,6 +1220,16 @@ func (wm *WalletManager) SignRawTransactionInCoreWallet(txHex, walletID string, 
 
 //SendRawTransaction 广播交易
 func (wm *WalletManager) SendRawTransaction(txHex string) (string, error) {
+
+	if wm.Config.RPCServerType == RPCServerExplorer {
+		return wm.sendRawTransactionByExplorer(txHex)
+	} else {
+		return wm.sendRawTransactionByCore(txHex)
+	}
+}
+
+//sendRawTransactionByCore 广播交易
+func (wm *WalletManager) sendRawTransactionByCore(txHex string) (string, error) {
 
 	request := []interface{}{
 		txHex,
@@ -1667,7 +1686,17 @@ func (wm *WalletManager) EstimateFee(inputs, outputs int64, feeRate decimal.Deci
 //EstimateFeeRate 预估的没KB手续费率
 func (wm *WalletManager) EstimateFeeRate() (decimal.Decimal, error) {
 
-	defaultRate, _ := decimal.NewFromString("0.0001")
+	if wm.Config.RPCServerType == RPCServerExplorer {
+		return wm.estimateFeeRateByExplorer()
+	} else {
+		return wm.estimateFeeRateByCore()
+	}
+}
+
+//estimateFeeRateByCore 预估的没KB手续费率
+func (wm *WalletManager) estimateFeeRateByCore() (decimal.Decimal, error) {
+
+	defaultRate, _ := decimal.NewFromString("0.00001")
 
 	//估算交易大小 手续费
 	request := []interface{}{
@@ -1868,6 +1897,7 @@ func (wm *WalletManager) LoadConfig() error {
 		return errors.New("Config is not setup. Please run 'wmd Config -s <symbol>' ")
 	}
 
+	wm.Config.RPCServerType, _ = c.Int("rpcServerType")
 	wm.Config.ServerAPI = c.String("serverAPI")
 	wm.Config.Threshold, _ = decimal.NewFromString(c.String("threshold"))
 	wm.Config.SumAddress = c.String("sumAddress")
@@ -1891,7 +1921,11 @@ func (wm *WalletManager) LoadConfig() error {
 
 	token := BasicAuth(wm.Config.RpcUser, wm.Config.RpcPassword)
 
-	wm.WalletClient = NewClient(wm.Config.ServerAPI, token, false)
+	if wm.Config.RPCServerType == RPCServerCore {
+		wm.WalletClient = NewClient(wm.Config.ServerAPI, token, false)
+	} else {
+		wm.ExplorerClient = NewExplorer(wm.Config.ServerAPI, false)
+	}
 
 	return nil
 }

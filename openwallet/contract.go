@@ -16,8 +16,8 @@
 package openwallet
 
 type SmartContract struct {
-	ContractID string `json:"contractID" storm:"id"` //计算ID：base64(sha256({symbol}_{address}))
-	Symbol     string `json:"symbol"`
+	ContractID string `json:"contractID" storm:"id"` //计算ID：base64(sha256({symbol}_{address})) 主链symbol
+	Symbol     string `json:"symbol"`	//合约的symbol
 	Address    string `json:"address"`
 	Token      string `json:"token"`
 	Protocol   string `json:"protocol"`
