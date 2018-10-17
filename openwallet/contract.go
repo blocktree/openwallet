@@ -31,4 +31,6 @@ type SmartContractDecoder interface {
 	//GetTokenBalanceByAddress 查询地址token余额列表
 	GetTokenBalanceByAddress(contract SmartContract, address ...string) ([]*TokenBalance, error)
 
+	//GetSmartContractInfo 获取智能合约信息
+	GetSmartContractInfo(contractAddress string) (*SmartContract, error)
 }
