@@ -295,6 +295,7 @@ func (bs *BTCBlockScanner) ScanTxMemPool() {
 	txIDsInMemPool, err := bs.wm.GetTxIDsInMemPool()
 	if err != nil {
 		log.Std.Info("block scanner can not get mempool data; unexpected error: %v", err)
+		return
 	}
 
 	err = bs.BatchExtractTransaction(0, "", txIDsInMemPool)
@@ -1134,6 +1135,16 @@ func (wm *WalletManager) getBlockByCore(hash string) (*Block, error) {
 //GetTxIDsInMemPool 获取待处理的交易池中的交易单IDs
 func (wm *WalletManager) GetTxIDsInMemPool() ([]string, error) {
 
+	if wm.Config.RPCServerType == RPCServerExplorer {
+		return wm.getTxIDsInMemPoolByExplorer()
+	} else {
+		return wm.getTxIDsInMemPoolByCore()
+	}
+}
+
+//getTxIDsInMemPoolByCore 获取待处理的交易池中的交易单IDs
+func (wm *WalletManager) getTxIDsInMemPoolByCore() ([]string, error) {
+
 	var (
 		txids = make([]string, 0)
 	)
@@ -1415,7 +1426,7 @@ func (bs *BTCBlockScanner) setupSocketIO() error {
 	}
 
 	err := bs.socketIO.On("tx", func(h *gosocketio.Channel, args interface{}) {
-		log.Info("block scanner socketIO get new transaction received: ", args)
+		//log.Info("block scanner socketIO get new transaction received: ", args)
 		txMap, ok := args.(map[string]interface{})
 		if ok {
 			txid := txMap["txid"].(string)

@@ -22,7 +22,7 @@ import (
 )
 
 func TestAddressDecoder_PublicKeyToAddress(t *testing.T) {
-	addr := "tb1qk87tnszyj4528l6pa86zfqcl0d90c7vvkrt7j7rxlkxy9drvxqhsmwpg6q"
+	addr := "tb1q08djg7ea5h27x0srvqzezxungx5dzdnk3gqpa8mmsmzjzyc4u0ssjvtktm"
 
 	cfg := addressEncoder.BTC_testnetAddressBech32V0
 
@@ -36,13 +36,15 @@ func TestAddressDecoder_PublicKeyToAddress(t *testing.T) {
 
 func TestAddressDecoder_ScriptPubKeyToBech32Address(t *testing.T) {
 
-	scriptPubKey, _ := hex.DecodeString("00140513ef61e8bb24e4b82be1366d25c8fb78693ff8")
+	scriptPubKey, _ := hex.DecodeString("002079db247b3da5d5e33e036005911b9341a8d136768a001e9f7b86c5211315e3e1")
 
-	addr, err := ScriptPubKeyToBech32Address(scriptPubKey, false)
+	addr, err := ScriptPubKeyToBech32Address(scriptPubKey, true)
 	if err != nil {
 		t.Errorf("ScriptPubKeyToBech32Address failed unexpected error: %v\n", err)
 		return
 	}
 	t.Logf("addr: %s", addr)
 
+
+	t.Logf("addr: %s", addr)
 }
