@@ -420,7 +420,10 @@ func makeTransactionData(methodId string, params []SolidityParam) (string, error
 	return data, nil
 }
 
-func (this *Client) ERC20GetAddressBalance(address string, contractAddr string) (*big.Int, error) {
+func (this *Client) ERC20GetAddressBalance2(address string, contractAddr string, sign string) (*big.Int, error) {
+	if sign != "latest" && sign != "pending" {
+		return nil, errors.New("unknown sign was put through.")
+	}
 
 	var funcParams []SolidityParam
 	funcParams = append(funcParams, SolidityParam{
@@ -458,6 +461,11 @@ func (this *Client) ERC20GetAddressBalance(address string, contractAddr string) 
 		return big.NewInt(0), errors.New(errInfo)
 	}
 	return balance, nil
+
+}
+
+func (this *Client) ERC20GetAddressBalance(address string, contractAddr string) (*big.Int, error) {
+	return this.ERC20GetAddressBalance2(address, contractAddr, "pending")
 }
 
 func (this *Client) GetAddrBalance(address string) (*big.Int, error) {

@@ -18,6 +18,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/blocktree/OpenWallet/crypto"
+
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
@@ -27,6 +29,7 @@ import (
 	"strconv"
 
 	//	"golang.org/x/text/currency"
+	"encoding/base64"
 	"fmt"
 )
 
@@ -329,6 +332,7 @@ func (this *ETHBLockScanner) GetTxPoolPendingTxs() ([]BlockTransaction, error) {
 
 func (this *ETHBLockScanner) InitEthTokenExtractResult(tx *BlockTransaction, tokenEvent *TransferEvent, result *ExtractResult, isFromAccount bool) {
 	txExtractData := &openwallet.TxExtractData{}
+	ContractId := base64.StdEncoding.EncodeToString(crypto.SHA256([]byte(fmt.Sprintf("{%v}_{%v}", this.wm.Symbol(), tx.To))))
 	transx := &openwallet.Transaction{
 		//From: tx.From,
 		//To:   tx.To,
@@ -336,12 +340,22 @@ func (this *ETHBLockScanner) InitEthTokenExtractResult(tx *BlockTransaction, tok
 		Coin: openwallet.Coin{
 			Symbol:     this.wm.Symbol(),
 			IsContract: true,
+			ContractID: ContractId,
+			Contract: openwallet.SmartContract{
+				ContractID: ContractId,
+				Address:    tx.To,
+			},
 		},
 		BlockHash:   tx.BlockHash,
 		BlockHeight: tx.BlockHeight,
 		TxID:        tx.Hash,
 		Decimal:     18,
 	}
+	//contractId :=
+	//base64.StdEncoding.EncodeToString([]byte(auth))
+	//crypto.SHA256([]byte(s))
+	//base64(sha256({symbol}_{address}))
+
 	transx.From = append(transx.From, tx.From)
 	transx.To = append(transx.To, tx.To)
 	wxID := openwallet.GenTransactionWxID(transx)

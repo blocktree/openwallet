@@ -107,6 +107,9 @@ func TestWalletManager_SubmitTransaction() {
 		return
 	}
 
+	str, _ := json.MarshalIndent(rawTx, "", " ")
+	log.Info("create rawTx:", string(str))
+
 	_, err = tm.SignTransaction(testApp, walletID, accountID, "12345678", rawTx)
 	if err != nil {
 		log.Error("SignTransaction failed, unexpected error:", err)
@@ -121,7 +124,7 @@ func TestWalletManager_SubmitTransaction() {
 		return
 	}
 
-	str, _ := json.MarshalIndent(rawTx, "", " ")
+	str, _ = json.MarshalIndent(rawTx, "", " ")
 	log.Info("rawTx:", string(str))
 
 	_, err = tm.SubmitTransaction(testApp, walletID, accountID, rawTx)

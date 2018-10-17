@@ -85,13 +85,14 @@ type WalletManager struct {
 	Decoder      openwallet.AddressDecoder     //地址编码器
 	TxDecoder    openwallet.TransactionDecoder //交易单编码器
 	//	RootDir        string                        //
-	locker         sync.Mutex //防止并发修改和读取配置, 可能用不上
-	WalletInSumOld map[string]*Wallet
-	StorageOld     *keystore.HDKeystore
-	ConfigPath     string
-	RootPath       string
-	DefaultConfig  string
-	SymbolID       string
+	locker          sync.Mutex //防止并发修改和读取配置, 可能用不上
+	WalletInSumOld  map[string]*Wallet
+	ContractDecoder openwallet.SmartContractDecoder //
+	StorageOld      *keystore.HDKeystore
+	ConfigPath      string
+	RootPath        string
+	DefaultConfig   string
+	SymbolID        string
 }
 
 func (this *WalletManager) GetConfig() WalletConfig {
@@ -122,6 +123,9 @@ func NewWalletManager() *WalletManager {
 	wm.Storage = storage
 	client := &Client{BaseURL: wm.Config.ServerAPI, Debug: false}
 	wm.WalletClient = client
+	wm.ContractDecoder = &EthContractDecoder{
+		wm: &wm,
+	}
 
 	wm.WalletInSumOld = make(map[string]*Wallet)
 	return &wm

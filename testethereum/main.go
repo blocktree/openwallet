@@ -75,10 +75,10 @@ func main() {
 	//tech.TestWalletManager_CreateTransaction()
 	//tech.TestWalletManager_SignTransaction()
 	//tech.TestWalletManager_VerifyTransaction()
-	//tech.TestWalletManager_SubmitTransaction()
+	tech.TestWalletManager_SubmitTransaction()
 
 	//tech.TestSlice2()
-	tech.TestStringAndSlice()
+	//tech.TestStringAndSlice()
 
 	//tech.TestCreateWallet2345()
 	//tech.TestBatchCreateAddr2345()
@@ -87,4 +87,5 @@ func main() {
 	//tech.TestInitCongfig2345()
 
 	//tech.TestWalletLog()
+	//tech.TestTokenDecode()
 }

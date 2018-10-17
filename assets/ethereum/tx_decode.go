@@ -205,8 +205,7 @@ func NewTransactionDecoder(wm *WalletManager) *EthTransactionDecoder {
 	return &decoder
 }
 
-//CreateRawTransaction 创建交易单
-func (this *EthTransactionDecoder) CreateRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
+func (this *EthTransactionDecoder)CreateSimpleRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error{
 	//check交易交易单基本字段
 	err := VerifyRawTransaction(rawTx)
 	if err != nil {
@@ -330,16 +329,6 @@ func (this *EthTransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 		return errors.New("no enough balance address found in wallet. ")
 	}
 
-	/*initTxStaticMap := func() {
-		this.DecoderLocker.Lock()
-		defer this.DecoderLocker.Unlock()
-		if this.AddrTxStatisMap == nil {
-			this.AddrTxStatisMap = new(sync.Map)
-			this.RunClearAddrStatic()
-		}
-	}*/
-
-	//initTxStaticMap()
 
 	_, nonce, err := this.GetTransactionCount2(keySignList[0].Address.Address)
 	if err != nil {
@@ -380,6 +369,18 @@ func (this *EthTransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 	rawTx.IsBuilt = true
 
 	return nil
+}
+
+func (this *EthTransactionDecoder) CreateErc20TokenRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
+    return nil
+}
+
+//CreateRawTransaction 创建交易单
+func (this *EthTransactionDecoder) CreateRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
+	if !rawTx.Coin.IsContract {
+		return this.CreateSimpleRawTransaction(wrapper, rawTx)
+	}
+	return this.CreateErc20TokenRawTransaction(wrapper, rawTx)
 }
 
 /*func (this *EthTransactionDecoder) CreateRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
