@@ -87,7 +87,7 @@ type WalletManager struct {
 	//	RootDir        string                        //
 	locker          sync.Mutex //防止并发修改和读取配置, 可能用不上
 	WalletInSumOld  map[string]*Wallet
-	ContractDecoder *EthContractDecoder
+	ContractDecoder openwallet.SmartContractDecoder //
 	StorageOld      *keystore.HDKeystore
 	ConfigPath      string
 	RootPath        string
