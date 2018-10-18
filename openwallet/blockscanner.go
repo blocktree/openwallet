@@ -78,9 +78,6 @@ type BlockScanner interface {
 	//GetBalanceByAddress 查询地址余额
 	GetBalanceByAddress(address ...string) ([]*Balance, error)
 
-	//GetTokenBalanceByAddress 查询地址token余额列表
-	//GetTokenBalanceByAddress(address ...string) ([]*TokenBalance, error)
-
 	//GetTransactionsByAddress 查询基于账户的交易记录，通过账户关系的地址
 	//返回的交易记录以资产账户为集合的结果，转账数量以基于账户来计算
 	GetTransactionsByAddress(offset, limit int, coin Coin, address ...string) ([]*TxExtractData, error)

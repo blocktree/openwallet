@@ -358,63 +358,6 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper *openwallet.Wallet
 
 	log.Info("transaction hash sign success")
 
-	//txBytes, err := hex.DecodeString(emptyTrans)
-	//if err != nil {
-	//	return errors.New("Invalid transaction hex data! ")
-	//}
-	//
-	//trx, err := btcTransaction.DecodeRawTransaction(txBytes)
-	//if err != nil {
-	//	return errors.New("Invalid transaction data! ")
-	//}
-	//
-	////log.Debug("trx.Vins:", len(trx.Vins))
-	//
-	//
-	//
-	//for i, vin := range trx.Vins {
-	//
-	//	utxo, err := decoder.wm.GetTxOut(vin.GetTxID(), uint64(vin.GetVout()))
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	keyBytes := privateKeys[i]
-	//
-	//	txUnlock := btcTransaction.TxUnlock{
-	//		LockScript: utxo.Get("scriptPubKey.hex").String(),
-	//		PrivateKey: keyBytes,
-	//	}
-	//	txUnlocks = append(txUnlocks, txUnlock)
-	//
-	//}
-	//
-	////log.Debug("transHash len:", len(transHash))
-	////log.Debug("txUnlocks len:", len(txUnlocks))
-	//
-	///////////交易单哈希签名
-	//sigPub, err = btcTransaction.SignRawTransactionHash(transHash, txUnlocks)
-	//if err != nil {
-	//	return fmt.Errorf("transaction hash sign failed, unexpected error: %v", err)
-	//} else {
-	//	log.Info("transaction hash sign success")
-	//	//for i, s := range sigPub {
-	//	//	log.Info("第", i+1, "个签名结果")
-	//	//	log.Info()
-	//	//	log.Info("对应的公钥为")
-	//	//	log.Info(hex.EncodeToString(s.Pubkey))
-	//	//}
-	//}
-	//
-	//if len(sigPub) != len(keySignatures) {
-	//	return fmt.Errorf("sign raw transaction fail, program error. ")
-	//}
-	//
-	//for i, keySignature := range keySignatures {
-	//	keySignature.Signature = hex.EncodeToString(sigPub[i].Signature)
-	//	//log.Debug("keySignature.Signature:",i, "=", keySignature.Signature)
-	//}
-
 	rawTx.Signatures[rawTx.Account.AccountID] = keySignatures
 
 	//log.Info("rawTx.Signatures 1:", rawTx.Signatures)
@@ -488,7 +431,7 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper *openwallet.Wall
 		}
 
 		txUnlock := btcTransaction.TxUnlock{
-			LockScript: utxo.Get("scriptPubKey.hex").String(),
+			LockScript: utxo.ScriptPubKey,
 			SigType:    btcTransaction.SigHashAll}
 		txUnlocks = append(txUnlocks, txUnlock)
 

@@ -99,6 +99,8 @@ type WalletConfig struct {
 	CoinDecimal decimal.Decimal
 	//核心钱包密码，配置有值用于自动解锁钱包
 	WalletPassword string
+	//后台数据源类型
+	RPCServerType int
 }
 
 func NewConfig(symbol string, masterKey string) *WalletConfig {
@@ -156,6 +158,8 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	c.CoinDecimal = decimal.NewFromFloat(100000000)
 	//核心钱包密码，配置有值用于自动解锁钱包
 	c.WalletPassword = ""
+	//后台数据源类型
+	c.RPCServerType = RPCServerCore
 
 	//默认配置内容
 	c.DefaultConfig = `
@@ -169,6 +173,8 @@ nodeInstallPath = ""
 mainNetDataPath = ""
 # testnet data path
 testNetDataPath = ""
+# RPC Server Type，0: CoreWallet RPC; 1: Explorer API
+rpcServerType = 0
 # RPC api url
 serverAPI = ""
 # RPC Authentication Username

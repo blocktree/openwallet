@@ -35,7 +35,11 @@ var (
 func init() {
 	tc.IsTestnet = true
 	tc.EnableBlockScan = true
-	tc.SupportAssets = []string{"BTC", "QTUM", "LTC"}
+	tc.SupportAssets = []string{
+		"BTC",
+		//"QTUM",
+		//"LTC",
+	}
 	tm = NewWalletManager(tc)
 	//tm.Init()
 }
