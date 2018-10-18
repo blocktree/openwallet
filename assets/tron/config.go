@@ -41,7 +41,7 @@ const (
 	//币种
 	Symbol    = "TRON"
 	MasterKey = "Troncoin seed"
-	CurveType = owcrypt.ECC_CURVE_SECP256K1
+	CurveType = owcrypt.ECC_CURVE_SECP256K1 // to generate ChildKey by BIP32
 )
 
 type WalletConfig struct {

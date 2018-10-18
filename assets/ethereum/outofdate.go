@@ -452,3 +452,72 @@ func (this *WalletManager) RestoreWallet(keyFile string, password string) error 
 
 	return nil
 }
+
+func (this *WalletManager) ERC20SendTransaction(wallet *Wallet, to string, amount *big.Int, password string, feesInSender bool) ([]string, error) {
+	var txIds []string
+
+	err := this.UnlockWallet(wallet, password)
+	if err != nil {
+		openwLogger.Log.Errorf("unlock wallet [%v]. failed, err=%v", wallet.WalletID, err)
+		return nil, err
+	}
+
+	addrs, err := this.ERC20GetAddressesByWallet(this.GetConfig().DbPath, wallet)
+	if err != nil {
+		openwLogger.Log.Errorf("failed to get addresses from db, err = %v", err)
+		return nil, err
+	}
+
+	sort.Sort(&TokenAddrVec{addrs: addrs})
+	//检查下地址排序是否正确, 仅用于测试
+	/*for _, theAddr := range addrs {
+		fmt.Println("theAddr[", theAddr.Address, "]:", theAddr.tokenBalance)
+	}*/
+
+	for i := len(addrs) - 1; i >= 0 && amount.Cmp(big.NewInt(0)) > 0; i-- {
+		var fee *txFeeInfo
+		var amountToSend big.Int
+		fmt.Println("amount remained:", amount.String())
+		//空的token账户直接跳过
+		//if addrs[i].tokenBalance.Cmp(big.NewInt(0)) == 0 {
+		//	openwLogger.Log.Infof("skip the address[%v] with 0 balance. ", addrs[i].Address)
+		//	continue
+		//}
+
+		if addrs[i].tokenBalance.Cmp(amount) >= 0 {
+			amountToSend = *amount
+
+		} else {
+			amountToSend = *addrs[i].tokenBalance
+		}
+
+		dataPara, err := makeERC20TokenTransData(wallet.erc20Token.Address, to, &amountToSend)
+		if err != nil {
+			openwLogger.Log.Errorf("make token transaction data failed, err=%v", err)
+			return nil, err
+		}
+		fee, err = this.GetERC20TokenTransactionFeeEstimated(addrs[i].Address, wallet.erc20Token.Address, dataPara)
+		if err != nil {
+			openwLogger.Log.Errorf("get erc token transaction fee estimated failed, err = %v", err)
+			continue
+		}
+
+		if addrs[i].balance.Cmp(fee.Fee) < 0 {
+			openwLogger.Log.Errorf("address[%v] cannot afford a token transfer with a fee [%v]", addrs[i].Address, fee.Fee)
+			continue
+		}
+
+		txid, err := this.SendTransactionToAddr(makeERC20TokenTransactionPara(addrs[i], wallet.erc20Token.Address, dataPara, password, fee))
+		if err != nil {
+			openwLogger.Log.Errorf("SendTransactionToAddr failed, err=%v", err)
+			if txid == "" {
+				continue //txIds = append(txIds, txid)
+			}
+		}
+
+		txIds = append(txIds, txid)
+		amount.Sub(amount, &amountToSend)
+	}
+
+	return txIds, nil
+}

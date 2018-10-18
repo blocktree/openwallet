@@ -86,6 +86,7 @@ func (wc WalletnodeConfig) isTestNetCheck() bool {
 }
 
 type FullnodeContainerConfig struct {
+	NAME string
 	//CMD      [2][]string // Commands to run fullnode wallet ex: {{"/bin/sh", "mainnet"}, {"/bin/sh", "testnet"}}
 	PORT      [][3]string // Which ports need to be mapped, ex: {{innerPort, mainNetPort, testNetPort}, ...}
 	APIPORT   []string    // Port of default fullnode API(within container), from PORT
@@ -208,8 +209,8 @@ testNetDataPath = "/data"
 			STOPCMD:  []string{"qtum-cli", "-datadir=/data", "-conf=/etc/qtum.conf", "stop"},
 			LOGFIELS: [2]string{"debug.log", "testnet3/debug.log"},
 		},
-		"eth": &FullnodeContainerConfig{ // Eth
-			PORT:     [][3]string{{"8545/tcp", "10002", "20002"}},
+		"eth": &FullnodeContainerConfig{ // Release0929
+			PORT:     [][3]string{{"8545/tcp", "18545", "28545"}},
 			APIPORT:  []string{"8545/tcp"},
 			IMAGE:    string("openw/eth:geth-v1.8.15"),
 			LOGFIELS: [2]string{"run.log", "run.log"},
@@ -252,6 +253,7 @@ testNetDataPath = "/data"
 		// 	IMAGE:   string("openwallet/hc:2.0.3dev"),
 		// },
 		"ltc": &FullnodeContainerConfig{ // Release0929
+			NAME:     "Litecoin",
 			PORT:     [][3]string{{"9360/tcp", "10061", "20061"}},
 			APIPORT:  []string{"9360/tcp"},
 			IMAGE:    string("openw/litecoin:v0.16.0"),
@@ -260,10 +262,21 @@ testNetDataPath = "/data"
 			LOGFIELS: [2]string{"debug.log", "testnet4/debug.log"},
 		},
 		"tron": &FullnodeContainerConfig{ // Release0929
-			PORT:     [][3]string{{"9360/tcp", "18890", "28890"}},
-			APIPORT:  []string{"9360/tcp"},
-			IMAGE:    string("openw/tron:v3.1.1"),
+			NAME:     "Tron Network",
+			PORT:     [][3]string{{"8090/tcp", "18090", "28090"}},
+			APIPORT:  []string{"8090/tcp"},
+			IMAGE:    string("openw/tron:v3.1.2"),
+			STOPCMD:  []string{"bash", "-c", "kill -15 $(ps -ef | grep java-tron.jar | grep -v grep | awk '{print $2}') > /data/xxxx.txt"},
 			LOGFIELS: [2]string{"logs/tron.log", "logs/tron.log"},
+		},
+		"nas": &FullnodeContainerConfig{ // Release0929
+			NAME:    "NebulasIO",
+			PORT:    [][3]string{{"8685/tcp", "18685", "28685"}},
+			APIPORT: []string{"8685/tcp"},
+			IMAGE:   string("openw/nebulasio:v1.0.8"),
+			// ENCRYPT:  nil,
+			// STOPCMD:  nil,
+			LOGFIELS: [2]string{"logs/neb.log", "logs/neb.log"},
 		},
 	}
 }

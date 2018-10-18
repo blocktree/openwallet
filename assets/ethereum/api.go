@@ -51,17 +51,6 @@ type Response struct {
 	Result  interface{} `json:"result"`
 }
 
-const (
-	ETH_GET_TOKEN_BALANCE_METHOD      = "0x70a08231"
-	ETH_TRANSFER_TOKEN_BALANCE_METHOD = "0xa9059cbb"
-)
-
-const (
-	SOLIDITY_TYPE_ADDRESS = "address"
-	SOLIDITY_TYPE_UINT256 = "uint256"
-	SOLIDITY_TYPE_UINT160 = "uint160"
-)
-
 /*
 1. eth block example
    "result": {
@@ -149,6 +138,7 @@ func (this *TxpoolContent) GetSequentTxNonce(addr string) (uint64, uint64, uint6
 		return 0, 0, 0, nil
 	}*/
 	for theAddr, _ := range txpool {
+		log.Debugf("theAddr:%v, addr:%v", strings.ToLower(theAddr), strings.ToLower(addr))
 		if strings.ToLower(theAddr) == strings.ToLower(addr) {
 			target = txpool[theAddr]
 		}
@@ -251,6 +241,35 @@ func (this *Client) ethGetTxPoolContent() (*TxpoolContent, error) {
 	}
 
 	return &txpool, nil
+}
+
+func (this *Client) ethGetTransactionReceipt(transactionId string) (*EthTransactionReceipt, error) {
+	params := []interface{}{
+		transactionId,
+	}
+
+	var txReceipt EthTransactionReceipt
+	result, err := this.Call("eth_getTransactionReceipt", 1, params)
+	if err != nil {
+		//errInfo := fmt.Sprintf("get block[%v] failed, err = %v \n", blockNumStr,  err)
+		log.Errorf("get tx[%v] receipt failed, err = %v \n", transactionId, err)
+		return nil, err
+	}
+
+	if result.Type != gjson.JSON {
+		errInfo := fmt.Sprintf("get tx[%v] receipt result type failed, result type is %v", transactionId, result.Type)
+		log.Errorf(errInfo)
+		return nil, errors.New(errInfo)
+	}
+
+	err = json.Unmarshal([]byte(result.Raw), &txReceipt)
+	if err != nil {
+		log.Errorf("decode json [%v] failed, err=%v", []byte(result.Raw), err)
+		return nil, err
+	}
+
+	return &txReceipt, nil
+
 }
 
 func (this *Client) ethGetBlockSpecByHash(blockHash string, showTransactionSpec bool) (*EthBlock, error) {
@@ -391,7 +410,7 @@ func makeTransactionData(methodId string, params []SolidityParam) (string, error
 				return "", errors.New("integer overflow.")
 			}
 			param = makeRepeatString("0", uint(64-l)) + param
-			fmt.Println("makeTransactionData intParam:", intParam.String(), " param:", param)
+			//fmt.Println("makeTransactionData intParam:", intParam.String(), " param:", param)
 		} else {
 			return "", errors.New("not support solidity type")
 		}
@@ -401,7 +420,10 @@ func makeTransactionData(methodId string, params []SolidityParam) (string, error
 	return data, nil
 }
 
-func (this *Client) ERC20GetAddressBalance(address string, contractAddr string) (*big.Int, error) {
+func (this *Client) ERC20GetAddressBalance2(address string, contractAddr string, sign string) (*big.Int, error) {
+	if sign != "latest" && sign != "pending" {
+		return nil, errors.New("unknown sign was put through.")
+	}
 
 	var funcParams []SolidityParam
 	funcParams = append(funcParams, SolidityParam{
@@ -439,6 +461,11 @@ func (this *Client) ERC20GetAddressBalance(address string, contractAddr string) 
 		return big.NewInt(0), errors.New(errInfo)
 	}
 	return balance, nil
+
+}
+
+func (this *Client) ERC20GetAddressBalance(address string, contractAddr string) (*big.Int, error) {
+	return this.ERC20GetAddressBalance2(address, contractAddr, "pending")
 }
 
 func (this *Client) GetAddrBalance(address string) (*big.Int, error) {
@@ -478,9 +505,9 @@ func signEthTransaction(priKey []byte, toAddr string, amount *big.Int, nonce uin
 	var err error
 	signer := types.NewEIP155Signer(big.NewInt(int64(chainId)))
 	tx := types.NewTransaction(nonce, ethcommon.HexToAddress(toAddr),
-		amount, fee.GasLimit.Uint64(), fee.GasPrice, []byte(data))
-	msg := signer.Hash(tx)
+		amount, fee.GasLimit.Uint64(), fee.GasPrice, common.FromHex(data))
 
+	msg := signer.Hash(tx)
 	sig, err := secp256k1.Sign(msg[:], priKey)
 	if err != nil {
 		log.Error("secp256k1.Sign failed, err=", err)
@@ -561,6 +588,7 @@ func makeERC20TokenTransData(contractAddr string, toAddr string, amount *big.Int
 		openwLogger.Log.Errorf("make transaction data failed, err = %v", err)
 		return "", err
 	}
+	log.Debugf("data:%v", data)
 	return data, nil
 }
 

@@ -16,6 +16,7 @@
 package bitcoin
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/blocktree/OpenWallet/log"
@@ -184,7 +185,7 @@ func (wm *WalletManager) getTransactionByExplorer(txid string) (*Transaction, er
 		return nil, err
 	}
 
-	tx := newTxByExplorer(result)
+	tx := newTxByExplorer(result, wm.Config.IsTestNet)
 
 	return tx, nil
 
@@ -218,6 +219,7 @@ func (wm *WalletManager) listUnspentByExplorer(address ...string) ([]*Unspent, e
 	return utxos, nil
 
 }
+
 
 func newBlockByExplorer(json *gjson.Result) *Block {
 
@@ -256,13 +258,13 @@ func newBlockByExplorer(json *gjson.Result) *Block {
 	obj.tx = txs
 	obj.Previousblockhash = gjson.Get(json.Raw, "previousblockhash").String()
 	obj.Height = gjson.Get(json.Raw, "height").Uint()
-	obj.Version = gjson.Get(json.Raw, "version").Uint()
+	//obj.Version = gjson.Get(json.Raw, "version").String()
 	obj.Time = gjson.Get(json.Raw, "time").Uint()
 
 	return obj
 }
 
-func newTxByExplorer(json *gjson.Result) *Transaction {
+func newTxByExplorer(json *gjson.Result, isTestnet bool) *Transaction {
 
 	/*
 			{
@@ -305,7 +307,7 @@ func newTxByExplorer(json *gjson.Result) *Transaction {
 	obj.Vouts = make([]*Vout, 0)
 	if vouts := gjson.Get(json.Raw, "vout"); vouts.IsArray() {
 		for _, vout := range vouts.Array() {
-			output := newTxVoutByExplorer(&vout)
+			output := newTxVoutByExplorer(&vout, isTestnet)
 			obj.Vouts = append(obj.Vouts, output)
 		}
 	}
@@ -343,7 +345,7 @@ func newTxVinByExplorer(json *gjson.Result) *Vin {
 	return &obj
 }
 
-func newTxVoutByExplorer(json *gjson.Result) *Vout {
+func newTxVoutByExplorer(json *gjson.Result, isTestnet bool) *Vout {
 
 	/*
 		{
@@ -364,7 +366,7 @@ func newTxVoutByExplorer(json *gjson.Result) *Vout {
 	//解析json
 	obj.Value = gjson.Get(json.Raw, "value").String()
 	obj.N = gjson.Get(json.Raw, "n").Uint()
-	obj.ScriptPubKey = gjson.Get(json.Raw, "scriptPubKey,hex").String()
+	obj.ScriptPubKey = gjson.Get(json.Raw, "scriptPubKey.hex").String()
 
 	//提取地址
 	if addresses := gjson.Get(json.Raw, "scriptPubKey.addresses"); addresses.IsArray() {
@@ -372,6 +374,11 @@ func newTxVoutByExplorer(json *gjson.Result) *Vout {
 	}
 
 	obj.Type = gjson.Get(json.Raw, "scriptPubKey.type").String()
+
+	if len(obj.Addr) == 0 {
+		scriptBytes, _ := hex.DecodeString(obj.ScriptPubKey)
+		obj.Addr, _ = ScriptPubKeyToBech32Address(scriptBytes, isTestnet)
+	}
 
 	return &obj
 }
@@ -444,10 +451,69 @@ func (wm *WalletManager) getMultiAddrTransactionsByExplorer(offset, limit int, a
 
 	if items := result.Get("items"); items.IsArray() {
 		for _, obj := range items.Array() {
-			tx := newTxByExplorer(&obj)
+			tx := newTxByExplorer(&obj, wm.Config.IsTestNet)
 			trxs = append(trxs, tx)
 		}
 	}
 
 	return trxs, nil
+}
+
+
+//estimateFeeRateByExplorer 通过浏览器获取费率
+func (wm *WalletManager) estimateFeeRateByExplorer() (decimal.Decimal, error) {
+
+	defaultRate, _ := decimal.NewFromString("0.00001")
+
+	path := fmt.Sprintf("utils/estimatefee?nbBlocks=%d", 2)
+
+	result, err := wm.ExplorerClient.Call(path, nil, "GET")
+	if err != nil {
+		return decimal.New(0, 0), err
+	}
+
+	feeRate, _ := decimal.NewFromString(result.Get("2").String())
+
+	if feeRate.LessThan(defaultRate) {
+		feeRate = defaultRate
+	}
+
+	return feeRate, nil
+}
+
+
+//getTxOutByExplorer 获取交易单输出信息，用于追溯交易单输入源头
+func (wm *WalletManager) getTxOutByExplorer(txid string, vout uint64) (*Vout, error) {
+
+	tx, err := wm.getTransactionByExplorer(txid)
+	if err != nil {
+		return nil, err
+	}
+
+	for i, out := range tx.Vouts {
+		if uint64(i) == vout {
+			return out, nil
+		}
+	}
+
+	return nil, fmt.Errorf("can not find ouput")
+
+}
+
+//sendRawTransactionByExplorer 广播交易
+func (wm *WalletManager) sendRawTransactionByExplorer(txHex string) (string, error) {
+
+	request := req.Param{
+		"rawtx": txHex,
+	}
+
+	path := fmt.Sprintf("tx/send")
+
+	result, err := wm.ExplorerClient.Call(path, request, "POST")
+	if err != nil {
+		return "", err
+	}
+
+	return result.Get("txid").String(), nil
+
 }

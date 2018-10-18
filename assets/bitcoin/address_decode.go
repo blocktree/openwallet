@@ -16,6 +16,7 @@
 package bitcoin
 
 import (
+	"fmt"
 	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
 	"github.com/blocktree/go-OWCrypt"
 )
@@ -33,7 +34,7 @@ func init() {
 //	}
 //)
 
-type addressDecoder struct{
+type addressDecoder struct {
 	wm *WalletManager //钱包管理者
 }
 
@@ -122,5 +123,30 @@ func (decoder *addressDecoder) WIFToPrivateKey(wif string, isTestnet bool) ([]by
 	}
 
 	return priv, err
+
+}
+
+//ScriptPubKeyToBech32Address scriptPubKey转Bech32地址
+func ScriptPubKeyToBech32Address(scriptPubKey []byte, isTestnet bool) (string, error) {
+	var (
+		hash []byte
+	)
+
+	cfg := addressEncoder.BTC_mainnetAddressBech32V0
+	if isTestnet {
+		cfg = addressEncoder.BTC_testnetAddressBech32V0
+	}
+
+	if len(scriptPubKey) == 22 || len(scriptPubKey) == 34 {
+
+		hash = scriptPubKey[2:]
+
+		address := addressEncoder.AddressEncode(hash, cfg)
+
+		return address, nil
+
+	} else {
+		return "", fmt.Errorf("scriptPubKey length is invalid")
+	}
 
 }

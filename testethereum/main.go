@@ -36,7 +36,7 @@ func main() {
 
 	//fmt.Println("change dir err:",err)
 	//tech.TestNewWallet()
-	//tech.TestBatchCreateAddr()
+	//tech.TestBatchCreateAddr()p
 	//tech.TestBitInt()
 	//tech.TestTransferFlow()
 	//tech.TestSummaryFlow()
@@ -49,6 +49,7 @@ func main() {
 	//tech.TestDiffer()
 	//tech.TestGetFuncAndFileName()
 	//tech.PrepareTestForBlockScan()
+	//tech.TestErc20GetEventLog()
 	//tech.TestDbInf()
 	//tech.TestBlockScan()
 	//tech.TestBlockScanWhenFork()
@@ -74,9 +75,10 @@ func main() {
 	//tech.TestWalletManager_CreateTransaction()
 	//tech.TestWalletManager_SignTransaction()
 	//tech.TestWalletManager_VerifyTransaction()
-	tech.TestWalletManager_SubmitTransaction()
+	//tech.TestWalletManager_SubmitTransaction()
 
 	//tech.TestSlice2()
+	//tech.TestStringAndSlice()
 
 	//tech.TestCreateWallet2345()
 	//tech.TestBatchCreateAddr2345()
@@ -85,4 +87,8 @@ func main() {
 	//tech.TestInitCongfig2345()
 
 	//tech.TestWalletLog()
+	//tech.TestTokenDecode()
+	//tech.TestTokenBalance()
+
+	tech.TestWalletManager_SubmitTokenTransaction()
 }

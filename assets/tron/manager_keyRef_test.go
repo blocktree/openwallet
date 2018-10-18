@@ -13,34 +13,34 @@
  * GNU Lesser General Public License for more details.
  */
 
-package walletnode
+package tron
 
 import (
-	"context"
-	"errors"
+	"encoding/hex"
+	"fmt"
+	"testing"
 )
 
-func (w *WalletnodeManager) RestartWalletnode(symbol string) error {
+func TestGetPrivateKeyRef(t *testing.T) {
+	var (
+		walletID   string = "W4Hv5qiUb3R7GVQ9wgmX8MfhZ1GVR6dqL7"
+		password   string = "1234qwer"
+		index      uint64 = 1539142990
+		serializes uint32 = 0
+	)
 
-	return errors.New("Function closed! Use stop/start, please!")
+	if r, err := tw.GetPrivateKeyRef(walletID, password, index, serializes); err != nil {
+		t.Errorf("CreateAddressRef failed: %v\n", err)
+	} else {
 
-	if err := loadConfig(symbol); err != nil {
-		return err
-	}
+		h, _ := hex.DecodeString(r)
 
-	// Init docker client
-	c, err := getDockerClient(symbol)
-	if err != nil {
-		return err
+		if addr, err := tw.CreateAddressRef(h, true); err != nil {
+			t.Errorf("CreateAddressRef failed: %v\n", err)
+		} else {
+			fmt.Println("Address = ", addr)
+		}
+
+		fmt.Printf("GetPrivateKeyRef return: \n\t%+v\n\n", r)
 	}
-	// Action within client
-	cName, err := getCName(symbol) // container name
-	if err != nil {
-		return err
-	}
-	err = c.ContainerRestart(context.Background(), cName, nil)
-	if err != nil {
-		return err
-	}
-	return nil
 }

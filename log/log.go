@@ -71,7 +71,7 @@ func Critical(v ...interface{}) {
 // format & Error logs a message at error level.
 func Errorf(format string, v ...interface{}) {
 	SetLogFuncCall(true)
-	Std.Error(generateFmtStr(len(v)), v...)
+	Std.Error(format, v...)
 }
 
 // Error logs a message at error level.

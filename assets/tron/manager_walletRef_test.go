@@ -13,42 +13,33 @@
  * GNU Lesser General Public License for more details.
  */
 
-package openwallet
+package tron
 
-type SymbolInfo interface {
+import (
+	"fmt"
+	"testing"
+)
 
-	//CurveType 曲线类型
-	CurveType() uint32
+func TestGetWallets(t *testing.T) {
 
-	//FullName 币种全名
-	FullName() string
-
-	//Symbol 币种标识
-	Symbol() string
-
-	//小数位精度
-	Decimal() int32
+	if r, err := tw.GetWallets(); err != nil {
+		t.Errorf("GetWallets failed: %v\n", err)
+	} else {
+		tw.printWalletList(r)
+		t.Logf("GetWallets return: \n%+v\n", r)
+	}
 }
 
-type SymbolInfoBase struct {
-}
+func TestCreateNewWallet(t *testing.T) {
 
-//CurveType 曲线类型
-func (s *SymbolInfoBase) CurveType() uint32 {
-	return 0
-}
-
-//FullName 币种全名
-func (s *SymbolInfoBase) FullName() string {
-	return ""
-}
-
-//Symbol 币种标识
-func (s *SymbolInfoBase) Symbol() string {
-	return ""
-}
-
-//小数位精度
-func (s *SymbolInfoBase) Decimal() int32 {
-	return 0
+	var (
+		wallet_name string = "simon"
+		wallet_pass string = "1234qwer"
+	)
+	if r, s, err := tw.CreateNewWallet(wallet_name, wallet_pass); err != nil {
+		t.Errorf("CreateNewWallet failed: %v\n", err)
+	} else {
+		fmt.Printf("keyfile = %+v\n", s)
+		t.Logf("TestCreateTrCreateNewWalletansaction return: \n%+v\n", r)
+	}
 }

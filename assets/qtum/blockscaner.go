@@ -696,7 +696,7 @@ func (bs *BTCBlockScanner) ExtractTxOutput(blockHeight uint64, blockHash string,
 				outPut.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("output_%s_%d_%s", txid, n, addr))))
 
 				//保存utxo到扩展字段
-				outPut.ExtParam = output.Get("scriptPubKey").Raw
+				outPut.SetExtParam("scriptPubKey", output.Get("scriptPubKey").Raw)
 				outPut.CreateAt = createAt
 				if blockHeight > 0 {
 					outPut.BlockHeight = blockHeight

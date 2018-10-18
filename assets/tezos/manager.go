@@ -50,6 +50,7 @@ var prefix = map[string][]byte{
 	"tz2": {6, 161, 161},
 	"edpk": {13, 15, 37, 217},
 	"edsk": {43, 246, 78, 7},
+	"edsk2": {13, 15, 58, 7},
 	"edsig": {9, 245, 205, 134, 18},
 	"nil": {},
 }
@@ -432,7 +433,7 @@ func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index
 		Address:   address,
 		AccountID: key.KeyID,
 		HDPath:    derivedPath,
-		CreatedAt: time.Now().Unix(),
+		CreatedTime: time.Now().Unix(),
 		Symbol:    wm.Config.Symbol,
 		Index:     index,
 		WatchOnly: false,

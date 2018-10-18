@@ -19,13 +19,14 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"log"
+	"time"
 
 	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
-
 	"github.com/tronprotocol/grpc-gateway/api"
 	"github.com/tronprotocol/grpc-gateway/core"
+
+	"github.com/blocktree/OpenWallet/log"
 )
 
 // Done
@@ -42,8 +43,17 @@ func (wm *WalletManager) GetNowBlock() (block *core.Block, err error) {
 
 	block = &core.Block{}
 	if err := gjson.Unmarshal(r, block); err != nil {
-		log.Println(err)
+		log.Error(err)
 		return nil, err
+	}
+
+	timestamp := block.GetBlockHeader().GetRawData().GetTimestamp() // Unit: ms
+	currstamp := time.Now().UnixNano() / (1000 * 1000)              // Unit: ms
+	if timestamp < currstamp-(5*1000) {
+		log.Error(fmt.Sprintf("Now block timestamp: %d [%+v]", timestamp, time.Unix(timestamp/1000, 0)))
+		log.Error(fmt.Sprintf("Current d timestamp: %d [%+v]", currstamp, time.Unix(currstamp/1000, 0)))
+		log.Error(fmt.Sprintf("Now block height: %d", block.GetBlockHeader().GetRawData().GetNumber()))
+		return nil, errors.New("GetNowBlock return without synced!")
 	}
 
 	return block, nil

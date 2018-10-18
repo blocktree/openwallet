@@ -25,6 +25,6 @@ type Balance struct {
 }
 
 type TokenBalance struct {
-	contract *SmartContract
-	balance  *Balance
+	Contract *SmartContract
+	Balance  *Balance
 }

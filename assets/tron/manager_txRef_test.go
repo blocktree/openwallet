@@ -16,6 +16,7 @@
 package tron
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -26,26 +27,21 @@ var (
 
 func TestCreateTransactionRef(t *testing.T) {
 
-	var to_address, owner_address string
-	var amount int64
-
-	// predictTxRaw := "0a7e0a021031220816b0c1a29ce3387c40e099ad83e02c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a1541b6c1abf9fb31c9077dfb3c25469e6e943ffbfa7a12154199fee02e1ee01189bc41a68e9069b7919ef2ad8218c0843d"
-	// to_address, owner_address, amount = "TQ1TiUzStbSLdEtACUDmzfMDpWUyo8cyCf", "TSdXzXKSQ3RQzQ5Ge8TiYfMQEjofSVQ8ax", uint64(1)
-	to_address, owner_address, amount = TOADDRESS, OWNERADDRESS, AMOUNT
-
-	if r, err := tw.CreateTransactionRef(to_address, owner_address, amount); err != nil {
+	if r, err := tw.CreateTransactionRef(TOADDRESS, OWNERADDRESS, AMOUNT); err != nil {
 		t.Errorf("TestCreateTransaction failed: %v\n", err)
 	} else {
-		t.Logf("TestCreateTransaction return: \n%+v\n", r)
+		t.Logf("TestCreateTransaction return: \n%+v\n", "Success!")
+
+		fmt.Println("")
+		fmt.Printf("APP Generated: %+v\n", "0a7e0a02adcd220873bf2dfd044f459440e0d4d2f8e12c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d")
+		fmt.Printf("Ref Generated: %+v\n\n", r)
 	}
 }
 
 func TestSignTransactoinRef(t *testing.T) {
 
 	var txRaw string
-	txRaw = "0a7e0a02adcd220873bf2dfd044f459440e0d4d2f8e12c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d"
-	// txRaw = "0a7e0a02ad0f2208c6a7a9976e8601a240b3afdaf7e12c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d"
-
+	txRaw = "0a7e0a02055122080d595b1696607c7e40f8baf4b3e72c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d"
 	if r, err := tw.SignTransactionRef(txRaw, PRIVATEKEY); err != nil {
 		t.Errorf("SignTransactionRef failed: %v\n", err)
 	} else {
@@ -58,7 +54,7 @@ func TestValidSignedTransactionRef(t *testing.T) {
 	var txSignedRaw string
 	txSignedRaw = TXSIGNED
 	txSignedRaw = "0a7e0a02adcd220873bf2dfd044f459440e0d4d2f8e12c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d1241f5b8eaac6034f590b54d7d1e2fcd588c56573c113ec7e98aac4a393747ae290e55f1bc2e861cc9dde18ac48e9594054632f4a1da2491bf091c2fe813f4e373d201"
-	txSignedRaw = "0a7e0a02adcd220873bf2dfd044f459440e0d4d2f8e12c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d1241f5b8eaac6034f590b54d7d1e2fcd588c56573c113ec7e98aac4a393747ae290e2f5c1cdf47cf33b85fd1ea0b6b34555c809f2c52a037d2678cac5064a1f7410700"
+	txSignedRaw = "0a7e0a0269bb220876979998ddefc0d94088a5b192e62c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518e091431241e99894c32ec9b8d878c6624416aab59cc9bd0eeafb34d9e6d5a95b3472899a817dc87172dc2dec525cc99ae25247388a390e6827ee4fcaa9d29447dc24a8a3d100"
 
 	if err := tw.ValidSignedTransactionRef(txSignedRaw); err != nil {
 		t.Errorf("ValidSignedTransactionRef: %v\n", err)
@@ -101,11 +97,11 @@ func TestSuiteTx(t *testing.T) {
 	println("------------------------------------------------------------------- Valid Done! \n")
 
 	// txSignedRaw := "0a7e0a02b73b2208d971acfd3452661c40f0d68cfce12c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d1241166ae365792c1918de963cc4121e47417252da11d54783dbeb248f913240f27ea02b1b42f807c4ffb5d7ebecf687f5294400281021e6fefd0f38c50765f9c87200"
-	// err = tw.BroadcastTransaction(txSignedRaw)
-	// if err != nil {
-	// 	t.Errorf("ValidSignedTransactionRef: %v\n", err)
-	// } else {
-	// 	println("Success!")
-	// }
+	err = tw.BroadcastTransaction(txSignedRaw)
+	if err != nil {
+		t.Errorf("ValidSignedTransactionRef: %v\n", err)
+	} else {
+		println("Success!")
+	}
 	println("------------------------------------------------------------------- Boradcast! \n")
 }
