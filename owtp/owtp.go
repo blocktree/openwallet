@@ -599,6 +599,18 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 
 		node.serveMux.ServeOWTP(peer.PID(), &ctx)
 
+	} else if packet.Req == HTTPRequest {
+
+			//创建上下面指针，处理请求参数
+			ctx := Context{PID: peer.PID(), Req: packet.Req, nonce: packet.Nonce, inputs: packet.Data, Method: packet.Method}
+
+			node.serveMux.ServeOWTP(peer.PID(), &ctx)
+
+			//处理完请求，推送响应结果给服务端
+			packet.Req = HTTPRequest
+			packet.Data = ctx.Resp
+			peer.Send(*packet)
+
 	}
 
 }

@@ -30,6 +30,8 @@ import (
 const (
 	WSRequest  = 1 //wesocket请求标识
 	WSResponse = 2 //wesocket响应标识
+
+	HTTPRequest  = 3 //http请求标识
 )
 
 var (
