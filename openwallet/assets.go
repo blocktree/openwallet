@@ -38,4 +38,31 @@ type AssetsAdapter interface {
 
 	//GetBlockScanner 获取区块链扫描器
 	GetBlockScanner() BlockScanner
+
+	//GetSmartContractDecoder 获取智能合约解析器
+	GetSmartContractDecoder() SmartContractDecoder
+}
+
+type AssetsAdapterBase struct {
+	SymbolInfoBase
+}
+
+//GetAddressDecode 地址解析器
+func (a *AssetsAdapterBase) GetAddressDecode() AddressDecoder {
+	return nil
+}
+
+//GetTransactionDecoder 交易单解析器
+func (a *AssetsAdapterBase) GetTransactionDecoder() TransactionDecoder {
+	return nil
+}
+
+//GetBlockScanner 获取区块链扫描器
+func (a *AssetsAdapterBase) GetBlockScanner() BlockScanner {
+	return nil
+}
+
+//GetBlockScanner 获取智能合约解析器
+func (a *AssetsAdapterBase) GetSmartContractDecoder() SmartContractDecoder {
+	return nil
 }

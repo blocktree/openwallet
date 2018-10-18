@@ -17,6 +17,7 @@ package openwallet
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"github.com/blocktree/OpenWallet/crypto"
 	"github.com/blocktree/OpenWallet/log"
@@ -161,6 +162,31 @@ type TxInput struct {
 type TxOutPut struct {
 	Recharge `storm:"inline"`
 	ExtParam string //扩展参数，用于记录utxo的解锁字段，json格式
+}
+
+//SetExtParam
+func (txOut *TxOutPut) SetExtParam(key string, value interface{}) error {
+	var ext map[string]interface{}
+	err := json.Unmarshal([]byte(txOut.ExtParam), &ext)
+	if err != nil {
+		return err
+	}
+
+	ext[key] = value
+
+	json, err := json.Marshal(ext)
+	if err != nil {
+		return err
+	}
+	txOut.ExtParam = string(json)
+
+	return nil
+}
+
+//GetExtParam
+func (txOut *TxOutPut) GetExtParam() gjson.Result {
+	//如果param没有值，使用inputs初始化
+	return gjson.ParseBytes([]byte(txOut.ExtParam))
 }
 
 type Withdraw struct {
