@@ -62,6 +62,9 @@ const (
 )
 
 type WalletManager struct {
+
+	*openwallet.AssetsAdapterBase
+
 	storage      *hdkeystore.HDKeystore          //秘钥存取
 	walletClient *Client                       // 节点客户端
 	config       *WalletConfig                 //钱包管理配置
