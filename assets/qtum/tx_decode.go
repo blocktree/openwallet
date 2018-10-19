@@ -490,3 +490,13 @@ func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper *openwallet.Wall
 	return nil
 }
 
+//GetRawTransactionFeeRate 获取交易单的费率
+func (decoder *TransactionDecoder) GetRawTransactionFeeRate() (feeRate string, unit string, err error) {
+	rate, err := decoder.wm.EstimateFeeRate()
+	if err != nil {
+		return "", "", err
+	}
+
+	return rate.StringFixed(decoder.wm.Decimal()), "K", nil
+}
+
