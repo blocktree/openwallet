@@ -29,13 +29,13 @@ type TransactionDecoder interface {
 	//SendRawTransaction 广播交易单
 	//SendTransaction func(amount, feeRate string, to []string, wallet *Wallet, account *AssetsAccount) (*RawTransaction, error)
 	//CreateRawTransaction 创建交易单
-	CreateRawTransaction(wrapper *WalletWrapper, rawTx *RawTransaction) error
+	CreateRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error
 	//SignRawTransaction 签名交易单
-	SignRawTransaction(wrapper *WalletWrapper, rawTx *RawTransaction) error
+	SignRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error
 	//SendRawTransaction 广播交易单
-	SubmitRawTransaction(wrapper *WalletWrapper, rawTx *RawTransaction) error
+	SubmitRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error
 	//VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
-	VerifyRawTransaction(wrapper *WalletWrapper, rawTx *RawTransaction) error
+	VerifyRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error
 	//GetRawTransactionFeeRate 获取交易单的费率
 	GetRawTransactionFeeRate() (feeRate string, unit string, err error)
 }

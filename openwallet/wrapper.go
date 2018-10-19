@@ -16,10 +16,11 @@
 package openwallet
 
 import (
-	"github.com/asdine/storm"
-	"github.com/coreos/bbolt"
 	"sync"
 	"time"
+
+	"github.com/asdine/storm"
+	"github.com/coreos/bbolt"
 )
 
 type WrapperSourceFile string
@@ -76,6 +77,7 @@ func (wrapper *Wrapper) OpenStormDB() (*StormDB, error) {
 		return wrapper.sourceDB, nil
 	}
 
+	//log.Debugf("sourceFile :%v", wrapper.sourceFile)
 	db, err = OpenStormDB(
 		wrapper.sourceFile,
 		storm.BoltOptions(0600, &bolt.Options{Timeout: 3 * time.Second}),

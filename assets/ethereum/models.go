@@ -322,45 +322,45 @@ func (this *WalletManager) ClearBlockScanDb() {
 	}
 }
 
-func (this *WalletManager) DumpBlockScanDb() {
-	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
-	if err != nil {
-		openwLogger.Log.Errorf("open db failed, err = %v", err)
-		return
-	}
-	defer db.Close()
-
-	var unscanTransactions []UnscanTransaction
-	var blocks []BlockHeader
-	var blockHeightStr string
-	err = db.All(&unscanTransactions)
-	if err != nil {
-		openwLogger.Log.Errorf("get transactions failed, err = %v", err)
-		return
-	}
-
-	for i, _ := range unscanTransactions {
-		fmt.Printf("Print unscanned transaction [%v] = %v\n", unscanTransactions[i].TxID, unscanTransactions[i])
-	}
-
-	err = db.All(&blocks)
-	if err != nil {
-		openwLogger.Log.Errorf("get blocks failed failed, err = %v", err)
-		return
-	}
-
-	for i, _ := range blocks {
-		fmt.Printf("print block [%v] = %v\n", blocks[i].BlockNumber, blocks[i])
-	}
-
-	err = db.Get(BLOCK_CHAIN_BUCKET, "BlockNumber", &blockHeightStr)
-	if err != nil {
-		openwLogger.Log.Errorf("get block height from db failed, err=%v", err)
-		return
-	}
-
-	fmt.Println("print block number = ", blockHeightStr)
-}
+//func (this *WalletManager) DumpBlockScanDb() {
+//	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
+//	if err != nil {
+//		openwLogger.Log.Errorf("open db failed, err = %v", err)
+//		return
+//	}
+//	defer db.Close()
+//
+//	var unscanTransactions []UnscanTransaction
+//	var blocks []BlockHeader
+//	var blockHeightStr string
+//	err = db.All(&unscanTransactions)
+//	if err != nil {
+//		openwLogger.Log.Errorf("get transactions failed, err = %v", err)
+//		return
+//	}
+//
+//	for i, _ := range unscanTransactions {
+//		fmt.Printf("Print unscanned transaction [%v] = %v\n", unscanTransactions[i].TxID, unscanTransactions[i])
+//	}
+//
+//	err = db.All(&blocks)
+//	if err != nil {
+//		openwLogger.Log.Errorf("get blocks failed failed, err = %v", err)
+//		return
+//	}
+//
+//	for i, _ := range blocks {
+//		fmt.Printf("print block [%v] = %v\n", blocks[i].BlockNumber, blocks[i])
+//	}
+//
+//	err = db.Get(BLOCK_CHAIN_BUCKET, "BlockNumber", &blockHeightStr)
+//	if err != nil {
+//		openwLogger.Log.Errorf("get block height from db failed, err=%v", err)
+//		return
+//	}
+//
+//	fmt.Println("print block number = ", blockHeightStr)
+//}
 
 func (this *Wallet) SaveTransactions(dbPath string, txs []BlockTransaction) error {
 	db, err := this.OpenDB(dbPath)

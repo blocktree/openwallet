@@ -17,8 +17,9 @@ package manager
 
 import (
 	"testing"
-	"github.com/blocktree/OpenWallet/log"
 	"time"
+
+	"github.com/blocktree/OpenWallet/log"
 )
 
 func TestWalletManager_RefreshAssetsAccountBalance(t *testing.T) {

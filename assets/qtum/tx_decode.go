@@ -40,7 +40,7 @@ func NewTransactionDecoder(wm *WalletManager) *TransactionDecoder {
 }
 
 //CreateRawTransaction 创建交易单
-func (decoder *TransactionDecoder) CreateRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
+func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	//先加载是否有配置文件
 	err := decoder.wm.loadConfig()
@@ -280,7 +280,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 }
 
 //SignRawTransaction 签名交易单
-func (decoder *TransactionDecoder) SignRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
+func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	//先加载是否有配置文件
 	err := decoder.wm.loadConfig()
@@ -377,7 +377,7 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper *openwallet.Wallet
 }
 
 //VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
-func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
+func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	//先加载是否有配置文件
 	err := decoder.wm.loadConfig()
@@ -463,7 +463,7 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper *openwallet.Wall
 }
 
 //SendRawTransaction 广播交易单
-func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
+func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	//先加载是否有配置文件
 	err := decoder.wm.loadConfig()
@@ -488,5 +488,15 @@ func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper *openwallet.Wall
 	rawTx.IsSubmit = true
 
 	return nil
+}
+
+//GetRawTransactionFeeRate 获取交易单的费率
+func (decoder *TransactionDecoder) GetRawTransactionFeeRate() (feeRate string, unit string, err error) {
+	rate, err := decoder.wm.EstimateFeeRate()
+	if err != nil {
+		return "", "", err
+	}
+
+	return rate.StringFixed(decoder.wm.Decimal()), "K", nil
 }
 

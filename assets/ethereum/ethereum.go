@@ -822,17 +822,17 @@ func (this *WalletManager) GetLocalBlockHeight() (uint64, error) {
 		return 0, err
 	}
 	defer db.Close()
-	var blockHeightStr string
-	err = db.Get(BLOCK_CHAIN_BUCKET, BLOCK_HEIGHT_KEY, &blockHeightStr)
+	var blockHeight uint64
+	err = db.Get(BLOCK_CHAIN_BUCKET, BLOCK_HEIGHT_KEY, &blockHeight)
 	if err != nil {
 		openwLogger.Log.Errorf("get block height from db failed, err=%v", err)
 		return 0, err
 	}
-	blockHeight, err := ConvertToUint64(blockHeightStr, 16) //ConvertToBigInt(blockHeightStr, 16)
-	if err != nil {
-		openwLogger.Log.Errorf("convert block height string failed, err=%v", err)
-		return 0, err
-	}
+	// blockHeight, err := ConvertToUint64(blockHeightStr, 16) //ConvertToBigInt(blockHeightStr, 16)
+	// if err != nil {
+	// 	openwLogger.Log.Errorf("convert block height string failed, err=%v", err)
+	// 	return 0, err
+	// }
 	return blockHeight, nil
 }
 
@@ -851,14 +851,14 @@ func (this *WalletManager) SaveLocalBlockScanned(blockHeight uint64, blockHash s
 	}
 	defer tx.Rollback()
 
-	blockHeightStr := "0x" + strconv.FormatUint(blockHeight, 16) //blockHeight.Text(16)
-	err = tx.Set(BLOCK_CHAIN_BUCKET, BLOCK_HEIGHT_KEY, &blockHeightStr)
+	//blockHeightStr := "0x" + strconv.FormatUint(blockHeight, 16) //blockHeight.Text(16)
+	err = tx.Set(BLOCK_CHAIN_BUCKET, BLOCK_HEIGHT_KEY, &blockHeight)
 	if err != nil {
 		openwLogger.Log.Errorf("update block height failed, err= %v", err)
 		return err
 	}
 
-	err = tx.Set(BLOCK_CHAIN_BUCKET, BLOCK_HASH_KEY, &blockHeightStr)
+	err = tx.Set(BLOCK_CHAIN_BUCKET, BLOCK_HASH_KEY, &blockHash)
 	if err != nil {
 		openwLogger.Log.Errorf("update block height failed, err= %v", err)
 		return err
@@ -876,8 +876,8 @@ func (this *WalletManager) UpdateLocalBlockHeight(blockHeight uint64) error {
 	}
 	defer db.Close()
 
-	blockHeightStr := "0x" + strconv.FormatUint(blockHeight, 16) //blockHeight.Text(16)
-	err = db.Set(BLOCK_CHAIN_BUCKET, BLOCK_HEIGHT_KEY, &blockHeightStr)
+	//blockHeightStr := "0x" + strconv.FormatUint(blockHeight, 16) //blockHeight.Text(16)
+	err = db.Set(BLOCK_CHAIN_BUCKET, BLOCK_HEIGHT_KEY, &blockHeight)
 	if err != nil {
 		openwLogger.Log.Errorf("update block height failed, err= %v", err)
 		return err
@@ -895,7 +895,7 @@ func (this *WalletManager) RecoverBlockHeader(height uint64) (*EthBlock, error) 
 	defer db.Close()
 	var block EthBlock
 
-	err = db.One(BLOCK_HEIGHT_KEY, "0x"+strconv.FormatUint(height, 16), &block.BlockHeader)
+	err = db.One("BlockNumber", "0x"+strconv.FormatUint(height, 16), &block.BlockHeader)
 	if err != nil {
 		openwLogger.Log.Errorf("get block failed, block number=%v, err=%v", "0x"+strconv.FormatUint(height, 16), err)
 		return nil, err
@@ -944,8 +944,8 @@ func (this *WalletManager) SaveBlockHeader2(block *EthBlock) error {
 		return err
 	}
 
-	blockHeightStr := "0x" + strconv.FormatUint(block.blockHeight, 16) //block.blockHeight.Text(16)
-	err = tx.Set(BLOCK_CHAIN_BUCKET, BLOCK_HEIGHT_KEY, &blockHeightStr)
+	//blockHeightStr := "0x" + strconv.FormatUint(block.blockHeight, 16) //block.blockHeight.Text(16)
+	err = tx.Set(BLOCK_CHAIN_BUCKET, BLOCK_HEIGHT_KEY, &block.blockHeight)
 	if err != nil {
 		openwLogger.Log.Errorf("update block height failed, err= %v", err)
 		return err
@@ -977,7 +977,21 @@ func (this *WalletManager) SaveBlockHeader2(block *EthBlock) error {
 	return nil
 }*/
 
-func (this *WalletManager) GetAllUnscannedTransactions() ([]BlockTransaction, error) {
+func (this *WalletManager) RecoverUnscannedTransactions(unscannedTxs []UnscanTransaction) ([]BlockTransaction, error) {
+	allTxs := make([]BlockTransaction, 0, len(unscannedTxs))
+	for i, _ := range unscannedTxs {
+		var tx BlockTransaction
+		err := json.Unmarshal([]byte(unscannedTxs[i].TxSpec), &tx)
+		if err != nil {
+			openwLogger.Log.Errorf("decode json [%v] from unscanned transactions failed, err=%v", unscannedTxs[i].TxSpec, err)
+			return nil, err
+		}
+		allTxs = append(allTxs, tx)
+	}
+	return allTxs, nil
+}
+
+func (this *WalletManager) GetAllUnscannedTransactions() ([]UnscanTransaction, error) {
 	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
 		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
@@ -992,20 +1006,41 @@ func (this *WalletManager) GetAllUnscannedTransactions() ([]BlockTransaction, er
 		return nil, err
 	}
 
-	allTxs := make([]BlockTransaction, 0)
-	for i, _ := range allRecords {
-		var tx BlockTransaction
-		err = json.Unmarshal([]byte(allRecords[i].TxSpec), &tx)
-		if err != nil {
-			openwLogger.Log.Errorf("decode json [%v] from unscanned transactions failed, err=%v", allRecords[i].TxSpec, err)
-			return nil, err
-		}
-		allTxs = append(allTxs, tx)
-	}
-	return allTxs, nil
+	return allRecords, nil
 }
 
-func (this *WalletManager) DeleteUnscannedTransaction(height uint64) error {
+func (this *WalletManager) DeleteUnscannedTransactions(list []UnscanTransaction) error {
+	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
+	if err != nil {
+		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
+		return err
+	}
+	defer db.Close()
+
+	tx, err := db.Begin(true)
+	if err != nil {
+		log.Errorf("start transaction failed, err=%v", err)
+		return err
+	}
+	defer tx.Rollback()
+
+	for i, _ := range list {
+		err = tx.DeleteStruct(&list[i])
+		if err != nil {
+			log.Errorf("delete unscanned tx faled, err= %v", err)
+			return err
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		log.Error("commit failed, err=%v", err)
+		return err
+	}
+	return nil
+}
+
+func (this *WalletManager) DeleteUnscannedTransactionByHeight(height uint64) error {
 	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
 		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
@@ -1015,7 +1050,7 @@ func (this *WalletManager) DeleteUnscannedTransaction(height uint64) error {
 
 	var list []UnscanTransaction
 	heightStr := "0x" + strconv.FormatUint(height, 16)
-	err = db.Find(BLOCK_HEIGHT_KEY, heightStr, &list)
+	err = db.Find("BlockNumber", heightStr, &list)
 	if err != nil && err != storm.ErrNotFound {
 		openwLogger.Log.Errorf("find unscanned tx failed, block height=%v, err=%v", heightStr, err)
 		return err

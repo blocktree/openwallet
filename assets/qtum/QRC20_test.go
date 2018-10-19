@@ -4,6 +4,8 @@ import (
 	"testing"
 	"encoding/hex"
 	"strconv"
+	"github.com/shopspring/decimal"
+	"github.com/blocktree/OpenWallet/common"
 )
 
 
@@ -23,18 +25,23 @@ func Test_addressTo32bytesArg(t *testing.T) {
 
 func Test_getUnspentByAddress(t *testing.T) {
 	contractAddress := "91a6081095ef860d28874c9db613e7a4107b0281"
-	address := "qQLYQn7vCAU8irPEeqjZ3rhFGLnS5vxVy8"
+	address := "qdphfFinfJutJFvtnr2UaCwNAMxC3HbVxa"
 
 	QRC20Utox, err := tw.GetUnspentByAddress(contractAddress, address)
 	if err != nil {
 		t.Errorf("GetUnspentByAddress failed unexpected error: %v\n", err)
 	}
 
-	Unspent, err := strconv.ParseInt(QRC20Utox.Output,16,64)
+	sotashiUnspent, _ := strconv.ParseInt(QRC20Utox.Output,16,64)
+	t.Logf("sotashiUnspent: %d\n", sotashiUnspent)
+
+	sotashiUnspentDecimal, _ := decimal.NewFromString(common.NewString(sotashiUnspent).String())
+	unspent := sotashiUnspentDecimal.Div(coinDecimal)
+
 	if err != nil {
 		t.Errorf("strconv.ParseInt failed unexpected error: %v\n", err)
 	}else {
-		t.Logf("QRC20Unspent %s: %s = %d\n", QRC20Utox.Address, address, Unspent)
+		t.Logf("QRC20Unspent %s: %s = %v\n", QRC20Utox.Address, address, unspent)
 	}
 }
 
@@ -51,10 +58,10 @@ func Test_AmountTo32bytesArg(t *testing.T){
 func Test_QRC20Transfer(t *testing.T) {
 	contractAddress := "91a6081095ef860d28874c9db613e7a4107b0281"
 	from := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
-	to := "qQLYQn7vCAU8irPEeqjZ3rhFGLnS5vxVy8"
+	to := "qdphfFinfJutJFvtnr2UaCwNAMxC3HbVxa"
 	gasPrice := "0.00000040"
 	var gasLimit int64 = 250000
-	var amount int64 = 1000
+	var amount decimal.Decimal = decimal.NewFromFloat(9.999999)
 
 	result, err := tw.QRC20Transfer(contractAddress, from, to, gasPrice, amount, gasLimit)
 	if err != nil {

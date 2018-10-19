@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"encoding/hex"
 	"strconv"
+	"github.com/shopspring/decimal"
 )
 
 func AddressTo32bytesArg(address string) ([]byte, error) {
@@ -62,8 +63,12 @@ func AmountTo32bytesArg(amount int64) (string, error) {
 	return bytesArg, nil
 }
 
-func (wm *WalletManager)QRC20Transfer(contractAddress string, from string, to string, gasPrice string, amount int64, gasLimit int64) (string, error){
-	amountToArg, err := AmountTo32bytesArg(amount)
+func (wm *WalletManager)QRC20Transfer(contractAddress string, from string, to string, gasPrice string, amount decimal.Decimal, gasLimit int64) (string, error){
+
+	amountDecimal := amount.Mul(coinDecimal)
+	sotashiAmount := amountDecimal.IntPart()
+
+	amountToArg, err := AmountTo32bytesArg(sotashiAmount)
 	if err != nil {
 		return "", err
 	}
