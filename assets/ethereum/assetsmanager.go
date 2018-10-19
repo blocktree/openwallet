@@ -15,6 +15,10 @@ func (this *WalletManager) GetTransactionDecoder() openwallet.TransactionDecoder
 	return this.TxDecoder
 }
 
+func (this *WalletManager) GetSmartContractDecoder() openwallet.SmartContractDecoder {
+	return this.ContractDecoder
+}
+
 //GetBlockScanner 获取区块链
 func (this *WalletManager) GetBlockScanner() openwallet.BlockScanner {
 	//先加载是否有配置文件

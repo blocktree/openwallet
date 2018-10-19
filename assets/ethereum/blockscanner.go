@@ -14,6 +14,11 @@
  */
 package ethereum
 
+//block scan db内容:
+//1. 扫描过的blockheader
+//2. unscanned tx
+//3. block height, block hash
+
 import (
 	"path/filepath"
 	"strings"
@@ -130,12 +135,25 @@ func (this *ETHBLockScanner) ScanTxMemPool() error {
 }
 
 func (this *ETHBLockScanner) RescanFailedTransactions() error {
-	txs, err := this.wm.GetAllUnscannedTransactions()
+	unscannedTxs, err := this.wm.GetAllUnscannedTransactions()
 	if err != nil {
 		log.Errorf("GetAllUnscannedTransactions failed. err=%v", err)
 		return err
 	}
+
+	txs, err := this.wm.RecoverUnscannedTransactions(unscannedTxs)
+	if err != nil {
+		log.Errorf("recover transactions from unscanned result failed. err=%v", err)
+		return err
+	}
+
 	err = this.BatchExtractTransaction(txs)
+	if err != nil {
+		log.Errorf("batch extract transactions failed, err=%v", err)
+		return err
+	}
+
+	err = this.wm.DeleteUnscannedTransactions(unscannedTxs)
 	if err != nil {
 		log.Errorf("batch extract transactions failed, err=%v", err)
 		return err
@@ -195,7 +213,7 @@ func (this *ETHBLockScanner) ScanBlockTask() {
 			//	break
 			//}
 
-			err = this.wm.DeleteUnscannedTransaction(previousHeight)
+			err = this.wm.DeleteUnscannedTransactionByHeight(previousHeight)
 			if err != nil {
 				log.Errorf("DeleteUnscannedTransaction failed, height=%v, err=%v", "0x"+strconv.FormatUint(previousHeight, 16), err)
 				break

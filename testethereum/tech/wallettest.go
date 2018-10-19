@@ -197,7 +197,7 @@ func TestDbInf() error {
 		return err
 	}
 	wallets[len(wallets)-1].DumpWalletDB(manager.GetConfig().DbPath)
-	manager.DumpBlockScanDb()
+	DumpBlockScanDb()
 	return nil
 }
 
@@ -260,7 +260,7 @@ func TestBlockScanWhenFork() error {
 	scanner.ScanBlock()
 	fmt.Println("after scan block, show db following:")
 	w.DumpWalletDB(manager.GetConfig().DbPath)
-	manager.DumpBlockScanDb()
+	DumpBlockScanDb()
 	return nil
 }
 
@@ -306,7 +306,7 @@ func TestBlockScan() error {
 	scanner.ScanBlock()
 	fmt.Println("after scan block, show db following:")
 	w.DumpWalletDB("/Users/peter/workspace/bitcoin/wallet/src/github.com/blocktree/OpenWallet/test/data/eth/db")
-	manager.DumpBlockScanDb()
+	DumpBlockScanDb()
 	return nil
 }
 

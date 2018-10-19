@@ -166,11 +166,18 @@ func (this *ETHBlockScan) GetWalletByAddress(address string) (*Wallet, bool) {
 }
 
 func (this *ETHBlockScan) RescanFailedTransactions() (map[string][]BlockTransaction, error) {
-	txs, err := this.wmanager.GetAllUnscannedTransactions()
+	unscannedTxs, err := this.wmanager.GetAllUnscannedTransactions()
 	if err != nil {
 		log.Errorf("GetAllUnscannedTransactions failed. err=%v", err)
 		return nil, err
 	}
+	
+	txs, err := this.wmanager.RecoverUnscannedTransactions(unscannedTxs)
+	if err != nil{
+		log.Errorf("recover transactions from unscanned records failed, err=%v", err)
+		return nil, err
+	}
+
 	return this.TransactionScanning(txs)
 }
 
@@ -300,7 +307,7 @@ func (this *ETHBlockScan) ScanBlock() {
 				break
 			}
 
-			err = this.wmanager.DeleteUnscannedTransaction(previousHeight)
+			err = this.wmanager.DeleteUnscannedTransactionByHeight(previousHeight)
 			if err != nil {
 				log.Errorf("DeleteUnscannedTransaction failed, height=%v, err=%v", "0x"+strconv.FormatUint(previousHeight, 16), err)
 				break
