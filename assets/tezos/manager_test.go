@@ -158,13 +158,13 @@ func TestWalletManager_getWalletBalance(t *testing.T) {
 }
 
 func TestWalletManager_TransferFlow(t *testing.T) {
-	w, err := wm.GetWalletByID("WEY5DDuXbvHrBUa5UBKmVpwLCwP69bieeB")
+	w, err := wm.GetWalletByID("WGp7QW8jG3BF9CCrQvBq54zpS6huYasiAC")
 	if err != nil {
 		t.Error("get wallet by id error")
 		return
 	}
 
-	keystore, _ := w.HDKey("jinxin")
+	keystore, _ := w.HDKey("1234qwer")
 
 	db, err := w.OpenDB()
 	if err != nil {
@@ -179,7 +179,7 @@ func TestWalletManager_TransferFlow(t *testing.T) {
 	var sender *openwallet.Address
 	//key, _ := wm.getKeys(keystore, addrs[0])
 	for _, a := range addrs {
-		if a.Address == "tz1XSuiDu5Fevzwv3CG26dxmsinejRsUviC2" {
+		if a.Address == "tz1bQce59RgUkuV9WfvTvkZGiLLt8aedqvzd" {
 			sender = a
 			break
 		}
@@ -192,10 +192,48 @@ func TestWalletManager_TransferFlow(t *testing.T) {
 
 	dst := "tz1Neor2KRu3zp5FdMox98sxYLvFqtUs4fCJ"
 
-	inj, pre := wm.Transfer(*key, dst, "100", "100", "100", "1001")
+	inj, pre := wm.Transfer(*key, dst, "100", "100", "100", "801")
 	t.Logf("inj: %s\n, pre: %s\n", inj, pre)
 }
 
+func Test_Sign(t *testing.T) {
+
+	str := "cb81d878a257e9f7bb864a33700f0c411c142d2f4eaa423338112e37152a1879080000acf886e911fa1118ffd5e7394b740ddbaa81b67700acb60cc801c801000000e3f24bd5bca29cb50422b59a3a779698c0b14e4400"
+	w, err := wm.GetWalletByID("WGp7QW8jG3BF9CCrQvBq54zpS6huYasiAC")
+	if err != nil {
+		t.Error("get wallet by id error")
+		return
+	}
+
+	keystore, _ := w.HDKey("1234qwer")
+
+	db, err := w.OpenDB()
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	defer db.Close()
+
+	var addrs []*openwallet.Address
+	db.All(&addrs)
+
+	var sender *openwallet.Address
+	//key, _ := wm.getKeys(keystore, addrs[0])
+	for _, a := range addrs {
+		if a.Address == "tz1bQce59RgUkuV9WfvTvkZGiLLt8aedqvzd" {
+			sender = a
+			break
+		}
+	}
+
+	key, err := wm.getKeys(keystore, sender)
+	if err != nil {
+		t.Error("get key error")
+	}
+
+	sign, _, _ := wm.signTransaction(str, key.PrivateKey, watermark["generic"])
+	t.Log(sign)
+	}
 
 /*
 	manager_test.go:121: tz1NGveHiqsNEjUUGqkUHRfp69PkGyNaq8Ax
