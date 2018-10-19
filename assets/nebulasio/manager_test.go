@@ -27,7 +27,8 @@ var wm *WalletManager
 func init() {
 	wm = NewWalletManager()
 	wm.InitConfigFlow()
-	wm.Config.ServerAPI = "http://127.0.0.1:8685"
+	//wm.Config.ServerAPI = "http://127.0.0.1:8685"
+	wm.Config.ServerAPI = "http://192.168.32.107:20012"
 	wm.WalletClient = NewClient(wm.Config.ServerAPI, false)
 }
 
