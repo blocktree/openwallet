@@ -71,13 +71,13 @@ func (decoder *TransactionDecoderBase) GetRawTransactionFeeRate() (feeRate strin
 
 //RawTransaction 原始交易单
 type RawTransaction struct {
-	Coin        Coin                       `json:"coin"`       //区块链类型标识
+	Coin        Coin                       `json:"coin"`       //@required 区块链类型标识
 	TxID        string                     `json:"txID"`       //交易单ID，广播后会生成
 	Sid         string                     `json:"sid"`        //业务订单号，保证业务不重复交易而用
 	RawHex      string                     `json:"rawHex"`     //区块链协议构造的交易原生数据
 	FeeRate     string                     `json:"feeRate"`    //自定义费率
-	To          map[string]string          `json:"to"`         //目的地址:转账数量
-	Account     *AssetsAccount             `json:"account"`    //创建交易单的账户
+	To          map[string]string          `json:"to"`         //@required 目的地址:转账数量
+	Account     *AssetsAccount             `json:"account"`    //@required 创建交易单的账户
 	Signatures  map[string][]*KeySignature `json:"sigParts"`   //拥有者accountID: []未花签名
 	Required    uint64                     `json:"reqSigs"`    //必要签名
 	IsBuilt     bool                       `json:"isBuilt"`    //是否完成构建建议单
@@ -100,28 +100,26 @@ type KeySignature struct {
 type Transaction struct {
 	//openwallet自定义的ID，在不同链可能存在重复的txid，
 	// 所以我们要生成一个全局不重复的
-	WxID string `json:"wxid" storm:"id"`
-
-	TxID      string `json:"txid"`
-	AccountID string `json:"accountID"`
-	//Address     string   `json:"address"`
-	Coin        Coin     `json:"coin"` //区块链类型标识
-	From        []string `json:"from"`
-	To          []string `json:"to"`
+	WxID        string   `json:"wxid" storm:"id"` //@required 通过GenTransactionWxID计算
+	TxID        string   `json:"txid"`            //@required
+	AccountID   string   `json:"accountID"`
+	Coin        Coin     `json:"coin"` //@required 区块链类型标识
+	From        []string `json:"from"` //@required
+	To          []string `json:"to"`   //@required
 	Amount      string   `json:"amount"`
-	Decimal     int32    `json:"decimal"`
-	TxType      uint64
-	Confirm     int64  `json:"confirm"`
-	BlockHash   string `json:"blockHash"`
-	BlockHeight uint64 `json:"blockHeight"`
-	IsMemo      bool   `json:"isMemo"`
-	Memo        string `json:"memo"`
-	Fees        string `json:"fees"`
-	Received    bool   `json:"received"`
-	SubmitTime  int64  `json:"submitTime"`
-	ConfirmTime int64  `json:"confirmTime"`
-	Status      string `json:"status"` //链上状态
-	Reason      string `json:"reason"` //失败原因
+	Decimal     int32    `json:"decimal"` //@required
+	TxType      uint64   `json:"txType"`
+	Confirm     int64    `json:"confirm"`
+	BlockHash   string   `json:"blockHash"`   //@required
+	BlockHeight uint64   `json:"blockHeight"` //@required
+	IsMemo      bool     `json:"isMemo"`
+	Memo        string   `json:"memo"`
+	Fees        string   `json:"fees"` //@required
+	Received    bool     `json:"received"`
+	SubmitTime  int64    `json:"submitTime"`  //@required
+	ConfirmTime int64    `json:"confirmTime"` //@required
+	Status      string   `json:"status"`      //链上状态
+	Reason      string   `json:"reason"`      //失败原因
 }
 
 //GenTransactionWxID 生成交易单的WxID，格式为 base64(sha1(tx_{txID}_{symbol}_contractID}))
@@ -135,21 +133,21 @@ func GenTransactionWxID(tx *Transaction) string {
 }
 
 type Recharge struct {
-	Sid         string `json:"sid" storm:"id"` // base64(sha1(txid+n+addr))
-	TxID        string `json:"txid"`
+	Sid         string `json:"sid" storm:"id"` //@required base64(sha1(txid+n+addr))
+	TxID        string `json:"txid"`           //@required
 	AccountID   string `json:"accountID"`
-	Address     string `json:"address"`
-	Symbol      string `json:"symbol"` //Deprecated: use Coin
-	Coin        Coin   //区块链类型标识
-	Amount      string `json:"amount"`
+	Address     string `json:"address"` //@required
+	Symbol      string `json:"symbol"`  //Deprecated: use Coin
+	Coin        Coin   //@required 区块链类型标识
+	Amount      string `json:"amount"` //@required
 	Confirm     int64  `json:"confirm"`
-	BlockHash   string `json:"blockHash"`
-	BlockHeight uint64 `json:"blockHeight" storm:"index"`
+	BlockHash   string `json:"blockHash"`                 //@required
+	BlockHeight uint64 `json:"blockHeight" storm:"index"` //@required
 	IsMemo      bool   `json:"isMemo"`
 	Memo        string `json:"memo"`
-	Index       uint64 `json:"index"`
+	Index       uint64 `json:"index"` //@required
 	Received    bool
-	CreateAt    int64 `json:"createdAt"`
+	CreateAt    int64 `json:"createdAt"` //@required
 	Delete      bool
 }
 
