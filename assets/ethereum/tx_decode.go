@@ -205,7 +205,7 @@ func NewTransactionDecoder(wm *WalletManager) *EthTransactionDecoder {
 	return &decoder
 }
 
-func (this *EthTransactionDecoder) CreateSimpleRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
+func (this *EthTransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 	//check交易交易单基本字段
 	err := VerifyRawTransaction(rawTx)
 	if err != nil {
@@ -351,7 +351,7 @@ func (this *EthTransactionDecoder) CreateSimpleRawTransaction(wrapper *openwalle
 	return nil
 }
 
-func (this *EthTransactionDecoder) CreateErc20TokenRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
+func (this *EthTransactionDecoder) CreateErc20TokenRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 	//check交易交易单基本字段
 	err := VerifyRawTransaction(rawTx)
 	if err != nil {
@@ -514,7 +514,7 @@ func (this *EthTransactionDecoder) CreateErc20TokenRawTransaction(wrapper *openw
 }
 
 //CreateRawTransaction 创建交易单
-func (this *EthTransactionDecoder) CreateRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
+func (this *EthTransactionDecoder) CreateRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 	if !rawTx.Coin.IsContract {
 		return this.CreateSimpleRawTransaction(wrapper, rawTx)
 	}
@@ -522,7 +522,7 @@ func (this *EthTransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 }
 
 //SignRawTransaction 签名交易单
-func (this *EthTransactionDecoder) SignRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
+func (this *EthTransactionDecoder) SignRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	//check交易交易单基本字段
 	err := VerifyRawTransaction(rawTx)
@@ -588,7 +588,7 @@ func (this *EthTransactionDecoder) SignRawTransaction(wrapper *openwallet.Wallet
 	return nil
 }
 
-func (this *EthTransactionDecoder) SubmitSimpleRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
+func (this *EthTransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 	//check交易交易单基本字段
 	err := VerifyRawTransaction(rawTx)
 	if err != nil {
@@ -703,7 +703,7 @@ func (this *EthTransactionDecoder) SubmitSimpleRawTransaction(wrapper *openwalle
 	return nil
 }
 
-func (this *EthTransactionDecoder) SubmitErc20TokenRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
+func (this *EthTransactionDecoder) SubmitErc20TokenRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 	//check交易交易单基本字段
 	err := VerifyRawTransaction(rawTx)
 	if err != nil {
@@ -809,7 +809,7 @@ func (this *EthTransactionDecoder) SubmitErc20TokenRawTransaction(wrapper *openw
 }
 
 //SendRawTransaction 广播交易单
-func (this *EthTransactionDecoder) SubmitRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
+func (this *EthTransactionDecoder) SubmitRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 	if !rawTx.Coin.IsContract {
 		return this.SubmitSimpleRawTransaction(wrapper, rawTx)
 	}
@@ -817,7 +817,7 @@ func (this *EthTransactionDecoder) SubmitRawTransaction(wrapper *openwallet.Wall
 }
 
 //VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
-func (this *EthTransactionDecoder) VerifyRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
+func (this *EthTransactionDecoder) VerifyRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 	//check交易交易单基本字段
 	err := VerifyRawTransaction(rawTx)
 	if err != nil {
