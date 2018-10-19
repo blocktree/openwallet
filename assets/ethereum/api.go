@@ -112,7 +112,7 @@ func (this *EthBlock) CreateOpenWalletBlockHeader() *openwallet.BlockHeader {
 
 func (this *EthBlock) Init() error {
 	var err error
-	this.blockHeight, err = strconv.ParseUint(this.BlockNumber, 16, 64) //ConvertToBigInt(this.BlockNumber, 16) //
+	this.blockHeight, err = strconv.ParseUint(removeOxFromHex(this.BlockNumber), 16, 64) //ConvertToBigInt(this.BlockNumber, 16) //
 	if err != nil {
 		openwLogger.Log.Errorf("init blockheight failed, err=%v", err)
 		return err

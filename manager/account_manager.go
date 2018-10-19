@@ -299,7 +299,6 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 	//	}
 	//}()
 
-
 	//导入新地址到区块扫描器
 	scanner := assetsMgr.GetBlockScanner()
 
@@ -339,7 +338,6 @@ func (wm *WalletManager) GetAddressList(appID, walletID, accountID string, offse
 	return addrs, nil
 }
 
-
 // GetAddress 获取单个地址信息
 func (wm *WalletManager) GetAddress(appID, walletID, accountID, address string) (*openwallet.Address, error) {
 
@@ -361,8 +359,6 @@ func (wm *WalletManager) GetAddress(appID, walletID, accountID, address string) 
 
 	return addr, nil
 }
-
-
 
 // ImportWatchOnlyAddress
 func (wm *WalletManager) ImportWatchOnlyAddress(appID, walletID, accountID string, addresses []*openwallet.Address) error {
@@ -451,7 +447,6 @@ func (wm *WalletManager) ImportWatchOnlyAddress(appID, walletID, accountID strin
 	return nil
 }
 
-
 // importNewAddressToCoreWallet 导入新地址到核心钱包
 func (wm *WalletManager) importNewAddressToCoreWallet() {
 
@@ -459,7 +454,7 @@ func (wm *WalletManager) importNewAddressToCoreWallet() {
 
 	var (
 		importAddressMap map[string][]*openwallet.Address
-		limit = 50
+		limit            = 50
 	)
 
 	//加载已存在所有app
@@ -469,7 +464,7 @@ func (wm *WalletManager) importNewAddressToCoreWallet() {
 	}
 
 	//处理所有App待导入地址，导入到核心钱包
-	LoopApp:
+LoopApp:
 	for _, appID := range appIDs {
 
 		importAddressMap = make(map[string][]*openwallet.Address)
@@ -521,7 +516,6 @@ func (wm *WalletManager) importNewAddressToCoreWallet() {
 				log.Error("ImportWatchOnlyAddress failed unexpected error:", err)
 				continue LoopApp
 			}
-
 
 		}
 

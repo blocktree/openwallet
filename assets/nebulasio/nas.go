@@ -545,3 +545,78 @@ func (w *WalletManager) RestoreWalletFlow() error {
 	return nil
 }
 
+
+//InstallNode 安装节点
+func (wm *WalletManager) InstallNodeFlow() error {
+	return errors.New("Install node is unsupport now. ")
+}
+
+//InitNodeConfig 初始化节点配置文件
+func (wm *WalletManager) InitNodeConfigFlow() error {
+	return errors.New("Install node is unsupport now. ")
+}
+/*
+//StartNodeFlow 开启节点
+func (wm *WalletManager) StartNodeFlow() error {
+
+	return wm.startNode()
+}
+
+//StopNodeFlow 关闭节点
+func (wm *WalletManager) StopNodeFlow() error {
+
+	return wm.stopNode()
+}
+*/
+//RestartNodeFlow 重启节点
+func (wm *WalletManager) RestartNodeFlow() error {
+	return errors.New("Install node is unsupport now. ")
+}
+
+//ShowNodeInfo 显示节点信息
+func (wm *WalletManager) ShowNodeInfo() error {
+	return errors.New("Install node is unsupport now. ")
+}
+
+//SetConfigFlow 初始化配置流程
+func (wm *WalletManager) SetConfigFlow(subCmd string) error {
+	file := wm.Config.configFilePath + wm.Config.configFileName
+	fmt.Printf("You can run 'vim %s' to edit %s Config.\n", file, subCmd)
+	return nil
+}
+
+//ShowConfigInfo 查看配置信息
+func (wm *WalletManager) ShowConfigInfo(subCmd string) error {
+	wm.Config.PrintConfig()
+	return nil
+}
+
+//CurveType 曲线类型
+func (wm *WalletManager) CurveType() uint32 {
+	return wm.Config.CurveType
+}
+
+//FullName 币种全名
+func (wm *WalletManager) FullName() string {
+	return "Bitcoin"
+}
+
+//Symbol 币种标识
+func (wm *WalletManager) Symbol() string {
+	return wm.Config.Symbol
+}
+
+//小数位精度
+func (wm *WalletManager) Decimal() int32 {
+	return 8
+}
+
+//AddressDecode 地址解析器
+func (wm *WalletManager) GetAddressDecode() openwallet.AddressDecoder {
+	return wm.Decoder
+}
+
+//TransactionDecoder 交易单解析器
+func (wm *WalletManager) GetTransactionDecoder() openwallet.TransactionDecoder {
+	return wm.TxDecoder
+}

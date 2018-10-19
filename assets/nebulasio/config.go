@@ -16,7 +16,6 @@
 package nebulasio
 
 import (
-	//wjq
 	"github.com/blocktree/go-OWCrypt"
 	"github.com/shopspring/decimal"
 	"time"
@@ -80,6 +79,9 @@ type WalletConfig struct {
 	DefaultConfig string
 	//曲线类型
 	CurveType uint32
+	/***********扫描器**************/
+	//区块链数据文件
+	BlockchainFile string
 }
 
 func NewConfig(symbol string, masterKey string) *WalletConfig {
@@ -119,6 +121,8 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	c.SumAddress = ""
 	//汇总执行间隔时间
 	c.CycleSeconds = time.Second * 10
+	//区块链数据文件
+	c.BlockchainFile = "blockchain.db"
 	//默认配置内容
 	c.DefaultConfig = `
 # start node command
