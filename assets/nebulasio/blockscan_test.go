@@ -113,7 +113,7 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 	)
 
 	accountID := "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
-	address := "n1a5JWwqVug7CjvsEbVAGRE5KQsKjK2Jy56"
+	address := "n1NCdn2vo1vz2didNfnvxPaAPZbh634CLqM"
 
 	bs := NewNASBlockScanner(wm)
 
@@ -121,7 +121,7 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 	sub := subscriber{}
 	bs.AddObserver(&sub)
 
-	//bs.SetRescanBlockHeight(1384586)
+	bs.SetRescanBlockHeight(1165601)
 
 	bs.AddAddress(address, accountID)
 

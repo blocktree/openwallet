@@ -1243,12 +1243,14 @@ type subscriber struct{
 }
 //BlockScanNotify 新区块扫描完成通知
 func (sub *subscriber) BlockScanNotify(header *openwallet.BlockHeader) error{
-	//fmt.Printf("header:%+v\n", header)
+	fmt.Printf("header:%+v\n", header)
 	return nil
 }
 //BlockExtractDataNotify 区块提取结果通知
 func (sub *subscriber)BlockExtractDataNotify(sourceKey string, data *openwallet.TxExtractData) error{
 	fmt.Printf("account:%+v\n", sourceKey)
+	fmt.Printf("data.TxInputs=%+v\n", data.TxInputs)
+	fmt.Printf("data.TxOutputs=%+v\n", data.TxOutputs)
 	fmt.Printf("data.Transaction=%+v\n", data.Transaction)
 	return nil
 }
