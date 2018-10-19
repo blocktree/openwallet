@@ -120,9 +120,11 @@ type Transaction struct {
 	Received    bool   `json:"received"`
 	SubmitTime  int64  `json:"submitTime"`
 	ConfirmTime int64  `json:"confirmTime"`
+	Status      string `json:"status"` //链上状态
+	Reason      string `json:"reason"` //失败原因
 }
 
-//GenTransactionWxID 生成交易单的WxID，格式为 base64(sha1(tx_{txID}_{symbol_contractID}))
+//GenTransactionWxID 生成交易单的WxID，格式为 base64(sha1(tx_{txID}_{symbol}_contractID}))
 func GenTransactionWxID(tx *Transaction) string {
 	txid := tx.TxID
 	symbol := tx.Coin.Symbol + "_" + tx.Coin.ContractID
