@@ -545,78 +545,51 @@ func (w *WalletManager) RestoreWalletFlow() error {
 	return nil
 }
 
-
-//InstallNode 安装节点
-func (wm *WalletManager) InstallNodeFlow() error {
-	return errors.New("Install node is unsupport now. ")
-}
-
-//InitNodeConfig 初始化节点配置文件
-func (wm *WalletManager) InitNodeConfigFlow() error {
-	return errors.New("Install node is unsupport now. ")
-}
-/*
-//StartNodeFlow 开启节点
-func (wm *WalletManager) StartNodeFlow() error {
-
-	return wm.startNode()
-}
-
-//StopNodeFlow 关闭节点
-func (wm *WalletManager) StopNodeFlow() error {
-
-	return wm.stopNode()
-}
-*/
-//RestartNodeFlow 重启节点
-func (wm *WalletManager) RestartNodeFlow() error {
-	return errors.New("Install node is unsupport now. ")
-}
-
-//ShowNodeInfo 显示节点信息
-func (wm *WalletManager) ShowNodeInfo() error {
-	return errors.New("Install node is unsupport now. ")
-}
-
-//SetConfigFlow 初始化配置流程
-func (wm *WalletManager) SetConfigFlow(subCmd string) error {
-	file := wm.Config.configFilePath + wm.Config.configFileName
-	fmt.Printf("You can run 'vim %s' to edit %s Config.\n", file, subCmd)
-	return nil
-}
-
-//ShowConfigInfo 查看配置信息
-func (wm *WalletManager) ShowConfigInfo(subCmd string) error {
-	wm.Config.PrintConfig()
-	return nil
-}
-
+/*实现 openwallet/assets.go 中AssetsAdapter接口中的SymbolInfo方法*/
 //CurveType 曲线类型
 func (wm *WalletManager) CurveType() uint32 {
 	return wm.Config.CurveType
 }
-
 //FullName 币种全名
 func (wm *WalletManager) FullName() string {
-	return "Bitcoin"
+	return "Nebulasio"
 }
-
 //Symbol 币种标识
 func (wm *WalletManager) Symbol() string {
 	return wm.Config.Symbol
 }
-
 //小数位精度
 func (wm *WalletManager) Decimal() int32 {
-	return 8
+	return 18
 }
 
+/*实现 openwallet/assets.go 中AssetsAdapter接口中的GetAddressDecode方法*/
 //AddressDecode 地址解析器
 func (wm *WalletManager) GetAddressDecode() openwallet.AddressDecoder {
 	return wm.Decoder
 }
 
+/*实现 openwallet/assets.go 中AssetsAdapter接口中的GetTransactionDecoder方法*/
 //TransactionDecoder 交易单解析器
 func (wm *WalletManager) GetTransactionDecoder() openwallet.TransactionDecoder {
 	return wm.TxDecoder
+}
+
+/*实现 openwallet/assets.go 中AssetsAdapter接口中的GetBlockScanner方法*/
+//GetBlockScanner 获取区块链
+func (wm *WalletManager) GetBlockScanner() *NASBlockScanner {
+
+	//先加载是否有配置文件
+	err := wm.LoadConfig()
+	if err != nil {
+		return nil
+	}
+
+	return wm.Blockscanner
+}
+
+/*实现 openwallet/assets.go 中AssetsAdapter接口中的GetSmartContractDecoder方法*/
+//GetSmartContractDecoder 获取智能合约解析器 wjq
+func (wm *WalletManager) GetSmartContractDecoder() openwallet.TransactionDecoder {
+	return nil
 }
