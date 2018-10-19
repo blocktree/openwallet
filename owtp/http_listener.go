@@ -16,16 +16,13 @@
 package owtp
 
 import (
+	"context"
 	"fmt"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/pkg/errors"
 	"net"
 	"net/http"
-	"context"
 )
-
-
-
 
 //owtp监听器
 type httpListener struct {
@@ -63,16 +60,41 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		cnCh = cn.CloseNotify()
 	}
 
-	auth, err := NewOWTPAuthWithHTTPHeader(r.Header)
+	header := r.Header
+	if header == nil {
+		log.Debug("header is nil")
+		http.Error(w, "Header is nil", 400)
+		return
+	}
+
+	var auth *OWTPAuth
+	var err error
+
+	if len(header.Get("a")) == 0 {
+
+		//临时通过
+		cert, err := NewCertificate(RandomPrivateKey(), "")
+		if err != nil {
+			log.Debug("NewCertificate unexpected error:", err)
+			http.Error(w, "Failed to NewCertificate", 400)
+			return
+		}
+
+		pub, _ := cert.KeyPair()
+
+		header.Set("a", pub)
+	}
+
+	auth, err = NewOWTPAuthWithHTTPHeader(header)
 	if err != nil {
 		log.Debug("NewOWTPAuth unexpected error:", err)
-		http.Error(w, "Failed to upgrade websocket", 400)
+		http.Error(w, "Failed to upgrade http", 400)
 		return
 	}
 
 	log.Debug("NewOWTPAuth successfully")
 
-	peer, err := NewHTTPClient(auth.RemotePID(), w,r, l.handler, auth, cancel)
+	peer, err := NewHTTPClient(auth.RemotePID(), w, r, l.handler, auth, cancel)
 	if err != nil {
 		log.Debug("NewClient unexpected error:", err)
 		http.Error(w, "authorization not passed", 401)
@@ -95,7 +117,7 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// wait until conn gets closed, otherwise the handler closes it early
 	select {
-	case <-ctx.Done():	//收到节点关闭的通知
+	case <-ctx.Done(): //收到节点关闭的通知
 		//log.Debug("peer 1:", peer.PID(), "closed")
 		return
 	case <-l.closed:

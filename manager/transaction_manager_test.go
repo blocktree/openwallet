@@ -29,7 +29,7 @@ func createTransaction(walletID, accountID, to string) (*openwallet.RawTransacti
 		return nil, err
 	}
 
-	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "0.05", to, "0.002", "")
+	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "0.0003", to, "", "")
 	if err != nil {
 		log.Error("CreateTransaction failed, unexpected error:", err)
 		return nil, err
@@ -40,9 +40,9 @@ func createTransaction(walletID, accountID, to string) (*openwallet.RawTransacti
 
 func TestWalletManager_CreateTransaction(t *testing.T) {
 
-	walletID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
-	accountID := "JYCcXtC18vnd1jbcJX47msDFbQMBDNjsq3xbvvK6qCHKAAqoQq"
-	to := "QjPGf82YKxygtr7H2Tm9A8P7ETBsWG2ih9"
+	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
+	accountID := "LLjgXvQqkiRBLsGJwHMdunrDt4YrVZu7n3cqtcBueEjtAcCbHp"
+	to := "mzK3BsJDMp6rviS5ZJuQfPxi6JjgV3m8Fu"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
 
@@ -56,9 +56,9 @@ func TestWalletManager_CreateTransaction(t *testing.T) {
 
 func TestWalletManager_SignTransaction(t *testing.T) {
 
-	walletID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
-	accountID := "JYCcXtC18vnd1jbcJX47msDFbQMBDNjsq3xbvvK6qCHKAAqoQq"
-	to := "QjPGf82YKxygtr7H2Tm9A8P7ETBsWG2ih9"
+	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
+	accountID := "LLjgXvQqkiRBLsGJwHMdunrDt4YrVZu7n3cqtcBueEjtAcCbHp"
+	to := "mzK3BsJDMp6rviS5ZJuQfPxi6JjgV3m8Fu"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
 	if err != nil {
@@ -78,8 +78,8 @@ func TestWalletManager_SignTransaction(t *testing.T) {
 func TestWalletManager_VerifyTransaction(t *testing.T) {
 
 	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
-	accountID := "EuXSRD56cwdYSSrF11YX4sCYz3LHxdwqXAa5hzgYMxKn"
-	to := "mrVEuAf3S1SZHYodB3K2DKhZbT7mqXMhDR"
+	accountID := "LLjgXvQqkiRBLsGJwHMdunrDt4YrVZu7n3cqtcBueEjtAcCbHp"
+	to := "mzK3BsJDMp6rviS5ZJuQfPxi6JjgV3m8Fu"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
 	if err != nil {
@@ -107,8 +107,8 @@ func TestWalletManager_VerifyTransaction(t *testing.T) {
 func TestWalletManager_SubmitTransaction(t *testing.T) {
 
 	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
-	accountID := "EuXSRD56cwdYSSrF11YX4sCYz3LHxdwqXAa5hzgYMxKn"
-	to := "mrVEuAf3S1SZHYodB3K2DKhZbT7mqXMhDR"
+	accountID := "LLjgXvQqkiRBLsGJwHMdunrDt4YrVZu7n3cqtcBueEjtAcCbHp"
+	to := "mzK3BsJDMp6rviS5ZJuQfPxi6JjgV3m8Fu"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
 	if err != nil {

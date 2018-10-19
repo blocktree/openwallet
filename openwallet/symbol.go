@@ -29,3 +29,26 @@ type SymbolInfo interface {
 	//小数位精度
 	Decimal() int32
 }
+
+type SymbolInfoBase struct {
+}
+
+//CurveType 曲线类型
+func (s *SymbolInfoBase) CurveType() uint32 {
+	return 0
+}
+
+//FullName 币种全名
+func (s *SymbolInfoBase) FullName() string {
+	return ""
+}
+
+//Symbol 币种标识
+func (s *SymbolInfoBase) Symbol() string {
+	return ""
+}
+
+//小数位精度
+func (s *SymbolInfoBase) Decimal() int32 {
+	return 0
+}

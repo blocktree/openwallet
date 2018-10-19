@@ -50,50 +50,6 @@ func NewClient(url, token string, debug bool) *Client {
 	return &c
 }
 
-// // Call calls a remote procedure on another node, specified by the path.
-// func (c *Client) Call(path string, param interface{}) (*gjson.Result, error) {
-
-// 	if c == nil || c.client == nil {
-// 		return nil, errors.New("API url is not setup. ")
-// 	}
-
-// 	url := c.BaseURL + path
-// 	authHeader := req.Header{"Accept": "application/json"}
-// 	// if c.Debug {
-// 	// 	log.Std.Info("Start Request API...")
-// 	// }
-
-// 	// r, err := c.client.Do("POST", url, request, authHeader)
-// 	// param = req.Param{"num": 100}
-
-// 	r, err := req.Post(url, req.BodyJSON(&param), authHeader)
-// 	// r, err := c.client.Post(c.BaseURL+path, req.BodyJSON(&body))
-
-// 	// if c.Debug {
-// 	// 	log.Std.Info("Request API Completed")
-// 	// }
-
-// 	// if c.Debug {
-// 	// 	log.Std.Info("%+v", r)
-// 	// }
-
-// 	if err != nil {
-// 		log.Error("Failed: %+v >\n", err)
-// 		return nil, err
-// 	}
-
-// 	if r.Response().StatusCode != http.StatusOK {
-// 		message := gjson.ParseBytes(r.Bytes()).String()
-// 		message = fmt.Sprintf("[%s]%s", r.Response().Status, message)
-// 		log.Error(message)
-// 		return nil, errors.New(message)
-// 	}
-
-// 	resp := gjson.ParseBytes(r.Bytes())
-
-// 	return &resp, nil
-// }
-
 // Call calls a remote procedure on another node, specified by the path.
 // func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error) {
 func (c *Client) Call(path string, param interface{}) ([]byte, error) {
@@ -106,15 +62,11 @@ func (c *Client) Call(path string, param interface{}) ([]byte, error) {
 	authHeader := req.Header{"Accept": "application/json"}
 
 	r, err := req.Post(url, req.BodyJSON(&param), authHeader)
-	// r, err := c.client.Do("POST", url, request, authHeader)
 	if err != nil {
 		log.Error("Failed: %+v >\n", err)
 		return nil, err
 	}
-
-	if c.Debug {
-		log.Std.Info("%+v", r)
-	}
+	// log.Std.Info("%+v", r)
 
 	if r.Response().StatusCode != http.StatusOK {
 		message := gjson.ParseBytes(r.Bytes()).String()
@@ -122,7 +74,6 @@ func (c *Client) Call(path string, param interface{}) ([]byte, error) {
 		log.Error(message)
 		return nil, errors.New(message)
 	}
-	// fmt.Println("XXXX = ", r)
-	// r.Request().GetBody()
+
 	return r.Bytes(), nil
 }

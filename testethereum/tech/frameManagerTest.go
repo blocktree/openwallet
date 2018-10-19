@@ -325,3 +325,44 @@ func signOWEIP155(walletID string, password string, from string, to string, nonc
 	//fmt.Println("signature:",)
 	return raw, nil
 }*/
+
+func TestTokenBalance() {
+	manager, _ := GetEthWalletManager()
+
+	addrs := []ethereum.AddrBalanceInf{
+		&ethereum.AddrBalance{Address: "0x50068fD632c1A6e6c5bD407b4cCf8861A589E776", Index: 0},
+		&ethereum.AddrBalance{Address: "0x2A63B2203955b84FefE52BAca3881b3614991b34", Index: 1},
+		&ethereum.AddrBalance{Address: "0x584a9Ed7f95Cd04337df791Fac32bED88E13b77a", Index: 2},
+		&ethereum.AddrBalance{Address: "0xdb9a569f7b80030956dc9686b89D5fF15922E175", Index: 3},
+	}
+
+	err := manager.GetTokenBalanceByAddress("0x8847E5F841458ace82dbb0692C97115799fe28d3", addrs...)
+	if err != nil {
+		log.Errorf("get token balance by address failed, err=%v", err)
+		return
+	}
+	objStr, _ := json.MarshalIndent(addrs, "", " ")
+	log.Debugf("balance list:%v", string(objStr))
+}
+
+func TestTokenDecode() {
+	manager, _ := GetEthWalletManager()
+
+	contract := openwallet.SmartContract{
+		Address: "0x8847E5F841458ace82dbb0692C97115799fe28d3",
+	}
+	addrs := []string{
+		"0x50068fD632c1A6e6c5bD407b4cCf8861A589E776",
+		"0x2A63B2203955b84FefE52BAca3881b3614991b34",
+		"0x584a9Ed7f95Cd04337df791Fac32bED88E13b77a",
+		"0xdb9a569f7b80030956dc9686b89D5fF15922E175",
+	}
+	balanceList, err := manager.ContractDecoder.GetTokenBalanceByAddress(contract, addrs...)
+	if err != nil {
+		log.Errorf("get token balance by address failed, err=%v", err)
+		return
+	}
+
+	objStr, _ := json.MarshalIndent(balanceList, "", " ")
+	log.Debugf("balance list:%v", string(objStr))
+}

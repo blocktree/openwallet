@@ -17,9 +17,12 @@ package walletnode
 
 import (
 	"context"
+	"errors"
 )
 
 func (w *WalletnodeManager) RestartWalletnode(symbol string) error {
+
+	return errors.New("Function closed! Use stop/start, please!")
 
 	if err := loadConfig(symbol); err != nil {
 		return err

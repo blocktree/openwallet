@@ -372,15 +372,15 @@ func (wrapper *WalletWrapper) CreateAddress(accountID string, count uint64, deco
 		}
 
 		addr := &Address{
-			Address:   address,
-			AccountID: accountID,
-			HDPath:    derivedPath,
-			CreatedAt: time.Now().Unix(),
-			Symbol:    strings.ToLower(account.Symbol),
-			Index:     uint64(newIndex),
-			WatchOnly: false,
-			IsChange:  isChange,
-			PublicKey: publicKey,
+			Address:     address,
+			AccountID:   accountID,
+			HDPath:      derivedPath,
+			CreatedTime: time.Now().Unix(),
+			Symbol:      strings.ToLower(account.Symbol),
+			Index:       uint64(newIndex),
+			WatchOnly:   false,
+			IsChange:    isChange,
+			PublicKey:   publicKey,
 		}
 
 		account.AddressIndex = newIndex

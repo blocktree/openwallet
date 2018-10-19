@@ -8,5 +8,5 @@ var (
 )
 
 func init() {
-	tm.Init()
+	//	tm.Init()
 }

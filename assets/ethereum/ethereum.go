@@ -668,7 +668,7 @@ func (this *WalletManager) ERC20TokenTransferFlow() error {
 	}
 
 	//建立交易单
-	txID, err := this.ERC20SendTransaction(wallet,
+	txID, err := this.ERC20SendTransaction2(wallet,
 		receiver, amount, password, true)
 	if err != nil {
 		return err
@@ -822,21 +822,21 @@ func (this *WalletManager) GetLocalBlockHeight() (uint64, error) {
 		return 0, err
 	}
 	defer db.Close()
-	var blockHeightStr string
-	err = db.Get(BLOCK_CHAIN_BUCKET, BLOCK_HEIGHT_KEY, &blockHeightStr)
+	var blockHeight uint64
+	err = db.Get(BLOCK_CHAIN_BUCKET, BLOCK_HEIGHT_KEY, &blockHeight)
 	if err != nil {
 		openwLogger.Log.Errorf("get block height from db failed, err=%v", err)
 		return 0, err
 	}
-	blockHeight, err := ConvertToUint64(blockHeightStr, 16) //ConvertToBigInt(blockHeightStr, 16)
-	if err != nil {
-		openwLogger.Log.Errorf("convert block height string failed, err=%v", err)
-		return 0, err
-	}
+	// blockHeight, err := ConvertToUint64(blockHeightStr, 16) //ConvertToBigInt(blockHeightStr, 16)
+	// if err != nil {
+	// 	openwLogger.Log.Errorf("convert block height string failed, err=%v", err)
+	// 	return 0, err
+	// }
 	return blockHeight, nil
 }
 
-func (this *WalletManager)SaveLocalBlockScanned(blockHeight uint64, blockHash string) error{
+func (this *WalletManager) SaveLocalBlockScanned(blockHeight uint64, blockHash string) error {
 	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
 		openwLogger.Log.Errorf("open db for update local block height failed, err=%v", err)
@@ -851,19 +851,18 @@ func (this *WalletManager)SaveLocalBlockScanned(blockHeight uint64, blockHash st
 	}
 	defer tx.Rollback()
 
-	blockHeightStr := "0x" + strconv.FormatUint(blockHeight, 16) //blockHeight.Text(16)
-	err = tx.Set(BLOCK_CHAIN_BUCKET, BLOCK_HEIGHT_KEY, &blockHeightStr)
+	//blockHeightStr := "0x" + strconv.FormatUint(blockHeight, 16) //blockHeight.Text(16)
+	err = tx.Set(BLOCK_CHAIN_BUCKET, BLOCK_HEIGHT_KEY, &blockHeight)
 	if err != nil {
 		openwLogger.Log.Errorf("update block height failed, err= %v", err)
 		return err
 	}
 
-	err = tx.Set(BLOCK_CHAIN_BUCKET, BLOCK_HASH_KEY, &blockHeightStr)
+	err = tx.Set(BLOCK_CHAIN_BUCKET, BLOCK_HASH_KEY, &blockHash)
 	if err != nil {
 		openwLogger.Log.Errorf("update block height failed, err= %v", err)
 		return err
 	}
-
 
 	tx.Commit()
 	return nil
@@ -877,8 +876,8 @@ func (this *WalletManager) UpdateLocalBlockHeight(blockHeight uint64) error {
 	}
 	defer db.Close()
 
-	blockHeightStr := "0x" + strconv.FormatUint(blockHeight, 16) //blockHeight.Text(16)
-	err = db.Set(BLOCK_CHAIN_BUCKET, BLOCK_HEIGHT_KEY, &blockHeightStr)
+	//blockHeightStr := "0x" + strconv.FormatUint(blockHeight, 16) //blockHeight.Text(16)
+	err = db.Set(BLOCK_CHAIN_BUCKET, BLOCK_HEIGHT_KEY, &blockHeight)
 	if err != nil {
 		openwLogger.Log.Errorf("update block height failed, err= %v", err)
 		return err
@@ -896,7 +895,7 @@ func (this *WalletManager) RecoverBlockHeader(height uint64) (*EthBlock, error) 
 	defer db.Close()
 	var block EthBlock
 
-	err = db.One(BLOCK_HEIGHT_KEY, "0x"+strconv.FormatUint(height, 16), &block.BlockHeader)
+	err = db.One("BlockNumber", "0x"+strconv.FormatUint(height, 16), &block.BlockHeader)
 	if err != nil {
 		openwLogger.Log.Errorf("get block failed, block number=%v, err=%v", "0x"+strconv.FormatUint(height, 16), err)
 		return nil, err
@@ -945,8 +944,8 @@ func (this *WalletManager) SaveBlockHeader2(block *EthBlock) error {
 		return err
 	}
 
-	blockHeightStr := "0x" + strconv.FormatUint(block.blockHeight, 16) //block.blockHeight.Text(16)
-	err = tx.Set(BLOCK_CHAIN_BUCKET, BLOCK_HEIGHT_KEY, &blockHeightStr)
+	//blockHeightStr := "0x" + strconv.FormatUint(block.blockHeight, 16) //block.blockHeight.Text(16)
+	err = tx.Set(BLOCK_CHAIN_BUCKET, BLOCK_HEIGHT_KEY, &block.blockHeight)
 	if err != nil {
 		openwLogger.Log.Errorf("update block height failed, err= %v", err)
 		return err
@@ -1016,7 +1015,7 @@ func (this *WalletManager) DeleteUnscannedTransaction(height uint64) error {
 
 	var list []UnscanTransaction
 	heightStr := "0x" + strconv.FormatUint(height, 16)
-	err = db.Find(BLOCK_HEIGHT_KEY, heightStr, &list)
+	err = db.Find("BlockNumber", heightStr, &list)
 	if err != nil && err != storm.ErrNotFound {
 		openwLogger.Log.Errorf("find unscanned tx failed, block height=%v, err=%v", heightStr, err)
 		return err

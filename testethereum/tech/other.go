@@ -67,6 +67,14 @@ func TestSlice2() {
 	fmt.Println("after append new slice:", newSlice, " cap:", cap(newSlice))
 }
 
+func TestStringAndSlice() {
+	str := "1234567890"
+	slice := []byte(str)
+	slice[0] = 'x'
+	fmt.Println("str:", str)
+	fmt.Println("slice:", string(slice))
+}
+
 func TestMap() {
 	type t struct {
 		a string

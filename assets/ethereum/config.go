@@ -46,6 +46,18 @@ const (
 //	CHAIN_ID     = 922337203685 //12
 )
 
+const (
+	ETH_GET_TOKEN_BALANCE_METHOD      = "0x70a08231"
+	ETH_TRANSFER_TOKEN_BALANCE_METHOD = "0xa9059cbb"
+	ETH_TRANSFER_EVENT_ID             = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+)
+
+const (
+	SOLIDITY_TYPE_ADDRESS = "address"
+	SOLIDITY_TYPE_UINT256 = "uint256"
+	SOLIDITY_TYPE_UINT160 = "uint160"
+)
+
 type WalletConfig struct {
 
 	//币种

@@ -1773,6 +1773,24 @@
 			"revisionTime": "2018-06-05T20:25:52Z"
 		},
 		{
+			"checksumSHA1": "2b05iFLBjNwhqBQtFtIuC+/ezfw=",
+			"path": "github.com/graarh/golang-socketio",
+			"revision": "2c44953b9b5fcd4da83ec8816f002ce68a12ef2d",
+			"revisionTime": "2017-05-10T16:27:25Z"
+		},
+		{
+			"checksumSHA1": "Yy4eN9/8WEN6w3zXKljHUEW6iC0=",
+			"path": "github.com/graarh/golang-socketio/protocol",
+			"revision": "2c44953b9b5fcd4da83ec8816f002ce68a12ef2d",
+			"revisionTime": "2017-05-10T16:27:25Z"
+		},
+		{
+			"checksumSHA1": "sJu0Oxc+CTNpsJmOjtBXRkGqB3I=",
+			"path": "github.com/graarh/golang-socketio/transport",
+			"revision": "2c44953b9b5fcd4da83ec8816f002ce68a12ef2d",
+			"revisionTime": "2017-05-10T16:27:25Z"
+		},
+		{
 			"checksumSHA1": "rV+Xj+DHJfdbgM/TtE/AO95PR+0=",
 			"origin": "github.com/tronprotocol/grpc-gateway/vendor/github.com/grpc-ecosystem/grpc-gateway/runtime",
 			"path": "github.com/grpc-ecosystem/grpc-gateway/runtime",
