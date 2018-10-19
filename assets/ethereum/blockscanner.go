@@ -162,7 +162,7 @@ func (this *ETHBLockScanner) ScanBlockTask() {
 			break
 		}
 
-		log.Infof("current block height:", "0x"+strconv.FormatUint(curBlockHeight, 16), " maxBlockHeight:", "0x"+strconv.FormatUint(maxBlockHeight, 16))
+		log.Info("current block height:", "0x"+strconv.FormatUint(curBlockHeight, 16), " maxBlockHeight:", "0x"+strconv.FormatUint(maxBlockHeight, 16))
 		if curBlockHeight == maxBlockHeight {
 			log.Infof("block scanner has done with scan. current height:%v", "0x"+strconv.FormatUint(maxBlockHeight, 16))
 			break
@@ -333,19 +333,22 @@ func (this *ETHBLockScanner) GetTxPoolPendingTxs() ([]BlockTransaction, error) {
 func (this *ETHBLockScanner) InitEthTokenExtractResult(tx *BlockTransaction, tokenEvent *TransferEvent, result *ExtractResult, isFromAccount bool) {
 	txExtractData := &openwallet.TxExtractData{}
 	ContractId := base64.StdEncoding.EncodeToString(crypto.SHA256([]byte(fmt.Sprintf("{%v}_{%v}", this.wm.Symbol(), tx.To))))
+	coin := openwallet.Coin{
+		Symbol:     this.wm.Symbol(),
+		IsContract: true,
+		ContractID: ContractId,
+		Contract: openwallet.SmartContract{
+			ContractID: ContractId,
+			Address:    tx.To,
+			Symbol:     this.wm.Symbol(),
+		},
+	}
+
 	transx := &openwallet.Transaction{
 		//From: tx.From,
 		//To:   tx.To,
-		Fees: tx.GasPrice, //totalSpent.Sub(totalReceived).StringFixed(8),
-		Coin: openwallet.Coin{
-			Symbol:     this.wm.Symbol(),
-			IsContract: true,
-			ContractID: ContractId,
-			Contract: openwallet.SmartContract{
-				ContractID: ContractId,
-				Address:    tx.To,
-			},
-		},
+		Fees:        tx.GasPrice, //totalSpent.Sub(totalReceived).StringFixed(8),
+		Coin:        coin,
 		BlockHash:   tx.BlockHash,
 		BlockHeight: tx.BlockHeight,
 		TxID:        tx.Hash,
@@ -376,12 +379,14 @@ func (this *ETHBLockScanner) InitEthTokenExtractResult(tx *BlockTransaction, tok
 	txInput.Recharge.Amount = tokenEvent.Value
 	txInput.Recharge.BlockHash = tx.BlockHash
 	txInput.Recharge.BlockHeight = tx.BlockHeight
+	txInput.Recharge.Coin = coin
 	txExtractData.TxInputs = append(txExtractData.TxInputs, txInput)
 	txOutput := &openwallet.TxOutPut{}
 	txOutput.Recharge.Address = tokenEvent.TokenTo
 	txOutput.Recharge.Amount = tokenEvent.Value
 	txOutput.Recharge.BlockHash = tx.BlockHash
 	txOutput.Recharge.BlockHeight = tx.BlockHeight
+	txOutput.Recharge.Coin = coin
 	txExtractData.TxOutputs = append(txExtractData.TxOutputs, txOutput)
 	result.extractData[sourceKey] = txExtractData
 }
@@ -430,7 +435,9 @@ func (this *WalletManager) GetErc20TokenEvent(transactionID string) (*TransferEv
 
 func (this *ETHBLockScanner) GetErc20TokenEvent(tx *BlockTransaction) (*TransferEvent, error) {
 	//非合约交易或未打包交易跳过
-	if tx.Data == "0x" || tx.Data != "" || tx.BlockHeight == 0 || tx.BlockHash == "" {
+	//obj, _ := json.MarshalIndent(tx, "", " ")
+	//log.Debugf("tx:%v", string(obj))
+	if tx.Data == "0x" || tx.Data == "" || tx.BlockHeight == 0 || tx.BlockHash == "" {
 		return nil, nil
 	}
 
@@ -458,6 +465,7 @@ func (this *ETHBLockScanner) TransactionScanning(tx *BlockTransaction) (*Extract
 		log.Errorf("GetErc20TokenEvent failed, err=%v", err)
 		return nil, err
 	}
+	log.Debugf("get token Event:%v", tokenEvent)
 
 	// 普通交易, from地址在监听地址中
 	if this.IsExistAddress(tx.From) && tokenEvent == nil {
