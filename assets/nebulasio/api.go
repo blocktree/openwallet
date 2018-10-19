@@ -401,3 +401,113 @@ func (c *Client) CallgetBlockByHeightOrHash( input string ,heightOrhash int) (*g
 	result := resp.Get("result")
 	return &result, nil
 }
+
+
+func (c *Client) CallGetTransactionReceipt( txid string ) (*gjson.Result, error)  {
+
+	url := c.BaseURL + "/v1/user/getTransactionReceipt"
+
+	var (
+		body = make(map[string]interface{}, 0)
+	)
+
+	if c.Client == nil {
+		return nil, errors.New("API url is not setup. ")
+	}
+
+	authHeader := req.Header{
+		"Accept":        "application/json",
+		"Authorization": "Basic " ,
+	}
+
+	//json-rpc
+	//	body["jsonrpc"] = "2.0"
+	//	body["id"] = "1"
+	//	body["method"] = path
+	//	body["params"] = request
+	body["hash"] = txid
+
+	if c.Debug {
+		log.Info("Start Request API...")
+	}
+
+	r, err := c.Client.Post(url, req.BodyJSON(&body), authHeader)
+
+	if c.Debug {
+		log.Info("Request API Completed")
+	}
+
+	if c.Debug {
+		log.Std.Info("%+v", r)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp := gjson.ParseBytes(r.Bytes())
+	err = isError(&resp)
+	if err != nil {
+		return nil, err
+	}
+	//resp :  {"result":{"address":"n1Qmnmuebg4xxvnuHUoSLDjLFMznxMdsDng"}}
+	//result:  "result" : {"address":"n1Qmnmuebg4xxvnuHUoSLDjLFMznxMdsDng"}
+	//result:  "result.address" : "n1Qmnmuebg4xxvnuHUoSLDjLFMznxMdsDng"
+
+	result := resp.Get("result")
+	return &result, nil
+}
+
+//由于接口是keep-alive connection，目前暂不支持
+func (c *Client) CallGetsubscribe() (*gjson.Result, error)  {
+
+	url := c.BaseURL + "/v1/user/subscribe"
+
+	body := map[string]interface{}{
+
+		"topics": []string{"chain.pendingTransaction"},
+	}
+
+	if c.Client == nil {
+		return nil, errors.New("API url is not setup. ")
+	}
+
+	authHeader := req.Header{
+	//	"Connection": 	 "keep-alive",
+		"Accept":        "application/json",
+		"Authorization": "Basic " ,
+	}
+
+	fmt.Printf("url=%v,body=%v\n",url,body)
+
+	if c.Debug {
+		log.Info("Start Request API...")
+	}
+
+	r, err := c.Client.Post(url, req.BodyJSON(&body), authHeader)
+
+	if c.Debug {
+		log.Info("Request API Completed")
+	}
+
+	if c.Debug {
+		log.Std.Info("%+v", r)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp := gjson.ParseBytes(r.Bytes())
+	err = isError(&resp)
+	if err != nil {
+		return nil, err
+	}
+
+	result := resp.Get("result")
+	return &result, nil
+}
+
+
+
+

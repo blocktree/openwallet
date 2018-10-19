@@ -61,6 +61,8 @@ var (
 var(
 	//Account Address前缀
 	addr_prefix = []byte{0x19,0x57}
+	//Smart Contract Address前缀
+	Contract_prefix = []byte{0x19,0x58}
 )
 
 //保存每个账户的地址、公钥、私钥、nonce
@@ -76,8 +78,9 @@ type WalletManager struct {
 	WalletClient *Client                        // 节点客户端
 	Config       *WalletConfig                  //钱包管理配置
 	WalletsInSum map[string]*openwallet.Wallet  //参与汇总的钱包
-	//Blockscanner *XTZBlockScanner             //区块扫描器
-	//Decoder      *openwallet.AddressDecoder     //地址编码器
+	Blockscanner *NASBlockScanner             //区块扫描器
+	Decoder        openwallet.AddressDecoder     //地址编码器
+	TxDecoder      openwallet.TransactionDecoder //交易单编码器
 }
 
 func NewWalletManager() *WalletManager {
@@ -88,7 +91,7 @@ func NewWalletManager() *WalletManager {
 	//参与汇总的钱包
 	wm.WalletsInSum = make(map[string]*openwallet.Wallet)
 	//区块扫描器
-	//wm.Blockscanner = NewXTZBlockScanner(&wm)
+	wm.Blockscanner = NewNASBlockScanner(&wm)
 	//wm.Decoder = AddressDecoder
 	return &wm
 }
@@ -1084,3 +1087,75 @@ func  NotenonceInDB(key *Key, db *storm.DB) error{
 
 	return nil
 }
+
+
+/*
+//ImportMulti 批量导入地址和私钥
+func (wm *WalletManager) ImportMulti(addresses []*openwallet.Address, keys []string, watchOnly bool) ([]int, error) {
+
+	/*
+		[
+		{
+			"scriptPubKey" : { "address": "1NL9w5fP9kX2D9ToNZPxaiwFJCngNYEYJo" },
+			"timestamp" : 0,
+			"label" : "Personal"
+		},
+		{
+			"scriptPubKey" : "76a9149e857da0a5b397559c78c98c9d3f7f655d19c68688ac",
+			"timestamp" : 1493912405,
+			"label" : "TestFailure"
+		}
+		]' '{ "rescan": true }'
+	*/
+/*
+	var (
+		request     []interface{}
+		imports     = make([]interface{}, 0)
+		failedIndex = make([]int, 0)
+	)
+
+	if len(addresses) != len(keys) && !watchOnly {
+		return nil, errors.New("Import addresses is not equal keys count!")
+	}
+
+	for i, a := range addresses {
+
+		obj := map[string]interface{}{
+			"scriptPubKey": map[string]interface{}{
+				"address": a.Address,
+			},
+			"label":     a.AccountID,
+			"timestamp": "now",
+			"watchonly": watchOnly,
+		}
+
+		if !watchOnly {
+			k := keys[i]
+			obj["keys"] = []string{k}
+		}
+
+		imports = append(imports, obj)
+	}
+
+	request = []interface{}{
+		imports,
+		map[string]interface{}{
+			"rescan": false,
+		},
+	}
+
+	result, err := wm.WalletClient.Call("importmulti", request)
+	if err != nil {
+		return nil, err
+	}
+
+	for i, r := range result.Array() {
+		if !r.Get("success").Bool() {
+			failedIndex = append(failedIndex, i)
+		}
+	}
+
+	return failedIndex, err
+
+}
+*/
