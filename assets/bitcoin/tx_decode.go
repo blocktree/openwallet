@@ -21,13 +21,14 @@ import (
 	"fmt"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
-	"github.com/blocktree/go-OWCBasedFuncs/btcLikeTxDriver"
+	"github.com/blocktree/go-OWCBasedFuncs/btcTransaction"
 	"github.com/shopspring/decimal"
 	"sort"
 	"strings"
 )
 
 type TransactionDecoder struct {
+	openwallet.TransactionDecoderBase
 	wm *WalletManager //钱包管理者
 }
 
@@ -48,9 +49,9 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 	}
 
 	var (
-		vins      = make([]btcLikeTxDriver.Vin, 0)
-		vouts     = make([]btcLikeTxDriver.Vout, 0)
-		txUnlocks = make([]btcLikeTxDriver.TxUnlock, 0)
+		vins      = make([]btcTransaction.Vin, 0)
+		vouts     = make([]btcTransaction.Vout, 0)
+		txUnlocks = make([]btcTransaction.TxUnlock, 0)
 
 		usedUTXO []*Unspent
 		balance  = decimal.New(0, 0)
@@ -70,7 +71,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 	for _, address := range address {
 		searchAddrs = append(searchAddrs, address.Address)
 	}
-	log.Debug(searchAddrs)
+	//log.Debug(searchAddrs)
 	//查找账户的utxo
 	unspents, err := decoder.wm.ListUnspent(0, searchAddrs...)
 	if err != nil {
@@ -189,10 +190,10 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 
 	//装配输入
 	for _, utxo := range usedUTXO {
-		in := btcLikeTxDriver.Vin{utxo.TxID, uint32(utxo.Vout)}
+		in := btcTransaction.Vin{utxo.TxID, uint32(utxo.Vout)}
 		vins = append(vins, in)
 
-		txUnlock := btcLikeTxDriver.TxUnlock{LockScript: utxo.ScriptPubKey, Address: utxo.Address}
+		txUnlock := btcTransaction.TxUnlock{LockScript: utxo.ScriptPubKey, SigType: btcTransaction.SigHashAll}
 		txUnlocks = append(txUnlocks, txUnlock)
 
 		//log.Debug("txUnlock:", txUnlock)
@@ -202,14 +203,14 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 	for to, amount := range rawTx.To {
 		deamount, _ := decimal.NewFromString(amount)
 		deamount = deamount.Mul(decoder.wm.Config.CoinDecimal)
-		out := btcLikeTxDriver.Vout{to, uint64(deamount.IntPart())}
+		out := btcTransaction.Vout{to, uint64(deamount.IntPart())}
 		vouts = append(vouts, out)
 	}
 
 	//changeAmount := balance.Sub(totalSend).Sub(actualFees)
 	if changeAmount.GreaterThan(decimal.New(0, 0)) {
 		deamount := changeAmount.Mul(decoder.wm.Config.CoinDecimal)
-		out := btcLikeTxDriver.Vout{changeAddress.Address, uint64(deamount.IntPart())}
+		out := btcTransaction.Vout{changeAddress.Address, uint64(deamount.IntPart())}
 		vouts = append(vouts, out)
 
 		//fmt.Printf("Create change address for receiving %s coin.", outputs[change])
@@ -222,7 +223,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 	replaceable := false
 
 	/////////构建空交易单
-	emptyTrans, err := btcLikeTxDriver.CreateEmptyRawTransaction(vins, vouts, lockTime, replaceable)
+	emptyTrans, err := btcTransaction.CreateEmptyRawTransaction(vins, vouts, lockTime, replaceable)
 
 	if err != nil {
 		return fmt.Errorf("create transaction failed, unexpected error: %v", err)
@@ -230,7 +231,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 	}
 
 	////////构建用于签名的交易单哈希
-	transHash, err := btcLikeTxDriver.CreateRawTransactionHashForSig(emptyTrans, txUnlocks)
+	transHash, err := btcTransaction.CreateRawTransactionHashForSig(emptyTrans, txUnlocks)
 	if err != nil {
 		return fmt.Errorf("create transaction hash for sig failed, unexpected error: %v", err)
 		//log.Error("获取待签名交易单哈希失败")
@@ -245,11 +246,27 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 	//装配签名
 	keySigs := make([]*openwallet.KeySignature, 0)
 
-	for i, unlock := range txUnlocks {
+	for i, txHash := range transHash {
 
-		beSignHex := transHash[i]
+		var unlockAddr string
 
-		addr, err := wrapper.GetAddress(unlock.Address)
+		//txHash := transHash[i]
+
+		//判断是否是多重签名
+		if txHash.IsMultisig() {
+			//获取地址
+			//unlockAddr = txHash.GetMultiTxPubkeys() //返回hex数组
+		} else {
+			//获取地址
+			unlockAddr = txHash.GetNormalTxAddress() //返回hex串
+		}
+		//获取hash值
+		beSignHex := txHash.GetTxHashHex()
+
+		log.Std.Debug("txHash[%d]: %s", i, beSignHex)
+		//beSignHex := transHash[i]
+
+		addr, err := wrapper.GetAddress(unlockAddr)
 		if err != nil {
 			return err
 		}
@@ -283,11 +300,11 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper *openwallet.Wallet
 	}
 
 	var (
-		txUnlocks   = make([]btcLikeTxDriver.TxUnlock, 0)
-		emptyTrans  = rawTx.RawHex
-		transHash   = make([]string, 0)
-		sigPub      = make([]btcLikeTxDriver.SignaturePubkey, 0)
-		privateKeys = make([][]byte, 0)
+	//txUnlocks   = make([]btcTransaction.TxUnlock, 0)
+	//emptyTrans  = rawTx.RawHex
+	//transHash   = make([]btcTransaction.TxHash, 0)
+	//sigPub      = make([]btcTransaction.SignaturePubkey, 0)
+	//privateKeys = make([][]byte, 0)
 	)
 
 	key, err := wrapper.HDKey()
@@ -304,65 +321,42 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper *openwallet.Wallet
 			if err != nil {
 				return err
 			}
-			privateKeys = append(privateKeys, keyBytes)
-			transHash = append(transHash, keySignature.Message)
+			log.Debug("privateKey:", hex.EncodeToString(keyBytes))
+
+			//privateKeys = append(privateKeys, keyBytes)
+			txHash := btcTransaction.TxHash{
+				Hash: keySignature.Message,
+				Normal: &btcTransaction.NormalTx{
+					Address: keySignature.Address.Address,
+					SigType: btcTransaction.SigHashAll,
+				},
+			}
+			//transHash = append(transHash, txHash)
+
+			log.Debug("hash:", txHash.GetTxHashHex())
+
+			//签名交易
+			/////////交易单哈希签名
+			sigPub, err := btcTransaction.SignRawTransactionHash(txHash.GetTxHashHex(), keyBytes)
+			if err != nil {
+				return fmt.Errorf("transaction hash sign failed, unexpected error: %v", err)
+			} else {
+
+				//for i, s := range sigPub {
+				//	log.Info("第", i+1, "个签名结果")
+				//	log.Info()
+				//	log.Info("对应的公钥为")
+				//	log.Info(hex.EncodeToString(s.Pubkey))
+				//}
+
+				//txHash.Normal.SigPub = *sigPub
+			}
+
+			keySignature.Signature = hex.EncodeToString(sigPub.Signature)
 		}
 	}
 
-	txBytes, err := hex.DecodeString(emptyTrans)
-	if err != nil {
-		return errors.New("Invalid transaction hex data! ")
-	}
-
-	trx, err := btcLikeTxDriver.DecodeRawTransaction(txBytes)
-	if err != nil {
-		return errors.New("Invalid transaction data! ")
-	}
-
-	//log.Debug("trx.Vins:", len(trx.Vins))
-
-	for i, vin := range trx.Vins {
-
-		utxo, err := decoder.wm.GetTxOut(vin.GetTxID(), uint64(vin.GetVout()))
-		if err != nil {
-			return err
-		}
-
-		keyBytes := privateKeys[i]
-
-		txUnlock := btcLikeTxDriver.TxUnlock{
-			LockScript: utxo.Get("scriptPubKey.hex").String(),
-			PrivateKey: keyBytes,
-		}
-		txUnlocks = append(txUnlocks, txUnlock)
-
-	}
-
-	//log.Debug("transHash len:", len(transHash))
-	//log.Debug("txUnlocks len:", len(txUnlocks))
-
-	/////////交易单哈希签名
-	sigPub, err = btcLikeTxDriver.SignRawTransactionHash(transHash, txUnlocks)
-	if err != nil {
-		return fmt.Errorf("transaction hash sign failed, unexpected error: %v", err)
-	} else {
-		log.Info("transaction hash sign success")
-		//for i, s := range sigPub {
-		//	log.Info("第", i+1, "个签名结果")
-		//	log.Info()
-		//	log.Info("对应的公钥为")
-		//	log.Info(hex.EncodeToString(s.Pubkey))
-		//}
-	}
-
-	if len(sigPub) != len(keySignatures) {
-		return fmt.Errorf("sign raw transaction fail, program error. ")
-	}
-
-	for i, keySignature := range keySignatures {
-		keySignature.Signature = hex.EncodeToString(sigPub[i].Signature)
-		//log.Debug("keySignature.Signature:",i, "=", keySignature.Signature)
-	}
+	log.Info("transaction hash sign success")
 
 	rawTx.Signatures[rawTx.Account.AccountID] = keySignatures
 
@@ -381,9 +375,10 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper *openwallet.Wall
 	}
 
 	var (
-		txUnlocks  = make([]btcLikeTxDriver.TxUnlock, 0)
+		txUnlocks  = make([]btcTransaction.TxUnlock, 0)
 		emptyTrans = rawTx.RawHex
-		sigPub     = make([]btcLikeTxDriver.SignaturePubkey, 0)
+		//sigPub     = make([]btcTransaction.SignaturePubkey, 0)
+		transHash = make([]btcTransaction.TxHash, 0)
 	)
 
 	//TODO:待支持多重签名
@@ -395,12 +390,23 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper *openwallet.Wall
 			signature, _ := hex.DecodeString(keySignature.Signature)
 			pubkey, _ := hex.DecodeString(keySignature.Address.PublicKey)
 
-			signaturePubkey := btcLikeTxDriver.SignaturePubkey{
+			signaturePubkey := btcTransaction.SignaturePubkey{
 				Signature: signature,
 				Pubkey:    pubkey,
 			}
 
-			sigPub = append(sigPub, signaturePubkey)
+			//sigPub = append(sigPub, signaturePubkey)
+
+			txHash := btcTransaction.TxHash{
+				Hash: keySignature.Message,
+				Normal: &btcTransaction.NormalTx{
+					Address: keySignature.Address.Address,
+					SigType: btcTransaction.SigHashAll,
+					SigPub:  signaturePubkey,
+				},
+			}
+
+			transHash = append(transHash, txHash)
 
 			log.Debug("Signature:", keySignature.Signature)
 			log.Debug("PublicKey:", keySignature.Address.PublicKey)
@@ -412,7 +418,7 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper *openwallet.Wall
 		return errors.New("Invalid transaction hex data!")
 	}
 
-	trx, err := btcLikeTxDriver.DecodeRawTransaction(txBytes)
+	trx, err := btcTransaction.DecodeRawTransaction(txBytes)
 	if err != nil {
 		return errors.New("Invalid transaction data! ")
 	}
@@ -424,7 +430,9 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper *openwallet.Wall
 			return err
 		}
 
-		txUnlock := btcLikeTxDriver.TxUnlock{LockScript: utxo.Get("scriptPubKey.hex").String()}
+		txUnlock := btcTransaction.TxUnlock{
+			LockScript: utxo.ScriptPubKey,
+			SigType:    btcTransaction.SigHashAll}
 		txUnlocks = append(txUnlocks, txUnlock)
 
 	}
@@ -433,7 +441,7 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper *openwallet.Wall
 
 	////////填充签名结果到空交易单
 	//  传入TxUnlock结构体的原因是： 解锁向脚本支付的UTXO时需要对应地址的赎回脚本， 当前案例的对应字段置为 "" 即可
-	signedTrans, err := btcLikeTxDriver.InsertSignatureIntoEmptyTransaction(emptyTrans, sigPub, txUnlocks)
+	signedTrans, err := btcTransaction.InsertSignatureIntoEmptyTransaction(emptyTrans, transHash, txUnlocks)
 	if err != nil {
 		return fmt.Errorf("transaction compose signatures failed")
 	}
@@ -444,7 +452,7 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper *openwallet.Wall
 
 	/////////验证交易单
 	//验证时，对于公钥哈希地址，需要将对应的锁定脚本传入TxUnlock结构体
-	pass := btcLikeTxDriver.VerifyRawTransaction(signedTrans, txUnlocks)
+	pass := btcTransaction.VerifyRawTransaction(signedTrans, txUnlocks)
 	if pass {
 		log.Debug("transaction verify passed")
 		rawTx.IsCompleted = true
@@ -483,4 +491,14 @@ func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper *openwallet.Wall
 	rawTx.IsSubmit = true
 
 	return nil
+}
+
+//GetRawTransactionFeeRate 获取交易单的费率
+func (decoder *TransactionDecoder) GetRawTransactionFeeRate() (feeRate string, unit string, err error) {
+	rate, err := decoder.wm.EstimateFeeRate()
+	if err != nil {
+		return "", "", err
+	}
+
+	return rate.StringFixed(decoder.wm.Decimal()), "K", nil
 }

@@ -271,3 +271,50 @@ func NewUnscanRecord(height uint64, txID, reason string) *UnscanRecord {
 
 */
 //}
+
+type QRC20Unspent struct{
+
+	/*
+		{
+		  "address": "91a6081095ef860d28874c9db613e7a4107b0281",
+		  "executionResult": {
+			"gasUsed": 23343,
+			"excepted": "None",
+			"newAddress": "91a6081095ef860d28874c9db613e7a4107b0281",
+			"output": "000000000000000000000000000000000000000000000000016345785d8a0000",
+			"codeDeposit": 0,
+			"gasRefunded": 0,
+			"depositSize": 0,
+			"gasForDeposit": 0
+		  },
+		  "transactionReceipt": {
+			"stateRoot": "2aeed0cff1334f1387b663079757ad1cff6fe72e8a37cfcaf051d564b7252d63",
+			"gasUsed": 23343,
+			"bloom": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+					  0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+					  0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+					  0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+					  0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+			"log": [
+			]
+		  }
+		}
+	*/
+
+	Key           string `storm:"id"`
+	Address       string `json:"address"`
+	GasUsed       string `json:"gasUsed"`
+	Output        string `json:"output"`
+	//HDAddress     openwallet.Address
+
+}
+
+func NewQRC20Unspent(json *gjson.Result) *QRC20Unspent {
+	obj := &QRC20Unspent{}
+	//解析json
+	obj.Address = gjson.Get(json.Raw, "address").String()
+	obj.GasUsed = gjson.Get(json.Raw, "executionResult.gasUsed").String()
+	obj.Output = gjson.Get(json.Raw, "executionResult.output").String()
+
+	return obj
+}

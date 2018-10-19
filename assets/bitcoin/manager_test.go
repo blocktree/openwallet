@@ -43,9 +43,9 @@ func init() {
 	tw.WalletClient = NewClient(tw.Config.ServerAPI, token, false)
 
 	explorerURL := "http://192.168.32.107:20003/insight-api/"
-	tw.ExplorerClient = NewExplorer(explorerURL, false)
+	tw.ExplorerClient = NewExplorer(explorerURL, true)
 
-	tw.Blockscanner.RPCServer = RPCServerExplorer
+	tw.Config.RPCServerType = RPCServerExplorer
 }
 
 func TestImportPrivKey(t *testing.T) {

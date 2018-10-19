@@ -28,6 +28,7 @@ import (
 	"github.com/shopspring/decimal"
 	"strconv"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"encoding/hex"
 )
 
 
@@ -285,7 +286,6 @@ func (wm *WalletManager) TransferFlow() error {
 	if err != nil {
 		return err
 	}
-
 	//打印钱包列表
 	addrs := wm.printWalletList(wallets, true)
 
@@ -477,7 +477,10 @@ func (wm *WalletManager) GetWalletList() error {
 	}
 
 	k, _ := wm.getKeys(key, addr)
-	fmt.Printf("Public key:%s\n", k.PublicKey)
+
+	fmt.Printf("Public key: %s\n", k.PublicKey)
+
+	fmt.Printf("Private key: %s\n", 	hex.EncodeToString(k.PrivateKey))
 
 	return nil
 }

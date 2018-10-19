@@ -654,7 +654,7 @@ func (wm *WalletManager) CreateAddrFromPublic (key *hdkeystore.HDKey, start, ind
 		Address:   address,
 		AccountID: key.KeyID,
 		HDPath:    derivedPath,
-		CreatedAt: time.Now().Unix(),
+		CreatedTime: time.Now().Unix(),
 		Symbol:    wm.Config.Symbol,
 		Index:     index,
 		WatchOnly: false,
