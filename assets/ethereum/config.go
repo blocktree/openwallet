@@ -314,7 +314,7 @@ func (this *WalletManager) NewConfig(rootDir string, masterKey string) *WalletCo
 	//备份路径
 	c.BackupDir = filepath.Join(rootDir, strings.ToLower(c.Symbol), "backup")
 	//钱包服务API
-	c.ServerAPI = "192.168.2.192:10025" //"http://127.0.0.1:8545"
+	c.ServerAPI = "http://127.0.0.1:8545" //"http://192.168.2.192:10025" //
 	//钱包安装的路径
 	//c.NodeInstallPath = ""
 	//钱包数据文件目录

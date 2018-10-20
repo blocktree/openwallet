@@ -171,9 +171,9 @@ func (this *ETHBlockScan) RescanFailedTransactions() (map[string][]BlockTransact
 		log.Errorf("GetAllUnscannedTransactions failed. err=%v", err)
 		return nil, err
 	}
-	
+
 	txs, err := this.wmanager.RecoverUnscannedTransactions(unscannedTxs)
-	if err != nil{
+	if err != nil {
 		log.Errorf("recover transactions from unscanned records failed, err=%v", err)
 		return nil, err
 	}
@@ -200,7 +200,7 @@ func (this *ETHBlockScan) TransactionScanning(transactions []BlockTransaction) (
 			}
 
 		} else {
-			log.Debugf("tx.from[%v] not found in scanning address.", tx.From)
+			//log.Debugf("tx.from[%v] not found in scanning address.", tx.From)
 		}
 
 		if this.IsExistAddress(tx.To) {
@@ -220,7 +220,7 @@ func (this *ETHBlockScan) TransactionScanning(transactions []BlockTransaction) (
 			}
 
 		} else {
-			log.Debugf("tx.to[%v] not found in scanning address.", tx.To)
+			//log.Debugf("tx.to[%v] not found in scanning address.", tx.To)
 		}
 	}
 
@@ -276,9 +276,9 @@ func (this *ETHBlockScan) ScanBlock() {
 			break
 		}
 
-		fmt.Println("current block height:", "0x"+strconv.FormatUint(curBlockHeight, 16), " maxBlockHeight:", "0x"+strconv.FormatUint(maxBlockHeight, 16))
+		fmt.Println("current block height:", curBlockHeight, " maxBlockHeight:", maxBlockHeight)
 		if curBlockHeight == maxBlockHeight {
-			log.Infof("block scanner has done with scan. current height:%v", "0x"+strconv.FormatUint(maxBlockHeight, 16))
+			log.Infof("block scanner has done with scan. current height:%v", maxBlockHeight)
 			break
 		}
 
@@ -296,20 +296,20 @@ func (this *ETHBlockScan) ScanBlock() {
 
 		if curBlock.PreviousHash != curBlockHash {
 			previousHeight = curBlockHeight - 1 //previousHeight.Sub(curBlockHeight, big.NewInt(1))
-			log.Infof("block has been fork on height: %v.", "0x"+strconv.FormatUint(curBlockHeight, 16))
-			log.Infof("block height: %v local hash = %v ", "0x"+strconv.FormatUint(previousHeight, 16), curBlockHash)
-			log.Infof("block height: %v mainnet hash = %v ", "0x"+strconv.FormatUint(previousHeight, 16), curBlock.PreviousHash)
+			log.Infof("block has been fork on height: %v.", curBlockHeight)
+			log.Infof("block height: %v local hash = %v ", previousHeight, curBlockHash)
+			log.Infof("block height: %v mainnet hash = %v ", previousHeight, curBlock.PreviousHash)
 
-			log.Infof("delete recharge records on block height: %v.", "0x"+strconv.FormatUint(previousHeight, 16))
+			log.Infof("delete recharge records on block height: %v.", previousHeight)
 			err = this.DeleteTransactionsByHeight(previousHeight)
 			if err != nil {
-				log.Errorf("DeleteTransactionsByHeight failed, height=%v, err=%v", "0x"+strconv.FormatUint(previousHeight, 16), err)
+				log.Errorf("DeleteTransactionsByHeight failed, height=%v, err=%v", previousHeight, err)
 				break
 			}
 
 			err = this.wmanager.DeleteUnscannedTransactionByHeight(previousHeight)
 			if err != nil {
-				log.Errorf("DeleteUnscannedTransaction failed, height=%v, err=%v", "0x"+strconv.FormatUint(previousHeight, 16), err)
+				log.Errorf("DeleteUnscannedTransaction failed, height=%v, err=%v", previousHeight, err)
 				break
 			}
 
@@ -317,7 +317,7 @@ func (this *ETHBlockScan) ScanBlock() {
 
 			curBlock, err = this.wmanager.RecoverBlockHeader(curBlockHeight)
 			if err != nil {
-				log.Errorf("RecoverBlockHeader failed, block number=%v, err=%v", "0x"+strconv.FormatUint(curBlockHeight, 16), err)
+				log.Errorf("RecoverBlockHeader failed, block number=%v, err=%v", curBlockHeight, err)
 				break
 			}
 
