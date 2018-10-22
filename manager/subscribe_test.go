@@ -81,7 +81,11 @@ func TestSubscribeAddress(t *testing.T) {
 		endRunning = make(chan bool, 1)
 		symbol = "ETH"
 		accountID = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
-		address = "0x558ef7a2b56611ef352b2ecf5d2dd2bf548afecc"
+		addrs = []string{
+			"0x558ef7a2b56611ef352b2ecf5d2dd2bf548afecc",
+			"0x95576498d5c2971bea1986ee92a3971de0747fc0",
+			"0x73995d52f20d9d40cbc339d5d2772d9cde6b6858",
+		}
 	)
 
 	assetsMgr, err := GetAssetsManager(symbol)
@@ -91,7 +95,7 @@ func TestSubscribeAddress(t *testing.T) {
 	}
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	//scanner.SetRescanBlockHeight(4840986)
+	scanner.SetRescanBlockHeight(4840986)
 
 
 	if scanner == nil {
@@ -99,13 +103,16 @@ func TestSubscribeAddress(t *testing.T) {
 		return
 	}
 
-	scanner.AddAddress(address, accountID)
+	for _, a := range addrs {
+		scanner.AddAddress(a, accountID)
+ 	}
+
 
 	sub := subscriberSingle{}
 	scanner.AddObserver(&sub)
 	//tm.SetRescanBlockHeight("QTUM", 236098)
 
-	scanner.ScanBlock(4840986)
+	//scanner.ScanBlock(4840986)
 
 	<-endRunning
 }
