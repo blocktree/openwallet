@@ -22,3 +22,10 @@ func BoolToUInt(b bool) uint64 {
 	}
 	return 0
 }
+
+func UIntToBool(u uint64) bool {
+	if u == 1 {
+		return true
+	}
+	return false
+}
