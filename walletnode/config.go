@@ -201,14 +201,6 @@ testNetDataPath = "/data"
 			STOPCMD:  []string{"bitcoin-cli", "-datadir=/data", "-conf=/etc/bitcoin.conf", "stop"},
 			LOGFIELS: [2]string{"debug.log", "testnet3/debug.log"},
 		},
-		"qtum": &FullnodeContainerConfig{ // Release0929
-			PORT:     [][3]string{{"9360/tcp", "10031", "20031"}},
-			APIPORT:  []string{"9360/tcp"},
-			IMAGE:    string("openw/qtum:v0.15.3"),
-			ENCRYPT:  []string{"qtum-cli", "-datadir=/data", "-conf=/etc/qtum.conf", "encryptwallet 1234qwer"},
-			STOPCMD:  []string{"qtum-cli", "-datadir=/data", "-conf=/etc/qtum.conf", "stop"},
-			LOGFIELS: [2]string{"debug.log", "testnet3/debug.log"},
-		},
 		"eth": &FullnodeContainerConfig{ // Release0929
 			PORT:     [][3]string{{"8545/tcp", "18545", "28545"}},
 			APIPORT:  []string{"8545/tcp"},
@@ -216,7 +208,7 @@ testNetDataPath = "/data"
 			LOGFIELS: [2]string{"run.log", "run.log"},
 		},
 		"eos": &FullnodeContainerConfig{
-			PORT:      [][3]string{{"8888/tcp", "10003", "20003"}},
+			PORT:      [][3]string{{"8888/tcp", "18888", "28888"}},
 			APIPORT:   []string{"8888/tcp"},
 			IMAGE:     string("openw/eos:v1.2.5"),
 			NOTESTNET: true,
@@ -240,7 +232,7 @@ testNetDataPath = "/data"
 			LOGFIELS:  [2]string{"run.log", "run.log"},
 		},
 		"sc": &FullnodeContainerConfig{ // Siadcoin
-			PORT:    [][3]string{{"9980/tcp", "10041", "20041"}, {"9981/tcp", "10042", "20042"}},
+			PORT:    [][3]string{{"9980/tcp", "19980", "29980"}, {"9981/tcp", "19981", "29981"}},
 			APIPORT: []string{"9980/tcp"},
 			IMAGE:   string("openw/siacoin:v1.3.4"),
 		},
@@ -261,6 +253,14 @@ testNetDataPath = "/data"
 			STOPCMD:  []string{"litecoin-cli", "-datadir=/data", "-conf=/etc/litecoin.conf", "stop"},
 			LOGFIELS: [2]string{"debug.log", "testnet4/debug.log"},
 		},
+		"qtum": &FullnodeContainerConfig{ // Release0929
+			PORT:     [][3]string{{"8332/tcp", "18332", "28332"}},
+			APIPORT:  []string{"8332/tcp"},
+			IMAGE:    string("openw/qtum:v0.16.1"),
+			ENCRYPT:  []string{"qtum-cli", "-datadir=/data", "-conf=/etc/qtum.conf", "encryptwallet 1234qwer"},
+			STOPCMD:  []string{"qtum-cli", "-datadir=/data", "-conf=/etc/qtum.conf", "stop"},
+			LOGFIELS: [2]string{"debug.log", "testnet3/debug.log"},
+		},
 		"tron": &FullnodeContainerConfig{ // Release0929
 			NAME:     "Tron Network",
 			PORT:     [][3]string{{"8090/tcp", "18090", "28090"}},
@@ -270,12 +270,10 @@ testNetDataPath = "/data"
 			LOGFIELS: [2]string{"logs/tron.log", "logs/tron.log"},
 		},
 		"nas": &FullnodeContainerConfig{ // Release0929
-			NAME:    "NebulasIO",
-			PORT:    [][3]string{{"8685/tcp", "18685", "28685"}},
-			APIPORT: []string{"8685/tcp"},
-			IMAGE:   string("openw/nebulasio:v1.0.8"),
-			// ENCRYPT:  nil,
-			// STOPCMD:  nil,
+			NAME:     "NebulasIO",
+			PORT:     [][3]string{{"8685/tcp", "18685", "28685"}},
+			APIPORT:  []string{"8685/tcp"},
+			IMAGE:    string("openw/nebulasio:v1.0.8"),
 			LOGFIELS: [2]string{"logs/neb.log", "logs/neb.log"},
 		},
 	}
