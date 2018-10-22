@@ -25,7 +25,7 @@ func TestGetNowBlock(t *testing.T) {
 		t.Errorf("GetNowBlock failed: %v\n", err)
 	} else {
 		// t.Logf("GetNowBlock return: \n\t%+v\n", r.GetBlockHeader().GetRawData().GetNumber())
-		t.Logf("GetNowBlock return: \n\t%+v\n", r)
+		// t.Logf("GetNowBlock return: \n\t%+v\n", r)
 
 		printBlock(r)
 	}
@@ -45,7 +45,7 @@ func TestGetBlockByNum(t *testing.T) {
 
 func TestGetBlockByID(t *testing.T) {
 
-	var blockID string = "000000000028ce0cca004e777f73d005060abf287b672e12600d462e81b41c99" // height=2674188
+	var blockID string = "fdd9227774d977151d3c59ca9fb552c732aeed589f2dc807b56cd17cddb429d6"
 
 	if r, err := tw.GetBlockByID(blockID); err != nil {
 		t.Errorf("GetBlockByID failed: %v\n", err)
