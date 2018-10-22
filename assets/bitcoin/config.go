@@ -101,6 +101,8 @@ type WalletConfig struct {
 	WalletPassword string
 	//后台数据源类型
 	RPCServerType int
+	//s是否支持隔离验证
+	SupportSegWit bool
 }
 
 func NewConfig(symbol string, masterKey string) *WalletConfig {
@@ -160,6 +162,8 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	c.WalletPassword = ""
 	//后台数据源类型
 	c.RPCServerType = RPCServerCore
+	//支持隔离见证
+	c.SupportSegWit = true
 
 	//默认配置内容
 	c.DefaultConfig = `
