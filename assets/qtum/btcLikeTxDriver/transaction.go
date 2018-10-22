@@ -16,6 +16,8 @@ type Vout struct {
 	Amount  uint64
 }
 
+
+
 type TxUnlock struct {
 	PrivateKey   []byte
 	LockScript   string

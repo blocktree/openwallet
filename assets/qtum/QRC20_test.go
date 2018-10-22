@@ -1,3 +1,18 @@
+/*
+ * Copyright 2018 The OpenWallet Authors
+ * This file is part of the OpenWallet library.
+ *
+ * The OpenWallet library is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The OpenWallet library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ */
+
 package qtum
 
 import (
@@ -10,7 +25,7 @@ import (
 
 
 func Test_addressTo32bytesArg(t *testing.T) {
-	address := "qP1VPw7RYm5qRuqcAvtiZ1cpurQpVWREu8"
+	address := "qdphfFinfJutJFvtnr2UaCwNAMxC3HbVxa"
 
 	to32bytesArg, err := AddressTo32bytesArg(address)
 	if err != nil {
@@ -33,8 +48,6 @@ func Test_getUnspentByAddress(t *testing.T) {
 	}
 
 	sotashiUnspent, _ := strconv.ParseInt(QRC20Utox.Output,16,64)
-	t.Logf("sotashiUnspent: %d\n", sotashiUnspent)
-
 	sotashiUnspentDecimal, _ := decimal.NewFromString(common.NewString(sotashiUnspent).String())
 	unspent := sotashiUnspentDecimal.Div(coinDecimal)
 
@@ -58,10 +71,10 @@ func Test_AmountTo32bytesArg(t *testing.T){
 func Test_QRC20Transfer(t *testing.T) {
 	contractAddress := "91a6081095ef860d28874c9db613e7a4107b0281"
 	from := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
-	to := "qdphfFinfJutJFvtnr2UaCwNAMxC3HbVxa"
+	to := "qJq5GbHeaaNbi6Bs5QCbuCZsZRXVWPoG1k"
 	gasPrice := "0.00000040"
 	var gasLimit int64 = 250000
-	var amount decimal.Decimal = decimal.NewFromFloat(9.999999)
+	var amount decimal.Decimal = decimal.NewFromFloat(18)
 
 	result, err := tw.QRC20Transfer(contractAddress, from, to, gasPrice, amount, gasLimit)
 	if err != nil {

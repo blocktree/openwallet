@@ -46,6 +46,7 @@ type BlockScanner interface {
 	Clear() error
 
 	//SetRescanBlockHeight 重置区块链扫描高度
+	//@required
 	SetRescanBlockHeight(height uint64) error
 
 	//Run 运行
@@ -61,18 +62,22 @@ type BlockScanner interface {
 	Restart() error
 
 	//ScanBlock 扫描指定高度的区块
+	//@required
 	ScanBlock(height uint64) error
 
 	//GetCurrentBlockHeight 获取当前区块高度
+	//@required
 	GetCurrentBlockHeader() (*BlockHeader, error)
 
 	//IsExistAddress 指定地址是否已登记扫描
 	IsExistAddress(address string) bool
 
 	//GetScannedBlockHeight 获取已扫区块高度
+	//@required
 	GetScannedBlockHeight() uint64
 
 	//ExtractTransactionData 提取交易单数据
+	//@required
 	ExtractTransactionData(txid string) (map[string]*TxExtractData, error)
 
 	//GetBalanceByAddress 查询地址余额
@@ -87,9 +92,11 @@ type BlockScanner interface {
 type BlockScanNotificationObject interface {
 
 	//BlockScanNotify 新区块扫描完成通知
+	//@required
 	BlockScanNotify(header *BlockHeader) error
 
 	//BlockExtractDataNotify 区块提取结果通知
+	//@required
 	BlockExtractDataNotify(sourceKey string, data *TxExtractData) error
 }
 
