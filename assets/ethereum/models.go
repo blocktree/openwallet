@@ -182,6 +182,42 @@ type BlockTransaction struct {
 	TokenValue       string //transaction scanning 的时候对其进行赋值, erc20代币转账有效
 }
 
+func (this *BlockTransaction) GetAmountEthString() (string, error) {
+	amount, err := ConvertToBigInt(this.Value, 16)
+	if err != nil {
+		log.Errorf("convert amount to big.int failed, err= %v", err)
+		return "", err
+	}
+	amountVal, err := ConverWeiStringToEthDecimal(amount.String())
+	if err != nil {
+		log.Errorf("convert tx.Amount to eth decimal failed, err=%v", err)
+		return "", err
+	}
+	return amountVal.String(), nil
+}
+
+func (this *BlockTransaction) GetTxFeeEthString() (string, error) {
+	gasPrice, err := ConvertToBigInt(this.GasPrice, 16)
+	if err != nil {
+		log.Errorf("convert tx.GasPrice failed, err= %v", err)
+		return "", err
+	}
+
+	gas, err := ConvertToBigInt(this.Gas, 16)
+	if err != nil {
+		log.Errorf("convert tx.Gas failed, err=%v", err)
+		return "", err
+	}
+	fee := big.NewInt(0)
+	fee.Mul(gasPrice, gas)
+	feeprice, err := ConverWeiStringToEthDecimal(fee.String())
+	if err != nil {
+		log.Errorf("convert fee failed, err=%v", err)
+		return "", err
+	}
+	return feeprice.String(), nil
+}
+
 type BlockHeader struct {
 	BlockNumber     string `json:"number" storm:"id"`
 	BlockHash       string `json:"hash"`

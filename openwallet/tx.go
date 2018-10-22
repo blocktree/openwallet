@@ -108,7 +108,7 @@ type Transaction struct {
 	To          []string `json:"to"`   //@required
 	Amount      string   `json:"amount"`
 	Decimal     int32    `json:"decimal"` //@required
-	TxType      uint64   `json:"txType"`
+	TxType      uint64   `json:"txType"`  // 0:未知，1:主币转账，2:合约调用
 	Confirm     int64    `json:"confirm"`
 	BlockHash   string   `json:"blockHash"`   //@required
 	BlockHeight uint64   `json:"blockHeight"` //@required
@@ -123,17 +123,28 @@ type Transaction struct {
 }
 
 //GenTransactionWxID 生成交易单的WxID，格式为 base64(sha1(tx_{txID}_{symbol}_contractID}))
-func GenTransactionWxID(tx *Transaction) string {
-	txid := tx.TxID
-	symbol := tx.Coin.Symbol + "_" + tx.Coin.ContractID
+
+func GenTransactionWxID2(txid string, coinsymbol string, contractId string) string{
+	//txid := tx.TxID
+	symbol := coinsymbol + "_" + contractId
 	plain := fmt.Sprintf("tx_%s_%s", txid, symbol)
 	log.Debug("wxID plain:", plain)
 	wxid := base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(plain)))
 	return wxid
 }
 
+func GenTransactionWxID(tx *Transaction) string {
+	//txid := tx.TxID
+	//symbol := tx.Coin.Symbol + "_" + tx.Coin.ContractID
+	//plain := fmt.Sprintf("tx_%s_%s", txid, symbol)
+	//log.Debug("wxID plain:", plain)
+	//wxid := base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(plain)))
+	//return wxid
+	return GenTransactionWxID2(tx.TxID, tx.Coin.Symbol, tx.Coin.ContractID)
+}
+
 type Recharge struct {
-	Sid         string `json:"sid" storm:"id"` //@required base64(sha1(txid+n+addr))
+	Sid         string `json:"sid" storm:"id"` //@required base64(sha1(txid+n+addr))，对于账户模型，只有一个输入输出，n = 0。
 	TxID        string `json:"txid"`           //@required
 	AccountID   string `json:"accountID"`
 	Address     string `json:"address"` //@required
@@ -153,6 +164,7 @@ type Recharge struct {
 
 // TxInput 交易输入，则出账记录
 type TxInput struct {
+	//SourceTxID和SourceIndex是utxo模型上的上一个交易输入源，account模型不需要填
 	SourceTxID  string //源交易单ID
 	SourceIndex uint64 //源交易单输出所因为
 	Recharge    `storm:"inline"`

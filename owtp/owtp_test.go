@@ -232,9 +232,10 @@ func TestHttp(t *testing.T) {
 	config["connectType"] = HTTP
 	transfer.HandleFunc("getInfo", getInfo)
 	transfer.Listen(config)
-	time.Sleep(4 * time.Second)
-	httpTestClient := NewHTTPT("http://"+config["address"], "", true)
-	httpTestClient.Call("getInfo", nil)
+
+	//httpTestClient := NewHTTPT("http://"+config["address"], "", true)
+	//httpTestClient.Call("getInfo", nil)
+	time.Sleep(400 * time.Second)
 }
 
 func TestMQtNode(t *testing.T) {
