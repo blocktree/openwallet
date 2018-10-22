@@ -49,11 +49,15 @@ func (wm *WalletManager) GetNowBlock() (block *core.Block, err error) {
 
 	timestamp := block.GetBlockHeader().GetRawData().GetTimestamp() // Unit: ms
 	currstamp := time.Now().UnixNano() / (1000 * 1000)              // Unit: ms
+
 	if timestamp < currstamp-(5*1000) {
-		log.Error(fmt.Sprintf("Now block timestamp: %d [%+v]", timestamp, time.Unix(timestamp/1000, 0)))
-		log.Error(fmt.Sprintf("Current d timestamp: %d [%+v]", currstamp, time.Unix(currstamp/1000, 0)))
+		log.Warningf(fmt.Sprintf("Get block timestamp: %d [%+v]", timestamp, time.Unix(timestamp/1000, 0)))
+	}
+	if timestamp < currstamp-(1*60*60*1000) {
+		log.Error(fmt.Sprintf("Get block timestamp: %d [%+v]", timestamp, time.Unix(timestamp/1000, 0)))
+		// log.Error(fmt.Sprintf("Current d timestamp: %d [%+v]", currstamp, time.Unix(currstamp/1000, 0)))
 		log.Error(fmt.Sprintf("Now block height: %d", block.GetBlockHeader().GetRawData().GetNumber()))
-		return nil, errors.New("GetNowBlock return without synced!")
+		return nil, errors.New("GetNowBlock returns with unsynced!")
 	}
 
 	return block, nil
@@ -103,6 +107,7 @@ func (wm *WalletManager) GetBlockByID(blockID string) (block *core.Block, err er
 		return nil, err
 	}
 
+	fmt.Println("XDM = ", block)
 	return block, nil
 }
 
@@ -169,22 +174,23 @@ func printBlock(block *core.Block) {
 	}
 
 	fmt.Println("\nvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv")
-	fmt.Println("Block Header:")
-	if block.BlockHeader != nil {
-		fmt.Printf("\tRawData: <Number=%v, ParentHash=%v, TxTrieRoot=%v> \n", block.BlockHeader.RawData.Number, hex.EncodeToString(block.BlockHeader.RawData.ParentHash), hex.EncodeToString(block.BlockHeader.RawData.TxTrieRoot))
-		// fmt.Printf("\t <%+v> \n", block.BlockHeader)
-	}
-
 	fmt.Println("Transactions:")
 	if block.Transactions != nil {
 		for i, tx := range block.Transactions {
-			sign0 := ""
+			// sign0 := ""
 			if tx.Signature != nil {
-				sign0 = hex.EncodeToString(tx.Signature[0])
+				// sign0 = hex.EncodeToString(tx.Signature[0])
 			}
-			fmt.Printf("\t tx%2d: <BlockBytes=%v, BlockNum=%v, BlockHash=%+v, Contact=%v, Signature_0=%v>\n", i+1, tx.RawData.RefBlockBytes, tx.RawData.RefBlockNum, hex.EncodeToString(tx.RawData.RefBlockHash), tx.RawData.Contract, sign0)
+			fmt.Printf("\t tx%2d: <BlockBytes=%v, BlockNum=%v, BlockHash=%+v, Contact=%v, Signature_len=%v>\n", i+1, tx.RawData.RefBlockBytes, tx.RawData.RefBlockNum, hex.EncodeToString(tx.RawData.RefBlockHash), tx.RawData.Contract, len(tx.Signature))
 			// fmt.Printf("\t tx%2d=<%v> \n", i+1, tx)
 		}
 	}
+
+	fmt.Println("Block Header:")
+	if block.BlockHeader != nil {
+		fmt.Printf("\tRawData: <Number=%v, timestamp=%v, ParentHash=%v> \n", block.BlockHeader.RawData.Number, time.Unix(block.GetBlockHeader().GetRawData().GetTimestamp()/1000, 0), hex.EncodeToString(block.BlockHeader.RawData.ParentHash))
+		// fmt.Printf("\t <%+v> \n", block.BlockHeader)
+	}
+
 	fmt.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 }
