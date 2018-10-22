@@ -20,6 +20,7 @@ package ethereum
 //3. block height, block hash
 
 import (
+	"math/big"
 	"path/filepath"
 	"strings"
 
@@ -304,6 +305,7 @@ func (this *ETHBLockScanner) newExtractDataNotify(height uint64, tx *BlockTransa
 
 	for o, _ := range this.Observers {
 		for key, data := range extractData {
+			log.Debugf("before notify, data.tx.Amount:%v", data.Transaction.Amount)
 			err := o.BlockExtractDataNotify(key, data)
 			if err != nil {
 				//记录未扫区块
@@ -317,6 +319,7 @@ func (this *ETHBLockScanner) newExtractDataNotify(height uint64, tx *BlockTransa
 					return err
 				}
 			}
+			log.Debugf("data.tx.Amount:%v", data.Transaction.Amount)
 		}
 	}
 
@@ -385,7 +388,10 @@ func (this *ETHBLockScanner) InitEthTokenExtractResult(tx *BlockTransaction, tok
 
 	gasPriceStr := ""
 	gasPrice, _ := ConvertToBigInt(tx.GasPrice, 16)
-	fee, err := ConverWeiStringToEthDecimal(gasPrice.String())
+	gas, _ := ConvertToBigInt(tx.Gas, 16)
+	feeInteger := big.NewInt(0)
+	feeInteger.Mul(gasPrice, gas)
+	fee, err := ConverWeiStringToEthDecimal(feeInteger.String())
 	if err != nil {
 		log.Errorf("convert to eth decimal failed, err=%v", err)
 		gasPriceStr = tx.GasPrice
@@ -445,7 +451,10 @@ func (this *ETHBLockScanner) InitEthExtractResult(tx *BlockTransaction, result *
 
 	gasPriceStr := ""
 	gasPrice, _ := ConvertToBigInt(tx.GasPrice, 16)
-	fee, err := ConverWeiStringToEthDecimal(gasPrice.String())
+	gas, _ := ConvertToBigInt(tx.Gas, 16)
+	feeInteger := big.NewInt(0)
+	feeInteger.Mul(gasPrice, gas)
+	fee, err := ConverWeiStringToEthDecimal(feeInteger.String())
 	if err != nil {
 		log.Errorf("convert to eth decimal failed, err=%v", err)
 		gasPriceStr = tx.GasPrice
@@ -453,6 +462,9 @@ func (this *ETHBLockScanner) InitEthExtractResult(tx *BlockTransaction, result *
 		gasPriceStr = fee.String()
 	}
 
+	amount, _ := ConvertToBigInt(tx.Value, 16)
+	amountVal, _ := ConverWeiStringToEthDecimal(amount.String())
+	log.Debugf("tx.Value:%v amount:%v amountVal:%v ", tx.Value, amount.String(), amountVal.String())
 	transx := &openwallet.Transaction{
 		//From: tx.From,
 		//To:   tx.To,
@@ -465,7 +477,9 @@ func (this *ETHBLockScanner) InitEthExtractResult(tx *BlockTransaction, result *
 		BlockHeight: tx.BlockHeight,
 		TxID:        tx.Hash,
 		Decimal:     18,
+		Amount:      amountVal.String(),
 	}
+	log.Debugf("transx.Amount:%v", transx.Amount)
 	transx.From = append(transx.From, tx.From)
 	transx.To = append(transx.To, tx.To)
 	wxID := openwallet.GenTransactionWxID(transx)
