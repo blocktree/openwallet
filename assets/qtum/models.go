@@ -272,7 +272,7 @@ func NewUnscanRecord(height uint64, txID, reason string) *UnscanRecord {
 */
 //}
 
-type QRC20Unspent struct{
+type QRC20Unspent struct {
 
 	/*
 		{
@@ -301,10 +301,10 @@ type QRC20Unspent struct{
 		}
 	*/
 
-	Key           string `storm:"id"`
-	Address       string `json:"address"`
-	GasUsed       string `json:"gasUsed"`
-	Output        string `json:"output"`
+	Key     string `storm:"id"`
+	Address string `json:"address"`
+	GasUsed string `json:"gasUsed"`
+	Output  string `json:"output"`
 	//HDAddress     openwallet.Address
 
 }
@@ -319,22 +319,23 @@ func NewQRC20Unspent(json *gjson.Result) *QRC20Unspent {
 	return obj
 }
 
-
 type Transaction struct {
-	TxID          string
-	Size          uint64
-	Version       uint64
-	LockTime      int64
-	Hex           string
-	BlockHash     string
-	BlockHeight   uint64
-	Confirmations uint64
-	Blocktime     int64
-	IsCoinBase    bool
-	Fees          string
+	TxID            string
+	Size            uint64
+	Version         uint64
+	LockTime        int64
+	Hex             string
+	BlockHash       string
+	BlockHeight     uint64
+	Confirmations   uint64
+	Blocktime       int64
+	IsCoinBase      bool
+	Fees            string
+	Isqrc20Transfer bool
 
-	Vins  []*Vin
-	Vouts []*Vout
+	Vins          []*Vin
+	Vouts         []*Vout
+	TokenReceipts []*TokenReceipt
 }
 
 type Vin struct {
@@ -352,6 +353,53 @@ type Vout struct {
 	Value        string
 	ScriptPubKey string
 	Type         string
+}
+
+type TokenReceipt struct {
+
+	TxHash            string
+	Size            uint64
+	Version         uint64
+	LockTime        int64
+	Hex             string
+	BlockHash       string
+	BlockHeight     uint64
+	From string
+	To string
+	GasUsed uint64
+	ContractAddress string
+	Excepted string
+	Amount string
+
+	/*
+		"receipt": [
+	        {
+	            "blockHash": "35d196cbd08cf7dcce08d99bb7267150c7ce328f08e0f66f706267cd75ab0d55",
+	            "blockNumber": 249878,
+	            "transactionHash": "eb8e496f7dd23554d6d45de30beab384c8e0d023c9c7f1fbc15d90d10bb873f8",
+	            "transactionIndex": 17,
+	            "from": "a20a4eec5c83fb9b61a9efc7fe6c0e06bb3dde43",
+	            "to": "f2033ede578e17fa6231047265010445bca8cf1c",
+	            "cumulativeGasUsed": 87782,
+	            "gasUsed": 36423,
+	            "contractAddress": "f2033ede578e17fa6231047265010445bca8cf1c",
+	            "excepted": "None",
+	            "log": [
+	                {
+	                    "address": "f2033ede578e17fa6231047265010445bca8cf1c",
+	                    "topics": [
+	                        "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+	                        "000000000000000000000000a20a4eec5c83fb9b61a9efc7fe6c0e06bb3dde43",
+	                        "000000000000000000000000e57e4a5f9ac130defb33a057729f10728fcdb9cb"
+	                    ],
+	                    "data": "0000000000000000000000000000000000000000000000000000034f80e83000"
+	                }
+	            ]
+	        }
+	    ],
+	    "isqrc20Transfer": true,
+	*/
+
 }
 
 func newTxByCore(json *gjson.Result, isTestnet bool) *Transaction {

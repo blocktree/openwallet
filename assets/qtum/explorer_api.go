@@ -16,10 +16,12 @@
 package qtum
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
 	"github.com/imroc/req"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
@@ -218,7 +220,6 @@ func (wm *WalletManager) listUnspentByExplorer(address ...string) ([]*Unspent, e
 	return utxos, nil
 
 }
-
 
 func newBlockByExplorer(json *gjson.Result) *Block {
 
@@ -458,7 +459,6 @@ func (wm *WalletManager) getMultiAddrTransactionsByExplorer(offset, limit int, a
 	return trxs, nil
 }
 
-
 //estimateFeeRateByExplorer 通过浏览器获取费率
 func (wm *WalletManager) estimateFeeRateByExplorer() (decimal.Decimal, error) {
 
@@ -479,7 +479,6 @@ func (wm *WalletManager) estimateFeeRateByExplorer() (decimal.Decimal, error) {
 
 	return feeRate, nil
 }
-
 
 //getTxOutByExplorer 获取交易单输出信息，用于追溯交易单输入源头
 func (wm *WalletManager) getTxOutByExplorer(txid string, vout uint64) (*Vout, error) {
@@ -514,5 +513,37 @@ func (wm *WalletManager) sendRawTransactionByExplorer(txHex string) (string, err
 	}
 
 	return result.Get("txid").String(), nil
+
+}
+
+//getAddressTokenBalanceByExplorer 通过合约地址查询用户地址的余额
+func (wm *WalletManager) getAddressTokenBalanceByExplorer(token openwallet.SmartContract, address string) (string, error) {
+
+	cfg := addressEncoder.QTUM_mainnetAddressP2PKH
+	if wm.config.isTestNet {
+		cfg = addressEncoder.QTUM_testnetAddressP2PKH
+	}
+
+	hash, err := hex.DecodeString(token.Address)
+	if err != nil {
+		return "", err
+	}
+
+	tokenAddressBase := addressEncoder.AddressEncode(hash, cfg)
+
+	path := fmt.Sprintf("tokens/%s/addresses/%s/balance?format=object", tokenAddressBase, address)
+
+	result, err := wm.ExplorerClient.Call(path, nil, "GET")
+	if err != nil {
+		return "", err
+	}
+
+	balanceStr := result.Get("balance").String()
+
+	balance, _ := decimal.NewFromString(balanceStr)
+	decimals := decimal.New(1, int32(token.Decimals))
+
+	balance = balance.Div(decimals)
+	return balance.StringFixed(int32(token.Decimals)), nil
 
 }
