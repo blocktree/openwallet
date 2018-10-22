@@ -20,6 +20,7 @@ package ethereum
 //3. block height, block hash
 
 import (
+	"math/big"
 	"path/filepath"
 	"strings"
 
@@ -31,7 +32,6 @@ import (
 
 	//	"fmt"
 	"errors"
-	"strconv"
 
 	//	"golang.org/x/text/currency"
 	"encoding/base64"
@@ -88,6 +88,28 @@ func NewETHBlockScanner(wm *WalletManager) *ETHBLockScanner {
 	bs.SetTask(bs.ScanBlockTask)
 
 	return &bs
+}
+
+//SetRescanBlockHeight 重置区块链扫描高度
+func (this *ETHBLockScanner) SetRescanBlockHeight(height uint64) error {
+	height = height - 1
+	if height < 0 {
+		return errors.New("block height to rescan must greater than 0.")
+	}
+
+	block, err := this.wm.WalletClient.ethGetBlockSpecByBlockNum(height, false)
+	if err != nil {
+		log.Errorf("get block spec by block number[%v] failed, err=%v", height, err)
+		return err
+	}
+
+	err = this.wm.SaveLocalBlockScanned(height, block.BlockHash)
+	if err != nil {
+		log.Errorf("save local block scanned failed, err=%v", err)
+		return err
+	}
+
+	return nil
 }
 
 func (this *ETHBLockScanner) newBlockNotify(block *EthBlock, isFork bool) {
@@ -180,9 +202,9 @@ func (this *ETHBLockScanner) ScanBlockTask() {
 			break
 		}
 
-		log.Info("current block height:", "0x"+strconv.FormatUint(curBlockHeight, 16), " maxBlockHeight:", "0x"+strconv.FormatUint(maxBlockHeight, 16))
+		log.Info("current block height:", curBlockHeight, " maxBlockHeight:", maxBlockHeight)
 		if curBlockHeight == maxBlockHeight {
-			log.Infof("block scanner has done with scan. current height:%v", "0x"+strconv.FormatUint(maxBlockHeight, 16))
+			log.Infof("block scanner has done with scan. current height:%v", maxBlockHeight)
 			break
 		}
 
@@ -200,11 +222,11 @@ func (this *ETHBLockScanner) ScanBlockTask() {
 
 		if curBlock.PreviousHash != curBlockHash {
 			previousHeight = curBlockHeight - 1
-			log.Infof("block has been fork on height: %v.", "0x"+strconv.FormatUint(curBlockHeight, 16))
-			log.Infof("block height: %v local hash = %v ", "0x"+strconv.FormatUint(previousHeight, 16), curBlockHash)
-			log.Infof("block height: %v mainnet hash = %v ", "0x"+strconv.FormatUint(previousHeight, 16), curBlock.PreviousHash)
+			log.Infof("block has been fork on height: %v.", curBlockHeight)
+			log.Infof("block height: %v local hash = %v ", previousHeight, curBlockHash)
+			log.Infof("block height: %v mainnet hash = %v ", previousHeight, curBlock.PreviousHash)
 
-			log.Infof("delete recharge records on block height: %v.", "0x"+strconv.FormatUint(previousHeight, 16))
+			log.Infof("delete recharge records on block height: %v.", previousHeight)
 
 			//本地数据库并不存储交易
 			//err = this.DeleteTransactionsByHeight(previousHeight)
@@ -215,7 +237,7 @@ func (this *ETHBLockScanner) ScanBlockTask() {
 
 			err = this.wm.DeleteUnscannedTransactionByHeight(previousHeight)
 			if err != nil {
-				log.Errorf("DeleteUnscannedTransaction failed, height=%v, err=%v", "0x"+strconv.FormatUint(previousHeight, 16), err)
+				log.Errorf("DeleteUnscannedTransaction failed, height=%v, err=%v", previousHeight, err)
 				break
 			}
 
@@ -223,12 +245,12 @@ func (this *ETHBLockScanner) ScanBlockTask() {
 
 			curBlock, err = this.wm.RecoverBlockHeader(curBlockHeight)
 			if err != nil && err != storm.ErrNotFound {
-				log.Errorf("RecoverBlockHeader failed, block number=%v, err=%v", "0x"+strconv.FormatUint(curBlockHeight, 16), err)
+				log.Errorf("RecoverBlockHeader failed, block number=%v, err=%v", curBlockHeight, err)
 				break
 			} else if err == storm.ErrNotFound {
 				curBlock, err = this.wm.WalletClient.ethGetBlockSpecByBlockNum(curBlockHeight, false)
 				if err != nil {
-					log.Errorf("ethGetBlockSpecByBlockNum  failed, block number=%v, err=%v", "0x"+strconv.FormatUint(curBlockHeight, 16), err)
+					log.Errorf("ethGetBlockSpecByBlockNum  failed, block number=%v, err=%v", curBlockHeight, err)
 					break
 				}
 			}
@@ -283,6 +305,7 @@ func (this *ETHBLockScanner) newExtractDataNotify(height uint64, tx *BlockTransa
 
 	for o, _ := range this.Observers {
 		for key, data := range extractData {
+			log.Debugf("before notify, data.tx.Amount:%v", data.Transaction.Amount)
 			err := o.BlockExtractDataNotify(key, data)
 			if err != nil {
 				//记录未扫区块
@@ -296,6 +319,7 @@ func (this *ETHBLockScanner) newExtractDataNotify(height uint64, tx *BlockTransa
 					return err
 				}
 			}
+			log.Debugf("data.tx.Amount:%v", data.Transaction.Amount)
 		}
 	}
 
@@ -362,10 +386,23 @@ func (this *ETHBLockScanner) InitEthTokenExtractResult(tx *BlockTransaction, tok
 		},
 	}
 
+	gasPriceStr := ""
+	gasPrice, _ := ConvertToBigInt(tx.GasPrice, 16)
+	gas, _ := ConvertToBigInt(tx.Gas, 16)
+	feeInteger := big.NewInt(0)
+	feeInteger.Mul(gasPrice, gas)
+	fee, err := ConverWeiStringToEthDecimal(feeInteger.String())
+	if err != nil {
+		log.Errorf("convert to eth decimal failed, err=%v", err)
+		gasPriceStr = tx.GasPrice
+	} else {
+		gasPriceStr = fee.String()
+	}
+
 	transx := &openwallet.Transaction{
 		//From: tx.From,
 		//To:   tx.To,
-		Fees:        tx.GasPrice, //totalSpent.Sub(totalReceived).StringFixed(8),
+		Fees:        gasPriceStr, //totalSpent.Sub(totalReceived).StringFixed(8),
 		Coin:        coin,
 		BlockHash:   tx.BlockHash,
 		BlockHeight: tx.BlockHeight,
@@ -411,10 +448,27 @@ func (this *ETHBLockScanner) InitEthTokenExtractResult(tx *BlockTransaction, tok
 
 func (this *ETHBLockScanner) InitEthExtractResult(tx *BlockTransaction, result *ExtractResult, isFromAccount bool) {
 	txExtractData := &openwallet.TxExtractData{}
+
+	gasPriceStr := ""
+	gasPrice, _ := ConvertToBigInt(tx.GasPrice, 16)
+	gas, _ := ConvertToBigInt(tx.Gas, 16)
+	feeInteger := big.NewInt(0)
+	feeInteger.Mul(gasPrice, gas)
+	fee, err := ConverWeiStringToEthDecimal(feeInteger.String())
+	if err != nil {
+		log.Errorf("convert to eth decimal failed, err=%v", err)
+		gasPriceStr = tx.GasPrice
+	} else {
+		gasPriceStr = fee.String()
+	}
+
+	amount, _ := ConvertToBigInt(tx.Value, 16)
+	amountVal, _ := ConverWeiStringToEthDecimal(amount.String())
+	log.Debugf("tx.Value:%v amount:%v amountVal:%v ", tx.Value, amount.String(), amountVal.String())
 	transx := &openwallet.Transaction{
 		//From: tx.From,
 		//To:   tx.To,
-		Fees: tx.GasPrice, //totalSpent.Sub(totalReceived).StringFixed(8),
+		Fees: gasPriceStr, //tx.GasPrice, //totalSpent.Sub(totalReceived).StringFixed(8),
 		Coin: openwallet.Coin{
 			Symbol:     this.wm.Symbol(),
 			IsContract: false,
@@ -423,7 +477,9 @@ func (this *ETHBLockScanner) InitEthExtractResult(tx *BlockTransaction, result *
 		BlockHeight: tx.BlockHeight,
 		TxID:        tx.Hash,
 		Decimal:     18,
+		Amount:      amountVal.String(),
 	}
+	log.Debugf("transx.Amount:%v", transx.Amount)
 	transx.From = append(transx.From, tx.From)
 	transx.To = append(transx.To, tx.To)
 	wxID := openwallet.GenTransactionWxID(transx)
@@ -502,7 +558,7 @@ func (this *ETHBLockScanner) TransactionScanning(tx *BlockTransaction) (*Extract
 		}
 
 	} else {
-		log.Debugf("tx.from[%v] not found in scanning address.", tx.From)
+		//log.Debugf("tx.from[%v] not found in scanning address.", tx.From)
 	}
 
 	if this.IsExistAddress(tx.To) && tokenEvent == nil {
@@ -526,7 +582,7 @@ func (this *ETHBLockScanner) TransactionScanning(tx *BlockTransaction) (*Extract
 		}
 
 	} else if len(result.extractData) == 0 {
-		log.Debugf("tx.to[%v] not found in scanning address.", tx.To)
+		//log.Debugf("tx.to[%v] not found in scanning address.", tx.To)
 		return nil, nil
 	}
 

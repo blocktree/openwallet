@@ -191,6 +191,7 @@ type BlockHeader struct {
 	Difficulty      string `json:"difficulty"`
 	TotalDifficulty string `json:"totalDifficulty"`
 	PreviousHash    string `json:"parentHash"`
+	blockHeight     uint64 //RecoverBlockHeader的时候进行初始化
 }
 
 func (this *Wallet) SaveAddress(dbpath string, addr *Address) error {

@@ -262,7 +262,7 @@ func (wm *WalletManager) BroadcastTransaction(raw string) error {
 		log.Error(err)
 		return err
 	} else {
-		log.Debugf("Test = %+v\n", gjson.ParseBytes(r))
+		// log.Debugf("Test = %+v\n", gjson.ParseBytes(r))
 
 		res := gjson.ParseBytes(r)
 		if res.Get("result").Bool() != true {

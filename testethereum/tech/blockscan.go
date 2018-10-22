@@ -26,6 +26,7 @@ func (sub *subscriber) BlockTxExtractDataNotify(account *openwallet.AssetsAccoun
 	log.Debug("account:", string(objStr))
 	objStr, _ = json.MarshalIndent(data, "", " ")
 	log.Debug("data:", string(objStr))
+	log.Debugf("amount :%v", data.Transaction.Amount)
 	return nil
 }
 

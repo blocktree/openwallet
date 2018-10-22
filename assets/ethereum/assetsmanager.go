@@ -27,7 +27,6 @@ func (this *WalletManager) GetBlockScanner() openwallet.BlockScanner {
 		log.Errorf("load config failed, err=%v", err)
 		return nil
 	}
-
 	return this.Blockscanner
 }
 
