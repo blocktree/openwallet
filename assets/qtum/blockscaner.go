@@ -23,6 +23,7 @@ import (
 	"github.com/blocktree/OpenWallet/crypto"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/graarh/golang-socketio"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
 	"path/filepath"
@@ -45,6 +46,7 @@ type BTCBlockScanner struct {
 	wm                   *WalletManager //钱包管理者
 	IsScanMemPool        bool           //是否扫描交易池
 	RescanLastBlockCount uint64         //重扫上N个区块数量
+	socketIO *gosocketio.Client //socketIO客户端
 }
 
 //ExtractResult 扫描完成的提取结果
