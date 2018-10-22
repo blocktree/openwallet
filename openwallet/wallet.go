@@ -35,7 +35,7 @@ import (
 )
 
 //WalletDAI 钱包数据访问接口
-type WalletDAI interface{
+type WalletDAI interface {
 	GetWallet() *Wallet
 	GetWalletByID(walletID string) (*Wallet, error)
 	GetAssetsAccountInfo(accountID string) (*AssetsAccount, error)
@@ -45,6 +45,46 @@ type WalletDAI interface{
 	GetAddressList(offset, limit int, cols ...interface{}) ([]*Address, error)
 	UnlockWallet(password string, time time.Duration) error
 	HDKey(password ...string) (*hdkeystore.HDKey, error)
+}
+
+//TransactionDecoderBase 实现TransactionDecoder的基类
+type WalletDAIBase struct {
+}
+
+func (base *WalletDAIBase) GetWallet() *Wallet {
+	return nil
+}
+
+func (base *WalletDAIBase) GetWalletByID(walletID string) (*Wallet, error) {
+	return nil, fmt.Errorf("not implement")
+}
+
+func (base *WalletDAIBase) GetAssetsAccountInfo(accountID string) (*AssetsAccount, error) {
+	return nil, fmt.Errorf("not implement")
+}
+
+func (base *WalletDAIBase) GetAssetsAccountList(offset, limit int, cols ...interface{}) ([]*AssetsAccount, error) {
+	return nil, fmt.Errorf("not implement")
+}
+
+func (base *WalletDAIBase) GetAssetsAccountByAddress(address string) (*AssetsAccount, error) {
+	return nil, fmt.Errorf("not implement")
+}
+
+func (base *WalletDAIBase) GetAddress(address string) (*Address, error) {
+	return nil, fmt.Errorf("not implement")
+}
+
+func (base *WalletDAIBase) GetAddressList(offset, limit int, cols ...interface{}) ([]*Address, error) {
+	return nil, fmt.Errorf("not implement")
+}
+
+func (base *WalletDAIBase) UnlockWallet(password string, time time.Duration) error {
+	return fmt.Errorf("not implement")
+}
+
+func (base *WalletDAIBase) HDKey(password ...string) (*hdkeystore.HDKey, error) {
+	return nil, fmt.Errorf("not implement")
 }
 
 type Wallet struct {

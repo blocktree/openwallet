@@ -1,3 +1,18 @@
+/*
+ * Copyright 2018 The OpenWallet Authors
+ * This file is part of the OpenWallet library.
+ *
+ * The OpenWallet library is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The OpenWallet library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ */
+
 package qtum
 
 import (
@@ -5,6 +20,7 @@ import (
 	"fmt"
 	"encoding/hex"
 	"strconv"
+	"github.com/shopspring/decimal"
 )
 
 func AddressTo32bytesArg(address string) ([]byte, error) {
@@ -62,8 +78,12 @@ func AmountTo32bytesArg(amount int64) (string, error) {
 	return bytesArg, nil
 }
 
-func (wm *WalletManager)QRC20Transfer(contractAddress string, from string, to string, gasPrice string, amount int64, gasLimit int64) (string, error){
-	amountToArg, err := AmountTo32bytesArg(amount)
+func (wm *WalletManager)QRC20Transfer(contractAddress string, from string, to string, gasPrice string, amount decimal.Decimal, gasLimit int64) (string, error){
+
+	amountDecimal := amount.Mul(coinDecimal)
+	sotashiAmount := amountDecimal.IntPart()
+
+	amountToArg, err := AmountTo32bytesArg(sotashiAmount)
 	if err != nil {
 		return "", err
 	}

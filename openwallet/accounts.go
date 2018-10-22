@@ -51,8 +51,9 @@ type AssetsAccount struct {
 	Symbol          string `json:"symbol"`          //资产币种类别
 	AddressIndex    int    `json:"addressIndex"`
 	Balance         string `json:"balance"`
-	IsTrust         bool   `json:"isTrust"`  //是否托管密钥
-	ExtParam        string `json:"extParam"` //扩展参数，用于调用智能合约，json结构
+	IsTrust         bool   `json:"isTrust"`   //是否托管密钥
+	ExtParam        string `json:"extParam"`  //扩展参数，用于调用智能合约，json结构
+	ModelType       uint64 `json:"modelType"` //模型类别, 1: utxo模型(BTC), 2: account模型（ETH），3: 账户别名模型(EOS)
 
 	core interface{} //核心账户指针
 }

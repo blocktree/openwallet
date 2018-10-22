@@ -24,7 +24,6 @@ import (
 	"github.com/tidwall/gjson"
 	"net"
 	"sync"
-	"time"
 	"net/http"
 	"io/ioutil"
 )
@@ -220,12 +219,6 @@ func (c *HTTPClient) OpenPipe() error {
 // WritePump 发送消息通道
 func (c *HTTPClient) writePump() {
 
-	ticker := time.NewTicker(PingPeriod) //发送心跳间隔事件要<等待时间
-	defer func() {
-		ticker.Stop()
-		c.Close()
-		log.Debug("writePump end")
-	}()
 	for {
 		select {
 		case message, ok := <-c.send:
@@ -240,13 +233,6 @@ func (c *HTTPClient) writePump() {
 			if err := c.write(websocket.TextMessage, message); err != nil {
 				return
 			}
-		case <-ticker.C:
-			//定时器的回调,发送心跳检查,
-			err := c.write(websocket.PingMessage, []byte{})
-
-			if err != nil {
-				return //客户端不响应心跳就停止
-			}
 
 		}
 	}
@@ -259,7 +245,6 @@ func (c *HTTPClient) write(mt int, message []byte) error {
 		return fmt.Errorf("responseWriter is nil")
 	}
 	w := c.responseWriter
-	//fmt.Fprint(c.responseWriter,[]byte(message))
 	w.Write([]byte(message))
 	w.(http.Flusher).Flush()
 	return nil
@@ -267,7 +252,40 @@ func (c *HTTPClient) write(mt int, message []byte) error {
 
 // ReadPump 监听消息
 func (c *HTTPClient) readPump() {
+
+	defer func() {
+		c.Close()
+		log.Debug("readPump end")
+	}()
+
 	s, _ := ioutil.ReadAll(c.request.Body)
+
+	w := c.responseWriter
+
+	result := string(s)
+
+	if len(result) == 0{
+		w.Write([]byte("is not a Json"))
+		w.(http.Flusher).Flush()
+		log.Error("is not a Json ")
+		return
+	}
+
+	if Debug {
+
+		log.Debug("readPump: ", string(s))
+	}
+
 	packet := NewDataPacket(gjson.ParseBytes(s))
+
+	if len(packet.Method) == 0{
+
+		w.Write([]byte("method is null"))
+		w.(http.Flusher).Flush()
+		log.Error(" method is null ")
+		return
+	}
+
 	c.handler.OnPeerNewDataPacketReceived(c, packet)
+
 }

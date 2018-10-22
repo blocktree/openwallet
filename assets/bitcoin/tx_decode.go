@@ -40,7 +40,7 @@ func NewTransactionDecoder(wm *WalletManager) *TransactionDecoder {
 }
 
 //CreateRawTransaction 创建交易单
-func (decoder *TransactionDecoder) CreateRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
+func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	//先加载是否有配置文件
 	err := decoder.wm.LoadConfig()
@@ -231,7 +231,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 	}
 
 	////////构建用于签名的交易单哈希
-	transHash, err := btcTransaction.CreateRawTransactionHashForSig(emptyTrans, txUnlocks)
+	transHash, err := btcTransaction.CreateRawTransactionHashForSig(emptyTrans, txUnlocks, decoder.wm.Config.SupportSegWit)
 	if err != nil {
 		return fmt.Errorf("create transaction hash for sig failed, unexpected error: %v", err)
 		//log.Error("获取待签名交易单哈希失败")
@@ -291,7 +291,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper *openwallet.Wall
 }
 
 //SignRawTransaction 签名交易单
-func (decoder *TransactionDecoder) SignRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
+func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	//先加载是否有配置文件
 	err := decoder.wm.LoadConfig()
@@ -366,7 +366,7 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper *openwallet.Wallet
 }
 
 //VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
-func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
+func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	//先加载是否有配置文件
 	err := decoder.wm.LoadConfig()
@@ -418,7 +418,7 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper *openwallet.Wall
 		return errors.New("Invalid transaction hex data!")
 	}
 
-	trx, err := btcTransaction.DecodeRawTransaction(txBytes)
+	trx, err := btcTransaction.DecodeRawTransaction(txBytes, decoder.wm.Config.SupportSegWit)
 	if err != nil {
 		return errors.New("Invalid transaction data! ")
 	}
@@ -441,7 +441,7 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper *openwallet.Wall
 
 	////////填充签名结果到空交易单
 	//  传入TxUnlock结构体的原因是： 解锁向脚本支付的UTXO时需要对应地址的赎回脚本， 当前案例的对应字段置为 "" 即可
-	signedTrans, err := btcTransaction.InsertSignatureIntoEmptyTransaction(emptyTrans, transHash, txUnlocks)
+	signedTrans, err := btcTransaction.InsertSignatureIntoEmptyTransaction(emptyTrans, transHash, txUnlocks, decoder.wm.Config.SupportSegWit)
 	if err != nil {
 		return fmt.Errorf("transaction compose signatures failed")
 	}
@@ -452,7 +452,7 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper *openwallet.Wall
 
 	/////////验证交易单
 	//验证时，对于公钥哈希地址，需要将对应的锁定脚本传入TxUnlock结构体
-	pass := btcTransaction.VerifyRawTransaction(signedTrans, txUnlocks)
+	pass := btcTransaction.VerifyRawTransaction(signedTrans, txUnlocks, decoder.wm.Config.SupportSegWit)
 	if pass {
 		log.Debug("transaction verify passed")
 		rawTx.IsCompleted = true
@@ -466,7 +466,7 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper *openwallet.Wall
 }
 
 //SendRawTransaction 广播交易单
-func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper *openwallet.WalletWrapper, rawTx *openwallet.RawTransaction) error {
+func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	//先加载是否有配置文件
 	err := decoder.wm.LoadConfig()

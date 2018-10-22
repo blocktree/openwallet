@@ -977,7 +977,21 @@ func (this *WalletManager) SaveBlockHeader2(block *EthBlock) error {
 	return nil
 }*/
 
-func (this *WalletManager) GetAllUnscannedTransactions() ([]BlockTransaction, error) {
+func (this *WalletManager) RecoverUnscannedTransactions(unscannedTxs []UnscanTransaction) ([]BlockTransaction, error) {
+	allTxs := make([]BlockTransaction, 0, len(unscannedTxs))
+	for i, _ := range unscannedTxs {
+		var tx BlockTransaction
+		err := json.Unmarshal([]byte(unscannedTxs[i].TxSpec), &tx)
+		if err != nil {
+			openwLogger.Log.Errorf("decode json [%v] from unscanned transactions failed, err=%v", unscannedTxs[i].TxSpec, err)
+			return nil, err
+		}
+		allTxs = append(allTxs, tx)
+	}
+	return allTxs, nil
+}
+
+func (this *WalletManager) GetAllUnscannedTransactions() ([]UnscanTransaction, error) {
 	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
 		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
@@ -992,20 +1006,41 @@ func (this *WalletManager) GetAllUnscannedTransactions() ([]BlockTransaction, er
 		return nil, err
 	}
 
-	allTxs := make([]BlockTransaction, 0)
-	for i, _ := range allRecords {
-		var tx BlockTransaction
-		err = json.Unmarshal([]byte(allRecords[i].TxSpec), &tx)
-		if err != nil {
-			openwLogger.Log.Errorf("decode json [%v] from unscanned transactions failed, err=%v", allRecords[i].TxSpec, err)
-			return nil, err
-		}
-		allTxs = append(allTxs, tx)
-	}
-	return allTxs, nil
+	return allRecords, nil
 }
 
-func (this *WalletManager) DeleteUnscannedTransaction(height uint64) error {
+func (this *WalletManager) DeleteUnscannedTransactions(list []UnscanTransaction) error {
+	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
+	if err != nil {
+		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
+		return err
+	}
+	defer db.Close()
+
+	tx, err := db.Begin(true)
+	if err != nil {
+		log.Errorf("start transaction failed, err=%v", err)
+		return err
+	}
+	defer tx.Rollback()
+
+	for i, _ := range list {
+		err = tx.DeleteStruct(&list[i])
+		if err != nil {
+			log.Errorf("delete unscanned tx faled, err= %v", err)
+			return err
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		log.Error("commit failed, err=%v", err)
+		return err
+	}
+	return nil
+}
+
+func (this *WalletManager) DeleteUnscannedTransactionByHeight(height uint64) error {
 	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
 		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)

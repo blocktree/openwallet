@@ -97,7 +97,6 @@ type Response struct {
 type EthBlock struct {
 	BlockHeader
 	Transactions []BlockTransaction `json:"transactions"`
-	blockHeight  uint64             //RecoverBlockHeader的时候进行初始化
 }
 
 func (this *EthBlock) CreateOpenWalletBlockHeader() *openwallet.BlockHeader {
@@ -320,9 +319,13 @@ func (this *Client) ethGetBlockSpecByBlockNum2(blockNum string, showTransactionS
 		return nil, err
 	}
 
-	err = json.Unmarshal([]byte(result.Raw), &ethBlock)
+	if showTransactionSpec {
+		err = json.Unmarshal([]byte(result.Raw), &ethBlock)
+	} else {
+		err = json.Unmarshal([]byte(result.Raw), &ethBlock.BlockHeader)
+	}
 	if err != nil {
-		openwLogger.Log.Errorf("decode json [%v] failed, err=%v", err)
+		openwLogger.Log.Errorf("decode json [%v] failed, err=%v", result.Raw, err)
 		return nil, err
 	}
 

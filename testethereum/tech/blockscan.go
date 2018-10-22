@@ -2,7 +2,10 @@ package tech
 
 import (
 	"encoding/json"
+	"strconv"
 
+	"github.com/asdine/storm"
+	"github.com/blocktree/OpenWallet/assets/ethereum"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 )
@@ -23,6 +26,7 @@ func (sub *subscriber) BlockTxExtractDataNotify(account *openwallet.AssetsAccoun
 	log.Debug("account:", string(objStr))
 	objStr, _ = json.MarshalIndent(data, "", " ")
 	log.Debug("data:", string(objStr))
+	log.Debugf("amount :%v", data.Transaction.Amount)
 	return nil
 }
 
@@ -35,10 +39,9 @@ func TestSubscribe() {
 	sub := subscriber{}
 	tm.AddObserver(&sub)
 	manager, _ := GetEthWalletManager()
-	manager.Blockscanner.AddAddress("0xe7134824df22750a42726483e64047ef652d6194", "XXXXXXXXXXXXXXXXX")
+	manager.Blockscanner.AddAddress("0xe7134824df22750a42726483e64047ef652d6194", "openw:KaszkQZb2xsaNuW5UoAukhM5MhzAqtPBWYTwkk4m2QhtDYN9E8")
 
 	err := PrepareTestForBlockScan()
-
 	if err != nil {
 		log.Errorf("prepare block scan failed, err=%v", err)
 		return
@@ -60,4 +63,53 @@ func TestScanBlockByHeight() {
 	if err != nil {
 		log.Errorf("scan block[%v] failed, err=%v", 319482, err)
 	}
+}
+
+func DumpBlockScanDb() {
+	db, err := storm.Open("data/eth/db/blockchain.db")
+	if err != nil {
+		log.Errorf("open block scan db failed, err=%v", err)
+		return
+	}
+	defer db.Close()
+
+	var unscanTransactions []ethereum.UnscanTransaction
+
+	var blockHeight uint64
+	var blockHash string
+	err = db.All(&unscanTransactions)
+	if err != nil {
+		log.Errorf("get transactions failed, err = %v", err)
+		return
+	}
+
+	for i, _ := range unscanTransactions {
+		objStr, _ := json.MarshalIndent(unscanTransactions[i], "", " ")
+		log.Infof("unscanned tx[%v]:%v", unscanTransactions[i].TxID, string(objStr))
+	}
+	var blocks []ethereum.BlockHeader
+	err = db.All(&blocks)
+	if err != nil {
+		log.Errorf("get blocks failed failed, err = %v", err)
+		return
+	}
+
+	for i, _ := range blocks {
+		objStr, _ := json.MarshalIndent(blocks[i], "", " ")
+		log.Infof("block[%v]:%v", blocks[i].BlockNumber, string(objStr))
+	}
+
+	err = db.Get(ethereum.BLOCK_CHAIN_BUCKET, ethereum.BLOCK_HEIGHT_KEY, &blockHeight)
+	if err != nil {
+		log.Errorf("get block height from db failed, err=%v", err)
+		return
+	}
+
+	err = db.Get(ethereum.BLOCK_CHAIN_BUCKET, ethereum.BLOCK_HASH_KEY, &blockHash)
+	if err != nil {
+		log.Errorf("get block height from db failed, err=%v", err)
+		return
+	}
+
+	log.Infof("current block height:%v, current block hash:%v", "0x"+strconv.FormatUint(blockHeight, 16), blockHash)
 }

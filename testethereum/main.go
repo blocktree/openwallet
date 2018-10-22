@@ -91,6 +91,7 @@ func main() {
 	//tech.TestTokenBalance()
 
 	//tech.TestWalletManager_SubmitTokenTransaction()
-	//tech.TestSubscribe()
-	tech.TestScanBlockByHeight()
+	tech.TestSubscribe()
+	//tech.DumpBlockScanDb()
+	//tech.TestScanBlockByHeight()
 }

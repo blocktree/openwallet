@@ -42,6 +42,8 @@ const (
 	Symbol    = "QTUM"
 	 MasterKey = "qtum seed"
 	CurveType = owcrypt.ECC_CURVE_SECP256K1
+	RPCServerCore     = 0 //RPC服务，bitcoin核心钱包
+	RPCServerExplorer = 1 //RPC服务，insight-API
 )
 
 
@@ -97,6 +99,8 @@ type WalletConfig struct {
 	CurveType uint32
 	//小数位长度
 	CoinDecimal decimal.Decimal
+	//后台数据源类型
+	RPCServerType int
 }
 
 func NewConfig() *WalletConfig {
@@ -152,7 +156,8 @@ func NewConfig() *WalletConfig {
 	c.cycleSeconds = time.Second * 10
 	//小数位长度
 	c.CoinDecimal = decimal.NewFromFloat(100000000)
-
+	//后台数据源类型
+	c.RPCServerType = RPCServerCore
 
 	//默认配置内容
 	c.defaultConfig = `
@@ -166,6 +171,8 @@ nodeInstallPath = ""
 mainNetDataPath = ""
 # testnet data path
 testNetDataPath = ""
+# RPC Server Type，0: CoreWallet RPC; 1: Explorer API
+rpcServerType = 0
 # Qtum api url
 chainAPI = ""
 # Qtum server url

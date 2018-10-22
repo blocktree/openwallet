@@ -37,7 +37,7 @@ const (
 )
 
 var (
-	Debug = false
+	Debug = true
 )
 
 //WebSocketClient 基于websocket的通信客户端
