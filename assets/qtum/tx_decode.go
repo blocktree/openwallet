@@ -335,7 +335,7 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletD
 		keyBytes := privateKeys[i]
 
 		txUnlock := btcLikeTxDriver.TxUnlock{
-			LockScript: utxo.Get("scriptPubKey.hex").String(),
+			LockScript: utxo.ScriptPubKey,
 			PrivateKey: keyBytes,
 		}
 		txUnlocks = append(txUnlocks, txUnlock)
@@ -429,7 +429,7 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 			return err
 		}
 
-		txUnlock := btcLikeTxDriver.TxUnlock{LockScript: utxo.Get("scriptPubKey.hex").String()}
+		txUnlock := btcLikeTxDriver.TxUnlock{LockScript: utxo.ScriptPubKey}
 		txUnlocks = append(txUnlocks, txUnlock)
 
 	}

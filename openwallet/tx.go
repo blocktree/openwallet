@@ -129,7 +129,7 @@ func GenTransactionWxID2(txid string, coinsymbol string, contractId string) stri
 	symbol := coinsymbol + "_" + contractId
 	plain := fmt.Sprintf("tx_%s_%s", txid, symbol)
 	log.Debug("wxID plain:", plain)
-	wxid := base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(plain)))
+	wxid := base64.StdEncoding.EncodeToString(crypto.SHA256([]byte(plain)))
 	return wxid
 }
 
@@ -167,7 +167,7 @@ func GenRechargeSID(txid string, coinsymbol string, contractId string, n uint64,
 	//txid := tx.TxID
 	symbol := coinsymbol + "_" + contractId
 	plain := fmt.Sprintf("%s_%s_%s_%d", prefix, txid, symbol, n)
-	sid := base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(plain)))
+	sid := base64.StdEncoding.EncodeToString(crypto.SHA256([]byte(plain)))
 	return sid
 }
 
