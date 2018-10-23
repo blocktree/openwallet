@@ -29,7 +29,7 @@ func TestGetTotalTransaction(t *testing.T) {
 
 func TestGetTransactionByID(t *testing.T) {
 
-	var txID string = "952c585391b658f72cd952e7efbd332991e923146dc755338208b1e80ca48386"
+	var txID string = "67b965cf2f47de253eb8cc2acf0cd64b19990836b361195c9fdcd3df489f8756"
 
 	if r, err := tw.GetTransactionByID(txID); err != nil {
 		t.Errorf("TestGetTransactionByID failed: %v\n", err)

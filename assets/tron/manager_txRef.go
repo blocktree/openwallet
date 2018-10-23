@@ -17,7 +17,6 @@
 package tron
 
 import (
-	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -40,17 +39,6 @@ func getTxHash(tx *core.Transaction) (txHash []byte, err error) {
 	}
 	txHash = owcrypt.Hash(txRaw, 0, owcrypt.HASH_ALG_SHA256)
 	return txHash, err
-}
-
-func getBlockHash(raw string) string {
-	block := &core.Block{}
-	x, _ := hex.DecodeString(raw)
-	proto.Unmarshal(x, block)
-
-	blockHeaderRaw, _ := proto.Marshal(block.GetBlockHeader().GetRawData())
-	blockHashBytes := owcrypt.Hash(blockHeaderRaw, 0, owcrypt.HASH_ALG_SHA256)
-
-	return hex.EncodeToString(blockHashBytes)
 }
 
 // Done
@@ -134,23 +122,15 @@ func (wm *WalletManager) CreateTransactionRef(to_address, owner_address string, 
 	}
 
 	// ----------------------- Get Reference Block ----------------------
-	block, err := wm.GetNowBlock()
+	r, err := wm.GetNowBlockID()
 	if err != nil {
 		return txRawHex, err
 	}
-
-	blockHight := block.GetBlockHeader().GetRawData().GetNumber() - 1
-	blockHightBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(blockHightBytes, uint64(blockHight))
-	refBlockBytes := blockHightBytes[6:8]
-
-	blockHeaderRaw, err := proto.Marshal(block.GetBlockHeader().GetRawData())
+	blockID, err := hex.DecodeString(r)
 	if err != nil {
-		return "", err
+		return txRawHex, err
 	}
-	blockHashBytes := owcrypt.Hash(blockHeaderRaw, 0, owcrypt.HASH_ALG_SHA256)
-	refBlockHash := blockHashBytes[8:16]
-	refBlockHash = block.GetBlockHeader().GetRawData().GetParentHash()[8:16]
+	refBlockBytes, refBlockHash := blockID[6:8], blockID[8:16]
 
 	// -------------------- Set timestamp --------------------
 	/*
@@ -221,6 +201,7 @@ func (wm *WalletManager) SignTransactionRef(txRawhex string, privateKey string) 
 	if err != nil {
 		return signedTxRaw, err
 	}
+	fmt.Println("Tx Hash = ", hex.EncodeToString(txHash))
 
 	pk, err := hex.DecodeString(privateKey)
 	if err != nil {

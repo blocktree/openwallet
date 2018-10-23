@@ -16,17 +16,20 @@
 package tron
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
 	"github.com/tronprotocol/grpc-gateway/api"
 	"github.com/tronprotocol/grpc-gateway/core"
 
 	"github.com/blocktree/OpenWallet/log"
+	owcrypt "github.com/blocktree/go-OWCrypt"
 )
 
 // Done
@@ -52,8 +55,10 @@ func (wm *WalletManager) GetNowBlock() (block *core.Block, err error) {
 
 	if timestamp < currstamp-(5*1000) {
 		log.Warningf(fmt.Sprintf("Get block timestamp: %d [%+v]", timestamp, time.Unix(timestamp/1000, 0)))
+		log.Warningf(fmt.Sprintf("Current d timestamp: %d [%+v]", currstamp, time.Unix(currstamp/1000, 0)))
+		log.Warningf("Diff seconds: %ds ", (currstamp-timestamp)/1000)
 	}
-	if timestamp < currstamp-(1*60*60*1000) {
+	if timestamp < currstamp-(5*60*1000) {
 		log.Error(fmt.Sprintf("Get block timestamp: %d [%+v]", timestamp, time.Unix(timestamp/1000, 0)))
 		// log.Error(fmt.Sprintf("Current d timestamp: %d [%+v]", currstamp, time.Unix(currstamp/1000, 0)))
 		log.Error(fmt.Sprintf("Now block height: %d", block.GetBlockHeader().GetRawData().GetNumber()))
@@ -61,6 +66,24 @@ func (wm *WalletManager) GetNowBlock() (block *core.Block, err error) {
 	}
 
 	return block, nil
+}
+
+func (wm *WalletManager) GetNowBlockID() (blockID string, err error) {
+
+	// url := "https://api.trongrid.io/wallet/getnowblock"
+	// authHeader := req.Header{"Accept": "application/json"}
+
+	r, err := wm.WalletClient.Call("/wallet/getnowblock", nil)
+	if err != nil {
+		return "", err
+	}
+
+	blockID = gjson.ParseBytes(r).Get("blockID").String()
+	if blockID == "" {
+		return "", errors.New("No found!")
+	}
+
+	return blockID, nil
 }
 
 // Done
@@ -95,7 +118,6 @@ func (wm *WalletManager) GetBlockByNum(num uint64) (block *core.Block, error err
 // Return value：Block Object
 func (wm *WalletManager) GetBlockByID(blockID string) (block *core.Block, err error) {
 
-	// request := req.Param{"value": base64.StdEncoding.EncodeToString([]byte(blockID))}
 	request := req.Param{"value": blockID}
 	r, err := wm.WalletClient.Call("/wallet/getblockbyid", request)
 	if err != nil {
@@ -107,7 +129,10 @@ func (wm *WalletManager) GetBlockByID(blockID string) (block *core.Block, err er
 		return nil, err
 	}
 
-	fmt.Println("XDM = ", block)
+	if block.GetBlockHeader().GetRawData().GetNumber() <= 0 {
+		return nil, errors.New("No found!")
+	}
+
 	return block, nil
 }
 
@@ -165,6 +190,21 @@ func (wm *WalletManager) GetBlockByLatestNum(num uint64) (blocks *api.BlockList,
 	}
 
 	return blocks, nil
+}
+
+// ----------------------------------- Refenrence -----------------------------------------------
+// Writing!
+func (wm *WalletManager) GenBlockID(block *core.Block) string {
+
+	blockHeaderRaw, _ := proto.Marshal(block.GetBlockHeader().GetRawData())
+	blockHashBytes := owcrypt.Hash(blockHeaderRaw, 0, owcrypt.HASH_ALG_SHA256)
+
+	blockHeight := block.GetBlockHeader().GetRawData().GetNumber()
+	blockHeightBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(blockHeightBytes, uint64(blockHeight))
+	blockHashBytes = append(blockHeightBytes, blockHashBytes[8:]...)
+
+	return hex.EncodeToString(blockHashBytes)
 }
 
 // ----------------------------------- Functions -----------------------------------------------
