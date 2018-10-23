@@ -93,8 +93,3 @@ func (wm *WalletManager) SummaryWallets() {
 
 	log.Std.Info("[Summary Wallet end]------%s", common.TimeFormat("2006-01-02 15:04:05"))
 }
-
-//SendTransaction 发送交易
-func (wm *WalletManager) SendTransaction(walletID, to string, amount decimal.Decimal, password string, feesInSender bool) ([]string, error) {
-	return nil, nil
-}

@@ -19,7 +19,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
-	// "github.com/blocktree/OpenWallet/log"
 )
 
 //GetPrivateKeyRef 找到地址索引对应的私钥，返回私钥hex格式字符串

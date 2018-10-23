@@ -29,9 +29,9 @@ func TestGetTotalTransaction(t *testing.T) {
 
 func TestGetTransactionByID(t *testing.T) {
 
-	var txID string = "952c585391b658f72cd952e7efbd332991e923146dc755338208b1e80ca48386"
+	var txID string = "67b965cf2f47de253eb8cc2acf0cd64b19990836b361195c9fdcd3df489f8756"
 
-	if r, err := tw.GetTransactionByID(txID); err != nil {
+	if r, isSuccess, err := tw.GetTransactionByID(txID); err != nil || isSuccess != true {
 		t.Errorf("TestGetTransactionByID failed: %v\n", err)
 	} else {
 		t.Logf("TestGetTransactionByID return: \n\t%+v\n", r)
@@ -39,14 +39,10 @@ func TestGetTransactionByID(t *testing.T) {
 }
 
 func TestCreateTransaction(t *testing.T) {
-	// RAW_expect := "0a7e0a0231d422084246e99b0394a3da40b0b4d2b0df2c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a1541b6c1abf9fb31c9077dfb3c25469e6e943ffbfa7a121541e6992304ae03e5c6bba7334432b7345bef031c1418c0843d"
 
 	if r, err := tw.CreateTransaction(TOADDRESS, OWNERADDRESS, AMOUNT); err != nil {
 		t.Errorf("TestCreateTransaction failed: %v\n", err)
 	} else {
-		// if strings.Join(r[:], "") != RAW_expect {
-		// 	t.Errorf("TestCreateTransaction return invalid RAW!")
-		// }
 		t.Logf("TestCreateTransaction return: \n\t%+v\n", r)
 	}
 
