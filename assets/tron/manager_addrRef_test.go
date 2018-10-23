@@ -33,12 +33,15 @@ func TestCreateAddressRef(t *testing.T) {
 	if r, err := tw.CreateAddressRef(priKeyBytes, true); err != nil {
 		t.Errorf("CreateAddressRef failed: %v\n", err)
 	} else {
+		t.Logf("CreateAddressRef return: \n\t%+v\n", r)
+
 		if r != predictedAddr {
-			t.Errorf("CreateAddressRef failed: not equal!\n")
-		} else {
-			fmt.Printf("CreateAddressRef return: \n\t%+v\n", r)
-			fmt.Printf("Pred: %+v\n", predictedAddr)
+			t.Errorf("CreateAddressRef failed: not equal (Predict: %v)!\n", predictedAddr)
+
 		}
+
+		fmt.Printf("Created: %+v\n", r)
+		fmt.Printf("Predict: %+v\n", predictedAddr)
 	}
 }
 
@@ -65,8 +68,7 @@ func TestCreateBatchAddress(t *testing.T) {
 	if s, r, err := tw.CreateBatchAddress(walletID, password, count); err != nil {
 		t.Errorf("CreateBatchAddress failed: \n\t%+v\n", err)
 	} else {
-		_, _ = s, r
-		// fmt.Printf("CreateBatchAddress return: \n\t%+v\n", r)
+		fmt.Printf("CreateBatchAddress return: \n\t%+v\n", s)
 		tw.printAddressList(r)
 	}
 }
@@ -82,10 +84,6 @@ func TestGetAddressesFromLocalDB(t *testing.T) {
 		t.Errorf("GetAddressesFromLocalDB failed: \n\t%+v\n", err)
 	} else {
 		fmt.Printf("GetAddressesFromLocalDB return: \n\t%+v\n", r)
-
-		// for i, a := range r {
-		// 	t.Logf("GetAddressesFromLocalDB address[%d] = %v\n", i, a)
-		// }
 
 		tw.printAddressList(r)
 	}

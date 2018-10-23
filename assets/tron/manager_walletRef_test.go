@@ -39,7 +39,8 @@ func TestCreateNewWallet(t *testing.T) {
 	if r, s, err := tw.CreateNewWallet(wallet_name, wallet_pass); err != nil {
 		t.Errorf("CreateNewWallet failed: %v\n", err)
 	} else {
-		fmt.Printf("keyfile = %+v\n", s)
 		t.Logf("TestCreateTrCreateNewWalletansaction return: \n%+v\n", r)
+
+		fmt.Printf("keyfile = %+v\n", s)
 	}
 }

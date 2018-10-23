@@ -16,8 +16,13 @@
 package tron
 
 import (
+	"encoding/hex"
 	"fmt"
 	"testing"
+	"time"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/tronprotocol/grpc-gateway/core"
 )
 
 var (
@@ -107,4 +112,24 @@ func TestSuiteTx(t *testing.T) {
 		println("Success!")
 	}
 	println("------------------------------------------------------------------- Boradcast! \n")
+
+	tx := &core.Transaction{}
+	txRawBytes, _ := hex.DecodeString(txRaw)
+	proto.Unmarshal(txRawBytes, tx)
+	txIDBytes, _ := getTxHash(tx)
+	txID := hex.EncodeToString(txIDBytes)
+
+	for i := 0; i < 1000; i++ {
+
+		_, isSuccess, _ := tw.GetTransactionByID(txID)
+		fmt.Println("Is Success: ", isSuccess)
+		fmt.Println("")
+
+		if isSuccess {
+			return
+		}
+
+		time.Sleep(time.Second * 1)
+	}
+
 }

@@ -16,7 +16,6 @@
 package tron
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -25,8 +24,7 @@ func TestGetNowBlock(t *testing.T) {
 	if r, err := tw.GetNowBlock(); err != nil {
 		t.Errorf("GetNowBlock failed: %v\n", err)
 	} else {
-		// t.Logf("GetNowBlock return: \n\t%+v\n", r.GetBlockHeader().GetRawData().GetNumber())
-		// t.Logf("GetNowBlock return: \n\t%+v\n", r)
+		t.Logf("GetNowBlock return: \n\t%+v\n", r)
 
 		printBlock(r)
 	}
@@ -38,6 +36,10 @@ func TestGetNowBlockID(t *testing.T) {
 		t.Errorf("GetNowBlock failed: %v\n", err)
 	} else {
 		t.Logf("GetNowBlock return: \n\t%+v\n", r)
+
+		if r == "" {
+			t.Errorf("GetNowBlock failed: %v\n", "Data Invalid!")
+		}
 	}
 }
 
@@ -55,9 +57,7 @@ func TestGetBlockByNum(t *testing.T) {
 
 func TestGetBlockByID(t *testing.T) {
 
-	var blockID string
-	blockID = "fdd9227774d977151d3c59ca9fb552c732aeed589f2dc807b56cd17cddb429d6"
-	blockID = "0000000000341190edc6eb2c61e2efd0b6c45177962b43cd13c0cd32da62cc0e"
+	var blockID string = "0000000000341190edc6eb2c61e2efd0b6c45177962b43cd13c0cd32da62cc0e"
 
 	if r, err := tw.GetBlockByID(blockID); err != nil {
 		t.Errorf("GetBlockByID failed: %v\n", err)
@@ -102,34 +102,4 @@ func TestGetBlockByLatestNum(t *testing.T) {
 			printBlock(v)
 		}
 	}
-}
-
-func TestGenBlockHash(t *testing.T) {
-	var blockHeight uint64
-	var blockID string
-	// var block *core.Block
-
-	blockHeight = 3412368
-	blockID = "0000000000341190edc6eb2c61e2efd0b6c45177962b43cd13c0cd32da62cc0e"
-	if r, err := tw.GetBlockByNum(blockHeight); err != nil {
-		t.Errorf("GenBlockHash failed: %v\n", err)
-		return
-	} else {
-		pBlockID := tw.GenBlockID(r)
-		fmt.Println("True to BlockID: ", blockID)
-		fmt.Println("Predict BlockID: ", pBlockID)
-	}
-
-	blockHeight = 3412367
-	blockID = "000000000034118fa1085f5f5e33f8c76b9479aae42d09ba6b30a47a5f788358"
-	if r, err := tw.GetBlockByNum(blockHeight); err != nil {
-		t.Errorf("GenBlockHash failed: %v\n", err)
-		return
-	} else {
-		r.GetBlockHeader().GetRawData()
-		pBlockID := tw.GenBlockID(r)
-		fmt.Println("True to BlockID: ", blockID)
-		fmt.Println("Predict BlockID: ", pBlockID)
-	}
-
 }

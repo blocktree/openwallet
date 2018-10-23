@@ -25,6 +25,7 @@ import (
 
 	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
 	"github.com/blocktree/go-OWCrypt"
+	"github.com/shopspring/decimal"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -41,7 +42,7 @@ func getTxHash(tx *core.Transaction) (txHash []byte, err error) {
 	return txHash, err
 }
 
-// Done
+// Done!
 // Function: Create a transaction
 //
 // Java Reference:
@@ -168,6 +169,7 @@ func (wm *WalletManager) CreateTransactionRef(to_address, owner_address string, 
 	return txRawHex, nil
 }
 
+// Done!
 // public static Transaction sign(Transaction transaction, ECKey myKey) {
 // 	Transaction.Builder transactionBuilderSigned = transaction.toBuilder();
 //
@@ -230,6 +232,7 @@ func (wm *WalletManager) SignTransactionRef(txRawhex string, privateKey string) 
 
 }
 
+// Done!
 //   /*
 //    * 1. check hash
 //    * 2. check double spent
@@ -329,8 +332,9 @@ func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
 	return nil
 }
 
-func (wm *WalletManager) BroadcastTransactionRef(signature, txID, raw_data string) error {
-	return nil
+//SendTransaction 发送交易
+func (wm *WalletManager) SendTransaction(walletID, to string, amount decimal.Decimal, password string, feesInSender bool) ([]string, error) {
+	return nil, nil
 }
 
 // ------------------------------------------------------------------------------------------------------

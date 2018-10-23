@@ -25,6 +25,10 @@ func TestCreateAddress(t *testing.T) {
 		t.Errorf("CreateAddress failed: %v\n", err)
 	} else {
 		t.Logf("CreateAddress return: \n\t%+v\n", r)
+
+		if r.Get("base58checkAddress").String() != "TWwv3YcHJ1NfMemQSmXCPY48RR1tsY3n9N" || r.Get("value").String() != "41e61c1205ee029fb4e41f294afd448cc5d578c8ef" {
+			t.Errorf("CreateAddress failed: %v\n", "Data Invalid!")
+		}
 	}
 }
 
@@ -39,13 +43,11 @@ func TestGenerateAddress(t *testing.T) {
 
 func TestValidateAddress(t *testing.T) {
 
-	var addr string = "4189139CB1387AF85E3D24E212A008AC974967E561"
-	addr = OWNERADDRESS
-	// addr = "TUZYMxXwwnX77rQvmP3RMwm3RhfBJ7bovV"
+	var addr string = OWNERADDRESS
 
 	if err := tw.ValidateAddress(addr); err != nil {
 		t.Errorf("ValidateAddress failed: %v\n", err)
 	} else {
-		t.Logf("ValidateAddress return: \n\t%+v\n", "success!")
+		t.Logf("ValidateAddress return: \n\t%+v\n", "Success!")
 	}
 }
