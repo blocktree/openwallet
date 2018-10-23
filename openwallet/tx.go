@@ -162,6 +162,15 @@ type Recharge struct {
 	Delete      bool
 }
 
+//GenRechargeSID
+func GenRechargeSID(txid string, coinsymbol string, contractId string, n uint64, prefix string) string{
+	//txid := tx.TxID
+	symbol := coinsymbol + "_" + contractId
+	plain := fmt.Sprintf("%s_%s_%s_%d", prefix, txid, symbol, n)
+	sid := base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(plain)))
+	return sid
+}
+
 // TxInput 交易输入，则出账记录
 type TxInput struct {
 	//SourceTxID和SourceIndex是utxo模型上的上一个交易输入源，account模型不需要填
@@ -170,10 +179,18 @@ type TxInput struct {
 	Recharge    `storm:"inline"`
 }
 
+func GenTxInputSID(txid string, coinsymbol string, contractId string, n uint64) string{
+	return GenRechargeSID(txid, coinsymbol, contractId, n, "input")
+}
+
 // TxOutPut 交易输出，则到账记录
 type TxOutPut struct {
 	Recharge `storm:"inline"`
 	ExtParam string //扩展参数，用于记录utxo的解锁字段，json格式
+}
+
+func GenTxOutPutSID(txid string, coinsymbol string, contractId string, n uint64) string{
+	return GenRechargeSID(txid, coinsymbol, contractId, n, "output")
 }
 
 //SetExtParam

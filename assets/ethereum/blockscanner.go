@@ -894,7 +894,7 @@ func (this *ETHBLockScanner) TransactionScanning(tx *BlockTransaction) (*Extract
 		log.Errorf("GetErc20TokenEvent failed, err=%v", err)
 		return nil, err
 	}
-	log.Debugf("get token Event:%v", tokenEvent)
+	//log.Debugf("get token Event:%v", tokenEvent)
 
 	FromSourceKey, fromExtractDataList, err := this.MakeFromExtractData(tx, tokenEvent)
 	if err != nil {

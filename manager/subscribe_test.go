@@ -69,8 +69,15 @@ func (sub *subscriberSingle) BlockScanNotify(header *openwallet.BlockHeader) err
 //BlockTxExtractDataNotify 区块提取结果通知
 func (sub *subscriberSingle) BlockExtractDataNotify(sourceKey string, data *openwallet.TxExtractData) error {
 	log.Notice("account:", sourceKey)
-	log.Std.Notice("data.TxInputs: %+v", data.TxInputs)
-	log.Std.Notice("data.TxOutputs: %+v", data.TxOutputs)
+
+	for i, input := range data.TxInputs {
+		log.Std.Notice("data.TxInputs[%d]: %+v", i, input)
+	}
+
+	for i, output := range data.TxOutputs {
+		log.Std.Notice("data.TxOutputs[%d]: %+v", i, output)
+	}
+
 	log.Std.Notice("data.Transaction: %+v", data.Transaction)
 	return nil
 }
