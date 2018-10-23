@@ -21,8 +21,8 @@ import (
 	"strconv"
 	"github.com/shopspring/decimal"
 	"github.com/blocktree/OpenWallet/common"
+	"github.com/blocktree/OpenWallet/openwallet"
 )
-
 
 func Test_addressTo32bytesArg(t *testing.T) {
 	address := "qdphfFinfJutJFvtnr2UaCwNAMxC3HbVxa"
@@ -81,5 +81,30 @@ func Test_QRC20Transfer(t *testing.T) {
 		t.Errorf("QRC20Transfer failed unexpected error: %v\n", err)
 	}else {
 		t.Logf("QRC20Transfer = %s\n", result)
+	}
+}
+
+func Test_GetTokenBalanceByAddress(t *testing.T) {
+	contract := openwallet.SmartContract{
+		Address: "91a6081095ef860d28874c9db613e7a4107b0281",
+	}
+	addrs := []string{
+		"qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP",
+		"qQLYQn7vCAU8irPEeqjZ3rhFGLnS5vxVy8",
+		"qMXS1YFtA5qr2UfhcDMthTCK6hWhJnzC47",
+		"qJq5GbHeaaNbi6Bs5QCbuCZsZRXVWPoG1k",
+	}
+	balanceList, err := tw.GetTokenBalanceByAddress(contract, addrs...)
+	if err != nil {
+		t.Errorf("get token balance by address failed, err=%v", err)
+		return
+	}
+
+	//输出json格式
+	//objStr, _ := json.MarshalIndent(balanceList, "", " ")
+	//t.Logf("balance list:%v", string(objStr))
+
+	for i:=0; i<len(balanceList); i++ {
+		t.Logf("%s: %s\n",addrs[i], balanceList[i].Balance.ConfirmBalance)
 	}
 }

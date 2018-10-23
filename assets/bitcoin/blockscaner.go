@@ -16,12 +16,10 @@
 package bitcoin
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/common"
-	"github.com/blocktree/OpenWallet/crypto"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/graarh/golang-socketio"
@@ -667,7 +665,8 @@ func (bs *BTCBlockScanner) extractTxInput(trx *Transaction, result *ExtractResul
 				IsContract: false,
 			}
 			input.Index = output.N
-			input.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", result.TxID, i, addr))))
+			input.Sid = openwallet.GenTxInputSID(txid, bs.wm.Symbol(), "", uint64(i))
+			//input.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", result.TxID, i, addr))))
 			input.CreateAt = createAt
 			//在哪个区块高度时消费
 			input.BlockHeight = trx.BlockHeight
@@ -729,7 +728,8 @@ func (bs *BTCBlockScanner) extractTxOutput(trx *Transaction, result *ExtractResu
 				IsContract: false,
 			}
 			outPut.Index = n
-			outPut.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("output_%s_%d_%s", txid, n, addr))))
+			outPut.Sid = openwallet.GenTxOutPutSID(txid, bs.wm.Symbol(), "", n)
+			//outPut.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("output_%s_%d_%s", txid, n, addr))))
 
 			//保存utxo到扩展字段
 			outPut.SetExtParam("scriptPubKey", output.ScriptPubKey)
