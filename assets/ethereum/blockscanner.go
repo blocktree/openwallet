@@ -551,7 +551,7 @@ func (this *ETHBLockScanner) MakeSimpleToExtractData(tx *BlockTransaction) (stri
 
 	balanceTxOut := openwallet.TxOutPut{
 		Recharge: openwallet.Recharge{
-			Sid:      base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tx.To)))),
+			Sid:      openwallet.GenTxOutPutSID(tx.Hash, this.wm.Symbol(), "", 0), //base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tx.To)))),
 			CreateAt: nowUnix,
 			TxID:     tx.Hash,
 			Address:  tx.To,
@@ -627,7 +627,7 @@ func (this *ETHBLockScanner) MakeTokenToExtractData(tx *BlockTransaction, tokenE
 
 	tokenBalanceTxOutput := openwallet.TxOutPut{
 		Recharge: openwallet.Recharge{
-			Sid:         base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tokenEvent.TokenTo)))),
+			Sid:         openwallet.GenTxOutPutSID(tx.Hash, this.wm.Symbol(), contractId, 0), //base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tokenEvent.TokenTo)))),
 			CreateAt:    nowUnix,
 			TxID:        tx.Hash,
 			Address:     tokenEvent.TokenTo,
@@ -697,7 +697,7 @@ func (this *ETHBLockScanner) MakeSimpleTxFromExtractData(tx *BlockTransaction) (
 
 	deductTxInput := openwallet.TxInput{
 		Recharge: openwallet.Recharge{
-			Sid:      base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tx.From)))),
+			Sid:      openwallet.GenTxInputSID(tx.Hash, this.wm.Symbol(), "", 0), //base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tx.From)))),
 			CreateAt: nowUnix,
 			TxID:     tx.Hash,
 			Address:  tx.From,
@@ -713,7 +713,7 @@ func (this *ETHBLockScanner) MakeSimpleTxFromExtractData(tx *BlockTransaction) (
 
 	feeTxInput := openwallet.TxInput{
 		Recharge: openwallet.Recharge{
-			Sid:      base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tx.From)))),
+			Sid:      openwallet.GenTxInputSID(tx.Hash, this.wm.Symbol(), "", 1), //base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tx.From)))),
 			CreateAt: nowUnix,
 			TxID:     tx.Hash,
 			Address:  tx.From,
@@ -791,7 +791,7 @@ func (this *ETHBLockScanner) MakeTokenTxFromExtractData(tx *BlockTransaction, to
 
 	deductTxInput := openwallet.TxInput{
 		Recharge: openwallet.Recharge{
-			Sid:         base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tx.From)))),
+			Sid:         openwallet.GenTxInputSID(tx.Hash, this.wm.Symbol(), contractId, 0), //base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tx.From)))),
 			CreateAt:    nowUnix,
 			TxID:        tx.Hash,
 			Address:     tx.From,
@@ -828,7 +828,7 @@ func (this *ETHBLockScanner) MakeTokenTxFromExtractData(tx *BlockTransaction, to
 
 	feeTxInput := openwallet.TxInput{
 		Recharge: openwallet.Recharge{
-			Sid:      base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tokenEvent.TokenFrom)))),
+			Sid:      openwallet.GenTxInputSID(tx.Hash, this.wm.Symbol(), "", 0), //base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tokenEvent.TokenFrom)))),
 			CreateAt: nowUnix,
 			TxID:     tx.Hash,
 			Address:  tx.From,
