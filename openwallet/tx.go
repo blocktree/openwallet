@@ -123,13 +123,24 @@ type Transaction struct {
 }
 
 //GenTransactionWxID 生成交易单的WxID，格式为 base64(sha1(tx_{txID}_{symbol}_contractID}))
-func GenTransactionWxID(tx *Transaction) string {
-	txid := tx.TxID
-	symbol := tx.Coin.Symbol + "_" + tx.Coin.ContractID
+
+func GenTransactionWxID2(txid string, coinsymbol string, contractId string) string{
+	//txid := tx.TxID
+	symbol := coinsymbol + "_" + contractId
 	plain := fmt.Sprintf("tx_%s_%s", txid, symbol)
 	log.Debug("wxID plain:", plain)
 	wxid := base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(plain)))
 	return wxid
+}
+
+func GenTransactionWxID(tx *Transaction) string {
+	//txid := tx.TxID
+	//symbol := tx.Coin.Symbol + "_" + tx.Coin.ContractID
+	//plain := fmt.Sprintf("tx_%s_%s", txid, symbol)
+	//log.Debug("wxID plain:", plain)
+	//wxid := base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(plain)))
+	//return wxid
+	return GenTransactionWxID2(tx.TxID, tx.Coin.Symbol, tx.Coin.ContractID)
 }
 
 type Recharge struct {
