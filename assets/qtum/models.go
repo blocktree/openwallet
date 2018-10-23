@@ -272,7 +272,7 @@ func NewUnscanRecord(height uint64, txID, reason string) *UnscanRecord {
 */
 //}
 
-type QRC20Unspent struct{
+type QRC20Unspent struct {
 
 	/*
 		{
@@ -301,10 +301,10 @@ type QRC20Unspent struct{
 		}
 	*/
 
-	Key           string `storm:"id"`
-	Address       string `json:"address"`
-	GasUsed       string `json:"gasUsed"`
-	Output        string `json:"output"`
+	Key     string `storm:"id"`
+	Address string `json:"address"`
+	GasUsed string `json:"gasUsed"`
+	Output  string `json:"output"`
 	//HDAddress     openwallet.Address
 
 }
@@ -319,22 +319,23 @@ func NewQRC20Unspent(json *gjson.Result) *QRC20Unspent {
 	return obj
 }
 
-
 type Transaction struct {
-	TxID          string
-	Size          uint64
-	Version       uint64
-	LockTime      int64
-	Hex           string
-	BlockHash     string
-	BlockHeight   uint64
-	Confirmations uint64
-	Blocktime     int64
-	IsCoinBase    bool
-	Fees          string
+	TxID            string
+	Size            uint64
+	Version         uint64
+	LockTime        int64
+	Hex             string
+	BlockHash       string
+	BlockHeight     uint64
+	Confirmations   uint64
+	Blocktime       int64
+	IsCoinBase      bool
+	Fees            string
+	Isqrc20Transfer bool
 
-	Vins  []*Vin
-	Vouts []*Vout
+	Vins          []*Vin
+	Vouts         []*Vout
+	TokenReceipts []*TokenReceipt
 }
 
 type Vin struct {
@@ -352,6 +353,20 @@ type Vout struct {
 	Value        string
 	ScriptPubKey string
 	Type         string
+}
+
+type TokenReceipt struct {
+
+	TxHash            string
+	BlockHash       string
+	BlockHeight     uint64
+	Sender string
+	From string
+	To string
+	GasUsed uint64
+	ContractAddress string
+	Excepted string
+	Amount string
 }
 
 func newTxByCore(json *gjson.Result, isTestnet bool) *Transaction {
