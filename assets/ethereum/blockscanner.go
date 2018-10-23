@@ -625,6 +625,12 @@ func (this *ETHBLockScanner) MakeTokenToExtractData(tx *BlockTransaction, tokenE
 		},
 	}
 
+	tokenValue, err := ConvertToBigInt(tokenEvent.Value, 16)
+	if err != nil {
+		log.Errorf("convert token value to big.int failed, err=%v", err)
+		return "", extractDataList, err
+	}
+
 	tokenBalanceTxOutput := openwallet.TxOutPut{
 		Recharge: openwallet.Recharge{
 			Sid:         openwallet.GenTxOutPutSID(tx.Hash, this.wm.Symbol(), contractId, 0), //base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tokenEvent.TokenTo)))),
@@ -632,7 +638,7 @@ func (this *ETHBLockScanner) MakeTokenToExtractData(tx *BlockTransaction, tokenE
 			TxID:        tx.Hash,
 			Address:     tokenEvent.TokenTo,
 			Coin:        coin,
-			Amount:      tokenEvent.Value,
+			Amount:      tokenValue.String(),
 			BlockHash:   tx.BlockHash,
 			BlockHeight: tx.BlockHeight,
 		},
@@ -789,6 +795,12 @@ func (this *ETHBLockScanner) MakeTokenTxFromExtractData(tx *BlockTransaction, to
 		return "", extractDataList, err
 	}
 
+	tokenValue, err := ConvertToBigInt(tokenEvent.Value, 16)
+	if err != nil {
+		log.Errorf("convert token value to big.int failed, err=%v", err)
+		return "", extractDataList, err
+	}
+
 	deductTxInput := openwallet.TxInput{
 		Recharge: openwallet.Recharge{
 			Sid:         openwallet.GenTxInputSID(tx.Hash, this.wm.Symbol(), contractId, 0), //base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tx.From)))),
@@ -796,7 +808,7 @@ func (this *ETHBLockScanner) MakeTokenTxFromExtractData(tx *BlockTransaction, to
 			TxID:        tx.Hash,
 			Address:     tx.From,
 			Coin:        coin,
-			Amount:      tokenEvent.Value,
+			Amount:      tokenValue.String(),
 			BlockHash:   tx.BlockHash,
 			BlockHeight: tx.BlockHeight,
 		},
