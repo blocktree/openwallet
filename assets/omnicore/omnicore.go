@@ -508,7 +508,7 @@ func (wm *WalletManager) GetAddressDecode() openwallet.AddressDecoder {
 }
 
 //TransactionDecoder 交易单解析器
-func (wm *WalletManager) GetTransactionDecoder() openwallet.TransactionDecoder {
+func (wm *WalletManager) GetTransactionDecoder() *TransactionDecoder {
 	return wm.TxDecoder
 }
 
