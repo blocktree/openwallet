@@ -24,8 +24,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blocktree/OpenWallet/crypto"
-
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
@@ -34,7 +32,7 @@ import (
 	"errors"
 
 	//	"golang.org/x/text/currency"
-	"encoding/base64"
+
 	"fmt"
 )
 
@@ -509,6 +507,26 @@ func (this *WalletManager) GetErc20TokenEvent(transactionID string) (*TransferEv
 	return transEvent, nil
 }
 
+func (this *ETHBLockScanner) UpdateTxByReceipt(tx *BlockTransaction) (*TransferEvent, error) {
+	//过滤掉未打包交易
+	if tx.BlockHeight == 0 || tx.BlockHash == "" {
+		return nil, nil
+	}
+
+	receipt, err := this.wm.WalletClient.ethGetTransactionReceipt(tx.Hash)
+	if err != nil {
+		log.Errorf("get transaction receipt failed, err=%v", err)
+		return nil, err
+	}
+
+	tx.Gas = receipt.GasUsed
+	// transEvent := receipt.ParseTransferEvent()
+	// if transEvent == nil {
+	// 	return nil, nil
+	// }
+	return receipt.ParseTransferEvent(), nil
+}
+
 func (this *ETHBLockScanner) GetErc20TokenEvent(tx *BlockTransaction) (*TransferEvent, error) {
 	//非合约交易或未打包交易跳过
 	//obj, _ := json.MarshalIndent(tx, "", " ")
@@ -611,7 +629,7 @@ func (this *ETHBLockScanner) MakeTokenToExtractData(tx *BlockTransaction, tokenE
 	// 	return "", extractDataList, err
 	// }
 
-	contractId := base64.StdEncoding.EncodeToString(crypto.SHA256([]byte(fmt.Sprintf("{%v}_{%v}", this.wm.Symbol(), tx.To))))
+	contractId := openwallet.GenContractID(this.wm.Symbol(), tx.To) //base64.StdEncoding.EncodeToString(crypto.SHA256([]byte(fmt.Sprintf("{%v}_{%v}", this.wm.Symbol(), tx.To))))
 	nowUnix := time.Now().Unix()
 
 	coin := openwallet.Coin{
@@ -775,7 +793,7 @@ func (this *ETHBLockScanner) MakeTokenTxFromExtractData(tx *BlockTransaction, to
 		return "", extractDataList, nil
 	}
 
-	contractId := base64.StdEncoding.EncodeToString(crypto.SHA256([]byte(fmt.Sprintf("{%v}_{%v}", this.wm.Symbol(), tx.To))))
+	contractId := openwallet.GenContractID(this.wm.Symbol(), tx.To) //base64.StdEncoding.EncodeToString(crypto.SHA256([]byte(fmt.Sprintf("{%v}_{%v}", this.wm.Symbol(), tx.To))))
 	nowUnix := time.Now().Unix()
 
 	coin := openwallet.Coin{
@@ -901,9 +919,9 @@ func (this *ETHBLockScanner) TransactionScanning(tx *BlockTransaction) (*Extract
 		Success:     true,
 	}
 
-	tokenEvent, err := this.GetErc20TokenEvent(tx)
+	tokenEvent, err := this.UpdateTxByReceipt(tx)
 	if err != nil {
-		log.Errorf("GetErc20TokenEvent failed, err=%v", err)
+		log.Errorf("UpdateTxByReceipt failed, err=%v", err)
 		return nil, err
 	}
 	//log.Debugf("get token Event:%v", tokenEvent)
