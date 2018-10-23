@@ -52,8 +52,10 @@ func (wm *WalletManager) GetNowBlock() (block *core.Block, err error) {
 
 	if timestamp < currstamp-(5*1000) {
 		log.Warningf(fmt.Sprintf("Get block timestamp: %d [%+v]", timestamp, time.Unix(timestamp/1000, 0)))
+		log.Warningf(fmt.Sprintf("Current d timestamp: %d [%+v]", currstamp, time.Unix(currstamp/1000, 0)))
+		log.Warningf("Diff seconds: %ds ", (currstamp-timestamp)/1000)
 	}
-	if timestamp < currstamp-(1*60*60*1000) {
+	if timestamp < currstamp-(5*60*1000) {
 		log.Error(fmt.Sprintf("Get block timestamp: %d [%+v]", timestamp, time.Unix(timestamp/1000, 0)))
 		// log.Error(fmt.Sprintf("Current d timestamp: %d [%+v]", currstamp, time.Unix(currstamp/1000, 0)))
 		log.Error(fmt.Sprintf("Now block height: %d", block.GetBlockHeader().GetRawData().GetNumber()))
@@ -63,7 +65,26 @@ func (wm *WalletManager) GetNowBlock() (block *core.Block, err error) {
 	return block, nil
 }
 
-// Done
+// Done!
+func (wm *WalletManager) GetNowBlockID() (blockID string, err error) {
+
+	// url := "https://api.trongrid.io/wallet/getnowblock"
+	// authHeader := req.Header{"Accept": "application/json"}
+
+	r, err := wm.WalletClient.Call("/wallet/getnowblock", nil)
+	if err != nil {
+		return "", err
+	}
+
+	blockID = gjson.ParseBytes(r).Get("blockID").String()
+	if blockID == "" {
+		return "", errors.New("No found!")
+	}
+
+	return blockID, nil
+}
+
+// Done!
 // Function：Query block by height
 // 	demo: curl -X POST http://127.0.0.1:8090/wallet/getblockbynum -d ‘
 // 		{“num” : 100}’
@@ -87,7 +108,7 @@ func (wm *WalletManager) GetBlockByNum(num uint64) (block *core.Block, error err
 	return block, nil
 }
 
-// Writing! Always return none?
+// Done!
 // Function：Query block by ID
 // 	demo: curl -X POST http://127.0.0.1:8090/wallet/getblockbyid -d ‘
 // 		{“value”: “0000000000038809c59ee8409a3b6c051e369ef1096603c7ee723c16e2376c73”}’
@@ -95,7 +116,6 @@ func (wm *WalletManager) GetBlockByNum(num uint64) (block *core.Block, error err
 // Return value：Block Object
 func (wm *WalletManager) GetBlockByID(blockID string) (block *core.Block, err error) {
 
-	// request := req.Param{"value": base64.StdEncoding.EncodeToString([]byte(blockID))}
 	request := req.Param{"value": blockID}
 	r, err := wm.WalletClient.Call("/wallet/getblockbyid", request)
 	if err != nil {
@@ -107,11 +127,14 @@ func (wm *WalletManager) GetBlockByID(blockID string) (block *core.Block, err er
 		return nil, err
 	}
 
-	fmt.Println("XDM = ", block)
+	if block.GetBlockHeader().GetRawData().GetNumber() <= 0 {
+		return nil, errors.New("No found!")
+	}
+
 	return block, nil
 }
 
-// Done
+// Done!
 // Function：Query a range of blocks by block height
 // 	demo: curl -X POST http://127.0.0.1:8090/wallet/getblockbylimitnext -d ‘
 // 		{“startNum”: 1, “endNum”: 2}’
@@ -139,7 +162,7 @@ func (wm *WalletManager) GetBlockByLimitNext(startNum, endNum uint64) (blocks *a
 	return blocks, nil
 }
 
-// Done
+// Done!
 // Function：Query the latest blocks
 // 	demo: curl -X POST http://127.0.0.1:8090/wallet/getblockbylatestnum -d ‘
 // 		{“num”: 5}’
@@ -177,19 +200,13 @@ func printBlock(block *core.Block) {
 	fmt.Println("Transactions:")
 	if block.Transactions != nil {
 		for i, tx := range block.Transactions {
-			// sign0 := ""
-			if tx.Signature != nil {
-				// sign0 = hex.EncodeToString(tx.Signature[0])
-			}
 			fmt.Printf("\t tx%2d: <BlockBytes=%v, BlockNum=%v, BlockHash=%+v, Contact=%v, Signature_len=%v>\n", i+1, tx.RawData.RefBlockBytes, tx.RawData.RefBlockNum, hex.EncodeToString(tx.RawData.RefBlockHash), tx.RawData.Contract, len(tx.Signature))
-			// fmt.Printf("\t tx%2d=<%v> \n", i+1, tx)
 		}
 	}
 
 	fmt.Println("Block Header:")
 	if block.BlockHeader != nil {
 		fmt.Printf("\tRawData: <Number=%v, timestamp=%v, ParentHash=%v> \n", block.BlockHeader.RawData.Number, time.Unix(block.GetBlockHeader().GetRawData().GetTimestamp()/1000, 0), hex.EncodeToString(block.BlockHeader.RawData.ParentHash))
-		// fmt.Printf("\t <%+v> \n", block.BlockHeader)
 	}
 
 	fmt.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")

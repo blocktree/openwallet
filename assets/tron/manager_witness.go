@@ -21,7 +21,13 @@ import (
 	"github.com/tronprotocol/grpc-gateway/api"
 )
 
-// wallet/listwitnesses Function：Query the list of Super Representatives demo: curl -X POSThttp://127.0.0.1:8090/wallet/listwitnesses Parameters：None Return value：List of all Super Representatives
+// Done!
+// Function：
+// 	Query the list of Super Representatives
+// demo:
+// 	curl -X POSThttp://127.0.0.1:8090/wallet/listwitnesses
+// Parameters：None
+// Return value：List of all Super Representatives
 func (wm *WalletManager) ListWitnesses() (witnesses *api.WitnessList, err error) {
 
 	r, err := wm.WalletClient.Call("/wallet/listwitnesses", nil)
@@ -37,9 +43,11 @@ func (wm *WalletManager) ListWitnesses() (witnesses *api.WitnessList, err error)
 	return witnesses, nil
 }
 
-// wallet/listnodes
-// Function：List the nodes which the api fullnode is connecting on the network
-// demo: curl -X POST http://127.0.0.1:8090/wallet/listnodes
+// Done!
+// Function：
+// 	List the nodes which the api fullnode is connecting on the network
+// demo:
+// 	curl -X POST http://127.0.0.1:8090/wallet/listnodes
 // Parameters：None
 // Return value：List of nodes
 func (wm *WalletManager) ListNodes() (nodes *api.NodeList, err error) {

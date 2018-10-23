@@ -24,15 +24,27 @@ func TestGetNowBlock(t *testing.T) {
 	if r, err := tw.GetNowBlock(); err != nil {
 		t.Errorf("GetNowBlock failed: %v\n", err)
 	} else {
-		// t.Logf("GetNowBlock return: \n\t%+v\n", r.GetBlockHeader().GetRawData().GetNumber())
-		// t.Logf("GetNowBlock return: \n\t%+v\n", r)
+		t.Logf("GetNowBlock return: \n\t%+v\n", r)
 
 		printBlock(r)
 	}
 }
 
+func TestGetNowBlockID(t *testing.T) {
+
+	if r, err := tw.GetNowBlockID(); err != nil {
+		t.Errorf("GetNowBlock failed: %v\n", err)
+	} else {
+		t.Logf("GetNowBlock return: \n\t%+v\n", r)
+
+		if r == "" {
+			t.Errorf("GetNowBlock failed: %v\n", "Data Invalid!")
+		}
+	}
+}
+
 func TestGetBlockByNum(t *testing.T) {
-	var num uint64 = 237 * 10000
+	var num uint64 = 3412368
 
 	if r, err := tw.GetBlockByNum(num); err != nil {
 		t.Errorf("GetBlockByNum failed: %v\n", err)
@@ -45,7 +57,7 @@ func TestGetBlockByNum(t *testing.T) {
 
 func TestGetBlockByID(t *testing.T) {
 
-	var blockID string = "fdd9227774d977151d3c59ca9fb552c732aeed589f2dc807b56cd17cddb429d6"
+	var blockID string = "0000000000341190edc6eb2c61e2efd0b6c45177962b43cd13c0cd32da62cc0e"
 
 	if r, err := tw.GetBlockByID(blockID); err != nil {
 		t.Errorf("GetBlockByID failed: %v\n", err)
@@ -53,6 +65,13 @@ func TestGetBlockByID(t *testing.T) {
 		t.Logf("GetBlockByID return: \n\t%+v\n", r)
 
 		printBlock(r)
+	}
+
+	blockID = "0000000000341190edc6eb2c61e2efd0b6c45177962b43cd13c0cd32da62cc0a" // Error ID
+	if r, err := tw.GetBlockByID(blockID); err != nil {
+		t.Logf("GetBlockByID return: \n\t%+v\n", r)
+	} else {
+		t.Errorf("GetBlockByID failed: %v\n", err)
 	}
 }
 
@@ -63,7 +82,6 @@ func TestGetBlockByLimitNext(t *testing.T) {
 	if r, err := tw.GetBlockByLimitNext(startSum, endSum); err != nil {
 		t.Errorf("GetBlockByLimitNext failed: %v\n", err)
 	} else {
-		// t.Logf("GetBlockByLimitNext return: \n\t%+v\n", r)
 
 		for _, v := range r.Block {
 			printBlock(v)
