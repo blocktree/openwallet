@@ -16,8 +16,11 @@
 package qtum
 
 import (
+	"encoding/hex"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
 	"github.com/graarh/golang-socketio"
 	"github.com/graarh/golang-socketio/transport"
 	"net/url"
@@ -36,7 +39,7 @@ func TestGetBlockHeightByExplorer(t *testing.T) {
 }
 
 func TestGetBlockHashByExplorer(t *testing.T) {
-	hash, err := tw.getBlockHashByExplorer(1434016)
+	hash, err := tw.getBlockHashByExplorer(249798)
 	if err != nil {
 		t.Errorf("getBlockHashByExplorer failed unexpected error: %v\n", err)
 		return
@@ -45,7 +48,7 @@ func TestGetBlockHashByExplorer(t *testing.T) {
 }
 
 func TestGetBlockByExplorer(t *testing.T) {
-	block, err := tw.getBlockByExplorer("0000000000002bd2475d1baea1de4067ebb528523a8046d5f9d8ef1cb60460d3")
+	block, err := tw.getBlockByExplorer("42f358f456a7544bbc9d6cf694c4183e2049456da7f06ad9f475fe12757aefe9")
 	if err != nil {
 		t.Errorf("GetBlock failed unexpected error: %v\n", err)
 		return
@@ -54,7 +57,7 @@ func TestGetBlockByExplorer(t *testing.T) {
 }
 
 func TestListUnspentByExplorer(t *testing.T) {
-	list, err := tw.listUnspentByExplorer("msHemmfSZ3au6h9S1annGcTGrTVryRbSFV")
+	list, err := tw.listUnspentByExplorer("QUZMTeBQaChsqPbNsTH5ZxsqF3B4Hi3NCe")
 	if err != nil {
 		t.Errorf("listUnspentByExplorer failed unexpected error: %v\n", err)
 		return
@@ -66,7 +69,9 @@ func TestListUnspentByExplorer(t *testing.T) {
 }
 
 func TestGetTransactionByExplorer(t *testing.T) {
-	raw, err := tw.getTransactionByExplorer("363d0901dea159acbba535b20e300148cb712d99684da0541e0832b60fb10250")
+	//5aa478590ea82d3b6a308bdf5af0753caeab0aefefeb4f88a088c15fe305f59b
+	//eb8e496f7dd23554d6d45de30beab384c8e0d023c9c7f1fbc15d90d10bb873f8
+	raw, err := tw.getTransactionByExplorer("eb8e496f7dd23554d6d45de30beab384c8e0d023c9c7f1fbc15d90d10bb873f8")
 	if err != nil {
 		t.Errorf("getTransactionByExplorer failed unexpected error: %v\n", err)
 		return
@@ -75,7 +80,7 @@ func TestGetTransactionByExplorer(t *testing.T) {
 }
 
 func TestGetBalanceByExplorer(t *testing.T) {
-	raw, err := tw.getBalanceByExplorer("2N1GguXdTZb7fG2axJnAMUsy3ueWL7YSPHM ")
+	raw, err := tw.getBalanceByExplorer("QUZMTeBQaChsqPbNsTH5ZxsqF3B4Hi3NCe ")
 	if err != nil {
 		t.Errorf("getBalanceByExplorer failed unexpected error: %v\n", err)
 		return
@@ -84,7 +89,7 @@ func TestGetBalanceByExplorer(t *testing.T) {
 }
 
 func TestGetMultiAddrTransactionsByExplorer(t *testing.T) {
-	list, err := tw.getMultiAddrTransactionsByExplorer(0, 15, "2N7Mh6PLX39japSF76r2MAf7wT7WKU5TdpK")
+	list, err := tw.getMultiAddrTransactionsByExplorer(0, 15, "QUZMTeBQaChsqPbNsTH5ZxsqF3B4Hi3NCe")
 	if err != nil {
 		t.Errorf("getMultiAddrTransactionsByExplorer failed unexpected error: %v\n", err)
 		return
@@ -95,11 +100,10 @@ func TestGetMultiAddrTransactionsByExplorer(t *testing.T) {
 
 }
 
-
 func TestSocketIO(t *testing.T) {
 
 	var (
-		room = "inv"
+		room       = "inv"
 		endRunning = make(chan bool, 1)
 	)
 
@@ -139,7 +143,7 @@ func TestSocketIO(t *testing.T) {
 		return
 	}
 
-	<- endRunning
+	<-endRunning
 }
 
 func TestEstimateFeeRateByExplorer(t *testing.T) {
@@ -158,4 +162,34 @@ func TestURLParse(t *testing.T) {
 	domain := apiUrl.Hostname()
 	port := common.NewString(apiUrl.Port()).Int()
 	t.Logf("%s : %d", domain, port)
+}
+
+func TestContractBaseAddress(t *testing.T) {
+	addrToHash, err := addressEncoder.AddressDecode("QQCf96PCyonzmpDHWqafP86XmenwMPunk9", addressEncoder.QTUM_mainnetAddressP2PKH)
+	if err != nil {
+		t.Errorf("ContractBaseAddress failed unexpected error: %v\n", err)
+		return
+	}
+
+	t.Logf("hash = %s", hex.EncodeToString(addrToHash))
+
+	hash, _ := hex.DecodeString("f2033ede578e17fa6231047265010445bca8cf1c")
+	hexToAddr := addressEncoder.AddressEncode(hash, addressEncoder.QTUM_mainnetAddressP2PKH)
+
+	t.Logf("addr = %s", hexToAddr)
+}
+
+func TestGetAddressTokenBalanceByExplorer(t *testing.T) {
+	token := openwallet.SmartContract{
+		ContractID: "",
+		Address: "f2033ede578e17fa6231047265010445bca8cf1c",
+		Symbol: tw.Symbol(),
+		Decimals: 8,
+	}
+	raw, err := tw.getAddressTokenBalanceByExplorer(token, "QbNmvcEPaBssXRmmiaQQQfFcE61po21yQK")
+	if err != nil {
+		t.Errorf("getAddressTokenBalanceByExplorer failed unexpected error: %v\n", err)
+		return
+	}
+	t.Logf("getAddressTokenBalanceByExplorer = %v \n", raw)
 }

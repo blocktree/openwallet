@@ -23,6 +23,7 @@ import (
 	"github.com/imroc/req"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
+	"math/big"
 	"net/http"
 	"strings"
 )
@@ -219,7 +220,6 @@ func (wm *WalletManager) listUnspentByExplorer(address ...string) ([]*Unspent, e
 
 }
 
-
 func newBlockByExplorer(json *gjson.Result) *Block {
 
 	/*
@@ -311,6 +311,18 @@ func newTxByExplorer(json *gjson.Result, isTestnet bool) *Transaction {
 		}
 	}
 
+	obj.Isqrc20Transfer = gjson.Get(json.Raw, "isqrc20Transfer").Bool()
+
+	if obj.Isqrc20Transfer {
+		obj.TokenReceipts = make([]*TokenReceipt, 0)
+		if receipts := gjson.Get(json.Raw, "receipt"); receipts.IsArray() {
+			for _, receipt := range receipts.Array() {
+				token := newTokenReceiptByExplorer(&receipt, isTestnet)
+				obj.TokenReceipts = append(obj.TokenReceipts, token)
+			}
+		}
+	}
+
 	return &obj
 }
 
@@ -378,6 +390,71 @@ func newTxVoutByExplorer(json *gjson.Result, isTestnet bool) *Vout {
 	//	scriptBytes, _ := hex.DecodeString(obj.ScriptPubKey)
 	//	obj.Addr, _ = ScriptPubKeyToBech32Address(scriptBytes, isTestnet)
 	//}
+
+	return &obj
+}
+
+//newTokenReceiptByExplorer
+func newTokenReceiptByExplorer(json *gjson.Result, isTestnet bool) *TokenReceipt {
+
+	/*
+			"receipt": [
+		        {
+		            "blockHash": "35d196cbd08cf7dcce08d99bb7267150c7ce328f08e0f66f706267cd75ab0d55",
+		            "blockNumber": 249878,
+		            "transactionHash": "eb8e496f7dd23554d6d45de30beab384c8e0d023c9c7f1fbc15d90d10bb873f8",
+		            "transactionIndex": 17,
+		            "from": "a20a4eec5c83fb9b61a9efc7fe6c0e06bb3dde43",
+		            "to": "f2033ede578e17fa6231047265010445bca8cf1c",
+		            "cumulativeGasUsed": 87782,
+		            "gasUsed": 36423,
+		            "contractAddress": "f2033ede578e17fa6231047265010445bca8cf1c",
+		            "excepted": "None",
+		            "log": [
+		                {
+		                    "address": "f2033ede578e17fa6231047265010445bca8cf1c",
+		                    "topics": [
+		                        "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+		                        "000000000000000000000000a20a4eec5c83fb9b61a9efc7fe6c0e06bb3dde43",
+		                        "000000000000000000000000e57e4a5f9ac130defb33a057729f10728fcdb9cb"
+		                    ],
+		                    "data": "0000000000000000000000000000000000000000000000000000034f80e83000"
+		                }
+		            ]
+		        }
+		    ],
+		    "isqrc20Transfer": true,
+	*/
+
+	obj := TokenReceipt{}
+	//解析json
+	obj.BlockHash = gjson.Get(json.Raw, "blockHash").String()
+	obj.BlockHeight = gjson.Get(json.Raw, "blockNumber").Uint()
+	obj.TxHash = gjson.Get(json.Raw, "transactionHash").String()
+	obj.Excepted = gjson.Get(json.Raw, "excepted").String()
+	obj.GasUsed = gjson.Get(json.Raw, "gasUsed").Uint()
+	obj.ContractAddress = "0x" + gjson.Get(json.Raw, "contractAddress").String()
+	obj.Sender = HashAddressToBaseAddress(
+		gjson.Get(json.Raw, "from").String(),
+		isTestnet)
+
+	logs := gjson.Get(json.Raw, "log").Array()
+	for _, logInfo := range logs {
+		topics := logInfo.Get("topics").Array()
+		if len(topics) == 3 {
+			log.Info("topics[1]:", topics[1].String())
+			log.Info("topics[2]:", topics[2].String())
+			obj.From = strings.TrimPrefix(topics[1].String(), "000000000000000000000000")
+			obj.To = strings.TrimPrefix(topics[2].String(), "000000000000000000000000")
+			obj.From = HashAddressToBaseAddress(obj.From, isTestnet)
+			obj.To = HashAddressToBaseAddress(obj.To, isTestnet)
+		}
+
+		//转化为10进制
+		value := new(big.Int)
+		value, _ = value.SetString(logInfo.Get("data").String(), 16)
+		obj.Amount = decimal.NewFromBigInt(value, 0).String()
+	}
 
 	return &obj
 }
@@ -458,7 +535,6 @@ func (wm *WalletManager) getMultiAddrTransactionsByExplorer(offset, limit int, a
 	return trxs, nil
 }
 
-
 //estimateFeeRateByExplorer 通过浏览器获取费率
 func (wm *WalletManager) estimateFeeRateByExplorer() (decimal.Decimal, error) {
 
@@ -479,7 +555,6 @@ func (wm *WalletManager) estimateFeeRateByExplorer() (decimal.Decimal, error) {
 
 	return feeRate, nil
 }
-
 
 //getTxOutByExplorer 获取交易单输出信息，用于追溯交易单输入源头
 func (wm *WalletManager) getTxOutByExplorer(txid string, vout uint64) (*Vout, error) {
@@ -514,5 +589,27 @@ func (wm *WalletManager) sendRawTransactionByExplorer(txHex string) (string, err
 	}
 
 	return result.Get("txid").String(), nil
+
+}
+
+//getAddressTokenBalanceByExplorer 通过合约地址查询用户地址的余额
+func (wm *WalletManager) getAddressTokenBalanceByExplorer(token openwallet.SmartContract, address string) (string, error) {
+
+	tokenAddressBase := HashAddressToBaseAddress(token.Address, wm.config.isTestNet)
+
+	path := fmt.Sprintf("tokens/%s/addresses/%s/balance?format=object", tokenAddressBase, address)
+
+	result, err := wm.ExplorerClient.Call(path, nil, "GET")
+	if err != nil {
+		return "", err
+	}
+
+	balanceStr := result.Get("balance").String()
+
+	balance, _ := decimal.NewFromString(balanceStr)
+	decimals := decimal.New(1, int32(token.Decimals))
+
+	balance = balance.Div(decimals)
+	return balance.StringFixed(int32(token.Decimals)), nil
 
 }
