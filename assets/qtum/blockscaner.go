@@ -19,10 +19,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/asdine/storm"
+	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/graarh/golang-socketio"
+	"github.com/graarh/golang-socketio/transport"
 	"github.com/shopspring/decimal"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"time"
@@ -399,6 +402,14 @@ func (bs *BTCBlockScanner) BatchExtractTransaction(blockHeight uint64, blockHash
 					failed++ //标记保存失败数
 					log.Std.Info("newExtractDataNotify unexpected error: %v", notifyErr)
 				}
+
+				notifyErr = nil
+				notifyErr = bs.newExtractDataNotify(height, gets.extractContractData)
+				if notifyErr != nil {
+					failed++ //标记保存失败数
+					log.Std.Info("newExtractDataNotify unexpected error: %v", notifyErr)
+				}
+
 			} else {
 				//记录未扫区块
 				unscanRecord := NewUnscanRecord(height, "", "")
@@ -1400,6 +1411,107 @@ func (wm *WalletManager) DeleteUnscanRecord(height uint64) error {
 
 	for _, r := range list {
 		db.DeleteStruct(r)
+	}
+
+	return nil
+}
+
+//Run 运行
+func (bs *BTCBlockScanner) Run() error {
+
+	//使用浏览器，开启socketIO监听内存池交易
+	if bs.wm.config.RPCServerType == RPCServerExplorer {
+		bs.setupSocketIO()
+	}
+
+	bs.BlockScannerBase.Run()
+
+	return nil
+}
+
+
+/******************* 使用insight socket.io 监听区块 *******************/
+
+//setupSocketIO 配置socketIO监听新区块
+func (bs *BTCBlockScanner) setupSocketIO() error {
+
+	log.Info("block scanner use socketIO to listen new data")
+
+	var (
+		room = "inv"
+	)
+
+	if bs.socketIO == nil {
+
+		apiUrl, err := url.Parse(bs.wm.config.serverAPI)
+		if err != nil {
+			return err
+		}
+		domain := apiUrl.Hostname()
+		port := common.NewString(apiUrl.Port()).Int()
+		c, err := gosocketio.Dial(
+			gosocketio.GetUrl(domain, port, false),
+			transport.GetDefaultWebsocketTransport())
+		if err != nil {
+			return err
+		}
+
+		bs.socketIO = c
+
+	}
+
+	err := bs.socketIO.On("tx", func(h *gosocketio.Channel, args interface{}) {
+		//log.Info("block scanner socketIO get new transaction received: ", args)
+		txMap, ok := args.(map[string]interface{})
+		if ok {
+			txid := txMap["txid"].(string)
+			errInner := bs.BatchExtractTransaction(0, "", []string{txid})
+			if errInner != nil {
+				log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", errInner)
+			}
+		}
+
+	})
+	if err != nil {
+		return err
+	}
+
+	/*
+	err = bs.socketIO.On("block", func(h *gosocketio.Channel, args interface{}) {
+		log.Info("block scanner socketIO get new block received: ", args)
+		hash, ok := args.(string)
+		if ok {
+
+			block, errInner := bs.wm.GetBlock(hash)
+			if errInner != nil {
+				log.Std.Info("block scanner can not get new block data; unexpected error: %v", errInner)
+			}
+
+			errInner = bs.scanBlock(block)
+			if errInner != nil {
+				log.Std.Info("block scanner can not block: %d; unexpected error: %v", block.Height, errInner)
+			}
+		}
+
+	})
+	if err != nil {
+		return err
+	}
+	*/
+
+	err = bs.socketIO.On(gosocketio.OnDisconnection, func(h *gosocketio.Channel) {
+		log.Info("block scanner socketIO disconnected")
+	})
+	if err != nil {
+		return err
+	}
+
+	err = bs.socketIO.On(gosocketio.OnConnection, func(h *gosocketio.Channel) {
+		log.Info("block scanner socketIO connected")
+		h.Emit("subscribe", room)
+	})
+	if err != nil {
+		return err
 	}
 
 	return nil
