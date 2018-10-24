@@ -15,14 +15,12 @@
 package nebulasio
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
-	"github.com/blocktree/OpenWallet/crypto"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
 	"path/filepath"
@@ -508,7 +506,7 @@ func (bs *NASBlockScanner) extractTxOutput(tx *NasTransaction,txExtractData *ope
 	txOutput := &openwallet.TxOutPut{
 		ExtParam: "", //扩展参数，用于记录utxo的解锁字段，账户模型中为空
 	}
-	txOutput.Recharge.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tx.To))))
+	txOutput.Recharge.Sid = openwallet.GenTxOutPutSID(tx.Hash, bs.wm.Symbol(), "", uint64(0))
 	txOutput.Recharge.TxID = tx.Hash
 	txOutput.Recharge.Address = tx.To
 	txOutput.Recharge.Coin = openwallet.Coin{
@@ -529,7 +527,7 @@ func (bs *NASBlockScanner) extractTxInput(tx *NasTransaction,txExtractData *open
 	txInput := &openwallet.TxInput{
 		SourceTxID:  "",  //utxo模型上的上一个交易输入源
 	}
-	txInput.Recharge.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tx.From))))
+	txInput.Recharge.Sid = openwallet.GenTxInputSID(tx.Hash, bs.wm.Symbol(), "", uint64(0))
 	txInput.Recharge.TxID = tx.Hash
 	txInput.Recharge.Address = tx.From
 	txInput.Recharge.Coin = openwallet.Coin{
@@ -547,7 +545,7 @@ func (bs *NASBlockScanner) extractTxInput(tx *NasTransaction,txExtractData *open
 	txInputfees := &openwallet.TxInput{
 		SourceTxID:  "",  //utxo模型上的上一个交易输入源
 	}
-	txInputfees.Recharge.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tx.From))))
+	txInputfees.Recharge.Sid = openwallet.GenTxInputSID(tx.Hash, bs.wm.Symbol(), "", uint64(1))
 	txInputfees.Recharge.TxID = tx.Hash
 	txInputfees.Recharge.Address = tx.From
 	txInputfees.Recharge.Coin = openwallet.Coin{
