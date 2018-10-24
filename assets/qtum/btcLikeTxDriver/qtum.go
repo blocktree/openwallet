@@ -1,8 +1,14 @@
 package btcLikeTxDriver
 
 const (
-	P2PKHPrefix  = byte(0x3A)
-	P2SHPrefix   = byte(0x32)
+	//mainnet
+	//P2PKHPrefix  = byte(0x3A)
+	//P2SHPrefix   = byte(0x32)
+
+	//testnet
+	P2PKHPrefix  = byte(0x78)
+	P2SHPrefix   = byte(0x6E)
+
 	Bech32Prefix = "tb1"
 )
 
