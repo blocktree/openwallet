@@ -39,7 +39,7 @@ func init() {
 		//"BTC",
 		//"QTUM",
 		//"LTC",
-		"ETH",
+		//"ETH",
 	}
 	tm = NewWalletManager(tc)
 	//tm.Init()
