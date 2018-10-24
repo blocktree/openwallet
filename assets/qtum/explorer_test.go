@@ -71,7 +71,7 @@ func TestListUnspentByExplorer(t *testing.T) {
 func TestGetTransactionByExplorer(t *testing.T) {
 	//5aa478590ea82d3b6a308bdf5af0753caeab0aefefeb4f88a088c15fe305f59b
 	//eb8e496f7dd23554d6d45de30beab384c8e0d023c9c7f1fbc15d90d10bb873f8
-	raw, err := tw.getTransactionByExplorer("eb8e496f7dd23554d6d45de30beab384c8e0d023c9c7f1fbc15d90d10bb873f8")
+	raw, err := tw.getTransactionByExplorer("b3357dc8455ffe3fe2cc9a446169b67ea46a02a0344abbe11cdf1ae8d33a3cfd")
 	if err != nil {
 		t.Errorf("getTransactionByExplorer failed unexpected error: %v\n", err)
 		return

@@ -441,18 +441,32 @@ func newTokenReceiptByExplorer(json *gjson.Result, isTestnet bool) *TokenReceipt
 	logs := gjson.Get(json.Raw, "log").Array()
 	for _, logInfo := range logs {
 		topics := logInfo.Get("topics").Array()
-		if len(topics) == 3 {
-			log.Info("topics[1]:", topics[1].String())
-			log.Info("topics[2]:", topics[2].String())
-			obj.From = strings.TrimPrefix(topics[1].String(), "000000000000000000000000")
-			obj.To = strings.TrimPrefix(topics[2].String(), "000000000000000000000000")
-			obj.From = HashAddressToBaseAddress(obj.From, isTestnet)
-			obj.To = HashAddressToBaseAddress(obj.To, isTestnet)
+		data := logInfo.Get("data").String()
+
+		if len(topics) != 3 {
+			continue
 		}
 
+		if "0x" + topics[0].String() != QTUM_TRANSFER_EVENT_ID {
+			continue
+		}
+
+		if len(data) != 64 {
+			continue
+		}
+
+		//log.Info("topics[1]:", topics[1].String())
+		//log.Info("topics[2]:", topics[2].String())
+		obj.From = strings.TrimPrefix(topics[1].String(), "000000000000000000000000")
+		obj.To = strings.TrimPrefix(topics[2].String(), "000000000000000000000000")
+		obj.From = HashAddressToBaseAddress(obj.From, isTestnet)
+		obj.To = HashAddressToBaseAddress(obj.To, isTestnet)
+
 		//转化为10进制
+		//log.Debug("TokenReceipt TxHash", obj.TxHash)
+		//log.Debug("TokenReceipt amount", logInfo.Get("data").String())
 		value := new(big.Int)
-		value, _ = value.SetString(logInfo.Get("data").String(), 16)
+		value, _ = value.SetString(data, 16)
 		obj.Amount = decimal.NewFromBigInt(value, 0).String()
 	}
 
