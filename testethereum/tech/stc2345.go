@@ -46,8 +46,8 @@ func DumpWalletDB(dbPath string, dbfile string) {
 	log.Debugf("address : %v", string(jsonStr))
 }
 
-func DumpEtc2345WalletDb() {
-	DumpWalletDB("data/stc2345/db", "peter-W7isVa7z1JdiC9LanGSPApdsKZfWuACbwk.db")
+func DumpWmdWalletDb(dbpath string, dbName string) {
+	DumpWalletDB(dbpath, dbName)
 }
 
 func Getetc2345WalletManager() (*stc2345.WalletManager, error) {

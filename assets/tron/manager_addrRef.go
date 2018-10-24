@@ -182,7 +182,6 @@ func (wm *WalletManager) CreateBatchAddress(name, password string, count uint64)
 	if otherCount > 0 {
 
 		//开始创建地址
-		// log.Std.Info("Start create address thread[REST]")
 		fmt.Println("Start create address thread[REST]")
 		s := count - otherCount
 		e := count
@@ -229,10 +228,7 @@ func (wm *WalletManager) CreateBatchAddress(name, password string, count uint64)
 		}
 	}
 
-	// wm.LockWallet()
-
 	return filePath, outputAddress, nil
-	// return []*openwallet.Address{}, nil
 }
 
 //createAddressWork 创建地址过程
@@ -251,17 +247,6 @@ func (wm *WalletManager) createAddressWork(k *hdkeystore.HDKey, producer chan<- 
 
 	// Generate address
 	for i := start; i < end; i++ {
-		// childKey, err := childKey.GenPrivateChild(uint32(i))
-		// if err != nil {
-		// 	log.Println(err)
-		// 	return
-		// }
-
-		// keyBytes, err := childKey.GetPrivateKeyBytes()
-		// if err != nil {
-		// 	log.Println(err)
-		// 	return
-		// }
 
 		// childKey, err := childKey.GenPrivateChild(uint32(i))
 		// priKeyBytes, err := childKey.GetPrivateKeyBytes()
@@ -280,13 +265,13 @@ func (wm *WalletManager) createAddressWork(k *hdkeystore.HDKey, producer chan<- 
 		}
 
 		address := &openwallet.Address{
-			Address:   addrBase58,
-			AccountID: k.KeyID,
-			HDPath:    fmt.Sprintf("%s/%d", derivedPath, i),
+			Address:     addrBase58,
+			AccountID:   k.KeyID,
+			HDPath:      fmt.Sprintf("%s/%d", derivedPath, i),
 			CreatedTime: time.Now().Unix(),
-			Symbol:    wm.Config.Symbol,
-			Index:     index,
-			WatchOnly: false,
+			Symbol:      wm.Config.Symbol,
+			Index:       index,
+			WatchOnly:   false,
 		}
 
 		runAddress = append(runAddress, address)
@@ -306,8 +291,6 @@ func (wm *WalletManager) exportAddressToFile(addrs []*openwallet.Address, filePa
 	)
 
 	for _, a := range addrs {
-
-		// fmt.Printf("Export: %+v \n", a.Address)
 		content = content + a.Address + "\n"
 	}
 
@@ -354,13 +337,10 @@ func (wm *WalletManager) GetAddressesFromLocalDB(walletID string, offset, limit 
 	defer db.Close()
 
 	var addresses []*openwallet.Address
-	//err = db.Find("WalletID", walletID, &addresses)
 	if limit > 0 {
-		// err = db.Find("AccountID", walletID, &addresses, storm.Limit(limit), storm.Skip(offset))
 		query := db.Select(q.Eq("AccountID", walletID)).Limit(limit).Skip(offset).OrderBy("Index", "HDPath")
 		err = query.Find(&addresses)
 	} else {
-		// err = db.Find("AccountID", walletID, &addresses, storm.Skip(offset))
 		query := db.Select(q.Eq("AccountID", walletID)).Reverse().OrderBy("Index", "HDPath")
 		err = query.Find(&addresses)
 	}

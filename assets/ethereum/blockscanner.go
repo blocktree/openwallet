@@ -24,8 +24,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blocktree/OpenWallet/crypto"
-
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
@@ -34,7 +32,7 @@ import (
 	"errors"
 
 	//	"golang.org/x/text/currency"
-	"encoding/base64"
+
 	"fmt"
 )
 
@@ -509,6 +507,26 @@ func (this *WalletManager) GetErc20TokenEvent(transactionID string) (*TransferEv
 	return transEvent, nil
 }
 
+func (this *ETHBLockScanner) UpdateTxByReceipt(tx *BlockTransaction) (*TransferEvent, error) {
+	//过滤掉未打包交易
+	if tx.BlockHeight == 0 || tx.BlockHash == "" {
+		return nil, nil
+	}
+
+	receipt, err := this.wm.WalletClient.ethGetTransactionReceipt(tx.Hash)
+	if err != nil {
+		log.Errorf("get transaction receipt failed, err=%v", err)
+		return nil, err
+	}
+
+	tx.Gas = receipt.GasUsed
+	// transEvent := receipt.ParseTransferEvent()
+	// if transEvent == nil {
+	// 	return nil, nil
+	// }
+	return receipt.ParseTransferEvent(), nil
+}
+
 func (this *ETHBLockScanner) GetErc20TokenEvent(tx *BlockTransaction) (*TransferEvent, error) {
 	//非合约交易或未打包交易跳过
 	//obj, _ := json.MarshalIndent(tx, "", " ")
@@ -551,7 +569,7 @@ func (this *ETHBLockScanner) MakeSimpleToExtractData(tx *BlockTransaction) (stri
 
 	balanceTxOut := openwallet.TxOutPut{
 		Recharge: openwallet.Recharge{
-			Sid:      base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tx.To)))),
+			Sid:      openwallet.GenTxOutPutSID(tx.Hash, this.wm.Symbol(), "", 0), //base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tx.To)))),
 			CreateAt: nowUnix,
 			TxID:     tx.Hash,
 			Address:  tx.To,
@@ -611,7 +629,7 @@ func (this *ETHBLockScanner) MakeTokenToExtractData(tx *BlockTransaction, tokenE
 	// 	return "", extractDataList, err
 	// }
 
-	contractId := base64.StdEncoding.EncodeToString(crypto.SHA256([]byte(fmt.Sprintf("{%v}_{%v}", this.wm.Symbol(), tx.To))))
+	contractId := openwallet.GenContractID(this.wm.Symbol(), tx.To) //base64.StdEncoding.EncodeToString(crypto.SHA256([]byte(fmt.Sprintf("{%v}_{%v}", this.wm.Symbol(), tx.To))))
 	nowUnix := time.Now().Unix()
 
 	coin := openwallet.Coin{
@@ -625,14 +643,20 @@ func (this *ETHBLockScanner) MakeTokenToExtractData(tx *BlockTransaction, tokenE
 		},
 	}
 
+	tokenValue, err := ConvertToBigInt(tokenEvent.Value, 16)
+	if err != nil {
+		log.Errorf("convert token value to big.int failed, err=%v", err)
+		return "", extractDataList, err
+	}
+
 	tokenBalanceTxOutput := openwallet.TxOutPut{
 		Recharge: openwallet.Recharge{
-			Sid:         base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tokenEvent.TokenTo)))),
+			Sid:         openwallet.GenTxOutPutSID(tx.Hash, this.wm.Symbol(), contractId, 0), //base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tokenEvent.TokenTo)))),
 			CreateAt:    nowUnix,
 			TxID:        tx.Hash,
 			Address:     tokenEvent.TokenTo,
 			Coin:        coin,
-			Amount:      tokenEvent.Value,
+			Amount:      tokenValue.String(),
 			BlockHash:   tx.BlockHash,
 			BlockHeight: tx.BlockHeight,
 		},
@@ -697,7 +721,7 @@ func (this *ETHBLockScanner) MakeSimpleTxFromExtractData(tx *BlockTransaction) (
 
 	deductTxInput := openwallet.TxInput{
 		Recharge: openwallet.Recharge{
-			Sid:      base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tx.From)))),
+			Sid:      openwallet.GenTxInputSID(tx.Hash, this.wm.Symbol(), "", 0), //base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tx.From)))),
 			CreateAt: nowUnix,
 			TxID:     tx.Hash,
 			Address:  tx.From,
@@ -713,7 +737,7 @@ func (this *ETHBLockScanner) MakeSimpleTxFromExtractData(tx *BlockTransaction) (
 
 	feeTxInput := openwallet.TxInput{
 		Recharge: openwallet.Recharge{
-			Sid:      base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tx.From)))),
+			Sid:      openwallet.GenTxInputSID(tx.Hash, this.wm.Symbol(), "", 1), //base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tx.From)))),
 			CreateAt: nowUnix,
 			TxID:     tx.Hash,
 			Address:  tx.From,
@@ -769,7 +793,7 @@ func (this *ETHBLockScanner) MakeTokenTxFromExtractData(tx *BlockTransaction, to
 		return "", extractDataList, nil
 	}
 
-	contractId := base64.StdEncoding.EncodeToString(crypto.SHA256([]byte(fmt.Sprintf("{%v}_{%v}", this.wm.Symbol(), tx.To))))
+	contractId := openwallet.GenContractID(this.wm.Symbol(), tx.To) //base64.StdEncoding.EncodeToString(crypto.SHA256([]byte(fmt.Sprintf("{%v}_{%v}", this.wm.Symbol(), tx.To))))
 	nowUnix := time.Now().Unix()
 
 	coin := openwallet.Coin{
@@ -789,14 +813,20 @@ func (this *ETHBLockScanner) MakeTokenTxFromExtractData(tx *BlockTransaction, to
 		return "", extractDataList, err
 	}
 
+	tokenValue, err := ConvertToBigInt(tokenEvent.Value, 16)
+	if err != nil {
+		log.Errorf("convert token value to big.int failed, err=%v", err)
+		return "", extractDataList, err
+	}
+
 	deductTxInput := openwallet.TxInput{
 		Recharge: openwallet.Recharge{
-			Sid:         base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tx.From)))),
+			Sid:         openwallet.GenTxInputSID(tx.Hash, this.wm.Symbol(), contractId, 0), //base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tx.From)))),
 			CreateAt:    nowUnix,
 			TxID:        tx.Hash,
 			Address:     tx.From,
 			Coin:        coin,
-			Amount:      tokenEvent.Value,
+			Amount:      tokenValue.String(),
 			BlockHash:   tx.BlockHash,
 			BlockHeight: tx.BlockHeight,
 		},
@@ -828,7 +858,7 @@ func (this *ETHBLockScanner) MakeTokenTxFromExtractData(tx *BlockTransaction, to
 
 	feeTxInput := openwallet.TxInput{
 		Recharge: openwallet.Recharge{
-			Sid:      base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tokenEvent.TokenFrom)))),
+			Sid:      openwallet.GenTxInputSID(tx.Hash, this.wm.Symbol(), "", 0), //base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", tx.Hash, 0, tokenEvent.TokenFrom)))),
 			CreateAt: nowUnix,
 			TxID:     tx.Hash,
 			Address:  tx.From,
@@ -889,9 +919,9 @@ func (this *ETHBLockScanner) TransactionScanning(tx *BlockTransaction) (*Extract
 		Success:     true,
 	}
 
-	tokenEvent, err := this.GetErc20TokenEvent(tx)
+	tokenEvent, err := this.UpdateTxByReceipt(tx)
 	if err != nil {
-		log.Errorf("GetErc20TokenEvent failed, err=%v", err)
+		log.Errorf("UpdateTxByReceipt failed, err=%v", err)
 		return nil, err
 	}
 	//log.Debugf("get token Event:%v", tokenEvent)

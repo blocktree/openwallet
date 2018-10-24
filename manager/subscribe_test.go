@@ -82,7 +82,7 @@ func (sub *subscriberSingle) BlockExtractDataNotify(sourceKey string, data *open
 	return nil
 }
 
-func TestSubscribeAddress(t *testing.T) {
+func TestSubscribeAddress_ETH(t *testing.T) {
 
 	var (
 		endRunning = make(chan bool, 1)
@@ -117,9 +117,46 @@ func TestSubscribeAddress(t *testing.T) {
 
 	sub := subscriberSingle{}
 	scanner.AddObserver(&sub)
-	//tm.SetRescanBlockHeight("QTUM", 236098)
 
-	//scanner.ScanBlock(4840986)
+	<-endRunning
+}
+
+
+func TestSubscribeAddress_QTUM(t *testing.T) {
+
+	var (
+		endRunning = make(chan bool, 1)
+		symbol = "QTUM"
+		accountID = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
+		addrs = []string{
+			"QhXS93hPpUcjoDxo192bmrbDubhH5UoQDp",
+		}
+	)
+
+	assetsMgr, err := GetAssetsManager(symbol)
+	if err != nil {
+		log.Error(symbol, "is not support")
+		return
+	}
+	//log.Debug("already got scanner:", assetsMgr)
+	scanner := assetsMgr.GetBlockScanner()
+	scanner.SetRescanBlockHeight(249878)
+
+
+	if scanner == nil {
+		log.Error(symbol, "is not support block scan")
+		return
+	}
+
+	for _, a := range addrs {
+		scanner.AddAddress(a, accountID)
+	}
+
+
+	sub := subscriberSingle{}
+	scanner.AddObserver(&sub)
+
+	scanner.Run()
 
 	<-endRunning
 }

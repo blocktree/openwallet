@@ -109,6 +109,7 @@ func (wm *WalletManager) CreateNewWallet(name, password string) (*openwallet.Wal
 	return w, keyFile, nil
 }
 
+// -------------------------------------------------- Functions ---------------------------------------------
 //打印钱包列表
 func (wm *WalletManager) printWalletList(list []*openwallet.Wallet) {
 

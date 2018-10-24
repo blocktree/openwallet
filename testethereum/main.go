@@ -82,7 +82,7 @@ func main() {
 
 	//tech.TestCreateWallet2345()
 	//tech.TestBatchCreateAddr2345()
-	//tech.DumpEtc2345WalletDb()
+	//tech.DumpWmdWalletDb("data/eth/db", "peter2-W4WUFawFp6FbzunjztXDDaN4nsdW8U4PrN.db")
 	//tech.TestTransferFlow2345()
 	//tech.TestInitCongfig2345()
 

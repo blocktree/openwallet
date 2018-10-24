@@ -144,14 +144,14 @@ func PrepareTestForBlockScan() error {
 	simpleTxs := []txsample{
 		{
 			From: "0xe7134824df22750a42726483e64047ef652d6194",
-			To:   "0xf1320dcbe77711745554a18a572418537328d5b4",
+			To:   "0xdfe55e4f7c1f24a7d9b05a0ac39c0390eb918564",
 		},
 	}
 
 	tokenTxs := []txsample{
 		{
 			From:            "0xe7134824df22750a42726483e64047ef652d6194",
-			To:              "0xf1320dcbe77711745554a18a572418537328d5b4",
+			To:              "0xdfe55e4f7c1f24a7d9b05a0ac39c0390eb918564",
 			ContractAddress: "0x8847E5F841458ace82dbb0692C97115799fe28d3",
 		},
 	}

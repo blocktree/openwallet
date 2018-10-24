@@ -521,21 +521,16 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 		trx.BlockHeight = blockHeight
 		trx.BlockHash = blockHash
 	}
-	result = bs.extractTransaction(trx, scanAddressFunc)
+	bs.extractTransaction(trx, &result, scanAddressFunc)
 	return result
 
 }
 
 //ExtractTransactionData 提取交易单
-func (bs *BTCBlockScanner) extractTransaction(trx *Transaction, scanAddressFunc openwallet.BlockScanAddressFunc) ExtractResult {
+func (bs *BTCBlockScanner) extractTransaction(trx *Transaction, result *ExtractResult, scanAddressFunc openwallet.BlockScanAddressFunc) {
 
 	var (
 		success = true
-		result  = ExtractResult{
-			BlockHeight: trx.BlockHeight,
-			TxID:        trx.TxID,
-			extractData: make(map[string]*openwallet.TxExtractData),
-		}
 	)
 
 	if trx == nil {
@@ -586,11 +581,11 @@ func (bs *BTCBlockScanner) extractTransaction(trx *Transaction, scanAddressFunc 
 		if success {
 
 			//提取出账部分记录
-			from, totalSpent := bs.extractTxInput(trx, &result, scanAddressFunc)
+			from, totalSpent := bs.extractTxInput(trx, result, scanAddressFunc)
 			//log.Debug("from:", from, "totalSpent:", totalSpent)
 
 			//提取入账部分记录
-			to, totalReceived := bs.extractTxOutput(trx, &result, scanAddressFunc)
+			to, totalReceived := bs.extractTxOutput(trx, result, scanAddressFunc)
 			//log.Debug("to:", to, "totalReceived:", totalReceived)
 
 			for _, extractData := range result.extractData {
@@ -621,9 +616,6 @@ func (bs *BTCBlockScanner) extractTransaction(trx *Transaction, scanAddressFunc 
 
 	}
 	result.Success = success
-
-	return result
-
 }
 
 //ExtractTxInput 提取交易单输入部分
@@ -1337,7 +1329,14 @@ func (bs *BTCBlockScanner) GetTransactionsByAddress(offset, limit int, coin open
 	//要检查一下tx.BlockHeight是否有值
 
 	for _, tx := range trxs {
-		result := bs.extractTransaction(tx, scanAddressFunc)
+
+		result := ExtractResult{
+			BlockHeight: tx.BlockHeight,
+			TxID:        tx.TxID,
+			extractData: make(map[string]*openwallet.TxExtractData),
+		}
+
+		bs.extractTransaction(tx, &result, scanAddressFunc)
 		data := result.extractData
 		txExtract := data[key]
 		if txExtract != nil {
