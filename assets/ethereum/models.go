@@ -65,7 +65,8 @@ type EthEvent struct {
 }
 
 type EthTransactionReceipt struct {
-	Logs []EthEvent
+	Logs    []EthEvent `json:"logs"`
+	GasUsed string     `json:"gasUsed"`
 }
 
 type TransferEvent struct {

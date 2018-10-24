@@ -45,7 +45,7 @@ func NewConfig() *Config {
 	//开启区块扫描
 	c.EnableBlockScan = false
 	//测试网
-	c.IsTestnet = false
+	c.IsTestnet = true
 
 	return &c
 }
