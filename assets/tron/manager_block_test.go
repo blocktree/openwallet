@@ -24,7 +24,7 @@ func TestGetNowBlock(t *testing.T) {
 	if r, err := tw.GetNowBlock(); err != nil {
 		t.Errorf("GetNowBlock failed: %v\n", err)
 	} else {
-		t.Logf("GetNowBlock return: \n\t%+v\n", r)
+		// t.Logf("GetNowBlock return: \n\t%+v\n", r)
 
 		printBlock(r)
 	}
