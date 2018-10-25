@@ -354,7 +354,7 @@ func TestGetBalanceByAddress() {
 		"0xdb9a569f7b80030956dc9686b89D5fF15922E175",
 	}
 
-	balanceList, err := manager.GetBalanceByAddress(addrs...)
+	balanceList, err := manager.Blockscanner.GetBalanceByAddress(addrs...)
 	if err != nil {
 		log.Errorf("get token balance by address failed, err=%v", err)
 		return

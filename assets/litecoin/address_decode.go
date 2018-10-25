@@ -32,7 +32,7 @@ func init() {
 //	}
 //)
 
-type addressDecoder struct{
+type addressDecoder struct {
 	wm *WalletManager //钱包管理者
 }
 
@@ -42,7 +42,6 @@ func NewAddressDecoder(wm *WalletManager) *addressDecoder {
 	decoder.wm = wm
 	return &decoder
 }
-
 
 //PrivateKeyToWIF 私钥转WIF
 func (decoder *addressDecoder) PrivateKeyToWIF(priv []byte, isTestnet bool) (string, error) {
@@ -85,7 +84,6 @@ func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (s
 	return address, nil
 
 }
-
 
 //RedeemScriptToAddress 多重签名赎回脚本转地址
 func (decoder *addressDecoder) RedeemScriptToAddress(pubs [][]byte, required uint64, isTestnet bool) (string, error) {
