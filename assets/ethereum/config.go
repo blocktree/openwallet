@@ -271,6 +271,11 @@ func (this *WalletManager) LoadAssetsConfig(c config.Configer) error {
 	}
 	this.Config.ChainID = uint64(chainId) //c.Int64("ChainID") //12
 
+	this.StorageOld = keystore.NewHDKeystore(this.Config.KeyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	storage := hdkeystore.NewHDKeystore(this.Config.KeyDir, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
+	this.Storage = storage
+	client := &Client{BaseURL: this.Config.ServerAPI, Debug: false}
+	this.WalletClient = client
 	return nil
 }
 
