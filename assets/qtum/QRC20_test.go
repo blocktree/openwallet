@@ -40,7 +40,7 @@ func Test_addressTo32bytesArg(t *testing.T) {
 
 func Test_getUnspentByAddress(t *testing.T) {
 	contractAddress := "91a6081095ef860d28874c9db613e7a4107b0281"
-	address := "qdphfFinfJutJFvtnr2UaCwNAMxC3HbVxa"
+	address := "qf4W82getddc3aqjWPoqqvjDp1JuyG36aC"
 
 	QRC20Utox, err := tw.GetUnspentByAddress(contractAddress, address)
 	if err != nil {
@@ -71,10 +71,10 @@ func Test_AmountTo32bytesArg(t *testing.T){
 func Test_QRC20Transfer(t *testing.T) {
 	contractAddress := "91a6081095ef860d28874c9db613e7a4107b0281"
 	from := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
-	to := "qJq5GbHeaaNbi6Bs5QCbuCZsZRXVWPoG1k"
+	to := "qf4W82getddc3aqjWPoqqvjDp1JuyG36aC"
 	gasPrice := "0.00000040"
 	var gasLimit int64 = 250000
-	var amount decimal.Decimal = decimal.NewFromFloat(18)
+	var amount decimal.Decimal = decimal.NewFromFloat(7777)
 
 	result, err := tw.QRC20Transfer(contractAddress, from, to, gasPrice, amount, gasLimit)
 	if err != nil {
@@ -93,6 +93,8 @@ func Test_GetTokenBalanceByAddress(t *testing.T) {
 		"qQLYQn7vCAU8irPEeqjZ3rhFGLnS5vxVy8",
 		"qMXS1YFtA5qr2UfhcDMthTCK6hWhJnzC47",
 		"qJq5GbHeaaNbi6Bs5QCbuCZsZRXVWPoG1k",
+		"qP1VPw7RYm5qRuqcAvtiZ1cpurQpVWREu8",
+		"qdphfFinfJutJFvtnr2UaCwNAMxC3HbVxa",
 	}
 	balanceList, err := tw.GetTokenBalanceByAddress(contract, addrs...)
 	if err != nil {

@@ -464,7 +464,7 @@ func newTxVoutByCore(json *gjson.Result, isTestnet bool) *Vout {
 	//解析json
 	obj.Value = gjson.Get(json.Raw, "value").String()
 	obj.N = gjson.Get(json.Raw, "n").Uint()
-	obj.ScriptPubKey = gjson.Get(json.Raw, "scriptPubKey,hex").String()
+	obj.ScriptPubKey = gjson.Get(json.Raw, "scriptPubKey.hex").String()
 
 	//提取地址
 	if addresses := gjson.Get(json.Raw, "scriptPubKey.addresses"); addresses.IsArray() {

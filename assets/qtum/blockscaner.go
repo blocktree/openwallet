@@ -19,10 +19,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/asdine/storm"
+	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/graarh/golang-socketio"
+	"github.com/graarh/golang-socketio/transport"
 	"github.com/shopspring/decimal"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"time"
@@ -280,6 +283,7 @@ func (bs *BTCBlockScanner) ScanTxMemPool() {
 	txIDsInMemPool, err := bs.wm.GetTxIDsInMemPool()
 	if err != nil {
 		log.Std.Info("block scanner can not get mempool data; unexpected error: %v", err)
+		return
 	}
 
 	err = bs.BatchExtractTransaction(0, "", txIDsInMemPool)
@@ -399,6 +403,14 @@ func (bs *BTCBlockScanner) BatchExtractTransaction(blockHeight uint64, blockHash
 					failed++ //标记保存失败数
 					log.Std.Info("newExtractDataNotify unexpected error: %v", notifyErr)
 				}
+
+				notifyErr = nil
+				notifyErr = bs.newExtractDataNotify(height, gets.extractContractData)
+				if notifyErr != nil {
+					failed++ //标记保存失败数
+					log.Std.Info("newExtractDataNotify unexpected error: %v", notifyErr)
+				}
+
 			} else {
 				//记录未扫区块
 				unscanRecord := NewUnscanRecord(height, "", "")
@@ -1400,6 +1412,175 @@ func (wm *WalletManager) DeleteUnscanRecord(height uint64) error {
 
 	for _, r := range list {
 		db.DeleteStruct(r)
+	}
+
+	return nil
+}
+
+
+//GetAssetsAccountBalanceByAddress 查询账户相关地址的交易记录
+func (bs *BTCBlockScanner) GetBalanceByAddress(address ...string) ([]*openwallet.Balance, error) {
+
+	if bs.wm.config.RPCServerType != RPCServerExplorer {
+		return nil, nil
+	}
+
+	addrsBalance := make([]*openwallet.Balance, 0)
+
+	for _, a := range address {
+		balance, err := bs.wm.getBalanceByExplorer(a)
+		if err != nil {
+			return nil, err
+		}
+
+		addrsBalance = append(addrsBalance, balance)
+	}
+
+	return addrsBalance, nil
+}
+
+//GetAssetsAccountTransactionsByAddress 查询账户相关地址的交易记录
+func (bs *BTCBlockScanner) GetTransactionsByAddress(offset, limit int, coin openwallet.Coin, address ...string) ([]*openwallet.TxExtractData, error) {
+
+	var (
+		array = make([]*openwallet.TxExtractData, 0)
+	)
+
+	trxs, err := bs.wm.getMultiAddrTransactionsByExplorer(offset, limit, address...)
+	if err != nil {
+		return nil, err
+	}
+
+	key := "account"
+
+	//提取账户相关的交易单
+	var scanAddressFunc openwallet.BlockScanAddressFunc = func(findAddr string) (string, bool) {
+		for _, a := range address {
+			if findAddr == a {
+				return key, true
+			}
+		}
+		return "", false
+	}
+
+	//要检查一下tx.BlockHeight是否有值
+
+	for _, tx := range trxs {
+
+		result := ExtractResult{
+			BlockHeight: tx.BlockHeight,
+			TxID:        tx.TxID,
+			extractData:         make(map[string]*openwallet.TxExtractData),
+			extractContractData: make(map[string]*openwallet.TxExtractData),
+		}
+
+		bs.extractTransaction(tx, &result, scanAddressFunc)
+		data := result.extractData
+		txExtract := data[key]
+		if txExtract != nil {
+			array = append(array, txExtract)
+		}
+	}
+
+	return array, nil
+}
+
+//Run 运行
+func (bs *BTCBlockScanner) Run() error {
+
+	//使用浏览器，开启socketIO监听内存池交易
+	if bs.wm.config.RPCServerType == RPCServerExplorer {
+		bs.setupSocketIO()
+	}
+
+	bs.BlockScannerBase.Run()
+
+	return nil
+}
+
+
+/******************* 使用insight socket.io 监听区块 *******************/
+
+//setupSocketIO 配置socketIO监听新区块
+func (bs *BTCBlockScanner) setupSocketIO() error {
+
+	log.Info("block scanner use socketIO to listen new data")
+
+	var (
+		room = "inv"
+	)
+
+	if bs.socketIO == nil {
+
+		apiUrl, err := url.Parse(bs.wm.config.serverAPI)
+		if err != nil {
+			return err
+		}
+		domain := apiUrl.Hostname()
+		port := common.NewString(apiUrl.Port()).Int()
+		c, err := gosocketio.Dial(
+			gosocketio.GetUrl(domain, port, false),
+			transport.GetDefaultWebsocketTransport())
+		if err != nil {
+			return err
+		}
+
+		bs.socketIO = c
+
+	}
+
+	err := bs.socketIO.On("tx", func(h *gosocketio.Channel, args interface{}) {
+		//log.Info("block scanner socketIO get new transaction received: ", args)
+		txMap, ok := args.(map[string]interface{})
+		if ok {
+			txid := txMap["txid"].(string)
+			errInner := bs.BatchExtractTransaction(0, "", []string{txid})
+			if errInner != nil {
+				log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", errInner)
+			}
+		}
+
+	})
+	if err != nil {
+		return err
+	}
+
+	/*
+	err = bs.socketIO.On("block", func(h *gosocketio.Channel, args interface{}) {
+		log.Info("block scanner socketIO get new block received: ", args)
+		hash, ok := args.(string)
+		if ok {
+
+			block, errInner := bs.wm.GetBlock(hash)
+			if errInner != nil {
+				log.Std.Info("block scanner can not get new block data; unexpected error: %v", errInner)
+			}
+
+			errInner = bs.scanBlock(block)
+			if errInner != nil {
+				log.Std.Info("block scanner can not block: %d; unexpected error: %v", block.Height, errInner)
+			}
+		}
+
+	})
+	if err != nil {
+		return err
+	}
+	*/
+
+	err = bs.socketIO.On(gosocketio.OnDisconnection, func(h *gosocketio.Channel) {
+		log.Info("block scanner socketIO disconnected")
+	})
+	if err != nil {
+		return err
+	}
+
+	err = bs.socketIO.On(gosocketio.OnConnection, func(h *gosocketio.Channel) {
+		log.Info("block scanner socketIO connected")
+		h.Emit("subscribe", room)
+	})
+	if err != nil {
+		return err
 	}
 
 	return nil

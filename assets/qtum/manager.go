@@ -1886,6 +1886,7 @@ func (wm *WalletManager) loadConfig() error {
 		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
 	}
 
+	wm.config.RPCServerType, _ = c.Int("rpcServerType")
 	wm.config.serverAPI = c.String("apiURL")
 	wm.config.threshold, _ = decimal.NewFromString(c.String("threshold"))
 	wm.config.sumAddress = c.String("sumAddress")
@@ -1908,7 +1909,11 @@ func (wm *WalletManager) loadConfig() error {
 
 	token := basicAuth(wm.config.rpcUser, wm.config.rpcPassword)
 
-	wm.walletClient = NewClient(wm.config.serverAPI, token, false)
+	if wm.config.RPCServerType == RPCServerCore {
+		wm.walletClient = NewClient(wm.config.serverAPI, token, false)
+	} else {
+		wm.ExplorerClient = NewExplorer(wm.config.serverAPI, false)
+	}
 
 	return nil
 }
@@ -2044,10 +2049,10 @@ func (wm *WalletManager) SendToAddress(address,amount,comment string,subtractfee
 	}
 
 	//解锁钱包
-	err := wm.UnlockWallet(password, 120)
-	if err != nil {
-		return "", err
-	}
+	//err := wm.UnlockWallet(password, 120)
+	//if err != nil {
+	//	return "", err
+	//}
 
 	result, err := wm.walletClient.Call("sendtoaddress", request)
 	if err != nil {

@@ -1900,35 +1900,7 @@ func (wm *WalletManager) LoadConfig() error {
 		return errors.New("Config is not setup. Please run 'wmd Config -s <symbol>' ")
 	}
 
-	wm.Config.RPCServerType, _ = c.Int("rpcServerType")
-	wm.Config.ServerAPI = c.String("serverAPI")
-	wm.Config.Threshold, _ = decimal.NewFromString(c.String("threshold"))
-	wm.Config.SumAddress = c.String("sumAddress")
-	wm.Config.RpcUser = c.String("rpcUser")
-	wm.Config.RpcPassword = c.String("rpcPassword")
-	wm.Config.NodeInstallPath = c.String("nodeInstallPath")
-	wm.Config.IsTestNet, _ = c.Bool("isTestNet")
-	wm.Config.WalletPassword = c.String("walletPassword")
-	if wm.Config.IsTestNet {
-		wm.Config.WalletDataPath = c.String("testNetDataPath")
-	} else {
-		wm.Config.WalletDataPath = c.String("mainNetDataPath")
-	}
-
-	cyclesec := c.String("cycleSeconds")
-	if cyclesec == "" {
-		return errors.New(fmt.Sprintf(" cycleSeconds is not set, sample: 1m , 30s, 3m20s etc... Please set it in './conf/%s.ini' \n", Symbol))
-	}
-
-	wm.Config.CycleSeconds, _ = time.ParseDuration(cyclesec)
-
-	token := BasicAuth(wm.Config.RpcUser, wm.Config.RpcPassword)
-
-	if wm.Config.RPCServerType == RPCServerCore {
-		wm.WalletClient = NewClient(wm.Config.ServerAPI, token, false)
-	} else {
-		wm.ExplorerClient = NewExplorer(wm.Config.ServerAPI, false)
-	}
+	wm.LoadAssetsConfig(c)
 
 	return nil
 }

@@ -49,7 +49,7 @@ func NewAddressDecoder(wm *WalletManager) *addressDecoder {
 func (decoder *addressDecoder) PrivateKeyToWIF(priv []byte, isTestnet bool) (string, error) {
 
 	cfg := addressEncoder.QTUM_mainnetPrivateWIFCompressed
-	if decoder.wm.config.isTestNet {
+	if isTestnet {
 		cfg = addressEncoder.QTUM_testnetPrivateWIFCompressed
 	}
 
@@ -69,7 +69,7 @@ func (decoder *addressDecoder) PrivateKeyToWIF(priv []byte, isTestnet bool) (str
 func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (string, error) {
 
 	cfg := addressEncoder.QTUM_mainnetAddressP2PKH
-	if decoder.wm.config.isTestNet {
+	if isTestnet {
 		cfg = addressEncoder.QTUM_testnetAddressP2PKH
 	}
 
@@ -91,7 +91,7 @@ func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (s
 func (decoder *addressDecoder) RedeemScriptToAddress(pubs [][]byte, required uint64, isTestnet bool) (string, error) {
 
 	cfg := addressEncoder.QTUM_mainnetAddressP2SH
-	if decoder.wm.config.isTestNet {
+	if isTestnet {
 		cfg = addressEncoder.QTUM_testnetAddressP2SH
 	}
 
@@ -113,7 +113,7 @@ func (decoder *addressDecoder) RedeemScriptToAddress(pubs [][]byte, required uin
 func (decoder *addressDecoder) WIFToPrivateKey(wif string, isTestnet bool) ([]byte, error) {
 
 	cfg := addressEncoder.QTUM_mainnetPrivateWIFCompressed
-	if decoder.wm.config.isTestNet {
+	if isTestnet {
 		cfg = addressEncoder.QTUM_testnetPrivateWIFCompressed
 	}
 

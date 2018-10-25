@@ -17,12 +17,24 @@ package openwallet
 
 import "github.com/astaxie/beego/config"
 
-//Config 用于给AssetsAdapter调用者初始化、加载外部配置的接口
-type Config interface {
+//AssetsConfig 用于给AssetsAdapter调用者初始化、加载外部配置的接口
+type AssetsConfig interface {
 
 	//LoadExternalConfig 加载外部配置
-	LoadExternalConfig(c config.Configer) error
+	LoadAssetsConfig(c config.Configer) error
 
 	//InitDefaultConfig 初始化默认配置
-	InitDefaultConfig() (config.Configer, error)
+	InitAssetsConfig() (config.Configer, error)
+}
+
+type AssetsConfigBase struct{}
+
+//LoadAssetsConfig 加载外部配置
+func (*AssetsConfigBase) LoadAssetsConfig(c config.Configer) error {
+	return nil
+}
+
+//InitAssetsConfig 初始化默认配置
+func (*AssetsConfigBase) InitAssetsConfig() (config.Configer, error) {
+	return nil, nil
 }

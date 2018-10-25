@@ -46,6 +46,11 @@ const (
 	RPCServerExplorer = 1 //RPC服务，insight-API
 )
 
+const (
+	QTUM_GET_TOKEN_BALANCE_METHOD      = "0x70a08231"
+	QTUM_TRANSFER_TOKEN_BALANCE_METHOD = "0xa9059cbb"
+	QTUM_TRANSFER_EVENT_ID             = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+)
 
 type WalletConfig struct {
 
@@ -133,7 +138,7 @@ func NewConfig() *WalletConfig {
 	//区块链数据文件
 	c.blockchainFile = "blockchain.db"
 	//是否测试网络
-	c.isTestNet = false
+	c.isTestNet = true
 	// 核心钱包是否只做监听
 	c.CoreWalletWatchOnly = true
 	//最大的输入数量
