@@ -17,6 +17,7 @@ package manager
 
 import (
 	"fmt"
+	"github.com/shopspring/decimal"
 	"time"
 
 	"github.com/blocktree/OpenWallet/log"
@@ -279,6 +280,67 @@ func (wm *WalletManager) SubmitTransaction(appID, walletID, accountID string, ra
 	//log.Error("perfectTx:", perfectTx)
 
 	return perfectTx, nil
+}
+
+//GetAssetsAccountBalance 获取账户余额
+func (wm *WalletManager) GetAssetsAccountBalance(appID, walletID, accountID string) (*openwallet.Balance, error) {
+
+	var (
+		addressMap  = make(map[string]*openwallet.Address)
+		searchAddrs = make([]string, 0)
+	)
+
+	wrapper, err := wm.newWalletWrapper(appID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := wrapper.GetAssetsAccountInfo(accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	assetsMgr, err := GetAssetsManager(account.Symbol)
+	if err != nil {
+		return nil, err
+	}
+
+	//提取交易单
+	scanner := assetsMgr.GetBlockScanner()
+	if scanner == nil {
+		return nil, fmt.Errorf("[%s] not support block scan", account.Symbol)
+	}
+
+	addresses, err := wrapper.GetAddressList(0, -1, "AccountID", accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, address := range addresses {
+		searchAddrs = append(searchAddrs, address.Address)
+		addressMap[address.Address] = address
+	}
+
+	accountBalanceDec := decimal.New(0, 0)
+
+	balances, err := scanner.GetBalanceByAddress(searchAddrs...)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, b := range balances {
+		addrBalance, _ := decimal.NewFromString(b.Balance)
+		accountBalanceDec = accountBalanceDec.Add(addrBalance)
+	}
+
+	accountBalance := openwallet.Balance{
+		Symbol:    account.Symbol,
+		AccountID: accountID,
+		Address:   "",
+		Balance:   accountBalanceDec.StringFixed(assetsMgr.Decimal()),
+	}
+
+	return &accountBalance, nil
 }
 
 //GetTransactions
