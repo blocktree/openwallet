@@ -37,7 +37,7 @@ func init() {
 	tc.EnableBlockScan = true
 	tc.SupportAssets = []string{
 		//"BTC",
-		"QTUM",
+		//"QTUM",
 		//"LTC",
 		//"ETH",
 	}

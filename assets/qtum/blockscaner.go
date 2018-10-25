@@ -283,6 +283,7 @@ func (bs *BTCBlockScanner) ScanTxMemPool() {
 	txIDsInMemPool, err := bs.wm.GetTxIDsInMemPool()
 	if err != nil {
 		log.Std.Info("block scanner can not get mempool data; unexpected error: %v", err)
+		return
 	}
 
 	err = bs.BatchExtractTransaction(0, "", txIDsInMemPool)

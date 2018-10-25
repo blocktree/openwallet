@@ -90,9 +90,9 @@ func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (s
 //RedeemScriptToAddress 多重签名赎回脚本转地址
 func (decoder *addressDecoder) RedeemScriptToAddress(pubs [][]byte, required uint64, isTestnet bool) (string, error) {
 
-	cfg := addressEncoder.LTC_mainnetAddressP2SH
+	cfg := addressEncoder.LTC_mainnetAddressP2SH2
 	if decoder.wm.Config.IsTestNet {
-		cfg = addressEncoder.LTC_testnetAddressP2SH
+		cfg = addressEncoder.LTC_testnetAddressP2SH2
 	}
 
 	redeemScript := make([]byte, 0)

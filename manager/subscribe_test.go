@@ -118,6 +118,8 @@ func TestSubscribeAddress_ETH(t *testing.T) {
 	sub := subscriberSingle{}
 	scanner.AddObserver(&sub)
 
+	scanner.Run()
+
 	<-endRunning
 }
 
@@ -143,7 +145,49 @@ func TestSubscribeAddress_QTUM(t *testing.T) {
 	}
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	scanner.SetRescanBlockHeight(2)
+	scanner.SetRescanBlockHeight(249878)
+
+
+	if scanner == nil {
+		log.Error(symbol, "is not support block scan")
+		return
+	}
+
+	for _, a := range addrs {
+		scanner.AddAddress(a, accountID)
+	}
+
+
+	sub := subscriberSingle{}
+	scanner.AddObserver(&sub)
+
+	scanner.Run()
+
+	<-endRunning
+}
+
+
+
+func TestSubscribeAddress_LTC(t *testing.T) {
+
+	var (
+		endRunning = make(chan bool, 1)
+		symbol = "LTC"
+		accountID = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
+		addrs = []string{
+			"QZn9j1oWxcYCdL8VBKPfv1SAXNaAEYjoga",	//主链转账
+			"QYkwzDhU7UyKd4hdX69c24unYjynVyYKot", 	//主链转账
+		}
+	)
+
+	assetsMgr, err := GetAssetsManager(symbol)
+	if err != nil {
+		log.Error(symbol, "is not support")
+		return
+	}
+	//log.Debug("already got scanner:", assetsMgr)
+	scanner := assetsMgr.GetBlockScanner()
+	scanner.SetRescanBlockHeight(813080)
 
 
 	if scanner == nil {
