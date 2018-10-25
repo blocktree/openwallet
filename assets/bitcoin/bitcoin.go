@@ -18,6 +18,7 @@ package bitcoin
 import (
 	"errors"
 	"fmt"
+	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/console"
 	"github.com/blocktree/OpenWallet/log"
@@ -27,6 +28,7 @@ import (
 	"github.com/shopspring/decimal"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 //初始化配置流程
@@ -168,6 +170,10 @@ func (wm *WalletManager) SummaryFollow() error {
 	if len(wm.Config.SumAddress) == 0 {
 
 		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
+	}
+
+	if wm.Config.CycleSeconds == 0 {
+		wm.Config.CycleSeconds = 30 * 1000
 	}
 
 	//查询所有钱包信息
@@ -609,4 +615,42 @@ func (wm *WalletManager) GetAddressWithBalance(address ...*openwallet.Address) e
 
 	return nil
 
+}
+
+//LoadAssetsConfig 加载外部配置
+func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
+
+	wm.Config.RPCServerType, _ = c.Int("rpcServerType")
+	wm.Config.ServerAPI = c.String("serverAPI")
+	wm.Config.Threshold, _ = decimal.NewFromString(c.String("threshold"))
+	wm.Config.SumAddress = c.String("sumAddress")
+	wm.Config.RpcUser = c.String("rpcUser")
+	wm.Config.RpcPassword = c.String("rpcPassword")
+	wm.Config.NodeInstallPath = c.String("nodeInstallPath")
+	wm.Config.IsTestNet, _ = c.Bool("isTestNet")
+	wm.Config.WalletPassword = c.String("walletPassword")
+	if wm.Config.IsTestNet {
+		wm.Config.WalletDataPath = c.String("testNetDataPath")
+	} else {
+		wm.Config.WalletDataPath = c.String("mainNetDataPath")
+	}
+
+	cyclesec := c.String("cycleSeconds")
+
+	wm.Config.CycleSeconds, _ = time.ParseDuration(cyclesec)
+
+	token := BasicAuth(wm.Config.RpcUser, wm.Config.RpcPassword)
+
+	if wm.Config.RPCServerType == RPCServerCore {
+		wm.WalletClient = NewClient(wm.Config.ServerAPI, token, false)
+	} else {
+		wm.ExplorerClient = NewExplorer(wm.Config.ServerAPI, false)
+	}
+
+	return nil
+}
+
+//InitAssetsConfig 初始化默认配置
+func (wm *WalletManager) InitAssetsConfig() (config.Configer, error) {
+	return config.NewConfigData("ini", []byte(wm.Config.DefaultConfig))
 }
