@@ -40,9 +40,9 @@ func createTransaction(walletID, accountID, to string) (*openwallet.RawTransacti
 
 func TestWalletManager_CreateTransaction(t *testing.T) {
 
-	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
-	accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
-	to := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
+	to := "d35f9Ea14D063af9B3567064FAB567275b09f03D"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
 
@@ -79,9 +79,9 @@ func TestWalletManager_CreateQrc20TokenTransaction(t *testing.T) {
 
 func TestWalletManager_SignTransaction(t *testing.T) {
 
-	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
-	accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
-	to := "qYHPRYDUNq6ScqbweP5Cawnyp566VWBfUi"
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
+	to := "d35f9Ea14D063af9B3567064FAB567275b09f03D"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
 	if err != nil {
@@ -100,9 +100,9 @@ func TestWalletManager_SignTransaction(t *testing.T) {
 
 func TestWalletManager_VerifyTransaction(t *testing.T) {
 
-	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
-	accountID := "26THHhacorJKJrF2RNCwkkNUrv16fnksdjsa7PxQXWry"
-	to := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
+	to := "d35f9Ea14D063af9B3567064FAB567275b09f03D"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
 	if err != nil {
@@ -129,9 +129,9 @@ func TestWalletManager_VerifyTransaction(t *testing.T) {
 
 func TestWalletManager_SubmitTransaction(t *testing.T) {
 
-	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
-	accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
-	to := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
+	to := "d35f9Ea14D063af9B3567064FAB567275b09f03D"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
 	if err != nil {
@@ -237,4 +237,17 @@ func TestWalletManager_GetTransactionByWxID(t *testing.T) {
 		return
 	}
 	log.Info("tx:", tx)
+}
+
+func TestWalletManager_GetAssetsAccountBalance(t *testing.T) {
+
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
+
+	balance, err := tm.GetAssetsAccountBalance(testApp, walletID, accountID)
+	if err != nil {
+		log.Error("GetAssetsAccountBalance failed, unexpected error:", err)
+		return
+	}
+	log.Info("balance:", balance)
 }

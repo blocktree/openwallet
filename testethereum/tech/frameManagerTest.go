@@ -345,6 +345,25 @@ func TestTokenBalance() {
 	log.Debugf("balance list:%v", string(objStr))
 }
 
+func TestGetBalanceByAddress() {
+	manager, _ := GetEthWalletManager()
+	addrs := []string{
+		"0x50068fD632c1A6e6c5bD407b4cCf8861A589E776",
+		"0x2A63B2203955b84FefE52BAca3881b3614991b34",
+		"0x584a9Ed7f95Cd04337df791Fac32bED88E13b77a",
+		"0xdb9a569f7b80030956dc9686b89D5fF15922E175",
+	}
+
+	balanceList, err := manager.Blockscanner.GetBalanceByAddress(addrs...)
+	if err != nil {
+		log.Errorf("get token balance by address failed, err=%v", err)
+		return
+	}
+
+	objStr, _ := json.MarshalIndent(balanceList, "", " ")
+	log.Debugf("balance list:%v", string(objStr))
+}
+
 func TestTokenDecode() {
 	manager, _ := GetEthWalletManager()
 

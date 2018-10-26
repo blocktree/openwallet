@@ -30,6 +30,9 @@ type AssetsAdapter interface {
 	//币种信息
 	SymbolInfo
 
+	//配置
+	AssetsConfig
+
 	//GetAddressDecode 地址解析器
 	GetAddressDecode() AddressDecoder
 
@@ -45,6 +48,7 @@ type AssetsAdapter interface {
 
 type AssetsAdapterBase struct {
 	SymbolInfoBase
+	AssetsConfigBase
 }
 
 //GetAddressDecode 地址解析器
