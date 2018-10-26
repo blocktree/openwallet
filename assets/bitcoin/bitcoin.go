@@ -642,9 +642,9 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 	token := BasicAuth(wm.Config.RpcUser, wm.Config.RpcPassword)
 
 	if wm.Config.RPCServerType == RPCServerCore {
-		wm.WalletClient = NewClient(wm.Config.ServerAPI, token, false)
+		wm.WalletClient = NewClient(wm.Config.ServerAPI, token, true)
 	} else {
-		wm.ExplorerClient = NewExplorer(wm.Config.ServerAPI, false)
+		wm.ExplorerClient = NewExplorer(wm.Config.ServerAPI, true)
 	}
 
 	return nil

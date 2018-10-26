@@ -30,6 +30,7 @@ func createTransaction(walletID, accountID, to string) (*openwallet.RawTransacti
 	}
 
 	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "0.0003", to, "", "")
+
 	if err != nil {
 		log.Error("CreateTransaction failed, unexpected error:", err)
 		return nil, err
@@ -52,6 +53,29 @@ func TestWalletManager_CreateTransaction(t *testing.T) {
 
 	log.Info("rawTx:", rawTx)
 
+}
+
+func TestWalletManager_CreateQrc20TokenTransaction(t *testing.T) {
+	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
+	accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
+	to := "qYHPRYDUNq6ScqbweP5Cawnyp566VWBfUi"
+	feeRate := "0.00000040"
+	contractAddr := "91a6081095ef860d28874c9db613e7a4107b0281"
+	tokenName := "QRC ZB TEST"
+	tokeSymbol := "QZTC"
+	var tokenDecimal uint64 = 8
+
+	err := tm.RefreshAssetsAccountBalance(testApp, accountID)
+	if err != nil {
+		log.Error("RefreshAssetsAccountBalance failed, unexpected error:", err)
+	}
+
+	rawTx, err := tm.CreateQrc20TokenTransaction(testApp, walletID, accountID,"0.4", to, feeRate,"",contractAddr, tokenName, tokeSymbol, tokenDecimal)
+	if err != nil {
+		log.Error("CreateQrc20TokenTransaction failed, unexpected error:", err)
+	}else {
+		log.Info("rawTx:", rawTx)
+	}
 }
 
 func TestWalletManager_SignTransaction(t *testing.T) {
@@ -227,4 +251,8 @@ func TestWalletManager_GetAssetsAccountBalance(t *testing.T) {
 		return
 	}
 	log.Info("balance:", balance)
+}
+
+func TestTransfer_BTC(t *testing.T) {
+
 }

@@ -75,6 +75,58 @@ func (wm *WalletManager) CreateErc20TokenTransaction(appID, walletID, accountID,
 	return &rawTx, nil
 }
 
+func (wm *WalletManager) CreateQrc20TokenTransaction(appID, walletID, accountID, sendAmount, toAddress, feeRate, memo,
+contractAddr, tokenName, tokenSymbol string, tokenDecimal uint64) (*openwallet.RawTransaction, error) {
+	wrapper, err := wm.newWalletWrapper(appID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := wrapper.GetAssetsAccountInfo(accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	assetsMgr, err := GetAssetsManager(account.Symbol)
+	if err != nil {
+		return nil, err
+	}
+
+	rawTx := openwallet.RawTransaction{
+		Coin: openwallet.Coin{
+			Symbol:     account.Symbol,
+			ContractID: "",
+			IsContract: true,
+			Contract: openwallet.SmartContract{
+				ContractID: "",
+				Address:    contractAddr,
+				Name:       tokenName,
+				Symbol:     account.Symbol,
+				Token:      tokenSymbol,
+				Decimals:   tokenDecimal,
+			},
+		},
+		Account:  account,
+		//gasPrice
+		FeeRate:  feeRate,
+		To:       map[string]string{toAddress: sendAmount},
+		Required: 1,
+	}
+
+	txdecoder := assetsMgr.GetTransactionDecoder()
+	if txdecoder == nil {
+		return nil, fmt.Errorf("[%s] is not support transaction. ", account.Symbol)
+	}
+	err = txdecoder.CreateRawTransaction(wrapper, &rawTx)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Debug("Qrc20Token transaction has been created successfully")
+
+	return &rawTx, nil
+}
+
 // CreateTransaction
 func (wm *WalletManager) CreateTransaction(appID, walletID, accountID, amount, address, feeRate, memo string) (*openwallet.RawTransaction, error) {
 
