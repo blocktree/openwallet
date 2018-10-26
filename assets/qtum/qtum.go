@@ -18,9 +18,12 @@ package qtum
 import (
 	"errors"
 	"fmt"
+	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/console"
 	"github.com/blocktree/OpenWallet/logger"
+	"time"
+
 	//"github.com/blocktree/OpenWallet/timer"
 	"github.com/shopspring/decimal"
 	"github.com/blocktree/OpenWallet/log"
@@ -170,6 +173,10 @@ func (wm *WalletManager) SummaryFollow() error {
 	if len(wm.config.sumAddress) == 0 {
 
 		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
+	}
+
+	if wm.config.cycleSeconds == 0 {
+		wm.config.cycleSeconds = 30 * 1000
 	}
 
 	//查询所有钱包信息
@@ -527,10 +534,10 @@ func (wm *WalletManager) GetTransactionDecoder() openwallet.TransactionDecoder {
 func (wm *WalletManager) GetBlockScanner() openwallet.BlockScanner {
 
 	//先加载是否有配置文件
-	err := wm.loadConfig()
-	if err != nil {
-		return nil
-	}
+	//err := wm.loadConfig()
+	//if err != nil {
+	//	return nil
+	//}
 
 	return wm.blockscanner
 }
@@ -539,10 +546,10 @@ func (wm *WalletManager) GetBlockScanner() openwallet.BlockScanner {
 func (wm *WalletManager) ImportWatchOnlyAddress(address ...*openwallet.Address) error {
 
 	//先加载是否有配置文件
-	err := wm.loadConfig()
-	if err != nil {
-		return nil
-	}
+	//err := wm.loadConfig()
+	//if err != nil {
+	//	return nil
+	//}
 
 	var (
 		failedIndex = make([]int, 0)
@@ -550,7 +557,7 @@ func (wm *WalletManager) ImportWatchOnlyAddress(address ...*openwallet.Address) 
 
 	for i, a := range address {
 		log.Debug("start ImportAddress")
-		err = wm.ImportAddress(a)
+		err := wm.ImportAddress(a)
 		if err != nil {
 			failedIndex = append(failedIndex, i)
 		}
@@ -586,10 +593,10 @@ func (wm *WalletManager) GetAddressWithBalance(address ...*openwallet.Address) e
 	)
 
 	//先加载是否有配置文件
-	err := wm.loadConfig()
-	if err != nil {
-		return err
-	}
+	//err := wm.loadConfig()
+	//if err != nil {
+	//	return err
+	//}
 
 
 	for _, address := range address {
@@ -615,4 +622,42 @@ func (wm *WalletManager) GetAddressWithBalance(address ...*openwallet.Address) e
 
 	return nil
 
+}
+
+
+//LoadAssetsConfig 加载外部配置
+func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
+
+	wm.config.RPCServerType, _ = c.Int("rpcServerType")
+	wm.config.serverAPI = c.String("apiURL")
+	wm.config.threshold, _ = decimal.NewFromString(c.String("threshold"))
+	wm.config.sumAddress = c.String("sumAddress")
+	wm.config.rpcUser = c.String("rpcUser")
+	wm.config.rpcPassword = c.String("rpcPassword")
+	wm.config.nodeInstallPath = c.String("nodeInstallPath")
+	wm.config.isTestNet, _ = c.Bool("isTestNet")
+	if wm.config.isTestNet {
+		wm.config.walletDataPath = c.String("testNetDataPath")
+	} else {
+		wm.config.walletDataPath = c.String("mainNetDataPath")
+	}
+
+	cyclesec := c.String("cycleSeconds")
+
+	wm.config.cycleSeconds, _ = time.ParseDuration(cyclesec)
+
+	token := basicAuth(wm.config.rpcUser, wm.config.rpcPassword)
+
+	if wm.config.RPCServerType == RPCServerCore {
+		wm.walletClient = NewClient(wm.config.serverAPI, token, false)
+	} else {
+		wm.ExplorerClient = NewExplorer(wm.config.serverAPI, false)
+	}
+
+	return nil
+}
+
+//InitAssetsConfig 初始化默认配置
+func (wm *WalletManager) InitAssetsConfig() (config.Configer, error) {
+	return config.NewConfigData("ini", []byte(wm.config.defaultConfig))
 }

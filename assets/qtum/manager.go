@@ -63,7 +63,7 @@ const (
 
 type WalletManager struct {
 
-	*openwallet.AssetsAdapterBase
+	openwallet.AssetsAdapterBase
 
 	storage      *hdkeystore.HDKeystore          //秘钥存取
 	walletClient *Client                       // 节点客户端
@@ -1886,34 +1886,8 @@ func (wm *WalletManager) loadConfig() error {
 		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
 	}
 
-	wm.config.RPCServerType, _ = c.Int("rpcServerType")
-	wm.config.serverAPI = c.String("apiURL")
-	wm.config.threshold, _ = decimal.NewFromString(c.String("threshold"))
-	wm.config.sumAddress = c.String("sumAddress")
-	wm.config.rpcUser = c.String("rpcUser")
-	wm.config.rpcPassword = c.String("rpcPassword")
-	wm.config.nodeInstallPath = c.String("nodeInstallPath")
-	wm.config.isTestNet, _ = c.Bool("isTestNet")
-	if wm.config.isTestNet {
-		wm.config.walletDataPath = c.String("testNetDataPath")
-	} else {
-		wm.config.walletDataPath = c.String("mainNetDataPath")
-	}
+	wm.LoadAssetsConfig(c)
 
-	cyclesec := c.String("cycleSeconds")
-	if cyclesec == "" {
-		return errors.New(fmt.Sprintf(" cycleSeconds is not set, sample: 1m , 30s, 3m20s etc... Please set it in './conf/%s.ini' \n", Symbol))
-	}
-
-	wm.config.cycleSeconds, _ = time.ParseDuration(cyclesec)
-
-	token := basicAuth(wm.config.rpcUser, wm.config.rpcPassword)
-
-	if wm.config.RPCServerType == RPCServerCore {
-		wm.walletClient = NewClient(wm.config.serverAPI, token, false)
-	} else {
-		wm.ExplorerClient = NewExplorer(wm.config.serverAPI, false)
-	}
 
 	return nil
 }
