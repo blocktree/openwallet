@@ -73,7 +73,7 @@ func TestWalletManager_CreateQrc20TokenTransaction(t *testing.T) {
 	if err != nil {
 		log.Error("CreateQrc20TokenTransaction failed, unexpected error:", err)
 	}else {
-		log.Info("rawTx:", rawTx)
+		log.Info("rawTx:", rawTx.)
 	}
 }
 
@@ -129,9 +129,9 @@ func TestWalletManager_VerifyTransaction(t *testing.T) {
 
 func TestWalletManager_SubmitTransaction(t *testing.T) {
 
-	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
-	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
-	to := "d35f9Ea14D063af9B3567064FAB567275b09f03D"
+	walletID := "W3hxZRqw67PbBq5GFpULkaAJdKN9Mzasj5"
+	accountID := "26THHhacorJKJrF2RNCwkkNUrv16fnksdjsa7PxQXWry"
+	to := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
 	if err != nil {

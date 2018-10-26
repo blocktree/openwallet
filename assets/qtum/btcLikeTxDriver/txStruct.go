@@ -220,8 +220,8 @@ func (t Contract) encodeToBytes() ([]byte, error) {
 		ret = append(ret, t.Vcontract.gasPrice...)
 		ret = append(ret,0x44)
 		ret = append(ret, t.Vcontract.dataHex...)
-		ret = append(ret,0x14)
-		ret = append(ret, t.Vcontract.address...)
+		ret = append(ret,t.Vcontract.lenContract...)
+		ret = append(ret, t.Vcontract.contractAddr...)
 		ret = append(ret, t.Vcontract.opCall...)
 
 		for _, out := range t.Vouts {
@@ -279,8 +279,8 @@ func (t Contract) encodeToBytes() ([]byte, error) {
 		ret = append(ret, t.Vcontract.gasPrice...)
 		ret = append(ret,0x44)
 		ret = append(ret, t.Vcontract.dataHex...)
-		ret = append(ret,0x14)
-		ret = append(ret, t.Vcontract.address...)
+		ret = append(ret,t.Vcontract.lenContract...)
+		ret = append(ret, t.Vcontract.contractAddr...)
 		ret = append(ret, t.Vcontract.opCall...)
 
 		for _, out := range t.Vouts {
