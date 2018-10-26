@@ -84,7 +84,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	}
 
 	if len(unspents) == 0 {
-		return fmt.Errorf("[%s] have not unspents", accountID)
+		return fmt.Errorf("[%s] balance is not enough", accountID)
 	}
 
 	if len(rawTx.To) == 0 {

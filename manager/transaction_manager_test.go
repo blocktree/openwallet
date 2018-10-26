@@ -29,7 +29,7 @@ func createTransaction(walletID, accountID, to string) (*openwallet.RawTransacti
 		return nil, err
 	}
 
-	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "0.0003", to, "", "")
+	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "0.0002", to, "", "")
 
 	if err != nil {
 		log.Error("CreateTransaction failed, unexpected error:", err)
@@ -243,7 +243,7 @@ func TestWalletManager_GetTransactionByWxID(t *testing.T) {
 func TestWalletManager_GetAssetsAccountBalance(t *testing.T) {
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
-	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
+	accountID := "EbUsW3YaHQ61eNt3f4hDXJAFh9LGmLZWH1VTTSnQmhnL"
 
 	balance, err := tm.GetAssetsAccountBalance(testApp, walletID, accountID)
 	if err != nil {
@@ -251,8 +251,4 @@ func TestWalletManager_GetAssetsAccountBalance(t *testing.T) {
 		return
 	}
 	log.Info("balance:", balance)
-}
-
-func TestTransfer_BTC(t *testing.T) {
-
 }
