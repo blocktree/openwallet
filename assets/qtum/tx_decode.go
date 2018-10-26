@@ -82,12 +82,6 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		return errors.New("Receiver addresses is empty!")
 	}
 
-	//计算总发送金额
-	for addr, amount := range rawTx.To {
-		deamount, _ := decimal.NewFromString(amount)
-		totalSend = totalSend.Add(deamount)
-		destinations = append(destinations, addr)
-	}
 
 	//获取utxo，按小到大排序
 	sort.Sort(UnspentSort{unspents, func(a, b *Unspent) int {
@@ -217,7 +211,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 			txInTotal += amount2
 		}
 
-		txInTotal -= 50000000
+		txInTotal -= 20000000
 
 		//装配输出
 		for to, amount = range rawTx.To {
@@ -250,6 +244,13 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		}
 
 	}else {
+
+		//计算总发送金额
+		for addr, amount := range rawTx.To {
+			deamount, _ := decimal.NewFromString(amount)
+			totalSend = totalSend.Add(deamount)
+			destinations = append(destinations, addr)
+		}
 
 		log.Std.Notice("-----------------------------------------------")
 		log.Std.Notice("From Account: %s", accountID)

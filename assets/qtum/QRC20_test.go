@@ -71,10 +71,10 @@ func Test_AmountTo32bytesArg(t *testing.T){
 func Test_QRC20Transfer(t *testing.T) {
 	contractAddress := "91a6081095ef860d28874c9db613e7a4107b0281"
 	from := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
-	to := "qf4W82getddc3aqjWPoqqvjDp1JuyG36aC"
+	to := "qakZE2dYZU7VF1m5RDRBFVr1fFMFKhTNWA"
 	gasPrice := "0.00000040"
 	var gasLimit int64 = 250000
-	var amount decimal.Decimal = decimal.NewFromFloat(7777)
+	var amount decimal.Decimal = decimal.NewFromFloat(999)
 
 	result, err := tw.QRC20Transfer(contractAddress, from, to, gasPrice, amount, gasLimit)
 	if err != nil {
