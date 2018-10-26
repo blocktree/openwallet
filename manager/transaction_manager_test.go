@@ -301,7 +301,3 @@ func TestWalletManager_GetAssetsAccountBalance(t *testing.T) {
 	}
 	log.Info("balance:", balance)
 }
-
-func TestTransfer_BTC(t *testing.T) {
-
-}
