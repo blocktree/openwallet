@@ -30,11 +30,11 @@ type AssetsConfig interface {
 type AssetsConfigBase struct{}
 
 //LoadAssetsConfig 加载外部配置
-func (*AssetsConfigBase) LoadAssetsConfig(c config.Configer) error {
+func (as *AssetsConfigBase) LoadAssetsConfig(c config.Configer) error {
 	return nil
 }
 
 //InitAssetsConfig 初始化默认配置
-func (*AssetsConfigBase) InitAssetsConfig() (config.Configer, error) {
+func (as *AssetsConfigBase) InitAssetsConfig() (config.Configer, error) {
 	return nil, nil
 }

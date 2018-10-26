@@ -43,10 +43,10 @@ func NewTransactionDecoder(wm *WalletManager) *TransactionDecoder {
 func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	//先加载是否有配置文件
-	err := decoder.wm.LoadConfig()
-	if err != nil {
-		return err
-	}
+	//err := decoder.wm.LoadConfig()
+	//if err != nil {
+	//	return err
+	//}
 
 	var (
 		vins      = make([]btcTransaction.Vin, 0)
@@ -294,10 +294,10 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	//先加载是否有配置文件
-	err := decoder.wm.LoadConfig()
-	if err != nil {
-		return err
-	}
+	//err := decoder.wm.LoadConfig()
+	//if err != nil {
+	//	return err
+	//}
 
 	var (
 	//txUnlocks   = make([]btcTransaction.TxUnlock, 0)
@@ -369,10 +369,10 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletD
 func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	//先加载是否有配置文件
-	err := decoder.wm.LoadConfig()
-	if err != nil {
-		return err
-	}
+	//err := decoder.wm.LoadConfig()
+	//if err != nil {
+	//	return err
+	//}
 
 	var (
 		txUnlocks  = make([]btcTransaction.TxUnlock, 0)
@@ -469,10 +469,10 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	//先加载是否有配置文件
-	err := decoder.wm.LoadConfig()
-	if err != nil {
-		return err
-	}
+	//err := decoder.wm.LoadConfig()
+	//if err != nil {
+	//	return err
+	//}
 
 	if len(rawTx.RawHex) == 0 {
 		return fmt.Errorf("transaction hex is empty")

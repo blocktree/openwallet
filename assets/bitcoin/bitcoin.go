@@ -522,10 +522,10 @@ func (wm *WalletManager) GetTransactionDecoder() openwallet.TransactionDecoder {
 func (wm *WalletManager) GetBlockScanner() openwallet.BlockScanner {
 
 	//先加载是否有配置文件
-	err := wm.LoadConfig()
-	if err != nil {
-		return nil
-	}
+	//err := wm.LoadConfig()
+	//if err != nil {
+	//	return nil
+	//}
 
 	return wm.Blockscanner
 }
@@ -534,10 +534,10 @@ func (wm *WalletManager) GetBlockScanner() openwallet.BlockScanner {
 func (wm *WalletManager) ImportWatchOnlyAddress(address ...*openwallet.Address) error {
 
 	//先加载是否有配置文件
-	err := wm.LoadConfig()
-	if err != nil {
-		return nil
-	}
+	//err := wm.LoadConfig()
+	//if err != nil {
+	//	return nil
+	//}
 
 	var (
 		failedIndex = make([]int, 0)
@@ -557,7 +557,7 @@ func (wm *WalletManager) ImportWatchOnlyAddress(address ...*openwallet.Address) 
 		wm.UnlockWallet(wm.Config.WalletPassword, 600)
 	}
 
-	failedIndex, err = wm.ImportMulti(address, nil, true)
+	failedIndex, err := wm.ImportMulti(address, nil, true)
 	if err != nil {
 		return err
 	}
@@ -586,10 +586,10 @@ func (wm *WalletManager) GetAddressWithBalance(address ...*openwallet.Address) e
 	)
 
 	//先加载是否有配置文件
-	err := wm.LoadConfig()
-	if err != nil {
-		return err
-	}
+	//err := wm.LoadConfig()
+	//if err != nil {
+	//	return err
+	//}
 
 
 	for _, address := range address {
