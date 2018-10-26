@@ -22,7 +22,7 @@ type Vcontract struct {
 	To string
 	SendAmount decimal.Decimal
 	GasLimit string
-	GasPrice decimal.Decimal
+	GasPrice string
 	Amount uint32
 }
 

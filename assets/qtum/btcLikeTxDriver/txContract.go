@@ -5,6 +5,7 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
 	"strconv"
+	"github.com/blocktree/OpenWallet/log"
 )
 
 type TxContract struct {
@@ -14,7 +15,8 @@ type TxContract struct {
 	lenGasPrice  []byte
 	gasPrice     []byte
 	dataHex      []byte
-	address      []byte
+	lenContract  []byte
+	contractAddr []byte
 	opCall       []byte
 }
 
@@ -57,21 +59,25 @@ func newTxContractForEmptyTrans(vcontract Vcontract) (*TxContract, error) {
 	}
 
 	//gasPrice
-	gasPriceHex, err := strconv.ParseInt(vcontract.GasPrice.String(),16,64)
+	gasPriceInt, err := strconv.ParseInt(vcontract.GasPrice,10,64)
 	if err != nil {
 		return nil, err
 	}
-	gasPrice, err := reverseStringToBytes(string(gasPriceHex))
+	gasPriceHex := strconv.FormatInt(gasPriceInt, 16)
+	if len(gasPriceHex)%2 == 1 {
+		gasPriceHex = "0" + gasPriceHex
+	}
+	gasPrice, err := reverseStringToBytes(gasPriceHex)
 	if err != nil {
 		return nil, err
 	}
 
 	//length of gasPrice
-	lenGasPriceHex, err := strconv.ParseInt(string(len(gasPrice)),16,64)
-	if err != nil {
-		return nil, err
+	lenGasPriceHex := strconv.FormatInt(int64(len(gasPrice)),16)
+	if len(lenGasPriceHex)%2 == 1 {
+		lenGasPriceHex = "0" + lenGasPriceHex
 	}
-	lenGasPrice, err := hex.DecodeString(string(lenGasPriceHex))
+	lenGasPrice, err := hex.DecodeString(lenGasPriceHex)
 	if err != nil {
 		return nil, err
 	}
@@ -102,13 +108,22 @@ func newTxContractForEmptyTrans(vcontract Vcontract) (*TxContract, error) {
 		return nil, err
 	}
 
-	address, err := hex.DecodeString(string(len(vcontract.ContractAddr)))
+	if int64(len(vcontract.ContractAddr))%2 == 1 {
+		log.Errorf("Contract address length error.")
+	}
+	lanAddressHex := strconv.FormatInt(int64(len(vcontract.ContractAddr))/2,16)
+	lanAddress, err := hex.DecodeString(lanAddressHex)
+	if err != nil {
+		return nil, err
+	}
+
+	contractAddr, err := hex.DecodeString(vcontract.ContractAddr)
 	if err != nil {
 		return nil, err
 	}
 
 	opCall := []byte{0xC2}
 
-	ret = TxContract{vmVersion,lenGasLimit,gasLimit,lenGasPrice,gasPrice,dataHex,address,opCall}
+	ret = TxContract{vmVersion,lenGasLimit,gasLimit,lenGasPrice,gasPrice,dataHex,lanAddress,contractAddr,opCall}
 	return &ret, nil
 }

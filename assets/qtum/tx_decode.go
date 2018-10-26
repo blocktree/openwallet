@@ -202,6 +202,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		    amount string
 		    txInTotal uint64
 			deamount decimal.Decimal
+			gasPrice string
 		)
 
 		//装配输入
@@ -231,10 +232,12 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		}
 
 		//gasPrice
-		gasPrice, _ := decimal.NewFromString(rawTx.FeeRate)
-		if rawTx.FeeRate == "" || gasPrice.Equal(decimal.Zero) {
-			gasPrice = decimal.New(4, -7)
+		gasPriceDec, _ := decimal.NewFromString(rawTx.FeeRate)
+		if rawTx.FeeRate == "" || gasPriceDec.Equal(decimal.Zero) {
+			gasPriceDec = decimal.New(4, -7)
 		}
+		SotashiGasPriceDec := gasPriceDec.Mul(decoder.wm.config.CoinDecimal)
+		gasPrice = SotashiGasPriceDec.String()
 
 		//装配合约
 		vcontract := btcLikeTxDriver.Vcontract{rawTx.Coin.Contract.Address, to, deamount, "250000", gasPrice, 0}
