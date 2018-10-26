@@ -74,7 +74,7 @@ func TestWalletManager_CreateQrc20TokenTransaction(t *testing.T) {
 	if err != nil {
 		log.Error("CreateQrc20TokenTransaction failed, unexpected error:", err)
 	}else {
-		log.Info("rawTx:", rawTx.)
+		log.Info("rawTx:", rawTx)
 	}
 }
 
