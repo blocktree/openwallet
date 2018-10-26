@@ -316,7 +316,7 @@ func (this *EthTransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 		openwLogger.Log.Errorf("GetTransactionCount2 failed, err=%v", err)
 		return err
 	}
-
+	log.Debug("chainID:", this.wm.GetConfig().ChainID)
 	signer := types.NewEIP155Signer(big.NewInt(int64(this.wm.GetConfig().ChainID)))
 	tx := types.NewTransaction(nonce, ethcommon.HexToAddress(to),
 		amount, fee.GasLimit.Uint64(), fee.GasPrice, []byte(""))
@@ -616,7 +616,7 @@ func (this *EthTransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet
 		return err
 	}
 
-	signer := types.NewEIP155Signer(big.NewInt(12))
+	signer := types.NewEIP155Signer(big.NewInt(int64(this.wm.GetConfig().ChainID)))
 
 	var to, amountStr string
 	for k, v := range rawTx.To {
@@ -739,7 +739,7 @@ func (this *EthTransactionDecoder) SubmitErc20TokenRawTransaction(wrapper openwa
 		return errors.New("get gas limit failed")
 	}
 
-	signer := types.NewEIP155Signer(big.NewInt(12))
+	signer := types.NewEIP155Signer(big.NewInt(int64(this.wm.GetConfig().ChainID)))
 
 	txStatis, _, err := this.GetTransactionCount2(from)
 	if err != nil {

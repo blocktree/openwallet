@@ -16,8 +16,10 @@
 package manager
 
 import (
+	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"path/filepath"
 	"testing"
 )
 
@@ -100,6 +102,16 @@ func TestSubscribeAddress_ETH(t *testing.T) {
 		log.Error(symbol, "is not support")
 		return
 	}
+
+	//读取配置
+	absFile := filepath.Join(configFilePath, symbol + ".ini")
+
+	c, err := config.NewConfig("ini", absFile)
+	if err != nil {
+		return
+	}
+	assetsMgr.LoadAssetsConfig(c)
+
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
 	scanner.SetRescanBlockHeight(4840986)
@@ -143,6 +155,16 @@ func TestSubscribeAddress_QTUM(t *testing.T) {
 		log.Error(symbol, "is not support")
 		return
 	}
+
+	//读取配置
+	absFile := filepath.Join(configFilePath, symbol + ".ini")
+
+	c, err := config.NewConfig("ini", absFile)
+	if err != nil {
+		return
+	}
+	assetsMgr.LoadAssetsConfig(c)
+
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
 	scanner.SetRescanBlockHeight(249878)
@@ -185,6 +207,16 @@ func TestSubscribeAddress_LTC(t *testing.T) {
 		log.Error(symbol, "is not support")
 		return
 	}
+
+	//读取配置
+	absFile := filepath.Join(configFilePath, symbol + ".ini")
+
+	c, err := config.NewConfig("ini", absFile)
+	if err != nil {
+		return
+	}
+	assetsMgr.LoadAssetsConfig(c)
+
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
 	scanner.SetRescanBlockHeight(813080)

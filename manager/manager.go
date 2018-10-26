@@ -16,6 +16,7 @@
 package manager
 
 import (
+	"github.com/astaxie/beego/config"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -34,6 +35,8 @@ import (
 
 var (
 	PeriodOfTask = 5 * time.Second
+	//配置文件路径
+	configFilePath = filepath.Join("conf")
 )
 
 type NotificationObject interface {
@@ -85,7 +88,7 @@ func (wm *WalletManager) Init() {
 
 	wm.mu.Unlock()
 
-	wm.initBlockScanner()
+	wm.initSupportAssetsAdapter()
 
 	//启动定时导入地址到核心钱包
 	task := timer.NewTask(PeriodOfTask, wm.importNewAddressToCoreWallet)
@@ -212,11 +215,7 @@ func (wm *WalletManager) loadAllAppIDs() ([]string, error) {
 }
 
 // initBlockScanner 初始化区块链扫描器
-func (wm *WalletManager) initBlockScanner() error {
-
-	if !wm.cfg.EnableBlockScan {
-		return nil
-	}
+func (wm *WalletManager) initSupportAssetsAdapter() error {
 
 	//加载已存在所有app
 	appIDs, err := wm.loadAllAppIDs()
@@ -230,7 +229,21 @@ func (wm *WalletManager) initBlockScanner() error {
 			log.Error(symbol, "is not support")
 			continue
 		}
-		//log.Debug("already got scanner:", assetsMgr)
+
+		//读取配置
+		absFile := filepath.Join(configFilePath, symbol + ".ini")
+
+		c, err := config.NewConfig("ini", absFile)
+		if err != nil {
+			continue
+		}
+		assetsMgr.LoadAssetsConfig(c)
+
+		if !wm.cfg.EnableBlockScan {
+			//不加载区块扫描
+			continue
+		}
+
 		scanner := assetsMgr.GetBlockScanner()
 
 		if scanner == nil {

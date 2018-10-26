@@ -29,7 +29,8 @@ func createTransaction(walletID, accountID, to string) (*openwallet.RawTransacti
 		return nil, err
 	}
 
-	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "0.7", to, "", "")
+	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "0.0003", to, "", "")
+
 	if err != nil {
 		log.Error("CreateTransaction failed, unexpected error:", err)
 		return nil, err
@@ -250,4 +251,8 @@ func TestWalletManager_GetAssetsAccountBalance(t *testing.T) {
 		return
 	}
 	log.Info("balance:", balance)
+}
+
+func TestTransfer_BTC(t *testing.T) {
+
 }
