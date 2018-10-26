@@ -185,54 +185,110 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 
 	changeAmount := balance.Sub(computeTotalSend).Sub(actualFees)
 
-	log.Std.Notice("-----------------------------------------------")
-	log.Std.Notice("From Account: %s", accountID)
-	log.Std.Notice("To Address: %s", strings.Join(destinations, ", "))
-	log.Std.Notice("Use: %v", balance.StringFixed(8))
-	log.Std.Notice("Fees: %v", actualFees.StringFixed(8))
-	log.Std.Notice("Receive: %v", computeTotalSend.StringFixed(8))
-	log.Std.Notice("Change: %v", changeAmount.StringFixed(8))
-	log.Std.Notice("Change Address: %v", changeAddress.Address)
-	log.Std.Notice("-----------------------------------------------")
-
-	//装配输入
-	for _, utxo := range usedUTXO {
-		in := btcLikeTxDriver.Vin{utxo.TxID, uint32(utxo.Vout)}
-		vins = append(vins, in)
-
-		txUnlock := btcLikeTxDriver.TxUnlock{LockScript: utxo.ScriptPubKey, Address: utxo.Address}
-		txUnlocks = append(txUnlocks, txUnlock)
-	}
-
-	//装配输入
-	for to, amount := range rawTx.To {
-		deamount, _ := decimal.NewFromString(amount)
-		deamount = deamount.Mul(decoder.wm.config.CoinDecimal)
-		out := btcLikeTxDriver.Vout{to, uint64(deamount.IntPart())}
-		vouts = append(vouts, out)
-	}
-
-	//changeAmount := balance.Sub(totalSend).Sub(actualFees)
-	if changeAmount.GreaterThan(decimal.New(0, 0)) {
-		deamount := changeAmount.Mul(decoder.wm.config.CoinDecimal)
-		out := btcLikeTxDriver.Vout{changeAddress.Address, uint64(deamount.IntPart())}
-		vouts = append(vouts, out)
-
-		//fmt.Printf("Create change address for receiving %s coin.", outputs[change])
-	}
-
 	//锁定时间
 	lockTime := uint32(0)
 
 	//追加手续费支持
 	replaceable := false
 
-	/////////构建空交易单
-	emptyTrans, err := btcLikeTxDriver.CreateEmptyRawTransaction(vins, vouts, lockTime, replaceable)
+	var emptyTrans string
 
-	if err != nil {
-		return fmt.Errorf("create transaction failed, unexpected error: %v", err)
-		//log.Error("构建空交易单失败")
+	//fmt.Printf("IsContract: %v\n", rawTx.Coin.IsContract)
+
+	if rawTx.Coin.IsContract {
+
+		var (
+			to string
+		    amount string
+		    txInTotal uint64
+			deamount decimal.Decimal
+		)
+
+		//装配输入
+		for _, utxo := range usedUTXO {
+			in := btcLikeTxDriver.Vin{utxo.TxID, uint32(utxo.Vout)}
+			vins = append(vins, in)
+			txUnlock := btcLikeTxDriver.TxUnlock{LockScript: utxo.ScriptPubKey, Address: utxo.Address}
+			txUnlocks = append(txUnlocks, txUnlock)
+			tempAmount, _ := decimal.NewFromString(utxo.Amount)
+			tempAmount = tempAmount.Mul(decoder.wm.config.CoinDecimal)
+			amount2 := uint64(tempAmount.IntPart())
+			txInTotal += amount2
+		}
+
+		txInTotal -= 50000000
+
+		//装配输出
+		for to, amount = range rawTx.To {
+			deamount, _ = decimal.NewFromString(amount)
+			//deamount = deamount.Mul(decoder.wm.config.CoinDecimal)
+			out := btcLikeTxDriver.Vout{usedUTXO[0].Address, txInTotal}
+			vouts = append(vouts, out)
+		}
+
+		if len(vouts)!= 1 {
+			return errors.New("error: the number of change addresses must be equal to one. ")
+		}
+
+		//gasPrice
+		gasPrice, _ := decimal.NewFromString(rawTx.FeeRate)
+		if rawTx.FeeRate == "" || gasPrice.Equal(decimal.Zero) {
+			gasPrice = decimal.New(4, -7)
+		}
+
+		//装配合约
+		vcontract := btcLikeTxDriver.Vcontract{rawTx.Coin.Contract.Address, to, deamount, "250000", gasPrice, 0}
+
+		//构建空合约交易单
+		emptyTrans, err = btcLikeTxDriver.CreateQRC20TokenEmptyRawTransaction(vins, vcontract, vouts, lockTime, replaceable)
+		if err != nil {
+			return err
+			//log.Error("构建空交易单失败")
+		}
+
+	}else {
+
+		log.Std.Notice("-----------------------------------------------")
+		log.Std.Notice("From Account: %s", accountID)
+		log.Std.Notice("To Address: %s", strings.Join(destinations, ", "))
+		log.Std.Notice("Use: %v", balance.StringFixed(8))
+		log.Std.Notice("Fees: %v", actualFees.StringFixed(8))
+		log.Std.Notice("Receive: %v", computeTotalSend.StringFixed(8))
+		log.Std.Notice("Change: %v", changeAmount.StringFixed(8))
+		log.Std.Notice("Change Address: %v", changeAddress.Address)
+		log.Std.Notice("-----------------------------------------------")
+
+		//装配输入
+		for _, utxo := range usedUTXO {
+			in := btcLikeTxDriver.Vin{utxo.TxID, uint32(utxo.Vout)}
+			vins = append(vins, in)
+
+			txUnlock := btcLikeTxDriver.TxUnlock{LockScript: utxo.ScriptPubKey, Address: utxo.Address}
+			txUnlocks = append(txUnlocks, txUnlock)
+		}
+
+		//装配输出
+		for to, amount := range rawTx.To {
+			deamount, _ := decimal.NewFromString(amount)
+			deamount = deamount.Mul(decoder.wm.config.CoinDecimal)
+			out := btcLikeTxDriver.Vout{to, uint64(deamount.IntPart())}
+			vouts = append(vouts, out)
+		}
+
+		//changeAmount := balance.Sub(totalSend).Sub(actualFees)
+		if changeAmount.GreaterThan(decimal.New(0, 0)) {
+			deamount := changeAmount.Mul(decoder.wm.config.CoinDecimal)
+			out := btcLikeTxDriver.Vout{changeAddress.Address, uint64(deamount.IntPart())}
+			vouts = append(vouts, out)
+
+			//fmt.Printf("Create change address for receiving %s coin.", outputs[change])
+		}
+		/////////构建空交易单
+		emptyTrans, err = btcLikeTxDriver.CreateEmptyRawTransaction(vins, vouts, lockTime, replaceable)
+		if err != nil {
+			return fmt.Errorf("create transaction failed, unexpected error: %v", err)
+			//log.Error("构建空交易单失败")
+		}
 	}
 
 	////////构建用于签名的交易单哈希
