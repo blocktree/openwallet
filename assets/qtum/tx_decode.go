@@ -25,6 +25,8 @@ import (
 	"sort"
 	"strings"
 	"github.com/blocktree/OpenWallet/assets/qtum/btcLikeTxDriver"
+	"strconv"
+	"github.com/blocktree/OpenWallet/common"
 )
 
 type TransactionDecoder struct {
@@ -72,6 +74,8 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		searchAddrs = append(searchAddrs, address.Address)
 	}
 	log.Debug(searchAddrs)
+
+	//log.Info("Calculating wallet unspent record to build transaction...")
 	//查找账户的utxo
 	unspents, err := decoder.wm.ListUnspent(0, searchAddrs...)
 	if err != nil {
@@ -107,9 +111,6 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	//
 	//changeAddress := changeAddrs[0]
 
-	//取账户最后一个地址
-	changeAddress := address[len(address)-1]
-
 	if len(rawTx.FeeRate) == 0 {
 		feesRate, err = decoder.wm.EstimateFeeRate()
 		if err != nil {
@@ -126,58 +127,14 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		}
 	}
 
-	log.Info("Calculating wallet unspent record to build transaction...")
+	//计算总发送金额
+	for addr, amount := range rawTx.To {
+		deamount, _ := decimal.NewFromString(amount)
+		totalSend = totalSend.Add(deamount)
+		destinations = append(destinations, addr)
+	}
+
 	computeTotalSend := totalSend
-	//循环的计算余额是否足够支付发送数额+手续费
-	for {
-
-		usedUTXO = make([]*Unspent, 0)
-		balance = decimal.New(0, 0)
-
-		//计算一个可用于支付的余额
-		for _, u := range unspents {
-
-			if u.Spendable {
-				ua, _ := decimal.NewFromString(u.Amount)
-				balance = balance.Add(ua)
-				usedUTXO = append(usedUTXO, u)
-				if balance.GreaterThanOrEqual(computeTotalSend) {
-					break
-				}
-			}
-		}
-
-		if balance.LessThan(computeTotalSend) {
-			return fmt.Errorf("The balance: %s is not enough! ", balance.StringFixed(decoder.wm.Decimal()))
-		}
-
-		//计算手续费，找零地址有2个，一个是发送，一个是新创建的
-		fees, err := decoder.wm.EstimateFee(int64(len(usedUTXO)), int64(len(destinations)+1), feesRate)
-		if err != nil {
-			return err
-		}
-
-		//如果要手续费有发送支付，得计算加入手续费后，计算余额是否足够
-		//总共要发送的
-		computeTotalSend = totalSend.Add(fees)
-		if computeTotalSend.GreaterThan(balance) {
-			continue
-		}
-		computeTotalSend = totalSend
-
-		actualFees = fees
-
-		break
-
-	}
-
-	//UTXO如果大于设定限制，则分拆成多笔交易单发送
-	if len(usedUTXO) > decoder.wm.config.maxTxInputs {
-		errStr := fmt.Sprintf("The transaction is use max inputs over: %d", decoder.wm.config.maxTxInputs)
-		return errors.New(errStr)
-	}
-
-	changeAmount := balance.Sub(computeTotalSend).Sub(actualFees)
 
 	//锁定时间
 	lockTime := uint32(0)
@@ -195,9 +152,103 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 			to string
 		    amount string
 		    txInTotal uint64
-			deamount decimal.Decimal
+			deAmount decimal.Decimal
 			gasPrice string
+			feeLimit decimal.Decimal
+			totalQtum decimal.Decimal
 		)
+
+		usedTokenUTXO := make([]*Unspent, 0)
+		unspent := decimal.New(0, 0)
+
+		//TODO 要扣除的手续费（qtum数量）待修改
+		feeLimit = decimal.New(15000000, -8)
+
+		//循环的计算余额是否足够支付发送数额+手续费
+		for {
+
+
+			usedUTXO = make([]*Unspent, 0)
+			balance = decimal.New(0, 0)
+			totalQtum = decimal.New(0, 0)
+
+
+			//计算一个可用于支付的余额
+			for _, u := range unspents {
+
+				if u.Spendable {
+
+					usedTokenUTXO = make([]*Unspent, 0)
+					unspent = decimal.New(0, 0)
+					token, err := decoder.wm.GetQRC20UnspentByAddress(rawTx.Coin.Contract.Address, u.Address)
+					if err != nil {
+						log.Errorf("GetTokenUnspentByAddress failed unexpected error: %v\n", err)
+					}
+					sotashiUnspent, _ := strconv.ParseInt(token.Output,16,64)
+					sotashiUnspentDecimal, _ := decimal.NewFromString(common.NewString(sotashiUnspent).String())
+					unspent = sotashiUnspentDecimal.Div(coinDecimal)
+
+					if unspent.GreaterThanOrEqual(computeTotalSend) {
+						usedTokenUTXO = append(usedTokenUTXO, u)
+						ua, _ := decimal.NewFromString(u.Amount)
+						totalQtum = totalQtum.Add(ua)
+						usedUTXO = append(usedUTXO, u)
+						break
+					}
+				}
+			}
+
+			if unspent.LessThan(computeTotalSend) {
+				return fmt.Errorf("The token balance is not enough! There must be enough balance in one address.")
+			}
+
+			//计算用于支付手续费的UTXO
+			if totalQtum.LessThan(feeLimit) {
+
+				for _, u := range unspents {
+
+					if u.Spendable && u.Address != usedTokenUTXO[0].Address{
+
+						ua, _ := decimal.NewFromString(u.Amount)
+						totalQtum = totalQtum.Add(ua)
+						usedUTXO = append(usedUTXO, u)
+						if totalQtum.GreaterThanOrEqual(computeTotalSend){
+							break
+						}
+
+					}
+				}
+			}
+
+			if totalQtum.LessThan(feeLimit) {
+				return fmt.Errorf("The fees(Qtum): %s is not enough! ", totalQtum.StringFixed(decoder.wm.Decimal()))
+			}
+
+			//计算手续费，找零地址有2个，一个是发送，一个是新创建的
+			//fees, err := decoder.wm.EstimateFee(int64(len(usedUTXO)), int64(len(destinations)+1), feesRate)
+			//if err != nil {
+			//	return err
+			//}
+
+			//如果要手续费有发送支付，得计算加入手续费后，计算余额是否足够
+			//总共要发送的
+			//computeTotalSend = totalSend.Add(fees)
+			//if computeTotalSend.GreaterThan(balance) {
+			//	continue
+			//}
+			//computeTotalSend = totalSend
+			//
+			//actualFees = fees
+
+			break
+
+		}
+
+		//UTXO如果大于设定限制，则分拆成多笔交易单发送
+		if len(usedUTXO) > decoder.wm.config.maxTxInputs {
+			errStr := fmt.Sprintf("The transaction is use max inputs over: %d", decoder.wm.config.maxTxInputs)
+			return errors.New(errStr)
+		}
 
 		//装配输入
 		for _, utxo := range usedUTXO {
@@ -211,11 +262,11 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 			txInTotal += amount2
 		}
 
-		txInTotal -= 20000000
+		txInTotal -= 50000000
 
 		//装配输出
 		for to, amount = range rawTx.To {
-			deamount, _ = decimal.NewFromString(amount)
+			deAmount, _ = decimal.NewFromString(amount)
 			//deamount = deamount.Mul(decoder.wm.config.CoinDecimal)
 			out := btcLikeTxDriver.Vout{usedUTXO[0].Address, txInTotal}
 			vouts = append(vouts, out)
@@ -234,7 +285,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		gasPrice = SotashiGasPriceDec.String()
 
 		//装配合约
-		vcontract := btcLikeTxDriver.Vcontract{rawTx.Coin.Contract.Address, to, deamount, "250000", gasPrice, 0}
+		vcontract := btcLikeTxDriver.Vcontract{rawTx.Coin.Contract.Address, to, deAmount, "250000", gasPrice, 0}
 
 		//构建空合约交易单
 		emptyTrans, err = btcLikeTxDriver.CreateQRC20TokenEmptyRawTransaction(vins, vcontract, vouts, lockTime, replaceable)
@@ -245,12 +296,61 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 
 	}else {
 
-		//计算总发送金额
-		for addr, amount := range rawTx.To {
-			deamount, _ := decimal.NewFromString(amount)
-			totalSend = totalSend.Add(deamount)
-			destinations = append(destinations, addr)
+		//取账户最后一个地址
+		changeAddress := address[len(address)-1]
+
+		//循环的计算余额是否足够支付发送数额+手续费
+		for {
+
+			usedUTXO = make([]*Unspent, 0)
+			balance = decimal.New(0, 0)
+
+			//计算一个可用于支付的余额
+			for _, u := range unspents {
+
+				if u.Spendable {
+					ua, _ := decimal.NewFromString(u.Amount)
+					balance = balance.Add(ua)
+					usedUTXO = append(usedUTXO, u)
+					if balance.GreaterThanOrEqual(computeTotalSend) {
+						break
+					}
+				}
+			}
+
+			if balance.LessThan(computeTotalSend) {
+				return fmt.Errorf("The balance: %s is not enough! ", balance.StringFixed(decoder.wm.Decimal()))
+			}
+
+			//计算手续费，找零地址有2个，一个是发送，一个是新创建的
+			fees, err := decoder.wm.EstimateFee(int64(len(usedUTXO)), int64(len(destinations)+1), feesRate)
+			if err != nil {
+				return err
+			}
+
+			//如果要手续费有发送支付，得计算加入手续费后，计算余额是否足够
+			//总共要发送的
+			computeTotalSend = totalSend.Add(fees)
+			if computeTotalSend.GreaterThan(balance) {
+				continue
+			}
+			computeTotalSend = totalSend
+
+			actualFees = fees
+
+			break
+
 		}
+
+		changeAmount := balance.Sub(computeTotalSend).Sub(actualFees)
+
+		//UTXO如果大于设定限制，则分拆成多笔交易单发送
+		if len(usedUTXO) > decoder.wm.config.maxTxInputs {
+			errStr := fmt.Sprintf("The transaction is use max inputs over: %d", decoder.wm.config.maxTxInputs)
+			return errors.New(errStr)
+		}
+
+
 
 		log.Std.Notice("-----------------------------------------------")
 		log.Std.Notice("From Account: %s", accountID)

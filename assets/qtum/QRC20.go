@@ -32,7 +32,7 @@ func (wm *WalletManager) GetTokenBalanceByAddress(contract openwallet.SmartContr
 	var tokenBalanceList []*openwallet.TokenBalance
 
  	for i:=0; i<len(address); i++ {
-		QRC20Utox, err := wm.GetUnspentByAddress(contract.Address, address[i])
+		QRC20Utox, err := wm.GetQRC20UnspentByAddress(contract.Address, address[i])
 		if err != nil {
 			log.Errorf("get address[%v] QRC20 token balance failed, err=%v", address[i], err)
 		}
@@ -74,7 +74,7 @@ func AddressTo32bytesArg(address string) ([]byte, error) {
 	return to32bytesArg, nil
 }
 
-func (wm *WalletManager)GetUnspentByAddress(contractAddress, address string) (*QRC20Unspent,error) {
+func (wm *WalletManager)GetQRC20UnspentByAddress(contractAddress, address string) (*QRC20Unspent,error) {
 
 	to32bytesArg, err := AddressTo32bytesArg(address)
 	if err != nil {
@@ -94,7 +94,7 @@ func (wm *WalletManager)GetUnspentByAddress(contractAddress, address string) (*Q
 		return nil, err
 	}
 
-	fmt.Printf("Callcontract result: %s\n", result.String())
+	//fmt.Printf("Callcontract result: %s\n", result.String())
 
 	QRC20Utox := NewQRC20Unspent(result)
 

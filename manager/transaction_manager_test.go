@@ -29,7 +29,7 @@ func createTransaction(walletID, accountID, to string) (*openwallet.RawTransacti
 		return nil, err
 	}
 
-	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "0.01", to, "", "")
+	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "2", to, "", "")
 
 	if err != nil {
 		log.Error("CreateTransaction failed, unexpected error:", err)
@@ -81,7 +81,7 @@ func TestWalletManager_CreateQrc20TokenTransaction(t *testing.T) {
 func TestWalletManager_SendQrc20TokenTransaction(t *testing.T) {
 	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
 	accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
-	to := "qZcK7XGwbzwtV4XZV8Kmd5FKW3wJ6JeAvR"
+	to := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
 	feeRate := "0.00000040"
 	contractAddr := "91a6081095ef860d28874c9db613e7a4107b0281"
 	tokenName := "QRC ZB TEST"
@@ -93,9 +93,10 @@ func TestWalletManager_SendQrc20TokenTransaction(t *testing.T) {
 		log.Error("RefreshAssetsAccountBalance failed, unexpected error:", err)
 	}
 
-	rawTx, err := tm.CreateQrc20TokenTransaction(testApp, walletID, accountID,"2.1", to, feeRate,"",contractAddr, tokenName, tokeSymbol, tokenDecimal)
+	rawTx, err := tm.CreateQrc20TokenTransaction(testApp, walletID, accountID,"5", to, feeRate,"",contractAddr, tokenName, tokeSymbol, tokenDecimal)
 	if err != nil {
 		log.Error("CreateQrc20TokenTransaction failed, unexpected error:", err)
+		return
 	}else {
 		log.Info("rawTx:", rawTx)
 	}
@@ -179,8 +180,8 @@ func TestWalletManager_VerifyTransaction(t *testing.T) {
 
 func TestWalletManager_SubmitTransaction(t *testing.T) {
 
-	walletID := "W3hxZRqw67PbBq5GFpULkaAJdKN9Mzasj5"
-	accountID := "26THHhacorJKJrF2RNCwkkNUrv16fnksdjsa7PxQXWry"
+	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
+	accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
 	to := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
@@ -291,8 +292,8 @@ func TestWalletManager_GetTransactionByWxID(t *testing.T) {
 
 func TestWalletManager_GetAssetsAccountBalance(t *testing.T) {
 
-	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
-	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
+	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
+	accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
 
 	balance, err := tm.GetAssetsAccountBalance(testApp, walletID, accountID)
 	if err != nil {

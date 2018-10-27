@@ -2023,10 +2023,10 @@ func (wm *WalletManager) SendToAddress(address,amount,comment string,subtractfee
 	}
 
 	//解锁钱包
-	err := wm.UnlockWallet(password, 120)
-	if err != nil {
-		return "", err
-	}
+	//err := wm.UnlockWallet(password, 120)
+	//if err != nil {
+	//	return "", err
+	//}
 
 	result, err := wm.walletClient.Call("sendtoaddress", request)
 	if err != nil {
