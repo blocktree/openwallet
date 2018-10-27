@@ -108,7 +108,7 @@ func TestWalletConfig_PrintConfig(t *testing.T) {
 
 func TestWalletManager_CreateBatchAddress(t *testing.T) {
 	var addrs []*openwallet.Address
-	fpath, addrs, err := wm.CreateBatchAddress("W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW", "123456789", 5)
+	fpath, addrs, err := wm.CreateBatchAddress("WMf6HjiKiXWoWm6ZigH5EmdeQVMCKKpLov", "123456789", 5)
 	if err != nil {
 		t.Error(err.Error())
 		return
@@ -184,7 +184,7 @@ func TestWalletManager_getWalletBalance(t *testing.T) {
 
 func TestWalletManager_TransferFlow(t *testing.T) {
 
-	var test_walletID string = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
+	var test_walletID string = "WMf6HjiKiXWoWm6ZigH5EmdeQVMCKKpLov"
 	w, err := wm.GetWalletByID(test_walletID)
 	if err != nil {
 		t.Error("get wallet by id error")
@@ -206,7 +206,7 @@ func TestWalletManager_TransferFlow(t *testing.T) {
 	var sender *openwallet.Address
 	//key, _ := wm.getKeys(keystore, addrs[0])
 	for _, a := range addrs {
-		if a.Address == "n1LJ1uAZbaHFxiBY8hkuTXges8Xkr4nvF9w" {
+		if a.Address == "n1Fvg4DvRhBE4YuC2d884TKQnBuksJYXem4" {
 			sender = a
 
 			break
@@ -221,7 +221,7 @@ func TestWalletManager_TransferFlow(t *testing.T) {
 		t.Error("get key error")
 	}
 
-	dst := "n1Qzgp7TE4TNQTC9LQpEsuYZFbGU14cpDZk"
+	dst := "n1PZw4XoMCFjcN697LQ9b7Mab9KyapKpf5z"
 
 	txid ,err := wm.Transfer( key, dst,"2000000","100000000000000000")
 	if err != nil{

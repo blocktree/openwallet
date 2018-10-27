@@ -26,6 +26,7 @@ import (
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
 	"github.com/blocktree/go-OWCrypt"
@@ -37,6 +38,7 @@ import (
 	"github.com/nebulasio/go-nebulas/util"
 	"github.com/nebulasio/go-nebulas/util/byteutils"
 	"github.com/shopspring/decimal"
+	"math/big"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -92,7 +94,11 @@ func NewWalletManager() *WalletManager {
 	wm.WalletsInSum = make(map[string]*openwallet.Wallet)
 	//区块扫描器
 	wm.Blockscanner = NewNASBlockScanner(&wm)
-	//wm.Decoder = AddressDecoder
+	//地址解析器
+	wm.Decoder =  NewAddressDecoder(&wm)
+	//交易单解析器
+	wm.TxDecoder = NewTransactionDecoder(&wm)
+
 	return &wm
 }
 
@@ -234,6 +240,7 @@ func (wm *WalletManager) SignTranscation(key *Key, to, gasLimit, value string) (
 //调用ow库进行验证签名
 	//公钥为33字节，需要解压缩出65字节公钥
 	PublicKey :=owcrypt.PointDecompress(key.PublicKey , owcrypt.ECC_CURVE_SECP256K1)
+	fmt.Printf("key.PrivateKey=%x,key.PublicKey=%x\n",key.PrivateKey,key.PublicKey)
 	//去掉65字节公钥的第一个字节后进行验签
 	verify :=owcrypt.Verify(PublicKey[1:65],nil,0,transaction_hash,32,sig[0:64],owcrypt.ECC_CURVE_SECP256K1 | (1<<9))
 	if verify != owcrypt.SUCCESS{
@@ -1085,77 +1092,101 @@ func  NotenonceInDB(key *Key, db *storm.DB) error{
 		return err
 	}
 
+	return nilestimateGas
+}
+
+
+type estimateGasParameter struct{
+	from  string
+	to    string
+	value string
+	nonce uint64
+	gasPrice string
+	gasLimit string
+}
+
+func ConvertToBigInt(value string, base int) (*big.Int, error) {
+	bigvalue := new(big.Int)
+	var success bool
+	if base == 16 {
+		value = removeOxFromHex(value)
+	}
+
+	if value == "" {
+		value = "0"
+	}
+
+	_, success = bigvalue.SetString(value, base)
+	if !success {
+		errInfo := fmt.Sprintf("convert value [%v] to bigint failed, check the value and base passed through\n", value)
+		openwLogger.Log.Errorf(errInfo)
+		return big.NewInt(0), errors.New(errInfo)
+	}
+	return bigvalue, nil
+}
+//构建gas估算入参
+func (wm *WalletManager) CreatestimateGasParameters(from string, to string, value *big.Int) (*estimateGasParameter,error){
+
+	Parameter := &estimateGasParameter{
+		from : from,
+		to   : to,
+		value: value.String(),
+		gasLimit: "2000000",
+	}
+
+	nonce,err := wm.WalletClient.CallGetaccountstate(from , "nonce")
+	if err != nil{
+		return nil,err
+	}
+	Nonce,_ :=strconv.ParseUint(nonce, 10, 64)
+	Parameter.nonce = Nonce
+
+	gasPrice := wm.WalletClient.CallGetGasPrice()
+	Parameter.gasPrice = gasPrice
+
+	return Parameter ,err
+}
+
+//计算花费gas所用的Wei = gasuse * gasprice
+func (feeinfo *txFeeInfo) CalcFee() error {
+	fee := new(big.Int)
+	fee.Mul(feeinfo.GasUse, feeinfo.GasPrice)
+	feeinfo.Fee = fee
 	return nil
 }
 
+//估算gas花费的Wei
+func (wm *WalletManager) Getestimatefee(from string, to string, value *big.Int) (*txFeeInfo, error) {
 
-/*
-//ImportMulti 批量导入地址和私钥
-func (wm *WalletManager) ImportMulti(addresses []*openwallet.Address, keys []string, watchOnly bool) ([]int, error) {
-
-	/*
-		[
-		{
-			"scriptPubKey" : { "address": "1NL9w5fP9kX2D9ToNZPxaiwFJCngNYEYJo" },
-			"timestamp" : 0,
-			"label" : "Personal"
-		},
-		{
-			"scriptPubKey" : "76a9149e857da0a5b397559c78c98c9d3f7f655d19c68688ac",
-			"timestamp" : 1493912405,
-			"label" : "TestFailure"
-		}
-		]' '{ "rescan": true }'
-	*/
-/*
-	var (
-		request     []interface{}
-		imports     = make([]interface{}, 0)
-		failedIndex = make([]int, 0)
-	)
-
-	if len(addresses) != len(keys) && !watchOnly {
-		return nil, errors.New("Import addresses is not equal keys count!")
+	Parameter,err := wm.CreatestimateGasParameters(from,to,value)
+	if err != nil{
+		return nil,err
 	}
 
-	for i, a := range addresses {
+	fmt.Printf("Parameter=%+v\n",Parameter)
 
-		obj := map[string]interface{}{
-			"scriptPubKey": map[string]interface{}{
-				"address": a.Address,
-			},
-			"label":     a.AccountID,
-			"timestamp": "now",
-			"watchonly": watchOnly,
-		}
-
-		if !watchOnly {
-			k := keys[i]
-			obj["keys"] = []string{k}
-		}
-
-		imports = append(imports, obj)
+	result ,err := wm.WalletClient.CallGetestimateGas(Parameter)
+	if err != nil{
+		return nil,err
 	}
 
-	request = []interface{}{
-		imports,
-		map[string]interface{}{
-			"rescan": false,
-		},
+	fmt.Printf("EstimateGas=%v\n",result.Get("gas").String())
+
+	EstimateGas, err := ConvertToBigInt(result.Get("gas").String(), 16)
+	if err != nil{
+		return nil,err
 	}
 
-	result, err := wm.WalletClient.Call("importmulti", request)
-	if err != nil {
-		return nil, err
+	GasPrice, err := ConvertToBigInt(Parameter.gasPrice, 16)
+	if err != nil{
+		return nil,err
 	}
 
-	for i, r := range result.Array() {
-		if !r.Get("success").Bool() {
-			failedIndex = append(failedIndex, i)
-		}
+	estimatefee := &txFeeInfo{
+		GasUse: EstimateGas,
+		GasPrice: GasPrice,
 	}
+	estimatefee.CalcFee()
 
-	return failedIndex, err
-
+	return estimatefee, nil
 }
-*/

@@ -55,8 +55,6 @@ type WalletConfig struct {
 	configFilePath string
 	//配置文件名
 	configFileName string
-	//是否测试网络
-	IsTestNet bool
 	//本地数据库文件路径
 	dbPath string
 	//备份路径
@@ -101,8 +99,6 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	c.configFilePath = filepath.Join("conf")
 	//配置文件名
 	c.configFileName = c.Symbol + ".ini"
-	//是否测试网络
-	c.IsTestNet = true
 	//本地数据库文件路径
 	c.dbPath = filepath.Join("data", strings.ToLower(c.Symbol), "db")
 	//备份路径
