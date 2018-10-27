@@ -58,6 +58,19 @@ func (t Transaction) isMultiSig() bool {
 	return true
 }
 
+func (t Contract) isMultiSig() bool {
+	if len(t.Vins) != 1 {
+		return false
+	}
+	if t.Vins[0].ScriptPubkeySignature == nil {
+		return false
+	}
+	if t.Vins[0].ScriptPubkeySignature[len(t.Vins[0].ScriptPubkeySignature)-1] != OpCheckMultiSig {
+		return false
+	}
+	return true
+}
+
 func isMultiSig(lockScript, redeemScript string) bool {
 	if len(lockScript) != 0x17*2 {
 		return false

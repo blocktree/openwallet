@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/blocktree/OpenWallet/crypto"
-	"github.com/blocktree/OpenWallet/log"
 	"github.com/tidwall/gjson"
 )
 
@@ -128,7 +127,7 @@ func GenTransactionWxID2(txid string, coinsymbol string, contractId string) stri
 	//txid := tx.TxID
 	symbol := coinsymbol + "_" + contractId
 	plain := fmt.Sprintf("tx_%s_%s", txid, symbol)
-	log.Debug("wxID plain:", plain)
+	//log.Debug("wxID plain:", plain)
 	wxid := base64.StdEncoding.EncodeToString(crypto.SHA256([]byte(plain)))
 	return wxid
 }

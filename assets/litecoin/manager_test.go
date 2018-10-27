@@ -44,6 +44,11 @@ func init() {
 	tw.Config.IsTestNet = false
 	token := bitcoin.BasicAuth(tw.Config.RpcUser, tw.Config.RpcPassword)
 	tw.WalletClient = bitcoin.NewClient(tw.Config.ServerAPI, token, true)
+
+	explorerURL := "http://47.52.97.183:20009/insight-lite-api/"
+	tw.ExplorerClient = bitcoin.NewExplorer(explorerURL, true)
+
+	tw.Config.RPCServerType = bitcoin.RPCServerCore
 }
 
 func TestWalletManager(t *testing.T) {
