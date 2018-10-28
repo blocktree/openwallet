@@ -63,6 +63,10 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		feesRate     = decimal.New(0, 0)
 		accountID    = rawTx.Account.AccountID
 		destinations = make([]string, 0)
+		DEFAULT_GAS_LIMIT = "250000"
+		DEFAULT_GAS_PRICE = decimal.New(4, -7)
+		// 要扣除的手续费（qtum数量）
+		feeLimit = decimal.New(15000000, -8)
 	)
 
 	address, err := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID)
@@ -154,15 +158,13 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		    txInTotal uint64
 			deAmount decimal.Decimal
 			gasPrice string
-			feeLimit decimal.Decimal
 			totalQtum decimal.Decimal
 		)
 
 		usedTokenUTXO := make([]*Unspent, 0)
 		unspent := decimal.New(0, 0)
 
-		//TODO 要扣除的手续费（qtum数量）待修改
-		feeLimit = decimal.New(15000000, -8)
+
 
 		//循环的计算余额是否足够支付发送数额+手续费
 		for {
@@ -262,7 +264,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 			txInTotal += amount2
 		}
 
-		txInTotal -= 50000000
+		txInTotal -= uint64(feeLimit.Mul(decoder.wm.config.CoinDecimal).IntPart())
 
 		//装配输出
 		for to, amount = range rawTx.To {
@@ -278,14 +280,14 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 
 		//gasPrice
 		gasPriceDec, _ := decimal.NewFromString(rawTx.FeeRate)
-		if rawTx.FeeRate == "" || gasPriceDec.Equal(decimal.Zero) {
-			gasPriceDec = decimal.New(4, -7)
+		if rawTx.FeeRate == "" || gasPriceDec.LessThan(DEFAULT_GAS_PRICE) {
+			gasPriceDec = DEFAULT_GAS_PRICE
 		}
 		SotashiGasPriceDec := gasPriceDec.Mul(decoder.wm.config.CoinDecimal)
 		gasPrice = SotashiGasPriceDec.String()
 
 		//装配合约
-		vcontract := btcLikeTxDriver.Vcontract{rawTx.Coin.Contract.Address, to, deAmount, "250000", gasPrice, 0}
+		vcontract := btcLikeTxDriver.Vcontract{rawTx.Coin.Contract.Address, to, deAmount, DEFAULT_GAS_LIMIT, gasPrice, 0}
 
 		//构建空合约交易单
 		emptyTrans, err = btcLikeTxDriver.CreateQRC20TokenEmptyRawTransaction(vins, vcontract, vouts, lockTime, replaceable)

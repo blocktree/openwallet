@@ -29,7 +29,7 @@ func createTransaction(walletID, accountID, to string) (*openwallet.RawTransacti
 		return nil, err
 	}
 
-	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "2", to, "", "")
+	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "10", to, "", "")
 
 	if err != nil {
 		log.Error("CreateTransaction failed, unexpected error:", err)
@@ -93,7 +93,7 @@ func TestWalletManager_SendQrc20TokenTransaction(t *testing.T) {
 		log.Error("RefreshAssetsAccountBalance failed, unexpected error:", err)
 	}
 
-	rawTx, err := tm.CreateQrc20TokenTransaction(testApp, walletID, accountID,"5", to, feeRate,"",contractAddr, tokenName, tokeSymbol, tokenDecimal)
+	rawTx, err := tm.CreateQrc20TokenTransaction(testApp, walletID, accountID,"2", to, feeRate,"",contractAddr, tokenName, tokeSymbol, tokenDecimal)
 	if err != nil {
 		log.Error("CreateQrc20TokenTransaction failed, unexpected error:", err)
 		return

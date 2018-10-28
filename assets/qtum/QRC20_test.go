@@ -71,7 +71,7 @@ func Test_AmountTo32bytesArg(t *testing.T){
 func Test_QRC20Transfer(t *testing.T) {
 	contractAddress := "91a6081095ef860d28874c9db613e7a4107b0281"
 	from := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
-	to := "qanQSDWs4ovU7sqswvEAHqBDuY4Nmz6qu1"
+	to := "qJ2HTPYoMF1DPBhgURjRqemun5WimD57Hy"
 	gasPrice := "0.00000040"
 	var gasLimit int64 = 250000
 	var amount decimal.Decimal = decimal.NewFromFloat(10)

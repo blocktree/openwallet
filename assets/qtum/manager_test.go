@@ -606,8 +606,8 @@ func TestSendFrom(t *testing.T) {
 }
 
 func TestSendToAddress(t *testing.T){
-	address := "qLY4B1u1qDu7WRTFuNH7bDrXvRS8RxWsiH"
-	txIDs, err := tw.SendToAddress(address, "2","", false,"1234qwer")
+	address := "qMrFCXxSuiTEDqd311VxivECpJqH5KsJg6"
+	txIDs, err := tw.SendToAddress(address, "0.5","", false,"1234qwer")
 
 	if err != nil {
 		t.Errorf("SendTransaction failed unexpected error: %v\n", err)
