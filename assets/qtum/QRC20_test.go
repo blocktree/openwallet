@@ -18,9 +18,7 @@ package qtum
 import (
 	"testing"
 	"encoding/hex"
-	"strconv"
 	"github.com/shopspring/decimal"
-	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/openwallet"
 )
 
@@ -39,22 +37,23 @@ func Test_addressTo32bytesArg(t *testing.T) {
 
 
 func Test_getUnspentByAddress(t *testing.T) {
-	contractAddress := "91a6081095ef860d28874c9db613e7a4107b0281"
-	address := "qakZE2dYZU7VF1m5RDRBFVr1fFMFKhTNWA"
+	//contractAddress := "91a6081095ef860d28874c9db613e7a4107b0281"
+	//address := "qMrFCXxSuiTEDqd311VxivECpJqH5KsJg6"
+	//var tokenDecimal uint64 = 8
 
-	QRC20Utox, err := tw.GetQRC20UnspentByAddress(contractAddress, address)
+	contractAddress := "482be94ca327f1dd1d9857a5a212df091f44980f"
+	address := "qJ2HTPYoMF1DPBhgURjRqemun5WimD57Hy"
+	var tokenDecimal uint64 = 4
+
+	unspent, err := tw.GetQRC20UnspentByAddress(contractAddress, address, tokenDecimal)
 	if err != nil {
 		t.Errorf("GetUnspentByAddress failed unexpected error: %v\n", err)
 	}
 
-	sotashiUnspent, _ := strconv.ParseInt(QRC20Utox.Output,16,64)
-	sotashiUnspentDecimal, _ := decimal.NewFromString(common.NewString(sotashiUnspent).String())
-	unspent := sotashiUnspentDecimal.Div(coinDecimal)
-
 	if err != nil {
 		t.Errorf("strconv.ParseInt failed unexpected error: %v\n", err)
 	}else {
-		t.Logf("QRC20Unspent %s: %s = %v\n", QRC20Utox.Address, address, unspent)
+		t.Logf("QRC20Unspent %s: %s = %v\n", contractAddress, address, unspent)
 	}
 }
 
@@ -69,14 +68,26 @@ func Test_AmountTo32bytesArg(t *testing.T){
 }
 
 func Test_QRC20Transfer(t *testing.T) {
-	contractAddress := "91a6081095ef860d28874c9db613e7a4107b0281"
-	from := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
-	to := "qJ2HTPYoMF1DPBhgURjRqemun5WimD57Hy"
+	//contractAddress := "482be94ca327f1dd1d9857a5a212df091f44980f"
+	//from := "qUaHAjfRLknMBuSsA5kBfkn9xLMDFc2FdV"
+	//to := "qJ2HTPYoMF1DPBhgURjRqemun5WimD57Hy"
+	//var tokenDecimal uint64 = 4
+
+	//contractAddress := "91a6081095ef860d28874c9db613e7a4107b0281"
+	//from := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
+	//to := "qMrFCXxSuiTEDqd311VxivECpJqH5KsJg6"
+	//var tokenDecimal uint64 = 8
+
+	contractAddress := "2d6cd7b2ef6de7e3866e17650c7d9c53529c0239"
+	from := "qHdSjkNTqSF3sVmiMpzU7ujSgZ9EobiTki"
+	to := "qLuqv9A7vigsaD8vZDqk7aS8fNH3EtNZjf"
+	var tokenDecimal uint64 = 15
+
 	gasPrice := "0.00000040"
 	var gasLimit int64 = 250000
-	var amount decimal.Decimal = decimal.NewFromFloat(10)
+	var amount decimal.Decimal = decimal.NewFromFloat(100)
 
-	result, err := tw.QRC20Transfer(contractAddress, from, to, gasPrice, amount, gasLimit)
+	result, err := tw.QRC20Transfer(contractAddress, from, to, gasPrice, amount, gasLimit, tokenDecimal)
 	if err != nil {
 		t.Errorf("QRC20Transfer failed unexpected error: %v\n", err)
 	}else {
@@ -96,6 +107,15 @@ func Test_GetTokenBalanceByAddress(t *testing.T) {
 		"qP1VPw7RYm5qRuqcAvtiZ1cpurQpVWREu8",
 		"qdphfFinfJutJFvtnr2UaCwNAMxC3HbVxa",
 	}
+
+	//contract := openwallet.SmartContract{
+	//	Address: "482be94ca327f1dd1d9857a5a212df091f44980f",
+	//}
+	//addrs := []string{
+	//	"qUaHAjfRLknMBuSsA5kBfkn9xLMDFc2FdV",
+	//	"qJ2HTPYoMF1DPBhgURjRqemun5WimD57Hy",
+	//}
+
 	balanceList, err := tw.GetTokenBalanceByAddress(contract, addrs...)
 	if err != nil {
 		t.Errorf("get token balance by address failed, err=%v", err)
