@@ -88,12 +88,30 @@ func TestWalletManager_SendQrc20TokenTransaction(t *testing.T) {
 	tokeSymbol := "QZTC"
 	var tokenDecimal uint64 = 8
 
+	//walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
+	//accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
+	//to := "qUaHAjfRLknMBuSsA5kBfkn9xLMDFc2FdV"
+	//feeRate := "0.00000040"
+	//contractAddr := "482be94ca327f1dd1d9857a5a212df091f44980f"
+	//tokenName := "QRC TEST FOUR"
+	//tokeSymbol := "QTCF"
+	//var tokenDecimal uint64 = 4
+
+	//walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
+	//accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
+	//to := "qHdSjkNTqSF3sVmiMpzU7ujSgZ9EobiTki"
+	//feeRate := "0.00000040"
+	//contractAddr := "2d6cd7b2ef6de7e3866e17650c7d9c53529c0239"
+	//tokenName := "QRC TEST FIVE"
+	//tokeSymbol := "QTCV"
+	//var tokenDecimal uint64 = 15
+
 	err := tm.RefreshAssetsAccountBalance(testApp, accountID)
 	if err != nil {
 		log.Error("RefreshAssetsAccountBalance failed, unexpected error:", err)
 	}
 
-	rawTx, err := tm.CreateQrc20TokenTransaction(testApp, walletID, accountID,"2", to, feeRate,"",contractAddr, tokenName, tokeSymbol, tokenDecimal)
+	rawTx, err := tm.CreateQrc20TokenTransaction(testApp, walletID, accountID,"30", to, feeRate,"",contractAddr, tokenName, tokeSymbol, tokenDecimal)
 	if err != nil {
 		log.Error("CreateQrc20TokenTransaction failed, unexpected error:", err)
 		return

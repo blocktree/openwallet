@@ -32,16 +32,12 @@ func (wm *WalletManager) GetTokenBalanceByAddress(contract openwallet.SmartContr
 	var tokenBalanceList []*openwallet.TokenBalance
 
  	for i:=0; i<len(address); i++ {
-		QRC20Utox, err := wm.GetQRC20UnspentByAddress(contract.Address, address[i])
+		unspent, err := wm.GetQRC20UnspentByAddress(contract.Address, address[i], contract.Decimals)
 		if err != nil {
 			log.Errorf("get address[%v] QRC20 token balance failed, err=%v", address[i], err)
 		}
 
-		sotashiUnspent, _ := strconv.ParseInt(QRC20Utox.Output,16,64)
-		sotashiUnspentDecimal, _ := decimal.NewFromString(common.NewString(sotashiUnspent).String())
-		balanceAll := sotashiUnspentDecimal.Div(coinDecimal)
-
-		balanceConfirmed := balanceAll
+		balanceConfirmed := unspent
 		//		log.Debugf("got balanceAll of [%v] :%v", address, balanceAll)
 		balanceUnconfirmed := big.NewInt(0)
 		//balanceUnconfirmed.Sub(balanceAll, balanceConfirmed)
@@ -51,7 +47,7 @@ func (wm *WalletManager) GetTokenBalanceByAddress(contract openwallet.SmartContr
 			Balance: &openwallet.Balance{
 				Address:          address[i],
 				Symbol:           contract.Symbol,
-				Balance:          balanceAll.String(),
+				Balance:          unspent.String(),
 				ConfirmBalance:   balanceConfirmed.String(),
 				UnconfirmBalance: balanceUnconfirmed.String(),
 			},
@@ -74,11 +70,11 @@ func AddressTo32bytesArg(address string) ([]byte, error) {
 	return to32bytesArg, nil
 }
 
-func (wm *WalletManager)GetQRC20UnspentByAddress(contractAddress, address string) (*QRC20Unspent,error) {
+func (wm *WalletManager)GetQRC20UnspentByAddress(contractAddress, address string, tokenDecimal uint64) (decimal.Decimal, error) {
 
 	to32bytesArg, err := AddressTo32bytesArg(address)
 	if err != nil {
-		return nil, err
+		return decimal.New(0,0), err
 	}
 
 	combineString := hex.EncodeToString(append([]byte{0x70, 0xa0, 0x82, 0x31}, to32bytesArg[:]...))
@@ -91,14 +87,18 @@ func (wm *WalletManager)GetQRC20UnspentByAddress(contractAddress, address string
 
 	result, err := wm.walletClient.Call("callcontract", request)
 	if err != nil {
-		return nil, err
+		return decimal.New(0,0), err
 	}
 
 	//fmt.Printf("Callcontract result: %s\n", result.String())
 
 	QRC20Utox := NewQRC20Unspent(result)
 
-	return QRC20Utox, nil
+	sotashiUnspent, _ := strconv.ParseInt(QRC20Utox.Output,16,64)
+	sotashiUnspentDecimal, _ := decimal.NewFromString(common.NewString(sotashiUnspent).String())
+	unspent := sotashiUnspentDecimal.Div(decimal.New(1, int32(tokenDecimal)))
+
+	return unspent, nil
 }
 
 func AmountTo32bytesArg(amount int64) (string, error) {
@@ -118,9 +118,9 @@ func AmountTo32bytesArg(amount int64) (string, error) {
 	return bytesArg, nil
 }
 
-func (wm *WalletManager)QRC20Transfer(contractAddress string, from string, to string, gasPrice string, amount decimal.Decimal, gasLimit int64) (string, error){
+func (wm *WalletManager)QRC20Transfer(contractAddress string, from string, to string, gasPrice string, amount decimal.Decimal, gasLimit int64, tokenDecimal uint64) (string, error){
 
-	amountDecimal := amount.Mul(coinDecimal)
+	amountDecimal := amount.Mul(decimal.New(1, int32(tokenDecimal)))
 	sotashiAmount := amountDecimal.IntPart()
 
 	amountToArg, err := AmountTo32bytesArg(sotashiAmount)

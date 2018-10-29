@@ -83,7 +83,7 @@ func newTxContractForEmptyTrans(vcontract Vcontract) (*TxContract, error) {
 	}
 
 	//AmountTo32ByteArg
-	amountDecimal := vcontract.SendAmount.Mul(coinDecimal)
+	amountDecimal := vcontract.SendAmount
 	sotashiAmount := amountDecimal.IntPart()
 	hexAmount := strconv.FormatInt(sotashiAmount, 16)
 	defaultLen := 64
@@ -93,6 +93,7 @@ func newTxContractForEmptyTrans(vcontract Vcontract) (*TxContract, error) {
 		bytesArg = bytesArg + "0"
 	}
 	bytesArg = bytesArg + hexAmount
+
 
 	//addrTo32bytesArg
 	addressToHash160, _ := addressEncoder.AddressDecode(vcontract.To, addressEncoder.QTUM_testnetAddressP2PKH)
