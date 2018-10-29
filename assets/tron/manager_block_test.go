@@ -30,19 +30,6 @@ func TestGetNowBlock(t *testing.T) {
 	}
 }
 
-func TestGetNowBlockID(t *testing.T) {
-
-	if r, err := tw.GetNowBlockID(); err != nil {
-		t.Errorf("GetNowBlock failed: %v\n", err)
-	} else {
-		t.Logf("GetNowBlock return: \n\t%+v\n", r)
-
-		if r == "" {
-			t.Errorf("GetNowBlock failed: %v\n", "Data Invalid!")
-		}
-	}
-}
-
 func TestGetBlockByNum(t *testing.T) {
 	var num uint64 = 3412368
 
@@ -83,7 +70,7 @@ func TestGetBlockByLimitNext(t *testing.T) {
 		t.Errorf("GetBlockByLimitNext failed: %v\n", err)
 	} else {
 
-		for _, v := range r.Block {
+		for _, v := range r {
 			printBlock(v)
 		}
 	}
@@ -98,7 +85,7 @@ func TestGetBlockByLatestNum(t *testing.T) {
 	} else {
 		t.Logf("GetBlockByLatestNum return: \n\t%+v\n", r)
 
-		for _, v := range r.Block {
+		for _, v := range r {
 			printBlock(v)
 		}
 	}
