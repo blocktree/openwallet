@@ -121,11 +121,11 @@ func TestSuiteTx(t *testing.T) {
 
 	for i := 0; i < 1000; i++ {
 
-		_, isSuccess, _ := tw.GetTransactionByID(txID)
-		fmt.Println("Is Success: ", isSuccess)
+		tx, _ := tw.GetTransactionByID(txID)
+		fmt.Println("Is Success: ", tx.IsSuccess)
 		fmt.Println("")
 
-		if isSuccess {
+		if tx.IsSuccess {
 			return
 		}
 
