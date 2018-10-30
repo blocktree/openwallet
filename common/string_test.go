@@ -21,42 +21,42 @@ import (
 )
 
 // 测试明文AES加密
-//func TestAES(t *testing.T) {
-//	var (
-//		// appkey     = "2d68067484a20f1a346b3cf28a898ed7f5736f5bacf0fe60449da95efdb97ad4"
-//		appsecret  = "0dd1e322907ad7f55deaa35fec2aac97cae7931454d734364bc63f3e9b9f993a"
-//		planttext  = String("考几分就；辣椒粉李经理发吉林省；发；快递放假；介绍费")
-//		ciphertext string
-//		err        error
-//	)
-//
-//	if ciphertext, err = planttext.AES(appsecret); err != nil {
-//		fmt.Println("err = %s", err.Error())
-//	}
-//
-//	fmt.Println("ciphertext = ", ciphertext)
-//}
+func TestAES(t *testing.T) {
+	var (
+		// appkey     = "2d68067484a20f1a346b3cf28a898ed7f5736f5bacf0fe60449da95efdb97ad4"
+		appsecret  = "0dd1e322907ad7f55deaa35fec2aac97cae7931454d734364bc63f3e9b9f993a"
+		planttext  = String("考几分就；辣椒粉李经理发吉林省；发；快递放假；介绍费sdfaf")
+		ciphertext string
+		err        error
+	)
 
-// 测试AES密文解密
-//func TestUnAES(t *testing.T) {
-//
-//	var (
-//		// appkey     = "2d68067484a20f1a346b3cf28a898ed7f5736f5bacf0fe60449da95efdb97ad4"
-//		appsecret  = "0dd1e322907ad7f55deaa35fec2aac97cae7931454d734364bc63f3e9b9f993a"
-//		planttext  = new(String)
-//		ciphertext = "Pr5nzcrcWtoJBjx3JrmeUwgftz3tWrpM8+/9BCduLEqcZBjNslDDiqWbvI+hpXMEZNsjorj3zpX2Sbolj/gpoLUqsXHN2UZmrdDCZY2M3PM="
-//		err        error
-//		// result     interface{}
-//	)
-//
-//	err = planttext.UnAES(ciphertext, appsecret)
-//
-//	fmt.Println("planttext = ", planttext)
-//	if err != nil {
-//		fmt.Println("err = ", err.Error())
-//	}
-//
-//}
+	if ciphertext, err = planttext.AES(appsecret); err != nil {
+		fmt.Println("err =", err.Error())
+	}
+
+	fmt.Println("ciphertext = ", ciphertext)
+}
+
+//测试AES密文解密
+func TestUnAES(t *testing.T) {
+
+	var (
+		// appkey     = "2d68067484a20f1a346b3cf28a898ed7f5736f5bacf0fe60449da95efdb97ad4"
+		appsecret  = "0dd1e322907ad7f55deaa35fec2aac97cae7931454d734364bc63f3e9b9f993a"
+		planttext  = new(String)
+		ciphertext = "Pr5nzcrcWtoJBjx3JrmeUwgftz3tWrpM8+/9BCduLEqcZBjNslDDiqWbvI+hpXMEZNsjorj3zpX2Sbolj/gpoLUqsXHN2UZmrdDCZY2M3PM="
+		err        error
+		// result     interface{}
+	)
+
+	err = planttext.UnAES(ciphertext, appsecret)
+
+	fmt.Println("planttext = ", planttext)
+	if err != nil {
+		fmt.Println("err = ", err.Error())
+	}
+
+}
 
 // 测试各种基本类型转为String
 func TestTypeToString(t *testing.T) {

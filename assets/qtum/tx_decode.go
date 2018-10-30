@@ -182,7 +182,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 
 					usedTokenUTXO = make([]*Unspent, 0)
 					//unspent = decimal.New(0, 0)
-					unspent, err = decoder.wm.GetQRC20UnspentByAddress(rawTx.Coin.Contract.Address, u.Address, rawTx.Coin.Contract.Decimals)
+					unspent, err = decoder.wm.GetQRC20Balance(rawTx.Coin.Contract, u.Address)
 					if err != nil {
 						log.Errorf("GetTokenUnspentByAddress failed unexpected error: %v\n", err)
 					}
