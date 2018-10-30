@@ -980,6 +980,16 @@ func (wm *WalletManager) GetBlockChainInfo() (*BlockchainInfo, error) {
 //ListUnspent 获取未花记录
 func (wm *WalletManager) ListUnspent(min uint64, addresses ...string) ([]*Unspent, error) {
 
+	if wm.config.RPCServerType == RPCServerExplorer {
+		return wm.listUnspentByExplorer(addresses...)
+	} else {
+		return wm.getListUnspentByCore(min, addresses...)
+	}
+}
+
+//getTransactionByCore 获取交易单
+func (wm *WalletManager) getListUnspentByCore(min uint64, addresses ...string) ([]*Unspent, error) {
+
 	var (
 		utxos = make([]*Unspent, 0)
 	)
@@ -1004,7 +1014,6 @@ func (wm *WalletManager) ListUnspent(min uint64, addresses ...string) ([]*Unspen
 	}
 
 	return utxos, nil
-
 }
 
 //RebuildWalletUnspent 批量插入未花记录到本地
@@ -1230,6 +1239,16 @@ func (wm *WalletManager) SignRawTransaction(txHex, walletID string, key *hdkeyst
 
 //SendRawTransaction 广播交易
 func (wm *WalletManager) SendRawTransaction(txHex string) (string, error) {
+
+	if wm.config.RPCServerType == RPCServerExplorer {
+		return wm.sendRawTransactionByExplorer(txHex)
+	} else {
+		return wm.sendRawTransactionByCore(txHex)
+	}
+}
+
+//sendRawTransactionByCore 广播交易
+func (wm *WalletManager) sendRawTransactionByCore(txHex string) (string, error) {
 
 	request := []interface{}{
 		txHex,
@@ -1678,8 +1697,19 @@ func (wm *WalletManager) EstimateFee(inputs, outputs int64, feeRate decimal.Deci
 	return trx_fee, nil
 }
 
+
 //EstimateFeeRate 预估的没KB手续费率
 func (wm *WalletManager) EstimateFeeRate() (decimal.Decimal, error) {
+
+	if wm.config.RPCServerType == RPCServerExplorer {
+		return wm.estimateFeeRateByExplorer()
+	} else {
+		return wm.estimateFeeRateByCore()
+	}
+}
+
+//estimateFeeRateByCore 预估的没KB手续费率
+func (wm *WalletManager) estimateFeeRateByCore() (decimal.Decimal, error) {
 
 	defaultRate, _ := decimal.NewFromString("0.004")
 

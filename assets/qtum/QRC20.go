@@ -74,6 +74,31 @@ func AddressTo32bytesArg(address string) ([]byte, error) {
 	return to32bytesArg, nil
 }
 
+// GetQRC20Balance 获取qrc20余额
+func (wm *WalletManager) GetQRC20Balance(token openwallet.SmartContract, address string) (decimal.Decimal, error) {
+	if wm.config.RPCServerType == RPCServerExplorer {
+		return wm.getAddressTokenBalanceByExplorer(token, address)
+	} else {
+		return wm.getAddressTokenBalanceByCore(token, address)
+	}
+}
+
+//getAddressTokenBalanceByCore 通过合约地址查询用户地址的余额
+func (wm *WalletManager) getAddressTokenBalanceByCore(token openwallet.SmartContract, address string) (decimal.Decimal, error) {
+
+	unspent, err := wm.GetQRC20UnspentByAddress(token.Address, address)
+	if err != nil {
+		return decimal.New(0, 0), err
+	}
+
+	dec := decimal.New(1, int32(token.Decimals))
+	sotashiUnspent, _ := strconv.ParseInt(unspent.Output,16,64)
+	balance, _ := decimal.NewFromString(common.NewString(sotashiUnspent).String())
+	balance = balance.Div(dec)
+	return balance, nil
+
+}
+
 func (wm *WalletManager)GetQRC20UnspentByAddress(contractAddress, address string) (*QRC20Unspent,error) {
 
 	to32bytesArg, err := AddressTo32bytesArg(address)

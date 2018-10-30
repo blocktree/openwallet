@@ -27,10 +27,11 @@ import (
 //owtp监听器
 type httpListener struct {
 	net.Listener
-	handler  PeerHandler
-	closed   chan struct{}
-	incoming chan Peer
-	laddr    string
+	handler   PeerHandler
+	closed    chan struct{}
+	incoming  chan Peer
+	laddr     string
+	peerstore Peerstore //节点存储器
 }
 
 //serve 监听服务
@@ -67,39 +68,15 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var auth *OWTPAuth
 	var err error
 
-	if len(header.Get("a")) == 0 {
-
-		//临时通过
-		cert, err := NewCertificate(RandomPrivateKey(), "")
-		if err != nil {
-			log.Debug("NewCertificate unexpected error:", err)
-			http.Error(w, "Failed to NewCertificate", 400)
-			return
-		}
-
-		pub, _ := cert.KeyPair()
-
-		header.Set("a", pub)
-	}
-
-	auth, err = NewOWTPAuthWithHTTPHeader(header)
-	if err != nil {
-		log.Debug("NewOWTPAuth unexpected error:", err)
-		http.Error(w, "Failed to upgrade http", 400)
-		return
-	}
-
-	log.Debug("NewOWTPAuth successfully")
-
-	peer, err := NewHTTPClient(auth.RemotePID(), w, r, l.handler, auth, cancel)
+	peer, err := NewHTTPClientWithHeader(header, w, r, l.handler, cancel)
 	if err != nil {
 		log.Debug("NewClient unexpected error:", err)
 		http.Error(w, "authorization not passed", 401)
 		return
 	}
+
 	// Just to make sure.
 	//defer peer.Close()
 
@@ -150,11 +127,11 @@ func HttpListenAddr(addr string, handler PeerHandler) (*httpListener, error) {
 		return nil, err
 	}
 	listener := httpListener{
-		Listener: l,
-		laddr:    addr,
-		handler:  handler,
-		incoming: make(chan Peer),
-		closed:   make(chan struct{}),
+		Listener:  l,
+		laddr:     addr,
+		handler:   handler,
+		incoming:  make(chan Peer),
+		closed:    make(chan struct{}),
 	}
 
 	go listener.serve()
