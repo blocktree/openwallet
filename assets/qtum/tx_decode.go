@@ -25,8 +25,6 @@ import (
 	"sort"
 	"strings"
 	"github.com/blocktree/OpenWallet/assets/qtum/btcLikeTxDriver"
-	"strconv"
-	"github.com/blocktree/OpenWallet/common"
 )
 
 type TransactionDecoder struct {
@@ -157,12 +155,14 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		    amount string
 		    txInTotal uint64
 			deAmount decimal.Decimal
+			sendAmount decimal.Decimal
 			gasPrice string
 			totalQtum decimal.Decimal
+			unspent decimal.Decimal
 		)
 
 		usedTokenUTXO := make([]*Unspent, 0)
-		unspent := decimal.New(0, 0)
+		unspent = decimal.New(0, 0)
 
 
 
@@ -181,14 +181,11 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 				if u.Spendable {
 
 					usedTokenUTXO = make([]*Unspent, 0)
-					unspent = decimal.New(0, 0)
-					token, err := decoder.wm.GetQRC20UnspentByAddress(rawTx.Coin.Contract.Address, u.Address)
+					//unspent = decimal.New(0, 0)
+					unspent, err = decoder.wm.GetQRC20UnspentByAddress(rawTx.Coin.Contract.Address, u.Address, rawTx.Coin.Contract.Decimals)
 					if err != nil {
 						log.Errorf("GetTokenUnspentByAddress failed unexpected error: %v\n", err)
 					}
-					sotashiUnspent, _ := strconv.ParseInt(token.Output,16,64)
-					sotashiUnspentDecimal, _ := decimal.NewFromString(common.NewString(sotashiUnspent).String())
-					unspent = sotashiUnspentDecimal.Div(coinDecimal)
 
 					if unspent.GreaterThanOrEqual(computeTotalSend) {
 						usedTokenUTXO = append(usedTokenUTXO, u)
@@ -269,6 +266,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		//装配输出
 		for to, amount = range rawTx.To {
 			deAmount, _ = decimal.NewFromString(amount)
+			sendAmount = deAmount.Mul(decimal.New(1, int32(rawTx.Coin.Contract.Decimals)))
 			//deamount = deamount.Mul(decoder.wm.config.CoinDecimal)
 			out := btcLikeTxDriver.Vout{usedUTXO[0].Address, txInTotal}
 			vouts = append(vouts, out)
@@ -287,7 +285,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		gasPrice = SotashiGasPriceDec.String()
 
 		//装配合约
-		vcontract := btcLikeTxDriver.Vcontract{rawTx.Coin.Contract.Address, to, deAmount, DEFAULT_GAS_LIMIT, gasPrice, 0}
+		vcontract := btcLikeTxDriver.Vcontract{rawTx.Coin.Contract.Address, to, sendAmount, DEFAULT_GAS_LIMIT, gasPrice, 0}
 
 		//构建空合约交易单
 		emptyTrans, err = btcLikeTxDriver.CreateQRC20TokenEmptyRawTransaction(vins, vcontract, vouts, lockTime, replaceable)
