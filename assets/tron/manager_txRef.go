@@ -197,7 +197,7 @@ func (wm *WalletManager) SignTransactionRef(txRawhex string, privateKey string) 
 			return signedTxRaw, err
 		}
 	}
-	tx.GetRawData().GetRefBlockBytes()
+	// tx.GetRawData().GetRefBlockBytes()
 
 	txHash, err := getTxHash(tx)
 	if err != nil {
