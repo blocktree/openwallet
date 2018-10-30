@@ -41,9 +41,8 @@ func (wm *WalletManager) CreateAddress(passValue string) (addr *gjson.Result, er
 	if err != nil {
 		return nil, err
 	}
-	res := gjson.ParseBytes(r)
 
-	return &res, nil
+	return r, nil
 }
 
 // Done!
@@ -65,7 +64,7 @@ func (wm *WalletManager) GenerateAddress() (addr *api.AddressPrKeyPairMessage, e
 	}
 
 	addr = &api.AddressPrKeyPairMessage{}
-	if err := gjson.Unmarshal(r, addr); err != nil {
+	if err := gjson.Unmarshal([]byte(r.Raw), addr); err != nil {
 		return nil, err
 	}
 
@@ -88,7 +87,7 @@ func (wm *WalletManager) ValidateAddress(address string) (err error) {
 	if err != nil {
 		return err
 	}
-	if gjson.ParseBytes(r).Get("result").Bool() != true {
+	if r.Get("result").Bool() != true {
 		return errors.New("Invalid!")
 	}
 

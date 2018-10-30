@@ -14,3 +14,10 @@
  */
 
 package tron
+
+import "testing"
+
+func TestScanBlockTask(t *testing.T) {
+	scanner := NewTronBlockScanner(tw)
+	scanner.ScanBlockTask()
+}
