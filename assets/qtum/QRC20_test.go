@@ -37,13 +37,13 @@ func Test_addressTo32bytesArg(t *testing.T) {
 
 
 func Test_getUnspentByAddress(t *testing.T) {
-	//contractAddress := "91a6081095ef860d28874c9db613e7a4107b0281"
-	//address := "qMrFCXxSuiTEDqd311VxivECpJqH5KsJg6"
-	//var tokenDecimal uint64 = 8
+	contractAddress := "91a6081095ef860d28874c9db613e7a4107b0281"
+	address := "qMrFCXxSuiTEDqd311VxivECpJqH5KsJg6"
+	var tokenDecimal uint64 = 8
 
-	contractAddress := "482be94ca327f1dd1d9857a5a212df091f44980f"
-	address := "qJ2HTPYoMF1DPBhgURjRqemun5WimD57Hy"
-	var tokenDecimal uint64 = 4
+	//contractAddress := "482be94ca327f1dd1d9857a5a212df091f44980f"
+	//address := "qJ2HTPYoMF1DPBhgURjRqemun5WimD57Hy"
+	//var tokenDecimal uint64 = 4
 
 	unspent, err := tw.GetQRC20UnspentByAddress(contractAddress, address, tokenDecimal)
 	if err != nil {
@@ -73,19 +73,19 @@ func Test_QRC20Transfer(t *testing.T) {
 	//to := "qJ2HTPYoMF1DPBhgURjRqemun5WimD57Hy"
 	//var tokenDecimal uint64 = 4
 
-	//contractAddress := "91a6081095ef860d28874c9db613e7a4107b0281"
-	//from := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
-	//to := "qMrFCXxSuiTEDqd311VxivECpJqH5KsJg6"
-	//var tokenDecimal uint64 = 8
+	contractAddress := "91a6081095ef860d28874c9db613e7a4107b0281"
+	from := "qMXS1YFtA5qr2UfhcDMthTCK6hWhJnzC47"
+	to := "qMrFCXxSuiTEDqd311VxivECpJqH5KsJg6"
+	var tokenDecimal uint64 = 8
 
-	contractAddress := "2d6cd7b2ef6de7e3866e17650c7d9c53529c0239"
-	from := "qHdSjkNTqSF3sVmiMpzU7ujSgZ9EobiTki"
-	to := "qLuqv9A7vigsaD8vZDqk7aS8fNH3EtNZjf"
-	var tokenDecimal uint64 = 15
+	//contractAddress := "2d6cd7b2ef6de7e3866e17650c7d9c53529c0239"
+	//from := "qHdSjkNTqSF3sVmiMpzU7ujSgZ9EobiTki"
+	//to := "qLuqv9A7vigsaD8vZDqk7aS8fNH3EtNZjf"
+	//var tokenDecimal uint64 = 15
 
 	gasPrice := "0.00000040"
 	var gasLimit int64 = 250000
-	var amount decimal.Decimal = decimal.NewFromFloat(100)
+	var amount decimal.Decimal = decimal.NewFromFloat(15)
 
 	result, err := tw.QRC20Transfer(contractAddress, from, to, gasPrice, amount, gasLimit, tokenDecimal)
 	if err != nil {
@@ -96,25 +96,25 @@ func Test_QRC20Transfer(t *testing.T) {
 }
 
 func Test_GetTokenBalanceByAddress(t *testing.T) {
-	contract := openwallet.SmartContract{
-		Address: "91a6081095ef860d28874c9db613e7a4107b0281",
-	}
-	addrs := []string{
-		"qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP",
-		"qQLYQn7vCAU8irPEeqjZ3rhFGLnS5vxVy8",
-		"qMXS1YFtA5qr2UfhcDMthTCK6hWhJnzC47",
-		"qJq5GbHeaaNbi6Bs5QCbuCZsZRXVWPoG1k",
-		"qP1VPw7RYm5qRuqcAvtiZ1cpurQpVWREu8",
-		"qdphfFinfJutJFvtnr2UaCwNAMxC3HbVxa",
-	}
-
 	//contract := openwallet.SmartContract{
-	//	Address: "482be94ca327f1dd1d9857a5a212df091f44980f",
+	//	Address: "91a6081095ef860d28874c9db613e7a4107b0281",
 	//}
 	//addrs := []string{
-	//	"qUaHAjfRLknMBuSsA5kBfkn9xLMDFc2FdV",
-	//	"qJ2HTPYoMF1DPBhgURjRqemun5WimD57Hy",
+	//	"qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP",
+	//	"qQLYQn7vCAU8irPEeqjZ3rhFGLnS5vxVy8",
+	//	"qMXS1YFtA5qr2UfhcDMthTCK6hWhJnzC47",
+	//	"qJq5GbHeaaNbi6Bs5QCbuCZsZRXVWPoG1k",
+	//	"qP1VPw7RYm5qRuqcAvtiZ1cpurQpVWREu8",
+	//	"qdphfFinfJutJFvtnr2UaCwNAMxC3HbVxa",
 	//}
+
+	contract := openwallet.SmartContract{
+		Address: "482be94ca327f1dd1d9857a5a212df091f44980f",
+	}
+	addrs := []string{
+		"qUaHAjfRLknMBuSsA5kBfkn9xLMDFc2FdV",
+		"qJ2HTPYoMF1DPBhgURjRqemun5WimD57Hy",
+	}
 
 	balanceList, err := tw.GetTokenBalanceByAddress(contract, addrs...)
 	if err != nil {
