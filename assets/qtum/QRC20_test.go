@@ -22,10 +22,14 @@ import (
 	"github.com/blocktree/OpenWallet/openwallet"
 )
 
+var (
+	isTestNet = true
+)
+
 func Test_addressTo32bytesArg(t *testing.T) {
 	address := "qdphfFinfJutJFvtnr2UaCwNAMxC3HbVxa"
 
-	to32bytesArg, err := tw.AddressTo32bytesArg(address)
+	to32bytesArg, err := AddressTo32bytesArg(address, isTestNet)
 	if err != nil {
 		t.Errorf("To32bytesArg failed unexpected error: %v\n", err)
 	}else {
@@ -37,6 +41,7 @@ func Test_addressTo32bytesArg(t *testing.T) {
 
 
 func Test_getUnspentByAddress(t *testing.T) {
+
 	contractAddress := "91a6081095ef860d28874c9db613e7a4107b0281"
 	address := "qMrFCXxSuiTEDqd311VxivECpJqH5KsJg6"
 	var tokenDecimal uint64 = 8
@@ -45,7 +50,7 @@ func Test_getUnspentByAddress(t *testing.T) {
 	//address := "qJ2HTPYoMF1DPBhgURjRqemun5WimD57Hy"
 	//var tokenDecimal uint64 = 4
 
-	unspent, err := tw.GetQRC20UnspentByAddress(contractAddress, address, tokenDecimal)
+	unspent, err := tw.GetQRC20UnspentByAddress(contractAddress, address, tokenDecimal, isTestNet)
 	if err != nil {
 		t.Errorf("GetUnspentByAddress failed unexpected error: %v\n", err)
 	}
@@ -68,6 +73,7 @@ func Test_AmountTo32bytesArg(t *testing.T){
 }
 
 func Test_QRC20Transfer(t *testing.T) {
+
 	//contractAddress := "482be94ca327f1dd1d9857a5a212df091f44980f"
 	//from := "qUaHAjfRLknMBuSsA5kBfkn9xLMDFc2FdV"
 	//to := "qJ2HTPYoMF1DPBhgURjRqemun5WimD57Hy"
@@ -87,7 +93,7 @@ func Test_QRC20Transfer(t *testing.T) {
 	var gasLimit int64 = 250000
 	var amount decimal.Decimal = decimal.NewFromFloat(15)
 
-	result, err := tw.QRC20Transfer(contractAddress, from, to, gasPrice, amount, gasLimit, tokenDecimal)
+	result, err := tw.QRC20Transfer(contractAddress, from, to, gasPrice, amount, gasLimit, tokenDecimal, isTestNet)
 	if err != nil {
 		t.Errorf("QRC20Transfer failed unexpected error: %v\n", err)
 	}else {
@@ -96,27 +102,27 @@ func Test_QRC20Transfer(t *testing.T) {
 }
 
 func Test_GetTokenBalanceByAddress(t *testing.T) {
-	//contract := openwallet.SmartContract{
-	//	Address: "91a6081095ef860d28874c9db613e7a4107b0281",
-	//}
-	//addrs := []string{
-	//	"qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP",
-	//	"qQLYQn7vCAU8irPEeqjZ3rhFGLnS5vxVy8",
-	//	"qMXS1YFtA5qr2UfhcDMthTCK6hWhJnzC47",
-	//	"qJq5GbHeaaNbi6Bs5QCbuCZsZRXVWPoG1k",
-	//	"qP1VPw7RYm5qRuqcAvtiZ1cpurQpVWREu8",
-	//	"qdphfFinfJutJFvtnr2UaCwNAMxC3HbVxa",
-	//}
-
 	contract := openwallet.SmartContract{
-		Address: "482be94ca327f1dd1d9857a5a212df091f44980f",
+		Address: "91a6081095ef860d28874c9db613e7a4107b0281",
 	}
 	addrs := []string{
-		"qUaHAjfRLknMBuSsA5kBfkn9xLMDFc2FdV",
-		"qJ2HTPYoMF1DPBhgURjRqemun5WimD57Hy",
+		"qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP",
+		"qQLYQn7vCAU8irPEeqjZ3rhFGLnS5vxVy8",
+		"qMXS1YFtA5qr2UfhcDMthTCK6hWhJnzC47",
+		"qJq5GbHeaaNbi6Bs5QCbuCZsZRXVWPoG1k",
+		"qP1VPw7RYm5qRuqcAvtiZ1cpurQpVWREu8",
+		"qdphfFinfJutJFvtnr2UaCwNAMxC3HbVxa",
 	}
 
-	balanceList, err := tw.GetTokenBalanceByAddress(contract, addrs...)
+	//contract := openwallet.SmartContract{
+	//	Address: "482be94ca327f1dd1d9857a5a212df091f44980f",
+	//}
+	//addrs := []string{
+	//	"qUaHAjfRLknMBuSsA5kBfkn9xLMDFc2FdV",
+	//	"qJ2HTPYoMF1DPBhgURjRqemun5WimD57Hy",
+	//}
+
+	balanceList, err := tw.GetTokenBalanceByAddress(contract, isTestNet, addrs...)
 	if err != nil {
 		t.Errorf("get token balance by address failed, err=%v", err)
 		return

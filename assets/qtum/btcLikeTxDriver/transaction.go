@@ -39,8 +39,8 @@ const (
 	DefaultHashType  = uint32(1)
 )
 
-func CreateEmptyRawTransaction(vins []Vin, vouts []Vout, lockTime uint32, replaceable bool) (string, error) {
-	emptyTrans, err := newTransaction(vins, vouts, lockTime, replaceable)
+func CreateEmptyRawTransaction(vins []Vin, vouts []Vout, lockTime uint32, replaceable bool, isTestNet bool) (string, error) {
+	emptyTrans, err := newTransaction(vins, vouts, lockTime, replaceable, isTestNet)
 	if err != nil {
 		return "", err
 	}

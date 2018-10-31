@@ -67,6 +67,8 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		feeLimit = decimal.New(15000000, -8)
 	)
 
+	isTestNet := decoder.wm.config.isTestNet
+
 	address, err := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID)
 	if err != nil {
 		return err
@@ -182,7 +184,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 
 					usedTokenUTXO = make([]*Unspent, 0)
 					//unspent = decimal.New(0, 0)
-					unspent, err = decoder.wm.GetQRC20Balance(rawTx.Coin.Contract, u.Address)
+					unspent, err = decoder.wm.GetQRC20Balance(rawTx.Coin.Contract, u.Address, isTestNet)
 					if err != nil {
 						log.Errorf("GetTokenUnspentByAddress failed unexpected error: %v\n", err)
 					}
@@ -295,7 +297,6 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		//装配合约
 		vcontract := btcLikeTxDriver.Vcontract{rawTx.Coin.Contract.Address, to, sendAmount, DEFAULT_GAS_LIMIT, gasPrice, 0}
 
-		isTestNet := decoder.wm.config.isTestNet
 		//构建空合约交易单
 		emptyTrans, err = btcLikeTxDriver.CreateQRC20TokenEmptyRawTransaction(vins, vcontract, vouts, lockTime, replaceable, isTestNet)
 		if err != nil {
@@ -397,7 +398,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 			//fmt.Printf("Create change address for receiving %s coin.", outputs[change])
 		}
 		/////////构建空交易单
-		emptyTrans, err = btcLikeTxDriver.CreateEmptyRawTransaction(vins, vouts, lockTime, replaceable)
+		emptyTrans, err = btcLikeTxDriver.CreateEmptyRawTransaction(vins, vouts, lockTime, replaceable, isTestNet)
 		if err != nil {
 			return fmt.Errorf("create transaction failed, unexpected error: %v", err)
 			//log.Error("构建空交易单失败")

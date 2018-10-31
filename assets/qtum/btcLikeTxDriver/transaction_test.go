@@ -6,6 +6,10 @@ import (
 	"testing"
 )
 
+var (
+	isTestNet = true
+)
+
 //案例一：
 //花费指向公钥哈希地址的UTXO
 //from pkh
@@ -28,7 +32,7 @@ func Test_case1(t *testing.T) {
 	replaceable := false
 
 	/////////构建空交易单
-	emptyTrans, err := CreateEmptyRawTransaction([]Vin{in1, in2}, []Vout{out}, lockTime, replaceable)
+	emptyTrans, err := CreateEmptyRawTransaction([]Vin{in1, in2}, []Vout{out}, lockTime, replaceable, isTestNet)
 
 	if err != nil {
 		t.Error("构建空交易单失败")
@@ -138,7 +142,7 @@ func Test_case2(t *testing.T) {
 	replaceable := false
 
 	///////构建空交易单
-	emptyTrans, err := CreateEmptyRawTransaction([]Vin{in1, in2}, []Vout{out}, lockTime, replaceable)
+	emptyTrans, err := CreateEmptyRawTransaction([]Vin{in1, in2}, []Vout{out}, lockTime, replaceable, isTestNet)
 
 	if err != nil {
 		t.Error("构建空交易单失败")
@@ -256,7 +260,7 @@ func Test_case3(t *testing.T) {
 	replaceable := false
 
 	///////构建空交易单
-	emptyTrans, err := CreateEmptyRawTransaction([]Vin{in1, in2}, []Vout{out}, lockTime, replaceable)
+	emptyTrans, err := CreateEmptyRawTransaction([]Vin{in1, in2}, []Vout{out}, lockTime, replaceable, isTestNet)
 
 	if err != nil {
 		t.Error("构建空交易单失败")
@@ -370,7 +374,7 @@ func Test_case4(t *testing.T) {
 	replaceable := false
 
 	///////构建空交易单
-	emptyTrans, err := CreateEmptyRawTransaction([]Vin{in}, []Vout{out}, lockTime, replaceable)
+	emptyTrans, err := CreateEmptyRawTransaction([]Vin{in}, []Vout{out}, lockTime, replaceable, isTestNet)
 
 	if err != nil {
 		t.Error("构建空交易单失败")
@@ -458,6 +462,7 @@ func Test_case4(t *testing.T) {
 //案例五
 //多重签名流程
 func Test_case5(t *testing.T) {
+	isTestNet := true
 	// step1
 	// 创建多重签名地址
 
@@ -470,7 +475,7 @@ func Test_case5(t *testing.T) {
 
 	//填充成为2维数组，获取多重签名地址
 
-	address, redeem, err := CreateMultiSig(required, [][]byte{pubA, pubB, pubC})
+	address, redeem, err := CreateMultiSig(required, [][]byte{pubA, pubB, pubC}, isTestNet)
 	if err != nil {
 		t.Error("创建多签地址失败！")
 	} else {
@@ -498,7 +503,7 @@ func Test_case5(t *testing.T) {
 	//追加手续费支持
 	replaceable := false
 
-	emptyTrans, err := CreateEmptyRawTransaction([]Vin{in}, []Vout{out}, lockTime, replaceable)
+	emptyTrans, err := CreateEmptyRawTransaction([]Vin{in}, []Vout{out}, lockTime, replaceable, isTestNet)
 	if err != nil {
 		t.Error("构建空交易单失败")
 	} else {

@@ -32,7 +32,7 @@ type Contract struct {
 	//	HashType []byte
 }
 
-func newTransaction(vins []Vin, vouts []Vout, lockTime uint32, replaceable bool) (*Transaction, error) {
+func newTransaction(vins []Vin, vouts []Vout, lockTime uint32, replaceable bool, isTestNet bool) (*Transaction, error) {
 	txIn, err := newTxInForEmptyTrans(vins)
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func newTransaction(vins []Vin, vouts []Vout, lockTime uint32, replaceable bool)
 		txIn[i].setSequence(lockTime, replaceable)
 	}
 
-	txOut, err := newTxOutForEmptyTrans(vouts)
+	txOut, err := newTxOutForEmptyTrans(vouts, isTestNet)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func newQRC20TokenTransaction(vins []Vin, vcontract Vcontract, vout []Vout, lock
 		return nil, err
 	}
 
-	txOut, err := newTxOutForEmptyTrans(vout)
+	txOut, err := newTxOutForEmptyTrans(vout, isTestNet)
 	if err != nil {
 		return nil, err
 	}
