@@ -59,9 +59,15 @@ func (wm *WalletManager) GetTokenBalanceByAddress(contract openwallet.SmartContr
 	return tokenBalanceList, nil
 }
 
-func AddressTo32bytesArg(address string) ([]byte, error) {
+func (wm *WalletManager) AddressTo32bytesArg(address string) ([]byte, error) {
 
-	addressToHash160, _ := addressEncoder.AddressDecode(address, addressEncoder.QTUM_testnetAddressP2PKH)
+	var addressToHash160 []byte
+	if wm.config.isTestNet {
+		addressToHash160, _ = addressEncoder.AddressDecode(address, addressEncoder.QTUM_testnetAddressP2PKH)
+	}else {
+		addressToHash160, _ = addressEncoder.AddressDecode(address, addressEncoder.QTUM_mainnetAddressP2PKH)
+	}
+
 	//fmt.Printf("addressToHash160: %s\n",hex.EncodeToString(addressToHash160))
 
 	to32bytesArg := append([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, addressToHash160[:]...)
@@ -81,7 +87,7 @@ func (wm *WalletManager) GetQRC20Balance(token openwallet.SmartContract, address
 
 func (wm *WalletManager)GetQRC20UnspentByAddress(contractAddress, address string, tokenDecimal uint64) (decimal.Decimal, error) {
 
-	to32bytesArg, err := AddressTo32bytesArg(address)
+	to32bytesArg, err := wm.AddressTo32bytesArg(address)
 	if err != nil {
 		return decimal.New(0,0), err
 	}
@@ -137,7 +143,7 @@ func (wm *WalletManager)QRC20Transfer(contractAddress string, from string, to st
 		return "", err
 	}
 
-	addressToArg, err := AddressTo32bytesArg(to)
+	addressToArg, err := wm.AddressTo32bytesArg(to)
 	if err != nil {
 		return "", err
 	}

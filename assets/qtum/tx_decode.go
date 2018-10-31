@@ -261,14 +261,22 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 			txInTotal += amount2
 		}
 
-		txInTotal -= uint64(feeLimit.Mul(decoder.wm.config.CoinDecimal).IntPart())
+		//计算手续费，找零地址有2个，一个是发送，一个是新创建的
+		fees, err := decoder.wm.EstimateFee(int64(len(usedUTXO)), int64(len(destinations)+1), feesRate)
+		if err != nil {
+			return err
+		}
+		//合约手续费在普通交易基础上加上0.16个qtum, 小数点8位
+		contractFees := fees.Add(decimal.New(16, -2)).Mul(decoder.wm.config.CoinDecimal)
+
+		change := txInTotal - uint64(contractFees.IntPart())
 
 		//装配输出
 		for to, amount = range rawTx.To {
 			deAmount, _ = decimal.NewFromString(amount)
 			sendAmount = deAmount.Mul(decimal.New(1, int32(rawTx.Coin.Contract.Decimals)))
 			//deamount = deamount.Mul(decoder.wm.config.CoinDecimal)
-			out := btcLikeTxDriver.Vout{usedUTXO[0].Address, txInTotal}
+			out := btcLikeTxDriver.Vout{usedUTXO[0].Address, change}
 			vouts = append(vouts, out)
 		}
 
@@ -287,8 +295,9 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		//装配合约
 		vcontract := btcLikeTxDriver.Vcontract{rawTx.Coin.Contract.Address, to, sendAmount, DEFAULT_GAS_LIMIT, gasPrice, 0}
 
+		isTestNet := decoder.wm.config.isTestNet
 		//构建空合约交易单
-		emptyTrans, err = btcLikeTxDriver.CreateQRC20TokenEmptyRawTransaction(vins, vcontract, vouts, lockTime, replaceable)
+		emptyTrans, err = btcLikeTxDriver.CreateQRC20TokenEmptyRawTransaction(vins, vcontract, vouts, lockTime, replaceable, isTestNet)
 		if err != nil {
 			return err
 			//log.Error("构建空交易单失败")

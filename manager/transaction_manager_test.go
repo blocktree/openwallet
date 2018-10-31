@@ -29,7 +29,7 @@ func createTransaction(walletID, accountID, to string) (*openwallet.RawTransacti
 		return nil, err
 	}
 
-	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "10", to, "", "")
+	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "5", to, "", "")
 
 	if err != nil {
 		log.Error("CreateTransaction failed, unexpected error:", err)
@@ -79,23 +79,23 @@ func TestWalletManager_CreateQrc20TokenTransaction(t *testing.T) {
 }
 
 func TestWalletManager_SendQrc20TokenTransaction(t *testing.T) {
-	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
-	accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
-	to := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
-	feeRate := "0.00000040"
-	contractAddr := "91a6081095ef860d28874c9db613e7a4107b0281"
-	tokenName := "QRC ZB TEST"
-	tokeSymbol := "QZTC"
-	var tokenDecimal uint64 = 8
-
 	//walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
 	//accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
-	//to := "qUaHAjfRLknMBuSsA5kBfkn9xLMDFc2FdV"
+	//to := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
 	//feeRate := "0.00000040"
-	//contractAddr := "482be94ca327f1dd1d9857a5a212df091f44980f"
-	//tokenName := "QRC TEST FOUR"
-	//tokeSymbol := "QTCF"
-	//var tokenDecimal uint64 = 4
+	//contractAddr := "91a6081095ef860d28874c9db613e7a4107b0281"
+	//tokenName := "QRC ZB TEST"
+	//tokeSymbol := "QZTC"
+	//var tokenDecimal uint64 = 8
+
+	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
+	accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
+	to := "qUaHAjfRLknMBuSsA5kBfkn9xLMDFc2FdV"
+	feeRate := "0.00000040"
+	contractAddr := "482be94ca327f1dd1d9857a5a212df091f44980f"
+	tokenName := "QRC TEST FOUR"
+	tokeSymbol := "QTCF"
+	var tokenDecimal uint64 = 4
 
 	//walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
 	//accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
@@ -111,7 +111,7 @@ func TestWalletManager_SendQrc20TokenTransaction(t *testing.T) {
 		log.Error("RefreshAssetsAccountBalance failed, unexpected error:", err)
 	}
 
-	rawTx, err := tm.CreateQrc20TokenTransaction(testApp, walletID, accountID,"30", to, feeRate,"",contractAddr, tokenName, tokeSymbol, tokenDecimal)
+	rawTx, err := tm.CreateQrc20TokenTransaction(testApp, walletID, accountID,"10", to, feeRate,"",contractAddr, tokenName, tokeSymbol, tokenDecimal)
 	if err != nil {
 		log.Error("CreateQrc20TokenTransaction failed, unexpected error:", err)
 		return
