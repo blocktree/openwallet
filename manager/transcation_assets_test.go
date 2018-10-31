@@ -21,7 +21,7 @@ import (
 	"testing"
 )
 
-func testCreateTransactionStep(walletID, accountID, to, amount, feeRate string) (*openwallet.RawTransaction, error) {
+func testCreateTransactionStep(walletID, accountID, to, amount, feeRate string, contract *openwallet.SmartContract) (*openwallet.RawTransaction, error) {
 
 	err := tm.RefreshAssetsAccountBalance(testApp, accountID)
 	if err != nil {
@@ -29,7 +29,7 @@ func testCreateTransactionStep(walletID, accountID, to, amount, feeRate string) 
 		return nil, err
 	}
 
-	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, amount, to, feeRate, "")
+	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, amount, to, feeRate, "", contract)
 
 	if err != nil {
 		log.Error("CreateTransaction failed, unexpected error:", err)
@@ -84,7 +84,43 @@ func TestTransfer_ETH(t *testing.T) {
 	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
 	to := "d35f9Ea14D063af9B3567064FAB567275b09f03D"
 
-	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.0003", "")
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.0003", "", nil)
+	if err != nil {
+		return
+	}
+
+	_, err = testSignTransactionStep(rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testVerifyTransactionStep(rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testSubmitTransactionStep(rawTx)
+	if err != nil {
+		return
+	}
+
+}
+
+func TestTransfer_ERC20(t *testing.T) {
+
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
+	to := "d35f9Ea14D063af9B3567064FAB567275b09f03D"
+
+	contract := openwallet.SmartContract{
+		Address:  "0x4092678e4E78230F46A1534C0fbc8fA39780892B",
+		Symbol:   "ETH",
+		Name:     "OCoin",
+		Token:    "OCN",
+		Decimals: 18,
+	}
+
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "1.1", "", &contract)
 	if err != nil {
 		return
 	}
@@ -112,7 +148,7 @@ func TestTransfer_LTC(t *testing.T) {
 	accountID := "EbUsW3YaHQ61eNt3f4hDXJAFh9LGmLZWH1VTTSnQmhnL"
 	to := "n3ctLfAj8ksiXbVRCSQwEiyh2ZV8REAcUC"
 
-	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "1.1", "0.001")
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "1.1", "0.001", nil)
 	if err != nil {
 		return
 	}
@@ -134,14 +170,13 @@ func TestTransfer_LTC(t *testing.T) {
 
 }
 
-
 func TestTransfer_QTUM(t *testing.T) {
-
+	//Qf6t5Ww14ZWVbG3kpXKoTt4gXeKNVxM9QJ
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
-	accountID := "EbUsW3YaHQ61eNt3f4hDXJAFh9LGmLZWH1VTTSnQmhnL"
-	to := "n3ctLfAj8ksiXbVRCSQwEiyh2ZV8REAcUC"
+	accountID := "2by6wzbzw7cnWkxiA31xMHpFmE99bqL3BnjkUJnJtEN6"
+	to := "Qe2M15jwosabZeKNZ6xDEGsLx9SV95AEkw"
 
-	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "1.1", "0.001")
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.03", "", nil)
 	if err != nil {
 		return
 	}

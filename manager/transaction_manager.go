@@ -128,7 +128,11 @@ contractAddr, tokenName, tokenSymbol string, tokenDecimal uint64) (*openwallet.R
 }
 
 // CreateTransaction
-func (wm *WalletManager) CreateTransaction(appID, walletID, accountID, amount, address, feeRate, memo string) (*openwallet.RawTransaction, error) {
+func (wm *WalletManager) CreateTransaction(appID, walletID, accountID, amount, address, feeRate, memo string, contract *openwallet.SmartContract) (*openwallet.RawTransaction, error) {
+
+	var (
+		coin openwallet.Coin
+	)
 
 	wrapper, err := wm.newWalletWrapper(appID, "")
 	if err != nil {
@@ -145,12 +149,23 @@ func (wm *WalletManager) CreateTransaction(appID, walletID, accountID, amount, a
 		return nil, err
 	}
 
-	rawTx := openwallet.RawTransaction{
-		Coin: openwallet.Coin{
+	if contract != nil {
+		coin = openwallet.Coin{
+			Symbol:     account.Symbol,
+			ContractID: contract.ContractID,
+			IsContract: true,
+			Contract: *contract,
+		}
+	} else {
+		coin = openwallet.Coin{
 			Symbol:     account.Symbol,
 			ContractID: "",
 			IsContract: false,
-		},
+		}
+	}
+
+	rawTx := openwallet.RawTransaction{
+		Coin: coin,
 		Account:  account,
 		FeeRate:  feeRate,
 		To:       map[string]string{address: amount},
