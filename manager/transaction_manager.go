@@ -333,10 +333,12 @@ func (wm *WalletManager) SubmitTransaction(appID, walletID, accountID string, ra
 	}
 
 	txWrapper := openwallet.NewTransactionWrapper(wrapper)
-	err = txWrapper.SaveBlockExtractData(accountID, accountTxData)
-	if err != nil {
-		log.Error("SaveBlockExtractData failed, unexpected error:", err)
-		return tx, err
+	for _, d := range accountTxData {
+		err = txWrapper.SaveBlockExtractData(accountID, d)
+		if err != nil {
+			log.Error("SaveBlockExtractData failed, unexpected error:", err)
+			return tx, err
+		}
 	}
 
 	log.Info("Save new transaction data successfully")

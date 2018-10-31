@@ -1016,12 +1016,33 @@ func (bs *BTCBlockScanner) GetScannedBlockHeight() uint64 {
 	return localHeight
 }
 
-func (bs *BTCBlockScanner) ExtractTransactionData(txid string, scanAddressFunc openwallet.BlockScanAddressFunc) (map[string]*openwallet.TxExtractData, error) {
+func (bs *BTCBlockScanner) ExtractTransactionData(txid string, scanAddressFunc openwallet.BlockScanAddressFunc) (map[string][]*openwallet.TxExtractData, error) {
+
 	result := bs.ExtractTransaction(0, "", txid, scanAddressFunc)
 	if !result.Success {
 		return nil, fmt.Errorf("extract transaction failed")
 	}
-	return result.extractData, nil
+
+	extData := make(map[string][]*openwallet.TxExtractData)
+	for key, data := range result.extractData {
+		txs := extData[key]
+		if txs == nil {
+			txs = make([]*openwallet.TxExtractData, 0)
+		}
+		txs = append(txs, data)
+		extData[key] = txs
+	}
+
+	for key, data := range result.extractContractData {
+		txs := extData[key]
+		if txs == nil {
+			txs = make([]*openwallet.TxExtractData, 0)
+		}
+		txs = append(txs, data)
+		extData[key] = txs
+	}
+
+	return extData, nil
 }
 
 //DropRechargeRecords 清楚钱包的全部充值记录
