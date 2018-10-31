@@ -25,7 +25,7 @@ import (
 func Test_addressTo32bytesArg(t *testing.T) {
 	address := "qdphfFinfJutJFvtnr2UaCwNAMxC3HbVxa"
 
-	to32bytesArg, err := AddressTo32bytesArg(address)
+	to32bytesArg, err := tw.AddressTo32bytesArg(address)
 	if err != nil {
 		t.Errorf("To32bytesArg failed unexpected error: %v\n", err)
 	}else {

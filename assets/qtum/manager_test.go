@@ -48,7 +48,7 @@ func init() {
 	explorerURL := "http://192.168.2.193:20001/qtum-insight-api/"
 	tw.ExplorerClient = NewExplorer(explorerURL, true)
 
-	tw.config.RPCServerType = RPCServerExplorer
+	tw.config.RPCServerType = RPCServerCore
 }
 
 func TestImportPrivKey(t *testing.T) {

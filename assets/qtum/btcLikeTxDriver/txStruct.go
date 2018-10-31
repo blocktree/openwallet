@@ -156,7 +156,7 @@ func (t Transaction) encodeToBytes() ([]byte, error) {
 	return ret, nil
 }
 
-func newQRC20TokenTransaction(vins []Vin, vcontract Vcontract, vout []Vout, lockTime uint32, replaceable bool) (*Contract, error) {
+func newQRC20TokenTransaction(vins []Vin, vcontract Vcontract, vout []Vout, lockTime uint32, replaceable bool, isTestNet bool) (*Contract, error) {
 	txIn, err := newTxInForEmptyTrans(vins)
 	if err != nil {
 		return nil, err
@@ -166,7 +166,7 @@ func newQRC20TokenTransaction(vins []Vin, vcontract Vcontract, vout []Vout, lock
 		txIn[i].setSequence(lockTime, replaceable)
 	}
 
-	txContract, err := newTxContractForEmptyTrans(vcontract)
+	txContract, err := newTxContractForEmptyTrans(vcontract, isTestNet)
 	if err != nil {
 		return nil, err
 	}
