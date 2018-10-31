@@ -79,39 +79,21 @@ func TestWalletManager_CreateQrc20TokenTransaction(t *testing.T) {
 }
 
 func TestWalletManager_SendQrc20TokenTransaction(t *testing.T) {
-	//walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
-	//accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
-	//to := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
-	//feeRate := "0.00000040"
-	//contractAddr := "91a6081095ef860d28874c9db613e7a4107b0281"
-	//tokenName := "QRC ZB TEST"
-	//tokeSymbol := "QZTC"
-	//var tokenDecimal uint64 = 8
-
-	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
-	accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
-	to := "qUaHAjfRLknMBuSsA5kBfkn9xLMDFc2FdV"
+	walletID := "WBiuSsYdPgzZhLSMkAA7XYQuKUgsb6DQgJ"
+	accountID := "HYZs6qySNUCj5w1Px7Btm1VF1TLkFvhGcL1FTN9gTUz"
+	to := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
 	feeRate := "0.00000040"
-	contractAddr := "482be94ca327f1dd1d9857a5a212df091f44980f"
-	tokenName := "QRC TEST FOUR"
-	tokeSymbol := "QTCF"
-	var tokenDecimal uint64 = 4
-
-	//walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
-	//accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
-	//to := "qHdSjkNTqSF3sVmiMpzU7ujSgZ9EobiTki"
-	//feeRate := "0.00000040"
-	//contractAddr := "2d6cd7b2ef6de7e3866e17650c7d9c53529c0239"
-	//tokenName := "QRC TEST FIVE"
-	//tokeSymbol := "QTCV"
-	//var tokenDecimal uint64 = 15
+	contractAddr := "91a6081095ef860d28874c9db613e7a4107b0281"
+	tokenName := "QRC ZB TEST"
+	tokeSymbol := "QZTC"
+	var tokenDecimal uint64 = 8
 
 	err := tm.RefreshAssetsAccountBalance(testApp, accountID)
 	if err != nil {
 		log.Error("RefreshAssetsAccountBalance failed, unexpected error:", err)
 	}
 
-	rawTx, err := tm.CreateQrc20TokenTransaction(testApp, walletID, accountID,"10", to, feeRate,"",contractAddr, tokenName, tokeSymbol, tokenDecimal)
+	rawTx, err := tm.CreateQrc20TokenTransaction(testApp, walletID, accountID,"1", to, feeRate,"",contractAddr, tokenName, tokeSymbol, tokenDecimal)
 	if err != nil {
 		log.Error("CreateQrc20TokenTransaction failed, unexpected error:", err)
 		return
@@ -169,9 +151,9 @@ func TestWalletManager_SignTransaction(t *testing.T) {
 
 func TestWalletManager_VerifyTransaction(t *testing.T) {
 
-	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
-	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
-	to := "d35f9Ea14D063af9B3567064FAB567275b09f03D"
+	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
+	accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
+	to := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
 	if err != nil {
@@ -198,8 +180,8 @@ func TestWalletManager_VerifyTransaction(t *testing.T) {
 
 func TestWalletManager_SubmitTransaction(t *testing.T) {
 
-	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
-	accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
+	walletID := "WBiuSsYdPgzZhLSMkAA7XYQuKUgsb6DQgJ"
+	accountID := "HYZs6qySNUCj5w1Px7Btm1VF1TLkFvhGcL1FTN9gTUz"
 	to := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
