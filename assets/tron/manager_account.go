@@ -58,7 +58,7 @@ func (wm *WalletManager) GetAccountNet(address string) (account *api.AccountNetM
 	}
 
 	account = &api.AccountNetMessage{}
-	if err := gjson.Unmarshal(r, account); err != nil {
+	if err := gjson.Unmarshal([]byte(r.Raw), account); err != nil {
 		return nil, err
 	}
 
@@ -80,7 +80,7 @@ func (wm *WalletManager) GetAccount(address string) (account *core.Account, err 
 	}
 
 	account = &core.Account{}
-	if err := gjson.Unmarshal(r, account); err != nil {
+	if err := gjson.Unmarshal([]byte(r.Raw), account); err != nil {
 		return nil, err
 	}
 
@@ -108,12 +108,12 @@ func (wm *WalletManager) CreateAccount(owner_address, account_address string) (t
 	if err != nil {
 		return nil, err
 	}
-	res := gjson.ParseBytes(r)
-	if res.Get("Error").String() != "" {
-		return nil, errors.New(res.Get("Error").String())
+
+	if r.Get("Error").String() != "" {
+		return nil, errors.New(r.Get("Error").String())
 	}
 
-	return &res, nil
+	return r, nil
 }
 
 // Done
@@ -139,6 +139,5 @@ func (wm *WalletManager) UpdateAccount(account_name, owner_address string) (tx *
 		return nil, err
 	}
 
-	res := gjson.ParseBytes(r)
-	return &res, nil
+	return r, nil
 }

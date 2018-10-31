@@ -137,7 +137,7 @@ func (this *TxpoolContent) GetSequentTxNonce(addr string) (uint64, uint64, uint6
 		return 0, 0, 0, nil
 	}*/
 	for theAddr, _ := range txpool {
-		log.Debugf("theAddr:%v, addr:%v", strings.ToLower(theAddr), strings.ToLower(addr))
+		//log.Debugf("theAddr:%v, addr:%v", strings.ToLower(theAddr), strings.ToLower(addr))
 		if strings.ToLower(theAddr) == strings.ToLower(addr) {
 			target = txpool[theAddr]
 		}

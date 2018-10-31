@@ -123,11 +123,11 @@ func (wm *WalletManager) CreateTransactionRef(to_address, owner_address string, 
 	}
 
 	// ----------------------- Get Reference Block ----------------------
-	r, err := wm.GetNowBlockID()
+	block, err := wm.GetNowBlock()
 	if err != nil {
-		return txRawHex, err
+		return "", err
 	}
-	blockID, err := hex.DecodeString(r)
+	blockID, err := hex.DecodeString(block.GetBlockHashID())
 	if err != nil {
 		return txRawHex, err
 	}
@@ -197,7 +197,7 @@ func (wm *WalletManager) SignTransactionRef(txRawhex string, privateKey string) 
 			return signedTxRaw, err
 		}
 	}
-	tx.GetRawData().GetRefBlockBytes()
+	// tx.GetRawData().GetRefBlockBytes()
 
 	txHash, err := getTxHash(tx)
 	if err != nil {

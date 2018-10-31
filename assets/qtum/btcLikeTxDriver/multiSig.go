@@ -7,7 +7,11 @@ import (
 	"github.com/blocktree/go-OWCrypt"
 )
 
-func CreateMultiSig(required byte, pubkeys [][]byte) (string, string, error) {
+func CreateMultiSig(required byte, pubkeys [][]byte, isTestNet bool) (string, string, error) {
+	var (
+		P2SHPrefix byte
+	)
+
 	if required < 1 {
 		return "", "", errors.New("A multisignature address must require at least one key to redeem!")
 	}
@@ -42,6 +46,11 @@ func CreateMultiSig(required byte, pubkeys [][]byte) (string, string, error) {
 	redeemHash = append([]byte{0x00, 0x20}, redeemHash...)
 	redeemHash = owcrypt.Hash(redeemHash, 0, owcrypt.HASH_ALG_HASH160)
 
+	if isTestNet {
+		P2SHPrefix  = testNetP2SHPrefix
+	}else {
+		P2SHPrefix  = mainNetP2SHPrefix
+	}
 	return EncodeCheck(P2SHPrefix, redeemHash), hex.EncodeToString(redeem), nil
 }
 

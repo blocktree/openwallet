@@ -10,8 +10,13 @@ type TxOut struct {
 	lockScript []byte
 }
 
-func newTxOutForEmptyTrans(vout []Vout) ([]TxOut, error) {
+func newTxOutForEmptyTrans(vout []Vout, isTestNet bool) ([]TxOut, error) {
 	var ret []TxOut
+
+	var (
+		P2PKHPrefix byte
+		P2SHPrefix byte
+	)
 
 	for _, v := range vout {
 		amount := uint64ToLittleEndianBytes(v.Amount)
@@ -39,6 +44,15 @@ func newTxOutForEmptyTrans(vout []Vout) ([]TxOut, error) {
 
 		hash = append([]byte{byte(len(hash))}, hash...)
 		hash = append([]byte{OpCodeHash160}, hash...)
+
+
+		if isTestNet {
+			P2PKHPrefix = testNetP2PKHPrefix
+			P2SHPrefix  = testNetP2SHPrefix
+		}else {
+			P2PKHPrefix = mainNetP2PKHPrefix
+			P2SHPrefix  = mainNetP2SHPrefix
+		}
 		if prefix == P2PKHPrefix {
 			hash = append(hash, OpCodeEqualVerify, OpCodeCheckSig)
 			hash = append([]byte{OpCodeDup}, hash...)

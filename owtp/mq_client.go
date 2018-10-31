@@ -189,12 +189,12 @@ func (c *MQClient) Send(data DataPacket) error {
 		return err
 	}
 
-	if c.auth != nil && c.auth.EnableAuth() {
-		respBytes, err = c.auth.EncryptData(respBytes)
-		if err != nil {
-			return errors.New("OWTP: EncryptData failed")
-		}
-	}
+	//if c.auth != nil && c.auth.EnableAuth() {
+	//	respBytes, err = c.auth.EncryptData(respBytes)
+	//	if err != nil {
+	//		return errors.New("OWTP: EncryptData failed")
+	//	}
+	//}
 
 	//log.Printf("Send: %s\n", string(respBytes))
 	c.send <- respBytes

@@ -20,12 +20,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/blocktree/OpenWallet/log"
-	"github.com/gorilla/websocket"
+	"github.com/blocktree/go-OWCrypt"
+	"github.com/imroc/req"
+	"github.com/mr-tron/base58/base58"
 	"github.com/tidwall/gjson"
-	"net"
-	"sync"
-	"net/http"
 	"io/ioutil"
+	"net"
+	"net/http"
+	"sync"
 )
 
 //HTTPClient 基于http的通信服务端
@@ -34,7 +36,6 @@ type HTTPClient struct {
 	request         *http.Request
 	auth            Authorization
 	handler         PeerHandler
-	send            chan []byte
 	isHost          bool
 	ReadBufferSize  int
 	WriteBufferSize int
@@ -44,20 +45,22 @@ type HTTPClient struct {
 	closeOnce       sync.Once
 	done            func()
 	config          map[string]string //节点配置
+	httpClient      *req.Req
+	baseURL         string
+	authHeader      map[string]string
 }
 
 func HTTPDial(
 	pid, url string,
 	handler PeerHandler,
-	header map[string]string,
-	ReadBufferSize, WriteBufferSize int) ( error) {
+	header map[string]string) (*HTTPClient, error) {
 
-	var (
-		httpHeader http.Header
-	)
+	//var (
+	//	httpHeader http.Header
+	//)
 
 	if handler == nil {
-		return  errors.New("hander should not be nil! ")
+		return nil, errors.New("hander should not be nil! ")
 	}
 
 	//处理连接授权
@@ -67,31 +70,102 @@ func HTTPDial(
 	//}
 	log.Debug("Connecting URL:", url)
 
+	//if header != nil {
+	//	httpHeader = make(http.Header)
+	//	for key, value := range header {
+	//		httpHeader.Add(key, value)
+	//	}
+	//}
 
-	if header != nil {
-		httpHeader = make(http.Header)
-		for key, value := range header {
-			httpHeader.Add(key, value)
-		}
+	client := &HTTPClient{
+		pid:        pid,
+		baseURL:    url,
+		httpClient: req.New(),
+		authHeader: header,
+		handler:    handler,
 	}
 
-	return  nil
+	client.isConnect = true
+	client.isHost = true //我方主动连接
+	client.handler.OnPeerOpen(client)
+
+	return client, nil
 }
 
+func NewHTTPClientWithHeader(header http.Header, responseWriter http.ResponseWriter, request *http.Request, hander PeerHandler, done func()) (*HTTPClient, error) {
 
-func NewHTTPClient(pid string,responseWriter  http.ResponseWriter, request *http.Request , hander PeerHandler, auth Authorization, done func()) (*HTTPClient, error) {
+	/*
+			| 参数名称 | 类型   | 是否可空   | 描述                                                                              |
+		|----------|--------|------------|-----------------------------------------------------------------------------------|
+		| a        | string | 是         | 节点公钥，base58                                                                 |
+		| p        | string | 是         | 计算协商密码的临时公钥，base58                                                                 |
+		| n        | uint32 | 123        | 请求序号。为了保证请求对应响应按序执行，并防御重放攻击，序号可以为随机数，但不可重复。 |
+		| t        | uint32 | 1528520843 | 时间戳。限制请求在特定时间范围内有效，如10分钟。                                     |
+		| c        | string | 是         | 协商密码，生成的密钥类别，aes-128-ctr，aes-128-cbc，aes-256-ecb等，为空不进行协商      |
+		| s        | string | 是         | 组合[a+n+t]并sha256两次，使用钱包工具配置的本地私钥签名，最后base58编码             |
+	*/
+
+	var (
+		enableSig       bool
+		//isConsult       bool
+		tmpPublicKey    []byte
+		remotePublicKey []byte
+		err             error
+		//nodeID          string
+	)
+
+	log.Debug("header:", header)
+
+	a := header.Get("a")
+
+	//HTTP的节点ID都采用随机生成，因为是短连接
+	_, tmpPublicKey = owcrypt.KeyAgreement_initiator_step1(owcrypt.ECC_CURVE_SM2_STANDARD)
+
+	if len(a) == 0 {
+		//没有授权公钥，不授权的HTTP访问，不建立协商密码，不进行签名授权
+		remotePublicKey = tmpPublicKey
+		//isConsult = false
+		enableSig = false
+	} else {
+		//有授权公钥，必须授权的HTTP访问，不建立协商密码，进行签名授权
+		remotePublicKey, err = base58.Decode(a)
+		if err != nil {
+			return nil, err
+		}
+		enableSig = true
+	}
+
+	//nodeID = base58.Encode(owcrypt.Hash(tmpPublicKey, 0, owcrypt.HASH_ALG_SHA256))
+
+	auth := &OWTPAuth{
+		remotePublicKey: remotePublicKey,
+		//consultType:     c,
+		//isConsult:       isConsult,
+		enable:          enableSig,
+	}
+
+	err = auth.VerifyHeader()
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := NewHTTPClient(auth.RemotePID(), responseWriter, request, hander, auth, done)
+
+	return client, nil
+}
+
+func NewHTTPClient(pid string, responseWriter http.ResponseWriter, request *http.Request, hander PeerHandler, auth Authorization, done func()) (*HTTPClient, error) {
 
 	if hander == nil {
 		return nil, errors.New("hander should not be nil! ")
 	}
 
 	client := &HTTPClient{
-		pid:  pid,
-		send: make(chan []byte, MaxMessageSize),
-		auth: auth,
-		done: done,
-		responseWriter:responseWriter,
-		request:request,
+		pid:            pid,
+		auth:           auth,
+		done:           done,
+		responseWriter: responseWriter,
+		request:        request,
 	}
 
 	client.isConnect = true
@@ -162,53 +236,73 @@ func (c *HTTPClient) LocalAddr() net.Addr {
 
 //RemoteAddr 远程节点地址
 func (c *HTTPClient) RemoteAddr() net.Addr {
-	if c.request == nil {
-		return nil
+
+	if c.isHost {
+		addr := &MqAddr{
+			NetWork: c.baseURL,
+		}
+		return addr
+	} else {
+		if c.request == nil {
+			return nil
+		}
+		addr := &MqAddr{
+			NetWork: c.request.RemoteAddr,
+		}
+		return addr
 	}
-	addr := &MqAddr{
-		NetWork: c.request.RemoteAddr,
-	}
-	return addr
+
 }
 
 //Send 发送消息
 func (c *HTTPClient) Send(data DataPacket) error {
 
-	////添加授权
-	//if c.auth != nil && c.auth.EnableAuth() {
-	//	if !c.auth.GenerateSignature(&data) {
-	//		return errors.New("OWTP: authorization failed")
-	//	}
-	//}
-	//log.Emergency("Send DataPacket:", data)
-	respBytes, err := json.Marshal(data)
+	if c.isHost {
+		return c.sendHTTPRequest(data)
+	} else {
+		return c.writeResponse(data)
+	}
+}
+
+//sendHTTPRequest 发送HTTP请求
+func (c *HTTPClient) sendHTTPRequest(data DataPacket) error {
+
+	if c.httpClient == nil {
+		return errors.New("API url is not setup. ")
+	}
+
+	r, err := c.httpClient.Post(c.baseURL, req.BodyJSON(&data), req.Header(c.authHeader))
+
+	log.Std.Info("%+v", r)
+
 	if err != nil {
 		return err
 	}
 
-	if c.auth != nil && c.auth.EnableAuth() {
-		respBytes, err = c.auth.EncryptData(respBytes)
-		if err != nil {
-			return errors.New("OWTP: EncryptData failed")
-		}
-	}
+	resp := gjson.ParseBytes(r.Bytes())
 
-	//log.Printf("Send: %s\n", string(respBytes))
-	if err := c.write(websocket.TextMessage, respBytes); err != nil {
-		return nil
-	}
+	packet := NewDataPacket(resp)
+
+	//有可能存在数据已返回，上层才添加请求
+	go c.handler.OnPeerNewDataPacketReceived(c, packet)
+
 	return nil
 }
 
 //OpenPipe 打开通道
 func (c *HTTPClient) OpenPipe() error {
 
+	//对方节点时远程服务器，不需要打开读通道
+	if c.isHost {
+		return nil
+	}
+
 	if !c.IsConnected() {
 		return fmt.Errorf("client is not connect")
 	}
 
 	//发送通道
-	go c.writePump()
+	//go c.writePump()
 
 	//监听消息
 	go c.readPump()
@@ -216,36 +310,20 @@ func (c *HTTPClient) OpenPipe() error {
 	return nil
 }
 
-// WritePump 发送消息通道
-func (c *HTTPClient) writePump() {
-
-	for {
-		select {
-		case message, ok := <-c.send:
-			//发送消息
-			if !ok {
-				c.write(websocket.CloseMessage, []byte{})
-				return
-			}
-			if Debug {
-				log.Debug("Send: ", string(message))
-			}
-			if err := c.write(websocket.TextMessage, message); err != nil {
-				return
-			}
-
-		}
+// writeResponse 输出数据
+func (c *HTTPClient) writeResponse(data DataPacket) error {
+	log.Debug("writeResponse")
+	respBytes, err := json.Marshal(data)
+	if err != nil {
+		return err
 	}
-}
 
-// write 输出数据
-func (c *HTTPClient) write(mt int, message []byte) error {
 	defer c.Close()
 	if c.responseWriter == nil {
 		return fmt.Errorf("responseWriter is nil")
 	}
 	w := c.responseWriter
-	w.Write([]byte(message))
+	w.Write(respBytes)
 	w.(http.Flusher).Flush()
 	return nil
 }
@@ -264,7 +342,7 @@ func (c *HTTPClient) readPump() {
 
 	result := string(s)
 
-	if len(result) == 0{
+	if len(result) == 0 {
 		w.Write([]byte("is not a Json"))
 		w.(http.Flusher).Flush()
 		log.Error("is not a Json ")
@@ -278,7 +356,7 @@ func (c *HTTPClient) readPump() {
 
 	packet := NewDataPacket(gjson.ParseBytes(s))
 
-	if len(packet.Method) == 0{
+	if len(packet.Method) == 0 {
 
 		w.Write([]byte("method is null"))
 		w.(http.Flusher).Flush()

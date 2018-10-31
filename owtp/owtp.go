@@ -17,15 +17,16 @@
 package owtp
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/HcashOrg/hcutil/base58"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/bwmarrin/snowflake"
-	"github.com/mitchellh/mapstructure"
 	"math/rand"
+	"strings"
 	"sync"
 	"time"
-	"strings"
-	"errors"
 )
 
 type ConnectType int
@@ -38,13 +39,17 @@ const (
 	//客户端请求错误
 	ErrBadRequest uint64 = 400
 	//网络断开
-	ErrNetworkDisconnected uint64 = 401
+	ErrUnauthorized uint64 = 401
+	//通信密钥不正确
+	ErrSecretKeyInvalid uint64 = 402
 	//找不到方法
 	ErrNotFoundMethod uint64 = 404
 	//重放攻击
 	ErrReplayAttack uint64 = 409
 	//重放攻击
 	ErrRequestTimeout uint64 = 408
+	//网络断开
+	ErrNetworkDisconnected uint64 = 430
 	//服务器错误
 	ErrInternalServerError uint64 = 500
 	//请求与响应的方法不一致
@@ -60,10 +65,13 @@ const (
 	MQ string = "mq"
 
 	HTTP string = "http"
-
-	KeyAgreementMethod = "internal_keyAgreement"
 )
 
+const (
+
+	//校验协商结果
+	KeyAgreementMethod = "internal_keyAgreement"
+)
 
 //节点主配置 作为json解析工具
 type MainConfig struct {
@@ -90,7 +98,9 @@ type OWTPNode struct {
 	//连接时的回调
 	connectHandler func(n *OWTPNode, peerInfo PeerInfo)
 	//节点存储器
-	peerstore *owtpPeerstore
+	peerstore Peerstore
+	//在线节点
+	onlinePeers map[string]Peer
 	//服务监听器
 	listener Listener
 	//授权证书
@@ -125,12 +135,13 @@ func NewOWTPNode(cert Certificate, readBufferSize, writeBufferSize int) *OWTPNod
 	node.nonceGen, _ = snowflake.NewNode(1)
 	node.serveMux = NewServeMux(120)
 	node.cert = cert
-	node.peerstore = NewPeerstore()
+	node.peerstore = NewOWTPPeerstore()
 	node.ReadBufferSize = readBufferSize
 	node.WriteBufferSize = writeBufferSize
 	node.Join = make(chan Peer)
 	node.Leave = make(chan Peer)
 	node.Stop = make(chan struct{})
+	node.onlinePeers = make(map[string]Peer)
 
 	//内部配置一个协商密码处理过程
 	node.HandleFunc(KeyAgreementMethod, node.keyAgreement)
@@ -160,8 +171,7 @@ func (node *OWTPNode) Listen(config map[string]string) error {
 		return fmt.Errorf("the node is listening, please close listener first")
 	}
 
-
-	if connectType == Websocket || connectType == MQ{
+	if connectType == Websocket || connectType == MQ {
 		l, err := ListenAddr(addr, node)
 		if err != nil {
 			return err
@@ -179,7 +189,7 @@ func (node *OWTPNode) Listen(config map[string]string) error {
 		}(l)
 
 		node.listening = true
-	}else if connectType == HTTP{
+	} else if connectType == HTTP {
 		l, err := HttpListenAddr(addr, node)
 		if err != nil {
 			return err
@@ -206,20 +216,22 @@ func (node *OWTPNode) Listening() bool {
 	return node.listening
 }
 
-
 //Connect 建立长连接
-func (node *OWTPNode) Connect( pid string,config map[string]string) error {
+func (node *OWTPNode) Connect(pid string, config map[string]string) error {
 
-	_, err := node.connect( pid,config)
+	_, err := node.connect(pid, config)
 
 	return err
 }
 
 //connect 建立长连接，内部调用
-func (node *OWTPNode) connect( pid string,config map[string]string) (Peer, error) {
+func (node *OWTPNode) connect(pid string, config map[string]string) (Peer, error) {
 
+	var (
+		peer Peer
+	)
 
-	if config == nil{
+	if config == nil {
 		return nil, fmt.Errorf("config  is nil")
 	}
 
@@ -232,7 +244,7 @@ func (node *OWTPNode) connect( pid string,config map[string]string) (Peer, error
 	auth, err := NewOWTPAuthWithCertificate(node.cert)
 
 	//发起协商密钥
-	err = auth.InitKeyAgreement()
+	//err = auth.InitKeyAgreement()
 	if err != nil {
 		return nil, err
 	}
@@ -245,12 +257,12 @@ func (node *OWTPNode) connect( pid string,config map[string]string) (Peer, error
 	}
 
 	//websocket类型
-	if connectType == Websocket{
+	if connectType == Websocket {
 
-		url := "ws://" + strings.TrimSuffix(addr,"/") + "/" + pid
+		url := "ws://" + strings.TrimSuffix(addr, "/") + "/" + pid
 
 		//建立链接，记录默认的客户端
-		client, err := Dial(pid, url, node, auth.AuthHeader(), node.ReadBufferSize, node.WriteBufferSize)
+		client, err := Dial(pid, url, node, auth.WSAuthHeader(), node.ReadBufferSize, node.WriteBufferSize)
 		if err != nil {
 			return nil, err
 		}
@@ -258,18 +270,18 @@ func (node *OWTPNode) connect( pid string,config map[string]string) (Peer, error
 		client.auth = auth
 		//设置配置
 		client.config = config
-		return client, nil
+		peer = client
 	}
 
 	//MQ类型
-	if connectType == MQ{
+	if connectType == MQ {
 
 		mqAccount := config["account"]
 		mqPassword := config["password"]
-		url := "amqp://"+mqAccount+":"+mqPassword+"@" + strings.TrimSuffix(addr,"/") + "/"
+		url := "amqp://" + mqAccount + ":" + mqPassword + "@" + strings.TrimSuffix(addr, "/") + "/"
 
 		//建立链接，记录默认的客户端
-		client, err := MQDial(pid, url,node)
+		client, err := MQDial(pid, url, node)
 		if err != nil {
 			return nil, err
 		}
@@ -277,29 +289,35 @@ func (node *OWTPNode) connect( pid string,config map[string]string) (Peer, error
 		client.auth = auth
 		//设置配置
 		client.config = config
-		return client, nil
+		peer = client
 	}
 
 	//HTTP类型
-	if connectType == HTTP{
+	if connectType == HTTP {
 
-		//url := "http://" + strings.TrimSuffix(addr,"/") + "/" + pid
-		//
-		////建立链接，记录默认的客户端
-		//client, err := HTTPDial(pid, url,node)
-		//if err != nil {
-		//	return nil, err
-		//}
-		////设置授权规则
-		//client.auth = auth
-		////设置配置
-		//client.config = config
-		//return client, nil
+		url := "http://" + strings.TrimSuffix(addr, "/") + "/" + pid
+
+		//建立链接，记录默认的客户端
+		client, err := HTTPDial(pid, url, node, auth.HTTPAuthHeader())
+		if err != nil {
+			return nil, err
+		}
+		//设置授权规则
+		client.auth = auth
+		//设置配置
+		client.config = config
+
+		peer = client
 	}
 
-	return nil,errors.New("connectType can't found! ")
-}
+	if peer == nil {
+		return nil, errors.New("connectType can't found! ")
+	}
 
+	node.AddOnlinePeer(peer)
+
+	return peer, nil
+}
 
 //SetCloseHandler 设置关闭连接时的回调
 func (node *OWTPNode) SetOpenHandler(h func(n *OWTPNode, peer PeerInfo)) {
@@ -331,18 +349,12 @@ func (node *OWTPNode) Run() error {
 			//客户端加入
 			log.Info("Node Join:", peer.PID())
 			log.Info("Node IP:", peer.RemoteAddr().String())
-			node.peerstore.AddOnlinePeer(peer)
-			node.peerstore.SavePeer(peer.PID(), peer)
+			node.AddOnlinePeer(peer)
+			node.peerstore.SavePeer(peer) //HTTP可能会无限增加
 			//加入后打开数据流通道
 			if err := peer.OpenPipe(); err != nil {
 				log.Error("peer:", peer.PID(), "open pipe failed")
 				continue
-			}
-
-			//非我方主动连接的，并且开启授权，向其发起密钥协商
-			if !peer.IsHost() && peer.Auth().EnableAuth() {
-				//加入成功后，进行密码协商
-				node.callKeyAgreement(peer)
 			}
 
 			if node.connectHandler != nil {
@@ -353,7 +365,7 @@ func (node *OWTPNode) Run() error {
 			//客户端离开
 			log.Info("Node Leave:", peer.PID())
 			node.serveMux.ResetRequestQueue(peer.PID())
-			node.peerstore.RemoveOfflinePeer(peer.PID())
+			node.RemoveOfflinePeer(peer.PID())
 
 			if node.disconnectHandler != nil {
 				go node.disconnectHandler(node, node.Peerstore().PeerInfo(peer.PID()))
@@ -367,7 +379,7 @@ func (node *OWTPNode) Run() error {
 			//	p.broadcastMessage(m)
 			//	break
 		}
-		log.Info("Total Nodes:", len(node.peerstore.onlinePeers))
+		log.Info("Total Nodes:", len(node.onlinePeers))
 	}
 
 	return nil
@@ -375,7 +387,7 @@ func (node *OWTPNode) Run() error {
 
 //IsConnectPeer 是否连接某个节点
 func (node *OWTPNode) IsConnectPeer(pid string) bool {
-	peer := node.peerstore.GetOnlinePeer(pid)
+	peer := node.GetOnlinePeer(pid)
 	if peer == nil {
 		return false
 	}
@@ -386,7 +398,7 @@ func (node *OWTPNode) IsConnectPeer(pid string) bool {
 func (node *OWTPNode) ClosePeer(pid string) {
 
 	//检查是否已经连接服务
-	peer := node.peerstore.GetOnlinePeer(pid)
+	peer := node.GetOnlinePeer(pid)
 	if peer == nil {
 		return
 	}
@@ -404,7 +416,7 @@ func (node *OWTPNode) Close() {
 	}
 
 	//中断所有客户端连接
-	for _, peer := range node.peerstore.OnlinePeers() {
+	for _, peer := range node.OnlinePeers() {
 		peer.Close()
 		node.serveMux.ResetRequestQueue(peer.PID())
 	}
@@ -429,20 +441,12 @@ func (node *OWTPNode) Call(
 	)
 
 	//检查是否已经连接服务
-	peer := node.peerstore.GetOnlinePeer(pid)
+	peer := node.GetOnlinePeer(pid)
 	if peer == nil {
-		newPeer := node.peerstore.GetPeer(pid)
-		if newPeer == nil{
-			return fmt.Errorf("the peer: %s is not in peer book", pid)
-		}
-		peerAddr := newPeer.RemoteAddr().String()
-		if peerAddr == "" {
-			return fmt.Errorf("the peer: %s is not in address book", pid)
-		}
 
 		peerInfo := node.peerstore.PeerInfo(pid)
 
-		peer, err = node.connect(pid,peerInfo.Config) //重新连接
+		peer, err = node.connect(pid, peerInfo.Config) //重新连接
 		if err != nil {
 			return err
 		}
@@ -460,14 +464,23 @@ func (node *OWTPNode) Call(
 		Data:      params,
 	}
 
-	//向节点发送请求
-	err = peer.Send(packet)
+	//加密数据
+	err = node.encryptPacket(peer, &packet)
 	if err != nil {
 		return err
 	}
 
-	//添加请求到队列，异步或同步等待结果
+	//添加请求到队列，异步或同步等待结果，应该在发送前就添加请求，如果发送失败，删除请求
 	node.serveMux.AddRequest(peer.PID(), nonce, time, method, reqFunc, respChan, sync)
+
+	//向节点发送请求
+	err = peer.Send(packet)
+	if err != nil {
+		//发送失败移除请求
+		node.serveMux.RemoveRequest(peer.PID(), nonce)
+		return err
+	}
+
 	if sync {
 		//等待返回
 		result := <-respChan
@@ -477,21 +490,66 @@ func (node *OWTPNode) Call(
 	return nil
 }
 
+//encryptPacket
+func (node *OWTPNode) encryptPacket(peer Peer, packet *DataPacket) error {
+
+	//协商密码的数据包跳过
+	if packet.Method == KeyAgreementMethod {
+		return nil
+	}
+
+	log.Debug("encryptPacket")
+
+	//TODO:加密Data
+	if peer.Auth() != nil && peer.Auth().EnableKeyAgreement() && packet.Data != nil {
+		//协商校验码
+		localChecksumStr, ok := node.Peerstore().Get(peer.PID(), "localChecksum").(string)
+		if ok {
+			packet.CheckCode = localChecksumStr
+		}
+
+		enc, encErr := json.Marshal(packet.Data)
+		if encErr != nil {
+			return fmt.Errorf("json.Marshal data failed")
+		}
+		//fmt.Printf("plainText hex(%d): %s\n", len(enc), hex.EncodeToString(enc))
+		pKey, ok := node.Peerstore().Get(peer.PID(), "secretKey").(string)
+		if ok {
+			//加载到授权中
+			secretKey := base58.Decode(pKey)
+			chipText, chipErr := peer.Auth().EncryptData(enc, secretKey)
+			if chipErr != nil {
+				return fmt.Errorf("encrypt data failed")
+			}
+
+			//fmt.Printf("chipText hex(%d): %s\n", len(chipText), hex.EncodeToString(chipText))
+			packet.Data = string(chipText)
+		}
+	}
+	return nil
+}
+
 //HandleFunc 绑定路由器方法
 func (node *OWTPNode) HandleFunc(method string, handler HandlerFunc) {
 	node.serveMux.HandleFunc(method, handler)
 }
 
-//callKeyAgreement 发起协商计算
-func (node *OWTPNode) callKeyAgreement(peer Peer) error {
-
-	inputs := map[string]interface{}{
-		"localPrivateKey": node.cert.privateKeyBytes,
-		"localPublicKey":  node.cert.publicKeyBytes,
+//KeyAgreement 发起协商请求
+//这是一个同步请求
+func (node *OWTPNode) KeyAgreement(pid string, consultType string) error {
+	//检查是否已经连接服务
+	peer := node.GetOnlinePeer(pid)
+	if peer == nil {
+		return fmt.Errorf("remote peer is not connected")
 	}
+	return node.callKeyAgreement(peer, consultType)
+}
 
-	//计算密钥，并请求协商
-	params, err := peer.Auth().RequestKeyAgreement(inputs)
+//callKeyAgreement 发起协商计算
+func (node *OWTPNode) callKeyAgreement(peer Peer, consultType string) error {
+
+	//初始协商参数
+	params, err := peer.Auth().InitKeyAgreement(consultType)
 	if err != nil {
 		return err
 	}
@@ -503,12 +561,34 @@ func (node *OWTPNode) callKeyAgreement(peer Peer) error {
 		true,
 		func(resp Response) {
 			if resp.Status == StatusSuccess {
-				sa := resp.JsonData().Get("sa").String()
-				finalErr := peer.Auth().VerifyKeyAgreement(sa)
+
+				//响应方协商结果
+				pubkeyOther := resp.JsonData().Get("pubkeyOther").String()
+				tmpPubkeyOther := resp.JsonData().Get("tmpPubkeyOther").String()
+				sb := resp.JsonData().Get("sb").String()
+
+				inputs := map[string]interface{}{
+					"remotePublicKey":    pubkeyOther,
+					"remoteTmpPublicKey": tmpPubkeyOther,
+					"sb":                 sb,
+				}
+
+				//计算密钥，并请求协商
+				result, finalErr := peer.Auth().ResponseKeyAgreement(inputs)
 				if finalErr != nil {
+					log.Errorf("ResponseKeyAgreement unexpected error:", err)
 					//协商失败，断开连接
 					peer.Close()
+					return
 				}
+
+				secretKey := result["secretKey"]
+				localChecksum := result["localChecksum"]
+
+				//保存协商密码
+				node.peerstore.Put(peer.PID(), "secretKey", secretKey)
+				node.peerstore.Put(peer.PID(), "localChecksum", localChecksum)
+				//log.Debug("secretKey:", secretKey)
 			}
 		})
 	return err
@@ -516,31 +596,53 @@ func (node *OWTPNode) callKeyAgreement(peer Peer) error {
 
 //keyAgreement 协商密钥
 func (node *OWTPNode) keyAgreement(ctx *Context) {
-
 	//检查是否已经连接服务
-	peer := node.peerstore.GetOnlinePeer(ctx.PID)
+	peer := node.GetOnlinePeer(ctx.PID)
 	if peer == nil {
 		responseError(fmt.Sprintf("peer: %s is not connected.", ctx.PID), ErrKeyAgreementFailed)
 		return
 	}
 
-	pubkeyResponder := ctx.Params().Get("pubkeyResponder").String()
-	tmpPubkeyResponder := ctx.Params().Get("tmpPubkeyResponder").String()
-	sb := ctx.Params().Get("sb").String()
+	pubkey := ctx.Params().Get("pubkey").String()
+	tmpPubkey := ctx.Params().Get("tmpPubkey").String()
+	//sb := ctx.Params().Get("sb").String()
 
 	inputs := map[string]interface{}{
-		"remotePublicKey":    pubkeyResponder,
-		"remoteTmpPublicKey": tmpPubkeyResponder,
-		"sb":                 sb,
+		"pubkey":       pubkey,
+		"tmpPubkey":    tmpPubkey,
+		"localPubkey":  node.cert.PublicKeyBytes(),
+		"localPrivkey": node.cert.PrivateKeyBytes(),
 	}
 
-	result, err := peer.Auth().ResponseKeyAgreement(inputs)
+	//请求协商
+	result, err := peer.Auth().RequestKeyAgreement(inputs)
 	if err != nil {
 		responseError(err.Error(), ErrKeyAgreementFailed)
 		return
 	}
 
+	secretKey := result["secretKey"]
+	localChecksum := result["localChecksum"]
+
+	//保存协商密码
+	node.peerstore.Put(peer.PID(), "secretKey", secretKey)
+	node.peerstore.Put(peer.PID(), "localChecksum", localChecksum)
+
+	//log.Debug("secretKey:", secretKey)
+
+	//删除密码避免外传
+	delete(result, "secretKey")
+	delete(result, "localChecksum")
+
 	ctx.Response(result, StatusSuccess, "success")
+}
+
+func (node *OWTPNode) GetValueForPeer(peer Peer, key string) interface{} {
+	return node.Peerstore().Get(peer.PID(), key)
+}
+
+func (node *OWTPNode) PutValueForPeer(peer Peer, key string, val interface{}) error {
+	return node.Peerstore().Put(peer.PID(), key, val)
 }
 
 //OnPeerOpen 节点连接成功
@@ -563,56 +665,154 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 	//	return
 	//}
 
+	var (
+		//协商密码
+		secretKey     []byte
+		localChecksum []byte
+	)
+
+	//授权检查
+	//if packet.Req == WSRequest {
+
 	//验证授权
-	if peer.Auth() != nil && peer.Auth().EnableAuth() {
+	if peer.Auth() != nil {
 
 		//授权检查
 		if !peer.Auth().VerifySignature(packet) {
-			log.Error("auth failed: ", packet)
+			log.Critical("auth failed: ", packet)
+			packet.Req = WSResponse
+			packet.Data = responseError("unauthorizedd", ErrUnauthorized)
 			peer.Send(*packet) //发送验证失败结果
 			return
 		}
+
+		//协商校验码
+		localChecksumStr, ok := node.Peerstore().Get(peer.PID(), "localChecksum").(string)
+		if ok {
+			//加载到授权中
+			localChecksum = base58.Decode(localChecksumStr)
+		}
+
+		//检查是否完成协商密码
+		if !peer.Auth().VerifyKeyAgreement(packet, localChecksum) {
+			log.Critical("keyAgreement failed: ", packet)
+			packet.Req = WSResponse
+			packet.Data = responseError("key agreement failed", ErrKeyAgreementFailed)
+			peer.Send(*packet) //发送验证失败结果
+			return
+		} else {
+			pKey, ok := node.Peerstore().Get(peer.PID(), "secretKey").(string)
+			if ok {
+				//加载到授权中
+				secretKey = base58.Decode(pKey)
+			}
+		}
 	}
+	//}
+
+	rawData, ok := packet.Data.(string)
+	if !ok {
+		packet.Req = WSResponse
+		packet.Data = responseError("data parse failed", ErrBadRequest)
+		peer.Send(*packet)
+		return
+	}
+	//log.Debug("rawData:", rawData)
+	decryptData, err := peer.Auth().DecryptData([]byte(rawData), secretKey)
+	//log.Debug("decryptData:", string(decryptData))
 
 	if packet.Req == WSRequest {
 
+		if err != nil {
+			log.Critical("OWTP: DecryptData failed, unexpected err:", err)
+			packet.Req = WSResponse
+			packet.Data = responseError("secret key is invalid", ErrSecretKeyInvalid)
+			peer.Send(*packet)
+			return
+		}
+
 		//创建上下面指针，处理请求参数
-		ctx := Context{PID: peer.PID(), Req: packet.Req, nonce: packet.Nonce, inputs: packet.Data, Method: packet.Method}
+		ctx := Context{PID: peer.PID(), Req: packet.Req, nonce: packet.Nonce, inputs: decryptData, Method: packet.Method}
 
 		node.serveMux.ServeOWTP(peer.PID(), &ctx)
 
 		//处理完请求，推送响应结果给服务端
 		packet.Req = WSResponse
 		packet.Data = ctx.Resp
+
+		err = node.encryptPacket(peer, packet)
+		if err != nil {
+			log.Critical("OWTP: encryptData failed, unexpected err:", err)
+			packet.Req = WSResponse
+			packet.Data = responseError("server encryptData failed", ErrInternalServerError)
+			peer.Send(*packet)
+			return
+		}
+
 		peer.Send(*packet)
 	} else if packet.Req == WSResponse {
 
+		if err != nil {
+			log.Critical("OWTP: DecryptData failed")
+			return
+		}
+
 		//创建上下面指针，处理响应
 		var resp Response
-		runErr := mapstructure.Decode(packet.Data, &resp)
+		runErr := json.Unmarshal(decryptData, &resp)
+		//runErr := mapstructure.Decode(decryptData, &resp)
 		if runErr != nil {
 			log.Error("Response decode error: ", runErr)
-			return
+			resp = responseError("Response decode error", ErrBadRequest)
 		}
 
 		ctx := Context{Req: packet.Req, nonce: packet.Nonce, inputs: nil, Method: packet.Method, Resp: resp}
 
 		node.serveMux.ServeOWTP(peer.PID(), &ctx)
 
-	} else if packet.Req == HTTPRequest {
-
-			//创建上下面指针，处理请求参数
-			ctx := Context{PID: peer.PID(), Req: packet.Req, nonce: packet.Nonce, inputs: packet.Data, Method: packet.Method}
-
-			node.serveMux.ServeOWTP(peer.PID(), &ctx)
-
-			//处理完请求，推送响应结果给服务端
-			packet.Req = HTTPRequest
-			packet.Data = ctx.Resp
-			peer.Send(*packet)
-
 	}
 
+}
+
+// Peers 节点列表
+func (node *OWTPNode) OnlinePeers() []Peer {
+	node.mu.RLock()
+	defer node.mu.RUnlock()
+	peers := make([]Peer, 0)
+	for _, peer := range node.onlinePeers {
+		peers = append(peers, peer)
+	}
+	return peers
+}
+
+// GetOnlinePeer 获取当前在线的Peer
+func (node *OWTPNode) GetOnlinePeer(id string) Peer {
+	node.mu.RLock()
+	defer node.mu.RUnlock()
+	if node.onlinePeers == nil {
+		return nil
+	}
+	return node.onlinePeers[id]
+}
+
+// AddOnlinePeer 添加在线节点
+func (node *OWTPNode) AddOnlinePeer(peer Peer) {
+	node.mu.Lock()
+	defer node.mu.Unlock()
+	if node.onlinePeers == nil {
+		node.onlinePeers = make(map[string]Peer)
+	}
+	node.onlinePeers[peer.PID()] = peer
+}
+
+//RemoveOfflinePeer 移除不在线的节点
+func (node *OWTPNode) RemoveOfflinePeer(id string) {
+	node.mu.Lock()
+	defer node.mu.Unlock()
+	if node.onlinePeers == nil {
+		return
+	}
+	delete(node.onlinePeers, id)
 }
 
 //GenerateRangeNum 生成范围内的随机整数

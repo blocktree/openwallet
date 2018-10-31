@@ -40,7 +40,7 @@ func (wm *WalletManager) GetTotalTransaction() (num uint64, err error) {
 		return 0, err
 	}
 
-	num = gjson.ParseBytes(r).Get("num").Uint()
+	num = r.Get("num").Uint()
 	return num, nil
 }
 
@@ -50,30 +50,16 @@ func (wm *WalletManager) GetTotalTransaction() (num uint64, err error) {
 // 		{“value”: “d5ec749ecc2a615399d8a6c864ea4c74ff9f523c2be0e341ac9be5d47d7c2d62”}’
 // Parameters：Transaction ID.
 // Return value：Transaction information.
-func (wm *WalletManager) GetTransactionByID(txID string) (tx *core.Transaction, isSuccess bool, err error) {
+func (wm *WalletManager) GetTransactionByID(txID string) (tx *Transaction, err error) {
 
 	params := req.Param{"value": txID}
 	r, err := wm.WalletClient.Call("/wallet/gettransactionbyid", params)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
-	tx = &core.Transaction{}
-	if err := gjson.Unmarshal(r, tx); err != nil {
-		log.Error(err)
-		return nil, false, err
-	}
-
-	isSuccess = true
-	if len(tx.GetRet()) > 0 {
-		for _, x := range tx.GetRet() {
-			if x.GetRet().String() != "SUCCESS" {
-				isSuccess = false
-			}
-		}
-	}
-
-	return tx, isSuccess, nil
+	tx = NewTransaction(r)
+	return tx, err
 }
 
 // Done!
@@ -102,11 +88,11 @@ func (wm *WalletManager) CreateTransaction(to_address, owner_address string, amo
 	}
 
 	tx := &core.Transaction_Contract{}
-	if err := gjson.Unmarshal(r, tx); err != nil {
+	if err := gjson.Unmarshal([]byte(r.Raw), tx); err != nil {
 		log.Errorf("Proto Unmarshal: ", err)
 		return "", err
 	}
-	raw = hex.EncodeToString(r)
+	raw = hex.EncodeToString([]byte(r.Raw))
 
 	return raw, nil
 }
@@ -242,18 +228,17 @@ func (wm *WalletManager) BroadcastTransaction(raw string) error {
 		log.Error(err)
 		return err
 	} else {
-		log.Debugf("Test = %+v\n", gjson.ParseBytes(r))
+		log.Debugf("Test = %+v\n", r)
 
-		res := gjson.ParseBytes(r)
-		if res.Get("result").Bool() != true {
+		if r.Get("result").Bool() != true {
 
 			var err error
 
-			if res.Get("message").String() != "" {
-				msg, _ := hex.DecodeString(res.Get("message").String())
+			if r.Get("message").String() != "" {
+				msg, _ := hex.DecodeString(r.Get("message").String())
 				err = errors.New(fmt.Sprintf("BroadcastTransaction error message: %+v", string(msg)))
 			} else {
-				err = errors.New(fmt.Sprintf("BroadcastTransaction return error: %+v", res))
+				err = errors.New(fmt.Sprintf("BroadcastTransaction return error: %+v", r))
 			}
 			log.Error(err)
 
