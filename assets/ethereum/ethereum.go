@@ -63,7 +63,7 @@ func ConvertFloatStringToBigInt(amount string, decimals int) (*big.Int, error) {
 	}
 
 	if decimals <= 0 || decimals > 30 {
-		return nil, errors.New("wrong decimal input through. ")
+		return nil, errors.New("wrong decimal input through")
 	}
 
 	decimalInt := big.NewInt(1)
@@ -100,16 +100,38 @@ func ConvertEthStringToWei(amount string) (*big.Int, error) {
 	return ConvertFloatStringToBigInt(amount, 18)
 }
 
-func ConverWeiStringToEthDecimal(amount string) (decimal.Decimal, error) {
+func ConvertAmountToFloatDecimal(amount string, decimals int) (decimal.Decimal, error) {
 	d, err := decimal.NewFromString(amount)
 	if err != nil {
 		log.Error("convert string to deciaml failed, err=", err)
 		return d, err
 	}
 
-	ETH, _ := decimal.NewFromString(strings.Replace("1,000,000,000,000,000,000", ",", "", -1))
-	d = d.Div(ETH)
+	if decimals <= 0 || decimals > 30 {
+		return d, errors.New("wrong decimal input through ")
+	}
+
+	decimalInt := big.NewInt(1)
+	for i := 0; i < decimals; i++ {
+		decimalInt.Mul(decimalInt, big.NewInt(10))
+	}
+
+	w, _ := decimal.NewFromString(decimalInt.String())
+	d = d.Div(w)
 	return d, nil
+}
+
+func ConverWeiStringToEthDecimal(amount string) (decimal.Decimal, error) {
+	// d, err := decimal.NewFromString(amount)
+	// if err != nil {
+	// 	log.Error("convert string to deciaml failed, err=", err)
+	// 	return d, err
+	// }
+
+	// ETH, _ := decimal.NewFromString(strings.Replace("1,000,000,000,000,000,000", ",", "", -1))
+	// d = d.Div(ETH)
+	// return d, nil
+	return ConvertAmountToFloatDecimal(amount, 18)
 }
 
 func toHexBigIntForEtherTrans(value string, base int, unit int64) (*big.Int, error) {
