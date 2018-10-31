@@ -80,8 +80,8 @@ func Test_QRC20Transfer(t *testing.T) {
 	//var tokenDecimal uint64 = 4
 
 	contractAddress := "91a6081095ef860d28874c9db613e7a4107b0281"
-	from := "qMXS1YFtA5qr2UfhcDMthTCK6hWhJnzC47"
-	to := "qMrFCXxSuiTEDqd311VxivECpJqH5KsJg6"
+	from := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
+	to := "qJRyTVtn1bUjeYDztupJzinnN7sn7nZms7"
 	var tokenDecimal uint64 = 8
 
 	//contractAddress := "2d6cd7b2ef6de7e3866e17650c7d9c53529c0239"
@@ -91,7 +91,7 @@ func Test_QRC20Transfer(t *testing.T) {
 
 	gasPrice := "0.00000040"
 	var gasLimit int64 = 250000
-	var amount decimal.Decimal = decimal.NewFromFloat(15)
+	var amount decimal.Decimal = decimal.NewFromFloat(100)
 
 	result, err := tw.QRC20Transfer(contractAddress, from, to, gasPrice, amount, gasLimit, tokenDecimal, isTestNet)
 	if err != nil {
