@@ -16,8 +16,13 @@
 package tron
 
 import (
+	"encoding/hex"
 	"fmt"
 	"testing"
+	"time"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/tronprotocol/grpc-gateway/core"
 )
 
 var (
@@ -54,7 +59,7 @@ func TestValidSignedTransactionRef(t *testing.T) {
 	var txSignedRaw string
 	txSignedRaw = TXSIGNED
 	txSignedRaw = "0a7e0a02adcd220873bf2dfd044f459440e0d4d2f8e12c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d1241f5b8eaac6034f590b54d7d1e2fcd588c56573c113ec7e98aac4a393747ae290e55f1bc2e861cc9dde18ac48e9594054632f4a1da2491bf091c2fe813f4e373d201"
-	txSignedRaw = "0a7e0a0269bb220876979998ddefc0d94088a5b192e62c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518e091431241e99894c32ec9b8d878c6624416aab59cc9bd0eeafb34d9e6d5a95b3472899a817dc87172dc2dec525cc99ae25247388a390e6827ee4fcaa9d29447dc24a8a3d100"
+	txSignedRaw = "0a7e0a02fd77220882256bb5fe08d39240d0a7c98fe82c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d1241373bf54b04e287d902beff4c6bd7369395b7b65527513922ee3b61ac0c4c6e8d0061da08b1b2f361e53c933360c3e5783996339431d44469f8bd57ee8fdfd3d700"
 
 	if err := tw.ValidSignedTransactionRef(txSignedRaw); err != nil {
 		t.Errorf("ValidSignedTransactionRef: %v\n", err)
@@ -75,22 +80,25 @@ func TestSuiteTx(t *testing.T) {
 	txRaw, err = tw.CreateTransactionRef(TOADDRESS, OWNERADDRESS, AMOUNT)
 	if err != nil {
 		t.Errorf("TestCreateTransaction failed: %v\n", err)
+		return
 	}
 	println("txRaw: ", txRaw)
 	println("------------------------------------------------------------------- Create Done! \n")
 
-	// txRaw = "0a7e0a02adcd220873bf2dfd044f459440e0d4d2f8e12c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d"
+	// txRaw = "0a7e0a02b2302208e384c56f2822541840e0f2fed1e82c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d"
 	txSignedRaw, err = tw.SignTransactionRef(txRaw, PRIVATEKEY)
 	if err != nil {
 		t.Errorf("GetTransactionSignRef failed: %v\n", err)
+		return
 	}
 	println("txSignedRaw: ", txSignedRaw)
 	println("------------------------------------------------------------------- Sign Done! \n")
 
-	// txSignedRaw = "0a7e0a02adcd220873bf2dfd044f459440e0d4d2f8e12c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d1241f5b8eaac6034f590b54d7d1e2fcd588c56573c113ec7e98aac4a393747ae290e55f1bc2e861cc9dde18ac48e9594054632f4a1da2491bf091c2fe813f4e373d201"
+	// txSignedRaw = "0a7e0a02b20722088b88797132e6dc8540b09af7d1e82c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d12415407e6344baced1f933762ab31d1054906b4307a63fc5b3764a3ac803a3c3ceeabe1ac40d2947a8eaf98747de88e0e982cbb5f083d3e798c76280e170657303700"
 	err = tw.ValidSignedTransactionRef(txSignedRaw)
 	if err != nil {
 		t.Errorf("ValidSignedTransactionRef: %v\n", err)
+		return
 	} else {
 		println("Success!")
 	}
@@ -104,4 +112,24 @@ func TestSuiteTx(t *testing.T) {
 		println("Success!")
 	}
 	println("------------------------------------------------------------------- Boradcast! \n")
+
+	tx := &core.Transaction{}
+	txRawBytes, _ := hex.DecodeString(txRaw)
+	proto.Unmarshal(txRawBytes, tx)
+	txIDBytes, _ := getTxHash(tx)
+	txID := hex.EncodeToString(txIDBytes)
+
+	for i := 0; i < 1000; i++ {
+
+		tx, _ := tw.GetTransactionByID(txID)
+		fmt.Println("Is Success: ", tx.IsSuccess)
+		fmt.Println("")
+
+		if tx.IsSuccess {
+			return
+		}
+
+		time.Sleep(time.Second * 1)
+	}
+
 }

@@ -37,7 +37,7 @@ const (
 )
 
 var (
-	Debug = false
+	Debug = true
 )
 
 //WebSocketClient 基于websocket的通信客户端
@@ -213,12 +213,12 @@ func (c *WebSocketClient) Send(data DataPacket) error {
 		return err
 	}
 
-	if c.auth != nil && c.auth.EnableAuth() {
-		respBytes, err = c.auth.EncryptData(respBytes)
-		if err != nil {
-			return errors.New("OWTP: EncryptData failed")
-		}
-	}
+	//if c.auth != nil && c.auth.EnableAuth() {
+	//	respBytes, err = c.auth.EncryptData(respBytes)
+	//	if err != nil {
+	//		return errors.New("OWTP: EncryptData failed")
+	//	}
+	//}
 
 	//log.Printf("Send: %s\n", string(respBytes))
 	c.send <- respBytes
@@ -303,13 +303,13 @@ func (c *WebSocketClient) readPump() {
 			return
 		}
 
-		if c.auth != nil && c.auth.EnableAuth() {
-			message, err = c.auth.DecryptData(message)
-			if err != nil {
-				log.Critical("OWTP: DecryptData failed")
-				continue
-			}
-		}
+		//if c.auth != nil && c.auth.EnableAuth() {
+		//	message, err = c.auth.DecryptData(message)
+		//	if err != nil {
+		//		log.Critical("OWTP: DecryptData failed")
+		//		continue
+		//	}
+		//}
 
 		if Debug {
 			log.Debug("Read: ", string(message))

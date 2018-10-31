@@ -13,4 +13,22 @@
  * GNU Lesser General Public License for more details.
  */
 
-package tron
+package ethereum
+
+import (
+	"encoding/hex"
+	"testing"
+)
+
+func TestAddressDecoder_PublicKeyToAddress(t *testing.T) {
+	pub, _ := hex.DecodeString("032144da84e7c0037014be1332617ceec15d3561dc209a1d984bf74677a41a63d0")
+
+	decoder := AddressDecoder{}
+
+	addr, err := decoder.PublicKeyToAddress(pub, false)
+	if err != nil {
+		t.Errorf("AddressDecode failed unexpected error: %v\n", err)
+		return
+	}
+	t.Logf("addr: %s", addr)
+}

@@ -26,6 +26,14 @@ func reverseHexToBytes(hexVar string) ([]byte, error) {
 	return reverseBytes(ret), nil
 }
 
+func reverseStringToBytes(hexVar string) ([]byte, error) {
+	ret, err := hex.DecodeString(hexVar)
+	if err != nil {
+		return nil, err
+	}
+	return reverseBytes(ret), nil
+}
+
 //reverseBytesToHex change the endian of the input byte array then encode it to hex string
 func reverseBytesToHex(bytesVar []byte) string {
 	return hex.EncodeToString(reverseBytes(bytesVar))

@@ -16,7 +16,6 @@
 package walletnode
 
 import (
-	"context"
 	"errors"
 )
 
@@ -24,23 +23,23 @@ func (w *WalletnodeManager) RestartWalletnode(symbol string) error {
 
 	return errors.New("Function closed! Use stop/start, please!")
 
-	if err := loadConfig(symbol); err != nil {
-		return err
-	}
+	// if err := loadConfig(symbol); err != nil {
+	// 	return err
+	// }
 
-	// Init docker client
-	c, err := getDockerClient(symbol)
-	if err != nil {
-		return err
-	}
-	// Action within client
-	cName, err := getCName(symbol) // container name
-	if err != nil {
-		return err
-	}
-	err = c.ContainerRestart(context.Background(), cName, nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	// // Init docker client
+	// c, err := getDockerClient(symbol)
+	// if err != nil {
+	// 	return err
+	// }
+	// // Action within client
+	// cName, err := getCName(symbol) // container name
+	// if err != nil {
+	// 	return err
+	// }
+	// err = c.ContainerRestart(context.Background(), cName, nil)
+	// if err != nil {
+	// 	return err
+	// }
+	// return nil
 }

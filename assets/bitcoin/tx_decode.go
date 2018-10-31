@@ -43,10 +43,10 @@ func NewTransactionDecoder(wm *WalletManager) *TransactionDecoder {
 func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	//先加载是否有配置文件
-	err := decoder.wm.LoadConfig()
-	if err != nil {
-		return err
-	}
+	//err := decoder.wm.LoadConfig()
+	//if err != nil {
+	//	return err
+	//}
 
 	var (
 		vins      = make([]btcTransaction.Vin, 0)
@@ -67,6 +67,11 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	if err != nil {
 		return err
 	}
+
+	if len(address) == 0 {
+		return fmt.Errorf("[%s] have not addresses", accountID)
+	}
+
 	searchAddrs := make([]string, 0)
 	for _, address := range address {
 		searchAddrs = append(searchAddrs, address.Address)
@@ -76,6 +81,10 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	unspents, err := decoder.wm.ListUnspent(0, searchAddrs...)
 	if err != nil {
 		return err
+	}
+
+	if len(unspents) == 0 {
+		return fmt.Errorf("[%s] balance is not enough", accountID)
 	}
 
 	if len(rawTx.To) == 0 {
@@ -231,7 +240,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	}
 
 	////////构建用于签名的交易单哈希
-	transHash, err := btcTransaction.CreateRawTransactionHashForSig(emptyTrans, txUnlocks)
+	transHash, err := btcTransaction.CreateRawTransactionHashForSig(emptyTrans, txUnlocks, decoder.wm.Config.SupportSegWit)
 	if err != nil {
 		return fmt.Errorf("create transaction hash for sig failed, unexpected error: %v", err)
 		//log.Error("获取待签名交易单哈希失败")
@@ -294,10 +303,10 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	//先加载是否有配置文件
-	err := decoder.wm.LoadConfig()
-	if err != nil {
-		return err
-	}
+	//err := decoder.wm.LoadConfig()
+	//if err != nil {
+	//	return err
+	//}
 
 	var (
 	//txUnlocks   = make([]btcTransaction.TxUnlock, 0)
@@ -369,10 +378,10 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletD
 func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	//先加载是否有配置文件
-	err := decoder.wm.LoadConfig()
-	if err != nil {
-		return err
-	}
+	//err := decoder.wm.LoadConfig()
+	//if err != nil {
+	//	return err
+	//}
 
 	var (
 		txUnlocks  = make([]btcTransaction.TxUnlock, 0)
@@ -418,7 +427,7 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 		return errors.New("Invalid transaction hex data!")
 	}
 
-	trx, err := btcTransaction.DecodeRawTransaction(txBytes)
+	trx, err := btcTransaction.DecodeRawTransaction(txBytes, decoder.wm.Config.SupportSegWit)
 	if err != nil {
 		return errors.New("Invalid transaction data! ")
 	}
@@ -441,7 +450,7 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 
 	////////填充签名结果到空交易单
 	//  传入TxUnlock结构体的原因是： 解锁向脚本支付的UTXO时需要对应地址的赎回脚本， 当前案例的对应字段置为 "" 即可
-	signedTrans, err := btcTransaction.InsertSignatureIntoEmptyTransaction(emptyTrans, transHash, txUnlocks)
+	signedTrans, err := btcTransaction.InsertSignatureIntoEmptyTransaction(emptyTrans, transHash, txUnlocks, decoder.wm.Config.SupportSegWit)
 	if err != nil {
 		return fmt.Errorf("transaction compose signatures failed")
 	}
@@ -452,7 +461,7 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 
 	/////////验证交易单
 	//验证时，对于公钥哈希地址，需要将对应的锁定脚本传入TxUnlock结构体
-	pass := btcTransaction.VerifyRawTransaction(signedTrans, txUnlocks)
+	pass := btcTransaction.VerifyRawTransaction(signedTrans, txUnlocks, decoder.wm.Config.SupportSegWit)
 	if pass {
 		log.Debug("transaction verify passed")
 		rawTx.IsCompleted = true
@@ -469,10 +478,10 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	//先加载是否有配置文件
-	err := decoder.wm.LoadConfig()
-	if err != nil {
-		return err
-	}
+	//err := decoder.wm.LoadConfig()
+	//if err != nil {
+	//	return err
+	//}
 
 	if len(rawTx.RawHex) == 0 {
 		return fmt.Errorf("transaction hex is empty")

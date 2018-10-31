@@ -1280,6 +1280,10 @@ func ConvertToBigInt(value string, base int) (*big.Int, error) {
 		value = removeOxFromHex(value)
 	}
 
+	if value == "" {
+		value = "0"
+	}
+
 	_, success = bigvalue.SetString(value, base)
 	if !success {
 		errInfo := fmt.Sprintf("convert value [%v] to bigint failed, check the value and base passed through\n", value)

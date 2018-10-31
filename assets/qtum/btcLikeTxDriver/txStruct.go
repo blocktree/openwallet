@@ -22,6 +22,16 @@ type Transaction struct {
 	//	HashType []byte
 }
 
+type Contract struct {
+	Version   []byte
+	Vins      []TxIn
+	Vcontract TxContract
+	Vouts     []TxOut
+	Witness   []TxWitness
+	LockTime  []byte
+	//	HashType []byte
+}
+
 func newTransaction(vins []Vin, vouts []Vout, lockTime uint32, replaceable bool) (*Transaction, error) {
 	txIn, err := newTxInForEmptyTrans(vins)
 	if err != nil {
@@ -120,6 +130,158 @@ func (t Transaction) encodeToBytes() ([]byte, error) {
 		}
 
 		ret = append(ret, byte(len(t.Vouts)))
+
+		for _, out := range t.Vouts {
+			if out.amount == nil || len(out.amount) != 8 || out.lockScript == nil {
+				return nil, errors.New("Invalid transaction output!")
+			}
+			ret = append(ret, out.amount...)
+			ret = append(ret, byte(len(out.lockScript)))
+			ret = append(ret, out.lockScript...)
+		}
+
+		if t.Witness != nil {
+			for _, w := range t.Witness {
+				if w.Signature == nil {
+					ret = append(ret, byte(0x00))
+				} else {
+					ret = append(ret, byte(0x02))
+					ret = append(ret, w.encodeToScript(SigHashAll)...)
+				}
+			}
+		}
+	}
+
+	ret = append(ret, t.LockTime...)
+	return ret, nil
+}
+
+func newQRC20TokenTransaction(vins []Vin, vcontract Vcontract, vout []Vout, lockTime uint32, replaceable bool) (*Contract, error) {
+	txIn, err := newTxInForEmptyTrans(vins)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := 0; i < len(txIn); i++ {
+		txIn[i].setSequence(lockTime, replaceable)
+	}
+
+	txContract, err := newTxContractForEmptyTrans(vcontract)
+	if err != nil {
+		return nil, err
+	}
+
+	txOut, err := newTxOutForEmptyTrans(vout)
+	if err != nil {
+		return nil, err
+	}
+
+	version := uint32ToLittleEndianBytes(DefaultTxVersion)
+	locktime := uint32ToLittleEndianBytes(lockTime)
+
+	return &Contract{version, txIn, *txContract, txOut, nil, locktime}, nil
+}
+
+func (t Contract) encodeToBytes() ([]byte, error) {
+	if len(t.Vins) == 0 {
+		return nil, errors.New("No input found in the transaction struct!")
+	}
+
+	if len(t.Vouts) == 0 {
+		return nil, errors.New("No output found in the transaction struct!")
+	}
+
+	ret := []byte{}
+	ret = append(ret, t.Version...)
+	if t.isMultiSig() {
+		if t.Witness == nil {
+			return nil, errors.New("No witness data for a multisig transaction!")
+		}
+		ret = append(ret, SegWitSymbol, SegWitVersion)
+		ret = append(ret, byte(len(t.Vins)))
+		for _, in := range t.Vins {
+			if in.TxID == nil || len(in.TxID) != 32 || in.Vout == nil || len(in.Vout) != 4 {
+				return nil, errors.New("Invalid transaction input!")
+			}
+			ret = append(ret, in.TxID...)
+			ret = append(ret, in.Vout...)
+			redeemHash := calcRedeemHash(in.ScriptPubkeySignature)
+			ret = append(ret, byte(len(redeemHash)))
+			ret = append(ret, redeemHash...)
+			ret = append(ret, in.Sequence...)
+		}
+
+		//contract
+		ret = append(ret, byte(0x02), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x63)
+		ret = append(ret, t.Vcontract.vmVersion...)
+		ret = append(ret, t.Vcontract.lenGasLimit...)
+		ret = append(ret, t.Vcontract.gasLimit...)
+		ret = append(ret, t.Vcontract.lenGasPrice...)
+		ret = append(ret, t.Vcontract.gasPrice...)
+		ret = append(ret,0x44)
+		ret = append(ret, t.Vcontract.dataHex...)
+		ret = append(ret,t.Vcontract.lenContract...)
+		ret = append(ret, t.Vcontract.contractAddr...)
+		ret = append(ret, t.Vcontract.opCall...)
+
+		for _, out := range t.Vouts {
+			if out.amount == nil || len(out.amount) != 8 || out.lockScript == nil {
+				return nil, errors.New("Invalid transaction output!")
+			}
+			ret = append(ret, out.amount...)
+			ret = append(ret, byte(len(out.lockScript)))
+			ret = append(ret, out.lockScript...)
+		}
+
+		ret = append(ret, byte(0x04), 0x00)
+		for _, w := range t.Witness {
+			if w.Signature == nil {
+				return nil, errors.New("Miss signature data for a multisig transaction!")
+			} else {
+				sig := w.encodeToScript(SigHashAll)
+				sig = sig[:len(sig)-34]
+				ret = append(ret, sig...)
+			}
+		}
+
+		ret = append(ret, byte(len(t.Vins[0].ScriptPubkeySignature)))
+
+		ret = append(ret, t.Vins[0].ScriptPubkeySignature...)
+	} else {
+
+		if t.Witness != nil {
+			ret = append(ret, SegWitSymbol, SegWitVersion)
+		}
+
+		ret = append(ret, byte(len(t.Vins)))
+
+		for _, in := range t.Vins {
+			if in.TxID == nil || len(in.TxID) != 32 || in.Vout == nil || len(in.Vout) != 4 {
+				return nil, errors.New("Invalid transaction input!")
+			}
+			ret = append(ret, in.TxID...)
+			ret = append(ret, in.Vout...)
+			if in.ScriptPubkeySignature == nil {
+				ret = append(ret, 0x00)
+			} else {
+				ret = append(ret, byte(len(in.ScriptPubkeySignature)))
+				ret = append(ret, in.ScriptPubkeySignature...)
+			}
+			ret = append(ret, in.Sequence...)
+		}
+
+		//contract
+		ret = append(ret, byte(0x02), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x63)
+		ret = append(ret, t.Vcontract.vmVersion...)
+		ret = append(ret, t.Vcontract.lenGasLimit...)
+		ret = append(ret, t.Vcontract.gasLimit...)
+		ret = append(ret, t.Vcontract.lenGasPrice...)
+		ret = append(ret, t.Vcontract.gasPrice...)
+		ret = append(ret,0x44)
+		ret = append(ret, t.Vcontract.dataHex...)
+		ret = append(ret,t.Vcontract.lenContract...)
+		ret = append(ret, t.Vcontract.contractAddr...)
+		ret = append(ret, t.Vcontract.opCall...)
 
 		for _, out := range t.Vouts {
 			if out.amount == nil || len(out.amount) != 8 || out.lockScript == nil {

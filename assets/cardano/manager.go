@@ -557,7 +557,7 @@ func loadConfig() error {
 	absFile := filepath.Join(configFilePath, configFileName)
 	c, err = config.NewConfig("json", absFile)
 	if err != nil {
-		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
+		return fmt.Errorf("Config is not setup. Please run 'wmd config -s <symbol>', %v ", err)
 	}
 
 	serverAPI = c.String("apiURL")

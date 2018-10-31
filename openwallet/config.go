@@ -13,19 +13,28 @@
  * GNU Lesser General Public License for more details.
  */
 
-package common
+package openwallet
 
+import "github.com/astaxie/beego/config"
 
-func BoolToUInt(b bool) uint64 {
-	if b {
-		return 1
-	}
-	return 0
+//AssetsConfig 用于给AssetsAdapter调用者初始化、加载外部配置的接口
+type AssetsConfig interface {
+
+	//LoadExternalConfig 加载外部配置
+	LoadAssetsConfig(c config.Configer) error
+
+	//InitDefaultConfig 初始化默认配置
+	InitAssetsConfig() (config.Configer, error)
 }
 
-func UIntToBool(u uint64) bool {
-	if u == 1 {
-		return true
-	}
-	return false
+type AssetsConfigBase struct{}
+
+//LoadAssetsConfig 加载外部配置
+func (as *AssetsConfigBase) LoadAssetsConfig(c config.Configer) error {
+	return nil
+}
+
+//InitAssetsConfig 初始化默认配置
+func (as *AssetsConfigBase) InitAssetsConfig() (config.Configer, error) {
+	return nil, nil
 }

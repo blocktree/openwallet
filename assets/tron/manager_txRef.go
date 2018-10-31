@@ -17,7 +17,6 @@
 package tron
 
 import (
-	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -26,6 +25,7 @@ import (
 
 	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
 	"github.com/blocktree/go-OWCrypt"
+	"github.com/shopspring/decimal"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -42,18 +42,7 @@ func getTxHash(tx *core.Transaction) (txHash []byte, err error) {
 	return txHash, err
 }
 
-func getBlockHash(raw string) string {
-	block := &core.Block{}
-	x, _ := hex.DecodeString(raw)
-	proto.Unmarshal(x, block)
-
-	blockHeaderRaw, _ := proto.Marshal(block.GetBlockHeader().GetRawData())
-	blockHashBytes := owcrypt.Hash(blockHeaderRaw, 0, owcrypt.HASH_ALG_SHA256)
-
-	return hex.EncodeToString(blockHashBytes)
-}
-
-// Done
+// Done!
 // Function: Create a transaction
 //
 // Java Reference:
@@ -136,21 +125,13 @@ func (wm *WalletManager) CreateTransactionRef(to_address, owner_address string, 
 	// ----------------------- Get Reference Block ----------------------
 	block, err := wm.GetNowBlock()
 	if err != nil {
-		return txRawHex, err
-	}
-
-	blockHight := block.GetBlockHeader().GetRawData().GetNumber() - 1
-	blockHightBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(blockHightBytes, uint64(blockHight))
-	refBlockBytes := blockHightBytes[6:8]
-
-	blockHeaderRaw, err := proto.Marshal(block.GetBlockHeader().GetRawData())
-	if err != nil {
 		return "", err
 	}
-	blockHashBytes := owcrypt.Hash(blockHeaderRaw, 0, owcrypt.HASH_ALG_SHA256)
-	refBlockHash := blockHashBytes[8:16]
-	refBlockHash = block.GetBlockHeader().GetRawData().GetParentHash()[8:16]
+	blockID, err := hex.DecodeString(block.GetBlockHashID())
+	if err != nil {
+		return txRawHex, err
+	}
+	refBlockBytes, refBlockHash := blockID[6:8], blockID[8:16]
 
 	// -------------------- Set timestamp --------------------
 	/*
@@ -188,6 +169,7 @@ func (wm *WalletManager) CreateTransactionRef(to_address, owner_address string, 
 	return txRawHex, nil
 }
 
+// Done!
 // public static Transaction sign(Transaction transaction, ECKey myKey) {
 // 	Transaction.Builder transactionBuilderSigned = transaction.toBuilder();
 //
@@ -215,12 +197,13 @@ func (wm *WalletManager) SignTransactionRef(txRawhex string, privateKey string) 
 			return signedTxRaw, err
 		}
 	}
-	tx.GetRawData().GetRefBlockBytes()
+	// tx.GetRawData().GetRefBlockBytes()
 
 	txHash, err := getTxHash(tx)
 	if err != nil {
 		return signedTxRaw, err
 	}
+	fmt.Println("Tx Hash = ", hex.EncodeToString(txHash))
 
 	pk, err := hex.DecodeString(privateKey)
 	if err != nil {
@@ -249,6 +232,7 @@ func (wm *WalletManager) SignTransactionRef(txRawhex string, privateKey string) 
 
 }
 
+// Done!
 //   /*
 //    * 1. check hash
 //    * 2. check double spent
@@ -348,8 +332,9 @@ func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
 	return nil
 }
 
-func (wm *WalletManager) BroadcastTransactionRef(signature, txID, raw_data string) error {
-	return nil
+//SendTransaction 发送交易
+func (wm *WalletManager) SendTransaction(walletID, to string, amount decimal.Decimal, password string, feesInSender bool) ([]string, error) {
+	return nil, nil
 }
 
 // ------------------------------------------------------------------------------------------------------

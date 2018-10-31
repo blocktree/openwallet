@@ -36,7 +36,7 @@ import (
 	"github.com/blocktree/OpenWallet/assets/tezos"
 	"github.com/blocktree/OpenWallet/assets/tron"
 	"github.com/blocktree/OpenWallet/assets/nebulasio"
-	"github.com/blocktree/OpenWallet/assets/omnicore"
+	"github.com/blocktree/OpenWallet/assets/icon"
 )
 
 //WalletManager 钱包管理器
@@ -138,5 +138,5 @@ func init() {
 	RegWMD(strings.ToLower(decred.Symbol), decred.NewWalletManager())
 	RegWMD(strings.ToLower(tron.Symbol), tron.NewWalletManager())
 	RegWMD(strings.ToLower(nebulasio.Symbol), nebulasio.NewWalletManager())
-	RegWMD(strings.ToLower(omnicore.Symbol), omnicore.NewWalletManager())
+	RegWMD(strings.ToLower(icon.Symbol), icon.NewWalletManager())
 }

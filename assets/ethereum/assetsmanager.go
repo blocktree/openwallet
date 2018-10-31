@@ -27,7 +27,6 @@ func (this *WalletManager) GetBlockScanner() openwallet.BlockScanner {
 		log.Errorf("load config failed, err=%v", err)
 		return nil
 	}
-
 	return this.Blockscanner
 }
 
@@ -40,7 +39,7 @@ func (this *WalletManager) ImportWatchOnlyAddress(address ...*openwallet.Address
 func (this *WalletManager) GetAddressWithBalance(addresses ...*openwallet.Address) error {
 	for _, addr := range addresses {
 		log.Debugf("wallet[%v] address[%v]:", addr.AccountID, addr.Address)
-		amount, err := this.WalletClient.GetAddrBalance("0x" + addr.Address)
+		amount, err := this.WalletClient.GetAddrBalance(appendOxToAddress(addr.Address))
 		if err != nil {
 			log.Error("get address[", addr.Address, "] balance failed, err=", err)
 			return err

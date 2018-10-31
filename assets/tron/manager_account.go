@@ -16,8 +16,8 @@
 package tron
 
 import (
-	"encoding/base64"
-	"fmt"
+	"encoding/hex"
+	"errors"
 	"log"
 
 	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
@@ -28,13 +28,13 @@ import (
 	"github.com/tronprotocol/grpc-gateway/core"
 )
 
-func getAddrtoBase64(address string) string {
+func convertAddrToHex(address string) string {
 	to_address_bytes, err := addressEncoder.AddressDecode(address, addressEncoder.TRON_mainnetAddress)
 	if err != nil {
 		log.Println(err)
 	}
 	to_address_bytes = append([]byte{0x41}, to_address_bytes...)
-	return base64.StdEncoding.EncodeToString(to_address_bytes)
+	return hex.EncodeToString(to_address_bytes)
 }
 
 // Done
@@ -49,7 +49,7 @@ func getAddrtoBase64(address string) string {
 // 	{“freeNetUsed”: 557,”freeNetLimit”: 5000,”NetUsed”: 353,”NetLimit”: 5239157853,”TotalNetLimit”: 43200000000,”TotalNetWeight”: 41228}
 func (wm *WalletManager) GetAccountNet(address string) (account *api.AccountNetMessage, err error) {
 
-	address = getAddrtoBase64(address)
+	address = convertAddrToHex(address)
 
 	params := req.Param{"address": address}
 	r, err := wm.WalletClient.Call("/wallet/getaccountnet", params)
@@ -58,7 +58,7 @@ func (wm *WalletManager) GetAccountNet(address string) (account *api.AccountNetM
 	}
 
 	account = &api.AccountNetMessage{}
-	if err := gjson.Unmarshal(r, account); err != nil {
+	if err := gjson.Unmarshal([]byte(r.Raw), account); err != nil {
 		return nil, err
 	}
 
@@ -71,7 +71,7 @@ func (wm *WalletManager) GetAccountNet(address string) (account *api.AccountNetM
 // 	Account address，converted to a base64 string
 // Return value：
 func (wm *WalletManager) GetAccount(address string) (account *core.Account, err error) {
-	address = getAddrtoBase64(address)
+	address = convertAddrToHex(address)
 
 	params := req.Param{"address": address}
 	r, err := wm.WalletClient.Call("/wallet/getaccount", params)
@@ -80,13 +80,14 @@ func (wm *WalletManager) GetAccount(address string) (account *core.Account, err 
 	}
 
 	account = &core.Account{}
-	if err := gjson.Unmarshal(r, account); err != nil {
+	if err := gjson.Unmarshal([]byte(r.Raw), account); err != nil {
 		return nil, err
 	}
 
 	return account, nil
 }
 
+// Done!
 // Function：Create an account. Uses an already activated account to create a new account
 // demo：curl -X POST http://127.0.0.1:8090/wallet/createaccount -d ‘
 // 	{
@@ -97,21 +98,25 @@ func (wm *WalletManager) GetAccount(address string) (account *core.Account, err 
 // 	Owner_address is an activated account，converted to a hex String;
 // 	account_address is the address of the new account, converted to a hex string, this address needs to be calculated in advance
 // Return value：Create account Transaction raw data
-func (wm *WalletManager) CreateAccount(owner_address, account_address string) (txRaw string, err error) {
+func (wm *WalletManager) CreateAccount(owner_address, account_address string) (txRaw *gjson.Result, err error) {
 
-	owner_address = getAddrtoBase64(owner_address)
-	account_address = getAddrtoBase64(account_address)
+	owner_address = convertAddrToHex(owner_address)
+	account_address = convertAddrToHex(account_address)
 
 	params := req.Param{"owner_address": owner_address, "account_address": account_address}
 	r, err := wm.WalletClient.Call("/wallet/createaccount", params)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	fmt.Println("Result = ", string(r))
 
-	return "", nil
+	if r.Get("Error").String() != "" {
+		return nil, errors.New(r.Get("Error").String())
+	}
+
+	return r, nil
 }
 
+// Done
 // Function：Modify account name
 // demo：curl -X POSThttp://127.0.0.1:8090/wallet/updateaccount -d ‘
 // 	{
@@ -122,18 +127,17 @@ func (wm *WalletManager) CreateAccount(owner_address, account_address string) (t
 // 	account_name is the name of the account, converted into a hex string；
 // 	owner_address is the account address of the name to be modified, converted to a hex string.
 // Return value：modified Transaction Object
-func (wm *WalletManager) UpdateAccount(account_name, owner_address string) (tx string, err error) {
+func (wm *WalletManager) UpdateAccount(account_name, owner_address string) (tx *gjson.Result, err error) {
 
 	params := req.Param{
-		"account_name":  account_name,
-		"owner_address": owner_address,
+		"account_name":  hex.EncodeToString([]byte(account_name)),
+		"owner_address": convertAddrToHex(owner_address),
 	}
 
 	r, err := wm.WalletClient.Call("/wallet/updateaccount", params)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	fmt.Println("Result = ", r)
 
-	return "", nil
+	return r, nil
 }

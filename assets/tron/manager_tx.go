@@ -24,11 +24,10 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
-	"github.com/tronprotocol/grpc-gateway/api"
 	"github.com/tronprotocol/grpc-gateway/core"
 )
 
-// Done
+// Done!
 // Function：Count all transactions (number) on the network
 // demo: curl -X POST http://127.0.0.1:8090/wallet/totaltransaction
 // Parameters：Nones
@@ -41,17 +40,17 @@ func (wm *WalletManager) GetTotalTransaction() (num uint64, err error) {
 		return 0, err
 	}
 
-	num = gjson.ParseBytes(r).Get("num").Uint()
+	num = r.Get("num").Uint()
 	return num, nil
 }
 
-// Writing!
+// Done!
 // Function：Query transaction by ID
 // 	demo: curl -X POST http://127.0.0.1:8090/wallet/gettransactionbyid -d ‘
 // 		{“value”: “d5ec749ecc2a615399d8a6c864ea4c74ff9f523c2be0e341ac9be5d47d7c2d62”}’
 // Parameters：Transaction ID.
 // Return value：Transaction information.
-func (wm *WalletManager) GetTransactionByID(txID string) (tx *core.Transaction, err error) {
+func (wm *WalletManager) GetTransactionByID(txID string) (tx *Transaction, err error) {
 
 	params := req.Param{"value": txID}
 	r, err := wm.WalletClient.Call("/wallet/gettransactionbyid", params)
@@ -59,15 +58,11 @@ func (wm *WalletManager) GetTransactionByID(txID string) (tx *core.Transaction, 
 		return nil, err
 	}
 
-	tx = &core.Transaction{}
-	if err := gjson.Unmarshal(r, tx); err != nil {
-		return nil, err
-	}
-
-	return tx, nil
+	tx = NewTransaction(r)
+	return tx, err
 }
 
-// Writing! Unmarshal can not get all data?
+// Done!
 // Function：Creates a transaction of transfer. If the recipient address does not exist, a corresponding account will be created on the blockchain.
 // demo: curl -X POST http://127.0.0.1:8090/wallet/createtransaction -d ‘
 // 	{“to_address”: “41e9d79cc47518930bc322d9bf7cddd260a0260a8d”,
@@ -81,21 +76,6 @@ func (wm *WalletManager) GetTransactionByID(txID string) (tx *core.Transaction, 
 // 	Transaction contract data
 func (wm *WalletManager) CreateTransaction(to_address, owner_address string, amount int64) (raw string, err error) {
 
-	// to_address_bytes, err := addressEncoder.AddressDecode(to_address, addressEncoder.TRON_mainnetAddress)
-	// if err != nil {
-	// 	return "", err
-	// } else {
-	// 	to_address = hex.EncodeToString(to_address_bytes)
-	// }
-	// owner_address_bytes, err := addressEncoder.AddressDecode(owner_address, addressEncoder.TRON_mainnetAddress)
-	// if err != nil {
-	// 	return "", err
-	// } else {
-	// 	owner_address = hex.EncodeToString(owner_address_bytes)
-	// }
-	// // to_address = getAddrtoBase64(to_address)
-	// // owner_address = getAddrtoBase64(owner_address)
-
 	params := req.Param{
 		"to_address":    to_address,
 		"owner_address": owner_address,
@@ -107,26 +87,12 @@ func (wm *WalletManager) CreateTransaction(to_address, owner_address string, amo
 		return "", err
 	}
 
-	// fmt.Println("CCC = ", r)
-	// tx := &core.Transaction{}
-	// tx := &core.TransferContract{}
 	tx := &core.Transaction_Contract{}
-	// api.Transaction_Contract{}
-	// tx := &core.TransactionRaw{}
-	fmt.Println(api.AccountNetMessage{})
-	if err := gjson.Unmarshal(r, tx); err != nil {
+	if err := gjson.Unmarshal([]byte(r.Raw), tx); err != nil {
 		log.Errorf("Proto Unmarshal: ", err)
 		return "", err
 	}
-	fmt.Println("\ntx = ", tx)
-	// proto.Unmarshal(r, tx)
-
-	// rawBytes, err := proto.Marshal(tx)
-	// if err != nil {
-	// 	log.Errorf("Proto Marshal: ", err)
-	// 	return "", err
-	// }
-	raw = hex.EncodeToString(r)
+	raw = hex.EncodeToString([]byte(r.Raw))
 
 	return raw, nil
 }
@@ -166,7 +132,7 @@ func (wm *WalletManager) GetTransactionSign(transaction, privateKey string) (raw
 	return rawSinged, nil
 }
 
-// Done
+// Done!
 // Function：Broadcast the signed transaction
 // 	demo：curl -X POST http://127.0.0.1:8090/wallet/broadcasttransaction -d ‘
 // 		{“signature”:[“97c825b41c77de2a8bd65b3df55cd4c0df59c307c0187e42321dcc1cc455ddba583dd9502e17cfec5945b34cad0511985a6165999092a6dec84c2bdd97e649fc01”],
@@ -262,18 +228,17 @@ func (wm *WalletManager) BroadcastTransaction(raw string) error {
 		log.Error(err)
 		return err
 	} else {
-		log.Debugf("Test = %+v\n", gjson.ParseBytes(r))
+		log.Debugf("Test = %+v\n", r)
 
-		res := gjson.ParseBytes(r)
-		if res.Get("result").Bool() != true {
+		if r.Get("result").Bool() != true {
 
 			var err error
 
-			if res.Get("message").String() != "" {
-				msg, _ := hex.DecodeString(res.Get("message").String())
+			if r.Get("message").String() != "" {
+				msg, _ := hex.DecodeString(r.Get("message").String())
 				err = errors.New(fmt.Sprintf("BroadcastTransaction error message: %+v", string(msg)))
 			} else {
-				err = errors.New(fmt.Sprintf("BroadcastTransaction return error: %+v", res))
+				err = errors.New(fmt.Sprintf("BroadcastTransaction return error: %+v", r))
 			}
 			log.Error(err)
 

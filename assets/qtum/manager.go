@@ -63,10 +63,11 @@ const (
 
 type WalletManager struct {
 
-	*openwallet.AssetsAdapterBase
+	openwallet.AssetsAdapterBase
 
 	storage      *hdkeystore.HDKeystore          //秘钥存取
 	walletClient *Client                       // 节点客户端
+	ExplorerClient *Explorer                     // 浏览器API客户端
 	config       *WalletConfig                 //钱包管理配置
 	walletsInSum map[string]*openwallet.Wallet //参与汇总的钱包
 	blockscanner *BTCBlockScanner              //区块扫描器
@@ -979,6 +980,16 @@ func (wm *WalletManager) GetBlockChainInfo() (*BlockchainInfo, error) {
 //ListUnspent 获取未花记录
 func (wm *WalletManager) ListUnspent(min uint64, addresses ...string) ([]*Unspent, error) {
 
+	if wm.config.RPCServerType == RPCServerExplorer {
+		return wm.listUnspentByExplorer(addresses...)
+	} else {
+		return wm.getListUnspentByCore(min, addresses...)
+	}
+}
+
+//getTransactionByCore 获取交易单
+func (wm *WalletManager) getListUnspentByCore(min uint64, addresses ...string) ([]*Unspent, error) {
+
 	var (
 		utxos = make([]*Unspent, 0)
 	)
@@ -1003,7 +1014,6 @@ func (wm *WalletManager) ListUnspent(min uint64, addresses ...string) ([]*Unspen
 	}
 
 	return utxos, nil
-
 }
 
 //RebuildWalletUnspent 批量插入未花记录到本地
@@ -1229,6 +1239,16 @@ func (wm *WalletManager) SignRawTransaction(txHex, walletID string, key *hdkeyst
 
 //SendRawTransaction 广播交易
 func (wm *WalletManager) SendRawTransaction(txHex string) (string, error) {
+
+	if wm.config.RPCServerType == RPCServerExplorer {
+		return wm.sendRawTransactionByExplorer(txHex)
+	} else {
+		return wm.sendRawTransactionByCore(txHex)
+	}
+}
+
+//sendRawTransactionByCore 广播交易
+func (wm *WalletManager) sendRawTransactionByCore(txHex string) (string, error) {
 
 	request := []interface{}{
 		txHex,
@@ -1677,8 +1697,19 @@ func (wm *WalletManager) EstimateFee(inputs, outputs int64, feeRate decimal.Deci
 	return trx_fee, nil
 }
 
+
 //EstimateFeeRate 预估的没KB手续费率
 func (wm *WalletManager) EstimateFeeRate() (decimal.Decimal, error) {
+
+	if wm.config.RPCServerType == RPCServerExplorer {
+		return wm.estimateFeeRateByExplorer()
+	} else {
+		return wm.estimateFeeRateByCore()
+	}
+}
+
+//estimateFeeRateByCore 预估的没KB手续费率
+func (wm *WalletManager) estimateFeeRateByCore() (decimal.Decimal, error) {
 
 	defaultRate, _ := decimal.NewFromString("0.004")
 
@@ -1885,29 +1916,8 @@ func (wm *WalletManager) loadConfig() error {
 		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
 	}
 
-	wm.config.serverAPI = c.String("apiURL")
-	wm.config.threshold, _ = decimal.NewFromString(c.String("threshold"))
-	wm.config.sumAddress = c.String("sumAddress")
-	wm.config.rpcUser = c.String("rpcUser")
-	wm.config.rpcPassword = c.String("rpcPassword")
-	wm.config.nodeInstallPath = c.String("nodeInstallPath")
-	wm.config.isTestNet, _ = c.Bool("isTestNet")
-	if wm.config.isTestNet {
-		wm.config.walletDataPath = c.String("testNetDataPath")
-	} else {
-		wm.config.walletDataPath = c.String("mainNetDataPath")
-	}
+	wm.LoadAssetsConfig(c)
 
-	cyclesec := c.String("cycleSeconds")
-	if cyclesec == "" {
-		return errors.New(fmt.Sprintf(" cycleSeconds is not set, sample: 1m , 30s, 3m20s etc... Please set it in './conf/%s.ini' \n", Symbol))
-	}
-
-	wm.config.cycleSeconds, _ = time.ParseDuration(cyclesec)
-
-	token := basicAuth(wm.config.rpcUser, wm.config.rpcPassword)
-
-	wm.walletClient = NewClient(wm.config.serverAPI, token, false)
 
 	return nil
 }
@@ -2043,10 +2053,10 @@ func (wm *WalletManager) SendToAddress(address,amount,comment string,subtractfee
 	}
 
 	//解锁钱包
-	err := wm.UnlockWallet(password, 120)
-	if err != nil {
-		return "", err
-	}
+	//err := wm.UnlockWallet(password, 120)
+	//if err != nil {
+	//	return "", err
+	//}
 
 	result, err := wm.walletClient.Call("sendtoaddress", request)
 	if err != nil {

@@ -52,7 +52,7 @@ func GetMerchantKeychain() error {
 func InitServiceKeychain() error {
 
 	//随机创建证书
-	cert := owtp.NewRandomCertificate("")
+	cert := owtp.NewRandomCertificate()
 	if len(cert.PrivateKeyBytes()) == 0 {
 		log.Error("Create keychain failed!")
 		return fmt.Errorf("Create keychain failed ")

@@ -44,6 +44,11 @@ func init() {
 	//tw.config.rpcPassword = "walletPassword2017"
 	token := basicAuth(tw.config.rpcUser, tw.config.rpcPassword)
 	tw.walletClient = NewClient(tw.config.serverAPI, token, false)
+
+	explorerURL := "http://192.168.2.193:20001/qtum-insight-api/"
+	tw.ExplorerClient = NewExplorer(explorerURL, true)
+
+	tw.config.RPCServerType = RPCServerExplorer
 }
 
 func TestImportPrivKey(t *testing.T) {
@@ -601,8 +606,8 @@ func TestSendFrom(t *testing.T) {
 }
 
 func TestSendToAddress(t *testing.T){
-	address := "QdgMxJDYDG7Y1PMxAooqhDtzM3fWsJZyqF"
-	txIDs, err := tw.SendToAddress(address, "0.002","", false,"1234qwer")
+	address := "qMrFCXxSuiTEDqd311VxivECpJqH5KsJg6"
+	txIDs, err := tw.SendToAddress(address, "10","", false,"1234qwer")
 
 	if err != nil {
 		t.Errorf("SendTransaction failed unexpected error: %v\n", err)

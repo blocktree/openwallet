@@ -157,11 +157,11 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 func TestBTCBlockScanner_ScanBlock(t *testing.T) {
 
 	accountID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
-	address := "Qhuqn4r1Xj8tjn3s1gAqh1aBZKam99h6iF"
+	address := "QhXS93hPpUcjoDxo192bmrbDubhH5UoQDp"
 
 	bs := tw.blockscanner
 	bs.AddAddress(address, accountID)
-	bs.ScanBlock(231350)
+	bs.ScanBlock(249878)
 }
 
 func TestBTCBlockScanner_ExtractTransaction(t *testing.T) {
@@ -174,7 +174,8 @@ func TestBTCBlockScanner_ExtractTransaction(t *testing.T) {
 	bs.ExtractTransaction(
 		231425,
 		"7b12f59d92b3f4d4b4793df691942ab9ab2621187a751b875df983b4a22f73a5",
-		"9beb4c5ceacc5dfb90f299bfc737e1a00b0faecd9eb62c4258f9a94a93417a2a")
+		"9beb4c5ceacc5dfb90f299bfc737e1a00b0faecd9eb62c4258f9a94a93417a2a",
+		bs.GetSourceKeyByAddress)
 
 }
 

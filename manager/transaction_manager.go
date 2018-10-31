@@ -17,6 +17,7 @@ package manager
 
 import (
 	"fmt"
+	"github.com/shopspring/decimal"
 	"time"
 
 	"github.com/blocktree/OpenWallet/log"
@@ -70,6 +71,58 @@ func (wm *WalletManager) CreateErc20TokenTransaction(appID, walletID, accountID,
 	}
 
 	log.Debug("transaction has been created successfully")
+
+	return &rawTx, nil
+}
+
+func (wm *WalletManager) CreateQrc20TokenTransaction(appID, walletID, accountID, sendAmount, toAddress, feeRate, memo,
+contractAddr, tokenName, tokenSymbol string, tokenDecimal uint64) (*openwallet.RawTransaction, error) {
+	wrapper, err := wm.newWalletWrapper(appID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := wrapper.GetAssetsAccountInfo(accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	assetsMgr, err := GetAssetsManager(account.Symbol)
+	if err != nil {
+		return nil, err
+	}
+
+	rawTx := openwallet.RawTransaction{
+		Coin: openwallet.Coin{
+			Symbol:     account.Symbol,
+			ContractID: "",
+			IsContract: true,
+			Contract: openwallet.SmartContract{
+				ContractID: "",
+				Address:    contractAddr,
+				Name:       tokenName,
+				Symbol:     account.Symbol,
+				Token:      tokenSymbol,
+				Decimals:   tokenDecimal,
+			},
+		},
+		Account:  account,
+		//gasPrice
+		FeeRate:  feeRate,
+		To:       map[string]string{toAddress: sendAmount},
+		Required: 1,
+	}
+
+	txdecoder := assetsMgr.GetTransactionDecoder()
+	if txdecoder == nil {
+		return nil, fmt.Errorf("[%s] is not support transaction. ", account.Symbol)
+	}
+	err = txdecoder.CreateRawTransaction(wrapper, &rawTx)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Debug("Qrc20Token transaction has been created successfully")
 
 	return &rawTx, nil
 }
@@ -279,6 +332,67 @@ func (wm *WalletManager) SubmitTransaction(appID, walletID, accountID string, ra
 	//log.Error("perfectTx:", perfectTx)
 
 	return perfectTx, nil
+}
+
+//GetAssetsAccountBalance 获取账户余额
+func (wm *WalletManager) GetAssetsAccountBalance(appID, walletID, accountID string) (*openwallet.Balance, error) {
+
+	var (
+		addressMap  = make(map[string]*openwallet.Address)
+		searchAddrs = make([]string, 0)
+	)
+
+	wrapper, err := wm.newWalletWrapper(appID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := wrapper.GetAssetsAccountInfo(accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	assetsMgr, err := GetAssetsManager(account.Symbol)
+	if err != nil {
+		return nil, err
+	}
+
+	//提取交易单
+	scanner := assetsMgr.GetBlockScanner()
+	if scanner == nil {
+		return nil, fmt.Errorf("[%s] not support block scan", account.Symbol)
+	}
+
+	addresses, err := wrapper.GetAddressList(0, -1, "AccountID", accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, address := range addresses {
+		searchAddrs = append(searchAddrs, address.Address)
+		addressMap[address.Address] = address
+	}
+
+	accountBalanceDec := decimal.New(0, 0)
+
+	balances, err := scanner.GetBalanceByAddress(searchAddrs...)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, b := range balances {
+		addrBalance, _ := decimal.NewFromString(b.Balance)
+		accountBalanceDec = accountBalanceDec.Add(addrBalance)
+	}
+
+	accountBalance := openwallet.Balance{
+		Symbol:    account.Symbol,
+		AccountID: accountID,
+		Address:   "",
+		Balance:   accountBalanceDec.StringFixed(assetsMgr.Decimal()),
+	}
+
+	return &accountBalance, nil
 }
 
 //GetTransactions

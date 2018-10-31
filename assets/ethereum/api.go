@@ -471,11 +471,14 @@ func (this *Client) ERC20GetAddressBalance(address string, contractAddr string) 
 	return this.ERC20GetAddressBalance2(address, contractAddr, "pending")
 }
 
-func (this *Client) GetAddrBalance(address string) (*big.Int, error) {
+func (this *Client) GetAddrBalance2(address string, sign string) (*big.Int, error) {
+	if sign != "latest" && sign != "pending" {
+		return nil, errors.New("unknown sign was put through.")
+	}
 
 	params := []interface{}{
 		appendOxToAddress(address),
-		"pending",
+		sign,
 	}
 	result, err := this.Call("eth_getBalance", 1, params)
 	if err != nil {
@@ -495,6 +498,10 @@ func (this *Client) GetAddrBalance(address string) (*big.Int, error) {
 		return big.NewInt(0), errors.New(errInfo)
 	}
 	return balance, nil
+}
+
+func (this *Client) GetAddrBalance(address string) (*big.Int, error) {
+	return this.GetAddrBalance2(address, "pending")
 }
 
 func appendOxToAddress(addr string) string {

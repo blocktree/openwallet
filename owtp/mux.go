@@ -28,8 +28,8 @@ import (
 )
 
 const (
-	WSRequest  = 1 //wesocket请求标识
-	WSResponse = 2 //wesocket响应标识
+	WSRequest  = 1 //请求标识
+	WSResponse = 2 //响应标识
 )
 
 var (
@@ -103,8 +103,9 @@ func NewContext(req, nonce uint64, pid, method string, inputs interface{}) *Cont
 func (ctx *Context) Params() gjson.Result {
 	//如果param没有值，使用inputs初始化
 	if !ctx.params.Exists() {
-		inbs, err := json.Marshal(ctx.inputs)
-		if err == nil {
+		//inbs, err := json.Marshal(ctx.inputs)
+		inbs, ok := ctx.inputs.([]byte)
+		if ok {
 			ctx.params = gjson.ParseBytes(inbs)
 		}
 	}
@@ -219,6 +220,26 @@ func (mux *ServeMux) AddRequest(pid string, nonce uint64, time int64, method str
 	}
 
 	requestQueue[nonce] = requestEntry{sync, method, reqFunc, respChan, time}
+
+	mux.peerRequest[pid] = requestQueue
+
+	return nil
+}
+
+//RemoveRequest 移除请求
+func (mux *ServeMux) RemoveRequest(pid string, nonce uint64) error {
+
+	requestQueue := mux.peerRequest[pid]
+
+	if requestQueue == nil {
+		return nil
+	}
+
+	mux.mu.Lock()
+	defer mux.mu.Unlock()
+
+	delete(requestQueue, nonce)
+	mux.peerRequest[pid] = requestQueue
 
 	return nil
 }
