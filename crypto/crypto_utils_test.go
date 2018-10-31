@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/HcashOrg/hcd/hcutil/base58"
+	"github.com/mr-tron/base58/base58"
 	"testing"
 )
 
@@ -25,8 +25,8 @@ func TestHmacSHA1(t *testing.T) {
 func TestAESDecrypt(t *testing.T) {
 	entext := "HQTqsjyaQUVjCT2gUoUvxSNAwUXic3qdNUPG18gZHYJYehtAULGnCjY2eYyt"
 	keytext := "CxyAogk73eLTtQb8hmXvCm7ehb1tyfhv3NC6iD2nV2B9"
-	bit := base58.Decode(entext)
-	key := base58.Decode(keytext)
+	bit, _ := base58.Decode(entext)
+	key, _ := base58.Decode(keytext)
 	fmt.Printf("key hex(%d): %s\n", len(key), hex.EncodeToString(key))
 	fmt.Printf("bit hex(%d): %s\n", len(bit), hex.EncodeToString(bit))
 	plaintext, _ := AESDecrypt(bit, key)
@@ -37,7 +37,7 @@ func TestAESDecrypt(t *testing.T) {
 func TestEncryptJSON(t *testing.T) {
 
 	keytext := "CxyAogk73eLTtQb8hmXvCm7ehb1tyfhv3NC6iD2nV2B9"
-	key := base58.Decode(keytext)
+	key, _ := base58.Decode(keytext)
 
 	params := map[string]interface{}{
 		"name": "chance",
@@ -54,7 +54,7 @@ func TestEncryptJSON(t *testing.T) {
 
 	fmt.Printf("base58 = %s\n", base)
 	//1bf9d9ff6bbaf559e6b74479b0e770b480de59c5aa9ff044478834a0b1ec6986
-	enbase := base58.Decode(base)
+	enbase, _ := base58.Decode(base)
 	fmt.Printf("enbase hex(%d): %s\n", len(enbase), hex.EncodeToString(enbase))
 	raw, _ :=AESDecrypt(enbase, key)
 	fmt.Printf("raw = %s\n", string(raw))
