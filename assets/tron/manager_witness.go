@@ -36,7 +36,7 @@ func (wm *WalletManager) ListWitnesses() (witnesses *api.WitnessList, err error)
 	}
 
 	witnesses = &api.WitnessList{}
-	if err := gjson.Unmarshal(r, witnesses); err != nil {
+	if err := gjson.Unmarshal([]byte(r.Raw), witnesses); err != nil {
 		return nil, err
 	}
 
@@ -62,7 +62,7 @@ func (wm *WalletManager) ListNodes() (nodes *api.NodeList, err error) {
 	}
 
 	nodes = &api.NodeList{}
-	if err := gjson.Unmarshal(r, nodes); err != nil {
+	if err := gjson.Unmarshal([]byte(r.Raw), nodes); err != nil {
 		return nil, err
 	}
 

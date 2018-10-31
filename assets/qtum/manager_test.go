@@ -48,7 +48,7 @@ func init() {
 	explorerURL := "http://192.168.2.193:20001/qtum-insight-api/"
 	tw.ExplorerClient = NewExplorer(explorerURL, true)
 
-	tw.config.RPCServerType = RPCServerExplorer
+	tw.config.RPCServerType = RPCServerCore
 }
 
 func TestImportPrivKey(t *testing.T) {
@@ -606,8 +606,8 @@ func TestSendFrom(t *testing.T) {
 }
 
 func TestSendToAddress(t *testing.T){
-	address := "qK8fccETVn67ta137FAeUAiYg2fxtmzJfR"
-	txIDs, err := tw.SendToAddress(address, "5","", false,"1234qwer")
+	address := "qJ2HTPYoMF1DPBhgURjRqemun5WimD57Hy"
+	txIDs, err := tw.SendToAddress(address, "10","", false,"1234qwer")
 
 	if err != nil {
 		t.Errorf("SendTransaction failed unexpected error: %v\n", err)

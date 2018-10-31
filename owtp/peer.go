@@ -16,10 +16,9 @@
 package owtp
 
 import (
-	"fmt"
+	"github.com/tidwall/gjson"
 	"net"
 	"sync"
-	"github.com/tidwall/gjson"
 )
 
 //DataPacket 数据包
@@ -28,14 +27,15 @@ type DataPacket struct {
 
 		本协议传输数据，格式编码采用json。消息接收与发送，都遵循数据包规范定义字段内容。
 
-		| 参数名 | 类型   | 示例             | 描述                                                                              |
-		|--------|--------|------------------|-----------------------------------------------------------------------------------|
-		| r      | uint8  | 1                | 传输类型，1：请求，2：响应                                                            |
-		| m      | string | subscribe        | 方法名，对应接口方法定义                                                           |
-		| n      | uint32 | 123              | 请求序号。为了保证请求对应响应按序执行，并防御重放攻击，序号可以为随机数，但不可重复。 |
-		| t      | uint32 | 1528520843       | 时间戳。限制请求在特定时间范围内有效，如10分钟。                                     |
-		| d      | Object | {"foo": "hello"} | 数据主体，请求内容或响应内容。接口方法说明中，主要说明这部分。                        |
-		| s      | string | Qwse==           | 合并[r+m+n+t+d]进行sha256两次签名并base64编码，用于校验数据的一致性和合法性       |
+		| 参数名 | 类型   | 示例             | 描述                                                                                |
+|--------|--------|------------------|-----------------------------------------------------------------------------------|
+| r      | uint8  | 1                | 传输类型，1：请求，2：响应                                                              |
+| m      | string | subscribe        | 方法名，对应接口方法定义                                                             |
+| n      | uint32 | 123              | 请求序号。为了保证请求对应响应按序执行，并防御重放攻击，序号可以为随机数，但不可重复。   |
+| t      | uint32 | 1528520843       | 时间戳。限制请求在特定时间范围内有效，如10分钟。                                       |
+| d      | Object | {"foo": "hello"} | 数据主体，请求内容或响应内容。接口方法说明中，主要说明这部分。                          |
+| s      | string | Qwse             | [可选]合并[r+m+n+t+d]进行sha256两次ECC签名并base58编码，用于校验数据的一致性和合法性 |
+| v      | string | 1b24ac           | [可选]协商校验值SA，开启协商密码后，有协商过程计算出来SA值，以保证节点通信的密钥一致   |
 
 	*/
 
@@ -45,6 +45,7 @@ type DataPacket struct {
 	Timestamp int64       `json:"t"`
 	Data      interface{} `json:"d"`
 	Signature string      `json:"s"`
+	CheckCode string      `json:"v"`
 }
 
 //NewDataPacket 通过 gjson转为DataPacket
@@ -54,8 +55,9 @@ func NewDataPacket(json gjson.Result) *DataPacket {
 	dp.Method = json.Get("m").String()
 	dp.Nonce = json.Get("n").Uint()
 	dp.Timestamp = json.Get("t").Int()
-	dp.Data = json.Get("d").Value()
+	dp.Data = json.Get("d").String()
 	dp.Signature = json.Get("s").String()
+	dp.CheckCode = json.Get("v").String()
 	return dp
 }
 
@@ -88,113 +90,130 @@ type PeerHandler interface {
 	OnPeerOpen(peer Peer)                                      //节点连接成功
 	OnPeerClose(peer Peer, reason string)                      //节点关闭
 	OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket) //节点获取新数据包
+	GetValueForPeer(peer Peer, key string) interface{}
+	PutValueForPeer(peer Peer, key string, val interface{}) error
 }
 
 // Peerstore 节点存储器
 type Peerstore interface {
 	// SaveAddr 保存节点地址
-	SavePeer(id string, peer Peer)
-
-	// GetAddr 获取节点地址
-	GetPeer(id string) Peer
-
-	// DeleteAddr 删除节点的地址
-	DeletePeer(id string)
+	SavePeer(peer Peer)
+	//
+	//// GetAddr 获取节点地址
+	//GetPeer(id string) Peer
+	//
+	//// DeleteAddr 删除节点的地址
+	//DeletePeer(id string)
 
 	//PeerInfo 节点信息
 	PeerInfo(id string) PeerInfo
 
 	// Get 获取节点属性
-	Get(id string, key string) (interface{}, error)
+	Get(id string, key string) interface{}
 
 	// Put 设置节点属性
 	Put(id string, key string, val interface{}) error
 
-	//// Peers 节点列表
-	//OnlinePeers() []Peer
-	//
-	//// GetOnlinePeer 获取当前在线的Peer
-	//GetOnlinePeer(id string) Peer
-	//
-	//// AddOnlinePeer 添加在线节点
-	//AddOnlinePeer(peer Peer)
-	//
-	////RemoveOfflinePeer 移除不在线的节点
-	//RemoveOfflinePeer(id string)
+	// Delele 设置节点属性
+	Delele(id string, key string) error
 }
 
 type owtpPeerstore struct {
 	onlinePeers map[string]Peer
-	peers       map[string]Peer
+	//peers       map[string]Peer
 	peerInfos   map[string]PeerAttribute
 	mu          sync.RWMutex
 }
 
 // NewPeerstore 创建支持OWTP协议的Peerstore
-func NewPeerstore() *owtpPeerstore {
+func NewOWTPPeerstore() *owtpPeerstore {
 	store := owtpPeerstore{
 		onlinePeers: make(map[string]Peer),
-		peers:       make(map[string]Peer),
+		//peers:       make(map[string]Peer),
 		peerInfos:   make(map[string]PeerAttribute),
 	}
 	return &store
 }
 
 // SaveAddr 保存节点
-func (store *owtpPeerstore) SavePeer(id string, peer Peer) {
-	store.mu.Lock()
-	defer store.mu.Unlock()
+func (store *owtpPeerstore) SavePeer(peer Peer) {
 
-	if store.peers == nil {
-		store.peers = make(map[string]Peer)
+	config := peer.GetConfig()
+	////链接类型
+	//connectType := config["connectType"]
+	//
+	////HTTP类型，不做保存节点，因为都是短连接
+	//if connectType == HTTP {
+	//	if !peer.Auth().EnableKeyAgreement() {
+	//		return
+	//	}
+	//	if !peer.Auth().EnableAuth() {
+	//		return
+	//	}
+	//}
+
+	if config != nil && len(config) > 0 {
+		store.Put(peer.PID(), peer.PID(), config)
 	}
-	store.peers[id] = peer
+
+	//store.mu.Lock()
+	//defer store.mu.Unlock()
+	//
+	//if store.peers == nil {
+	//	store.peers = make(map[string]Peer)
+	//}
+	//store.peers[id] = peer
 }
 
-// GetAddr 获取节点
-func (store *owtpPeerstore) GetPeer(id string) Peer {
-	store.mu.RLock()
-	defer store.mu.RUnlock()
-	if store.peers == nil {
-		return nil
-	}
-	return store.peers[id]
-}
+//GetAddr 获取节点
+//func (store *owtpPeerstore) GetPeer(id string) Peer {
+//	store.mu.RLock()
+//	defer store.mu.RUnlock()
+//	if store.peers == nil {
+//		return nil
+//	}
+//	return store.peers[id]
+//}
 
-// DeletePeer 删除节点的地址
-func (store *owtpPeerstore) DeletePeer(id string) {
-	store.mu.Lock()
-	defer store.mu.Unlock()
-	if store.peers == nil {
-		return
-	}
-	delete(store.peers, id)
-}
+//DeletePeer 删除节点的地址
+//func (store *owtpPeerstore) DeletePeer(id string) {
+//	store.mu.Lock()
+//	defer store.mu.Unlock()
+//	if store.peers == nil {
+//		return
+//	}
+//	delete(store.peers, id)
+//}
 
 //PeerInfo 节点信息
 func (store *owtpPeerstore) PeerInfo(id string) PeerInfo {
-	if store.peers == nil {
-		return PeerInfo{}
+	//if store.peers == nil {
+	//	return PeerInfo{}
+	//}
+	//peer := store.peers[id]
+
+	config, ok := store.Get(id, id).(map[string]string)
+	if !ok {
+		config = make(map[string]string)
 	}
-	peer := store.peers[id]
 	return PeerInfo{
 		ID:     id,
-		Config: peer.GetConfig(),
+		Config: config,
 	}
 }
 
 // Get 获取节点属性
-func (store *owtpPeerstore) Get(id string, key string) (interface{}, error) {
+func (store *owtpPeerstore) Get(id string, key string) interface{} {
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 	if store.peerInfos == nil {
-		return nil, fmt.Errorf("no peer for this peer.id")
+		return nil
 	}
 	peerAttribute := store.peerInfos[id]
 	if peerAttribute == nil {
-		return nil, fmt.Errorf("no peer for this peer.id")
+		return nil
 	}
-	return peerAttribute[key], nil
+	return peerAttribute[key]
 }
 
 // Put 设置节点属性
@@ -211,46 +230,22 @@ func (store *owtpPeerstore) Put(id string, key string, val interface{}) error {
 	}
 
 	peerAttribute[key] = val
+	store.peerInfos[id] = peerAttribute
 	return nil
 }
 
-// Peers 节点列表
-func (store *owtpPeerstore) OnlinePeers() []Peer {
-	store.mu.RLock()
-	defer store.mu.RUnlock()
-	peers := make([]Peer, 0)
-	for _, peer := range store.onlinePeers {
-		peers = append(peers, peer)
-	}
-	return peers
-}
-
-// GetOnlinePeer 获取当前在线的Peer
-func (store *owtpPeerstore) GetOnlinePeer(id string) Peer {
-	store.mu.RLock()
-	defer store.mu.RUnlock()
-	if store.onlinePeers == nil {
+//Delele
+func (store *owtpPeerstore) Delele(id string, key string) error {
+	store.mu.Lock()
+	defer store.mu.Unlock()
+	if store.peerInfos == nil {
 		return nil
 	}
-	return store.onlinePeers[id]
-}
-
-// AddOnlinePeer 添加在线节点
-func (store *owtpPeerstore) AddOnlinePeer(peer Peer) {
-	store.mu.Lock()
-	defer store.mu.Unlock()
-	if store.onlinePeers == nil {
-		store.onlinePeers = make(map[string]Peer)
+	peerAttribute := store.peerInfos[id]
+	if peerAttribute == nil {
+		return nil
 	}
-	store.onlinePeers[peer.PID()] = peer
-}
-
-//RemoveOfflinePeer 移除不在线的节点
-func (store *owtpPeerstore) RemoveOfflinePeer(id string) {
-	store.mu.Lock()
-	defer store.mu.Unlock()
-	if store.onlinePeers == nil {
-		return
-	}
-	delete(store.onlinePeers, id)
+	delete(peerAttribute, key)
+	store.peerInfos[id] = peerAttribute
+	return nil
 }

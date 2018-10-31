@@ -51,8 +51,7 @@ func NewClient(url, token string, debug bool) *Client {
 }
 
 // Call calls a remote procedure on another node, specified by the path.
-// func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error) {
-func (c *Client) Call(path string, param interface{}) ([]byte, error) {
+func (c *Client) Call(path string, param interface{}) (*gjson.Result, error) {
 
 	if c == nil || c.client == nil {
 		return nil, errors.New("API url is not setup. ")
@@ -75,5 +74,6 @@ func (c *Client) Call(path string, param interface{}) ([]byte, error) {
 		return nil, errors.New(message)
 	}
 
-	return r.Bytes(), nil
+	res := gjson.ParseBytes(r.Bytes())
+	return &res, nil
 }
