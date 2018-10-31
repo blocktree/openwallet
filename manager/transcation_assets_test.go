@@ -133,3 +133,32 @@ func TestTransfer_LTC(t *testing.T) {
 	}
 
 }
+
+
+func TestTransfer_QTUM(t *testing.T) {
+
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "EbUsW3YaHQ61eNt3f4hDXJAFh9LGmLZWH1VTTSnQmhnL"
+	to := "n3ctLfAj8ksiXbVRCSQwEiyh2ZV8REAcUC"
+
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "1.1", "0.001")
+	if err != nil {
+		return
+	}
+
+	_, err = testSignTransactionStep(rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testVerifyTransactionStep(rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testSubmitTransactionStep(rawTx)
+	if err != nil {
+		return
+	}
+
+}
