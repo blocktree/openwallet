@@ -22,7 +22,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/shopspring/decimal"
 )
 

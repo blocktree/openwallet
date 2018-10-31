@@ -542,6 +542,10 @@ func (wm *WalletManager) GetBlockScanner() openwallet.BlockScanner {
 	return wm.blockscanner
 }
 
+func (this *WalletManager) GetSmartContractDecoder() openwallet.SmartContractDecoder {
+	return this.ContractDecoder
+}
+
 //ImportWatchOnlyAddress 导入观测地址
 func (wm *WalletManager) ImportWatchOnlyAddress(address ...*openwallet.Address) error {
 

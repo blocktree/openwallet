@@ -606,7 +606,7 @@ func TestSendFrom(t *testing.T) {
 }
 
 func TestSendToAddress(t *testing.T){
-	address := "qJ2HTPYoMF1DPBhgURjRqemun5WimD57Hy"
+	address := "qJRyTVtn1bUjeYDztupJzinnN7sn7nZms7"
 	txIDs, err := tw.SendToAddress(address, "10","", false,"1234qwer")
 
 	if err != nil {

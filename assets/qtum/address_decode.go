@@ -19,6 +19,7 @@ import (
 	"encoding/hex"
 	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
 	"github.com/blocktree/go-OWCrypt"
+	"strings"
 )
 
 func init() {
@@ -128,7 +129,7 @@ func (decoder *addressDecoder) WIFToPrivateKey(wif string, isTestnet bool) ([]by
 
 //HashAddressToBaseAddress 哈希地址转编码地址
 func HashAddressToBaseAddress(token string, isTestnet bool) string {
-
+	token = strings.TrimPrefix(token, "0x")
 	cfg := addressEncoder.QTUM_mainnetAddressP2PKH
 	if isTestnet {
 		cfg = addressEncoder.QTUM_testnetAddressP2PKH
