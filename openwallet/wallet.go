@@ -36,14 +36,30 @@ import (
 
 //WalletDAI 钱包数据访问接口
 type WalletDAI interface {
+	//获取当前钱包
 	GetWallet() *Wallet
+	//根据walletID查询钱包
 	GetWalletByID(walletID string) (*Wallet, error)
+
+	//获取单个资产账户
 	GetAssetsAccountInfo(accountID string) (*AssetsAccount, error)
+	//查询资产账户列表
 	GetAssetsAccountList(offset, limit int, cols ...interface{}) ([]*AssetsAccount, error)
+	//根据地址查询资产账户
 	GetAssetsAccountByAddress(address string) (*AssetsAccount, error)
+
+	//获取单个地址
 	GetAddress(address string) (*Address, error)
+	//查询地址列表
 	GetAddressList(offset, limit int, cols ...interface{}) ([]*Address, error)
+	//设置地址的扩展字段
+	SetAddressExtParam(address string, key string, val interface{}) error
+	//获取地址的扩展字段
+	GetAddressExtParam(address string, key string) (interface{}, error)
+
+	//解锁钱包，指定时间内免密
 	UnlockWallet(password string, time time.Duration) error
+	//获取钱包HDKey
 	HDKey(password ...string) (*hdkeystore.HDKey, error)
 }
 
@@ -76,6 +92,15 @@ func (base *WalletDAIBase) GetAddress(address string) (*Address, error) {
 }
 
 func (base *WalletDAIBase) GetAddressList(offset, limit int, cols ...interface{}) ([]*Address, error) {
+	return nil, fmt.Errorf("not implement")
+}
+
+//设置地址的扩展字段
+func (base *WalletDAIBase) SetAddressExtParam(address string, key string, val interface{}) error {
+	return fmt.Errorf("not implement")
+}
+//获取地址的扩展字段
+func (base *WalletDAIBase) GetAddressExtParam(address string, key string) (interface{}, error) {
 	return nil, fmt.Errorf("not implement")
 }
 

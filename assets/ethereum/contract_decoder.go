@@ -76,7 +76,7 @@ func (this *WalletManager) GetTokenBalanceByAddress(contractAddr string, addrs .
 		addr.SetTokenBalance(balance)
 	}
 
-	for i, _ := range addrs {
+	for i := range addrs {
 		go queryBalance(addrs[i])
 	}
 
@@ -132,20 +132,37 @@ func (this *EthContractDecoder) GetTokenBalanceByAddress(contract openwallet.Sma
 		//		log.Debugf("got balanceAll of [%v] :%v", address, balanceAll)
 		balanceUnconfirmed := big.NewInt(0)
 		balanceUnconfirmed.Sub(balanceAll, balanceConfirmed)
+		bstr, err := ConvertAmountToFloatDecimal(balanceAll.String(), int(contract.Decimals))
+		if err != nil {
+			log.Errorf("convert balanceAll to float string failed, err=%v", err)
+			return
+		}
+
+		cbstr, err := ConvertAmountToFloatDecimal(balanceConfirmed.String(), int(contract.Decimals))
+		if err != nil {
+			log.Errorf("convert balanceConfirmed to float string failed, err=%v", err)
+			return
+		}
+
+		ucbstr, err := ConvertAmountToFloatDecimal(balanceUnconfirmed.String(), int(contract.Decimals))
+		if err != nil {
+			log.Errorf("convert balanceUnconfirmed to float string failed, err=%v", err)
+			return
+		}
 
 		balance = &openwallet.TokenBalance{
 			Contract: &contract,
 			Balance: &openwallet.Balance{
 				Address:          address,
 				Symbol:           contract.Symbol,
-				Balance:          balanceAll.String(),
-				ConfirmBalance:   balanceConfirmed.String(),
-				UnconfirmBalance: balanceUnconfirmed.String(),
+				Balance:          bstr.String(),
+				ConfirmBalance:   cbstr.String(),
+				UnconfirmBalance: ucbstr.String(),
 			},
 		}
 	}
 
-	for i, _ := range address {
+	for i := range address {
 		go queryBalance(address[i])
 	}
 
@@ -153,7 +170,7 @@ func (this *EthContractDecoder) GetTokenBalanceByAddress(contract openwallet.Sma
 
 	if len(tokenBalanceList) != count {
 		log.Error("unknown errors occurred .")
-		return nil, errors.New("unknown errors occurred .")
+		return nil, errors.New("unknown errors occurred ")
 	}
 	return tokenBalanceList, nil
 }

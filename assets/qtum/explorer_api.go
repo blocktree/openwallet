@@ -552,7 +552,7 @@ func (wm *WalletManager) getMultiAddrTransactionsByExplorer(offset, limit int, a
 //estimateFeeRateByExplorer 通过浏览器获取费率
 func (wm *WalletManager) estimateFeeRateByExplorer() (decimal.Decimal, error) {
 
-	defaultRate, _ := decimal.NewFromString("0.00001")
+	defaultRate, _ := decimal.NewFromString("0.004")
 
 	path := fmt.Sprintf("utils/estimatefee?nbBlocks=%d", 2)
 

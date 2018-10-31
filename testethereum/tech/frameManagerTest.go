@@ -368,7 +368,8 @@ func TestTokenDecode() {
 	manager, _ := GetEthWalletManager()
 
 	contract := openwallet.SmartContract{
-		Address: "0x8847E5F841458ace82dbb0692C97115799fe28d3",
+		Address:  "0x8847E5F841458ace82dbb0692C97115799fe28d3",
+		Decimals: 3,
 	}
 	addrs := []string{
 		"0x50068fD632c1A6e6c5bD407b4cCf8861A589E776",

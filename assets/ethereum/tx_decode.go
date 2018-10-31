@@ -410,7 +410,7 @@ func (this *EthTransactionDecoder) CreateErc20TokenRawTransaction(wrapper openwa
 		break
 	}
 
-	amount, err := ConvertToBigInt(amountStr, 10)
+	amount, err := ConvertFloatStringToBigInt(amountStr, int(rawTx.Coin.Contract.Decimals)) //ConvertToBigInt(amountStr, 10)
 	if err != nil {
 		openwLogger.Log.Errorf("convert tx amount to big.int failed, err=%v", err)
 		return err

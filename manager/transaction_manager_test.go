@@ -29,7 +29,7 @@ func createTransaction(walletID, accountID, to string) (*openwallet.RawTransacti
 		return nil, err
 	}
 
-	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "5", to, "", "")
+	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "5", to, "", "", nil)
 
 	if err != nil {
 		log.Error("CreateTransaction failed, unexpected error:", err)
@@ -311,7 +311,7 @@ func TestWalletManager_GetTransactionByWxID(t *testing.T) {
 func TestWalletManager_GetAssetsAccountBalance(t *testing.T) {
 
 	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
-	accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
+	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
 
 	balance, err := tm.GetAssetsAccountBalance(testApp, walletID, accountID)
 	if err != nil {
@@ -319,4 +319,24 @@ func TestWalletManager_GetAssetsAccountBalance(t *testing.T) {
 		return
 	}
 	log.Info("balance:", balance)
+}
+
+func TestWalletManager_GetAssetsAccountTokenBalance(t *testing.T) {
+	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
+	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
+
+	contract := openwallet.SmartContract{
+		Address:  "0x4092678e4E78230F46A1534C0fbc8fA39780892B",
+		Symbol:   "ETH",
+		Name:     "OCoin",
+		Token:    "OCN",
+		Decimals: 18,
+	}
+
+	balance, err := tm.GetAssetsAccountTokenBalance(testApp, walletID, accountID, contract)
+	if err != nil {
+		log.Error("GetAssetsAccountTokenBalance failed, unexpected error:", err)
+		return
+	}
+	log.Info("balance:", balance.Balance)
 }

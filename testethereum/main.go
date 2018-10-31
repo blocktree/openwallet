@@ -75,7 +75,7 @@ func main() {
 	//tech.TestWalletManager_CreateTransaction()
 	//tech.TestWalletManager_SignTransaction()
 	//tech.TestWalletManager_VerifyTransaction()
-	tech.TestWalletManager_SubmitTransaction()
+	//tech.TestWalletManager_SubmitTransaction()
 
 	//tech.TestSlice2()
 	//tech.TestStringAndSlice()
@@ -87,7 +87,7 @@ func main() {
 	//tech.TestInitCongfig2345()
 
 	//tech.TestWalletLog()
-	//tech.TestTokenDecode()
+	tech.TestTokenDecode()
 	//tech.TestTokenBalance()
 
 	//tech.TestWalletManager_SubmitTokenTransaction()
@@ -95,4 +95,7 @@ func main() {
 	//tech.DumpBlockScanDb()
 	//tech.TestScanBlockByHeight()
 	//tech.TestGetBalanceByAddress()
+
+	//tech.TestConvertEthStringToWei()
+	//tech.TestConverWeiStringToEthDecimal()
 }
