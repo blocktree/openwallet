@@ -37,3 +37,13 @@ func TestFloat() {
 	}
 	fmt.Println("de:", de)
 }
+
+func TestConvertEthStringToWei() {
+	amount, err := ethereum.ConvertEthStringToWei("123")
+	if err != nil {
+		fmt.Println("convert eth string to wei, err=", err)
+		return
+	}
+	//fmt.Println("amount:", amount)
+	fmt.Println("amount:", "0x"+amount.Text(16))
+}
