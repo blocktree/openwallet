@@ -126,16 +126,16 @@ stopNodeCMD = ""
 # node install path
 nodeInstallPath = ""
 # node api url
-apiUrl = "http://"
+apiUrl = "https://ctz.solidwallet.io/api/v3"
 # min fees, 
-stepLimit = ""
+stepLimit = 100000
 # the safe address that wallet send money to.
-sumAddress = ""
+sumAddress = "hxb12addba58c934ff924aa87ee65d06ee20f89eb8"
 # when wallet's balance is over this value, the wallet willl send money to [sumAddress]
 #unit is ICX
-threshold = ""
+threshold = "0.5"
 # summary task timer cycle time, sample: 1h, 1h1m , 2m, 30s, 3m20s etc...
-cycleSeconds = ""
+cycleSeconds = "5m"
 `
 	return &c
 }

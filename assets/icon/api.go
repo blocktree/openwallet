@@ -145,7 +145,6 @@ func (c *Client) Call_icx_getBalance(address string) (string, error) {
 		return "", err
 	}
 
-	log.Info(ret.String())
 	bigint, _ := hexutil.DecodeBig(ret.String())
 	b := decimal.NewFromBigInt(bigint, 0).Div(coinDecimal)
 

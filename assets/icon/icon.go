@@ -310,7 +310,6 @@ func (wm *WalletManager) TransferFlow() error {
 	}
 
 	atculAmount, _ := decimal.NewFromString(amount)
-	atculAmount = atculAmount.Mul(coinDecimal)
 	log.Printf("amount:%d", atculAmount.IntPart())
 
 	// 等待用户输入发送地址
@@ -344,8 +343,14 @@ func (wm *WalletManager) TransferFlow() error {
 	for _, a := range addr {
 		k, _ := wm.getKeys(key, a)
 
-		//get balance
-		amount := decimal.RequireFromString(a.Balance).Mul(coinDecimal)
+		//计算的时候要减去手续费，因为decimal计算精度丢失问题，导致0.001手续费设置为0.001111
+		//防止出现这种错误[-32600]Out of balance: balance(943999998799999940) < value(942999998800000000) + fee(1000000000000000）
+		fee := decimal.NewFromFloat(0.001111)
+		amount := decimal.RequireFromString(a.Balance).Sub(fee)
+		log.Printf("addr: %s, balance: %s", a.Address, amount.String())
+		if amount.LessThanOrEqual(decimal.NewFromFloat(0)) {
+			continue
+		}
 
 
 		if resultSub.LessThanOrEqual(amount) {
@@ -365,7 +370,7 @@ func (wm *WalletManager) TransferFlow() error {
 				value, _ := send.amount.Float64()
 				txid, _ :=wm.Transfer(send.sednKeys.PrivateKey, send.sednKeys.Address, receiver, value, wm.Config.StepLimit, 100)
 
-				log.Print("summary form address:%s, to address:%s, amount:%d, txid:%s\n", send.sednKeys.Address, wm.Config.SumAddress, send.amount.StringFixed(18), txid)
+				log.Printf("summary form address:%s, to address:%s, amount:%s, txid:%s\n", send.sednKeys.Address, wm.Config.SumAddress, send.amount.StringFixed(8), txid)
 		}
 	} else {
 		log.Printf("not enough balance\n")
