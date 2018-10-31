@@ -73,6 +73,7 @@ type WalletManager struct {
 	blockscanner *BTCBlockScanner              //区块扫描器
 	Decoder      openwallet.AddressDecoder     //地址编码器
 	TxDecoder    openwallet.TransactionDecoder //交易单编码器
+	ContractDecoder openwallet.SmartContractDecoder //
 }
 
 func NewWalletManager() *WalletManager {
@@ -86,6 +87,7 @@ func NewWalletManager() *WalletManager {
 	wm.blockscanner = NewBTCBlockScanner(&wm)
 	wm.Decoder = NewAddressDecoder(&wm)
 	wm.TxDecoder = NewTransactionDecoder(&wm)
+	wm.ContractDecoder = NewContractDecoder(&wm)
 	return &wm
 }
 

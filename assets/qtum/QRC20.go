@@ -27,12 +27,23 @@ import (
 	"github.com/blocktree/OpenWallet/common"
 )
 
-func (wm *WalletManager) GetTokenBalanceByAddress(contract openwallet.SmartContract, isTestNet bool, address ...string) ([]*openwallet.TokenBalance, error) {
+type ContractDecoder struct {
+	wm *WalletManager
+}
+
+//NewContractDecoder 智能合约解析器
+func NewContractDecoder(wm *WalletManager) *ContractDecoder {
+	decoder := ContractDecoder{}
+	decoder.wm = wm
+	return &decoder
+}
+
+func (decoder *ContractDecoder) GetTokenBalanceByAddress(contract openwallet.SmartContract, address ...string) ([]*openwallet.TokenBalance, error) {
 
 	var tokenBalanceList []*openwallet.TokenBalance
 
  	for i:=0; i<len(address); i++ {
-		unspent, err := wm.GetQRC20Balance(contract, address[i], isTestNet)
+		unspent, err := decoder.wm.GetQRC20Balance(contract, address[i], decoder.wm.config.isTestNet)
 		if err != nil {
 			log.Errorf("get address[%v] QRC20 token balance failed, err=%v", address[i], err)
 		}

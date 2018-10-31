@@ -122,7 +122,7 @@ func Test_GetTokenBalanceByAddress(t *testing.T) {
 	//	"qJ2HTPYoMF1DPBhgURjRqemun5WimD57Hy",
 	//}
 
-	balanceList, err := tw.GetTokenBalanceByAddress(contract, isTestNet, addrs...)
+	balanceList, err := tw.ContractDecoder.GetTokenBalanceByAddress(contract, addrs...)
 	if err != nil {
 		t.Errorf("get token balance by address failed, err=%v", err)
 		return

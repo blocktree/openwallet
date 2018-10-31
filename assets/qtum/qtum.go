@@ -542,6 +542,10 @@ func (wm *WalletManager) GetBlockScanner() openwallet.BlockScanner {
 	return wm.blockscanner
 }
 
+func (this *WalletManager) GetSmartContractDecoder() openwallet.SmartContractDecoder {
+	return this.ContractDecoder
+}
+
 //ImportWatchOnlyAddress 导入观测地址
 func (wm *WalletManager) ImportWatchOnlyAddress(address ...*openwallet.Address) error {
 
@@ -651,7 +655,7 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 	if wm.config.RPCServerType == RPCServerCore {
 		wm.walletClient = NewClient(wm.config.serverAPI, token, false)
 	} else {
-		wm.ExplorerClient = NewExplorer(wm.config.serverAPI, false)
+		wm.ExplorerClient = NewExplorer(wm.config.serverAPI, true)
 	}
 
 	return nil
