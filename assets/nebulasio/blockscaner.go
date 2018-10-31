@@ -1353,17 +1353,6 @@ func (bs *BTCBlockScanner) GetBalanceByAddress(address ...*openwallet.Address) (
 }
 */
 
-//GetTokenBalanceByAddress 查询地址token余额列表
-func (bs *NASBlockScanner) GetTokenBalanceByAddress(address ...*openwallet.Address) ([]*openwallet.TokenBalance, error) {
-	return nil, nil
-}
-
-//GetAssetsAccountTransactionsByAddress 查询账户相关地址的交易记录
-func (bs *NASBlockScanner) GetTransactionsByAddress(offset, limit int, coin *openwallet.Coin, address ...*openwallet.Address) ([]*openwallet.Transaction, error) {
-
-	return nil, nil
-}
-
 
 //实现BlockScanNotificationObject interface下的方法
 type subscriber struct{

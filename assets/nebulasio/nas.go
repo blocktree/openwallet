@@ -390,14 +390,13 @@ func (wm *WalletManager) TransferFlow() error {
 
 	if haveEnoughBalance {
 		for _, send := range sends {
-
-			txid, err := wm.Transfer(send.sednKeys, receiver, "2000000",send.amount.String())
+			txid, err := wm.Transfer(send.sednKeys, send.sednKeys.Address,receiver, Gaslimit,send.amount.String())
 		//	log.Std.Info("transfer address:%s, to address:%s, amount:%s, txid:%s", send.sednKeys.Address, receiver, send.amount.String(), txid)
 			if err != nil{
 				log.Std.Info("Transfer Fail!",)
 			}else{
 					log.Std.Info("Transfer Success! txid=%s",txid)
-					err := NotenonceInDB(send.sednKeys,db)
+					err := NotenonceInDB(send.sednKeys.Address,db)
 					if err != nil {
 						log.Std.Info("NotenonceInDB error")
 					}
@@ -542,54 +541,5 @@ func (w *WalletManager) RestoreWalletFlow() error {
 	//输出备份导出目录
 	fmt.Printf("Restore wallet successfully.\n")
 
-	return nil
-}
-
-/*实现 openwallet/assets.go 中AssetsAdapter接口中的SymbolInfo方法*/
-//CurveType 曲线类型
-func (wm *WalletManager) CurveType() uint32 {
-	return wm.Config.CurveType
-}
-//FullName 币种全名
-func (wm *WalletManager) FullName() string {
-	return "Nebulasio"
-}
-//Symbol 币种标识
-func (wm *WalletManager) Symbol() string {
-	return wm.Config.Symbol
-}
-//小数位精度
-func (wm *WalletManager) Decimal() int32 {
-	return 18
-}
-
-/*实现 openwallet/assets.go 中AssetsAdapter接口中的GetAddressDecode方法*/
-//AddressDecode 地址解析器
-func (wm *WalletManager) GetAddressDecode() openwallet.AddressDecoder {
-	return wm.Decoder
-}
-
-/*实现 openwallet/assets.go 中AssetsAdapter接口中的GetTransactionDecoder方法*/
-//TransactionDecoder 交易单解析器
-func (wm *WalletManager) GetTransactionDecoder() openwallet.TransactionDecoder {
-	return wm.TxDecoder
-}
-
-/*实现 openwallet/assets.go 中AssetsAdapter接口中的GetBlockScanner方法*/
-//GetBlockScanner 获取区块链
-func (wm *WalletManager) GetBlockScanner() *NASBlockScanner {
-
-	//先加载是否有配置文件
-	err := wm.LoadConfig()
-	if err != nil {
-		return nil
-	}
-
-	return wm.Blockscanner
-}
-
-/*实现 openwallet/assets.go 中AssetsAdapter接口中的GetSmartContractDecoder方法*/
-//GetSmartContractDecoder 获取智能合约解析器 wjq
-func (wm *WalletManager) GetSmartContractDecoder() openwallet.TransactionDecoder {
 	return nil
 }

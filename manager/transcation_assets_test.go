@@ -80,8 +80,8 @@ func testSubmitTransactionStep(rawTx *openwallet.RawTransaction) (*openwallet.Ra
 
 func TestTransfer_ETH(t *testing.T) {
 
-	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
-	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
+	walletID := "WGWfGtgo8uLxVKTWoWkzuoPELMtehb9Vda"
+	accountID := "6SVDyi7dgcJHG7V2DP2ZJUvzbRyr2PjTqFxym8pEEBrv"
 	to := "d35f9Ea14D063af9B3567064FAB567275b09f03D"
 
 	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.0003", "")
@@ -110,9 +110,37 @@ func TestTransfer_LTC(t *testing.T) {
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "EbUsW3YaHQ61eNt3f4hDXJAFh9LGmLZWH1VTTSnQmhnL"
-	to := "n3ctLfAj8ksiXbVRCSQwEiyh2ZV8REAcUC"
+	to := "n1Prn7ZbZtd5CTN8Yrj4K9c3gD4u8tjFQzX"
 
 	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "1.1", "0.001")
+	if err != nil {
+		return
+	}
+
+	_, err = testSignTransactionStep(rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testVerifyTransactionStep(rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testSubmitTransactionStep(rawTx)
+	if err != nil {
+		return
+	}
+
+}
+
+func TestTransfer_NAS(t *testing.T) {
+
+	walletID := "VzQTLspxvbXSmfRGcN6LJVB8otYhJwAGWc"
+	accountID := "BjLtC1YN4sWQKzYHtNPdvx3D8yVfXmbyeCQTMHv4JUGG"
+	to := "n1Prn7ZbZtd5CTN8Yrj4K9c3gD4u8tjFQzX"
+
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.00005", "")
 	if err != nil {
 		return
 	}

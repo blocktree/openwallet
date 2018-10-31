@@ -36,7 +36,7 @@ type Client struct {
 }
 
 //定义全局变量Nonce用于记录真正交易上链的nonce值和记录在DB中的nonce值
-var Nonce int
+var Nonce_Chain int
 
 func NewClient(url string, debug bool) *Client {
 	c := Client{
@@ -94,14 +94,14 @@ func (c *Client) CheckNonce(key *Key) uint64{
 
 	//如果本地nonce_local > 链上nonce,采用本地nonce,否则采用链上nonce
 	if nonce_db > nonce_chain{
-		Nonce = nonce_db + 1
+		Nonce_Chain = nonce_db + 1
 		//log.Std.Info("%s nonce_db=%d > nonce_chain=%d,Use nonce_db+1...",key.Address,nonce_db,nonce_chain)
 	}else{
-		Nonce = nonce_chain + 1
+		Nonce_Chain = nonce_chain + 1
 		//log.Std.Info("%s nonce_db=%d <= nonce_chain=%d,Use nonce_chain+1...",key.Address,nonce_db,nonce_chain)
 	}
 
-	return uint64(Nonce)
+	return uint64(Nonce_Chain)
 }
 
 //查询每个地址balance、nonce
@@ -110,7 +110,10 @@ func (c *Client) CheckNonce(key *Key) uint64{
 func (c *Client) CallGetaccountstate( address string ,query string) (string, error) {
 
 	url := c.BaseURL + "/v1/user/accountstate"
-//	fmt.Printf("url=%s\n",url)
+
+	if c.Debug {
+		log.Info("URL :%v",url)
+	}
 
 	var (
 		body = make(map[string]interface{}, 0)
@@ -465,7 +468,7 @@ func (c *Client) CallGetsubscribe() (*gjson.Result, error)  {
 
 	body := map[string]interface{}{
 
-		"topics": []string{"chain.pendingTransaction"},
+		"topics": []string{"chain.linkBlock","chain.pendingTransaction"},
 	}
 
 	if c.Client == nil {

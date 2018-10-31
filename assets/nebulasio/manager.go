@@ -83,6 +83,7 @@ type WalletManager struct {
 	Blockscanner *NASBlockScanner             //区块扫描器
 	Decoder        openwallet.AddressDecoder     //地址编码器
 	TxDecoder      openwallet.TransactionDecoder //交易单编码器
+	ContractDecoder openwallet.SmartContractDecoder //智能合约解析器
 }
 
 func NewWalletManager() *WalletManager {
@@ -99,13 +100,15 @@ func NewWalletManager() *WalletManager {
 	//交易单解析器
 	wm.TxDecoder = NewTransactionDecoder(&wm)
 
+	wm.WalletClient = NewClient(wm.Config.ServerAPI, false)
+
 	return &wm
 }
 
 
-//SignTranscation签名返回结构
-type Transcation struct{
-	Hash []byte
+//SubmitTransaction 存放最终广播出去的交易单信息
+type SubmitTransaction struct{
+	Hash []byte		//交易hash
 	From []byte
 	To	 []byte
 	Value[]byte
@@ -116,7 +119,7 @@ type Transcation struct{
 	GasPrice []byte
 	GasLimit []byte
 	Alg	uint32
-	Sign []byte
+	Sign []byte		//交易hash签名结果
 }
 
 
@@ -147,7 +150,7 @@ func NasAddrTobyte(addr string) ([]byte, error){
 }
 
 //对签名结果按照官方进行编码
-func (tx *Transcation) ToProto() (proto.Message) {
+func (tx *SubmitTransaction) ToProto() (proto.Message) {
 
 	return &corepb.Transaction{
 		Hash:      tx.Hash,
@@ -165,16 +168,12 @@ func (tx *Transcation) ToProto() (proto.Message) {
 	}
 }
 
-//离线签名交易：
-//	1、参照官方交易体构建交易单
-//  2、调用ow库NAS专门签名函数进行签名
-func (wm *WalletManager) SignTranscation(key *Key, to, gasLimit, value string) (*Transcation ,error){
+//CreateRawTransaction创建交易单hash
+func (wm *WalletManager) CreateRawTransaction(from , to, gasLimit, gasPrice,value string, nonce uint64) (*SubmitTransaction,error){
 
-	nonce := wm.WalletClient.CheckNonce(key)
-	gasPrice := wm.WalletClient.CallGetGasPrice()
 	chainID,_ := wm.GetChainID()
 	timestamp := time.Now().Unix()
-	address_from ,err := NasAddrTobyte(key.Address)
+	address_from ,err := NasAddrTobyte(from)
 	if err != nil{
 		return nil,err
 	}
@@ -232,25 +231,7 @@ func (wm *WalletManager) SignTranscation(key *Key, to, gasLimit, value string) (
 	//计算交易hash
 	transaction_hash := owcrypt.Hash( transaction, uint16(len(transaction)), owcrypt.HASH_ALG_SHA3_256)
 
-//调用ow库签名交易结果
-	sig,_ := owcrypt.NAS_signature(key.PrivateKey,transaction_hash)   //对交易体进行签名结果 //65字节
-	//log.Std.Info("sigx=%x\n",sig)
-//调用ow库签名交易结果	End
-
-//调用ow库进行验证签名
-	//公钥为33字节，需要解压缩出65字节公钥
-	PublicKey :=owcrypt.PointDecompress(key.PublicKey , owcrypt.ECC_CURVE_SECP256K1)
-	fmt.Printf("key.PrivateKey=%x,key.PublicKey=%x\n",key.PrivateKey,key.PublicKey)
-	//去掉65字节公钥的第一个字节后进行验签
-	verify :=owcrypt.Verify(PublicKey[1:65],nil,0,transaction_hash,32,sig[0:64],owcrypt.ECC_CURVE_SECP256K1 | (1<<9))
-	if verify != owcrypt.SUCCESS{
-		return nil ,nil
-	}
-	//log.Std.Info("Verify success! verify=%x\n", verify)
-//调用ow库进行验证签名 End
-
-	//参照官方做法将交易体、交易hash、签名结果进行封装
-	transcation_all := &Transcation{
+	Submit_tx := &SubmitTransaction{
 		transaction_hash,
 		address_from,
 		address_to,
@@ -262,38 +243,105 @@ func (wm *WalletManager) SignTranscation(key *Key, to, gasLimit, value string) (
 		gasPrice_byte,
 		gasLimit_byte,
 		uint32(1),
-		sig,
+		nil,
 	}
-	//log.Std.Info("transcation_all=%v\n",*transcation_all)
-	return transcation_all,nil
+
+	return Submit_tx,err
 }
 
+//SignRawTransaction对交易hash进行签名
+func SignRawTransaction(PrivateKey []byte,txhash []byte) ([]byte,error){
+
+	//调用ow库签名交易结果
+	signed,ret := owcrypt.NAS_signature(PrivateKey,txhash)   //对交易体进行签名结果 //65字节
+	if ret != owcrypt.SUCCESS {
+		errdesc := fmt.Sprintln("signature error, ret:", "0x"+strconv.FormatUint(uint64(ret), 16))
+		log.Error(errdesc)
+		return nil,errors.New(errdesc)
+	}
+	//log.Std.Info("sigx=%x\n",sig)
+	//调用ow库签名交易结果	End
+
+	return signed,nil
+}
+
+//VerifyRawTransaction对签名进行验签
+//return :owcrypt.SUCCESS：成功，其他：失败
+func VerifyRawTransaction(PubKey []byte, txhash []byte, signed []byte) uint16{
+
+	//调用ow库进行验证签名
+	//公钥为33字节，需要解压缩出65字节公钥
+	PublicKey :=owcrypt.PointDecompress(PubKey , CurveType)
+	//去掉65字节公钥的第一个字节后进行验签
+	verify :=owcrypt.Verify(PublicKey[1:65],nil,0,txhash,32,signed[0:64],owcrypt.ECC_CURVE_SECP256K1 | (1<<9))
+	//log.Std.Info("Verify success! verify=%x\n", verify)
+	//调用ow库进行验证签名 End
+	return verify
+}
+
+//SubmitRawTransaction对签名结果进行编码
+func  EncodeTransaction( submit_tx *SubmitTransaction)(string ,error){
+
+	//参照官方对广播交易体进行编码
+	message := submit_tx.ToProto()
+	data_tmp, err := proto.Marshal(message)
+	if err != nil {
+		return "", err
+	}
+	data := rpcpb.SignTransactionPassphraseResponse{Data: data_tmp}
+	broadcastsend_data := base64.StdEncoding.EncodeToString(data.Data)
+
+	return broadcastsend_data,nil
+}
+
+//SubmitRawTransaction对签名编码后的数据进行广播
+func (wm *WalletManager)SubmitRawTransaction( submit_data string)(string ,error){
+
+	txhash, err := wm.WalletClient.CallSendRawTransaction(submit_data)
+	if (err != nil) || (len(txhash)==0){
+		return "" ,err
+	}
+
+	log.Std.Info("txhash=%v\n", txhash)
+	return txhash,nil
+}
+
+
+
 //发送交易
-//1、对签名结果参照官方进行编码
-//2、对编码后数据通过API进行广播
-func (wm *WalletManager) Transfer(key *Key, to, gasLimit, value string) (string, error) {
+func (wm *WalletManager) Transfer(key *Key, from ,to, gasLimit, value string) (string, error) {
 
-		//此处入参已经判断了余额充足的情况
-		Transcation_all,err := wm.SignTranscation(key, to, gasLimit, value )
-		if err != nil {
-			return "", err
-		}
+	//CreateRawTransaction 创建交易单
+	gasPrice := wm.WalletClient.CallGetGasPrice()
+	nonce := wm.WalletClient.CheckNonce(key)
+	transaction,err := wm.CreateRawTransaction(from, to, gasLimit, gasPrice,value,nonce)
+	if err != nil{
+		return "",err
+	}
+	//SignRawTransaction 签名交易单
+	signed, err := SignRawTransaction(key.PrivateKey,transaction.Hash)
+	if err != nil{
+		return "",err
+	}
+	//VerifyRawTransaction 验证交易单，
+	verify_result := VerifyRawTransaction(key.PublicKey,transaction.Hash,signed)
+	if verify_result != owcrypt.SUCCESS {
+		return "", errors.New("Verify Failed !")
+	}
+	//验证通过后对交易单进行相应的编码
+	transaction.Sign = signed
+	SubmitData,err := EncodeTransaction(transaction)
+	if err != nil {
+		return "", err
+	}
 
-		//参照官方对广播交易体进行编码
-		message := Transcation_all.ToProto()
-		data_tmp, err := proto.Marshal(message)
-		if err != nil {
-			return "", err
-		}
-		data := rpcpb.SignTransactionPassphraseResponse{Data: data_tmp}
-		broadcastsend_data := base64.StdEncoding.EncodeToString(data.Data)
+	//SendRawTransaction 广播交易单
+	txid ,err := wm.SubmitRawTransaction(SubmitData)
+	if err != nil{
+		return "",err
+	}
 
-		txhash, err := wm.WalletClient.CallSendRawTransaction(broadcastsend_data)
-		if (err != nil) || (len(txhash)==0){
-			return "" ,err
-		}
-
-		return txhash,nil
+	return txid,nil
 }
 
 
@@ -850,18 +898,15 @@ func (wm *WalletManager) summaryWallet(wallet *openwallet.Wallet, password strin
 		//log.Std.Info("Threshold:%v", wm.Config.Threshold.String())
 		//log.Std.Info("balance_safe=%v",balance_safe)
 		if balance_safe.GreaterThan(wm.Config.Threshold) {
-
-			txid, err := wm.Transfer(k, wm.Config.SumAddress, wm.Config.GasLimit.String(),
+			txid, err := wm.Transfer(k,k.Address, wm.Config.SumAddress, wm.Config.GasLimit.String(),
 				balance_safe.String())
 			//log.Std.Info("summary form address:%s, to address:%s, amount:%s, txid:%s", k.Address, wm.Config.SumAddress, balance_safe.String(), txid)
-
 			if err != nil{
 				log.Std.Info("Transfer Fail!\n",)
 			}else{
 				log.Std.Info("Transfer Success! txid=%s\n",txid)
 
-				err := NotenonceInDB(k,db)
-
+				err := NotenonceInDB(k.Address,db)
 				if err != nil {
 					log.Std.Info("NotenonceInDB error!\n")
 				}
@@ -1051,7 +1096,7 @@ func (wm *WalletManager) GetChainID() (uint32, error) {
 }
 
 //将签名成功广播出去后的nonce值记录在对应address的DB中
-func  NotenonceInDB(key *Key, db *storm.DB) error{
+func  NotenonceInDB(addr string, db *storm.DB) error{
 
 	//有db说明db已经在前文打开，不需要重复打开
 /*	if db == nil{
@@ -1065,7 +1110,7 @@ func  NotenonceInDB(key *Key, db *storm.DB) error{
 	}*/
 
 	var address openwallet.Address
-	err := db.One("Address", key.Address, &address)
+	err := db.One("Address", addr, &address)
 	if err != nil {
 		log.Debugf("get address failed, err=%v", err)
 		return err
@@ -1073,7 +1118,7 @@ func  NotenonceInDB(key *Key, db *storm.DB) error{
 
 	//modifyAddress.ExtParam for note nonce
 	//Nonce为最后一次成功上链的nonce值
-	address.ExtParam = strconv.Itoa(Nonce)
+	address.ExtParam = strconv.Itoa(Nonce_Chain)
 
 	//saveAddress
 	tx, err := db.Begin(true)
@@ -1092,7 +1137,7 @@ func  NotenonceInDB(key *Key, db *storm.DB) error{
 		return err
 	}
 
-	return nilestimateGas
+	return nil
 }
 
 
@@ -1105,18 +1150,11 @@ type estimateGasParameter struct{
 	gasLimit string
 }
 
-func ConvertToBigInt(value string, base int) (*big.Int, error) {
+func ConvertToBigInt(value string) (*big.Int, error) {
 	bigvalue := new(big.Int)
 	var success bool
-	if base == 16 {
-		value = removeOxFromHex(value)
-	}
 
-	if value == "" {
-		value = "0"
-	}
-
-	_, success = bigvalue.SetString(value, base)
+	_, success = bigvalue.SetString(value, 10)
 	if !success {
 		errInfo := fmt.Sprintf("convert value [%v] to bigint failed, check the value and base passed through\n", value)
 		openwLogger.Log.Errorf(errInfo)
@@ -1124,6 +1162,7 @@ func ConvertToBigInt(value string, base int) (*big.Int, error) {
 	}
 	return bigvalue, nil
 }
+
 //构建gas估算入参
 func (wm *WalletManager) CreatestimateGasParameters(from string, to string, value *big.Int) (*estimateGasParameter,error){
 
@@ -1131,7 +1170,7 @@ func (wm *WalletManager) CreatestimateGasParameters(from string, to string, valu
 		from : from,
 		to   : to,
 		value: value.String(),
-		gasLimit: "2000000",
+		gasLimit: Gaslimit,
 	}
 
 	nonce,err := wm.WalletClient.CallGetaccountstate(from , "nonce")
@@ -1163,21 +1202,17 @@ func (wm *WalletManager) Getestimatefee(from string, to string, value *big.Int) 
 		return nil,err
 	}
 
-	fmt.Printf("Parameter=%+v\n",Parameter)
-
 	result ,err := wm.WalletClient.CallGetestimateGas(Parameter)
 	if err != nil{
 		return nil,err
 	}
 
-	fmt.Printf("EstimateGas=%v\n",result.Get("gas").String())
-
-	EstimateGas, err := ConvertToBigInt(result.Get("gas").String(), 16)
+	EstimateGas, err := ConvertToBigInt(result.Get("gas").String())
 	if err != nil{
 		return nil,err
 	}
 
-	GasPrice, err := ConvertToBigInt(Parameter.gasPrice, 16)
+	GasPrice, err := ConvertToBigInt(Parameter.gasPrice)
 	if err != nil{
 		return nil,err
 	}

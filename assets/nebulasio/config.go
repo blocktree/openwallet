@@ -16,6 +16,7 @@
 package nebulasio
 
 import (
+	"github.com/astaxie/beego/config"
 	"github.com/blocktree/go-OWCrypt"
 	"github.com/shopspring/decimal"
 	"time"
@@ -41,6 +42,7 @@ const (
 	Symbol = "NAS"
 	MasterKey = "Nas seed"
 	CurveType = owcrypt.ECC_CURVE_SECP256K1
+	Gaslimit = "2000000"
 )
 
 type WalletConfig struct {
@@ -170,4 +172,25 @@ func (wc *WalletConfig) InitConfig() {
 		file.WriteFile(absFile, []byte(wc.DefaultConfig), false)
 	}
 
+}
+
+//InitAssetsConfig 初始化默认配置
+func (wm *WalletManager) InitAssetsConfig() (config.Configer, error) {
+	return config.NewConfigData("ini", []byte(wm.Config.DefaultConfig))
+}
+
+//LoadAssetsConfig 加载外部配置
+func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
+
+	fmt.Printf("12333\n")
+	wm.Config.ServerAPI = c.String("serverAPI")
+	wm.Config.Threshold, _ = decimal.NewFromString(c.String("threshold"))
+	wm.Config.SumAddress = c.String("sumAddress")
+	wm.Config.NodeInstallPath = c.String("nodeInstallPath")
+
+
+	cyclesec := c.String("cycleSeconds")
+	wm.Config.CycleSeconds, _ = time.ParseDuration(cyclesec)
+
+	return nil
 }
