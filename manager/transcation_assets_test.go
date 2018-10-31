@@ -110,7 +110,7 @@ func TestTransfer_ERC20(t *testing.T) {
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
-	to := "d35f9Ea14D063af9B3567064FAB567275b09f03D"
+	to := "0xd35f9Ea14D063af9B3567064FAB567275b09f03D"
 
 	contract := openwallet.SmartContract{
 		Address:  "0x4092678e4E78230F46A1534C0fbc8fA39780892B",

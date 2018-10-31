@@ -312,13 +312,22 @@ func (wm *WalletManager) SubmitTransaction(appID, walletID, accountID string, ra
 		return tx, nil
 	}
 
-	extractData, err := scanner.ExtractTransactionData(rawTx.TxID)
+	//GetSourceKeyByAddress 获取地址对应的数据源标识
+	scanAddressFunc := func (address string) (string, bool) {
+		scanAddr, scanErr := wrapper.GetAddress(address)
+		if scanErr != nil || scanAddr == nil {
+			return "", false
+		}
+		return scanAddr.AccountID, true
+	}
+
+	extractData, err := scanner.ExtractTransactionData(rawTx.TxID, scanAddressFunc)
 	if err != nil {
 		log.Error("ExtractTransactionData failed, unexpected error:", err)
 		return tx, nil
 	}
 
-	accountTxData, ok := extractData[wm.encodeSourceKey(appID, accountID)]
+	accountTxData, ok := extractData[accountID]
 	if !ok {
 		return tx, nil
 	}
@@ -408,6 +417,73 @@ func (wm *WalletManager) GetAssetsAccountBalance(appID, walletID, accountID stri
 	}
 
 	return &accountBalance, nil
+}
+
+
+//GetAssetsAccountTokenBalance 获取账户Token余额
+func (wm *WalletManager) GetAssetsAccountTokenBalance(appID, walletID, accountID string, contract openwallet.SmartContract) (*openwallet.TokenBalance, error) {
+
+	var (
+		addressMap  = make(map[string]*openwallet.Address)
+		searchAddrs = make([]string, 0)
+	)
+
+	wrapper, err := wm.newWalletWrapper(appID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := wrapper.GetAssetsAccountInfo(accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	assetsMgr, err := GetAssetsManager(account.Symbol)
+	if err != nil {
+		return nil, err
+	}
+
+	//提取交易单
+	smartContractDecoder := assetsMgr.GetSmartContractDecoder()
+	if smartContractDecoder == nil {
+		return nil, fmt.Errorf("[%s] not support smart contract", account.Symbol)
+	}
+
+	addresses, err := wrapper.GetAddressList(0, -1, "AccountID", accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, address := range addresses {
+		searchAddrs = append(searchAddrs, address.Address)
+		addressMap[address.Address] = address
+	}
+
+	accountBalanceDec := decimal.New(0, 0)
+
+	balances, err := smartContractDecoder.GetTokenBalanceByAddress(contract, searchAddrs...)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, b := range balances {
+		addrBalance, _ := decimal.NewFromString(b.Balance.Balance)
+		accountBalanceDec = accountBalanceDec.Add(addrBalance)
+	}
+
+	accountBalance := openwallet.Balance{
+		Symbol:    account.Symbol,
+		AccountID: accountID,
+		Address:   "",
+		Balance:   accountBalanceDec.StringFixed(int32(contract.Decimals)),
+	}
+
+	accountTokenBalance := openwallet.TokenBalance{
+		Contract: &contract,
+		Balance: &accountBalance,
+	}
+
+	return &accountTokenBalance, nil
 }
 
 //GetTransactions
