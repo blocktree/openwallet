@@ -13,51 +13,66 @@
  * GNU Lesser General Public License for more details.
  */
 
-package icon
+package omnicore
 
 import (
-	"github.com/imroc/req"
-	"github.com/tidwall/gjson"
-	"github.com/blocktree/OpenWallet/log"
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/go-ethereum/common/hexutil"
-	"github.com/shopspring/decimal"
+	"github.com/imroc/req"
+	"github.com/tidwall/gjson"
+	"github.com/blocktree/OpenWallet/log"
 )
 
+// A Client is a Bitcoin RPC client. It performs RPCs over HTTP using JSON
+// request and responses. A Client must be configured with a secret token
+// to authenticate with other Cores on the network.
 type Client struct {
 	BaseURL     string
+	AccessToken string
 	Debug       bool
-	Client      *req.Req
-	Header      req.Header
+	client      *req.Req
+	//Client *req.Req
 }
 
-func NewClient(url string, debug bool) *Client {
+type Response struct {
+	Code    int         `json:"code,omitempty"`
+	Error   interface{} `json:"error,omitempty"`
+	Result  interface{} `json:"result,omitempty"`
+	Message string      `json:"message,omitempty"`
+	Id      string      `json:"id,omitempty"`
+}
+
+
+func NewClient(url, token string, debug bool) *Client {
 	c := Client{
 		BaseURL:     url,
+		AccessToken: token,
 		Debug:       debug,
 	}
 
 	api := req.New()
-	c.Client = api
+	//trans, _ := api.Client().Transport.(*http.Transport)
+	//trans.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	c.client = api
 
 	return &c
 }
 
 // Call calls a remote procedure on another node, specified by the path.
-func (c *Client) Call(path string, request map[string]interface{}) (*gjson.Result, error) {
+func (c *Client) Call(path string, request []interface{}) (*gjson.Result, error) {
 
 	var (
 		body = make(map[string]interface{}, 0)
 	)
 
-	if c.Client == nil {
+	if c.client == nil {
 		return nil, errors.New("API url is not setup. ")
 	}
 
 	authHeader := req.Header{
 		"Accept":        "application/json",
+		"Authorization": "Basic " + c.AccessToken,
 	}
 
 	//json-rpc
@@ -70,7 +85,7 @@ func (c *Client) Call(path string, request map[string]interface{}) (*gjson.Resul
 		log.Std.Info("Start Request API...")
 	}
 
-	r, err := c.Client.Post(c.BaseURL, req.BodyJSON(&body), authHeader)
+	r, err := c.client.Post(c.BaseURL, req.BodyJSON(&body), authHeader)
 
 	if c.Debug {
 		log.Std.Info("Request API Completed")
@@ -112,20 +127,27 @@ func isError(result *gjson.Result) error {
 	)
 
 	/*
-		// Response - error
+		//failed 返回错误
 		{
-			"jsonrpc": "2.0",
-			"id": 1234,
+			"result": null,
 			"error": {
-				"code": -32602,
-				"message": "Invalid address"
-			}
+				"code": -8,
+				"message": "Block height out of range"
+			},
+			"id": "foo"
 		}
 	*/
 
-	if result.Get("result").Exists() {
+	if !result.Get("error").IsObject() {
+
+		if !result.Get("result").Exists() {
+			return errors.New("Response is empty! ")
+		}
+
 		return nil
 	}
+
+
 
 	errInfo := fmt.Sprintf("[%d]%s",
 		result.Get("error.code").Int(),
@@ -133,42 +155,4 @@ func isError(result *gjson.Result) error {
 	err = errors.New(errInfo)
 
 	return err
-}
-
-func (c *Client) Call_icx_getBalance(address string) (string, error) {
-	request := map[string]interface{} {
-		"address":address,
-	}
-
-	ret, err := c.Call("icx_getBalance", request)
-	if err != nil {
-		return "", err
-	}
-
-	bigint, _ := hexutil.DecodeBig(ret.String())
-	b := decimal.NewFromBigInt(bigint, 0).Div(coinDecimal)
-
-	return b.String(), nil
-}
-
-func (c *Client) Call_icx_sendTransaction(request map[string]interface{}) (string, error) {
-	ret, err := c.Call("icx_sendTransaction", request)
-	if err != nil {
-		return "", err
-	}
-
-	return ret.String(), nil
-}
-
-func (c *Client) Call_icx_getTransactionByHash(txhash string) (string, error) {
-	request := map[string]interface{} {
-		"txHash":txhash,
-	}
-
-	ret, err := c.Call("icx_getTransactionByHash", request)
-	if err != nil {
-		return "", err
-	}
-
-	return ret.String(), nil
 }

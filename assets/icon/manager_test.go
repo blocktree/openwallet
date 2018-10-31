@@ -188,44 +188,6 @@ func TestWalletManager_TransferFlow(t *testing.T) {
 	}
 }
 
-func Test_Sign(t *testing.T) {
-	str := "cb81d878a257e9f7bb864a33700f0c411c142d2f4eaa423338112e37152a1879080000acf886e911fa1118ffd5e7394b740ddbaa81b67700acb60cc801c801000000e3f24bd5bca29cb50422b59a3a779698c0b14e4400"
-	w, err := wm.GetWalletByID("WGp7QW8jG3BF9CCrQvBq54zpS6huYasiAC")
-	if err != nil {
-		t.Error("get wallet by id error")
-		return
-	}
-
-	keystore, _ := w.HDKey("1234qwer")
-
-	db, err := w.OpenDB()
-	if err != nil {
-		t.Error(err.Error())
-		return
-	}
-	defer db.Close()
-
-	var addrs []*openwallet.Address
-	db.All(&addrs)
-
-	var sender *openwallet.Address
-	//key, _ := wm.getKeys(keystore, addrs[0])
-	for _, a := range addrs {
-		if a.Address == "tz1bQce59RgUkuV9WfvTvkZGiLLt8aedqvzd" {
-			sender = a
-			break
-		}
-	}
-
-	key, err := wm.getKeys(keystore, sender)
-	if err != nil {
-		t.Error("get key error")
-	}
-
-	sign, _ := wm.signTransaction(key.PrivateKey, []byte(str))
-	t.Log(sign)
-}
-
 func TestWalletManager_CalculateTxHash(t *testing.T) {
 	from := "hxb12addba58c934ff924aa87ee65d06ee20f89eb8"
 	to := "hxb12addba58c934ff924aa87ee65d06ee20f89eb8"
@@ -266,7 +228,6 @@ func TestWalletManager_Transfer(t *testing.T) {
 	db.All(&addrs)
 
 	var sender *openwallet.Address
-	//key, _ := wm.getKeys(keystore, addrs[0])
 	for _, a := range addrs {
 		if a.Address == "hx2006f91de4cd0b9ce74cb00a06e66eaeb44c70b1" {
 			sender = a
@@ -332,3 +293,4 @@ func Test_timeFormat(t *testing.T) {
 	 }
 	 t.Log(ret)
  }
+

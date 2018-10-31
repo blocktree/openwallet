@@ -32,7 +32,6 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
 	"encoding/base64"
-	"github.com/go-ethereum/common/hexutil"
 	"github.com/blocktree/OpenWallet/crypto/sha3"
 	//"github.com/go-ethereum/crypto/secp256k1"
 	"github.com/blocktree/go-OWCrypt"
@@ -128,10 +127,10 @@ func (wm *WalletManager) CalculateTxHash(from, to string, value float64, stepLim
 		str_tmp += "."
 		str_tmp += tx_temp[key].(string)
 	}
-	log.Info(str_tmp)
+	//log.Info(str_tmp)
 
 	hash := sha3.Sum256([]byte(str_tmp)[:])
-	log.Info(hexutil.Encode(hash[:]))
+	//log.Info(hexutil.Encode(hash[:]))
 
 	return tx_temp, hash
 }
@@ -143,10 +142,10 @@ func (wm *WalletManager) Transfer(sk []byte, from, to string, value float64, ste
 	if err != nil {
 		return "", err
 	}
-	log.Info(sig)
+	//log.Info(sig)
 
 	tx["signature"] = sig
-	log.Info(tx)
+	//log.Info(tx)
 
 	ret, err := wm.WalletClient.Call_icx_sendTransaction(tx)
 	if err != nil {
@@ -598,16 +597,20 @@ func (wm *WalletManager) summaryWallet(wallet *openwallet.Wallet, password strin
 			log.Error(err)
 			continue
 		}
-		decimal_balance := decimal.RequireFromString(b).Div(coinDecimal)
+		decimal_balance := decimal.RequireFromString(b)
+		log.Info(decimal_balance.StringFixed(8))
 
 		// 将该地址多余额减去矿工费后，全部转到汇总地址
 		//coin 交易不带data的固定手续费是0.001 ICX
-		fee := decimal.NewFromFloat(0.001)
-		amount, _ := decimal_balance.Sub(fee).Float64()
-		if decimal_balance.GreaterThan(wm.Config.Threshold) {
-			txid, _ := wm.Transfer(k.PrivateKey, a.Address, wm.Config.SumAddress, amount, wm.Config.StepLimit, 100)
+		//计算的时候要减去手续费，因为decimal计算精度丢失问题，导致0.001手续费设置为0.001111
+		//防止出现这种错误[-32600]Out of balance: balance(943999998799999940) < value(942999998800000000) + fee(1000000000000000）
+		fee := decimal.NewFromFloat(0.001111)
+		amount := decimal_balance.Sub(fee)
+		if amount.GreaterThan(wm.Config.Threshold) {
+			value, _ := amount.Float64()
+			txid, _ := wm.Transfer(k.PrivateKey, a.Address, wm.Config.SumAddress, value, wm.Config.StepLimit, 100)
 
-			log.Std.Info("summary form address:%s, to address:%s, amount:%d, txid:%s\n", k.Address, wm.Config.SumAddress, b, txid)
+			log.Std.Info("summary form address:%s, to address:%s, amount:%s, txid:%s\n", k.Address, wm.Config.SumAddress, amount.StringFixed(8), txid)
 		}
 	}
 
@@ -697,7 +700,7 @@ func (wm *WalletManager) LoadConfig() error {
 	}
 
 	wm.Config.ServerAPI = c.String("apiUrl")
-	wm.Config.Threshold = (decimal.RequireFromString(c.String("threshold"))).Mul(coinDecimal)
+	wm.Config.Threshold = decimal.RequireFromString(c.String("threshold"))
 	wm.Config.SumAddress = c.String("sumAddress")
 	wm.Config.StepLimit, _ = c.Int64("stepLimit")
 
@@ -708,7 +711,7 @@ func (wm *WalletManager) LoadConfig() error {
 
 	wm.Config.CycleSeconds, _ = time.ParseDuration(cyclesec)
 
-	wm.WalletClient = NewClient(wm.Config.ServerAPI,true)
+	wm.WalletClient = NewClient(wm.Config.ServerAPI,false)
 
 	return nil
 }
