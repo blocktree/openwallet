@@ -39,11 +39,20 @@ func TestFloat() {
 }
 
 func TestConvertEthStringToWei() {
-	amount, err := ethereum.ConvertEthStringToWei("123")
+	amount, err := ethereum.ConvertEthStringToWei("123.5678")
 	if err != nil {
 		fmt.Println("convert eth string to wei, err=", err)
 		return
 	}
 	//fmt.Println("amount:", amount)
 	fmt.Println("amount:", "0x"+amount.Text(16))
+}
+
+func TestConverWeiStringToEthDecimal() {
+	de, err := ethereum.ConverWeiStringToEthDecimal("123567800000000000000")
+	if err != nil {
+		fmt.Println("conver to eth decimal failed, err=", err)
+		return
+	}
+	fmt.Println("de:", de)
 }
