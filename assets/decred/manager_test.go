@@ -261,11 +261,12 @@ func TestListUnspent(t *testing.T) {
 	for _, u := range utxos {
 		t.Logf("ListUnspent: %v\n", u)
 	}
-}
+
+	}
 
 func TestGetAddressesFromLocalDB(t *testing.T) {
 	//wallet, _ := tw.GetWalletInfo("W3K2C9q4tM4PDiRQfwz3FbsZcH2AMfpqH6")
-	addresses, err := tw.GetAddressesFromLocalDB("W1xmuWQv2qCubnjS22zaVTyJ3XZ5JyNjnW", false,0, -1)
+	addresses, err := tw.GetAddressesFromLocalDB("W12LP1CJ71vss8SRt6SmdacEhd4yofFGSD", false,0, -1)
 	if err != nil {
 		t.Errorf("GetAddressesFromLocalDB failed unexpected error: %v\n", err)
 		return
@@ -273,7 +274,9 @@ func TestGetAddressesFromLocalDB(t *testing.T) {
 	//db, _ := wallet.OpenDB()
 	//defer db.Close()
 	for i, a := range addresses {
-		t.Logf("GetAddressesFromLocalDB address[%d] = %v\n", i, a)
+		//if a.Address == "DsWWkKgb5135faUtXa8bKAYzLuxzqZRxZJY" {
+			t.Logf("GetAddressesFromLocalDB address[%d] = %v\n", i, a)
+		//}
 		//a.WatchOnly = false
 		//db.Save(a)
 	}
@@ -345,7 +348,7 @@ func TestDumpprivkey(t *testing.T) {
 	}
 
 	request := []interface{}{
-		"Dsnz4MPERzcPjVWoA6iyGVJKmGEh1ZeBkKi",
+		"DsWWkKgb5135faUtXa8bKAYzLuxzqZRxZJY",
 	}
 
 	result, err := tw.walletClient.Call("dumpprivkey", request)
@@ -365,7 +368,7 @@ func TestGetreive(t *testing.T) {
 	}
 
 	request := []interface{}{
-		"Dsnz4MPERzcPjVWoA6iyGVJKmGEh1ZeBkKi",
+		"DsWWkKgb5135faUtXa8bKAYzLuxzqZRxZJY",
 		2,
 	}
 
@@ -379,7 +382,8 @@ func TestGetreive(t *testing.T) {
 }
 
 func TestListUnspentFromLocalDB(t *testing.T) {
-	utxos, err := tw.ListUnspentFromLocalDB("W1xmuWQv2qCubnjS22zaVTyJ3XZ5JyNjnW")
+	tw.RebuildWalletUnspent("W12LP1CJ71vss8SRt6SmdacEhd4yofFGSD")
+	utxos, err := tw.ListUnspentFromLocalDB("W12LP1CJ71vss8SRt6SmdacEhd4yofFGSD")
 	if err != nil {
 		t.Errorf("ListUnspentFromLocalDB failed unexpected error: %v\n", err)
 		return
@@ -434,14 +438,14 @@ func TestEstimateFee(t *testing.T) {
 func TestSendTransaction(t *testing.T) {
 
 	sends := []string{
-		"Dsnz4MPERzcPjVWoA6iyGVJKmGEh1ZeBkKi",
+		"DspJSJBq5qhnpcTgNnprWAhUap9sft6Bpoh",
 	}
 
-	tw.RebuildWalletUnspent("W7ANJPR91CjFhA648fSWaPAPWWWUGY4ffQ")
+	tw.RebuildWalletUnspent("W12LP1CJ71vss8SRt6SmdacEhd4yofFGSD")
 
 	for _, to := range sends {
 
-		txIDs, err := tw.SendTransaction("W7ANJPR91CjFhA648fSWaPAPWWWUGY4ffQ", to, decimal.NewFromFloat(0.8), "jinxin", true)
+		txIDs, err := tw.SendTransaction("W12LP1CJ71vss8SRt6SmdacEhd4yofFGSD", to, decimal.NewFromFloat(0.1), "jinxin", true)
 
 		if err != nil {
 			t.Errorf("SendTransaction failed unexpected error: %v\n", err)
@@ -526,3 +530,4 @@ func TestStartNode(t *testing.T) {
 		t.Errorf("startNode failed unexpected error: %v\n", err)
 	}
 }
+

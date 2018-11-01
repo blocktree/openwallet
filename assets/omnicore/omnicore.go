@@ -13,39 +13,34 @@
  * GNU Lesser General Public License for more details.
  */
 
-package qtum
+package omnicore
 
 import (
 	"errors"
 	"fmt"
-	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/console"
-	"github.com/blocktree/OpenWallet/logger"
-	"time"
-
-	//"github.com/blocktree/OpenWallet/timer"
-	"github.com/shopspring/decimal"
 	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/OpenWallet/logger"
+	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/OpenWallet/timer"
+	"github.com/shopspring/decimal"
 	"path/filepath"
 	"strings"
-	"github.com/blocktree/OpenWallet/timer"
-	"github.com/blocktree/OpenWallet/openwallet"
 )
-
 
 //初始化配置流程
 func (wm *WalletManager) InitConfigFlow() error {
 
-	wm.config.initConfig()
-	file := filepath.Join(wm.config.configFilePath, wm.config.configFileName)
-	fmt.Printf("You can run 'vim %s' to edit wallet's config.\n", file)
+	wm.Config.InitConfig()
+	file := filepath.Join(wm.Config.configFilePath, wm.Config.configFileName)
+	fmt.Printf("You can run 'vim %s' to edit wallet's Config.\n", file)
 	return nil
 }
 
 //查看配置信息
 func (wm *WalletManager) ShowConfig() error {
-	return wm.config.printConfig()
+	return wm.Config.PrintConfig()
 }
 
 //创建钱包流程
@@ -59,7 +54,7 @@ func (wm *WalletManager) CreateWalletFlow() error {
 	)
 
 	//先加载是否有配置文件
-	err = wm.loadConfig()
+	err = wm.LoadConfig()
 	if err != nil {
 		return err
 	}
@@ -86,7 +81,7 @@ func (wm *WalletManager) CreateWalletFlow() error {
 func (wm *WalletManager) CreateAddressFlow() error {
 
 	//先加载是否有配置文件
-	err := wm.loadConfig()
+	err := wm.LoadConfig()
 	if err != nil {
 		return err
 	}
@@ -164,19 +159,15 @@ func (wm *WalletManager) SummaryFollow() error {
 	)
 
 	//先加载是否有配置文件
-	err := wm.loadConfig()
+	err := wm.LoadConfig()
 	if err != nil {
 		return err
 	}
 
 	//判断汇总地址是否存在
-	if len(wm.config.sumAddress) == 0 {
+	if len(wm.Config.SumAddress) == 0 {
 
 		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", Symbol))
-	}
-
-	if wm.config.cycleSeconds == 0 {
-		wm.config.cycleSeconds = 30 * 1000
 	}
 
 	//查询所有钱包信息
@@ -239,14 +230,14 @@ func (wm *WalletManager) SummaryFollow() error {
 		}
 	}
 
-	if len(wm.walletsInSum) == 0 {
+	if len(wm.WalletsInSum) == 0 {
 		return errors.New("Not summary wallets to register! ")
 	}
 
-	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", wm.config.cycleSeconds.Seconds())
+	fmt.Printf("The timer for summary has started. Execute by every %v seconds.\n", wm.Config.CycleSeconds.Seconds())
 
 	//启动钱包汇总程序
-	sumTimer := timer.NewTask(wm.config.cycleSeconds, wm.SummaryWallets)
+	sumTimer := timer.NewTask(wm.Config.CycleSeconds, wm.SummaryWallets)
 	sumTimer.Start()
 
 	<-endRunning
@@ -263,7 +254,7 @@ func (wm *WalletManager) BackupWalletFlow() error {
 	)
 
 	//先加载是否有配置文件
-	err = wm.loadConfig()
+	err = wm.LoadConfig()
 	if err != nil {
 		return err
 	}
@@ -306,7 +297,7 @@ func (wm *WalletManager) BackupWalletFlow() error {
 func (wm *WalletManager) TransferFlow() error {
 
 	//先加载是否有配置文件
-	err := wm.loadConfig()
+	err := wm.LoadConfig()
 	if err != nil {
 		return err
 	}
@@ -368,12 +359,6 @@ func (wm *WalletManager) TransferFlow() error {
 		return err
 	}
 
-	//txID, err := wm.SendToAddress(receiver, amount,"", false,password)
-
-	//if err != nil {
-	//	return err
-	//}
-
 	fmt.Printf("Send transaction successfully, TXID：%s\n", txID)
 
 	return nil
@@ -382,9 +367,8 @@ func (wm *WalletManager) TransferFlow() error {
 //GetWalletList 获取钱包列表
 func (wm *WalletManager) GetWalletList() error {
 
-
 	//先加载是否有配置文件
-	err := wm.loadConfig()
+	err := wm.LoadConfig()
 	if err != nil {
 		return err
 	}
@@ -414,7 +398,7 @@ func (wm *WalletManager) RestoreWalletFlow() error {
 	)
 
 	//先加载是否有配置文件
-	err = wm.loadConfig()
+	err = wm.LoadConfig()
 	if err != nil {
 		return err
 	}
@@ -443,7 +427,6 @@ func (wm *WalletManager) RestoreWalletFlow() error {
 	fmt.Printf("Wallet restoring, please wait a moment...\n")
 	err = wm.RestoreWallet(keyFile, dbFile, datFile, password)
 	if err != nil {
-		fmt.Println("Restore wallet unsuccessfully, please copy the wallet.db to the path: /home/zbuser/.qtum/")
 		return err
 	}
 
@@ -453,7 +436,6 @@ func (wm *WalletManager) RestoreWalletFlow() error {
 	return nil
 
 }
-
 
 //InstallNode 安装节点
 func (wm *WalletManager) InstallNodeFlow() error {
@@ -489,30 +471,30 @@ func (wm *WalletManager) ShowNodeInfo() error {
 
 //SetConfigFlow 初始化配置流程
 func (wm *WalletManager) SetConfigFlow(subCmd string) error {
-	file := wm.config.configFilePath + wm.config.configFileName
-	fmt.Printf("You can run 'vim %s' to edit %s config.\n", file, subCmd)
+	file := wm.Config.configFilePath + wm.Config.configFileName
+	fmt.Printf("You can run 'vim %s' to edit %s Config.\n", file, subCmd)
 	return nil
 }
 
 //ShowConfigInfo 查看配置信息
 func (wm *WalletManager) ShowConfigInfo(subCmd string) error {
-	wm.config.printConfig()
+	wm.Config.PrintConfig()
 	return nil
 }
 
 //CurveType 曲线类型
 func (wm *WalletManager) CurveType() uint32 {
-	return wm.config.CurveType
+	return wm.Config.CurveType
 }
 
 //FullName 币种全名
 func (wm *WalletManager) FullName() string {
-	return "QTUM"
+	return "Bitcoin"
 }
 
 //Symbol 币种标识
 func (wm *WalletManager) Symbol() string {
-	return wm.config.symbol
+	return wm.Config.Symbol
 }
 
 //小数位精度
@@ -526,7 +508,7 @@ func (wm *WalletManager) GetAddressDecode() openwallet.AddressDecoder {
 }
 
 //TransactionDecoder 交易单解析器
-func (wm *WalletManager) GetTransactionDecoder() openwallet.TransactionDecoder {
+func (wm *WalletManager) GetTransactionDecoder() *TransactionDecoder {
 	return wm.TxDecoder
 }
 
@@ -534,38 +516,32 @@ func (wm *WalletManager) GetTransactionDecoder() openwallet.TransactionDecoder {
 func (wm *WalletManager) GetBlockScanner() openwallet.BlockScanner {
 
 	//先加载是否有配置文件
-	//err := wm.loadConfig()
-	//if err != nil {
-	//	return nil
-	//}
+	err := wm.LoadConfig()
+	if err != nil {
+		return nil
+	}
 
-	return wm.blockscanner
-}
-
-func (this *WalletManager) GetSmartContractDecoder() openwallet.SmartContractDecoder {
-	return this.ContractDecoder
+	return wm.Blockscanner
 }
 
 //ImportWatchOnlyAddress 导入观测地址
 func (wm *WalletManager) ImportWatchOnlyAddress(address ...*openwallet.Address) error {
 
 	//先加载是否有配置文件
-	//err := wm.loadConfig()
-	//if err != nil {
-	//	return nil
-	//}
+	err := wm.LoadConfig()
+	if err != nil {
+		return nil
+	}
 
 	var (
 		failedIndex = make([]int, 0)
 	)
 
 	for i, a := range address {
-		log.Debug("start ImportAddress")
-		err := wm.ImportAddress(a)
+		err = wm.ImportAddress(a)
 		if err != nil {
 			failedIndex = append(failedIndex, i)
 		}
-		log.Debug("end ImportAddress")
 	}
 
 	//failed, err := wm.ImportMulti(address, nil, true)
@@ -597,10 +573,10 @@ func (wm *WalletManager) GetAddressWithBalance(address ...*openwallet.Address) e
 	)
 
 	//先加载是否有配置文件
-	//err := wm.loadConfig()
-	//if err != nil {
-	//	return err
-	//}
+	err := wm.LoadConfig()
+	if err != nil {
+		return err
+	}
 
 
 	for _, address := range address {
@@ -626,42 +602,4 @@ func (wm *WalletManager) GetAddressWithBalance(address ...*openwallet.Address) e
 
 	return nil
 
-}
-
-
-//LoadAssetsConfig 加载外部配置
-func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
-
-	wm.config.RPCServerType, _ = c.Int("rpcServerType")
-	wm.config.serverAPI = c.String("apiURL")
-	wm.config.threshold, _ = decimal.NewFromString(c.String("threshold"))
-	wm.config.sumAddress = c.String("sumAddress")
-	wm.config.rpcUser = c.String("rpcUser")
-	wm.config.rpcPassword = c.String("rpcPassword")
-	wm.config.nodeInstallPath = c.String("nodeInstallPath")
-	wm.config.isTestNet, _ = c.Bool("isTestNet")
-	if wm.config.isTestNet {
-		wm.config.walletDataPath = c.String("testNetDataPath")
-	} else {
-		wm.config.walletDataPath = c.String("mainNetDataPath")
-	}
-
-	cyclesec := c.String("cycleSeconds")
-
-	wm.config.cycleSeconds, _ = time.ParseDuration(cyclesec)
-
-	token := basicAuth(wm.config.rpcUser, wm.config.rpcPassword)
-
-	if wm.config.RPCServerType == RPCServerCore {
-		wm.walletClient = NewClient(wm.config.serverAPI, token, false)
-	} else {
-		wm.ExplorerClient = NewExplorer(wm.config.serverAPI, false)
-	}
-
-	return nil
-}
-
-//InitAssetsConfig 初始化默认配置
-func (wm *WalletManager) InitAssetsConfig() (config.Configer, error) {
-	return config.NewConfigData("ini", []byte(wm.config.defaultConfig))
 }

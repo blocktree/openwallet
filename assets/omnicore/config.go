@@ -13,16 +13,17 @@
  * GNU Lesser General Public License for more details.
  */
 
-package icon
+package omnicore
 
 import (
-	"github.com/blocktree/go-OWCrypt"
-	"github.com/shopspring/decimal"
-	"time"
+	"fmt"
 	"path/filepath"
 	"strings"
-	"fmt"
+	"time"
+
 	"github.com/blocktree/OpenWallet/common/file"
+	"github.com/shopspring/decimal"
+	"github.com/blocktree/go-OWCrypt"
 )
 
 /*
@@ -38,16 +39,25 @@ import (
 
 const (
 	//币种
-	Symbol = "ICX"
-	MasterKey = "Icon seed"
+	Symbol    = "USDT"
+	MasterKey = "omnicore seed"
 	CurveType = owcrypt.ECC_CURVE_SECP256K1
 )
 
+
 type WalletConfig struct {
+
 	//币种
 	Symbol    string
 	MasterKey string
 
+	//RPC认证账户名
+	RpcUser string
+	//RPC认证账户密码
+	RpcPassword string
+	//证书目录
+	CertsDir string
+	//钥匙备份路径
 	keyDir string
 	//地址导出路径
 	addressDir string
@@ -55,8 +65,16 @@ type WalletConfig struct {
 	configFilePath string
 	//配置文件名
 	configFileName string
+	//rpc证书
+	CertFileName string
+	//区块链数据文件
+	BlockchainFile string
 	//是否测试网络
 	IsTestNet bool
+	// 核心钱包是否只做监听
+	CoreWalletWatchOnly bool
+	//最大的输入数量
+	MaxTxInputs int
 	//本地数据库文件路径
 	dbPath string
 	//备份路径
@@ -77,17 +95,31 @@ type WalletConfig struct {
 	DefaultConfig string
 	//曲线类型
 	CurveType uint32
-	//stepLimit 矿工费上限
-	StepLimit int64
+	//小数位长度
+	CoinDecimal decimal.Decimal
+	//支付手续费地址
+	FeeAdddress string
+	//资产ID
+	PropertyID int64
+	//debug
+	Debug    bool
 }
 
 func NewConfig(symbol string, masterKey string) *WalletConfig {
+
 	c := WalletConfig{}
 
 	//币种
 	c.Symbol = symbol
 	c.MasterKey = masterKey
 	c.CurveType = CurveType
+
+	//RPC认证账户名
+	c.RpcUser = ""
+	//RPC认证账户密码
+	c.RpcPassword = ""
+	//证书目录
+	c.CertsDir = filepath.Join("data", strings.ToLower(c.Symbol), "certs")
 	//钥匙备份路径
 	c.keyDir = filepath.Join("data", strings.ToLower(c.Symbol), "key")
 	//地址导出路径
@@ -98,15 +130,22 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	c.configFilePath = filepath.Join("conf")
 	//配置文件名
 	c.configFileName = c.Symbol + ".ini"
+	//rpc证书
+	c.CertFileName = "rpc.cert"
+	//区块链数据文件
+	c.BlockchainFile = "blockchain.db"
 	//是否测试网络
 	c.IsTestNet = true
+	// 核心钱包是否只做监听
+	c.CoreWalletWatchOnly = true
+	//最大的输入数量
+	c.MaxTxInputs = 50
 	//本地数据库文件路径
 	c.dbPath = filepath.Join("data", strings.ToLower(c.Symbol), "db")
 	//备份路径
 	c.backupDir = filepath.Join("data", strings.ToLower(c.Symbol), "backup")
 	//钱包服务API
-	c.ServerAPI = ""
-	c.StepLimit = 100000
+	c.ServerAPI = "http://127.0.0.1:10000"
 	//钱包安装的路径
 	c.NodeInstallPath = ""
 	//钱包数据文件目录
@@ -117,6 +156,12 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	c.SumAddress = ""
 	//汇总执行间隔时间
 	c.CycleSeconds = time.Second * 10
+	//小数位长度
+	c.CoinDecimal = decimal.NewFromFloat(100000000)
+	//手续费地址
+	c.FeeAdddress = ""
+	//资产ID  usdt 资产ID为31
+	c.PropertyID = 2
 	//默认配置内容
 	c.DefaultConfig = `
 # start node command
@@ -125,28 +170,58 @@ startNodeCMD = ""
 stopNodeCMD = ""
 # node install path
 nodeInstallPath = ""
-# node api url
-apiUrl = ""
-# transaction max step limit, 
-stepLimit = 100000
+# mainnet data path
+mainNetDataPath = ""
+# testnet data path
+testNetDataPath = ""
+# RPC api url
+serverAPI = ""
+# RPC Authentication Username
+rpcUser = ""
+# RPC Authentication Password
+rpcPassword = ""
+# Is network test?
+isTestNet = false
 # the safe address that wallet send money to.
 sumAddress = ""
 # when wallet's balance is over this value, the wallet willl send money to [sumAddress]
-#unit is ICX
 threshold = ""
-# summary task timer cycle time, sample: 1h, 1h1m , 2m, 30s, 3m20s etc...
+# summary task timer cycle time, sample: 1m , 30s, 3m20s etc
 cycleSeconds = ""
+#fee address
+feeAddress = ""
+debug = ""
 `
+
 	return &c
 }
 
 //printConfig Print config information
 func (wc *WalletConfig) PrintConfig() error {
+
 	wc.InitConfig()
 	//读取配置
 	absFile := filepath.Join(wc.configFilePath, wc.configFileName)
+	//apiURL := c.String("apiURL")
+	//walletPath := c.String("walletPath")
+	//threshold := c.String("threshold")
+	//minSendAmount := c.String("minSendAmount")
+	//minFees := c.String("minFees")
+	//sumAddress := c.String("sumAddress")
+	//isTestNet, _ := c.Bool("isTestNet")
 
 	fmt.Printf("-----------------------------------------------------------\n")
+	//fmt.Printf("Wallet API URL: %s\n", apiURL)
+	//fmt.Printf("Wallet Data FilePath: %s\n", walletPath)
+	//fmt.Printf("Summary Address: %s\n", sumAddress)
+	//fmt.Printf("Summary Threshold: %s\n", threshold)
+	//fmt.Printf("Min Send Amount: %s\n", minSendAmount)
+	//fmt.Printf("Transfer Fees: %s\n", minFees)
+	//if isTestNet {
+	//	fmt.Printf("Network: TestNet\n")
+	//} else {
+	//	fmt.Printf("Network: MainNet\n")
+	//}
 	file.PrintFile(absFile)
 	fmt.Printf("-----------------------------------------------------------\n")
 
@@ -156,6 +231,7 @@ func (wc *WalletConfig) PrintConfig() error {
 
 //initConfig 初始化配置文件
 func (wc *WalletConfig) InitConfig() {
+
 	//读取配置
 	absFile := filepath.Join(wc.configFilePath, wc.configFileName)
 	if !file.Exists(absFile) {

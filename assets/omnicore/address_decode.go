@@ -13,13 +13,11 @@
  * GNU Lesser General Public License for more details.
  */
 
-package qtum
+package omnicore
 
 import (
-	"encoding/hex"
 	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
 	"github.com/blocktree/go-OWCrypt"
-	"strings"
 )
 
 func init() {
@@ -35,23 +33,14 @@ func init() {
 //	}
 //)
 
-type addressDecoder struct {
-	wm *WalletManager //钱包管理者
-}
-
-//NewAddressDecoder 地址解析器
-func NewAddressDecoder(wm *WalletManager) *addressDecoder {
-	decoder := addressDecoder{}
-	decoder.wm = wm
-	return &decoder
-}
+type addressDecoder struct{}
 
 //PrivateKeyToWIF 私钥转WIF
 func (decoder *addressDecoder) PrivateKeyToWIF(priv []byte, isTestnet bool) (string, error) {
 
-	cfg := addressEncoder.QTUM_mainnetPrivateWIFCompressed
-	if decoder.wm.config.isTestNet {
-		cfg = addressEncoder.QTUM_testnetPrivateWIFCompressed
+	cfg := addressEncoder.BTC_mainnetPrivateWIFCompressed
+	if isTestnet {
+		cfg = addressEncoder.BTC_testnetPrivateWIFCompressed
 	}
 
 	//privateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), priv)
@@ -69,9 +58,9 @@ func (decoder *addressDecoder) PrivateKeyToWIF(priv []byte, isTestnet bool) (str
 //PublicKeyToAddress 公钥转地址
 func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (string, error) {
 
-	cfg := addressEncoder.QTUM_mainnetAddressP2PKH
-	if decoder.wm.config.isTestNet {
-		cfg = addressEncoder.QTUM_testnetAddressP2PKH
+	cfg := addressEncoder.BTC_mainnetAddressP2PKH
+	if isTestnet {
+		cfg = addressEncoder.BTC_testnetAddressP2PKH
 	}
 
 	//pkHash := btcutil.Hash160(pub)
@@ -91,9 +80,9 @@ func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (s
 //RedeemScriptToAddress 多重签名赎回脚本转地址
 func (decoder *addressDecoder) RedeemScriptToAddress(pubs [][]byte, required uint64, isTestnet bool) (string, error) {
 
-	cfg := addressEncoder.QTUM_mainnetAddressP2SH
-	if decoder.wm.config.isTestNet {
-		cfg = addressEncoder.QTUM_testnetAddressP2SH
+	cfg := addressEncoder.BTC_mainnetAddressP2SH
+	if isTestnet {
+		cfg = addressEncoder.BTC_testnetAddressP2SH
 	}
 
 	redeemScript := make([]byte, 0)
@@ -113,9 +102,9 @@ func (decoder *addressDecoder) RedeemScriptToAddress(pubs [][]byte, required uin
 //WIFToPrivateKey WIF转私钥
 func (decoder *addressDecoder) WIFToPrivateKey(wif string, isTestnet bool) ([]byte, error) {
 
-	cfg := addressEncoder.QTUM_mainnetPrivateWIFCompressed
-	if decoder.wm.config.isTestNet {
-		cfg = addressEncoder.QTUM_testnetPrivateWIFCompressed
+	cfg := addressEncoder.BTC_mainnetPrivateWIFCompressed
+	if isTestnet {
+		cfg = addressEncoder.BTC_testnetPrivateWIFCompressed
 	}
 
 	priv, err := addressEncoder.AddressDecode(wif, cfg)
@@ -124,24 +113,5 @@ func (decoder *addressDecoder) WIFToPrivateKey(wif string, isTestnet bool) ([]by
 	}
 
 	return priv, err
-
-}
-
-//HashAddressToBaseAddress 哈希地址转编码地址
-func HashAddressToBaseAddress(token string, isTestnet bool) string {
-	token = strings.TrimPrefix(token, "0x")
-	cfg := addressEncoder.QTUM_mainnetAddressP2PKH
-	if isTestnet {
-		cfg = addressEncoder.QTUM_testnetAddressP2PKH
-	}
-
-	hash, err := hex.DecodeString(token)
-	if err != nil {
-		return ""
-	}
-
-	tokenAddressBase := addressEncoder.AddressEncode(hash, cfg)
-
-	return tokenAddressBase
 
 }

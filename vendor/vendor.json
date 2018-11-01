@@ -292,6 +292,12 @@
 			"revisionTime": "2018-07-31T10:42:41Z"
 		},
 		{
+			"checksumSHA1": "1jymACj7DYHqw/tFweGew0wnTYo=",
+			"path": "github.com/HcashOrg/hcd/hcutil/base58",
+			"revision": "66ea42c6c0264eccdfc9e4956f9ae75e4ef2f7da",
+			"revisionTime": "2018-08-03T16:04:06Z"
+		},
+		{
 			"checksumSHA1": "uMz/DFrUf8nqR0YmdfUKlw0RCw0=",
 			"path": "github.com/HcashOrg/hcd/wire",
 			"revision": "3e4cce8e3779e03de2996b7f68ceca145024b3a7",
@@ -544,6 +550,12 @@
 			"path": "github.com/blocktree/go-OWCBasedFuncs/btcLikeTxDriver",
 			"revision": "94bb4af06b71939f4d56a740fac32f7eec0dd7c1",
 			"revisionTime": "2018-09-13T10:02:33Z"
+		},
+		{
+			"checksumSHA1": "RtOlFvOi92XbrTEpxBBsSf2ckiE=",
+			"path": "github.com/blocktree/go-OWCBasedFuncs/btcTransaction",
+			"revision": "2a61c7e936461b5737003e02136d85b37005dedc",
+			"revisionTime": "2018-10-25T03:25:22Z"
 		},
 		{
 			"checksumSHA1": "zQB2fofDApInWPc4CWVeeEZ3rro=",

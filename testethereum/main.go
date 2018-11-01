@@ -87,7 +87,7 @@ func main() {
 	//tech.TestInitCongfig2345()
 
 	//tech.TestWalletLog()
-	tech.TestTokenDecode()
+	//tech.TestTokenDecode()
 	//tech.TestTokenBalance()
 
 	//tech.TestWalletManager_SubmitTokenTransaction()
@@ -95,6 +95,7 @@ func main() {
 	//tech.DumpBlockScanDb()
 	//tech.TestScanBlockByHeight()
 	//tech.TestGetBalanceByAddress()
+	tech.TestGetTxByHash()
 
 	//tech.TestConvertEthStringToWei()
 	//tech.TestConverWeiStringToEthDecimal()

@@ -364,6 +364,17 @@ func TestGetBalanceByAddress() {
 	log.Debugf("balance list:%v", string(objStr))
 }
 
+func TestGetTxByHash() {
+	manager, _ := GetEthWalletManager()
+	tx, err := manager.WalletClient.EthGetTransactionByHash("0x5b1bf99b02d3e8463aa03dde28bea3b6d04be55d098dbe67a49e715b8c3be313")
+	if err != nil {
+		log.Errorf("eth get transaction by hash failed, err=%v", err)
+		return
+	}
+	objStr, _ := json.MarshalIndent(tx, "", " ")
+	log.Debugf("tx:%v", string(objStr))
+}
+
 func TestTokenDecode() {
 	manager, _ := GetEthWalletManager()
 

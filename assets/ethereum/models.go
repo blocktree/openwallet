@@ -29,6 +29,7 @@ import (
 	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/logger"
+	"github.com/blocktree/OpenWallet/openwallet"
 	owcrypt "github.com/blocktree/go-OWCrypt"
 	"github.com/bytom/common"
 )
@@ -175,12 +176,8 @@ type BlockTransaction struct {
 	Data             string `json:"input"`
 	TransactionIndex string `json:"transactionIndex"`
 	Timestamp        string `json:"timestamp"`
-	FromSourceKey    string //transaction scanning 的时候对其进行赋值
 	BlockHeight      uint64 //transaction scanning 的时候对其进行赋值
-	ToSourceKey      string //transaction scanning 的时候对其进行赋值
-	TokenFrom        string //transaction scanning 的时候对其进行赋值, erc20代币转账有效
-	TokenTo          string //transaction scanning 的时候对其进行赋值, erc20代币转账有效
-	TokenValue       string //transaction scanning 的时候对其进行赋值, erc20代币转账有效
+	filterFunc       openwallet.BlockScanAddressFunc
 }
 
 func (this *BlockTransaction) GetAmountEthString() (string, error) {
