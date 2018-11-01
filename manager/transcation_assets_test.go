@@ -122,7 +122,7 @@ func TestTransfer_ERC20(t *testing.T) {
 		Decimals: 18,
 	}
 
-	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "50", "", &contract)
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "1", "", &contract)
 	if err != nil {
 		return
 	}
