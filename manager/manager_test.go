@@ -155,8 +155,8 @@ func TestWalletManager_GetAssetsAccountList(t *testing.T) {
 
 func TestWalletManager_CreateAddress(t *testing.T) {
 
-	walletID := "WGWfGtgo8uLxVKTWoWkzuoPELMtehb9Vda"
-	accountID := "6SVDyi7dgcJHG7V2DP2ZJUvzbRyr2PjTqFxym8pEEBrv"
+	walletID := "VzQTLspxvbXSmfRGcN6LJVB8otYhJwAGWc"
+	accountID := "BjLtC1YN4sWQKzYHtNPdvx3D8yVfXmbyeCQTMHv4JUGG"
 	address, err := tm.CreateAddress(testApp, walletID, accountID, 5)
 	if err != nil {
 		log.Error(err)
@@ -165,7 +165,7 @@ func TestWalletManager_CreateAddress(t *testing.T) {
 
 	log.Info("address:", address)
 
-	time.Sleep(30 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	tm.CloseDB(testApp)
 }

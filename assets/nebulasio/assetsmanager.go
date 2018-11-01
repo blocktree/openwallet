@@ -13,8 +13,8 @@ func (wm *WalletManager) ImportWatchOnlyAddress(address ...*openwallet.Address) 
 
 //GetAddressWithBalance 获取多个地址余额，使用查账户和单地址
 func (wm *WalletManager) GetAddressWithBalance(address ...*openwallet.Address) error {
-
 	for _,addr := range address{
+		//fmt.Printf("%v's balance=%v\n",addr.Address,addr.Balance)
 		balance,err := wm.WalletClient.CallGetaccountstate(addr.Address,"balance")
 		if err != nil{
 			return err

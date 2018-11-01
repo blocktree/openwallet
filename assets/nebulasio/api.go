@@ -617,22 +617,4 @@ func (c *Client) CallGetestimateGas( parameter * estimateGasParameter ) (*gjson.
 	return &result, nil
 }
 
-//确定nonce值
-func (wm *WalletManager) ConfirmTxdecodeNonce(addr string,nonce_DB string) uint64{
 
-	var nonce_submit uint64
-	nonce_get,_ := wm.WalletClient.CallGetaccountstate(addr,"nonce")
-	nonce_chain ,_ := strconv.ParseUint(nonce_get,10,64) 	//当前链上nonce值
-	nonce_db,_ := strconv.ParseUint(nonce_DB,10,64)	//本地记录的nonce值
-
-	//如果本地nonce_db > 链上nonce,采用本地nonce,否则采用链上nonce
-	if nonce_db > nonce_chain{
-		nonce_submit = nonce_db + 1
-		//log.Std.Info("%s nonce_db=%d > nonce_chain=%d,Use nonce_db+1...",key.Address,nonce_db,nonce_chain)
-	}else{
-		nonce_submit = nonce_chain + 1
-		//log.Std.Info("%s nonce_db=%d <= nonce_chain=%d,Use nonce_chain+1...",key.Address,nonce_db,nonce_chain)
-	}
-
-	return nonce_submit
-}

@@ -179,17 +179,25 @@ func (decoder *TransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 		return err
 	}
 
+	var nonce uint64
 	//获取db记录的nonce并确认nonce值
-	nonce_db ,_:= wrapper.GetAddressExtParam(keySignList[0].Address.Address,decoder.wm.FullName())
-	nonce := decoder.wm.ConfirmTxdecodeNonce(keySignList[0].Address.Address,nonce_db)
-
+	nonce_db ,err := wrapper.GetAddressExtParam(keySignList[0].Address.Address,decoder.wm.FullName())
+	if err != nil{
+		return err
+	}
+	//判断nonce_db是否为空,为空则说明当前nonce是0
+	if nonce_db == nil{
+		nonce = 1
+	}else {
+		nonce = decoder.wm.ConfirmTxdecodeNonce(keySignList[0].Address.Address, nonce_db.(string))
+	}
 	//构建交易单
-	TX ,err = decoder.wm.CreateRawTransaction(keySignList[0].Address.Address, to, Gaslimit, gasprice.Mul(coinDecimal).String(), amount.String(),Nonce)
+	TX ,err = decoder.wm.CreateRawTransaction(keySignList[0].Address.Address, to, Gaslimit, gasprice.Mul(coinDecimal).String(), amount.String(),nonce)
 	if err != nil{
 		return err
 	}
 
-	keySignList[0].Nonce = strconv.FormatUint(Nonce,16)
+	keySignList[0].Nonce = strconv.FormatUint(nonce,10)
 	keySignList[0].Message = common.ToHex(TX.Hash[:])
 	signatureMap[rawTx.Account.AccountID] = keySignList
 
@@ -337,8 +345,8 @@ func (decoder *TransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet
 	if err != nil {
 		return err
 	}else{
-		//广播成功后记录nonce值到本地 wjq
-		fmt.Printf("Submit Success , Save nonce To AddressExtParam!\n")
+		//广播成功后记录nonce值到本地
+		//fmt.Printf("Submit Success , Save nonce To AddressExtParam!\n")
 		wrapper.SetAddressExtParam(rawTx.Signatures[rawTx.Account.AccountID][0].Address.Address, decoder.wm.FullName(), rawTx.Signatures[rawTx.Account.AccountID][0].Nonce)
 	}
 	rawTx.TxID = txid
