@@ -5,6 +5,7 @@ import (
 	owcrypt "github.com/blocktree/go-OWCrypt"
 )
 
+//AddressDecoder 地址解析器
 type AddressDecoder struct{}
 
 //PrivateKeyToWIF 私钥转WIF

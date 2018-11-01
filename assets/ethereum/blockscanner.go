@@ -331,6 +331,7 @@ func (this *ETHBLockScanner) newExtractDataNotify(height uint64, tx *BlockTransa
 //bitcoin 1M的区块链可以容纳3000笔交易，批量多线程处理，速度更快
 func (this *ETHBLockScanner) BatchExtractTransaction(txs []BlockTransaction) error {
 	for i := range txs {
+		txs[i].filterFunc = this.GetSourceKeyByAddress
 		extractResult, err := this.TransactionScanning(&txs[i])
 		if err != nil {
 			log.Errorf("transaction  failed, err=%v", err)
@@ -550,7 +551,7 @@ func (this *ETHBLockScanner) MakeSimpleToExtractData(tx *BlockTransaction) (stri
 	var sourceKey string
 	var exist bool
 	var extractDataList []*openwallet.TxExtractData
-	if sourceKey, exist = this.GetSourceKeyByAddress(tx.To); !exist {
+	if sourceKey, exist = tx.filterFunc(tx.To); !exist { //this.GetSourceKeyByAddress(tx.To)
 		return "", extractDataList, nil
 	}
 
@@ -714,7 +715,7 @@ func (this *ETHBLockScanner) MakeTokenToExtractData(tx *BlockTransaction, tokenE
 	var sourceKey string
 	var exist bool
 	var extractDataList []*openwallet.TxExtractData
-	if sourceKey, exist = this.GetSourceKeyByAddress(tokenEvent.TokenTo); !exist {
+	if sourceKey, exist = tx.filterFunc(tokenEvent.TokenTo); !exist { //this.GetSourceKeyByAddress(tokenEvent.TokenTo)
 		return "", extractDataList, nil
 	}
 	// fee, err := tx.GetTxFeeEthString()
@@ -795,7 +796,7 @@ func (this *ETHBLockScanner) MakeSimpleTxFromExtractData(tx *BlockTransaction) (
 	var sourceKey string
 	var exist bool
 	var extractDataList []*openwallet.TxExtractData
-	if sourceKey, exist = this.GetSourceKeyByAddress(tx.From); !exist {
+	if sourceKey, exist = tx.filterFunc(tx.From); !exist { //this.GetSourceKeyByAddress(tx.From)
 		return "", extractDataList, nil
 	}
 
@@ -883,7 +884,7 @@ func (this *ETHBLockScanner) MakeTokenTxFromExtractData(tx *BlockTransaction, to
 	var sourceKey string
 	var exist bool
 	var extractDataList []*openwallet.TxExtractData
-	if sourceKey, exist = this.GetSourceKeyByAddress(tokenEvent.TokenFrom); !exist {
+	if sourceKey, exist = tx.filterFunc(tokenEvent.TokenFrom); !exist { //this.GetSourceKeyByAddress(tokenEvent.TokenFrom)
 		return "", extractDataList, nil
 	}
 
@@ -994,6 +995,23 @@ func (this *ETHBLockScanner) MakeTokenTxFromExtractData(tx *BlockTransaction, to
 	extractDataList = append(extractDataList, feeExtractData)
 
 	return sourceKey, extractDataList, nil
+}
+
+//ExtractTransactionData 扫描一笔交易
+func (this *ETHBLockScanner) ExtractTransactionData(txid string, scanAddressFunc openwallet.BlockScanAddressFunc) (map[string][]*openwallet.TxExtractData, error) {
+	//result := bs.ExtractTransaction(0, "", txid, scanAddressFunc)
+	tx, err := this.wm.WalletClient.EthGetTransactionByHash(txid)
+	if err != nil {
+		log.Errorf("get transaction by has failed, err=%v", err)
+		return nil, fmt.Errorf("get transaction by has failed, err=%v", err)
+	}
+	tx.filterFunc = scanAddressFunc
+	result, err := this.TransactionScanning(tx)
+	if err != nil {
+		log.Errorf("scan transaction[%v] failed, err=%v", txid, err)
+		return nil, fmt.Errorf("scan transaction[%v] failed, err=%v", txid, err)
+	}
+	return result.extractData, nil
 }
 
 func (this *ETHBLockScanner) TransactionScanning(tx *BlockTransaction) (*ExtractResult, error) {

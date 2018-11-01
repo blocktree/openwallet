@@ -305,6 +305,35 @@ func (this *Client) ethGetBlockSpecByHash(blockHash string, showTransactionSpec 
 	return &ethBlock, nil
 }
 
+func (this *Client) EthGetTransactionByHash(txid string) (*BlockTransaction, error) {
+	params := []interface{}{
+		appendOxToAddress(txid),
+	}
+
+	var tx BlockTransaction
+
+	result, err := this.Call("eth_getTransactionByHash", 1, params)
+	if err != nil {
+		//errInfo := fmt.Sprintf("get block[%v] failed, err = %v \n", blockNumStr,  err)
+		log.Errorf("get transaction[%v] failed, err = %v \n", appendOxToAddress(txid), err)
+		return nil, err
+	}
+
+	if result.Type != gjson.JSON {
+		errInfo := fmt.Sprintf("get transaction[%v] result type failed, result type is %v", appendOxToAddress(txid), result.Type)
+		log.Errorf(errInfo)
+		return nil, errors.New(errInfo)
+	}
+
+	err = json.Unmarshal([]byte(result.Raw), &tx)
+	if err != nil {
+		openwLogger.Log.Errorf("decode json [%v] failed, err=%v", result.Raw, err)
+		return nil, err
+	}
+
+	return &tx, nil
+}
+
 func (this *Client) ethGetBlockSpecByBlockNum2(blockNum string, showTransactionSpec bool) (*EthBlock, error) {
 	params := []interface{}{
 		blockNum,
