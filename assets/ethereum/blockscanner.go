@@ -1016,6 +1016,14 @@ func (this *ETHBLockScanner) ExtractTransactionData(txid string, scanAddressFunc
 
 func (this *ETHBLockScanner) TransactionScanning(tx *BlockTransaction) (*ExtractResult, error) {
 	//txToNotify := make(map[string][]BlockTransaction)
+	if tx.BlockNumber == "" {
+		return &ExtractResult{
+			BlockHeight: 0,
+			TxID:        "",
+			extractData: make(map[string][]*openwallet.TxExtractData),
+			Success:     true,
+		}, nil
+	}
 
 	blockHeight, err := ConvertToUint64(tx.BlockNumber, 16)
 	if err != nil {
