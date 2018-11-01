@@ -191,7 +191,7 @@ func TestWalletManager_TransferFlow(t *testing.T) {
 func TestWalletManager_CalculateTxHash(t *testing.T) {
 	from := "hxb12addba58c934ff924aa87ee65d06ee20f89eb8"
 	to := "hxb12addba58c934ff924aa87ee65d06ee20f89eb8"
-	value := 0.1
+	value := "0.1"
 
 	_, hash := wm.CalculateTxHash(from, to, value, 1000000, 10)
 	t.Log(hexutil.Encode(hash[:]))
@@ -241,7 +241,7 @@ func TestWalletManager_Transfer(t *testing.T) {
 
 	from := "hx2006f91de4cd0b9ce74cb00a06e66eaeb44c70b1"
 	to := "hxb12addba58c934ff924aa87ee65d06ee20f89eb8"
-	value := 0.02
+	value := "0.02"
 
 	ret, err := wm.Transfer(key.PrivateKey, from, to, value, 100000, 100)
 	if err != nil {
@@ -294,3 +294,9 @@ func Test_timeFormat(t *testing.T) {
 	 t.Log(ret)
  }
 
+func Test_Decimal(t *testing.T) {
+	a := decimal.RequireFromString("1.2")
+	b := decimal.New(10, 18)
+	c := a.Mul(b)
+	t.Log(c)
+}
