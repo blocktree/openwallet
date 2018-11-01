@@ -26,7 +26,6 @@ import (
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/blocktree/OpenWallet/log"
-	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
 	"github.com/blocktree/go-OWCrypt"
@@ -312,7 +311,7 @@ func (wm *WalletManager)SubmitRawTransaction( submit_data string)(string ,error)
 func (wm *WalletManager) Transfer(key *Key, from ,to, gasLimit, value string) (string, error) {
 
 	//CreateRawTransaction 创建交易单
-	gasPrice := wm.WalletClient.CallGetGasPrice()
+	gasPrice := wm.EstimateFeeRate()
 	nonce := wm.WalletClient.CheckNonce(key)
 	transaction,err := wm.CreateRawTransaction(from, to, gasLimit, gasPrice,value,nonce)
 	if err != nil{
@@ -1058,6 +1057,12 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, password string) error {
 	return nil
 }
 
+func (wm *WalletManager) EstimateFeeRate() string {
+
+	gasprice := wm.WalletClient.CallGetGasPrice()
+	return gasprice
+}
+
 //通过hdpath获取地址、公钥、私钥、数据库nonce值
 func (wm *WalletManager) getKeys(key *hdkeystore.HDKey, a *openwallet.Address) (*Key, error){
 	childKey, err := key.DerivedKeyWithPath(a.HDPath, wm.Config.CurveType)
@@ -1150,19 +1155,6 @@ type estimateGasParameter struct{
 	gasLimit string
 }
 
-func ConvertToBigInt(value string) (*big.Int, error) {
-	bigvalue := new(big.Int)
-	var success bool
-
-	_, success = bigvalue.SetString(value, 10)
-	if !success {
-		errInfo := fmt.Sprintf("convert value [%v] to bigint failed, check the value and base passed through\n", value)
-		openwLogger.Log.Errorf(errInfo)
-		return big.NewInt(0), errors.New(errInfo)
-	}
-	return bigvalue, nil
-}
-
 //构建gas估算入参
 func (wm *WalletManager) CreatestimateGasParameters(from string, to string, value *big.Int) (*estimateGasParameter,error){
 
@@ -1180,7 +1172,7 @@ func (wm *WalletManager) CreatestimateGasParameters(from string, to string, valu
 	Nonce,_ :=strconv.ParseUint(nonce, 10, 64)
 	Parameter.nonce = Nonce
 
-	gasPrice := wm.WalletClient.CallGetGasPrice()
+	gasPrice := wm.EstimateFeeRate()
 	Parameter.gasPrice = gasPrice
 
 	return Parameter ,err

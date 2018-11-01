@@ -22,6 +22,7 @@ import (
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/go-OWCrypt"
 	"github.com/bytom/common"
+	"github.com/shopspring/decimal"
 	"math/big"
 	"sort"
 	"strconv"
@@ -178,10 +179,9 @@ func (decoder *TransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 		return err
 	}
 
-	//获取当前nonce
-	nonce ,_:= decoder.wm.WalletClient.CallGetaccountstate(keySignList[0].Address.Address,"nonce")
-	nonce_chain ,_:= strconv.ParseUint(nonce,10,64)
-	Nonce := nonce_chain + 1
+	//获取db记录的nonce并确认nonce值
+	nonce_db ,_:= wrapper.GetAddressExtParam(keySignList[0].Address.Address,decoder.wm.FullName())
+	nonce := decoder.wm.ConfirmTxdecodeNonce(keySignList[0].Address.Address,nonce_db)
 
 	//构建交易单
 	TX ,err = decoder.wm.CreateRawTransaction(keySignList[0].Address.Address, to, Gaslimit, gasprice.Mul(coinDecimal).String(), amount.String(),Nonce)
@@ -268,55 +268,6 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletD
 	return nil
 }
 
-func (decoder *TransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
-	//check交易交易单基本字段
-	err := CheckRawTransaction(rawTx)
-	if err != nil {
-		openwLogger.Log.Errorf("Verify raw tx failed, err=%v", err)
-		return err
-	}
-	if len(rawTx.Signatures) != 1 {
-		openwLogger.Log.Errorf("len of signatures error. ")
-		return errors.New("len of signatures error. ")
-	}
-
-	if _, exist := rawTx.Signatures[rawTx.Account.AccountID]; !exist {
-		openwLogger.Log.Errorf("wallet[%v] signature not found ", rawTx.Account.AccountID)
-		return errors.New("wallet signature not found ")
-	}
-
-	if len(rawTx.RawHex) == 0 {
-		return fmt.Errorf("transaction hex is empty")
-	}
-
-	if !rawTx.IsCompleted {
-		return fmt.Errorf("transaction is not completed validation")
-	}
-
-	txid, err := decoder.wm.SubmitRawTransaction(rawTx.RawHex)
-	if err != nil {
-		return err
-	}else{
-		//广播成功后记录nonce值到本地 wjq
-
-	}
-
-	rawTx.TxID = txid
-	rawTx.IsSubmit = true
-
-	return nil
-}
-
-//SendRawTransaction 广播交易单
-func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
-	if !rawTx.Coin.IsContract {
-		return decoder.SubmitSimpleRawTransaction(wrapper, rawTx)
-	}
-
-	return nil
-	//wjq return decoder.SubmitErc20TokenRawTransaction(wrapper, rawTx)
-}
-
 //VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
 func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
@@ -355,4 +306,62 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 	}
 
 	return nil
+}
+
+func (decoder *TransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
+	//check交易交易单基本字段
+	err := CheckRawTransaction(rawTx)
+	if err != nil {
+		openwLogger.Log.Errorf("Verify raw tx failed, err=%v", err)
+		return err
+	}
+	if len(rawTx.Signatures) != 1 {
+		openwLogger.Log.Errorf("len of signatures error. ")
+		return errors.New("len of signatures error. ")
+	}
+
+	if _, exist := rawTx.Signatures[rawTx.Account.AccountID]; !exist {
+		openwLogger.Log.Errorf("wallet[%v] signature not found ", rawTx.Account.AccountID)
+		return errors.New("wallet signature not found ")
+	}
+
+	if len(rawTx.RawHex) == 0 {
+		return fmt.Errorf("transaction hex is empty")
+	}
+
+	if !rawTx.IsCompleted {
+		return fmt.Errorf("transaction is not completed validation")
+	}
+
+	txid, err := decoder.wm.SubmitRawTransaction(rawTx.RawHex)
+	if err != nil {
+		return err
+	}else{
+		//广播成功后记录nonce值到本地 wjq
+		fmt.Printf("Submit Success , Save nonce To AddressExtParam!\n")
+		wrapper.SetAddressExtParam(rawTx.Signatures[rawTx.Account.AccountID][0].Address.Address, decoder.wm.FullName(), rawTx.Signatures[rawTx.Account.AccountID][0].Nonce)
+	}
+	rawTx.TxID = txid
+	rawTx.IsSubmit = true
+
+	return nil
+}
+
+//SendRawTransaction 广播交易单
+func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
+	if !rawTx.Coin.IsContract {
+		return decoder.SubmitSimpleRawTransaction(wrapper, rawTx)
+	}
+
+	return nil
+	//wjq return decoder.SubmitErc20TokenRawTransaction(wrapper, rawTx)
+}
+
+//GetRawTransactionFeeRate 获取交易单的费率
+func (decoder *TransactionDecoder) GetRawTransactionFeeRate() (feeRate string, unit string, err error) {
+
+	rate := decoder.wm.EstimateFeeRate()
+	rate_decimal := decimal.RequireFromString(rate).Div(coinDecimal)
+
+	return rate_decimal.StringFixed(decoder.wm.Decimal()), "NAS", nil
 }
