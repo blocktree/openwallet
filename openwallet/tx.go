@@ -123,7 +123,7 @@ type Transaction struct {
 
 //GenTransactionWxID 生成交易单的WxID，格式为 base64(sha1(tx_{txID}_{symbol}_contractID}))
 
-func GenTransactionWxID2(txid string, coinsymbol string, contractId string) string{
+func GenTransactionWxID2(txid string, coinsymbol string, contractId string) string {
 	//txid := tx.TxID
 	symbol := coinsymbol + "_" + contractId
 	plain := fmt.Sprintf("tx_%s_%s", txid, symbol)
@@ -162,7 +162,7 @@ type Recharge struct {
 }
 
 //GenRechargeSID
-func GenRechargeSID(txid string, coinsymbol string, contractId string, n uint64, prefix string) string{
+func GenRechargeSID(txid string, coinsymbol string, contractId string, n uint64, prefix string) string {
 	//txid := tx.TxID
 	symbol := coinsymbol + "_" + contractId
 	plain := fmt.Sprintf("%s_%s_%s_%d", prefix, txid, symbol, n)
@@ -178,7 +178,7 @@ type TxInput struct {
 	Recharge    `storm:"inline"`
 }
 
-func GenTxInputSID(txid string, coinsymbol string, contractId string, n uint64) string{
+func GenTxInputSID(txid string, coinsymbol string, contractId string, n uint64) string {
 	return GenRechargeSID(txid, coinsymbol, contractId, n, "input")
 }
 
@@ -188,16 +188,21 @@ type TxOutPut struct {
 	ExtParam string //扩展参数，用于记录utxo的解锁字段，json格式
 }
 
-func GenTxOutPutSID(txid string, coinsymbol string, contractId string, n uint64) string{
+func GenTxOutPutSID(txid string, coinsymbol string, contractId string, n uint64) string {
 	return GenRechargeSID(txid, coinsymbol, contractId, n, "output")
 }
 
 //SetExtParam
 func (txOut *TxOutPut) SetExtParam(key string, value interface{}) error {
 	var ext map[string]interface{}
-	err := json.Unmarshal([]byte(txOut.ExtParam), &ext)
-	if err != nil {
-		return err
+
+	if len(txOut.ExtParam) == 0 {
+		ext = make(map[string]interface{})
+	} else {
+		err := json.Unmarshal([]byte(txOut.ExtParam), &ext)
+		if err != nil {
+			return err
+		}
 	}
 
 	ext[key] = value
