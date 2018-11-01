@@ -213,11 +213,27 @@ func (wm *WalletManager) listUnspentByExplorer(address ...string) ([]*Unspent, e
 
 	array := result.Array()
 	for _, a := range array {
-		utxos = append(utxos, NewUnspent(&a))
+		utxos = append(utxos, newUnspentByExplorer(&a))
 	}
 
 	return utxos, nil
 
+}
+
+func newUnspentByExplorer(json *gjson.Result) *Unspent {
+	obj := &Unspent{}
+	//解析json
+	obj.TxID = gjson.Get(json.Raw, "txid").String()
+	obj.Vout = gjson.Get(json.Raw, "vout").Uint()
+	obj.Address = gjson.Get(json.Raw, "address").String()
+	obj.AccountID = gjson.Get(json.Raw, "account").String()
+	obj.ScriptPubKey = gjson.Get(json.Raw, "scriptPubKey").String()
+	obj.Amount = gjson.Get(json.Raw, "amount").String()
+	obj.Confirmations = gjson.Get(json.Raw, "confirmations").Uint()
+	obj.Spendable = !gjson.Get(json.Raw, "isStake").Bool() //非挖矿状态才能使用
+	obj.Solvable = gjson.Get(json.Raw, "solvable").Bool()
+
+	return obj
 }
 
 func newBlockByExplorer(json *gjson.Result) *Block {

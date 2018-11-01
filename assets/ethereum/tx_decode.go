@@ -419,7 +419,7 @@ func (this *EthTransactionDecoder) CreateErc20TokenRawTransaction(wrapper openwa
 	var fee *txFeeInfo
 	var data string
 	for i, _ := range addrsBalanceList {
-		totalAmount := new(big.Int)
+		//		totalAmount := new(big.Int)
 		if addrsBalanceList[i].TokenBalance.Cmp(amount) > 0 {
 			data, err = makeERC20TokenTransData(rawTx.Coin.Contract.Address, to, amount)
 			if err != nil {
@@ -442,7 +442,7 @@ func (this *EthTransactionDecoder) CreateErc20TokenRawTransaction(wrapper openwa
 				fee.CalcFee()
 			}
 
-			if addrsBalanceList[i].Balance.Cmp(totalAmount) > 0 {
+			if addrsBalanceList[i].Balance.Cmp(fee.Fee) > 0 {
 				fromAddr := &openwallet.Address{
 					AccountID:   addresses[addrsBalanceList[i].Index].AccountID,
 					Address:     addresses[addrsBalanceList[i].Index].Address,

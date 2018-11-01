@@ -396,15 +396,15 @@ func (wrapper *WalletWrapper) CreateAddress(accountID string, count uint64, deco
 			return nil, err
 		}
 
-		//记录要导入到核心钱包的地址
-		imported := ImportAddress{
-			Address: *addr,
-		}
-
-		err = tx.Save(&imported)
-		if err != nil {
-			return nil, err
-		}
+		////记录要导入到核心钱包的地址
+		//imported := ImportAddress{
+		//	Address: *addr,
+		//}
+		//
+		//err = tx.Save(&imported)
+		//if err != nil {
+		//	return nil, err
+		//}
 
 		addrs = append(addrs, addr)
 
