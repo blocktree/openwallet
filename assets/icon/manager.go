@@ -92,7 +92,7 @@ func (wm *WalletManager) signTransaction(hash []byte, sk []byte) (string, error)
 	 }
 
 */
-func (wm *WalletManager) CalculateTxHash(from, to string, value float64, stepLimit, nonce int64) (map[string]interface{}, [32]byte) {
+func (wm *WalletManager) CalculateTxHash(from, to , value string, stepLimit, nonce int64) (map[string]interface{}, [32]byte) {
 	tx_temp := make(map[string]interface{})
 
 	tx_temp["version"] = "0x3"   //API版本
@@ -108,7 +108,8 @@ func (wm *WalletManager) CalculateTxHash(from, to string, value float64, stepLim
 	tx_temp["timestamp"] = "0x" + strconv.FormatInt(time.Now().UnixNano() / 1000, 16)
 	tx_temp["to"] = to
 
-	v := int64(value * coinDecimal_float64)    //用decimal DIV乘法的时候会有有一点点丢失精度
+	vd, _ := decimal.NewFromString(value)
+	v := vd.Mul(coinDecimal).IntPart()
 	hvalue := fmt.Sprintf("%x", v)
 	tx_temp["value"] = "0x" + hvalue
 
@@ -135,7 +136,7 @@ func (wm *WalletManager) CalculateTxHash(from, to string, value float64, stepLim
 	return tx_temp, hash
 }
 //转账
-func (wm *WalletManager) Transfer(sk []byte, from, to string, value float64, stepLimit, nonce int64) (string, error){
+func (wm *WalletManager) Transfer(sk []byte, from, to, value string, stepLimit, nonce int64) (string, error){
 	tx, hash := wm.CalculateTxHash(from, to, value, stepLimit, nonce)
 
 	sig, err := wm.signTransaction(hash[:], sk)
@@ -240,7 +241,7 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 	var addrs []*openwallet.Address
 	db.All(&addrs)
 
-	var balance decimal.Decimal = decimal.NewFromFloat(0)
+	balance, _ := decimal.NewFromString("0")
 	count := len(addrs)
 	if  count <= 0 {
 		log.Std.Info("This wallet have 0 address!!!")
@@ -360,7 +361,7 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 		}
 	}
 
-	return balance.Div(coinDecimal), outputAddress, nil
+	return balance, outputAddress, nil
 }
 
 //打印钱包列表
@@ -598,17 +599,13 @@ func (wm *WalletManager) summaryWallet(wallet *openwallet.Wallet, password strin
 			continue
 		}
 		decimal_balance := decimal.RequireFromString(b)
-		log.Info(decimal_balance.StringFixed(8))
 
-		// 将该地址多余额减去矿工费后，全部转到汇总地址
-		//coin 交易不带data的固定手续费是0.001 ICX
-		//计算的时候要减去手续费，因为decimal计算精度丢失问题，导致0.001手续费设置为0.001111
-		//防止出现这种错误[-32600]Out of balance: balance(943999998799999940) < value(942999998800000000) + fee(1000000000000000）
-		fee := decimal.NewFromFloat(0.001111)
+		// 将该地址的余额减去矿工费后，全部转到汇总地址
+		//coin交易不带data的固定手续费是0.001 ICX
+		fee, _ := decimal.NewFromString("0.001")
 		amount := decimal_balance.Sub(fee)
 		if amount.GreaterThan(wm.Config.Threshold) {
-			value, _ := amount.Float64()
-			txid, _ := wm.Transfer(k.PrivateKey, a.Address, wm.Config.SumAddress, value, wm.Config.StepLimit, 100)
+			txid, _ := wm.Transfer(k.PrivateKey, a.Address, wm.Config.SumAddress, amount.String(), wm.Config.StepLimit, 100)
 
 			log.Std.Info("summary form address:%s, to address:%s, amount:%s, txid:%s\n", k.Address, wm.Config.SumAddress, amount.StringFixed(8), txid)
 		}
