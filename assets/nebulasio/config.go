@@ -182,7 +182,6 @@ func (wm *WalletManager) InitAssetsConfig() (config.Configer, error) {
 //LoadAssetsConfig 加载外部配置
 func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 
-	fmt.Printf("12333\n")
 	wm.Config.ServerAPI = c.String("serverAPI")
 	wm.Config.Threshold, _ = decimal.NewFromString(c.String("threshold"))
 	wm.Config.SumAddress = c.String("sumAddress")
@@ -191,6 +190,8 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 
 	cyclesec := c.String("cycleSeconds")
 	wm.Config.CycleSeconds, _ = time.ParseDuration(cyclesec)
+
+	wm.WalletClient = NewClient(wm.Config.ServerAPI,  false)
 
 	return nil
 }
