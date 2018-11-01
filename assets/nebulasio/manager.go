@@ -1238,3 +1238,21 @@ func (wm *WalletManager) ConfirmTxdecodeNonce(addr string,nonce_DB string) uint6
 
 	return nonce_submit
 }
+
+//BsGetBalanceByAddress区块扫描器获取余额
+func (wm *WalletManager) BsGetBalanceByAddress(addr string) (*openwallet.Balance, error){
+
+	balance_wei ,err := wm.WalletClient.CallGetaccountstate(addr,"balance")
+	if err != nil{
+		return nil ,err
+	}
+	balance_decimal ,_:= decimal.NewFromString(balance_wei)
+	balance := balance_decimal.Div(coinDecimal)
+
+	Balance := &openwallet.Balance{
+		Address:	addr,
+		Balance:	balance.String(),
+	}
+
+	return Balance,nil
+}
