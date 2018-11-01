@@ -91,9 +91,9 @@ func (wm *WalletManager) Init() {
 	wm.initSupportAssetsAdapter()
 
 	//启动定时导入地址到核心钱包
-	task := timer.NewTask(PeriodOfTask, wm.importNewAddressToCoreWallet)
-	wm.importAddressTask = task
-	wm.importAddressTask.Start()
+	//task := timer.NewTask(PeriodOfTask, wm.importNewAddressToCoreWallet)
+	//wm.importAddressTask = task
+	//wm.importAddressTask.Start()
 
 	log.Info("OpenWallet Manager has been initialized!")
 }

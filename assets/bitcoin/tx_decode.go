@@ -186,6 +186,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	}
 
 	changeAmount := balance.Sub(computeTotalSend).Sub(actualFees)
+	rawTx.Fees = actualFees.StringFixed(decoder.wm.Decimal())
 
 	log.Std.Notice("-----------------------------------------------")
 	log.Std.Notice("From Account: %s", accountID)
@@ -204,8 +205,6 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 
 		txUnlock := btcTransaction.TxUnlock{LockScript: utxo.ScriptPubKey, SigType: btcTransaction.SigHashAll}
 		txUnlocks = append(txUnlocks, txUnlock)
-
-		//log.Debug("txUnlock:", txUnlock)
 	}
 
 	//装配输入
