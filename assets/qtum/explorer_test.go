@@ -57,7 +57,7 @@ func TestGetBlockByExplorer(t *testing.T) {
 }
 
 func TestListUnspentByExplorer(t *testing.T) {
-	list, err := tw.listUnspentByExplorer("QUZMTeBQaChsqPbNsTH5ZxsqF3B4Hi3NCe")
+	list, err := tw.listUnspentByExplorer("Qf6t5Ww14ZWVbG3kpXKoTt4gXeKNVxM9QJ")
 	if err != nil {
 		t.Errorf("listUnspentByExplorer failed unexpected error: %v\n", err)
 		return
@@ -71,7 +71,7 @@ func TestListUnspentByExplorer(t *testing.T) {
 func TestGetTransactionByExplorer(t *testing.T) {
 	//5aa478590ea82d3b6a308bdf5af0753caeab0aefefeb4f88a088c15fe305f59b
 	//eb8e496f7dd23554d6d45de30beab384c8e0d023c9c7f1fbc15d90d10bb873f8
-	raw, err := tw.getTransactionByExplorer("b3357dc8455ffe3fe2cc9a446169b67ea46a02a0344abbe11cdf1ae8d33a3cfd")
+	raw, err := tw.getTransactionByExplorer("16c0c4e4b5218899f9bf1b44bf7e89848f5e031a1ea60e6b6fabd42c7a4175f1")
 	if err != nil {
 		t.Errorf("getTransactionByExplorer failed unexpected error: %v\n", err)
 		return

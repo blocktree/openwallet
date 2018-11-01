@@ -84,7 +84,7 @@ type RawTransaction struct {
 	IsSubmit    bool                       `json:"isSubmit"`   //是否已广播
 	Change      *Address                   `json:"change"`     //找零地址
 	ExtParam    string                     `json:"extParam"`   //扩展参数，用于调用智能合约，json结构
-	Fees        string                     `json:"fees"`       //后续费
+	Fees        string                     `json:"fees"`       //手续费
 }
 
 //KeySignature 签名信息
