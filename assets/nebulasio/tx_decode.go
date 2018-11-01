@@ -17,15 +17,14 @@ package nebulasio
 import (
 	"errors"
 	"fmt"
-	"github.com/shopspring/decimal"
-	"strconv"
-	"math/big"
-	"sort"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/go-OWCrypt"
 	"github.com/bytom/common"
+	"math/big"
+	"sort"
+	"strconv"
 )
 
 var TX *SubmitTransaction
@@ -64,35 +63,6 @@ type txFeeInfo struct {
 	Fee      *big.Int
 }
 
-//ConverWeiStringToNasDecimal NAS转字符串
-func ConverWeiStringToNasDecimal(amount string) (decimal.Decimal, error) {
-	d, err := decimal.NewFromString(amount)
-	if err != nil {
-		log.Error("convert string to deciaml failed, err=", err)
-		return d, err
-	}
-
-	d = d.Div(coinDecimal)
-	return d, nil
-}
-
-//ConvertNasStringToWei NAS转成Wei
-func ConvertNasStringToWei(amount string) (*big.Int, error) {
-	//log.Debug("amount:", amount)
-	vDecimal, err := decimal.NewFromString(amount)
-	if err != nil {
-		log.Error("convert from string to decimal failed, err=", err)
-		return nil, err
-	}
-
-	vDecimal = vDecimal.Mul(coinDecimal)
-	rst := new(big.Int)
-	if _, valid := rst.SetString(vDecimal.String(), 10); !valid {
-		log.Error("conver to big.int failed")
-		return nil, errors.New("conver to big.int failed")
-	}
-	return rst, nil
-}
 
 func (decoder *TransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 

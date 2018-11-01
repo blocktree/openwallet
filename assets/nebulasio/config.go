@@ -106,7 +106,7 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	//备份路径
 	c.backupDir = filepath.Join("data", strings.ToLower(c.Symbol), "backup")
 	//钱包服务API
-	c.ServerAPI = ""
+	c.ServerAPI = "http://127.0.0.1:8685"
 	//gas limit
 	c.GasLimit = decimal.NewFromFloat(0.0001)        //0.0001 XTZ
 	//钱包安装的路径

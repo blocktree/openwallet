@@ -983,7 +983,7 @@ func (bs *NASBlockScanner) GetScannedBlockHeight() uint64 {
 	return localHeight
 }
 
-func (bs *NASBlockScanner) ExtractTransactionData(txid string) (map[string]*openwallet.TxExtractData, error) {
+func (bs *NASBlockScanner) ExtractTransactionData(txid string, scanAddressFunc openwallet.BlockScanAddressFunc) (map[string]*openwallet.TxExtractData, error) {
 	result := bs.ExtractTransaction(0, "", txid)
 	if !result.Success {
 		return nil, fmt.Errorf("extract transaction failed")
@@ -1159,72 +1159,9 @@ func (wm *WalletManager) GetLocalBlock(height uint64) (*Block, error) {
 
 	return &block, nil
 }
-/*
-//GetBlock 获取区块数据
-func (wm *WalletManager) GetBlock(hash string) (*Block, error) {
 
-	if wm.Blockscanner.RPCServer == RPCServerExplorer {
-		return wm.getBlockByExplorer(hash)
-	} else {
-		return wm.getBlockByCore(hash)
-	}
-}
-
-//getBlockByCore 获取区块数据
-func (wm *WalletManager) getBlockByCore(hash string) (*Block, error) {
-
-	request := []interface{}{
-		hash,
-	}
-
-	result, err := wm.WalletClient.Call("getblock", request)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewBlock(result), nil
-}
-*/
-
-/*
-//GetTxIDsInMemPool 获取待处理的交易池中的交易单IDs
-func (wm *WalletManager) GetTxIDsInMemPool() ([]string, error) {
-
-	var (
-		txids = make([]string, 0)
-	)
-
-	result, err := wm.WalletClient.Call("getrawmempool", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if !result.IsArray() {
-		return nil, errors.New("no query record")
-	}
-
-	for _, txid := range result.Array() {
-		txids = append(txids, txid.String())
-	}
-
-	return txids, nil
-}
-*/
 //GetTransaction 获取交易单
 func (wm *WalletManager) GetTransaction(txid string,height uint64) (*NasTransaction, error) {
-
-	//request := []interface{}{
-	//	txid,
-	//	true,
-	//}
-	//
-	//result, err := wm.WalletClient.Call("getrawtransaction", request)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//return result, nil
-
 	Transaction_result, err := wm.WalletClient.CallGetTransactionReceipt(txid)
 	if err != nil {
 		return nil, err

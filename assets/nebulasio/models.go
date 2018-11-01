@@ -1,3 +1,18 @@
+/*
+ * Copyright 2018 The OpenWallet Authors
+ * This file is part of the OpenWallet library.
+ *
+ * The OpenWallet library is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The OpenWallet library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ */
+
 package nebulasio
 
 import (
@@ -9,11 +24,6 @@ import (
 	"github.com/tidwall/gjson"
 	"strconv"
 )
-
-
-
-
-
 
 //BlockchainInfo 本地节点区块链信息
 type BlockchainInfo struct {
@@ -41,82 +51,6 @@ func NewBlockchainInfo(json *gjson.Result) *BlockchainInfo {
 	b.Chainwork = gjson.Get(json.Raw, "chainwork").String()
 	b.Pruned = gjson.Get(json.Raw, "pruned").Bool()
 	return b
-}
-
-//Unspent 未花记录
-type Unspent struct {
-
-	/*
-			{
-		        "txid" : "d54994ece1d11b19785c7248868696250ab195605b469632b7bd68130e880c9a",
-		        "vout" : 1,
-		        "address" : "mgnucj8nYqdrPFh2JfZSB1NmUThUGnmsqe",
-		        "account" : "test label",
-		        "scriptPubKey" : "76a9140dfc8bafc8419853b34d5e072ad37d1a5159f58488ac",
-		        "amount" : 0.00010000,
-		        "confirmations" : 6210,
-		        "spendable" : true,
-		        "solvable" : true
-		    }
-	*/
-	Key           string `storm:"id"`
-	TxID          string `json:"txid"`
-	Vout          uint64 `json:"vout"`
-	Address       string `json:"address"`
-	AccountID     string `json:"account" storm:"index"`
-	ScriptPubKey  string `json:"scriptPubKey"`
-	Amount        string `json:"amount"`
-	Confirmations uint64 `json:"confirmations"`
-	Spendable     bool   `json:"spendable"`
-	Solvable      bool   `json:"solvable"`
-	HDAddress     openwallet.Address
-}
-
-func NewUnspent(json *gjson.Result) *Unspent {
-	obj := &Unspent{}
-	//解析json
-	obj.TxID = gjson.Get(json.Raw, "txid").String()
-	obj.Vout = gjson.Get(json.Raw, "vout").Uint()
-	obj.Address = gjson.Get(json.Raw, "address").String()
-	obj.AccountID = gjson.Get(json.Raw, "account").String()
-	obj.ScriptPubKey = gjson.Get(json.Raw, "scriptPubKey").String()
-	obj.Amount = gjson.Get(json.Raw, "amount").String()
-	obj.Confirmations = gjson.Get(json.Raw, "confirmations").Uint()
-	//obj.Spendable = gjson.Get(json.Raw, "spendable").Bool()
-	obj.Spendable = true
-	obj.Solvable = gjson.Get(json.Raw, "solvable").Bool()
-
-	return obj
-}
-
-type UnspentSort struct {
-	values     []*Unspent
-	comparator func(a, b *Unspent) int
-}
-
-func (s UnspentSort) Len() int {
-	return len(s.values)
-}
-func (s UnspentSort) Swap(i, j int) {
-	s.values[i], s.values[j] = s.values[j], s.values[i]
-}
-func (s UnspentSort) Less(i, j int) bool {
-	return s.comparator(s.values[i], s.values[j]) < 0
-}
-
-//type Address struct {
-//	Address   string `json:"address" storm:"id"`
-//	Account   string `json:"account" storm:"index"`
-//	HDPath    string `json:"hdpath"`
-//	CreatedAt time.Time
-//}
-
-type User struct {
-	UserKey string `storm:"id"`     // primary key
-	Group   string `storm:"index"`  // this field will be indexed
-	Email   string `storm:"unique"` // this field will be indexed with a unique constraint
-	Name    string // this field will not be indexed
-	Age     int    `storm:"index"`
 }
 
 type Block struct {
@@ -233,7 +167,6 @@ func NewUnscanRecord(height uint64, txID, reason string) *UnscanRecord {
 }
 
 type NasTransaction struct {
-
 /*
 	TxID          string
 	Size          uint64
@@ -296,78 +229,6 @@ type NasTransaction struct {
 	BlockHeight		 uint64
 	BlockHash		 string
 }
-
-/*
-type Vin struct {
-	Coinbase string
-	TxID     string
-	Vout     uint64
-	N        uint64
-	Addr     string
-	Value    string
-}
-
-type Vout struct {
-	N            uint64
-	Addr         string
-	Value        string
-	ScriptPubKey string
-	Type         string
-}
-*/
-/*
-func newTxByExplorer(json *gjson.Result) *Transaction {
-
-	/*
-			{
-			"txid": "9f5eae5b95016825a437ceb9c9224d3e30d3b351f1100e4df5cc0cacac4e668c",
-			"version": 1,
-			"locktime": 1433760,
-			"vin": [],
-			"vout": [],
-			"blockhash": "0000000000003ac968ee1ae321f35f76d4dcb685045968d60fc39edb20b0eed0",
-			"blockheight": 1433761,
-			"confirmations": 5,
-			"time": 1539050096,
-			"blocktime": 1539050096,
-			"valueOut": 0.14652549,
-			"size": 814,
-			"valueIn": 0.14668889,
-			"fees": 0.0001634
-		}
-	*/
-/*
-	obj := Transaction{}
-	//解析json
-	obj.TxID = gjson.Get(json.Raw, "txid").String()
-	obj.Version = gjson.Get(json.Raw, "version").Uint()
-	obj.LockTime = gjson.Get(json.Raw, "locktime").Int()
-	obj.BlockHash = gjson.Get(json.Raw, "blockhash").String()
-	obj.BlockHeight = gjson.Get(json.Raw, "blockheight").Uint()
-	obj.Confirmations = gjson.Get(json.Raw, "confirmations").Uint()
-	obj.Blocktime = gjson.Get(json.Raw, "blocktime").Int()
-	obj.Size = gjson.Get(json.Raw, "size").Uint()
-	obj.Fees = gjson.Get(json.Raw, "fees").String()
-
-	obj.Vins = make([]*Vin, 0)
-	if vins := gjson.Get(json.Raw, "vin"); vins.IsArray() {
-		for _, vin := range vins.Array() {
-			input := newTxVinByExplorer(&vin)
-			obj.Vins = append(obj.Vins, input)
-		}
-	}
-
-	obj.Vouts = make([]*Vout, 0)
-	if vouts := gjson.Get(json.Raw, "vout"); vouts.IsArray() {
-		for _, vout := range vouts.Array() {
-			output := newTxVoutByExplorer(&vout)
-			obj.Vouts = append(obj.Vouts, output)
-		}
-	}
-
-	return &obj
-}
-*/
 
 //构建NAS专属交易单,包含交易和区块相关信息
 func newNasTransaction(transaction *gjson.Result,block *Block) *NasTransaction {

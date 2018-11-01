@@ -21,6 +21,7 @@ import (
 	"github.com/imroc/req"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
+	"math/big"
 	"strconv"
 
 	//	"log"
@@ -83,6 +84,35 @@ func (c *Client) CallTestJson() (){
 	fmt.Printf("tx=%v\n",tx)
 }
 
+//ConverWeiStringToNasDecimal 字符串Wei转小数NAS
+func ConverWeiStringToNasDecimal(amount string) (decimal.Decimal, error) {
+	d, err := decimal.NewFromString(amount)
+	if err != nil {
+		log.Error("convert string to deciaml failed, err=", err)
+		return d, err
+	}
+
+	d = d.Div(coinDecimal)
+	return d, nil
+}
+
+//ConvertNasStringToWei 字符串NAS转Wei
+func ConvertNasStringToWei(amount string) (*big.Int, error) {
+	//log.Debug("amount:", amount)
+	vDecimal, err := decimal.NewFromString(amount)
+	if err != nil {
+		log.Error("convert from string to decimal failed, err=", err)
+		return nil, err
+	}
+
+	vDecimal = vDecimal.Mul(coinDecimal)
+	rst := new(big.Int)
+	if _, valid := rst.SetString(vDecimal.String(), 10); !valid {
+		log.Error("conver to big.int failed")
+		return nil, errors.New("conver to big.int failed")
+	}
+	return rst, nil
+}
 
 
 //确定nonce值
