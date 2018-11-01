@@ -1278,12 +1278,12 @@ func (wm *WalletManager) DeleteUnscanRecord(height uint64) error {
 }
 
 //GetAssetsAccountBalanceByAddress 查询账户相关地址的交易记录
-func (bs *NASBlockScanner) GetBalanceByAddress(address ...*openwallet.Address) ([]*openwallet.Balance, error) {
+func (bs *NASBlockScanner) GetBalanceByAddress(address ...string) ([]*openwallet.Balance, error) {
 
 	addrsBalance := make([]*openwallet.Balance, 0)
 
 	for _, a := range address {
-		balance, err := bs.wm.BsGetBalanceByAddress(a.Address)
+		balance, err := bs.wm.BsGetBalanceByAddress(a)
 		if err != nil {
 			return nil, err
 		}
