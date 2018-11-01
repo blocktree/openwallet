@@ -205,8 +205,6 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 
 		txUnlock := btcTransaction.TxUnlock{LockScript: utxo.ScriptPubKey, SigType: btcTransaction.SigHashAll}
 		txUnlocks = append(txUnlocks, txUnlock)
-
-		//log.Debug("txUnlock:", txUnlock)
 	}
 
 	//装配输入

@@ -150,7 +150,7 @@ func TestTransfer_LTC(t *testing.T) {
 	accountID := "EbUsW3YaHQ61eNt3f4hDXJAFh9LGmLZWH1VTTSnQmhnL"
 	to := "n3ctLfAj8ksiXbVRCSQwEiyh2ZV8REAcUC"
 
-	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "1.1", "0.001", nil)
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.1", "0.001", nil)
 	if err != nil {
 		return
 	}
