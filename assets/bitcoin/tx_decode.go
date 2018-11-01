@@ -186,6 +186,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	}
 
 	changeAmount := balance.Sub(computeTotalSend).Sub(actualFees)
+	rawTx.Fees = actualFees.StringFixed(decoder.wm.Decimal())
 
 	log.Std.Notice("-----------------------------------------------")
 	log.Std.Notice("From Account: %s", accountID)

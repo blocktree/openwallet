@@ -75,6 +75,8 @@ func testSubmitTransactionStep(rawTx *openwallet.RawTransaction) (*openwallet.Ra
 	log.Info("wxID:", tx.WxID)
 	log.Info("txID:", rawTx.TxID)
 
+	log.Std.Info("tx: %v", tx)
+
 	return rawTx, nil
 }
 
@@ -82,9 +84,9 @@ func TestTransfer_ETH(t *testing.T) {
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
-	to := "d35f9Ea14D063af9B3567064FAB567275b09f03D"
+	to := "0x029C4B6c4C7294475D685a37d1C89F0c75ef8C5A"
 
-	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.0003", "", nil)
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.0013", "", nil)
 	if err != nil {
 		return
 	}
@@ -110,7 +112,7 @@ func TestTransfer_ERC20(t *testing.T) {
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
-	to := "0xd35f9Ea14D063af9B3567064FAB567275b09f03D"
+	to := "0x029C4B6c4C7294475D685a37d1C89F0c75ef8C5A"
 
 	contract := openwallet.SmartContract{
 		Address:  "0x4092678e4E78230F46A1534C0fbc8fA39780892B",
@@ -120,7 +122,7 @@ func TestTransfer_ERC20(t *testing.T) {
 		Decimals: 18,
 	}
 
-	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "1.1", "", &contract)
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "50", "", &contract)
 	if err != nil {
 		return
 	}
