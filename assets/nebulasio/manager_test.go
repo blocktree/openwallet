@@ -27,9 +27,9 @@ var wm *WalletManager
 func init() {
 	wm = NewWalletManager()
 	wm.InitConfigFlow()
-	//wm.Config.ServerAPI = "http://127.0.0.1:8685"
-	wm.Config.ServerAPI = "https://mainnet.nebulas.io"
-	wm.WalletClient = NewClient(wm.Config.ServerAPI, false)
+	wm.Config.ServerAPI = "http://127.0.0.1:8685"
+	//wm.Config.ServerAPI = "https://mainnet.nebulas.io"
+	wm.WalletClient = NewClient(wm.Config.ServerAPI, true)
 }
 
 func TestWalletManager_InitConfigFlow(t *testing.T) {
@@ -108,7 +108,7 @@ func TestWalletConfig_PrintConfig(t *testing.T) {
 
 func TestWalletManager_CreateBatchAddress(t *testing.T) {
 	var addrs []*openwallet.Address
-	fpath, addrs, err := wm.CreateBatchAddress("W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW", "123456789", 5)
+	fpath, addrs, err := wm.CreateBatchAddress("WMf6HjiKiXWoWm6ZigH5EmdeQVMCKKpLov", "123456789", 5)
 	if err != nil {
 		t.Error(err.Error())
 		return
@@ -121,7 +121,7 @@ func TestWalletManager_CreateBatchAddress(t *testing.T) {
 }
 
 func TestGetAddreses(t *testing.T) {
-	w, err := wm.GetWalletByID("VyXcihm3vcXxv7nnBsFxq7TRNYcdBmFoPW")
+	w, err := wm.GetWalletByID("WMf6HjiKiXWoWm6ZigH5EmdeQVMCKKpLov")
 	if err != nil {
 		t.Error("get wallet by id error")
 		return
@@ -146,7 +146,7 @@ func TestGetAddreses(t *testing.T) {
 //查询指定钱包余额
 func TestWalletManager_getBanlance(t *testing.T) {
 	//w, err := wm.GetWalletByID("WEY5DDuXbvHrBUa5UBKmVpwLCwP69bieeB")
-	w, err := wm.GetWalletByID("W55KaGZNka3uesGoYopCY2FoW9CaJskTUb")
+	w, err := wm.GetWalletByID("WMf6HjiKiXWoWm6ZigH5EmdeQVMCKKpLov")
 	if err != nil {
 		t.Error("get wallet by id error")
 		return
@@ -184,7 +184,7 @@ func TestWalletManager_getWalletBalance(t *testing.T) {
 
 func TestWalletManager_TransferFlow(t *testing.T) {
 
-	var test_walletID string = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
+	var test_walletID string = "WMf6HjiKiXWoWm6ZigH5EmdeQVMCKKpLov"
 	w, err := wm.GetWalletByID(test_walletID)
 	if err != nil {
 		t.Error("get wallet by id error")
@@ -206,7 +206,7 @@ func TestWalletManager_TransferFlow(t *testing.T) {
 	var sender *openwallet.Address
 	//key, _ := wm.getKeys(keystore, addrs[0])
 	for _, a := range addrs {
-		if a.Address == "n1LJ1uAZbaHFxiBY8hkuTXges8Xkr4nvF9w" {
+		if a.Address == "n1RC2cksMwFr8ivFVYDydeUSWe4h9aWNc44" {
 			sender = a
 
 			break
@@ -221,15 +221,16 @@ func TestWalletManager_TransferFlow(t *testing.T) {
 		t.Error("get key error")
 	}
 
-	dst := "n1Qzgp7TE4TNQTC9LQpEsuYZFbGU14cpDZk"
+	dst := "n1KtPWggi7B9fokhdXgjPKpoyNggshjUPUM"
 
-	txid ,err := wm.Transfer( key, dst,"2000000","100000000000000000")
+	fmt.Printf("key.Nonce=%v\n",key.Nonce)
+	txid ,err := wm.Transfer( key,key.Address, dst,Gaslimit,"10000000000")
 	if err != nil{
 		t.Logf("Transfer Fail!\n",)
 	}else{
 		t.Logf("Transfer Success! txid=%s\n",txid)
 
-		err := NotenonceInDB(key , db)
+		err := NotenonceInDB(key.Address , db)
 		if err != nil {
 			t.Error("NotenonceInDB error")
 		}
@@ -286,6 +287,19 @@ func TestModifySaveDB(t *testing.T) {
 	}
 
 }
+
+func TestCreateRawTransaction(t *testing.T) {
+
+	raw_tx,err := wm.CreateRawTransaction("n1HEEtUecE5CQ3wCeHWvKVacsS2S5GAPCCu",
+		"n1Prn7ZbZtd5CTN8Yrj4K9c3gD4u8tjFQzX",Gaslimit,"1000000","200000000000000",1)  //此处会加载配置文件，配置文件中最好填
+	if err != nil {
+		t.Error("get wallet list error")
+		t.Logf(err.Error())
+	}
+
+	fmt.Printf("raw_tx=%+v\n",raw_tx)
+}
+
 
 func TestDecimal(t *testing.T) {
 
