@@ -75,7 +75,7 @@ func (b *Explorer) Call(path string, request interface{}, method string) (*gjson
 	}
 
 	if r.Response().StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%s", r.Response().Status)
+		return nil, fmt.Errorf("%s", r.String())
 	}
 
 	if err != nil {

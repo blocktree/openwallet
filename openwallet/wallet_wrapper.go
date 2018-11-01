@@ -17,8 +17,10 @@ package openwallet
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/tidwall/gjson"
 	"io/ioutil"
 	"strings"
 	"time"
@@ -509,4 +511,54 @@ func (wrapper *WalletWrapper) HDKey(password ...string) (*hdkeystore.HDKey, erro
 		return nil, err
 	}
 	return key, err
+}
+
+//设置地址的扩展字段
+func (wrapper *WalletWrapper) SetAddressExtParam(address string, key string, val interface{}) error {
+	//打开数据库
+	db, err := wrapper.OpenStormDB()
+	if err != nil {
+		return err
+	}
+	defer wrapper.CloseDB()
+
+	var obj Address
+	err = db.One("Address", address, &obj)
+
+	if err != nil {
+		return fmt.Errorf("can not find address")
+	}
+
+	var ext map[string]interface{}
+	err = json.Unmarshal([]byte(obj.ExtParam), &ext)
+	if err != nil {
+		ext = make(map[string]interface{})
+	}
+	ext[key] = val
+
+	json, err := json.Marshal(ext)
+	if err != nil {
+		return err
+	}
+	obj.ExtParam = string(json)
+	return db.Save(&obj)
+}
+
+//获取地址的扩展字段
+func (wrapper *WalletWrapper) GetAddressExtParam(address string, key string) (interface{}, error) {
+	//打开数据库
+	db, err := wrapper.OpenStormDB()
+	if err != nil {
+		return nil, err
+	}
+	defer wrapper.CloseDB()
+
+	var obj Address
+	err = db.One("Address", address, &obj)
+
+	if err != nil {
+		return nil, fmt.Errorf("can not find address")
+	}
+
+	return gjson.ParseBytes([]byte(obj.ExtParam)).Get(key).Value(), nil
 }
