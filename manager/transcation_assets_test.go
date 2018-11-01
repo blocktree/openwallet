@@ -200,11 +200,15 @@ func TestTransfer_QTUM(t *testing.T) {
 
 func TestTransfer_NAS(t *testing.T) {
 
-	walletID := "VzQTLspxvbXSmfRGcN6LJVB8otYhJwAGWc"
-	accountID := "BjLtC1YN4sWQKzYHtNPdvx3D8yVfXmbyeCQTMHv4JUGG"
-	to := "n1Prn7ZbZtd5CTN8Yrj4K9c3gD4u8tjFQzX"
+	//walletID := "VzQTLspxvbXSmfRGcN6LJVB8otYhJwAGWc"
+	//accountID := "BjLtC1YN4sWQKzYHtNPdvx3D8yVfXmbyeCQTMHv4JUGG"
+	//to := "n1Prn7ZbZtd5CTN8Yrj4K9c3gD4u8tjFQzX"
 
-	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.5", "",nil)
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "7VftKuNoDtwZ3mn3wDA4smTDMz4iqCg3fNna1fXicVDg"
+	to := "n1J6e6RhZXuG1RpbcMYeeUShAo1e3QsJTXb"
+
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.2", "",nil)
 	if err != nil {
 		return
 	}

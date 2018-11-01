@@ -230,7 +230,17 @@ func newUnspentByExplorer(json *gjson.Result) *Unspent {
 	obj.ScriptPubKey = gjson.Get(json.Raw, "scriptPubKey").String()
 	obj.Amount = gjson.Get(json.Raw, "amount").String()
 	obj.Confirmations = gjson.Get(json.Raw, "confirmations").Uint()
-	obj.Spendable = !gjson.Get(json.Raw, "isStake").Bool() //非挖矿状态才能使用
+	isStake := gjson.Get(json.Raw, "isStake").Bool()
+	if isStake {
+		//挖矿的UTXO需要超过500个确认才能用
+		if obj.Confirmations >= StakeConfirmations {
+			obj.Spendable = true
+		} else {
+			obj.Spendable = false
+		}
+	} else {
+		obj.Spendable = true
+	}
 	obj.Solvable = gjson.Get(json.Raw, "solvable").Bool()
 
 	return obj
