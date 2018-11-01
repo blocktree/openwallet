@@ -29,7 +29,7 @@ func createTransaction(walletID, accountID, to string) (*openwallet.RawTransacti
 		return nil, err
 	}
 
-	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "5", to, "", "", nil)
+	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "0.1", to, "0.1", "", nil)
 
 	if err != nil {
 		log.Error("CreateTransaction failed, unexpected error:", err)
@@ -82,8 +82,8 @@ func TestWalletManager_SendQrc20TokenTransaction(t *testing.T) {
 	walletID := "WBiuSsYdPgzZhLSMkAA7XYQuKUgsb6DQgJ"
 	accountID := "HYZs6qySNUCj5w1Px7Btm1VF1TLkFvhGcL1FTN9gTUz"
 	to := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
-	feeRate := "0.00000040"
-	contractAddr := "91a6081095ef860d28874c9db613e7a4107b0281"
+	feeRate := "0.01"
+	contractAddr := "0x91a6081095ef860d28874c9db613e7a4107b0281"
 	tokenName := "QRC ZB TEST"
 	tokeSymbol := "QZTC"
 	var tokenDecimal uint64 = 8

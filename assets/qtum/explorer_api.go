@@ -625,7 +625,9 @@ func (wm *WalletManager) sendRawTransactionByExplorer(txHex string) (string, err
 //getAddressTokenBalanceByExplorer 通过合约地址查询用户地址的余额
 func (wm *WalletManager) getAddressTokenBalanceByExplorer(token openwallet.SmartContract, address string) (decimal.Decimal, error) {
 
-	tokenAddressBase := HashAddressToBaseAddress(token.Address, wm.config.isTestNet)
+	trimContractAddr := strings.TrimPrefix(token.Address, "0x")
+
+	tokenAddressBase := HashAddressToBaseAddress(trimContractAddr, wm.config.isTestNet)
 
 	path := fmt.Sprintf("tokens/%s/addresses/%s/balance?format=object", tokenAddressBase, address)
 

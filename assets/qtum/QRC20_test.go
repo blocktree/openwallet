@@ -42,7 +42,7 @@ func Test_addressTo32bytesArg(t *testing.T) {
 
 func Test_getUnspentByAddress(t *testing.T) {
 
-	contractAddress := "91a6081095ef860d28874c9db613e7a4107b0281"
+	contractAddress := "0x91a6081095ef860d28874c9db613e7a4107b0281"
 	address := "qMrFCXxSuiTEDqd311VxivECpJqH5KsJg6"
 	var tokenDecimal uint64 = 8
 
@@ -79,7 +79,7 @@ func Test_QRC20Transfer(t *testing.T) {
 	//to := "qJ2HTPYoMF1DPBhgURjRqemun5WimD57Hy"
 	//var tokenDecimal uint64 = 4
 
-	contractAddress := "91a6081095ef860d28874c9db613e7a4107b0281"
+	contractAddress := "0x91a6081095ef860d28874c9db613e7a4107b0281"
 	from := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
 	to := "qJRyTVtn1bUjeYDztupJzinnN7sn7nZms7"
 	var tokenDecimal uint64 = 8
@@ -103,7 +103,7 @@ func Test_QRC20Transfer(t *testing.T) {
 
 func Test_GetTokenBalanceByAddress(t *testing.T) {
 	contract := openwallet.SmartContract{
-		Address: "91a6081095ef860d28874c9db613e7a4107b0281",
+		Address: "0x91a6081095ef860d28874c9db613e7a4107b0281",
 	}
 	addrs := []string{
 		"qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP",

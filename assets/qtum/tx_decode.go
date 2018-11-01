@@ -67,8 +67,6 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 
 	isTestNet := decoder.wm.config.isTestNet
 
-	//trimContractAddr := HashAddressToBaseAddress(rawTx.Coin.Contract.Address, isTestNet)
-
 	address, err := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID)
 	if err != nil {
 		return err
@@ -114,22 +112,6 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	//
 	//changeAddress := changeAddrs[0]
 
-	if len(rawTx.FeeRate) == 0 {
-		feesRate, err = decoder.wm.EstimateFeeRate()
-		if err != nil {
-			return err
-		}
-	} else {
-		feesRate, _ = decimal.NewFromString(rawTx.FeeRate)
-		relayfee := decimal.NewFromFloat(0.004)
-		if feesRate.LessThan(relayfee) {
-			feesRate, err = decoder.wm.EstimateFeeRate()
-			if err != nil {
-				return err
-			}
-		}
-	}
-
 	//计算总发送金额
 	for addr, amount := range rawTx.To {
 		deamount, _ := decimal.NewFromString(amount)
@@ -157,19 +139,31 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		    txInTotal      uint64
 			deAmount       decimal.Decimal
 			sendAmount     decimal.Decimal
-			gasPrice       string
 			totalQtum      decimal.Decimal
 			unspent        decimal.Decimal
 			change         uint64
 			contractFees   decimal.Decimal
+			gasPrice       string
 		)
 
+		trimContractAddr := strings.TrimPrefix(rawTx.Coin.Contract.Address, "0x")
+
+		if len(rawTx.FeeRate) == 0 {
+			feesRate, err = decoder.wm.EstimateFeeRate()
+			if err != nil {
+				return err
+			}
+		} else {
+			feesRate, _ = decimal.NewFromString(rawTx.FeeRate)
+		}
+
+		log.Debugf("feesRate:%v",feesRate)
 
 		usedTokenUTXO := make([]*Unspent, 0)
 		unspent = decimal.New(0, 0)
 
 		computeTotalfee := feesRate
-
+		//log.Debugf("computeTotalfee:%v",computeTotalfee)
 		log.Info("Calculating wallet unspent record to build transaction...")
 		//循环的计算余额是否足够支付发送数额+手续费
 		for {
@@ -206,26 +200,24 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 			}
 
 			//计算用于支付手续费的UTXO
-			if totalQtum.LessThan(computeTotalfee) {
+			for _, u := range unspents {
 
-				for _, u := range unspents {
+				if u.Spendable && u.Address != usedTokenUTXO[0].Address{
 
-					if u.Spendable && u.Address != usedTokenUTXO[0].Address{
-
-						ua, _ := decimal.NewFromString(u.Amount)
-						totalQtum = totalQtum.Add(ua)
-						usedUTXO = append(usedUTXO, u)
-						if totalQtum.GreaterThanOrEqual(computeTotalfee){
-							break
-						}
-
+					if totalQtum.GreaterThanOrEqual(computeTotalfee){
+						break
 					}
+					ua, _ := decimal.NewFromString(u.Amount)
+					totalQtum = totalQtum.Add(ua)
+					usedUTXO = append(usedUTXO, u)
+
+
 				}
 			}
 
-			//if totalQtum.LessThan(computeTotalSend) {
-			//	return fmt.Errorf("The fees(Qtum): %s is not enough! ", totalQtum.StringFixed(decoder.wm.Decimal()))
-			//}
+			if totalQtum.LessThan(computeTotalfee) {
+				return fmt.Errorf("The fees(Qtum): %s is not enough! ", totalQtum.StringFixed(decoder.wm.Decimal()))
+			}
 
 			//计算手续费，找零地址有2个，一个是发送，一个是新创建的
 			fees, err := decoder.wm.EstimateFee(int64(len(usedUTXO)), int64(len(destinations)+1), feesRate)
@@ -240,7 +232,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 			//如果要手续费有发送支付，得计算加入手续费后，计算余额是否足够
 			//总共要发送的
 			computeTotalfee = contractFees
-			//log.Debugf("computeTotalfee:%v, totalQtum:%v",computeTotalfee,totalQtum)
+			log.Debugf("computeTotalfee:%v, totalQtum:%v",computeTotalfee,totalQtum)
 			if computeTotalfee.GreaterThan(totalQtum) {
 				continue
 			}
@@ -295,15 +287,15 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		}
 
 		//gasPrice
-		gasPriceDec, _ := decimal.NewFromString(rawTx.FeeRate)
-		if rawTx.FeeRate == "" || gasPriceDec.LessThan(DEFAULT_GAS_PRICE) {
-			gasPriceDec = DEFAULT_GAS_PRICE
-		}
-		SotashiGasPriceDec := gasPriceDec.Mul(decoder.wm.config.CoinDecimal)
+		//gasPriceDec, _ := decimal.NewFromString(rawTx.FeeRate)
+		//if rawTx.FeeRate == "" || gasPriceDec.LessThan(DEFAULT_GAS_PRICE) {
+		//	gasPriceDec = DEFAULT_GAS_PRICE
+		//}
+		SotashiGasPriceDec := DEFAULT_GAS_PRICE.Mul(decoder.wm.config.CoinDecimal)
 		gasPrice = SotashiGasPriceDec.String()
 
 		//装配合约
-		vcontract := btcLikeTxDriver.Vcontract{rawTx.Coin.Contract.Address, to, sendAmount, DEFAULT_GAS_LIMIT, gasPrice, 0}
+		vcontract := btcLikeTxDriver.Vcontract{trimContractAddr, to, sendAmount, DEFAULT_GAS_LIMIT, gasPrice, 0}
 
 		//构建空合约交易单
 		emptyTrans, err = btcLikeTxDriver.CreateQRC20TokenEmptyRawTransaction(vins, vcontract, vouts, lockTime, replaceable, isTestNet)
@@ -314,9 +306,26 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 
 	}else {
 
+		if len(rawTx.FeeRate) == 0 {
+			feesRate, err = decoder.wm.EstimateFeeRate()
+			if err != nil {
+				return err
+			}
+		} else {
+			feesRate, _ = decimal.NewFromString(rawTx.FeeRate)
+			relayfee := decimal.NewFromFloat(0.004)
+			if feesRate.LessThan(relayfee) {
+				feesRate, err = decoder.wm.EstimateFeeRate()
+				if err != nil {
+					return err
+				}
+			}
+		}
+
 		//取账户最后一个地址
 		changeAddress := address[len(address)-1]
 
+		log.Info("Calculating wallet unspent record to build transaction...")
 		//循环的计算余额是否足够支付发送数额+手续费
 		for {
 
@@ -346,6 +355,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 				return err
 			}
 
+			//log.Debugf("fees:%v",fees)
 			//如果要手续费有发送支付，得计算加入手续费后，计算余额是否足够
 			//总共要发送的
 			computeTotalSend = totalSend.Add(fees)
