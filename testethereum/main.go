@@ -90,12 +90,12 @@ func main() {
 	//tech.TestTokenDecode()
 	//tech.TestTokenBalance()
 
-	//tech.TestWalletManager_SubmitTokenTransaction()
+	tech.TestWalletManager_SubmitTokenTransaction()
 	//tech.TestSubscribe()
 	//tech.DumpBlockScanDb()
 	//tech.TestScanBlockByHeight()
 	//tech.TestGetBalanceByAddress()
-	tech.TestGetTxByHash()
+	//tech.TestGetTxByHash()
 
 	//tech.TestConvertEthStringToWei()
 	//tech.TestConverWeiStringToEthDecimal()
