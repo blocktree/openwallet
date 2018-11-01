@@ -36,7 +36,7 @@ func createErc20TokenTransaction(walletID, accountID, to string) (*openwallet.Ra
 	}
 
 	rawTx, err := tm.CreateErc20TokenTransaction(testApp, walletID, accountID, "1", to, "", "",
-		"0x8847E5F841458ace82dbb0692C97115799fe28d3", "peterToken", "PTN", 18)
+		"0x8847E5F841458ace82dbb0692C97115799fe28d3", "peterToken", "PTN", 1)
 	if err != nil {
 		log.Error("CreateTransaction failed, unexpected error:", err)
 		return nil, err
