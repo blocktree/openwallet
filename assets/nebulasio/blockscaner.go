@@ -20,11 +20,13 @@ import (
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
+	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
+	"time"
 )
 
 const (
@@ -497,12 +499,103 @@ func CheckIsContract(Toaddr string) bool{
 	return false
 }
 
+//extractTxOutput 提取交易单输入部分,只有一个TxOutPut
+func (bs *NASBlockScanner) extractTxOutput(tx *NasTransaction,txExtractData *openwallet.TxExtractData) {
+
+	//主网to交易转账信息,只有一个TxOutPut
+	txOutput := &openwallet.TxOutPut{
+		ExtParam: "", //扩展参数，用于记录utxo的解锁字段，账户模型中为空
+	}
+	txOutput.Recharge.Sid = openwallet.GenTxOutPutSID(tx.Hash, bs.wm.Symbol(), "", uint64(0))
+	txOutput.Recharge.TxID = tx.Hash
+	txOutput.Recharge.Address = tx.To
+	txOutput.Recharge.Coin = openwallet.Coin{
+		Symbol:     bs.wm.Symbol(),
+		IsContract: false,
+	}
+	txOutput.Recharge.Amount = tx.Value.Div(coinDecimal).String()
+	txOutput.Recharge.BlockHash = tx.BlockHash
+	txOutput.Recharge.BlockHeight = tx.BlockHeight
+	txOutput.Recharge.Index = 0 //账户模型填0
+	txOutput.Recharge.CreateAt = time.Now().Unix()
+	txExtractData.TxOutputs = append(txExtractData.TxOutputs, txOutput)
+}
+//extractTxInput 提取交易单输入部分,包含两个TxInput
+func (bs *NASBlockScanner) extractTxInput(tx *NasTransaction,txExtractData *openwallet.TxExtractData) {
+
+	//主网from交易转账信息，第一个TxInput
+	txInput := &openwallet.TxInput{
+		SourceTxID:  "",  //utxo模型上的上一个交易输入源
+	}
+	txInput.Recharge.Sid = openwallet.GenTxInputSID(tx.Hash, bs.wm.Symbol(), "", uint64(0))
+	txInput.Recharge.TxID = tx.Hash
+	txInput.Recharge.Address = tx.From
+	txInput.Recharge.Coin = openwallet.Coin{
+		Symbol:     bs.wm.Symbol(),
+		IsContract: false,
+	}
+	txInput.Recharge.Amount = tx.Value.Div(coinDecimal).String()
+	txInput.Recharge.BlockHash = tx.BlockHash
+	txInput.Recharge.BlockHeight = tx.BlockHeight
+	txInput.Recharge.Index = 0 //账户模型填0
+	txInput.Recharge.CreateAt = time.Now().Unix()
+	txExtractData.TxInputs = append(txExtractData.TxInputs, txInput)
+
+	//主网from交易转账手续费信息，第二个TxInput
+	txInputfees := &openwallet.TxInput{
+		SourceTxID:  "",  //utxo模型上的上一个交易输入源
+	}
+	txInputfees.Recharge.Sid = openwallet.GenTxInputSID(tx.Hash, bs.wm.Symbol(), "", uint64(1))
+	txInputfees.Recharge.TxID = tx.Hash
+	txInputfees.Recharge.Address = tx.From
+	txInputfees.Recharge.Coin = openwallet.Coin{
+		Symbol:     bs.wm.Symbol(),
+		IsContract: false,
+	}
+	txInputfees.Recharge.Amount = decimal.RequireFromString(tx.Gas_used).Div(coinDecimal).String()
+	txInputfees.Recharge.BlockHash = tx.BlockHash
+	txInputfees.Recharge.BlockHeight = tx.BlockHeight
+	txInputfees.Recharge.Index = 0 //账户模型填0
+	txInputfees.Recharge.CreateAt = time.Now().Unix()
+	txExtractData.TxInputs = append(txExtractData.TxInputs, txInputfees)
+}
+
 func (bs *NASBlockScanner) InitNasExtractResult(tx *NasTransaction, result *ExtractResult,isFromAccount bool) {
+
 	txExtractData := &openwallet.TxExtractData{}
 	transx := &openwallet.Transaction{
-		//From: tx.From,
-		//To:   tx.To,
-		Fees: tx.Gas_used,
+		Fees: decimal.RequireFromString(tx.Gas_used).Div(coinDecimal).String() ,
+		Coin: openwallet.Coin{
+			Symbol:     bs.wm.Symbol(),
+			IsContract: false,
+		},
+		BlockHash:   tx.BlockHash,
+		BlockHeight: tx.BlockHeight,
+		TxID:        tx.Hash,
+		Decimal:     18,
+		Amount:		 tx.Value.Div(coinDecimal).String(),
+		ConfirmTime:  int64(tx.BlockTime),
+	}
+	submitTime ,_ := strconv.ParseInt(tx.Timestamp,10,64)
+	transx.SubmitTime = submitTime
+	transx.From = append(transx.From, tx.From)
+	transx.To = append(transx.To, tx.To)
+	wxID := openwallet.GenTransactionWxID(transx)
+	transx.WxID = wxID
+	txExtractData.Transaction = transx
+
+	if isFromAccount {
+		bs.extractTxInput(tx,txExtractData)
+		result.extractData[tx.FromAccountId] = txExtractData
+	} else {
+		bs.extractTxOutput(tx,txExtractData)
+		result.extractData[tx.ToAccountId] = txExtractData
+	}
+}
+/*func (bs *NASBlockScanner) InitNasExtractResult(tx *NasTransaction, result *ExtractResult,isFromAccount bool) {
+	txExtractData := &openwallet.TxExtractData{}
+	transx := &openwallet.Transaction{
+		Fees: decimal.RequireFromString(tx.Gas_used).Div(coinDecimal).String() ,
 		Coin: openwallet.Coin{
 			Symbol:     bs.wm.Symbol(),
 			IsContract: false,
@@ -515,9 +608,6 @@ func (bs *NASBlockScanner) InitNasExtractResult(tx *NasTransaction, result *Extr
 		ConfirmTime:  int64(tx.BlockTime),
 	}
 
-	if CheckIsContract(tx.To) {
-		transx.Coin.IsContract = true
-	}
 	submitTime ,_ := strconv.ParseInt(tx.Timestamp,10,64)
 	transx.SubmitTime = submitTime
 	transx.From = append(transx.From, tx.From)
@@ -526,11 +616,48 @@ func (bs *NASBlockScanner) InitNasExtractResult(tx *NasTransaction, result *Extr
 	transx.WxID = wxID
 	txExtractData.Transaction = transx
 	if isFromAccount {
+		//input
+		txInput := &openwallet.TxInput{
+			SourceTxID:  "",  //utxo模型上的上一个交易输入源
+			SourceIndex: "",	//utxo模型上的上一个交易输入源
+		}
+		txInput.Recharge.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", result.TxID, 0, tx.From))))
+		txInput.Recharge.TxID = tx.Hash
+		txInput.Recharge.Address = tx.From
+		txInput.Recharge.Coin = openwallet.Coin{
+			Symbol:     bs.wm.Symbol(),
+			IsContract: false,
+		}
+		txInput.Recharge.Amount = tx.Value.Div(coinDecimal).String()
+		txInput.Recharge.BlockHash = tx.BlockHash
+		txInput.Recharge.BlockHeight = tx.BlockHeight
+		txInput.Recharge.Index = 0 //账户模型填0
+		txInput.Recharge.CreateAt = time.Now().Unix()
+		txExtractData.TxInputs = append(txExtractData.TxInputs, txInput)
+
 		result.extractData[tx.FromAccountId] = txExtractData
 	} else {
+		//output
+		txOutput := &openwallet.TxOutPut{
+			ExtParam: "", //扩展参数，用于记录utxo的解锁字段，账户模型中为空
+		}
+		txOutput.Recharge.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", result.TxID, 0, tx.From))))
+		txOutput.Recharge.TxID = tx.Hash
+		txOutput.Recharge.Address = tx.To
+		txOutput.Recharge.Coin = openwallet.Coin{
+			Symbol:     bs.wm.Symbol(),
+			IsContract: false,
+		}
+		txOutput.Recharge.Amount = tx.Value.Div(coinDecimal).String()
+		txOutput.Recharge.BlockHash = tx.BlockHash
+		txOutput.Recharge.BlockHeight = tx.BlockHeight
+		txOutput.Recharge.Index = 0 //账户模型填0
+		txOutput.Recharge.CreateAt = time.Now().Unix()
+		txExtractData.TxOutputs = append(txExtractData.TxOutputs, txOutput)
+
 		result.extractData[tx.ToAccountId] = txExtractData
 	}
-}
+}*/
 
 //ExtractTransaction 提取交易单
 func (bs *NASBlockScanner) ExtractTransaction(blockHeight uint64, blockHash string, txid string) ExtractResult {
@@ -856,12 +983,22 @@ func (bs *NASBlockScanner) GetScannedBlockHeight() uint64 {
 	return localHeight
 }
 
-func (bs *NASBlockScanner) ExtractTransactionData(txid string) (map[string]*openwallet.TxExtractData, error) {
+func (bs *NASBlockScanner) ExtractTransactionData(txid string, scanAddressFunc openwallet.BlockScanAddressFunc) (map[string][]*openwallet.TxExtractData, error) {
 	result := bs.ExtractTransaction(0, "", txid)
 	if !result.Success {
 		return nil, fmt.Errorf("extract transaction failed")
 	}
-	return result.extractData, nil
+
+	extData := make(map[string][]*openwallet.TxExtractData)
+	for key, data := range result.extractData {
+		txs := extData[key]
+		if txs == nil {
+			txs = make([]*openwallet.TxExtractData, 0)
+		}
+		txs = append(txs, data)
+		extData[key] = txs
+	}
+	return extData, nil
 }
 
 //DropRechargeRecords 清楚钱包的全部充值记录
@@ -1032,72 +1169,9 @@ func (wm *WalletManager) GetLocalBlock(height uint64) (*Block, error) {
 
 	return &block, nil
 }
-/*
-//GetBlock 获取区块数据
-func (wm *WalletManager) GetBlock(hash string) (*Block, error) {
 
-	if wm.Blockscanner.RPCServer == RPCServerExplorer {
-		return wm.getBlockByExplorer(hash)
-	} else {
-		return wm.getBlockByCore(hash)
-	}
-}
-
-//getBlockByCore 获取区块数据
-func (wm *WalletManager) getBlockByCore(hash string) (*Block, error) {
-
-	request := []interface{}{
-		hash,
-	}
-
-	result, err := wm.WalletClient.Call("getblock", request)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewBlock(result), nil
-}
-*/
-
-/*
-//GetTxIDsInMemPool 获取待处理的交易池中的交易单IDs
-func (wm *WalletManager) GetTxIDsInMemPool() ([]string, error) {
-
-	var (
-		txids = make([]string, 0)
-	)
-
-	result, err := wm.WalletClient.Call("getrawmempool", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if !result.IsArray() {
-		return nil, errors.New("no query record")
-	}
-
-	for _, txid := range result.Array() {
-		txids = append(txids, txid.String())
-	}
-
-	return txids, nil
-}
-*/
 //GetTransaction 获取交易单
 func (wm *WalletManager) GetTransaction(txid string,height uint64) (*NasTransaction, error) {
-
-	//request := []interface{}{
-	//	txid,
-	//	true,
-	//}
-	//
-	//result, err := wm.WalletClient.Call("getrawtransaction", request)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//return result, nil
-
 	Transaction_result, err := wm.WalletClient.CallGetTransactionReceipt(txid)
 	if err != nil {
 		return nil, err
@@ -1226,31 +1300,26 @@ func (bs *BTCBlockScanner) GetBalanceByAddress(address ...*openwallet.Address) (
 }
 */
 
-//GetTokenBalanceByAddress 查询地址token余额列表
-func (bs *NASBlockScanner) GetTokenBalanceByAddress(address ...*openwallet.Address) ([]*openwallet.TokenBalance, error) {
-	return nil, nil
-}
-
-//GetAssetsAccountTransactionsByAddress 查询账户相关地址的交易记录
-func (bs *NASBlockScanner) GetTransactionsByAddress(offset, limit int, coin *openwallet.Coin, address ...*openwallet.Address) ([]*openwallet.Transaction, error) {
-
-	return nil, nil
-}
-
 
 //实现BlockScanNotificationObject interface下的方法
 type subscriber struct{
 }
 //BlockScanNotify 新区块扫描完成通知
 func (sub *subscriber) BlockScanNotify(header *openwallet.BlockHeader) error{
-	fmt.Printf("header:%+v\n", header)
+	//fmt.Printf("header:%+v\n", header)
 	return nil
 }
 //BlockExtractDataNotify 区块提取结果通知
 func (sub *subscriber)BlockExtractDataNotify(sourceKey string, data *openwallet.TxExtractData) error{
 	fmt.Printf("account:%+v\n", sourceKey)
-	fmt.Printf("data.TxInputs=%+v\n", data.TxInputs)
-	fmt.Printf("data.TxOutputs=%+v\n", data.TxOutputs)
+
+	for _, TxInput := range data.TxInputs{
+		fmt.Printf("TxInput=%+v\n", TxInput)
+	}
+	for _, TxOutput := range data.TxOutputs{
+		fmt.Printf("TxOutput=%+v\n", TxOutput)
+	}
+//	fmt.Printf("data.TxOutputs=%+v\n", data.TxOutputs)
 	fmt.Printf("data.Transaction=%+v\n", data.Transaction)
 	return nil
 }

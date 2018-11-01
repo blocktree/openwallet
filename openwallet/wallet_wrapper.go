@@ -530,10 +530,15 @@ func (wrapper *WalletWrapper) SetAddressExtParam(address string, key string, val
 	}
 
 	var ext map[string]interface{}
-	err = json.Unmarshal([]byte(obj.ExtParam), &ext)
-	if err != nil {
+	if len(obj.ExtParam) == 0 {
 		ext = make(map[string]interface{})
+	} else {
+		err = json.Unmarshal([]byte(obj.ExtParam), &ext)
+		if err != nil {
+			return err
+		}
 	}
+
 	ext[key] = val
 
 	json, err := json.Marshal(ext)
