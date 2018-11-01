@@ -198,6 +198,43 @@ func TestTransfer_QTUM(t *testing.T) {
 
 }
 
+
+func TestTransfer_QRC20(t *testing.T) {
+
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "2by6wzbzw7cnWkxiA31xMHpFmE99bqL3BnjkUJnJtEN6"
+	to := "QfY78pcvLTYrU8YLvCSpb2bKDXrW3Lk6g3"
+
+	contract := openwallet.SmartContract{
+		Address:  "f2033ede578e17fa6231047265010445bca8cf1c",
+		Symbol:   "QTUM",
+		Name:     "QCASH",
+		Token:    "QC",
+		Decimals: 8,
+	}
+
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "2.345", "", &contract)
+	if err != nil {
+		return
+	}
+
+	_, err = testSignTransactionStep(rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testVerifyTransactionStep(rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testSubmitTransactionStep(rawTx)
+	if err != nil {
+		return
+	}
+
+}
+
 func TestTransfer_NAS(t *testing.T) {
 
 	//walletID := "VzQTLspxvbXSmfRGcN6LJVB8otYhJwAGWc"
