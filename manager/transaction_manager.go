@@ -76,7 +76,7 @@ func (wm *WalletManager) CreateErc20TokenTransaction(appID, walletID, accountID,
 }
 
 func (wm *WalletManager) CreateQrc20TokenTransaction(appID, walletID, accountID, sendAmount, toAddress, feeRate, memo,
-contractAddr, tokenName, tokenSymbol string, tokenDecimal uint64) (*openwallet.RawTransaction, error) {
+	contractAddr, tokenName, tokenSymbol string, tokenDecimal uint64) (*openwallet.RawTransaction, error) {
 	wrapper, err := wm.newWalletWrapper(appID, "")
 	if err != nil {
 		return nil, err
@@ -106,7 +106,7 @@ contractAddr, tokenName, tokenSymbol string, tokenDecimal uint64) (*openwallet.R
 				Decimals:   tokenDecimal,
 			},
 		},
-		Account:  account,
+		Account: account,
 		//gasPrice
 		FeeRate:  feeRate,
 		To:       map[string]string{toAddress: sendAmount},
@@ -154,7 +154,7 @@ func (wm *WalletManager) CreateTransaction(appID, walletID, accountID, amount, a
 			Symbol:     account.Symbol,
 			ContractID: contract.ContractID,
 			IsContract: true,
-			Contract: *contract,
+			Contract:   *contract,
 		}
 	} else {
 		coin = openwallet.Coin{
@@ -165,7 +165,7 @@ func (wm *WalletManager) CreateTransaction(appID, walletID, accountID, amount, a
 	}
 
 	rawTx := openwallet.RawTransaction{
-		Coin: coin,
+		Coin:     coin,
 		Account:  account,
 		FeeRate:  feeRate,
 		To:       map[string]string{address: amount},
@@ -290,56 +290,74 @@ func (wm *WalletManager) SubmitTransaction(appID, walletID, accountID string, ra
 	log.Debug("transaction has been submitted successfully")
 
 	des := make([]string, 0)
-
-	for to, _ := range rawTx.To {
+	totalSent := decimal.New(0, 0)
+	decimals := int32(0)
+	for to, amount := range rawTx.To {
 		des = append(des, to)
+		amountDec, decErr := decimal.NewFromString(amount)
+		if decErr != nil {
+			continue
+		}
+		totalSent = totalSent.Add(amountDec)
+	}
+
+	feesDec, _ := decimal.NewFromString(rawTx.Fees)
+	totalSent = totalSent.Add(feesDec)
+
+	if rawTx.Coin.IsContract {
+		decimals = int32(rawTx.Coin.Contract.Decimals)
+	} else {
+		decimals = int32(assetsMgr.Decimal())
 	}
 
 	tx := &openwallet.Transaction{
-		To:        des,
-		Coin:      rawTx.Coin,
-		TxID:      rawTx.TxID,
-		Decimal:   assetsMgr.Decimal(),
-		AccountID: rawTx.Account.AccountID,
+		To:         des,
+		Amount:     totalSent.StringFixed(decimals),
+		Coin:       rawTx.Coin,
+		TxID:       rawTx.TxID,
+		Decimal:    decimals,
+		AccountID:  rawTx.Account.AccountID,
+		Fees:       rawTx.Fees,
+		SubmitTime: time.Now().Unix(),
 	}
 
 	tx.WxID = openwallet.GenTransactionWxID(tx)
 
 	//提取交易单
-	scanner := assetsMgr.GetBlockScanner()
-	if scanner == nil {
-		log.Std.Error("[%s] is not block scan", account.Symbol)
-		return tx, nil
-	}
-
-	//GetSourceKeyByAddress 获取地址对应的数据源标识
-	scanAddressFunc := func (address string) (string, bool) {
-		scanAddr, scanErr := wrapper.GetAddress(address)
-		if scanErr != nil || scanAddr == nil {
-			return "", false
-		}
-		return scanAddr.AccountID, true
-	}
-
-	extractData, err := scanner.ExtractTransactionData(rawTx.TxID, scanAddressFunc)
-	if err != nil {
-		log.Error("ExtractTransactionData failed, unexpected error:", err)
-		return tx, nil
-	}
-
-	accountTxData, ok := extractData[accountID]
-	if !ok {
-		return tx, nil
-	}
-
-	txWrapper := openwallet.NewTransactionWrapper(wrapper)
-	for _, d := range accountTxData {
-		err = txWrapper.SaveBlockExtractData(accountID, d)
-		if err != nil {
-			log.Error("SaveBlockExtractData failed, unexpected error:", err)
-			return tx, err
-		}
-	}
+	//scanner := assetsMgr.GetBlockScanner()
+	//if scanner == nil {
+	//	log.Std.Error("[%s] is not block scan", account.Symbol)
+	//	return tx, nil
+	//}
+	//
+	////GetSourceKeyByAddress 获取地址对应的数据源标识
+	//scanAddressFunc := func (address string) (string, bool) {
+	//	scanAddr, scanErr := wrapper.GetAddress(address)
+	//	if scanErr != nil || scanAddr == nil {
+	//		return "", false
+	//	}
+	//	return scanAddr.AccountID, true
+	//}
+	//
+	//extractData, err := scanner.ExtractTransactionData(rawTx.TxID, scanAddressFunc)
+	//if err != nil {
+	//	log.Error("ExtractTransactionData failed, unexpected error:", err)
+	//	return tx, nil
+	//}
+	//
+	//accountTxData, ok := extractData[accountID]
+	//if !ok {
+	//	return tx, nil
+	//}
+	//
+	//txWrapper := openwallet.NewTransactionWrapper(wrapper)
+	//for _, d := range accountTxData {
+	//	err = txWrapper.SaveBlockExtractData(accountID, d)
+	//	if err != nil {
+	//		log.Error("SaveBlockExtractData failed, unexpected error:", err)
+	//		return tx, err
+	//	}
+	//}
 
 	log.Info("Save new transaction data successfully")
 
@@ -349,15 +367,15 @@ func (wm *WalletManager) SubmitTransaction(appID, walletID, accountID string, ra
 		log.Error("RefreshAssetsAccountBalance error:", err)
 	}
 
-	perfectTx, err := wm.GetTransactionByWxID(appID, tx.WxID)
-	if err != nil {
-		log.Error("GetTransactionByTxID failed, unexpected error:", err)
-		return tx, err
-	}
+	//perfectTx, err := wm.GetTransactionByWxID(appID, tx.WxID)
+	//if err != nil {
+	//	log.Error("GetTransactionByTxID failed, unexpected error:", err)
+	//	return tx, err
+	//}
 
 	//log.Error("perfectTx:", perfectTx)
-
-	return perfectTx, nil
+	return tx, nil
+	//return perfectTx, nil
 }
 
 //GetAssetsAccountBalance 获取账户余额
@@ -421,7 +439,6 @@ func (wm *WalletManager) GetAssetsAccountBalance(appID, walletID, accountID stri
 	return &accountBalance, nil
 }
 
-
 //GetAssetsAccountTokenBalance 获取账户Token余额
 func (wm *WalletManager) GetAssetsAccountTokenBalance(appID, walletID, accountID string, contract openwallet.SmartContract) (*openwallet.TokenBalance, error) {
 
@@ -482,7 +499,7 @@ func (wm *WalletManager) GetAssetsAccountTokenBalance(appID, walletID, accountID
 
 	accountTokenBalance := openwallet.TokenBalance{
 		Contract: &contract,
-		Balance: &accountBalance,
+		Balance:  &accountBalance,
 	}
 
 	return &accountTokenBalance, nil

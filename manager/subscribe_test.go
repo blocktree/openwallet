@@ -143,10 +143,10 @@ func TestSubscribeAddress_QTUM(t *testing.T) {
 		symbol = "QTUM"
 		accountID = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
 		addrs = []string{
-			"QhXS93hPpUcjoDxo192bmrbDubhH5UoQDp",	//合约收币
-			"QWSTGRwdScLfdr6agUqR4G7ow4Mjc4e5re",	//合约发币
-			"QbTQBADMqSuHM6wJk2e8w1KckqK5RRYrQ6",	//主链转账
-			"QREUcesH46vMeF6frLy92aR1QC22tADNda", 	//主链转账
+			"Qf6t5Ww14ZWVbG3kpXKoTt4gXeKNVxM9QJ",	//合约收币
+			//"QWSTGRwdScLfdr6agUqR4G7ow4Mjc4e5re",	//合约发币
+			//"QbTQBADMqSuHM6wJk2e8w1KckqK5RRYrQ6",	//主链转账
+			//"QREUcesH46vMeF6frLy92aR1QC22tADNda", 	//主链转账
 		}
 	)
 
@@ -167,7 +167,7 @@ func TestSubscribeAddress_QTUM(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	scanner.SetRescanBlockHeight(249878)
+	scanner.SetRescanBlockHeight(255323)
 
 
 	if scanner == nil {
