@@ -25,6 +25,7 @@ import (
 	"math/big"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/common"
+	"strings"
 )
 
 type ContractDecoder struct {
@@ -98,6 +99,8 @@ func (wm *WalletManager) GetQRC20Balance(token openwallet.SmartContract, address
 
 func (wm *WalletManager)GetQRC20UnspentByAddress(contractAddress, address string, tokenDecimal uint64, isTestNet bool) (decimal.Decimal, error) {
 
+	trimContractAddr := strings.TrimPrefix(contractAddress, "0x")
+
 	to32bytesArg, err := AddressTo32bytesArg(address, isTestNet)
 	if err != nil {
 		return decimal.New(0,0), err
@@ -107,7 +110,7 @@ func (wm *WalletManager)GetQRC20UnspentByAddress(contractAddress, address string
 	//fmt.Printf("combineString: %s\n",combineString)
 
 	request := []interface{}{
-		contractAddress,
+		trimContractAddr,
 		combineString,
 	}
 
@@ -146,6 +149,8 @@ func AmountTo32bytesArg(amount int64) (string, error) {
 
 func (wm *WalletManager)QRC20Transfer(contractAddress string, from string, to string, gasPrice string, amount decimal.Decimal, gasLimit int64, tokenDecimal uint64, isTestNet bool) (string, error){
 
+	trimContractAddr := strings.TrimPrefix(contractAddress, "0x")
+
 	amountDecimal := amount.Mul(decimal.New(1, int32(tokenDecimal)))
 	sotashiAmount := amountDecimal.IntPart()
 
@@ -165,7 +170,7 @@ func (wm *WalletManager)QRC20Transfer(contractAddress string, from string, to st
 	fmt.Printf("dataHex: %s\n",dataHex)
 
 	request := []interface{}{
-		contractAddress,
+		trimContractAddr,
 		dataHex,
 		0,
 		gasLimit,
