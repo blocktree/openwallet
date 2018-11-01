@@ -69,6 +69,8 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 
 	isTestNet := decoder.wm.config.isTestNet
 
+	//trimContractAddr := HashAddressToBaseAddress(rawTx.Coin.Contract.Address, isTestNet)
+
 	address, err := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID)
 	if err != nil {
 		return err
@@ -161,6 +163,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 			gasPrice string
 			totalQtum decimal.Decimal
 			unspent decimal.Decimal
+			change uint64
 		)
 
 		usedTokenUTXO := make([]*Unspent, 0)
@@ -213,7 +216,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 						ua, _ := decimal.NewFromString(u.Amount)
 						totalQtum = totalQtum.Add(ua)
 						usedUTXO = append(usedUTXO, u)
-						if totalQtum.GreaterThanOrEqual(computeTotalSend){
+						if totalQtum.GreaterThanOrEqual(feeLimit){
 							break
 						}
 
@@ -268,10 +271,15 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		if err != nil {
 			return err
 		}
+
 		//合约手续费在普通交易基础上加上0.16个qtum, 小数点8位
 		contractFees := fees.Add(decimal.New(16, -2)).Mul(decoder.wm.config.CoinDecimal)
 
-		change := txInTotal - uint64(contractFees.IntPart())
+		if txInTotal >= uint64(contractFees.IntPart()) {
+			change = txInTotal - uint64(contractFees.IntPart())
+		}else {
+			return fmt.Errorf("The fees(Qtum): %s is not enough! ", totalQtum.StringFixed(decoder.wm.Decimal()))
+		}
 
 		//装配输出
 		for to, amount = range rawTx.To {
