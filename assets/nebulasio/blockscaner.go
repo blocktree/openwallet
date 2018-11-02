@@ -564,7 +564,7 @@ func (bs *NASBlockScanner) InitNasExtractResult(tx *NasTransaction, result *Extr
 
 	txExtractData := &openwallet.TxExtractData{}
 	transx := &openwallet.Transaction{
-		Fees: decimal.RequireFromString(tx.Gas_used).Div(coinDecimal).String() ,
+		Fees: decimal.RequireFromString(tx.Gas_used).Mul(decimal.RequireFromString(tx.Gas_price)).Div(coinDecimal).StringFixed(bs.wm.Decimal()) ,
 		Coin: openwallet.Coin{
 			Symbol:     bs.wm.Symbol(),
 			IsContract: false,

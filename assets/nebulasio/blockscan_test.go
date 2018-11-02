@@ -84,7 +84,7 @@ func TestGetTxIDsInMemPool(t *testing.T) {
 func TestBTCBlockScanner_scanning(t *testing.T) {
 
 	accountID := "wjq2"
-	address := "n1gn5MezRMCRwdqwE3Cv6jknPfe1213XdEJ"
+	address := "n1Prn7ZbZtd5CTN8Yrj4K9c3gD4u8tjFQzX"
 
 	bs := NewNASBlockScanner(wm)
 
@@ -93,7 +93,7 @@ func TestBTCBlockScanner_scanning(t *testing.T) {
 	bs.AddObserver(&sub)
 
 	//重置区块扫描器的扫描开始高度
-	err := bs.SetRescanBlockHeight(1139278)
+	err := bs.SetRescanBlockHeight(39027)
 	if err != nil {
 		t.Errorf("SetRescanBlockHeight error: %v\n", err)
 		return
