@@ -323,7 +323,10 @@ func (c *HTTPClient) writeResponse(data DataPacket) error {
 		return fmt.Errorf("responseWriter is nil")
 	}
 	w := c.responseWriter
-	w.Write(respBytes)
+	_,err = w.Write(respBytes)
+	if err != nil {
+		return fmt.Errorf("responseWriter is close")
+	}
 	w.(http.Flusher).Flush()
 	return nil
 }
