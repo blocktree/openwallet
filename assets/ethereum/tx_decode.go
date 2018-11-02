@@ -260,6 +260,7 @@ func (this *EthTransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 	}
 
 	var fee *txFeeInfo
+	totalFee := big.NewInt(0)
 	//	var data string
 	for i, _ := range addrsBalanceList {
 		totalAmount := new(big.Int)
@@ -280,7 +281,6 @@ func (this *EthTransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 			}
 
 			totalAmount.Add(totalAmount, fee.Fee)
-
 			if addrsBalanceList[i].Balance.Cmp(totalAmount) > 0 {
 				//fromAddr = addrsBalanceList[i].address
 				fromAddr := &openwallet.Address{
@@ -302,10 +302,18 @@ func (this *EthTransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 				keySignList = append(keySignList, &openwallet.KeySignature{
 					Address: fromAddr,
 				})
+				totalFee.Add(totalFee, fee.Fee)
 				break
 			}
 		}
 	}
+
+	totalFeeDecimal, err := ConverWeiStringToEthDecimal(totalFee.String())
+	if err != nil {
+		log.Errorf("convert total fee from wei string to eth decimal failed, err=%v", err)
+		return err
+	}
+	rawTx.Fees = totalFeeDecimal.String()
 
 	if len(keySignList) != 1 {
 		return errors.New("no enough balance address found in wallet. ")
@@ -418,6 +426,7 @@ func (this *EthTransactionDecoder) CreateErc20TokenRawTransaction(wrapper openwa
 
 	var fee *txFeeInfo
 	var data string
+	totalFee := big.NewInt(0)
 	for i, _ := range addrsBalanceList {
 		//		totalAmount := new(big.Int)
 		if addrsBalanceList[i].TokenBalance.Cmp(amount) > 0 {
@@ -462,6 +471,8 @@ func (this *EthTransactionDecoder) CreateErc20TokenRawTransaction(wrapper openwa
 				keySignList = append(keySignList, &openwallet.KeySignature{
 					Address: fromAddr,
 				})
+
+				totalFee.Add(totalFee, fee.Fee)
 				break
 			}
 		}
@@ -470,6 +481,14 @@ func (this *EthTransactionDecoder) CreateErc20TokenRawTransaction(wrapper openwa
 	if len(keySignList) != 1 {
 		return errors.New("no enough balance address found in wallet. ")
 	}
+
+	totalFeeDecimal, err := ConverWeiStringToEthDecimal(totalFee.String())
+	if err != nil {
+		log.Errorf("convert fee from wei string to eth decimal failed, err=%v", err)
+		return err
+	}
+
+	rawTx.Fees = totalFeeDecimal.String()
 
 	_, nonce, err := this.GetTransactionCount2(keySignList[0].Address.Address)
 	if err != nil {
