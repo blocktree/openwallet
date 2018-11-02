@@ -178,6 +178,12 @@ func (decoder *TransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 		log.Error("convert wei string to gas price failed, err=", err)
 		return err
 	}
+	//最终手续费
+	fee, err := ConverWeiStringToNasDecimal(estimatefee.Fee.String())
+	if err != nil {
+		log.Error("convert wei string to gas price failed, err=", err)
+		return err
+	}
 
 	var nonce uint64
 	//获取db记录的nonce并确认nonce值
@@ -203,6 +209,7 @@ func (decoder *TransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 
 	rawTx.Signatures = signatureMap
 	rawTx.FeeRate = gasprice.String()
+	rawTx.Fees = fee.StringFixed(decoder.wm.Decimal())
 	rawTx.IsBuilt = true
 
 	return nil
@@ -351,6 +358,8 @@ func (decoder *TransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet
 	}
 	rawTx.TxID = txid
 	rawTx.IsSubmit = true
+
+	fmt.Printf("rawTx=%+v\n",rawTx)
 
 	return nil
 }

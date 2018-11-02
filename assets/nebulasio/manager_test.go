@@ -29,7 +29,7 @@ func init() {
 	wm.InitConfigFlow()
 	wm.Config.ServerAPI = "http://127.0.0.1:8685"
 	//wm.Config.ServerAPI = "https://mainnet.nebulas.io"
-	wm.WalletClient = NewClient(wm.Config.ServerAPI, true)
+	wm.WalletClient = NewClient(wm.Config.ServerAPI, false)
 }
 
 func TestWalletManager_InitConfigFlow(t *testing.T) {
