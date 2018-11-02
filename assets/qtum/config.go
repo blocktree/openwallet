@@ -44,6 +44,7 @@ const (
 	CurveType = owcrypt.ECC_CURVE_SECP256K1
 	RPCServerCore     = 0 //RPC服务，bitcoin核心钱包
 	RPCServerExplorer = 1 //RPC服务，insight-API
+	StakeConfirmations = 500 //qtum规定500个确认的权益
 )
 
 const (
