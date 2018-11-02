@@ -290,15 +290,6 @@ func (this *ETHBLockScanner) ScanBlockTask() {
 	this.RescanFailedTransactions()
 }
 
-//GetSourceKeyByAddress 获取地址对应的数据源标识
-func (this *ETHBLockScanner) GetSourceKeyByAddress(address string) (string, bool) {
-	this.Mu.RLock()
-	defer this.Mu.RUnlock()
-
-	sourceKey, ok := this.AddressInScanning[address]
-	return sourceKey, ok
-}
-
 //newExtractDataNotify 发送通知
 func (this *ETHBLockScanner) newExtractDataNotify(height uint64, tx *BlockTransaction, extractDataList map[string][]*openwallet.TxExtractData) error {
 
@@ -331,7 +322,7 @@ func (this *ETHBLockScanner) newExtractDataNotify(height uint64, tx *BlockTransa
 //bitcoin 1M的区块链可以容纳3000笔交易，批量多线程处理，速度更快
 func (this *ETHBLockScanner) BatchExtractTransaction(txs []BlockTransaction) error {
 	for i := range txs {
-		txs[i].filterFunc = this.GetSourceKeyByAddress
+		txs[i].filterFunc = this.ScanAddressFunc
 		extractResult, err := this.TransactionScanning(&txs[i])
 		if err != nil {
 			log.Errorf("transaction  failed, err=%v", err)
@@ -358,13 +349,13 @@ func (this *ETHBLockScanner) GetTxPoolPendingTxs() ([]BlockTransaction, error) {
 
 	var txs []BlockTransaction
 	for from, txsets := range txpoolContent.Pending {
-		if this.IsExistAddress(strings.ToLower(from)) {
+		if _, ok := this.ScanAddressFunc(strings.ToLower(from)); ok {
 			for nonce, _ := range txsets {
 				txs = append(txs, txsets[nonce])
 			}
 		} else {
 			for nonce, _ := range txsets {
-				if this.IsExistAddress(strings.ToLower(txsets[nonce].To)) {
+				if _, ok2 := this.ScanAddressFunc(strings.ToLower(txsets[nonce].To)); ok2 {
 					txs = append(txs, txsets[nonce])
 				}
 

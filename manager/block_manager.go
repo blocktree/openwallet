@@ -19,6 +19,47 @@ import (
 	"fmt"
 )
 
+//AddAddressForBlockScan 添加订阅地址
+func (wm *WalletManager) AddAddressForBlockScan(address, sourceKey string) error {
+	wm.mu.Lock()
+	defer wm.mu.Unlock()
+	wm.AddressInScanning[address] = sourceKey
+	return nil
+	//if _, exist := wm.WalletInScanning[sourceKey]; exist {
+	//	return
+	//}
+	//wm.WalletInScanning[sourceKey] = wrapper
+}
+
+//IsExistAddressForBlockScan 指定地址是否已登记扫描
+func (wm *WalletManager) IsExistAddressForBlockScan(address string) bool {
+	wm.mu.RLock()
+	defer wm.mu.RUnlock()
+
+	_, exist := wm.AddressInScanning[address]
+	return exist
+}
+
+//ClearAddressForBlockScan 清理订阅扫描的内容
+func (wm *WalletManager) ClearAddressForBlockScan() error {
+	wm.mu.Lock()
+	defer wm.mu.Unlock()
+	//wm.WalletInScanning = nil
+	wm.AddressInScanning = nil
+	wm.AddressInScanning = make(map[string]string)
+	//wm.WalletInScanning = make(map[string]*WalletWrapper)
+	return nil
+}
+
+//GetSourceKeyByAddressForBlockScan 获取地址对应的数据源标识
+func (wm *WalletManager) GetSourceKeyByAddressForBlockScan(address string) (string, bool) {
+	wm.mu.RLock()
+	defer wm.mu.RUnlock()
+
+	sourceKey, ok := wm.AddressInScanning[address]
+	return sourceKey, ok
+}
+
 func (wm *WalletManager) RescanBlockHeight(symbol string, startHeight uint64, endHeight uint64) error {
 
 	assetsMgr, err := GetAssetsManager(symbol)
@@ -33,7 +74,7 @@ func (wm *WalletManager) RescanBlockHeight(symbol string, startHeight uint64, en
 	}
 
 	if startHeight <= endHeight {
-		for i := startHeight;i<=endHeight;i++ {
+		for i := startHeight; i <= endHeight; i++ {
 			err := scanner.ScanBlock(i)
 			if err != nil {
 				continue
@@ -68,7 +109,6 @@ func (wm *WalletManager) SetRescanBlockHeight(symbol string, height uint64) erro
 	return nil
 }
 
-
 //GetNewBlockHeight 获取区块高度，（最新高度，已扫描高度）
 func (wm *WalletManager) GetNewBlockHeight(symbol string) (uint64, uint64, error) {
 
@@ -89,7 +129,6 @@ func (wm *WalletManager) GetNewBlockHeight(symbol string) (uint64, uint64, error
 	}
 
 	scannedHeight := scanner.GetScannedBlockHeight()
-
 
 	return header.Height, scannedHeight, nil
 }
