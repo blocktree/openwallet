@@ -30,7 +30,7 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/openwallet"
-	"github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-owcrypt"
 	"github.com/bytom/common"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"

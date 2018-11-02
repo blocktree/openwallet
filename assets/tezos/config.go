@@ -16,7 +16,7 @@
 package tezos
 
 import (
-	"github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-owcrypt"
 	"github.com/shopspring/decimal"
 	"time"
 	"path/filepath"

@@ -45,8 +45,8 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/openwallet"
-	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
-	owcrypt "github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-owcdrivers/owkeychain"
+	owcrypt "github.com/blocktree/go-owcrypt"
 	ethKStore "github.com/ethereum/go-ethereum/accounts/keystore"
 )
 

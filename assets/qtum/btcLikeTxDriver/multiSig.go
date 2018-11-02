@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 
-	"github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-owcrypt"
 )
 
 func CreateMultiSig(required byte, pubkeys [][]byte, isTestNet bool) (string, string, error) {

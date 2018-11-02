@@ -23,7 +23,7 @@ import (
 
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/shopspring/decimal"
-	"github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-owcrypt"
 )
 
 /*

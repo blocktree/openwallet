@@ -5,7 +5,7 @@ import (
 
 	"github.com/blocktree/OpenWallet/assets/ethereum"
 	"github.com/blocktree/OpenWallet/openwallet"
-	owcrypt "github.com/blocktree/go-OWCrypt"
+	owcrypt "github.com/blocktree/go-owcrypt"
 )
 
 const (

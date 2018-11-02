@@ -16,7 +16,7 @@
 package qtum
 
 import (
-	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"fmt"
 	"encoding/hex"
 	"strconv"

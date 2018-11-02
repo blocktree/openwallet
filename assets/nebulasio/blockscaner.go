@@ -20,7 +20,7 @@ import (
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
-	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
 	"path/filepath"

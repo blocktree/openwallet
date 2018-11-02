@@ -4,7 +4,7 @@ import (
 	"errors"
 	"math/big"
 
-	owcrypt "github.com/blocktree/go-OWCrypt"
+	owcrypt "github.com/blocktree/go-owcrypt"
 )
 
 type SignaturePubkey struct {

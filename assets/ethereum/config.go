@@ -28,7 +28,7 @@ import (
 	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/blocktree/OpenWallet/keystore"
 	"github.com/blocktree/OpenWallet/log"
-	owcrypt "github.com/blocktree/go-OWCrypt"
+	owcrypt "github.com/blocktree/go-owcrypt"
 )
 
 const (

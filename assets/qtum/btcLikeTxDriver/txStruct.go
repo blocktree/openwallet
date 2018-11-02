@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 
-	"github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-owcrypt"
 )
 
 const (

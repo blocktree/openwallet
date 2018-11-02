@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
-	"github.com/blocktree/go-OWCBasedFuncs/btcTransaction"
+	"github.com/blocktree/go-owcdrivers/btcTransaction"
 	"github.com/shopspring/decimal"
 	"sort"
 	"strings"

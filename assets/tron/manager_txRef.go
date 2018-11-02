@@ -23,8 +23,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
-	"github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
+	"github.com/blocktree/go-owcrypt"
 	"github.com/shopspring/decimal"
 
 	"github.com/golang/protobuf/proto"

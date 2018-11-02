@@ -37,10 +37,10 @@ import (
 	"strings"
 	"time"
 	"github.com/asdine/storm/q"
-	"github.com/blocktree/go-OWCrypt"
-	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
+	"github.com/blocktree/go-owcrypt"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
+	"github.com/blocktree/go-owcdrivers/owkeychain"
 	"encoding/hex"
 	"crypto/rand"
 )

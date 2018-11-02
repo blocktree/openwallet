@@ -16,8 +16,8 @@
 package omnicore
 
 import (
-	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
-	"github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
+	"github.com/blocktree/go-owcrypt"
 )
 
 func init() {

@@ -29,7 +29,7 @@ import (
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/blocktree/OpenWallet/openwallet"
-	"github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-owcrypt"
 	"github.com/bndr/gotabulate"
 	"github.com/shengdoushi/base58"
 )

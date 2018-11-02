@@ -20,7 +20,7 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/openwallet"
-	"github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-owcrypt"
 	"github.com/bytom/common"
 	"github.com/shopspring/decimal"
 	"math/big"

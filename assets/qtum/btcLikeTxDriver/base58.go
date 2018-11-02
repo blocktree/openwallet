@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-owcrypt"
 )
 
 // Errors

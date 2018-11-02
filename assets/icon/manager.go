@@ -30,11 +30,11 @@ import (
 	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/blocktree/OpenWallet/log"
-	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"encoding/base64"
 	"github.com/blocktree/OpenWallet/crypto/sha3"
 	//"github.com/go-ethereum/crypto/secp256k1"
-	"github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-owcrypt"
 	"sort"
 )
 
