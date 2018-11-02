@@ -75,18 +75,16 @@ func testSubmitTransactionStep(rawTx *openwallet.RawTransaction) (*openwallet.Ra
 	log.Info("wxID:", tx.WxID)
 	log.Info("txID:", rawTx.TxID)
 
-	log.Std.Info("tx: %v", tx)
-
 	return rawTx, nil
 }
 
 func TestTransfer_ETH(t *testing.T) {
 
-	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
-	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
-	to := "0x029C4B6c4C7294475D685a37d1C89F0c75ef8C5A"
+	walletID := "WGWfGtgo8uLxVKTWoWkzuoPELMtehb9Vda"
+	accountID := "6SVDyi7dgcJHG7V2DP2ZJUvzbRyr2PjTqFxym8pEEBrv"
+	to := "d35f9Ea14D063af9B3567064FAB567275b09f03D"
 
-	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.0013", "", nil)
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.0003", "", nil)
 	if err != nil {
 		return
 	}
@@ -112,7 +110,7 @@ func TestTransfer_ERC20(t *testing.T) {
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
-	to := "0x029C4B6c4C7294475D685a37d1C89F0c75ef8C5A"
+	to := "0xd35f9Ea14D063af9B3567064FAB567275b09f03D"
 
 	contract := openwallet.SmartContract{
 		Address:  "0x4092678e4E78230F46A1534C0fbc8fA39780892B",
@@ -122,7 +120,7 @@ func TestTransfer_ERC20(t *testing.T) {
 		Decimals: 18,
 	}
 
-	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "50", "", &contract)
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "1.1", "", &contract)
 	if err != nil {
 		return
 	}
@@ -148,7 +146,7 @@ func TestTransfer_LTC(t *testing.T) {
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "EbUsW3YaHQ61eNt3f4hDXJAFh9LGmLZWH1VTTSnQmhnL"
-	to := "n3ctLfAj8ksiXbVRCSQwEiyh2ZV8REAcUC"
+	to := "n1Prn7ZbZtd5CTN8Yrj4K9c3gD4u8tjFQzX"
 
 	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "1.1", "0.001", nil)
 	if err != nil {
@@ -200,25 +198,6 @@ func TestTransfer_QTUM(t *testing.T) {
 
 }
 
-func TestWalletManager_GetQRC20TokenBalance(t *testing.T) {
-	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
-	accountID := "2by6wzbzw7cnWkxiA31xMHpFmE99bqL3BnjkUJnJtEN6"
-
-	contract := openwallet.SmartContract{
-		Address:  "f2033ede578e17fa6231047265010445bca8cf1c",
-		Symbol:   "QTUM",
-		Name:     "QCASH",
-		Token:    "QC",
-		Decimals: 8,
-	}
-
-	balance, err := tm.GetAssetsAccountTokenBalance(testApp, walletID, accountID, contract)
-	if err != nil {
-		log.Error("GetAssetsAccountTokenBalance failed, unexpected error:", err)
-		return
-	}
-	log.Info("balance:", balance.Balance)
-}
 
 func TestTransfer_QRC20(t *testing.T) {
 
@@ -235,6 +214,38 @@ func TestTransfer_QRC20(t *testing.T) {
 	}
 
 	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "2.345", "", &contract)
+	if err != nil {
+		return
+	}
+
+	_, err = testSignTransactionStep(rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testVerifyTransactionStep(rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testSubmitTransactionStep(rawTx)
+	if err != nil {
+		return
+	}
+
+}
+
+func TestTransfer_NAS(t *testing.T) {
+
+	//walletID := "VzQTLspxvbXSmfRGcN6LJVB8otYhJwAGWc"
+	//accountID := "BjLtC1YN4sWQKzYHtNPdvx3D8yVfXmbyeCQTMHv4JUGG"
+	//to := "n1Prn7ZbZtd5CTN8Yrj4K9c3gD4u8tjFQzX"
+
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "7VftKuNoDtwZ3mn3wDA4smTDMz4iqCg3fNna1fXicVDg"
+	to := "n1J6e6RhZXuG1RpbcMYeeUShAo1e3QsJTXb"
+
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.2", "",nil)
 	if err != nil {
 		return
 	}
