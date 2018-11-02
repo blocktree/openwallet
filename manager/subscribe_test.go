@@ -90,12 +90,21 @@ func TestSubscribeAddress_ETH(t *testing.T) {
 		endRunning = make(chan bool, 1)
 		symbol = "ETH"
 		accountID = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
-		addrs = []string{
-			"0x558ef7a2b56611ef352b2ecf5d2dd2bf548afecc",
-			"0x95576498d5c2971bea1986ee92a3971de0747fc0",
-			"0x73995d52f20d9d40cbc339d5d2772d9cde6b6858",
+		addrs = map[string]string{
+			"0x558ef7a2b56611ef352b2ecf5d2dd2bf548afecc": accountID,
+			"0x95576498d5c2971bea1986ee92a3971de0747fc0": accountID,
+			"0x73995d52f20d9d40cbc339d5d2772d9cde6b6858": accountID,
 		}
 	)
+
+	//GetSourceKeyByAddress 获取地址对应的数据源标识
+	scanAddressFunc := func (address string) (string, bool) {
+		key, ok := addrs[address]
+		if !ok {
+			return "", false
+		}
+		return key, true
+	}
 
 	assetsMgr, err := GetAssetsManager(symbol)
 	if err != nil {
@@ -122,9 +131,7 @@ func TestSubscribeAddress_ETH(t *testing.T) {
 		return
 	}
 
-	for _, a := range addrs {
-		scanner.AddAddress(a, accountID)
- 	}
+	scanner.SetBlockScanAddressFunc(scanAddressFunc)
 
 
 	sub := subscriberSingle{}
@@ -142,13 +149,22 @@ func TestSubscribeAddress_QTUM(t *testing.T) {
 		endRunning = make(chan bool, 1)
 		symbol = "QTUM"
 		accountID = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
-		addrs = []string{
-			"Qf6t5Ww14ZWVbG3kpXKoTt4gXeKNVxM9QJ",	//合约收币
+		addrs = map[string]string{
+			"Qf6t5Ww14ZWVbG3kpXKoTt4gXeKNVxM9QJ": accountID,	//合约收币
 			//"QWSTGRwdScLfdr6agUqR4G7ow4Mjc4e5re",	//合约发币
 			//"QbTQBADMqSuHM6wJk2e8w1KckqK5RRYrQ6",	//主链转账
 			//"QREUcesH46vMeF6frLy92aR1QC22tADNda", 	//主链转账
 		}
 	)
+
+	//GetSourceKeyByAddress 获取地址对应的数据源标识
+	scanAddressFunc := func (address string) (string, bool) {
+		key, ok := addrs[address]
+		if !ok {
+			return "", false
+		}
+		return key, true
+	}
 
 	assetsMgr, err := GetAssetsManager(symbol)
 	if err != nil {
@@ -175,9 +191,7 @@ func TestSubscribeAddress_QTUM(t *testing.T) {
 		return
 	}
 
-	for _, a := range addrs {
-		scanner.AddAddress(a, accountID)
-	}
+	scanner.SetBlockScanAddressFunc(scanAddressFunc)
 
 
 	sub := subscriberSingle{}
@@ -196,11 +210,20 @@ func TestSubscribeAddress_LTC(t *testing.T) {
 		endRunning = make(chan bool, 1)
 		symbol = "LTC"
 		accountID = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
-		addrs = []string{
-			"QZn9j1oWxcYCdL8VBKPfv1SAXNaAEYjoga",	//主链转账
-			"QYkwzDhU7UyKd4hdX69c24unYjynVyYKot", 	//主链转账
+		addrs = map[string]string{
+			"QZn9j1oWxcYCdL8VBKPfv1SAXNaAEYjoga": accountID,	//主链转账
+			"QYkwzDhU7UyKd4hdX69c24unYjynVyYKot": accountID, 	//主链转账
 		}
 	)
+
+	//GetSourceKeyByAddress 获取地址对应的数据源标识
+	scanAddressFunc := func (address string) (string, bool) {
+		key, ok := addrs[address]
+		if !ok {
+			return "", false
+		}
+		return key, true
+	}
 
 	assetsMgr, err := GetAssetsManager(symbol)
 	if err != nil {
@@ -227,9 +250,7 @@ func TestSubscribeAddress_LTC(t *testing.T) {
 		return
 	}
 
-	for _, a := range addrs {
-		scanner.AddAddress(a, accountID)
-	}
+	scanner.SetBlockScanAddressFunc(scanAddressFunc)
 
 
 	sub := subscriberSingle{}
@@ -247,11 +268,20 @@ func TestSubscribeAddress_NAS(t *testing.T) {
 		endRunning = make(chan bool, 1)
 		symbol = "NAS"
 		accountID = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
-		addrs = []string{
-			"n1cT1JhXUQFxDSyBYwcn3ZBmd93nin5yrfB",	//主链转账
-			"n1J6e6RhZXuG1RpbcMYeeUShAo1e3QsJTXb", 	//主链转账
+		addrs = map[string]string{
+			"n1cT1JhXUQFxDSyBYwcn3ZBmd93nin5yrfB": accountID,	//主链转账
+			"n1J6e6RhZXuG1RpbcMYeeUShAo1e3QsJTXb": accountID, 	//主链转账
 		}
 	)
+
+	//GetSourceKeyByAddress 获取地址对应的数据源标识
+	scanAddressFunc := func (address string) (string, bool) {
+		key, ok := addrs[address]
+		if !ok {
+			return "", false
+		}
+		return key, true
+	}
 
 	assetsMgr, err := GetAssetsManager(symbol)
 	if err != nil {
@@ -278,9 +308,7 @@ func TestSubscribeAddress_NAS(t *testing.T) {
 		return
 	}
 
-	for _, a := range addrs {
-		scanner.AddAddress(a, accountID)
-	}
+	scanner.SetBlockScanAddressFunc(scanAddressFunc)
 
 
 	sub := subscriberSingle{}

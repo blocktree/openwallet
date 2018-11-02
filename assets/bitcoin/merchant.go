@@ -207,7 +207,7 @@ func (wm *WalletManager) RemoveMerchantObserverForBlockScan(obj openwallet.Block
 	wm.Blockscanner.RemoveObserver(obj)
 	if len(wm.Blockscanner.Observers) == 0 {
 		wm.Blockscanner.Stop()
-		wm.Blockscanner.Clear()
+		//wm.Blockscanner.Clear()
 	}
 }
 
