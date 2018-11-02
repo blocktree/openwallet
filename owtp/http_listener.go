@@ -56,10 +56,12 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	//创建一个上下文通知，监控节点是否已经关闭
 	ctx, cancel := context.WithCancel(context.Background())
 
-	var cnCh <-chan bool
-	if cn, ok := w.(http.CloseNotifier); ok {
-		cnCh = cn.CloseNotify()
-	}
+	//var cnCh <-chan bool
+	//if cn, ok := w.(http.CloseNotifier); ok {
+	//	cnCh = cn.CloseNotify()
+	//}
+
+	httpCtx := r.Context()
 
 	header := r.Header
 	if header == nil {
@@ -87,7 +89,8 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case <-l.closed:
 		//peer.Close()
 		return
-	case <-cnCh:
+	//case <-cnCh:
+	case <-httpCtx.Done():
 		log.Debug("http CloseNotify")
 		return
 	}
@@ -100,7 +103,8 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case <-l.closed:
 		//log.Debug("peer 2:", peer.PID(), "closed")
 		peer.Close()
-	case <-cnCh:
+	//case <-cnCh:
+	case <-httpCtx.Done():
 		log.Debug("http CloseNotify")
 		return
 	}
@@ -127,11 +131,11 @@ func HttpListenAddr(addr string, handler PeerHandler) (*httpListener, error) {
 		return nil, err
 	}
 	listener := httpListener{
-		Listener:  l,
-		laddr:     addr,
-		handler:   handler,
-		incoming:  make(chan Peer),
-		closed:    make(chan struct{}),
+		Listener: l,
+		laddr:    addr,
+		handler:  handler,
+		incoming: make(chan Peer),
+		closed:   make(chan struct{}),
 	}
 
 	go listener.serve()
