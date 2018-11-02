@@ -296,3 +296,35 @@ func newNasTransaction(transaction *gjson.Result,block *Block) *NasTransaction {
 
 	return &obj
 }
+
+
+func newBalanceByExplorer(json *gjson.Result) *openwallet.Balance {
+
+	/*
+
+		{
+			"addrStr": "mnMSQs3HZ5zhJrCEKbqGvcDLjAAxvDJDCd",
+			"balance": 3136.82244887,
+			"balanceSat": 313682244887,
+			"totalReceived": 3136.82244887,
+			"totalReceivedSat": 313682244887,
+			"totalSent": 0,
+			"totalSentSat": 0,
+			"unconfirmedBalance": 0,
+			"unconfirmedBalanceSat": 0,
+			"unconfirmedTxApperances": 0,
+			"txApperances": 3909
+		}
+
+	*/
+	obj := openwallet.Balance{}
+	//解析json
+	obj.Address = gjson.Get(json.Raw, "addrStr").String()
+	obj.Balance = gjson.Get(json.Raw, "balance").String()
+	obj.UnconfirmBalance = gjson.Get(json.Raw, "unconfirmedBalance").String()
+	u, _ := decimal.NewFromString(obj.UnconfirmBalance)
+	b, _ := decimal.NewFromString(obj.UnconfirmBalance)
+	obj.ConfirmBalance = b.Sub(u).StringFixed(8)
+
+	return &obj
+}

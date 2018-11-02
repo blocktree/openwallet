@@ -564,7 +564,7 @@ func (bs *NASBlockScanner) InitNasExtractResult(tx *NasTransaction, result *Extr
 
 	txExtractData := &openwallet.TxExtractData{}
 	transx := &openwallet.Transaction{
-		Fees: decimal.RequireFromString(tx.Gas_used).Div(coinDecimal).String() ,
+		Fees: decimal.RequireFromString(tx.Gas_used).Mul(decimal.RequireFromString(tx.Gas_price)).Div(coinDecimal).StringFixed(bs.wm.Decimal()) ,
 		Coin: openwallet.Coin{
 			Symbol:     bs.wm.Symbol(),
 			IsContract: false,
@@ -1277,29 +1277,21 @@ func (wm *WalletManager) DeleteUnscanRecord(height uint64) error {
 	return nil
 }
 
-/*
 //GetAssetsAccountBalanceByAddress 查询账户相关地址的交易记录
-func (bs *BTCBlockScanner) GetBalanceByAddress(address ...*openwallet.Address) ([]*openwallet.Balance, error) {
-
-	if bs.RPCServer != RPCServerExplorer {
-		return nil, nil
-	}
+func (bs *NASBlockScanner) GetBalanceByAddress(address ...string) ([]*openwallet.Balance, error) {
 
 	addrsBalance := make([]*openwallet.Balance, 0)
 
 	for _, a := range address {
-		balance, err := bs.wm.getBalanceByExplorer(a.Address)
+		balance, err := bs.wm.BsGetBalanceByAddress(a)
 		if err != nil {
 			return nil, err
 		}
-
 		addrsBalance = append(addrsBalance, balance)
 	}
 
 	return addrsBalance, nil
 }
-*/
-
 
 //实现BlockScanNotificationObject interface下的方法
 type subscriber struct{

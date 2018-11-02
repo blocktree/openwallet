@@ -99,8 +99,6 @@ func NewWalletManager() *WalletManager {
 	//交易单解析器
 	wm.TxDecoder = NewTransactionDecoder(&wm)
 
-	wm.WalletClient = NewClient(wm.Config.ServerAPI, false)
-
 	return &wm
 }
 
@@ -999,7 +997,7 @@ func (wm *WalletManager) LoadConfig() error {
 		return errors.New("Config is not setup. Please run 'wmd Config -s <symbol>' ")
 	}
 
-	wm.Config.ServerAPI = c.String("apiUrl")
+	/*	、、wm.Config.ServerAPI = c.String("apiUrl")
 
 	if  c.String("threshold") == ""{
 		return errors.New(fmt.Sprintf(" threshold is not set, uint is NAS... Please set it in './conf/%s.ini' \n", Symbol))
@@ -1014,7 +1012,9 @@ func (wm *WalletManager) LoadConfig() error {
 	}
 	wm.Config.CycleSeconds, _ = time.ParseDuration(cyclesec)
 	wm.WalletClient = NewClient(wm.Config.ServerAPI,false)
+*/
 
+	wm.LoadAssetsConfig(c)
 	return nil
 }
 
@@ -1237,4 +1237,22 @@ func (wm *WalletManager) ConfirmTxdecodeNonce(addr string,nonce_DB string) uint6
 	}
 
 	return nonce_submit
+}
+
+//BsGetBalanceByAddress区块扫描器获取余额
+func (wm *WalletManager) BsGetBalanceByAddress(addr string) (*openwallet.Balance, error){
+
+	balance_wei ,err := wm.WalletClient.CallGetaccountstate(addr,"balance")
+	if err != nil{
+		return nil ,err
+	}
+	balance_decimal ,_:= decimal.NewFromString(balance_wei)
+	balance := balance_decimal.Div(coinDecimal)
+
+	Balance := &openwallet.Balance{
+		Address:	addr,
+		Balance:	balance.String(),
+	}
+
+	return Balance,nil
 }

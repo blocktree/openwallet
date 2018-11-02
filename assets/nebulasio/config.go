@@ -106,7 +106,7 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	//备份路径
 	c.backupDir = filepath.Join("data", strings.ToLower(c.Symbol), "backup")
 	//钱包服务API
-	c.ServerAPI = "http://127.0.0.1:8685"
+	c.ServerAPI = ""
 	//gas limit
 	c.GasLimit = decimal.NewFromFloat(0.0001)        //0.0001 XTZ
 	//钱包安装的路径
@@ -182,8 +182,7 @@ func (wm *WalletManager) InitAssetsConfig() (config.Configer, error) {
 //LoadAssetsConfig 加载外部配置
 func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 
-	fmt.Printf("12333\n")
-	wm.Config.ServerAPI = c.String("serverAPI")
+	wm.Config.ServerAPI = c.String("apiURL")
 	wm.Config.Threshold, _ = decimal.NewFromString(c.String("threshold"))
 	wm.Config.SumAddress = c.String("sumAddress")
 	wm.Config.NodeInstallPath = c.String("nodeInstallPath")
@@ -191,6 +190,8 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 
 	cyclesec := c.String("cycleSeconds")
 	wm.Config.CycleSeconds, _ = time.ParseDuration(cyclesec)
+
+	wm.WalletClient = NewClient(wm.Config.ServerAPI,  false)
 
 	return nil
 }
