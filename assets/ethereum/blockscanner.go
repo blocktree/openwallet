@@ -290,15 +290,6 @@ func (this *ETHBLockScanner) ScanBlockTask() {
 	this.RescanFailedTransactions()
 }
 
-//GetSourceKeyByAddress 获取地址对应的数据源标识
-func (this *ETHBLockScanner) GetSourceKeyByAddress(address string) (string, bool) {
-	this.Mu.RLock()
-	defer this.Mu.RUnlock()
-
-	sourceKey, ok := this.AddressInScanning[address]
-	return sourceKey, ok
-}
-
 //newExtractDataNotify 发送通知
 func (this *ETHBLockScanner) newExtractDataNotify(height uint64, tx *BlockTransaction, extractDataList map[string][]*openwallet.TxExtractData) error {
 
@@ -331,7 +322,7 @@ func (this *ETHBLockScanner) newExtractDataNotify(height uint64, tx *BlockTransa
 //bitcoin 1M的区块链可以容纳3000笔交易，批量多线程处理，速度更快
 func (this *ETHBLockScanner) BatchExtractTransaction(txs []BlockTransaction) error {
 	for i := range txs {
-		txs[i].filterFunc = this.GetSourceKeyByAddress
+		txs[i].filterFunc = this.ScanAddressFunc
 		extractResult, err := this.TransactionScanning(&txs[i])
 		if err != nil {
 			log.Errorf("transaction  failed, err=%v", err)

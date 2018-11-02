@@ -36,6 +36,10 @@ type BlockScanner interface {
 	//@param sourceKey 数据源标识，可以是地址所属的应用钱包的唯一标识，资产账户唯一标识
 	AddAddress(address, sourceKey string) error
 
+	//SetBlockScanAddressFunc 设置区块扫描过程，查找地址过程方法
+	//@required
+	SetBlockScanAddressFunc(scanAddressFunc BlockScanAddressFunc) error
+
 	//AddObserver 添加观测者
 	AddObserver(obj BlockScanNotificationObject) error
 
@@ -133,6 +137,7 @@ type BlockScannerBase struct {
 	Observers         map[BlockScanNotificationObject]bool //观察者
 	Scanning          bool                                 //是否扫描中
 	PeriodOfTask      time.Duration
+	ScanAddressFunc   BlockScanAddressFunc //区块扫描查询地址算法
 }
 
 //NewBTCBlockScanner 创建区块链扫描器
@@ -145,25 +150,11 @@ func NewBlockScannerBase() *BlockScannerBase {
 	return &bs
 }
 
-//AddAddress 添加订阅地址
-func (bs *BlockScannerBase) AddAddress(address, sourceKey string) error {
-	bs.Mu.Lock()
-	defer bs.Mu.Unlock()
-	bs.AddressInScanning[address] = sourceKey
+//SetBlockScanAddressFunc 设置区块扫描过程，查找地址过程方法
+//@required
+func (bs *BlockScannerBase) SetBlockScanAddressFunc(scanAddressFunc BlockScanAddressFunc) error {
+	bs.ScanAddressFunc = scanAddressFunc
 	return nil
-	//if _, exist := bs.WalletInScanning[sourceKey]; exist {
-	//	return
-	//}
-	//bs.WalletInScanning[sourceKey] = wrapper
-}
-
-//IsExistAddress 指定地址是否已登记扫描
-func (bs *BlockScannerBase) IsExistAddress(address string) bool {
-	bs.Mu.RLock()
-	defer bs.Mu.RUnlock()
-
-	_, exist := bs.AddressInScanning[address]
-	return exist
 }
 
 //IsExistWallet 指定账户的钱包是否已登记扫描
@@ -204,17 +195,6 @@ func (bs *BlockScannerBase) RemoveObserver(obj BlockScanNotificationObject) erro
 	return nil
 }
 
-//Clear 清理订阅扫描的内容
-func (bs *BlockScannerBase) Clear() error {
-	bs.Mu.Lock()
-	defer bs.Mu.Unlock()
-	//bs.WalletInScanning = nil
-	bs.AddressInScanning = nil
-	bs.AddressInScanning = make(map[string]string)
-	//bs.WalletInScanning = make(map[string]*WalletWrapper)
-	return nil
-}
-
 //SetRescanBlockHeight 重置区块链扫描高度
 func (bs *BlockScannerBase) SetRescanBlockHeight(height uint64) error {
 	return nil
@@ -233,6 +213,10 @@ func (bs *BlockScannerBase) SetTask(task func()) {
 
 //Run 运行
 func (bs *BlockScannerBase) Run() error {
+
+	if bs.ScanAddressFunc == nil {
+		return fmt.Errorf("BlockScanAddressFunc is not set up")
+	}
 
 	if bs.Scanning {
 		log.Warn("block scanner is running... ")
@@ -274,12 +258,12 @@ func (bs *BlockScannerBase) Restart() error {
 //ScanBlock 扫描指定高度区块
 func (bs *BlockScannerBase) ScanBlock(height uint64) error {
 	//扫描指定高度区块
-	return nil
+	return fmt.Errorf("ScanBlock is not implemented")
 }
 
 //GetCurrentBlockHeight 获取当前区块高度
 func (bs *BlockScannerBase) GetCurrentBlockHeader() (*BlockHeader, error) {
-	return nil, nil
+	return nil, fmt.Errorf("GetCurrentBlockHeader is not implemented")
 }
 
 //GetScannedBlockHeight 获取已扫区块高度
@@ -288,11 +272,12 @@ func (bs *BlockScannerBase) GetScannedBlockHeight() uint64 {
 }
 
 func (bs *BlockScannerBase) ExtractTransactionData(txid string, scanAddressFunc BlockScanAddressFunc) (map[string][]*TxExtractData, error) {
-	return nil, nil
+	return nil, fmt.Errorf("ExtractTransactionData is not implemented")
 }
+
 //GetBalanceByAddress 查询地址余额
 func (bs *BlockScannerBase) GetBalanceByAddress(address ...string) ([]*Balance, error) {
-	return nil, nil
+	return nil, fmt.Errorf("GetBalanceByAddress is not implemented")
 }
 
 //GetTokenBalanceByAddress 查询地址token余额列表
@@ -303,5 +288,5 @@ func (bs *BlockScannerBase) GetBalanceByAddress(address ...string) ([]*Balance, 
 //GetTransactionsByAddress 查询基于账户的交易记录，通过账户关系的地址
 //返回的交易记录以资产账户为集合的结果，转账数量以基于账户来计算
 func (bs *BlockScannerBase) GetTransactionsByAddress(offset, limit int, coin Coin, address ...string) ([]*TxExtractData, error) {
-	return nil, nil
+	return nil, fmt.Errorf("GetTransactionsByAddress is not implemented")
 }

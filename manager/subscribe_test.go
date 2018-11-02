@@ -239,3 +239,54 @@ func TestSubscribeAddress_LTC(t *testing.T) {
 
 	<-endRunning
 }
+
+
+func TestSubscribeAddress_NAS(t *testing.T) {
+
+	var (
+		endRunning = make(chan bool, 1)
+		symbol = "NAS"
+		accountID = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
+		addrs = []string{
+			"n1cT1JhXUQFxDSyBYwcn3ZBmd93nin5yrfB",	//主链转账
+			"n1J6e6RhZXuG1RpbcMYeeUShAo1e3QsJTXb", 	//主链转账
+		}
+	)
+
+	assetsMgr, err := GetAssetsManager(symbol)
+	if err != nil {
+		log.Error(symbol, "is not support")
+		return
+	}
+
+	//读取配置
+	absFile := filepath.Join(configFilePath, symbol + ".ini")
+
+	c, err := config.NewConfig("ini", absFile)
+	if err != nil {
+		return
+	}
+	assetsMgr.LoadAssetsConfig(c)
+
+	//log.Debug("already got scanner:", assetsMgr)
+	scanner := assetsMgr.GetBlockScanner()
+	scanner.SetRescanBlockHeight(1215112)
+
+
+	if scanner == nil {
+		log.Error(symbol, "is not support block scan")
+		return
+	}
+
+	for _, a := range addrs {
+		scanner.AddAddress(a, accountID)
+	}
+
+
+	sub := subscriberSingle{}
+	scanner.AddObserver(&sub)
+
+	scanner.Run()
+
+	<-endRunning
+}

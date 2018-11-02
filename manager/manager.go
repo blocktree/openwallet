@@ -56,6 +56,7 @@ type WalletManager struct {
 	mu                sync.RWMutex
 	observers         map[NotificationObject]bool //观察者
 	importAddressTask *timer.TaskTimer
+	AddressInScanning map[string]string                    //加入扫描的地址
 }
 
 // NewWalletManager
@@ -83,6 +84,7 @@ func (wm *WalletManager) Init() {
 
 	wm.observers = make(map[NotificationObject]bool)
 	wm.appDB = make(map[string]*openwallet.StormDB)
+	wm.AddressInScanning = make(map[string]string)
 
 	wm.initialized = true
 
@@ -223,6 +225,27 @@ func (wm *WalletManager) initSupportAssetsAdapter() error {
 		return err
 	}
 
+	wm.ClearAddressForBlockScan()
+
+	for _, appID := range appIDs {
+
+		wrapper, err := wm.newWalletWrapper(appID, "")
+		if err != nil {
+			log.Error("wallet manager init unexpected error:", err)
+			continue
+		}
+
+		addrs, err := wrapper.GetAddressList(0, -1)
+
+		for _, address := range addrs {
+			key := wm.encodeSourceKey(appID, address.AccountID)
+			wm.AddAddressForBlockScan(address.Address, key)
+
+			//log.Debug("import address:", address, "key:", key, "to block scanner")
+		}
+
+	}
+
 	for _, symbol := range wm.cfg.SupportAssets {
 		assetsMgr, err := GetAssetsManager(symbol)
 		if err != nil {
@@ -257,24 +280,8 @@ func (wm *WalletManager) initSupportAssetsAdapter() error {
 		//添加观测者到区块扫描器
 		scanner.AddObserver(wm)
 
-		for _, appID := range appIDs {
-
-			wrapper, err := wm.newWalletWrapper(appID, "")
-			if err != nil {
-				log.Error("wallet manager init unexpected error:", err)
-				continue
-			}
-
-			addrs, err := wrapper.GetAddressList(0, -1)
-
-			for _, address := range addrs {
-				key := wm.encodeSourceKey(appID, address.AccountID)
-				scanner.AddAddress(address.Address, key)
-
-				//log.Debug("import address:", address, "key:", key, "to block scanner")
-			}
-
-		}
+		//设置查找地址算法
+		scanner.SetBlockScanAddressFunc(wm.GetSourceKeyByAddressForBlockScan)
 
 		scanner.Run()
 	}
