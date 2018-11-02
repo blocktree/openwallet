@@ -349,13 +349,13 @@ func (this *ETHBLockScanner) GetTxPoolPendingTxs() ([]BlockTransaction, error) {
 
 	var txs []BlockTransaction
 	for from, txsets := range txpoolContent.Pending {
-		if this.IsExistAddress(strings.ToLower(from)) {
+		if _, ok := this.ScanAddressFunc(strings.ToLower(from)); ok {
 			for nonce, _ := range txsets {
 				txs = append(txs, txsets[nonce])
 			}
 		} else {
 			for nonce, _ := range txsets {
-				if this.IsExistAddress(strings.ToLower(txsets[nonce].To)) {
+				if _, ok2 := this.ScanAddressFunc(strings.ToLower(txsets[nonce].To)); ok2 {
 					txs = append(txs, txsets[nonce])
 				}
 
