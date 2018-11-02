@@ -16,14 +16,15 @@
 package nebulasio
 
 import (
-	"github.com/astaxie/beego/config"
-	"github.com/blocktree/go-owcrypt"
-	"github.com/shopspring/decimal"
-	"time"
+	"fmt"
 	"path/filepath"
 	"strings"
-	"fmt"
+	"time"
+
+	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common/file"
+	"github.com/blocktree/go-owcrypt"
+	"github.com/shopspring/decimal"
 )
 
 /*
@@ -39,10 +40,10 @@ import (
 
 const (
 	//币种
-	Symbol = "NAS"
+	Symbol    = "NAS"
 	MasterKey = "Nas seed"
 	CurveType = owcrypt.ECC_CURVE_SECP256K1
-	Gaslimit = "2000000"
+	Gaslimit  = "2000000"
 )
 
 type WalletConfig struct {
@@ -108,7 +109,7 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	//钱包服务API
 	c.ServerAPI = ""
 	//gas limit
-	c.GasLimit = decimal.NewFromFloat(0.0001)        //0.0001 XTZ
+	c.GasLimit = decimal.NewFromFloat(0.0001) //0.0001 XTZ
 	//钱包安装的路径
 	c.NodeInstallPath = ""
 	//钱包数据文件目录
@@ -187,11 +188,10 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 	wm.Config.SumAddress = c.String("sumAddress")
 	wm.Config.NodeInstallPath = c.String("nodeInstallPath")
 
-
 	cyclesec := c.String("cycleSeconds")
 	wm.Config.CycleSeconds, _ = time.ParseDuration(cyclesec)
 
-	wm.WalletClient = NewClient(wm.Config.ServerAPI,  false)
+	wm.WalletClient = NewClient(wm.Config.ServerAPI, false)
 
 	return nil
 }

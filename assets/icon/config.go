@@ -16,13 +16,14 @@
 package icon
 
 import (
-	"github.com/blocktree/go-owcrypt"
-	"github.com/shopspring/decimal"
-	"time"
+	"fmt"
 	"path/filepath"
 	"strings"
-	"fmt"
+	"time"
+
 	"github.com/blocktree/OpenWallet/common/file"
+	"github.com/blocktree/go-owcrypt"
+	"github.com/shopspring/decimal"
 )
 
 /*
@@ -38,7 +39,7 @@ import (
 
 const (
 	//币种
-	Symbol = "ICX"
+	Symbol    = "ICX"
 	MasterKey = "Icon seed"
 	CurveType = owcrypt.ECC_CURVE_SECP256K1
 )

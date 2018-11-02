@@ -29,7 +29,7 @@ import (
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/blocktree/OpenWallet/log"
-	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
+	"github.com/blocktree/go-owcdrivers/owkeychain"
 )
 
 type WalletDBFile WrapperSourceFile

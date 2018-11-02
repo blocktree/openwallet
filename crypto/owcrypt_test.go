@@ -19,7 +19,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"testing"
-	"github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-owcrypt"
 )
 
 func slide_cmp_equ(a []byte, b []byte, length uint16) bool {

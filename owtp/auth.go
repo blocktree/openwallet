@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"github.com/blocktree/OpenWallet/crypto"
 	"github.com/blocktree/OpenWallet/log"
-	"github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-owcrypt"
 	"github.com/mr-tron/base58/base58"
 	"net/http"
 	"strconv"

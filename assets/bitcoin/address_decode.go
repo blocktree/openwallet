@@ -17,6 +17,7 @@ package bitcoin
 
 import (
 	"fmt"
+
 	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/blocktree/go-owcrypt"
 )

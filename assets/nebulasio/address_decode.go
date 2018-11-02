@@ -49,18 +49,18 @@ func NewAddressDecoder(wm *WalletManager) *addressDecoder {
 
 //PrivateKeyToWIF 私钥转WIF
 func (decoder *addressDecoder) PrivateKeyToWIF(priv []byte, isTestnet bool) (string, error) {
-/*
-	cfg := addressEncoder.NAS_AccountAddress
+	/*
+		cfg := addressEncoder.NAS_AccountAddress
 
-	//privateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), priv)
-	//wif, err := btcutil.NewWIF(privateKey, &cfg, true)
-	//if err != nil {
-	//	return "", err
-	//}
+		//privateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), priv)
+		//wif, err := btcutil.NewWIF(privateKey, &cfg, true)
+		//if err != nil {
+		//	return "", err
+		//}
 
-	wif := addressEncoder.AddressEncode(priv, cfg)
+		wif := addressEncoder.AddressEncode(priv, cfg)
 
-	return wif, nil*/
+		return wif, nil*/
 	return "", nil
 }
 
@@ -70,7 +70,7 @@ func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (s
 	PublicKey_decode := pub
 	// 如入参是33字节的压缩公钥进行解压成65字节
 	// 04730923f3f99eb587cbbcfa4876a9be518d8893a2106ebb93e40def9af95c308ce09de098076869d067c3e82564e673de3f965585d2466383349b20bd8bface0a
-	if(len(pub) == 33) {
+	if len(pub) == 33 {
 		PublicKey_decode = owcrypt.PointDecompress(pub, owcrypt.ECC_CURVE_SECP256K1)
 		//fmt.Printf("PublicKey_decode=%x\n", PublicKey_decode)
 	}
@@ -88,16 +88,16 @@ func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (s
 //WIFToPrivateKey WIF转私钥
 func (decoder *addressDecoder) WIFToPrivateKey(wif string, isTestnet bool) ([]byte, error) {
 
-/*	cfg := addressEncoder.NAS_AccountAddress
+	/*	cfg := addressEncoder.NAS_AccountAddress
 
-	priv, err := addressEncoder.AddressDecode(wif, cfg)
-	if err != nil {
-		return nil, err
-	}
+		priv, err := addressEncoder.AddressDecode(wif, cfg)
+		if err != nil {
+			return nil, err
+		}
 
-	return priv, err*/
+		return priv, err*/
 
-	return nil,nil
+	return nil, nil
 }
 
 //RedeemScriptToAddress 多重签名赎回脚本转地址
@@ -117,4 +117,3 @@ func (decoder *addressDecoder) RedeemScriptToAddress(pubs [][]byte, required uin
 
 	return address, nil
 }
-

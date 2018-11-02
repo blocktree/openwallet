@@ -17,9 +17,10 @@ package qtum
 
 import (
 	"encoding/hex"
+	"strings"
+
 	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/blocktree/go-owcrypt"
-	"strings"
 )
 
 func init() {

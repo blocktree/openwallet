@@ -22,8 +22,8 @@ import (
 	"time"
 
 	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/shopspring/decimal"
 	"github.com/blocktree/go-owcrypt"
+	"github.com/shopspring/decimal"
 )
 
 /*
@@ -39,11 +39,11 @@ import (
 
 const (
 	//币种
-	Symbol    = "QTUM"
-	 MasterKey = "qtum seed"
-	CurveType = owcrypt.ECC_CURVE_SECP256K1
-	RPCServerCore     = 0 //RPC服务，bitcoin核心钱包
-	RPCServerExplorer = 1 //RPC服务，insight-API
+	Symbol             = "QTUM"
+	MasterKey          = "qtum seed"
+	CurveType          = owcrypt.ECC_CURVE_SECP256K1
+	RPCServerCore      = 0   //RPC服务，bitcoin核心钱包
+	RPCServerExplorer  = 1   //RPC服务，insight-API
 	StakeConfirmations = 500 //qtum规定500个确认的权益
 )
 

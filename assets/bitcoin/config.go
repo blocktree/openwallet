@@ -22,8 +22,8 @@ import (
 	"time"
 
 	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/shopspring/decimal"
 	"github.com/blocktree/go-owcrypt"
+	"github.com/shopspring/decimal"
 )
 
 /*
@@ -43,7 +43,6 @@ const (
 	MasterKey = "Bitcoin seed"
 	CurveType = owcrypt.ECC_CURVE_SECP256K1
 )
-
 
 type WalletConfig struct {
 
