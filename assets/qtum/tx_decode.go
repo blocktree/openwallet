@@ -202,7 +202,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 			//计算用于支付手续费的UTXO
 			for _, u := range unspents {
 
-				if u.Spendable && u.Address != usedTokenUTXO[0].Address{
+				if u.Spendable && u.TxID != usedTokenUTXO[0].TxID{
 
 					if totalQtum.GreaterThanOrEqual(computeTotalfee){
 						break
