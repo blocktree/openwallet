@@ -11,7 +11,7 @@ import (
 
 	"github.com/blocktree/OpenWallet/assets/ethereum"
 	"github.com/blocktree/OpenWallet/log"
-	"github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-owcrypt"
 	"github.com/bytom/common"
 	"github.com/ethereum/go-ethereum/accounts"
 	ethKStore "github.com/ethereum/go-ethereum/accounts/keystore"

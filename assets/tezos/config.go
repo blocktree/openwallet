@@ -16,13 +16,14 @@
 package tezos
 
 import (
-	"github.com/blocktree/go-OWCrypt"
-	"github.com/shopspring/decimal"
-	"time"
+	"fmt"
 	"path/filepath"
 	"strings"
-	"fmt"
+	"time"
+
 	"github.com/blocktree/OpenWallet/common/file"
+	"github.com/blocktree/go-owcrypt"
+	"github.com/shopspring/decimal"
 )
 
 /*
@@ -38,7 +39,7 @@ import (
 
 const (
 	//币种
-	Symbol = "XTZ"
+	Symbol    = "XTZ"
 	MasterKey = "Tezos seed"
 	CurveType = owcrypt.ECC_CURVE_ED25519
 )
@@ -64,7 +65,7 @@ type WalletConfig struct {
 	//钱包服务API
 	ServerAPI string
 	//gas limit & storage limit
-	GasLimit decimal.Decimal
+	GasLimit     decimal.Decimal
 	StorageLimit decimal.Decimal
 	//最小矿工费
 	MinFee decimal.Decimal
@@ -110,8 +111,8 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	//钱包服务API
 	c.ServerAPI = ""
 	//gas limit & storage limit
-	c.GasLimit = decimal.NewFromFloat(0.0001)        //0.0001 XTZ
-	c.StorageLimit = decimal.NewFromFloat(0.0001)    //0.0001 XTZ
+	c.GasLimit = decimal.NewFromFloat(0.0001)     //0.0001 XTZ
+	c.StorageLimit = decimal.NewFromFloat(0.0001) //0.0001 XTZ
 	//最小矿工费
 	c.MinFee = decimal.NewFromFloat(0.0001)
 	//钱包安装的路径

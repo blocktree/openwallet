@@ -17,7 +17,7 @@ package bitcoin
 
 import (
 	"encoding/hex"
-	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"testing"
 )
 

@@ -22,8 +22,8 @@ import (
 	"time"
 
 	"github.com/blocktree/OpenWallet/common/file"
+	"github.com/blocktree/go-owcrypt"
 	"github.com/shopspring/decimal"
-	"github.com/blocktree/go-OWCrypt"
 )
 
 /*
@@ -43,7 +43,6 @@ const (
 	MasterKey = "omnicore seed"
 	CurveType = owcrypt.ECC_CURVE_SECP256K1
 )
-
 
 type WalletConfig struct {
 
@@ -102,7 +101,7 @@ type WalletConfig struct {
 	//资产ID
 	PropertyID int64
 	//debug
-	Debug    bool
+	Debug bool
 }
 
 func NewConfig(symbol string, masterKey string) *WalletConfig {

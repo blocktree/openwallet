@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/blocktree/OpenWallet/common/file"
-	owcrypt "github.com/blocktree/go-OWCrypt"
+	owcrypt "github.com/blocktree/go-owcrypt"
 	"github.com/shopspring/decimal"
 )
 

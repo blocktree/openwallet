@@ -17,15 +17,16 @@ package nebulasio
 import (
 	"errors"
 	"fmt"
-	"github.com/blocktree/OpenWallet/log"
-	"github.com/blocktree/OpenWallet/logger"
-	"github.com/blocktree/OpenWallet/openwallet"
-	"github.com/blocktree/go-OWCrypt"
-	"github.com/bytom/common"
-	"github.com/shopspring/decimal"
 	"math/big"
 	"sort"
 	"strconv"
+
+	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/OpenWallet/logger"
+	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/go-owcrypt"
+	"github.com/bytom/common"
+	"github.com/shopspring/decimal"
 )
 
 var TX *SubmitTransaction
@@ -59,11 +60,10 @@ type AddrBalance struct {
 }
 
 type txFeeInfo struct {
-	GasUse 	 *big.Int
+	GasUse   *big.Int
 	GasPrice *big.Int
 	Fee      *big.Int
 }
-
 
 func (decoder *TransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
@@ -187,23 +187,23 @@ func (decoder *TransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 
 	var nonce uint64
 	//获取db记录的nonce并确认nonce值
-	nonce_db ,err := wrapper.GetAddressExtParam(keySignList[0].Address.Address,decoder.wm.FullName())
-	if err != nil{
+	nonce_db, err := wrapper.GetAddressExtParam(keySignList[0].Address.Address, decoder.wm.FullName())
+	if err != nil {
 		return err
 	}
 	//判断nonce_db是否为空,为空则说明当前nonce是0
-	if nonce_db == nil{
+	if nonce_db == nil {
 		nonce = 1
-	}else {
+	} else {
 		nonce = decoder.wm.ConfirmTxdecodeNonce(keySignList[0].Address.Address, nonce_db.(string))
 	}
 	//构建交易单
-	TX ,err = decoder.wm.CreateRawTransaction(keySignList[0].Address.Address, to, Gaslimit, gasprice.Mul(coinDecimal).String(), amount.String(),nonce)
-	if err != nil{
+	TX, err = decoder.wm.CreateRawTransaction(keySignList[0].Address.Address, to, Gaslimit, gasprice.Mul(coinDecimal).String(), amount.String(), nonce)
+	if err != nil {
 		return err
 	}
 
-	keySignList[0].Nonce = strconv.FormatUint(nonce,10)
+	keySignList[0].Nonce = strconv.FormatUint(nonce, 10)
 	keySignList[0].Message = common.ToHex(TX.Hash[:])
 	signatureMap[rawTx.Account.AccountID] = keySignList
 
@@ -267,8 +267,8 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletD
 
 	tx_hash := common.FromHex(keySignature.Message) //TX.Hash
 
-	signed ,err := SignRawTransaction(PrivateKey,tx_hash)
-	if err != nil{
+	signed, err := SignRawTransaction(PrivateKey, tx_hash)
+	if err != nil {
 		log.Error("signature error !")
 		return nil
 	}
@@ -303,17 +303,17 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 		return errors.New("wallet signature not found ")
 	}
 
-	message := common.FromHex(rawTx.Signatures[rawTx.Account.AccountID][0].Message) //TX.Hash
+	message := common.FromHex(rawTx.Signatures[rawTx.Account.AccountID][0].Message)     //TX.Hash
 	signature := common.FromHex(rawTx.Signatures[rawTx.Account.AccountID][0].Signature) //TX.Sign
 	publicKey := common.FromHex(rawTx.Signatures[rawTx.Account.AccountID][0].Address.PublicKey)
 	//VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
-	verify_result := VerifyRawTransaction(publicKey,message,signature)
+	verify_result := VerifyRawTransaction(publicKey, message, signature)
 	if verify_result == owcrypt.SUCCESS {
 		log.Debug("transaction verify passed")
 		rawTx.IsCompleted = true
-		rawTx.RawHex,err = EncodeTransaction(TX)
+		rawTx.RawHex, err = EncodeTransaction(TX)
 		if err != nil {
-			return  err
+			return err
 		}
 	} else {
 		log.Debug("transaction verify failed")
@@ -351,7 +351,7 @@ func (decoder *TransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet
 	txid, err := decoder.wm.SubmitRawTransaction(rawTx.RawHex)
 	if err != nil {
 		return err
-	}else{
+	} else {
 		//广播成功后记录nonce值到本地
 		//fmt.Printf("Submit Success , Save nonce To AddressExtParam!\n")
 		wrapper.SetAddressExtParam(rawTx.Signatures[rawTx.Account.AccountID][0].Address.Address, decoder.wm.FullName(), rawTx.Signatures[rawTx.Account.AccountID][0].Nonce)
@@ -359,7 +359,7 @@ func (decoder *TransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet
 	rawTx.TxID = txid
 	rawTx.IsSubmit = true
 
-	fmt.Printf("rawTx=%+v\n",rawTx)
+	fmt.Printf("rawTx=%+v\n", rawTx)
 
 	return nil
 }

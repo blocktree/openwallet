@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/blocktree/OpenWallet/log"
-	"github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-owcrypt"
 	"github.com/imroc/req"
 	"github.com/mr-tron/base58/base58"
 	"github.com/tidwall/gjson"

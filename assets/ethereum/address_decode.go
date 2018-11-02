@@ -1,8 +1,8 @@
 package ethereum
 
 import (
-	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
-	owcrypt "github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
+	owcrypt "github.com/blocktree/go-owcrypt"
 )
 
 //AddressDecoder 地址解析器

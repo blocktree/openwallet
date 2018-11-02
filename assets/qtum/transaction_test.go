@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"testing"
 	"github.com/blocktree/OpenWallet/assets/qtum/btcLikeTxDriver"
-	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
 )
 
 //案例一：

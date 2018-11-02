@@ -20,7 +20,7 @@ import (
 	"errors"
 	"log"
 
-	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/tidwall/gjson"
 
 	"github.com/imroc/req"

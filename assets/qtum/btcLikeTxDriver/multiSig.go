@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 
-	"github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-owcrypt"
 )
 
 func CreateMultiSig(required byte, pubkeys [][]byte, isTestNet bool) (string, string, error) {
@@ -47,9 +47,9 @@ func CreateMultiSig(required byte, pubkeys [][]byte, isTestNet bool) (string, st
 	redeemHash = owcrypt.Hash(redeemHash, 0, owcrypt.HASH_ALG_HASH160)
 
 	if isTestNet {
-		P2SHPrefix  = testNetP2SHPrefix
-	}else {
-		P2SHPrefix  = mainNetP2SHPrefix
+		P2SHPrefix = testNetP2SHPrefix
+	} else {
+		P2SHPrefix = mainNetP2SHPrefix
 	}
 	return EncodeCheck(P2SHPrefix, redeemHash), hex.EncodeToString(redeem), nil
 }

@@ -2,7 +2,7 @@ package btcLikeTxDriver
 
 import (
 	"encoding/hex"
-	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"strconv"
 	"github.com/blocktree/OpenWallet/log"
 )
