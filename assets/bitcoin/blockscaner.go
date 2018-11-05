@@ -437,7 +437,7 @@ func (bs *BTCBlockScanner) BatchExtractTransaction(blockHeight uint64, blockHash
 			go func(mBlockHeight uint64, mTxid string, end chan struct{}, mProducer chan<- ExtractResult) {
 
 				//导出提出的交易
-				mProducer <- bs.ExtractTransaction(mBlockHeight, eBlockHash, mTxid, bs.GetSourceKeyByAddress)
+				mProducer <- bs.ExtractTransaction(mBlockHeight, eBlockHash, mTxid, bs.ScanAddressFunc)
 				//释放
 				<-end
 
@@ -968,15 +968,6 @@ func (bs *BTCBlockScanner) SaveUnscanRecord(record *UnscanRecord) error {
 	defer db.Close()
 
 	return db.Save(record)
-}
-
-//GetSourceKeyByAddress 获取地址对应的数据源标识
-func (bs *BTCBlockScanner) GetSourceKeyByAddress(address string) (string, bool) {
-	bs.Mu.RLock()
-	defer bs.Mu.RUnlock()
-
-	sourceKey, ok := bs.AddressInScanning[address]
-	return sourceKey, ok
 }
 
 //GetWalletByAddress 获取地址对应的钱包

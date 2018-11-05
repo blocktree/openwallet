@@ -16,13 +16,13 @@
 package owtp
 
 import (
+	"context"
 	"fmt"
 	"github.com/blocktree/OpenWallet/log"
 	ws "github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 	"net"
 	"net/http"
-	"context"
 )
 
 //Listener 监听接口定义
@@ -72,10 +72,12 @@ func (l *owtpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	//创建一个上下文通知，监控节点是否已经关闭
 	ctx, cancel := context.WithCancel(context.Background())
 
-	var cnCh <-chan bool
-	if cn, ok := w.(http.CloseNotifier); ok {
-		cnCh = cn.CloseNotify()
-	}
+	//var cnCh <-chan bool
+	//if cn, ok := w.(http.CloseNotifier); ok {
+	//	cnCh = cn.CloseNotify()
+	//}
+
+	httpCtx := r.Context()
 
 	auth, err := NewOWTPAuthWithHTTPHeader(r.Header)
 	if err != nil {
@@ -102,20 +104,22 @@ func (l *owtpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case <-l.closed:
 		//peer.Close()
 		return
-	case <-cnCh:
+	//case <-cnCh:
+	case <-httpCtx.Done():
 		log.Error("http CloseNotify")
 		return
 	}
 
 	// wait until conn gets closed, otherwise the handler closes it early
 	select {
-	case <-ctx.Done():	//收到节点关闭的通知
+	case <-ctx.Done(): //收到节点关闭的通知
 		//log.Debug("peer 1:", peer.PID(), "closed")
 		return
 	case <-l.closed:
 		//log.Debug("peer 2:", peer.PID(), "closed")
 		peer.Close()
-	case <-cnCh:
+	//case <-cnCh:
+	case <-httpCtx.Done():
 		log.Error("http CloseNotify")
 		return
 	}

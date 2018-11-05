@@ -430,7 +430,7 @@ func (bs *NASBlockScanner) BatchExtractTransaction(blockHeight uint64, blockHash
 			go func(mBlockHeight uint64, mTxid string, end chan struct{}, mProducer chan<- ExtractResult) {
 
 				//导出提出的交易
-				mProducer <- bs.ExtractTransaction(mBlockHeight, eBlockHash, mTxid)
+				mProducer <- bs.ExtractTransaction(mBlockHeight, eBlockHash, mTxid, bs.ScanAddressFunc)
 				//释放
 				<-end
 
@@ -660,7 +660,7 @@ func (bs *NASBlockScanner) InitNasExtractResult(tx *NasTransaction, result *Extr
 }*/
 
 //ExtractTransaction 提取交易单
-func (bs *NASBlockScanner) ExtractTransaction(blockHeight uint64, blockHash string, txid string) ExtractResult {
+func (bs *NASBlockScanner) ExtractTransaction(blockHeight uint64, blockHash string, txid string, scanAddressFunc openwallet.BlockScanAddressFunc) ExtractResult {
 
 	var (
 		//transactions = make([]*openwallet.Recharge, 0)
@@ -682,9 +682,9 @@ func (bs *NASBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 	} else {
 			//log.Std.Info("block scanner scanning tx: %+v", txid)
 			//订阅地址为交易单中的发送者
-			if bs.IsExistAddress(tx_nas.From) {
+			if _, ok := scanAddressFunc(tx_nas.From); ok {
 				log.Std.Info("tx.from found in transaction [%v] .", tx_nas.Hash)
-				if accountId, exist := bs.GetSourceKeyByAddress(tx_nas.From); exist {
+				if accountId, exist := scanAddressFunc(tx_nas.From); exist {
 					tx_nas.FromAccountId = accountId
 					bs.InitNasExtractResult(tx_nas, &result, true)
 				} else {
@@ -695,9 +695,9 @@ func (bs *NASBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 			}
 
 			//订阅地址为交易单中的接收者
-			if bs.IsExistAddress(tx_nas.To) {
+			if _, ok2 := scanAddressFunc(tx_nas.To); ok2 {
 				log.Std.Info("tx.to found in transaction [%v].", tx_nas.Hash)
-				if accountId, exist := bs.GetSourceKeyByAddress(tx_nas.To); exist {
+				if accountId, exist := scanAddressFunc(tx_nas.To); exist {
 					if _, exist = result.extractData[accountId]; !exist {
 						tx_nas.ToAccountId = accountId
 						bs.InitNasExtractResult(tx_nas, &result, false)
@@ -983,8 +983,10 @@ func (bs *NASBlockScanner) GetScannedBlockHeight() uint64 {
 	return localHeight
 }
 
+//ExtractTransactionData 扫描一笔交易
 func (bs *NASBlockScanner) ExtractTransactionData(txid string, scanAddressFunc openwallet.BlockScanAddressFunc) (map[string][]*openwallet.TxExtractData, error) {
-	result := bs.ExtractTransaction(0, "", txid)
+
+	result := bs.ExtractTransaction(0, "", txid, scanAddressFunc)
 	if !result.Success {
 		return nil, fmt.Errorf("extract transaction failed")
 	}
@@ -1075,13 +1077,13 @@ func (bs *NASBlockScanner) SaveUnscanRecord(record *UnscanRecord) error {
 }
 
 //GetSourceKeyByAddress 获取地址对应的数据源标识
-func (bs *NASBlockScanner) GetSourceKeyByAddress(address string) (string, bool) {
-	bs.Mu.RLock()
-	defer bs.Mu.RUnlock()
-
-	sourceKey, ok := bs.AddressInScanning[address]
-	return sourceKey, ok
-}
+//func (bs *NASBlockScanner) GetSourceKeyByAddress(address string) (string, bool) {
+//	bs.Mu.RLock()
+//	defer bs.Mu.RUnlock()
+//
+//	sourceKey, ok := bs.AddressInScanning[address]
+//	return sourceKey, ok
+//}
 
 //GetWalletByAddress 获取地址对应的钱包
 //func (bs *BTCBlockScanner) GetWalletByAddress(address string) (*openwallet.Wallet, bool) {
