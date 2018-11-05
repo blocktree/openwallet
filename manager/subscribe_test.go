@@ -56,7 +56,6 @@ func TestSubscribe(t *testing.T) {
 	<-endRunning
 }
 
-
 ////////////////////////// 测试单个扫描器 //////////////////////////
 
 type subscriberSingle struct {
@@ -84,21 +83,21 @@ func (sub *subscriberSingle) BlockExtractDataNotify(sourceKey string, data *open
 	return nil
 }
 
-func TestSubscribeAddress_ETH(t *testing.T) {
+func TestSubscribeAddress_BTC(t *testing.T) {
 
 	var (
 		endRunning = make(chan bool, 1)
-		symbol = "ETH"
-		accountID = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
-		addrs = map[string]string{
-			"0x558ef7a2b56611ef352b2ecf5d2dd2bf548afecc": accountID,
-			"0x95576498d5c2971bea1986ee92a3971de0747fc0": accountID,
-			"0x73995d52f20d9d40cbc339d5d2772d9cde6b6858": accountID,
+		symbol     = "BTC"
+		accountID  = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
+		addrs      = map[string]string{
+			"mh84vzGGA6T5s39BovBJe2dQ3r9KkWQPML":         accountID,
+			"tb1qk7ya4ntkmnc6mrzj7a2ly60524hjue440egv5k": accountID,
+			"mpS3FzHr1WsXWnVw15uiFzLQ9wRmo7rBJZ":         accountID,
 		}
 	)
 
 	//GetSourceKeyByAddress 获取地址对应的数据源标识
-	scanAddressFunc := func (address string) (string, bool) {
+	scanAddressFunc := func(address string) (string, bool) {
 		key, ok := addrs[address]
 		if !ok {
 			return "", false
@@ -113,7 +112,63 @@ func TestSubscribeAddress_ETH(t *testing.T) {
 	}
 
 	//读取配置
-	absFile := filepath.Join(configFilePath, symbol + ".ini")
+	absFile := filepath.Join(configFilePath, symbol+".ini")
+
+	c, err := config.NewConfig("ini", absFile)
+	if err != nil {
+		return
+	}
+	assetsMgr.LoadAssetsConfig(c)
+
+	//log.Debug("already got scanner:", assetsMgr)
+	scanner := assetsMgr.GetBlockScanner()
+	scanner.SetRescanBlockHeight(1432048)
+
+	if scanner == nil {
+		log.Error(symbol, "is not support block scan")
+		return
+	}
+
+	scanner.SetBlockScanAddressFunc(scanAddressFunc)
+
+	sub := subscriberSingle{}
+	scanner.AddObserver(&sub)
+
+	scanner.Run()
+
+	<-endRunning
+}
+
+func TestSubscribeAddress_ETH(t *testing.T) {
+
+	var (
+		endRunning = make(chan bool, 1)
+		symbol     = "ETH"
+		accountID  = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
+		addrs      = map[string]string{
+			"0x558ef7a2b56611ef352b2ecf5d2dd2bf548afecc": accountID,
+			"0x95576498d5c2971bea1986ee92a3971de0747fc0": accountID,
+			"0x73995d52f20d9d40cbc339d5d2772d9cde6b6858": accountID,
+		}
+	)
+
+	//GetSourceKeyByAddress 获取地址对应的数据源标识
+	scanAddressFunc := func(address string) (string, bool) {
+		key, ok := addrs[address]
+		if !ok {
+			return "", false
+		}
+		return key, true
+	}
+
+	assetsMgr, err := GetAssetsManager(symbol)
+	if err != nil {
+		log.Error(symbol, "is not support")
+		return
+	}
+
+	//读取配置
+	absFile := filepath.Join(configFilePath, symbol+".ini")
 
 	c, err := config.NewConfig("ini", absFile)
 	if err != nil {
@@ -125,14 +180,12 @@ func TestSubscribeAddress_ETH(t *testing.T) {
 	scanner := assetsMgr.GetBlockScanner()
 	scanner.SetRescanBlockHeight(4840986)
 
-
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")
 		return
 	}
 
 	scanner.SetBlockScanAddressFunc(scanAddressFunc)
-
 
 	sub := subscriberSingle{}
 	scanner.AddObserver(&sub)
@@ -142,15 +195,14 @@ func TestSubscribeAddress_ETH(t *testing.T) {
 	<-endRunning
 }
 
-
 func TestSubscribeAddress_QTUM(t *testing.T) {
 
 	var (
 		endRunning = make(chan bool, 1)
-		symbol = "QTUM"
-		accountID = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
-		addrs = map[string]string{
-			"Qf6t5Ww14ZWVbG3kpXKoTt4gXeKNVxM9QJ": accountID,	//合约收币
+		symbol     = "QTUM"
+		accountID  = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
+		addrs      = map[string]string{
+			"Qf6t5Ww14ZWVbG3kpXKoTt4gXeKNVxM9QJ": accountID, //合约收币
 			//"QWSTGRwdScLfdr6agUqR4G7ow4Mjc4e5re",	//合约发币
 			//"QbTQBADMqSuHM6wJk2e8w1KckqK5RRYrQ6",	//主链转账
 			//"QREUcesH46vMeF6frLy92aR1QC22tADNda", 	//主链转账
@@ -158,7 +210,7 @@ func TestSubscribeAddress_QTUM(t *testing.T) {
 	)
 
 	//GetSourceKeyByAddress 获取地址对应的数据源标识
-	scanAddressFunc := func (address string) (string, bool) {
+	scanAddressFunc := func(address string) (string, bool) {
 		key, ok := addrs[address]
 		if !ok {
 			return "", false
@@ -173,7 +225,7 @@ func TestSubscribeAddress_QTUM(t *testing.T) {
 	}
 
 	//读取配置
-	absFile := filepath.Join(configFilePath, symbol + ".ini")
+	absFile := filepath.Join(configFilePath, symbol+".ini")
 
 	c, err := config.NewConfig("ini", absFile)
 	if err != nil {
@@ -185,14 +237,12 @@ func TestSubscribeAddress_QTUM(t *testing.T) {
 	scanner := assetsMgr.GetBlockScanner()
 	scanner.SetRescanBlockHeight(255323)
 
-
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")
 		return
 	}
 
 	scanner.SetBlockScanAddressFunc(scanAddressFunc)
-
 
 	sub := subscriberSingle{}
 	scanner.AddObserver(&sub)
@@ -202,22 +252,20 @@ func TestSubscribeAddress_QTUM(t *testing.T) {
 	<-endRunning
 }
 
-
-
 func TestSubscribeAddress_LTC(t *testing.T) {
 
 	var (
 		endRunning = make(chan bool, 1)
-		symbol = "LTC"
-		accountID = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
-		addrs = map[string]string{
-			"QZn9j1oWxcYCdL8VBKPfv1SAXNaAEYjoga": accountID,	//主链转账
-			"QYkwzDhU7UyKd4hdX69c24unYjynVyYKot": accountID, 	//主链转账
+		symbol     = "LTC"
+		accountID  = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
+		addrs      = map[string]string{
+			"QZn9j1oWxcYCdL8VBKPfv1SAXNaAEYjoga": accountID, //主链转账
+			"QYkwzDhU7UyKd4hdX69c24unYjynVyYKot": accountID, //主链转账
 		}
 	)
 
 	//GetSourceKeyByAddress 获取地址对应的数据源标识
-	scanAddressFunc := func (address string) (string, bool) {
+	scanAddressFunc := func(address string) (string, bool) {
 		key, ok := addrs[address]
 		if !ok {
 			return "", false
@@ -232,7 +280,7 @@ func TestSubscribeAddress_LTC(t *testing.T) {
 	}
 
 	//读取配置
-	absFile := filepath.Join(configFilePath, symbol + ".ini")
+	absFile := filepath.Join(configFilePath, symbol+".ini")
 
 	c, err := config.NewConfig("ini", absFile)
 	if err != nil {
@@ -244,14 +292,12 @@ func TestSubscribeAddress_LTC(t *testing.T) {
 	scanner := assetsMgr.GetBlockScanner()
 	scanner.SetRescanBlockHeight(813080)
 
-
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")
 		return
 	}
 
 	scanner.SetBlockScanAddressFunc(scanAddressFunc)
-
 
 	sub := subscriberSingle{}
 	scanner.AddObserver(&sub)
@@ -261,21 +307,20 @@ func TestSubscribeAddress_LTC(t *testing.T) {
 	<-endRunning
 }
 
-
 func TestSubscribeAddress_NAS(t *testing.T) {
 
 	var (
 		endRunning = make(chan bool, 1)
-		symbol = "NAS"
-		accountID = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
-		addrs = map[string]string{
-			"n1cT1JhXUQFxDSyBYwcn3ZBmd93nin5yrfB": accountID,	//主链转账
-			"n1J6e6RhZXuG1RpbcMYeeUShAo1e3QsJTXb": accountID, 	//主链转账
+		symbol     = "NAS"
+		accountID  = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
+		addrs      = map[string]string{
+			"n1cT1JhXUQFxDSyBYwcn3ZBmd93nin5yrfB": accountID, //主链转账
+			"n1J6e6RhZXuG1RpbcMYeeUShAo1e3QsJTXb": accountID, //主链转账
 		}
 	)
 
 	//GetSourceKeyByAddress 获取地址对应的数据源标识
-	scanAddressFunc := func (address string) (string, bool) {
+	scanAddressFunc := func(address string) (string, bool) {
 		key, ok := addrs[address]
 		if !ok {
 			return "", false
@@ -290,7 +335,7 @@ func TestSubscribeAddress_NAS(t *testing.T) {
 	}
 
 	//读取配置
-	absFile := filepath.Join(configFilePath, symbol + ".ini")
+	absFile := filepath.Join(configFilePath, symbol+".ini")
 
 	c, err := config.NewConfig("ini", absFile)
 	if err != nil {
@@ -302,14 +347,12 @@ func TestSubscribeAddress_NAS(t *testing.T) {
 	scanner := assetsMgr.GetBlockScanner()
 	scanner.SetRescanBlockHeight(1215112)
 
-
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")
 		return
 	}
 
 	scanner.SetBlockScanAddressFunc(scanAddressFunc)
-
 
 	sub := subscriberSingle{}
 	scanner.AddObserver(&sub)
