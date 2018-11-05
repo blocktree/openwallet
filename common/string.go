@@ -345,3 +345,8 @@ func Substr(str string, start int, end int) string {
 
 	return string(rs[start:end:end])
 }
+
+func FormatStruct(v interface{}) string {
+	objstr, _ := json.MarshalIndent(v, "", " ")
+	return string(objstr) //log.Debugf("event:%v", string(objstr))
+}
