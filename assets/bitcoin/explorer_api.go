@@ -74,8 +74,9 @@ func (b *Explorer) Call(path string, request interface{}, method string) (*gjson
 		log.Std.Debug("%+v", r)
 	}
 
-	if r.Response().StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%s", r.String())
+	err = b.isError(r)
+	if err != nil {
+		return nil, err
 	}
 
 	if err != nil {
@@ -83,49 +84,23 @@ func (b *Explorer) Call(path string, request interface{}, method string) (*gjson
 	}
 
 	resp := gjson.ParseBytes(r.Bytes())
-	err = b.isError(&resp)
-	if err != nil {
-		return nil, err
-	}
-
-	//result := resp.Get("result")
 
 	return &resp, nil
 }
 
 //isError 是否报错
-func (b *Explorer) isError(result *gjson.Result) error {
-	var (
-		err error
-	)
+func (b *Explorer) isError(resp *req.Resp) error {
 
-	/*
-		//failed 返回错误
-		{
-			"result": null,
-			"error": {
-				"code": -8,
-				"message": "Block height out of range"
-			},
-			"id": "foo"
-		}
-	*/
-
-	if !result.Get("error").Exists() {
-
-		if !result.Exists() {
-			return errors.New("Response is empty! ")
-		}
-
-		return nil
+	if resp == nil || resp.Response() == nil {
+		return errors.New("Response is empty! ")
 	}
 
-	errInfo := fmt.Sprintf("[%d]%s",
-		result.Get("status").Int(),
-		result.Get("error").String())
-	err = errors.New(errInfo)
 
-	return err
+	if resp.Response().StatusCode != http.StatusOK {
+		return fmt.Errorf("%s", resp.String())
+	}
+
+	return nil
 }
 
 //getBlockByExplorer 获取区块数据
