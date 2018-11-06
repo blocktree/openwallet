@@ -115,7 +115,7 @@ func TestTransfer_ERC20(t *testing.T) {
 	to := "0xd35f9Ea14D063af9B3567064FAB567275b09f03D"
 
 	contract := openwallet.SmartContract{
-		Address:  "0x4092678e4E78230F46A1534C0fbc8fA39780892B",
+		Address:  "4092678e4E78230F46A1534C0fbc8fA39780892B",
 		Symbol:   "ETH",
 		Name:     "OCoin",
 		Token:    "OCN",

@@ -189,8 +189,8 @@ func (this *EthTransactionDecoder) RunClearAddrStatic() {
 
 func VerifyRawTransaction(rawTx *openwallet.RawTransaction) error {
 	if len(rawTx.To) != 1 {
-		openwLogger.Log.Errorf("noly one to address can be set.")
-		return errors.New("noly one to address can be set.")
+		log.Error("only one to address can be set.")
+		return errors.New("only one to address can be set.")
 	}
 
 	return nil

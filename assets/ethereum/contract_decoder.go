@@ -3,6 +3,7 @@ package ethereum
 import (
 	"errors"
 	"math/big"
+	"strings"
 
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
@@ -59,6 +60,9 @@ func (this *WalletManager) GetTokenBalanceByAddress(contractAddr string, addrs .
 		}
 		done <- 1
 	}()
+
+	//Add 0x
+	contractAddr = "0x" + strings.TrimPrefix(contractAddr, "0x")
 
 	queryBalance := func(addr AddrBalanceInf) {
 		threadControl <- 1
