@@ -112,6 +112,12 @@ func TestSocketIO(t *testing.T) {
 
 	err = c.On("tx", func(h *gosocketio.Channel, args interface{}) {
 		log.Info("New transaction received: ", args)
+		txMap, ok := args.(map[string]interface{})
+		if ok {
+			txid := txMap["txid"].(string)
+			trx, _ := tw.GetTransaction(txid)
+			log.Std.Info("trx: %+v", trx)
+		}
 	})
 	if err != nil {
 		return
