@@ -22,11 +22,11 @@ func (this *WalletManager) GetSmartContractDecoder() openwallet.SmartContractDec
 //GetBlockScanner 获取区块链
 func (this *WalletManager) GetBlockScanner() openwallet.BlockScanner {
 	//先加载是否有配置文件
-	err := this.loadConfig()
-	if err != nil {
-		log.Errorf("load config failed, err=%v", err)
-		return nil
-	}
+	//err := this.loadConfig()
+	//if err != nil {
+	//	log.Errorf("load config failed, err=%v", err)
+	//	return nil
+	//}
 	return this.Blockscanner
 }
 
