@@ -94,6 +94,78 @@ type Transaction struct {
 	Vouts []*Vout
 }
 
+//Unspent 未花记录
+type Unspent struct {
+
+	/*
+			{
+		        "txid" : "d54994ece1d11b19785c7248868696250ab195605b469632b7bd68130e880c9a",
+		        "vout" : 1,
+		        "address" : "mgnucj8nYqdrPFh2JfZSB1NmUThUGnmsqe",
+		        "account" : "test label",
+		        "scriptPubKey" : "76a9140dfc8bafc8419853b34d5e072ad37d1a5159f58488ac",
+		        "amount" : 0.00010000,
+		        "confirmations" : 6210,
+		        "spendable" : true,
+		        "solvable" : true
+		    }
+	*/
+	Key           string `storm:"id"`
+	TxID          string `json:"txid"`
+	Vout          uint64 `json:"vout"`
+	Address       string `json:"address"`
+	AccountID     string `json:"account" storm:"index"`
+	ScriptPubKey  string `json:"scriptPubKey"`
+	Amount        string `json:"amount"`
+	Confirmations uint64 `json:"confirmations"`
+	Spendable     bool   `json:"spendable"`
+	Solvable      bool   `json:"solvable"`
+	HDAddress     openwallet.Address
+}
+
+func NewUnspent(json *gjson.Result) *Unspent {
+	obj := &Unspent{}
+	//解析json
+	obj.TxID = gjson.Get(json.Raw, "txid").String()
+	obj.Vout = gjson.Get(json.Raw, "vout").Uint()
+	obj.Address = gjson.Get(json.Raw, "address").String()
+	obj.AccountID = gjson.Get(json.Raw, "account").String()
+	obj.ScriptPubKey = gjson.Get(json.Raw, "scriptPubKey").String()
+	obj.Amount = gjson.Get(json.Raw, "amount").String()
+	obj.Confirmations = gjson.Get(json.Raw, "confirmations").Uint()
+	//obj.Spendable = gjson.Get(json.Raw, "spendable").Bool()
+	obj.Spendable = true
+	obj.Solvable = gjson.Get(json.Raw, "solvable").Bool()
+
+	return obj
+}
+
+
+func newTxVinByCore(json *gjson.Result) *Vin {
+
+	/*
+		{
+			"txid": "55c4b35a16df289851d8016b454f766485520ead4776670e04083c0277308acc",
+			"vout": 1,
+			"scriptSig": {
+				"asm": "0014aa59f94152351c79b57b14a53e538a923e332468",
+				"hex": "160014aa59f94152351c79b57b14a53e538a923e332468"
+			},
+			"txinwitness": ["304402205e667171c1798cde426282bb8bff45901866ad6bf0d209e856c1765eda65ba4802203aaa319ea3de00eccef0006e6ee2089aed4b91ada7953f420a47c9c258d424ca01", "033cfda2f93d13b01d46ecc406b03ebaba3e1bd526d2148a0a5d579d52f8c7cf02"],
+			"sequence": 4294967294
+		}
+	*/
+	obj := Vin{}
+	//解析json
+	obj.TxID = gjson.Get(json.Raw, "txid").String()
+	obj.Vout = gjson.Get(json.Raw, "vout").Uint()
+	obj.Coinbase = gjson.Get(json.Raw, "coinbase").String()
+	//obj.Addr = gjson.Get(json.Raw, "addr").String()
+	//obj.Value = gjson.Get(json.Raw, "value").String()
+
+	return &obj
+}
+
 func NewBlock(json *gjson.Result) *Block {
 	obj := &Block{}
 	//解析json
