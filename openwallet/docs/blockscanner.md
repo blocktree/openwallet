@@ -26,6 +26,7 @@
 - 获取某个适配的区块扫描器接口。
 - 通过调用SetBlockScanAddressFunc(scanAddressFunc BlockScanAddressFunc)方法，设置区块扫描器，查找地址算法。
 - 通过AddObserver(obj BlockScanNotificationObject)添加监听者。
+- 调用者实现BlockScanAddressFunc方法，返回传入的地址是否存在，及地址关联的sourceKey值。
 - BlockScanNotificationObject要实现接收数据的接口方法，并保存。
 - 执行Run()启动扫描器运行。
 

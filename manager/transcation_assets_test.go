@@ -80,8 +80,8 @@ func testSubmitTransactionStep(rawTx *openwallet.RawTransaction) (*openwallet.Ra
 
 func TestTransfer_ETH(t *testing.T) {
 
-	walletID := "WGWfGtgo8uLxVKTWoWkzuoPELMtehb9Vda"
-	accountID := "6SVDyi7dgcJHG7V2DP2ZJUvzbRyr2PjTqFxym8pEEBrv"
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
 	to := "d35f9Ea14D063af9B3567064FAB567275b09f03D"
 
 	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.0003", "", nil)
