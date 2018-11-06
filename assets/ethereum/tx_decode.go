@@ -225,11 +225,17 @@ func (this *EthTransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 
 	addrsBalanceList := make([]AddrBalance, 0, len(addresses))
 	for i, addr := range addresses {
-		balance, err := ConvertEthStringToWei(addr.Balance) //ConvertToBigInt(addr.Balance, 16)
+		balanceList, err := this.wm.Blockscanner.GetBalanceByAddress(addr.Address)
+		if len(balanceList) == 0 {
+			continue
+		}
+
+		balance, err := ConvertEthStringToWei(balanceList[0].Balance) //ConvertToBigInt(addr.Balance, 16)
 		if err != nil {
 			openwLogger.Log.Errorf("convert address [%v] balance [%v] to big.int failed, err = %v ", addr.Address, addr.Balance, err)
 			return err
 		}
+
 		addrsBalanceList = append(addrsBalanceList, AddrBalance{
 			Address: addr.Address,
 			Balance: balance,
