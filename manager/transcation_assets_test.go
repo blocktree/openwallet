@@ -23,11 +23,11 @@ import (
 
 func testCreateTransactionStep(walletID, accountID, to, amount, feeRate string, contract *openwallet.SmartContract) (*openwallet.RawTransaction, error) {
 
-	err := tm.RefreshAssetsAccountBalance(testApp, accountID)
-	if err != nil {
-		log.Error("RefreshAssetsAccountBalance failed, unexpected error:", err)
-		return nil, err
-	}
+	//err := tm.RefreshAssetsAccountBalance(testApp, accountID)
+	//if err != nil {
+	//	log.Error("RefreshAssetsAccountBalance failed, unexpected error:", err)
+	//	return nil, err
+	//}
 
 	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, amount, to, feeRate, "", contract)
 
