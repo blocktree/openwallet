@@ -17,6 +17,14 @@ package tron
 
 import "testing"
 
+func TestSetRescanBlockHeight(t *testing.T) {
+	scanner := NewTronBlockScanner(tw)
+
+	if err := scanner.SetRescanBlockHeight(3644100); err != nil {
+		t.Errorf("SetRescanBlockHeight failed: %+v", err)
+	}
+}
+
 func TestScanBlockTask(t *testing.T) {
 	scanner := NewTronBlockScanner(tw)
 	scanner.ScanBlockTask()
