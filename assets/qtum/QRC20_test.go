@@ -103,15 +103,19 @@ func Test_QRC20Transfer(t *testing.T) {
 
 func Test_GetTokenBalanceByAddress(t *testing.T) {
 	contract := openwallet.SmartContract{
-		Address: "0x91a6081095ef860d28874c9db613e7a4107b0281",
+		Address:  "f2033ede578e17fa6231047265010445bca8cf1c",
+		Symbol:   "QTUM",
+		Name:     "QCASH",
+		Token:    "QC",
+		Decimals: 8,
 	}
 	addrs := []string{
-		"qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP",
-		"qQLYQn7vCAU8irPEeqjZ3rhFGLnS5vxVy8",
-		"qMXS1YFtA5qr2UfhcDMthTCK6hWhJnzC47",
-		"qJq5GbHeaaNbi6Bs5QCbuCZsZRXVWPoG1k",
-		"qP1VPw7RYm5qRuqcAvtiZ1cpurQpVWREu8",
-		"qdphfFinfJutJFvtnr2UaCwNAMxC3HbVxa",
+		//"qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP",
+		//"qQLYQn7vCAU8irPEeqjZ3rhFGLnS5vxVy8",
+		//"qMXS1YFtA5qr2UfhcDMthTCK6hWhJnzC47",
+		//"qJq5GbHeaaNbi6Bs5QCbuCZsZRXVWPoG1k",
+		"QVTQ8QaKXcEzsGX74JePUkge5K4r41Ey3v",
+		"Qf2tU1GExXe8smNyoMgis9u1CLnQ2q1mam",
 	}
 
 	//contract := openwallet.SmartContract{
