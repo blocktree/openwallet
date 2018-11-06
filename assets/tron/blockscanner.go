@@ -16,27 +16,18 @@
 package tron
 
 import (
-	"fmt"
-
-	// "encoding/base64"
-	// "errors"
-	// "path/filepath"
-
+	"errors"
 	"time"
-
-	// "github.com/asdine/storm"
-	// "github.com/blocktree/OpenWallet/crypto"
-	"github.com/graarh/golang-socketio"
 
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
-	// "github.com/tidwall/gjson"
+	"github.com/graarh/golang-socketio"
 )
 
 const (
-	blockchainBucket  = "blockchain"    //区块链数据集合
-	periodOfTask      = 5 * time.Second //定时任务执行隔间
-	maxExtractingSize = 20              //并发的扫描线程数
+	blockchainBucket = "blockchain" //区块链数据集合
+	// periodOfTask      = 5 * time.Second //定时任务执行隔间
+	maxExtractingSize = 20 //并发的扫描线程数
 
 	RPCServerCore     = 0 //RPC服务，核心钱包
 	RPCServerExplorer = 1 //RPC服务，insight-API
@@ -46,18 +37,12 @@ const (
 type TronBlockScanner struct {
 	*openwallet.BlockScannerBase
 
-	// walletInScanning map[string]*openwallet.Wallet //加入扫描的钱包
-	// addressInScanning map[string]string                               //加入扫描的地址
-	// observers         map[openwallet.BlockScanNotificationObject]bool //观察者
-	// scanning bool //是否扫描中
-	// mu                 sync.RWMutex     //读写锁
-
 	CurrentBlockHeight   uint64             //当前区块高度
 	extractingCH         chan struct{}      //扫描工作令牌
 	wm                   *WalletManager     //钱包管理者
-	IsScanMemPool        bool               //是否扫描交易池
 	RescanLastBlockCount uint64             //重扫上N个区块数量
 	socketIO             *gosocketio.Client //socketIO客户端
+	// IsScanMemPool        bool               //是否扫描交易池
 }
 
 //NewTronBlockScanner 创建区块链扫描器
@@ -66,7 +51,7 @@ func NewTronBlockScanner(wm *WalletManager) *TronBlockScanner {
 
 	bs.extractingCH = make(chan struct{}, maxExtractingSize)
 	bs.wm = wm
-	bs.IsScanMemPool = true
+	// bs.IsScanMemPool = true
 	bs.RescanLastBlockCount = 0
 
 	// bs.walletInScanning = make(map[string]*openwallet.Wallet)
@@ -94,7 +79,25 @@ type SaveResult struct {
 	Success     bool
 }
 
-// ---------------------------------------- Scanner -------------------------------------
+// ---------------------------------------- Interface -----------------------------------------
+//SetRescanBlockHeight 重置区块链扫描高度
+func (bs *TronBlockScanner) SetRescanBlockHeight(height uint64) error {
+	height = height - 1
+	if height < 0 {
+		return errors.New("block height to rescan must greater than 0.")
+	}
+
+	block, err := bs.wm.GetBlockByNum(height)
+	if err != nil {
+		return err
+	}
+	hash := block.Hash
+	bs.SaveLocalNewBlock(height, hash)
+
+	return nil
+}
+
+// ---------------------------------------- Scanner -------------------------------------------
 //ScanBlockTask 扫描任务
 func (bs *TronBlockScanner) ScanBlockTask() {
 
@@ -108,21 +111,31 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 
 	//如果本地没有记录，查询接口的高度
 	if currentHeight == 0 {
+		log.Std.Info("No records found in local, get now block as the local!")
+
 		block, err := bs.wm.GetNowBlock()
 		if err != nil {
 			log.Std.Error("ScanBlockTask Faild: %+v", err)
-			// return nil, err
 		}
-		currentHash = block.Hash
-		currentHeight = block.Height // uint64(block.GetBlockHeader().GetRawData().GetNumber())
 
-		fmt.Println(currentHash)
+		// 取上一个块作为初始
+		block, err = bs.wm.GetBlockByNum(block.Height - 1)
+		if err != nil {
+			log.Std.Error("ScanBlockTask Faild: %+v", err)
+		}
+
+		currentHash = block.GetBlockHashID()
+		currentHeight = block.GetHeight()
 	}
+	log.Std.Info("Local block height: %v", currentHeight)
 
-	// currentHeight := blockHeader.Height
-	// currentHash := blockHeader.Hash
-
+	i := 0
 	for {
+		log.Std.Info("\n ------------------------------------ Foreach Start")
+
+		time.Sleep(time.Second * (5 * time.Duration(i*i)))
+		i += 1
+
 		block, err := bs.wm.GetNowBlock()
 		if err != nil {
 			//下一个高度找不到会报异常
@@ -130,20 +143,22 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 			break
 		}
 		hash := block.Hash
-		maxHeight := block.Height //uint64(block.GetBlockHeader().GetRawData().GetNumber())
+		maxHeight := block.Height
+
+		log.Std.Info("Get now block: height=%v, hash=%v", maxHeight, hash)
 
 		//是否已到最新高度
 		if currentHeight == maxHeight {
-			log.Std.Info("block scanner has scanned full chain data. Current height: %d", maxHeight)
+			log.Std.Info("Break: block scanner has scanned full chain data. Current height %d", maxHeight)
 			break
 		}
 
 		//继续扫描下一个区块
 		currentHeight = currentHeight + 1
 
-		log.Std.Info("block scanner scanning height: %d ...", currentHeight)
+		log.Std.Info("Block scanner scanning next height: %d ...", currentHeight)
 
-		block, err = bs.wm.GetBlockByID(currentHash)
+		block, err = bs.wm.GetBlockByNum(currentHeight)
 		if err != nil {
 			log.Std.Info("block scanner can not get new block data; unexpected error: %v", err)
 
@@ -153,18 +168,19 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 			log.Std.Info("block height: %d extract failed.", currentHeight)
 			continue
 		}
+		currentHash = block.GetBlockHashID()
 
 		isFork := false
 
 		//判断hash是否上一区块的hash
-		// if currentHash != block.Previousblockhash {
-		if true {
+		if currentHash != block.Previousblockhash {
+			// if true {
+			log.Std.Info("\n\t 分叉？")
+			log.Std.Info("\tblock has been fork on height: %d.", currentHeight)
+			log.Std.Info("\tblock height: %d local hash = %s ", currentHeight-1, currentHash)
+			// log.Std.Info("\tblock height: %d mainnet hash = %s ", currentHeight-1, block.Previousblockhash)
 
-			log.Std.Info("block has been fork on height: %d.", currentHeight)
-			log.Std.Info("block height: %d local hash = %s ", currentHeight-1, currentHash)
-			// log.Std.Info("block height: %d mainnet hash = %s ", currentHeight-1, block.Previousblockhash)
-
-			log.Std.Info("delete recharge records on block height: %d.", currentHeight-1)
+			log.Std.Info("\tdelete recharge records on block height: %d.", currentHeight-1)
 
 			//删除上一区块链的所有充值记录
 			//bs.DeleteRechargesByHeight(currentHeight - 1)
@@ -180,20 +196,19 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 				log.Std.Error("block scanner can not get local block; unexpected error: %v", err)
 
 				//查找core钱包的RPC
-				log.Info("block scanner prev block height:", currentHeight)
+				log.Info("\tblock scanner prev block height:", currentHeight)
 
-				localBlock, err := bs.wm.GetBlockByNum(currentHeight)
+				localBlock, err = bs.wm.GetBlockByNum(currentHeight)
 				if err != nil {
 					log.Std.Error("block scanner can not get prev block; unexpected error: %v", err)
 					break
 				}
-				fmt.Println(localBlock)
 			}
 
 			//重置当前区块的hash
 			currentHash = localBlock.Hash
 
-			log.Std.Info("rescan block on height: %d, hash: %s .", currentHeight, currentHash)
+			log.Std.Info("\trescan block on height: %d, hash: %s .", currentHeight, currentHash)
 
 			//重新记录一个新扫描起点
 			bs.SaveLocalNewBlock(localBlock.Height, localBlock.Hash)
@@ -212,14 +227,13 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 
 			//保存本地新高度
 			bs.SaveLocalNewBlock(currentHeight, currentHash)
-			// bs.SaveLocalBlock(block)
+			bs.SaveLocalBlock(block)
 
 			isFork = false
 		}
 
 		//通知新区块给观测者，异步处理
-		fmt.Println(isFork)
-		// go bs.newBlockNotify(block, isFork)
+		go bs.newBlockNotify(block, isFork)
 	}
 
 	//重扫前N个块，为保证记录找到
@@ -237,14 +251,14 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 
 }
 
-// //newBlockNotify 获得新区块后，通知给观测者
-// func (bs *TronBlockScanner) newBlockNotify(block *Block, isFork bool) {
-// 	for o, _ := range bs.Observers {
-// 		header := block.BlockHeader()
-// 		header.Fork = isFork
-// 		o.BlockScanNotify(block.BlockHeader())
-// 	}
-// }
+//newBlockNotify 获得新区块后，通知给观测者
+func (bs *TronBlockScanner) newBlockNotify(block *Block, isFork bool) {
+	// for o, _ := range bs.Observers {
+	// 	header := block.BlockHeader()
+	// 	header.Fork = isFork
+	// 	o.BlockScanNotify(block.BlockHeader())
+	// }
+}
 
 //BatchExtractTransaction 批量提取交易单
 //bitcoin 1M的区块链可以容纳3000笔交易，批量多线程处理，速度更快

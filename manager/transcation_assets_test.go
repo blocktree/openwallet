@@ -23,11 +23,11 @@ import (
 
 func testCreateTransactionStep(walletID, accountID, to, amount, feeRate string, contract *openwallet.SmartContract) (*openwallet.RawTransaction, error) {
 
-	err := tm.RefreshAssetsAccountBalance(testApp, accountID)
-	if err != nil {
-		log.Error("RefreshAssetsAccountBalance failed, unexpected error:", err)
-		return nil, err
-	}
+	//err := tm.RefreshAssetsAccountBalance(testApp, accountID)
+	//if err != nil {
+	//	log.Error("RefreshAssetsAccountBalance failed, unexpected error:", err)
+	//	return nil, err
+	//}
 
 	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, amount, to, feeRate, "", contract)
 
@@ -80,14 +80,16 @@ func testSubmitTransactionStep(rawTx *openwallet.RawTransaction) (*openwallet.Ra
 
 func TestTransfer_ETH(t *testing.T) {
 
-	walletID := "WGWfGtgo8uLxVKTWoWkzuoPELMtehb9Vda"
-	accountID := "6SVDyi7dgcJHG7V2DP2ZJUvzbRyr2PjTqFxym8pEEBrv"
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
 	to := "d35f9Ea14D063af9B3567064FAB567275b09f03D"
 
 	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.0003", "", nil)
 	if err != nil {
 		return
 	}
+
+	log.Info("rawTx.hex:", rawTx.RawHex)
 
 	_, err = testSignTransactionStep(rawTx)
 	if err != nil {
@@ -146,9 +148,9 @@ func TestTransfer_LTC(t *testing.T) {
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "EbUsW3YaHQ61eNt3f4hDXJAFh9LGmLZWH1VTTSnQmhnL"
-	to := "n1Prn7ZbZtd5CTN8Yrj4K9c3gD4u8tjFQzX"
+	to := "my2S5LBREZ8YCcuAHZz1YChoZpGPZN28uw"
 
-	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "1.1", "0.001", nil)
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.01", "0.001", nil)
 	if err != nil {
 		return
 	}

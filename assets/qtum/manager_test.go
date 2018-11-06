@@ -45,10 +45,12 @@ func init() {
 	token := basicAuth(tw.config.rpcUser, tw.config.rpcPassword)
 	tw.walletClient = NewClient(tw.config.serverAPI, token, false)
 
-	explorerURL := "http://192.168.2.193:20001/qtum-insight-api/"
+	tw.config.isTestNet = false
+
+	explorerURL := "http://47.52.97.183:20007/qtum-insight-api/"
 	tw.ExplorerClient = NewExplorer(explorerURL, true)
 
-	tw.config.RPCServerType = RPCServerCore
+	tw.config.RPCServerType = RPCServerExplorer
 }
 
 func TestImportPrivKey(t *testing.T) {

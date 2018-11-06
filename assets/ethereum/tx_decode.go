@@ -15,6 +15,7 @@
 package ethereum
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -225,11 +226,17 @@ func (this *EthTransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 
 	addrsBalanceList := make([]AddrBalance, 0, len(addresses))
 	for i, addr := range addresses {
-		balance, err := ConvertEthStringToWei(addr.Balance) //ConvertToBigInt(addr.Balance, 16)
+		balanceList, err := this.wm.Blockscanner.GetBalanceByAddress(addr.Address)
+		if len(balanceList) == 0 {
+			continue
+		}
+
+		balance, err := ConvertEthStringToWei(balanceList[0].Balance) //ConvertToBigInt(addr.Balance, 16)
 		if err != nil {
 			openwLogger.Log.Errorf("convert address [%v] balance [%v] to big.int failed, err = %v ", addr.Address, addr.Balance, err)
 			return err
 		}
+
 		addrsBalanceList = append(addrsBalanceList, AddrBalance{
 			Address: addr.Address,
 			Balance: balance,
@@ -345,7 +352,7 @@ func (this *EthTransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 	extparastr, _ := json.Marshal(extpara)
 	rawTx.ExtParam = string(extparastr)
 	keySignList[0].Nonce = "0x" + strconv.FormatUint(nonce, 16)
-	keySignList[0].Message = common.ToHex(msg[:])
+	keySignList[0].Message = hex.EncodeToString(msg[:])
 	signatureMap[rawTx.Account.AccountID] = keySignList
 	rawTx.Signatures = signatureMap
 	gasprice, err := ConverWeiStringToEthDecimal(fee.GasPrice.String())
@@ -518,7 +525,7 @@ func (this *EthTransactionDecoder) CreateErc20TokenRawTransaction(wrapper openwa
 	rawTx.ExtParam = string(extparastr)
 
 	keySignList[0].Nonce = "0x" + strconv.FormatUint(nonce, 16)
-	keySignList[0].Message = common.ToHex(msg[:])
+	keySignList[0].Message = hex.EncodeToString(msg[:])
 
 	signatureMap[rawTx.Account.AccountID] = keySignList
 	rawTx.Signatures = signatureMap
@@ -583,7 +590,10 @@ func (this *EthTransactionDecoder) SignRawTransaction(wrapper openwallet.WalletD
 	//prikeyStr := common.ToHex(keyBytes)
 	//log.Debugf("pri:%v", common.ToHex(keyBytes))
 
-	message := common.FromHex(signnode.Message)
+	message, err := hex.DecodeString(signnode.Message)
+	if err != nil {
+		return err
+	}
 	//seckey := math.PaddedBigBytes(key.PrivateKey.D, key.PrivateKey.Params().BitSize/8)
 
 	/*sig, err := secp256k1.Sign(message, keyBytes)
@@ -598,9 +608,9 @@ func (this *EthTransactionDecoder) SignRawTransaction(wrapper openwallet.WalletD
 		return errors.New(errdesc)
 	}
 
-	signnode.Signature = common.ToHex(sig)
+	signnode.Signature = hex.EncodeToString(sig)
 
-	log.Debug("** pri:", common.ToHex(keyBytes))
+	log.Debug("** pri:", hex.EncodeToString(keyBytes))
 	log.Debug("** message:", signnode.Message)
 	log.Debug("** Signature:", signnode.Signature)
 
