@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/tidwall/gjson"
 
 	//"log"
 	"math/big"
@@ -41,6 +42,13 @@ import (
 type EthTxExtPara struct {
 	Data     string `json:"data"`
 	GasLimit string `json:"gasLimit"`
+}
+
+func NewEthTxExtPara(j gjson.Result) *EthTxExtPara {
+	obj := EthTxExtPara{}
+	obj.GasLimit = j.Get("gasLimit").String()
+	obj.Data = j.Get("data").String()
+	return &obj
 }
 
 /*func (this *EthTxExtPara) GetGasLimit() (uint64, error) {
@@ -637,13 +645,13 @@ func (this *EthTransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet
 	from := rawTx.Signatures[rawTx.Account.AccountID][0].Address.Address
 	sig := rawTx.Signatures[rawTx.Account.AccountID][0].Signature
 
-	var extPara EthTxExtPara
 	log.Debug("rawTx.ExtParam:", rawTx.ExtParam)
-	err = json.Unmarshal([]byte(rawTx.ExtParam), &extPara)
-	if err != nil {
-		openwLogger.Log.Errorf("decode json from extpara failed, err=%v", err)
-		return err
-	}
+	extPara := NewEthTxExtPara(gjson.Parse(rawTx.ExtParam))
+	//err = json.Unmarshal([]byte(rawTx.ExtParam), &extPara)
+	//if err != nil {
+	//	log.Error("decode json from extpara failed, err=%v", err)
+	//	return err
+	//}
 
 	signer := types.NewEIP155Signer(big.NewInt(int64(this.wm.GetConfig().ChainID)))
 
@@ -752,13 +760,14 @@ func (this *EthTransactionDecoder) SubmitErc20TokenRawTransaction(wrapper openwa
 	from := rawTx.Signatures[rawTx.Account.AccountID][0].Address.Address
 	sig := rawTx.Signatures[rawTx.Account.AccountID][0].Signature
 
-	var extPara EthTxExtPara
-	log.Debug("rawTx.ExtParam:", rawTx.ExtParam)
-	err = json.Unmarshal([]byte(rawTx.ExtParam), &extPara)
-	if err != nil {
-		openwLogger.Log.Errorf("decode json from extpara failed, err=%v", err)
-		return err
-	}
+	extPara := NewEthTxExtPara(gjson.Parse(rawTx.ExtParam))
+	//var extPara EthTxExtPara
+	//log.Debug("rawTx.ExtParam:", rawTx.ExtParam)
+	//err = json.Unmarshal([]byte(rawTx.ExtParam), &extPara)
+	//if err != nil {
+	//	openwLogger.Log.Errorf("decode json from extpara failed, err=%v", err)
+	//	return err
+	//}
 
 	data := extPara.Data
 	log.Debug("extPara.GasLimit:", extPara.GasLimit)

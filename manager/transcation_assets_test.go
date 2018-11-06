@@ -89,7 +89,7 @@ func TestTransfer_ETH(t *testing.T) {
 		return
 	}
 
-	log.Info("rawTx.hex:", rawTx.RawHex)
+	log.Std.Info("rawTx: %+v", rawTx)
 
 	_, err = testSignTransactionStep(rawTx)
 	if err != nil {

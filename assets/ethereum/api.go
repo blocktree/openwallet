@@ -375,7 +375,7 @@ func (this *Client) ethGetTxpoolStatus() (uint64, uint64, error) {
 	result, err := this.Call("txpool_status", 1, nil)
 	if err != nil {
 		//errInfo := fmt.Sprintf("get block[%v] failed, err = %v \n", blockNumStr,  err)
-		openwLogger.Log.Errorf("get block[%v] failed, err = %v \n", err)
+		//openwLogger.Log.Errorf("get block[%v] failed, err = %v \n", err)
 		return 0, 0, err
 	}
 

@@ -676,7 +676,7 @@ func (bs *BTCBlockScanner) extractTxInput(trx *Transaction, result *ExtractResul
 
 		}
 
-		from = append(from, addr)
+		from = append(from, addr + ":" + amount)
 		dAmount, _ := decimal.NewFromString(amount)
 		totalAmount = totalAmount.Add(dAmount)
 
@@ -742,7 +742,7 @@ func (bs *BTCBlockScanner) extractTxOutput(trx *Transaction, result *ExtractResu
 
 		}
 
-		to = append(to, addr)
+		to = append(to, addr + ":" + amount)
 		dAmount, _ := decimal.NewFromString(amount)
 		totalAmount = totalAmount.Add(dAmount)
 
