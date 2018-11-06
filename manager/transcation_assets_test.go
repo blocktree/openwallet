@@ -89,6 +89,8 @@ func TestTransfer_ETH(t *testing.T) {
 		return
 	}
 
+	log.Info("rawTx.hex:", rawTx.RawHex)
+
 	_, err = testSignTransactionStep(rawTx)
 	if err != nil {
 		return
@@ -146,9 +148,9 @@ func TestTransfer_LTC(t *testing.T) {
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "EbUsW3YaHQ61eNt3f4hDXJAFh9LGmLZWH1VTTSnQmhnL"
-	to := "n1Prn7ZbZtd5CTN8Yrj4K9c3gD4u8tjFQzX"
+	to := "my2S5LBREZ8YCcuAHZz1YChoZpGPZN28uw"
 
-	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "1.1", "0.001", nil)
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.01", "0.001", nil)
 	if err != nil {
 		return
 	}

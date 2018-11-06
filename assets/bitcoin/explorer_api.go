@@ -265,7 +265,13 @@ func newTxByExplorer(json *gjson.Result, isTestnet bool) *Transaction {
 	obj.Version = gjson.Get(json.Raw, "version").Uint()
 	obj.LockTime = gjson.Get(json.Raw, "locktime").Int()
 	obj.BlockHash = gjson.Get(json.Raw, "blockhash").String()
-	obj.BlockHeight = gjson.Get(json.Raw, "blockheight").Uint()
+	blockHeight := gjson.Get(json.Raw, "blockheight").Int()
+	if blockHeight < 0 {
+		obj.BlockHeight = 0
+	} else {
+		obj.BlockHeight = uint64(blockHeight)
+	}
+
 	obj.Confirmations = gjson.Get(json.Raw, "confirmations").Uint()
 	obj.Blocktime = gjson.Get(json.Raw, "blocktime").Int()
 	obj.Size = gjson.Get(json.Raw, "size").Uint()

@@ -128,8 +128,8 @@ func TestGetTxIDsInMemPool(t *testing.T) {
 
 func TestBTCBlockScanner_scanning(t *testing.T) {
 
-	accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
-	address := "miphUAzHHeM1VXGSFnw6owopsQW3jAQZAk"
+	//accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
+	//address := "miphUAzHHeM1VXGSFnw6owopsQW3jAQZAk"
 
 	//wallet, err := tw.GetWalletInfo(accountID)
 	//if err != nil {
@@ -144,7 +144,7 @@ func TestBTCBlockScanner_scanning(t *testing.T) {
 	bs.SetRescanBlockHeight(1384586)
 	//tw.SaveLocalNewBlock(1355030, "00000000000000125b86abb80b1f94af13a5d9b07340076092eda92dade27686")
 
-	bs.AddAddress(address, accountID)
+	//bs.AddAddress(address, accountID)
 
 	bs.ScanBlockTask()
 }
@@ -155,8 +155,8 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 		endRunning = make(chan bool, 1)
 	)
 
-	accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
-	address := "msnYsBdBXQZqYYqNNJZsjShzwCx9fJVSin"
+	//accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
+	//address := "msnYsBdBXQZqYYqNNJZsjShzwCx9fJVSin"
 
 	//wallet, err := tw.GetWalletInfo(accountID)
 	//if err != nil {
@@ -170,7 +170,7 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 
 	//bs.SetRescanBlockHeight(1384586)
 
-	bs.AddAddress(address, accountID)
+	//bs.AddAddress(address, accountID)
 
 	bs.Run()
 
@@ -180,25 +180,25 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 
 func TestBTCBlockScanner_ScanBlock(t *testing.T) {
 
-	accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
-	address := "msnYsBdBXQZqYYqNNJZsjShzwCx9fJVSin"
+	//accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
+	//address := "msnYsBdBXQZqYYqNNJZsjShzwCx9fJVSin"
 
 	bs := tw.Blockscanner
-	bs.AddAddress(address, accountID)
+	//bs.AddAddress(address, accountID)
 	bs.ScanBlock(1384961)
 }
 
 func TestBTCBlockScanner_ExtractTransaction(t *testing.T) {
 
-	accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
-	address := "msHemmfSZ3au6h9S1annGcTGrTVryRbSFV"
+	//accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
+	//address := "msHemmfSZ3au6h9S1annGcTGrTVryRbSFV"
 
-	bs := tw.Blockscanner
-	bs.AddAddress(address, accountID)
-	bs.ExtractTransaction(
-		1435497,
-		"00000000e271b8234ed2271cb80f1cf2701469a4e02b0536fdce4f4306ff7852",
-		"c550ae3ffafdda46c13217797dd0aa8ee870727d3e8cab1551d6a3f5e3f7ace0", bs.GetSourceKeyByAddress)
+	//bs := tw.Blockscanner
+	////bs.AddAddress(address, accountID)
+	//bs.ExtractTransaction(
+	//	1435497,
+	//	"00000000e271b8234ed2271cb80f1cf2701469a4e02b0536fdce4f4306ff7852",
+	//	"c550ae3ffafdda46c13217797dd0aa8ee870727d3e8cab1551d6a3f5e3f7ace0", bs.GetSourceKeyByAddress)
 
 }
 
