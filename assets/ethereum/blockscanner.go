@@ -577,10 +577,10 @@ func (this *ETHBLockScanner) MakeSimpleToExtractData(tx *BlockTransaction) (stri
 	}
 
 	from := []string{
-		tx.From,
+		tx.From + ":" + amountVal,
 	}
 	to := []string{
-		tx.To,
+		tx.To + ":" + amountVal,
 	}
 
 	transx := &openwallet.Transaction{
@@ -748,10 +748,10 @@ func (this *ETHBLockScanner) MakeTokenToExtractData(tx *BlockTransaction, tokenE
 		},
 	}
 	from := []string{
-		tokenEvent.TokenFrom,
+		tokenEvent.TokenFrom + ":" + tokenValue.String(),
 	}
 	to := []string{
-		tokenEvent.TokenTo,
+		tokenEvent.TokenTo + ":" + tokenValue.String(),
 	}
 
 	tokentransx := &openwallet.Transaction{
@@ -838,10 +838,10 @@ func (this *ETHBLockScanner) MakeSimpleTxFromExtractData(tx *BlockTransaction) (
 	}
 
 	from := []string{
-		tx.From,
+		tx.From + ":" + amountVal,
 	}
 	to := []string{
-		tx.To,
+		tx.To + ":" + amountVal,
 	}
 
 	transx := &openwallet.Transaction{
@@ -918,10 +918,10 @@ func (this *ETHBLockScanner) MakeTokenTxFromExtractData(tx *BlockTransaction, to
 		},
 	}
 	from := []string{
-		tokenEvent.TokenFrom,
+		tokenEvent.TokenFrom + ":" + tokenValue.String(),
 	}
 	to := []string{
-		tokenEvent.TokenTo,
+		tokenEvent.TokenTo + ":" + tokenValue.String(),
 	}
 
 	tokentransx := &openwallet.Transaction{
@@ -958,10 +958,10 @@ func (this *ETHBLockScanner) MakeTokenTxFromExtractData(tx *BlockTransaction, to
 		},
 	}
 	from = []string{
-		tx.From,
+		tx.From + ":" + "0",
 	}
 	to = []string{
-		tx.To,
+		tx.To + ":" + "0",
 	}
 
 	feeTx := &openwallet.Transaction{

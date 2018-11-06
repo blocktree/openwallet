@@ -372,7 +372,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 
 		changeAmount := balance.Sub(computeTotalSend).Sub(actualFees)
 		rawTx.Fees = actualFees.StringFixed(decoder.wm.Decimal())
-
+		rawTx.FeeRate = feesRate.StringFixed(decoder.wm.Decimal())
 		//UTXO如果大于设定限制，则分拆成多笔交易单发送
 		if len(usedUTXO) > decoder.wm.config.maxTxInputs {
 			errStr := fmt.Sprintf("The transaction is use max inputs over: %d", decoder.wm.config.maxTxInputs)

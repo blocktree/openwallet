@@ -825,7 +825,7 @@ func (this *WalletManager) BackupWalletFlow() error {
 
 	wallets, err := this.GetLocalWalletList(this.GetConfig().KeyDir, this.GetConfig().DbPath, true)
 	if err != nil {
-		openwLogger.Log.Errorf("get wallet list failed, err = ", err)
+		//openwLogger.Log.Errorf("get wallet list failed, err = ", err)
 		return err
 	}
 

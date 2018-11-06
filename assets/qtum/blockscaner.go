@@ -679,7 +679,7 @@ func (bs *BTCBlockScanner) extractTxInput(trx *Transaction, result *ExtractResul
 
 		}
 
-		from = append(from, addr)
+		from = append(from, addr + ":" + amount)
 		dAmount, _ := decimal.NewFromString(amount)
 		totalAmount = totalAmount.Add(dAmount)
 
@@ -745,7 +745,7 @@ func (bs *BTCBlockScanner) extractTxOutput(trx *Transaction, result *ExtractResu
 
 		}
 
-		to = append(to, addr)
+		to = append(to, addr + ":" + amount)
 		dAmount, _ := decimal.NewFromString(amount)
 		totalAmount = totalAmount.Add(dAmount)
 
@@ -851,8 +851,8 @@ func (bs *BTCBlockScanner) extractTokenTransfer(trx *Transaction, result *Extrac
 
 				for _, extractData := range result.extractContractData {
 					tx := &openwallet.Transaction{
-						From: []string{tokenReceipt.From},
-						To:   []string{tokenReceipt.To},
+						From: []string{tokenReceipt.From + ":" + tokenReceipt.Amount},
+						To:   []string{tokenReceipt.To + ":" + tokenReceipt.Amount},
 						Fees: "0",
 						Coin: openwallet.Coin{
 							Symbol:     bs.wm.Symbol(),

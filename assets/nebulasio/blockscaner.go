@@ -561,7 +561,7 @@ func (bs *NASBlockScanner) extractTxInput(tx *NasTransaction,txExtractData *open
 }
 
 func (bs *NASBlockScanner) InitNasExtractResult(tx *NasTransaction, result *ExtractResult,isFromAccount bool) {
-
+	amount := tx.Value.Div(coinDecimal).StringFixed(bs.wm.Decimal())
 	txExtractData := &openwallet.TxExtractData{}
 	transx := &openwallet.Transaction{
 		Fees: decimal.RequireFromString(tx.Gas_used).Mul(decimal.RequireFromString(tx.Gas_price)).Div(coinDecimal).StringFixed(bs.wm.Decimal()) ,
@@ -573,13 +573,13 @@ func (bs *NASBlockScanner) InitNasExtractResult(tx *NasTransaction, result *Extr
 		BlockHeight: tx.BlockHeight,
 		TxID:        tx.Hash,
 		Decimal:     18,
-		Amount:		 tx.Value.Div(coinDecimal).String(),
+		Amount:		 amount,
 		ConfirmTime:  int64(tx.BlockTime),
 	}
 	submitTime ,_ := strconv.ParseInt(tx.Timestamp,10,64)
 	transx.SubmitTime = submitTime
-	transx.From = append(transx.From, tx.From)
-	transx.To = append(transx.To, tx.To)
+	transx.From = append(transx.From, tx.From + ":" + amount)
+	transx.To = append(transx.To, tx.To + ":" + amount)
 	wxID := openwallet.GenTransactionWxID(transx)
 	transx.WxID = wxID
 	txExtractData.Transaction = transx

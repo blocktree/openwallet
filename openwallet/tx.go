@@ -103,8 +103,8 @@ type Transaction struct {
 	TxID        string   `json:"txid"`            //@required
 	AccountID   string   `json:"accountID"`
 	Coin        Coin     `json:"coin"` //@required 区块链类型标识
-	From        []string `json:"from"` //@required
-	To          []string `json:"to"`   //@required
+	From        []string `json:"from"` //@required 格式："地址":"数量"
+	To          []string `json:"to"`   //@required 格式："地址":"数量"
 	Amount      string   `json:"amount"`
 	Decimal     int32    `json:"decimal"` //@required
 	TxType      uint64   `json:"txType"`  // 0:未知，1:主币转账，2:合约调用
