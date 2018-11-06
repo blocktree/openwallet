@@ -194,7 +194,6 @@ func (wm *WalletManager) CreateBatchAddress(name, password string, count uint64)
 	outputAddress := make([]*openwallet.Address, 0)
 
 	//以下使用生产消费模式
-
 	for {
 
 		var activeWorker chan<- []*openwallet.Address
