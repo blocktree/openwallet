@@ -15,6 +15,7 @@
 package nebulasio
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -28,8 +29,6 @@ import (
 	"github.com/bytom/common"
 	"github.com/shopspring/decimal"
 )
-
-var TX *SubmitTransaction
 
 type TransactionDecoder struct {
 	openwallet.TransactionDecoderBase
@@ -198,15 +197,22 @@ func (decoder *TransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 		nonce = decoder.wm.ConfirmTxdecodeNonce(keySignList[0].Address.Address, nonce_db.(string))
 	}
 	//构建交易单
+	var TX *SubmitTransaction
 	TX, err = decoder.wm.CreateRawTransaction(keySignList[0].Address.Address, to, Gaslimit, gasprice.Mul(coinDecimal).String(), amount.String(), nonce)
 	if err != nil {
 		return err
 	}
 
+	rawHex, err := EncodeToTransactionRawHex(TX)
+	if err != nil {
+		return err
+	}
+
 	keySignList[0].Nonce = strconv.FormatUint(nonce, 10)
-	keySignList[0].Message = common.ToHex(TX.Hash[:])
+	keySignList[0].Message = hex.EncodeToString(TX.Hash[:])
 	signatureMap[rawTx.Account.AccountID] = keySignList
 
+	rawTx.RawHex = rawHex
 	rawTx.Signatures = signatureMap
 	rawTx.FeeRate = gasprice.String()
 	rawTx.Fees = fee.StringFixed(decoder.wm.Decimal())
@@ -272,11 +278,12 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletD
 		log.Error("signature error !")
 		return nil
 	}
-	TX.Sign = signed
 
-	keySignature.Signature = common.ToHex(signed)
+	//TX.Sign = signed
 
-	log.Debug("** pri:", common.ToHex(PrivateKey))
+	keySignature.Signature = hex.EncodeToString(signed)
+
+	log.Debug("** pri:", hex.EncodeToString(PrivateKey))
 	log.Debug("** tx_hash:", keySignature.Message)
 	log.Debug("** Signature:", keySignature.Signature)
 
@@ -311,10 +318,7 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 	if verify_result == owcrypt.SUCCESS {
 		log.Debug("transaction verify passed")
 		rawTx.IsCompleted = true
-		rawTx.RawHex, err = EncodeTransaction(TX)
-		if err != nil {
-			return err
-		}
+
 	} else {
 		log.Debug("transaction verify failed")
 		rawTx.IsCompleted = false
@@ -335,8 +339,14 @@ func (decoder *TransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet
 		return errors.New("len of signatures error. ")
 	}
 
-	if _, exist := rawTx.Signatures[rawTx.Account.AccountID]; !exist {
+	accSignatures, exist := rawTx.Signatures[rawTx.Account.AccountID]
+	if !exist {
 		openwLogger.Log.Errorf("wallet[%v] signature not found ", rawTx.Account.AccountID)
+		return errors.New("wallet signature not found ")
+	}
+
+	if len(accSignatures) == 0 {
+		openwLogger.Log.Errorf("wallet[%v] signature is empty ", rawTx.Account.AccountID)
 		return errors.New("wallet signature not found ")
 	}
 
@@ -348,7 +358,21 @@ func (decoder *TransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet
 		return fmt.Errorf("transaction is not completed validation")
 	}
 
-	txid, err := decoder.wm.SubmitRawTransaction(rawTx.RawHex)
+	keySignature := accSignatures[0]
+
+	tx, err := DecodeRawHexToTransaction(rawTx.RawHex)
+	if err != nil {
+		return err
+	}
+
+	tx.Sign = common.FromHex(keySignature.Signature)
+
+	submitRawHex, err := EncodeTransaction(tx)
+	if err != nil {
+		return err
+	}
+
+	txid, err := decoder.wm.SubmitRawTransaction(submitRawHex)
 	if err != nil {
 		return err
 	} else {
@@ -359,7 +383,7 @@ func (decoder *TransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet
 	rawTx.TxID = txid
 	rawTx.IsSubmit = true
 
-	fmt.Printf("rawTx=%+v\n", rawTx)
+	//fmt.Printf("rawTx=%+v\n", rawTx)
 
 	return nil
 }

@@ -18,6 +18,7 @@ package nebulasio
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/asdine/storm"
@@ -165,6 +166,25 @@ func (tx *SubmitTransaction) ToProto() (proto.Message) {
 	}
 }
 
+
+//NewSubmitTransactionByProto
+func NewSubmitTransactionByProto(tx corepb.Transaction) *SubmitTransaction {
+	return &SubmitTransaction{
+		Hash:      tx.Hash,
+		From:      tx.From,
+		To:        tx.To,
+		Value:     tx.Value,
+		Nonce:     tx.Nonce,
+		Timestamp: tx.Timestamp,
+		Data:      tx.Data,
+		ChainId:   tx.ChainId,
+		GasPrice:  tx.GasPrice,
+		GasLimit:  tx.GasLimit,
+		Alg:       tx.Alg,
+		Sign:      tx.Sign,
+	}
+}
+
 //CreateRawTransaction创建交易单hash
 func (wm *WalletManager) CreateRawTransaction(from , to, gasLimit, gasPrice,value string, nonce uint64) (*SubmitTransaction,error){
 
@@ -277,7 +297,7 @@ func VerifyRawTransaction(PubKey []byte, txhash []byte, signed []byte) uint16{
 }
 
 //SubmitRawTransaction对签名结果进行编码
-func  EncodeTransaction( submit_tx *SubmitTransaction)(string ,error){
+func EncodeTransaction(submit_tx *SubmitTransaction)(string ,error){
 
 	//参照官方对广播交易体进行编码
 	message := submit_tx.ToProto()
@@ -289,6 +309,36 @@ func  EncodeTransaction( submit_tx *SubmitTransaction)(string ,error){
 	broadcastsend_data := base64.StdEncoding.EncodeToString(data.Data)
 
 	return broadcastsend_data,nil
+}
+
+//EncodeToTransactionRawHex
+func EncodeToTransactionRawHex(submit_tx *SubmitTransaction)(string ,error){
+
+	//参照官方对广播交易体进行编码
+	message := submit_tx.ToProto()
+	data_tmp, err := proto.Marshal(message)
+	if err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(data_tmp), nil
+}
+
+//DecodeRawHexToTransaction
+func DecodeRawHexToTransaction(rawHex string)(*SubmitTransaction ,error){
+
+	data, err := hex.DecodeString(rawHex)
+	if err != nil {
+		return nil, err
+	}
+	txMsg := corepb.Transaction{}
+	err = proto.Unmarshal(data, &txMsg)
+	if err != nil {
+		return nil, err
+	}
+	//参照官方对广播交易体进行编码
+	tx := NewSubmitTransactionByProto(txMsg)
+	return tx,nil
 }
 
 //SubmitRawTransaction对签名编码后的数据进行广播

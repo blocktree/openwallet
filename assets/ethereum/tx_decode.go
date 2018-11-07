@@ -344,6 +344,14 @@ func (this *EthTransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 	tx := types.NewTransaction(nonce, ethcommon.HexToAddress(to),
 		amount, fee.GasLimit.Uint64(), fee.GasPrice, []byte(""))
 
+	rawHex, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		log.Error("Transaction RLP encode failed, err:", err)
+		return err
+	}
+
+	rawTx.RawHex = hex.EncodeToString(rawHex)
+
 	txstr, _ := json.MarshalIndent(tx, "", " ")
 	log.Debug("**txStr:", string(txstr))
 	msg := signer.Hash(tx)
@@ -525,6 +533,14 @@ func (this *EthTransactionDecoder) CreateErc20TokenRawTransaction(wrapper openwa
 		return err
 	}
 
+	rawHex, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		log.Error("Transaction RLP encode failed, err:", err)
+		return err
+	}
+
+	rawTx.RawHex = hex.EncodeToString(rawHex)
+
 	extpara := EthTxExtPara{
 		Data:     data,
 		GasLimit: gasLimitStr.String(), //"0x" + fee.GasLimit.Text(16),
@@ -646,7 +662,7 @@ func (this *EthTransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet
 	sig := rawTx.Signatures[rawTx.Account.AccountID][0].Signature
 
 	log.Debug("rawTx.ExtParam:", rawTx.ExtParam)
-	extPara := NewEthTxExtPara(gjson.Parse(rawTx.ExtParam))
+	//extPara := NewEthTxExtPara(gjson.Parse(rawTx.ExtParam))
 	//err = json.Unmarshal([]byte(rawTx.ExtParam), &extPara)
 	//if err != nil {
 	//	log.Error("decode json from extpara failed, err=%v", err)
@@ -655,17 +671,17 @@ func (this *EthTransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet
 
 	signer := types.NewEIP155Signer(big.NewInt(int64(this.wm.GetConfig().ChainID)))
 
-	var to, amountStr string
-	for k, v := range rawTx.To {
-		to = k
-		amountStr = v
-		break
-	}
-	amount, err := ConvertEthStringToWei(amountStr) //ConvertToBigInt(amountStr, 10)
-	if err != nil {
-		openwLogger.Log.Errorf("amount convert to big int failed, err=%v", err)
-		return err
-	}
+	//var to, amountStr string
+	//for k, v := range rawTx.To {
+	//	to = k
+	//	amountStr = v
+	//	break
+	//}
+	//amount, err := ConvertEthStringToWei(amountStr) //ConvertToBigInt(amountStr, 10)
+	//if err != nil {
+	//	openwLogger.Log.Errorf("amount convert to big int failed, err=%v", err)
+	//	return err
+	//}
 
 	txStatis, _, err := this.GetTransactionCount2(from)
 	if err != nil {
@@ -673,35 +689,53 @@ func (this *EthTransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet
 		return errors.New("get transaction count2 faile")
 	}
 
-	log.Debug("extPara.GasLimit:", extPara.GasLimit)
-	gaslimit, err := ConvertEthStringToWei(extPara.GasLimit) //extPara.GetGasLimit()
-	if err != nil {
-		openwLogger.Log.Errorf("get gas limit failed, err=%v", err)
-		return errors.New("get gas limit failed")
-	}
+	//log.Debug("extPara.GasLimit:", extPara.GasLimit)
+	//gaslimit, err := ConvertEthStringToWei(extPara.GasLimit) //extPara.GetGasLimit()
+	//if err != nil {
+	//	openwLogger.Log.Errorf("get gas limit failed, err=%v", err)
+	//	return errors.New("get gas limit failed")
+	//}
 
-	gasPrice, err := ConvertEthStringToWei(rawTx.FeeRate) //ConvertToBigInt(rawTx.FeeRate, 16)
+	//gasPrice, err := ConvertEthStringToWei(rawTx.FeeRate) //ConvertToBigInt(rawTx.FeeRate, 16)
+	//if err != nil {
+	//	openwLogger.Log.Errorf("get gas price failed, err=%v", err)
+	//	return errors.New("get gas price failed")
+	//}
+
+	rawHex, err := hex.DecodeString(rawTx.RawHex)
 	if err != nil {
-		openwLogger.Log.Errorf("get gas price failed, err=%v", err)
-		return errors.New("get gas price failed")
+		log.Error("rawTx.RawHex decode failed, err:", err)
+		return err
 	}
 
 	err = func() error {
 		txStatis.AddressLocker.Lock()
 		defer txStatis.AddressLocker.Unlock()
-		nonceSigned, err := strconv.ParseUint(removeOxFromHex(rawTx.Signatures[rawTx.Account.AccountID][0].Nonce),
-			16, 64)
+		//nonceSigned, err := strconv.ParseUint(removeOxFromHex(rawTx.Signatures[rawTx.Account.AccountID][0].Nonce),
+		//	16, 64)
+		//if err != nil {
+		//	openwLogger.Log.Errorf("parse nonce from rawTx failed, err=%v", err)
+		//	return errors.New("parse nonce from rawTx failed. ")
+		//}
+		//if nonceSigned != *txStatis.TransactionCount {
+		//	openwLogger.Log.Errorf("nonce out of dated, please try to start ur tx once again. ")
+		//	return errors.New("nonce out of dated, please try to start ur tx once again. ")
+		//}
+
+		tx := &types.Transaction{}
+		err = rlp.DecodeBytes(rawHex, tx)
 		if err != nil {
-			openwLogger.Log.Errorf("parse nonce from rawTx failed, err=%v", err)
-			return errors.New("parse nonce from rawTx failed. ")
+			log.Error("transaction RLP decode failed, err:", err)
+			return err
 		}
-		if nonceSigned != *txStatis.TransactionCount {
+
+		if tx.Nonce() != *txStatis.TransactionCount {
 			openwLogger.Log.Errorf("nonce out of dated, please try to start ur tx once again. ")
 			return errors.New("nonce out of dated, please try to start ur tx once again. ")
 		}
 
-		tx := types.NewTransaction(nonceSigned, ethcommon.HexToAddress(to),
-			amount, gaslimit.Uint64(), gasPrice, nil)
+		//tx := types.NewTransaction(nonceSigned, ethcommon.HexToAddress(to),
+		//	amount, gaslimit.Uint64(), gasPrice, nil)
 		tx, err = tx.WithSignature(signer, common.FromHex(sig))
 		if err != nil {
 			openwLogger.Log.Errorf("tx with signature failed, err=%v ", err)
@@ -760,7 +794,7 @@ func (this *EthTransactionDecoder) SubmitErc20TokenRawTransaction(wrapper openwa
 	from := rawTx.Signatures[rawTx.Account.AccountID][0].Address.Address
 	sig := rawTx.Signatures[rawTx.Account.AccountID][0].Signature
 
-	extPara := NewEthTxExtPara(gjson.Parse(rawTx.ExtParam))
+	//extPara := NewEthTxExtPara(gjson.Parse(rawTx.ExtParam))
 	//var extPara EthTxExtPara
 	//log.Debug("rawTx.ExtParam:", rawTx.ExtParam)
 	//err = json.Unmarshal([]byte(rawTx.ExtParam), &extPara)
@@ -769,13 +803,13 @@ func (this *EthTransactionDecoder) SubmitErc20TokenRawTransaction(wrapper openwa
 	//	return err
 	//}
 
-	data := extPara.Data
-	log.Debug("extPara.GasLimit:", extPara.GasLimit)
-	gaslimit, err := ConvertEthStringToWei(extPara.GasLimit) //extPara.GetGasLimit()
-	if err != nil {
-		openwLogger.Log.Errorf("get gas limit failed, err=%v", err)
-		return errors.New("get gas limit failed")
-	}
+	//data := extPara.Data
+	//log.Debug("extPara.GasLimit:", extPara.GasLimit)
+	//gaslimit, err := ConvertEthStringToWei(extPara.GasLimit) //extPara.GetGasLimit()
+	//if err != nil {
+	//	openwLogger.Log.Errorf("get gas limit failed, err=%v", err)
+	//	return errors.New("get gas limit failed")
+	//}
 
 	signer := types.NewEIP155Signer(big.NewInt(int64(this.wm.GetConfig().ChainID)))
 
@@ -785,30 +819,48 @@ func (this *EthTransactionDecoder) SubmitErc20TokenRawTransaction(wrapper openwa
 		return errors.New("get transaction count2 faile")
 	}
 
-	gasPrice, err := ConvertEthStringToWei(rawTx.FeeRate) //ConvertToBigInt(rawTx.FeeRate, 16)
+	//gasPrice, err := ConvertEthStringToWei(rawTx.FeeRate) //ConvertToBigInt(rawTx.FeeRate, 16)
+	//if err != nil {
+	//	openwLogger.Log.Errorf("get gas price failed, err=%v", err)
+	//	return errors.New("get gas price failed")
+	//}
+
+	rawHex, err := hex.DecodeString(rawTx.RawHex)
 	if err != nil {
-		openwLogger.Log.Errorf("get gas price failed, err=%v", err)
-		return errors.New("get gas price failed")
+		log.Error("rawTx.RawHex decode failed, err:", err)
+		return err
 	}
 
 	err = func() error {
 		txStatis.AddressLocker.Lock()
 		defer txStatis.AddressLocker.Unlock()
+		//
+		//nonceSigned, err := strconv.ParseUint(removeOxFromHex(rawTx.Signatures[rawTx.Account.AccountID][0].Nonce),
+		//	16, 64)
+		//if err != nil {
+		//	openwLogger.Log.Errorf("parse nonce from rawTx failed, err=%v", err)
+		//	return errors.New("parse nonce from rawTx failed. ")
+		//}
+		//
+		//if nonceSigned != *txStatis.TransactionCount {
+		//	openwLogger.Log.Errorf("nonce out of dated, please try to start ur tx once again. ")
+		//	return errors.New("nonce out of dated, please try to start ur tx once again. ")
+		//}
 
-		nonceSigned, err := strconv.ParseUint(removeOxFromHex(rawTx.Signatures[rawTx.Account.AccountID][0].Nonce),
-			16, 64)
+		tx := &types.Transaction{}
+		err = rlp.DecodeBytes(rawHex, tx)
 		if err != nil {
-			openwLogger.Log.Errorf("parse nonce from rawTx failed, err=%v", err)
-			return errors.New("parse nonce from rawTx failed. ")
+			log.Error("transaction RLP decode failed, err:", err)
+			return err
 		}
 
-		if nonceSigned != *txStatis.TransactionCount {
+		if tx.Nonce() != *txStatis.TransactionCount {
 			openwLogger.Log.Errorf("nonce out of dated, please try to start ur tx once again. ")
 			return errors.New("nonce out of dated, please try to start ur tx once again. ")
 		}
 
-		tx := types.NewTransaction(nonceSigned, ethcommon.HexToAddress(rawTx.Coin.Contract.Address),
-			big.NewInt(0), gaslimit.Uint64(), gasPrice, common.FromHex(data))
+		//tx := types.NewTransaction(nonceSigned, ethcommon.HexToAddress(rawTx.Coin.Contract.Address),
+		//	big.NewInt(0), gaslimit.Uint64(), gasPrice, common.FromHex(data))
 		tx, err = tx.WithSignature(signer, common.FromHex(sig))
 		if err != nil {
 			openwLogger.Log.Errorf("tx with signature failed, err=%v ", err)
