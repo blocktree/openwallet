@@ -22,8 +22,8 @@ import (
 	"time"
 
 	"github.com/blocktree/OpenWallet/common/file"
+	"github.com/blocktree/go-owcrypt"
 	"github.com/shopspring/decimal"
-	"github.com/blocktree/go-OWCrypt"
 )
 
 /*
@@ -43,7 +43,6 @@ const (
 	MasterKey = "Bitcoin seed"
 	CurveType = owcrypt.ECC_CURVE_SECP256K1
 )
-
 
 type WalletConfig struct {
 
@@ -99,6 +98,10 @@ type WalletConfig struct {
 	CoinDecimal decimal.Decimal
 	//核心钱包密码，配置有值用于自动解锁钱包
 	WalletPassword string
+	//后台数据源类型
+	RPCServerType int
+	//s是否支持隔离验证
+	SupportSegWit bool
 }
 
 func NewConfig(symbol string, masterKey string) *WalletConfig {
@@ -156,6 +159,10 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	c.CoinDecimal = decimal.NewFromFloat(100000000)
 	//核心钱包密码，配置有值用于自动解锁钱包
 	c.WalletPassword = ""
+	//后台数据源类型
+	c.RPCServerType = RPCServerCore
+	//支持隔离见证
+	c.SupportSegWit = true
 
 	//默认配置内容
 	c.DefaultConfig = `
@@ -169,6 +176,8 @@ nodeInstallPath = ""
 mainNetDataPath = ""
 # testnet data path
 testNetDataPath = ""
+# RPC Server Type，0: CoreWallet RPC; 1: Explorer API
+rpcServerType = 0
 # RPC api url
 serverAPI = ""
 # RPC Authentication Username

@@ -16,7 +16,6 @@
 package log
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/astaxie/beego/logs"
@@ -69,10 +68,21 @@ func Critical(v ...interface{}) {
 	Std.Critical(generateFmtStr(len(v)), v...)
 }
 
+// format & Error logs a message at error level.
+func Errorf(format string, v ...interface{}) {
+	SetLogFuncCall(true)
+	Std.Error(format, v...)
+}
+
 // Error logs a message at error level.
 func Error(v ...interface{}) {
 	SetLogFuncCall(true)
 	Std.Error(generateFmtStr(len(v)), v...)
+}
+
+// format & Warning logs a message at warning level.
+func Warningf(format string, v ...interface{}) {
+	Std.Warning(format, v...)
 }
 
 // Warning logs a message at warning level.
@@ -95,6 +105,10 @@ func Informational(v ...interface{}) {
 	Std.Informational(generateFmtStr(len(v)), v...)
 }
 
+func Infof(format string, v ...interface{}) {
+	Std.Info(format, v...)
+}
+
 // Info compatibility alias for Warning()
 func Info(v ...interface{}) {
 	Std.Info(generateFmtStr(len(v)), v...)
@@ -102,9 +116,8 @@ func Info(v ...interface{}) {
 
 // Format & debug logs a message at debug level.
 func Debugf(format string, v ...interface{}) {
-	txt := fmt.Sprintf(format, v)
 	SetLogFuncCall(true)
-	Std.Debug(txt)
+	Std.Debug(format, v...)
 }
 
 // Debug logs a message at debug level.

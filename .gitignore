@@ -28,9 +28,13 @@ conf/
 data/
 assets/sia/data/sc/address/
 hdkeystore/keys/sogosdfo-VykdgSwVtbEWExc5AdNykKCDqgw8cBKLs2.key
-vendor/github.com/blocktree/go-OWCBasedFuncs/
+vendor/*/
+!/vendor/vendor.json
 mqnode/*
 
 manager/openw_data/
 openw-linux-amd64
 openw-qtum
+openw-btc
+openw-qtum1
+openw-*

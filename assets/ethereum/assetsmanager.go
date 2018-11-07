@@ -15,15 +15,19 @@ func (this *WalletManager) GetTransactionDecoder() openwallet.TransactionDecoder
 	return this.TxDecoder
 }
 
+func (this *WalletManager) GetSmartContractDecoder() openwallet.SmartContractDecoder {
+	return this.ContractDecoder
+}
+
 //GetBlockScanner 获取区块链
 func (this *WalletManager) GetBlockScanner() openwallet.BlockScanner {
 	//先加载是否有配置文件
-	/*err := this.loadConfig()
-	if err != nil {
-		return nil
-	}*/
-
-	return nil //this.Blockscanner.
+	//err := this.loadConfig()
+	//if err != nil {
+	//	log.Errorf("load config failed, err=%v", err)
+	//	return nil
+	//}
+	return this.Blockscanner
 }
 
 //ImportWatchOnlyAddress 导入观测地址
@@ -35,7 +39,7 @@ func (this *WalletManager) ImportWatchOnlyAddress(address ...*openwallet.Address
 func (this *WalletManager) GetAddressWithBalance(addresses ...*openwallet.Address) error {
 	for _, addr := range addresses {
 		log.Debugf("wallet[%v] address[%v]:", addr.AccountID, addr.Address)
-		amount, err := this.WalletClient.GetAddrBalance("0x" + addr.Address)
+		amount, err := this.WalletClient.GetAddrBalance(appendOxToAddress(addr.Address))
 		if err != nil {
 			log.Error("get address[", addr.Address, "] balance failed, err=", err)
 			return err

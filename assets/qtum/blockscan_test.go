@@ -75,7 +75,7 @@ func TestGetBlock(t *testing.T) {
 }
 
 func TestGetTransaction(t *testing.T) {
-	raw, err := tw.GetTransaction("f8da6ec4fa4f27e6f1bd5f787b44cfa3edc5b8144aa7092e0de0fe5385ba0f62")
+	raw, err := tw.GetTransaction("6997a0cd251c26f86ecf609553151765f7c680d2b075a7a936bc950738a2ac76")
 	if err != nil {
 		t.Errorf("GetTransaction failed unexpected error: %v\n", err)
 		return
@@ -104,8 +104,8 @@ func TestGetTxIDsInMemPool(t *testing.T) {
 
 func TestBTCBlockScanner_scanning(t *testing.T) {
 
-	accountID := "WG8QXeEW7CVmRRbvw7Yb2f9wQf9ufR32M3"
-	address := "Qbb3TiXLgzwrmdLLjZMbAwgMHmiCFy9Jed"
+	//accountID := "WG8QXeEW7CVmRRbvw7Yb2f9wQf9ufR32M3"
+	//address := "QYdBJS91qbE4jzjUttKn5R2DRaZM4dxz4D"
 
 	//wallet, err := tw.GetWalletInfo(accountID)
 	//if err != nil {
@@ -117,10 +117,10 @@ func TestBTCBlockScanner_scanning(t *testing.T) {
 
 	//bs.DropRechargeRecords(accountID)
 
-	bs.SetRescanBlockHeight(231350)
+	bs.SetRescanBlockHeight(236523)
 	//tw.SaveLocalNewBlock(1355030, "00000000000000125b86abb80b1f94af13a5d9b07340076092eda92dade27686")
 
-	bs.AddAddress(address, accountID)
+	//bs.AddAddress(address, accountID)
 
 	bs.ScanBlockTask()
 }
@@ -131,8 +131,8 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 		endRunning = make(chan bool, 1)
 	)
 
-	accountID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
-	address := "Qhuqn4r1Xj8tjn3s1gAqh1aBZKam99h6iF"
+	//accountID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
+	//address := "QYdBJS91qbE4jzjUttKn5R2DRaZM4dxz4D"
 
 	//wallet, err := tw.GetWalletInfo(accountID)
 	//if err != nil {
@@ -144,9 +144,9 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 
 	//bs.DropRechargeRecords(accountID)
 
-	//bs.SetRescanBlockHeight(1384586)
+	bs.SetRescanBlockHeight(236523)
 
-	bs.AddAddress(address, accountID)
+	//bs.AddAddress(address, accountID)
 
 	bs.Run()
 
@@ -156,25 +156,26 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 
 func TestBTCBlockScanner_ScanBlock(t *testing.T) {
 
-	accountID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
-	address := "Qhuqn4r1Xj8tjn3s1gAqh1aBZKam99h6iF"
+	//accountID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
+	//address := "QhXS93hPpUcjoDxo192bmrbDubhH5UoQDp"
 
 	bs := tw.blockscanner
-	bs.AddAddress(address, accountID)
-	bs.ScanBlock(231350)
+	//bs.AddAddress(address, accountID)
+	bs.ScanBlock(249878)
 }
 
 func TestBTCBlockScanner_ExtractTransaction(t *testing.T) {
 
-	accountID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
-	address := "Qhuqn4r1Xj8tjn3s1gAqh1aBZKam99h6iF"
-
-	bs := tw.blockscanner
-	bs.AddAddress(address, accountID)
-	bs.ExtractTransaction(
-		231425,
-		"7b12f59d92b3f4d4b4793df691942ab9ab2621187a751b875df983b4a22f73a5",
-		"9beb4c5ceacc5dfb90f299bfc737e1a00b0faecd9eb62c4258f9a94a93417a2a")
+	//accountID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
+	//address := "Qhuqn4r1Xj8tjn3s1gAqh1aBZKam99h6iF"
+	//
+	//bs := tw.blockscanner
+	//bs.AddAddress(address, accountID)
+	//bs.ExtractTransaction(
+	//	231425,
+	//	"7b12f59d92b3f4d4b4793df691942ab9ab2621187a751b875df983b4a22f73a5",
+	//	"9beb4c5ceacc5dfb90f299bfc737e1a00b0faecd9eb62c4258f9a94a93417a2a",
+	//	bs.GetSourceKeyByAddress)
 
 }
 
@@ -226,5 +227,39 @@ func TestFullAddress (t *testing.T) {
 	dic := make(map[string]string)
 	for i := 0;i<20000000;i++ {
 		dic[uuid.NewUUID().String()] = uuid.NewUUID().String()
+	}
+}
+
+func TestBTCBlockScanner_GetBalanceByAddress(t *testing.T) {
+
+	addrs := []string{
+		//"qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP",
+		//"qQLYQn7vCAU8irPEeqjZ3rhFGLnS5vxVy8",
+		//"qMXS1YFtA5qr2UfhcDMthTCK6hWhJnzC47",
+		//"qJq5GbHeaaNbi6Bs5QCbuCZsZRXVWPoG1k",
+		"QVTQ8QaKXcEzsGX74JePUkge5K4r41Ey3v",
+		"Qf2tU1GExXe8smNyoMgis9u1CLnQ2q1mam",
+	}
+
+	//contract := openwallet.SmartContract{
+	//	Address: "482be94ca327f1dd1d9857a5a212df091f44980f",
+	//}
+	//addrs := []string{
+	//	"qUaHAjfRLknMBuSsA5kBfkn9xLMDFc2FdV",
+	//	"qJ2HTPYoMF1DPBhgURjRqemun5WimD57Hy",
+	//}
+
+	balanceList, err := tw.blockscanner.GetBalanceByAddress(addrs...)
+	if err != nil {
+		t.Errorf("get token balance by address failed, err=%v", err)
+		return
+	}
+
+	//输出json格式
+	//objStr, _ := json.MarshalIndent(balanceList, "", " ")
+	//t.Logf("balance list:%v", string(objStr))
+
+	for i:=0; i<len(balanceList); i++ {
+		t.Logf("%s: %s\n",addrs[i], balanceList[i].Balance)
 	}
 }

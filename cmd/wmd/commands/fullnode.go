@@ -120,52 +120,21 @@ var (
 			
 				`,
 			},
-			//			{
-			//				//节点配置
-			//				Name:     "initNodeConfig",
-			//				Usage:    "init node configuration",
-			//				Action:   initNodeConfig,
-			//				Category: "FULLNODE COMMANDS",
-			//				Flags: []cli.Flag{
-			//					utils.SymbolFlag,
-			//				},
-			//				Description: `
-			//	wmd node initNodeConfig
-			//init node configuration
-			//
-			//	`,
-			//			},
-			//			{
-			//				//创建镜像
-			//				Name:     "buildImage",
-			//				Usage:    "build docker image",
-			//				Action:   buildImage,
-			//				Category: "FULLNODE COMMANDS",
-			//				Flags: []cli.Flag{
-			//					utils.SymbolFlag,
-			//				},
-			//				Description: `
-			//	wmd node buildImage
-			//Build docker image
-			//
-			//	`,
-			//			},
-			//			{
-			//				//运行节点
-			//				Name:     "runFullNode",
-			//				Usage:    "run a full node in container",
-			//				Action:   runFullNode,
-			//				Category: "FULLNODE COMMANDS",
-			//				Flags: []cli.Flag{
-			//					utils.SymbolFlag,
-			//				},
-			//				Description: `
-			//	wmd node runFullNode
-			//
-			//Run a full node process in docker container
-			//
-			//	`,
-			//			},
+			{
+				Name:     "logs",
+				Usage:    "show logs of fullnode server",
+				Action:   logsNode,
+				Category: "FULLNODE COMMANDS",
+				Flags: []cli.Flag{
+					utils.SymbolFlag,
+				},
+				Description: `
+				wmd node logs -s <symbol>
+			
+			Remove a container
+			
+				`,
+			},
 			//			{
 			//				//登录容器
 			//				Name:     "loginContainer",
@@ -294,40 +263,23 @@ func removeNode(c *cli.Context) error {
 	return nil
 }
 
-//func initNodeConfig(c *cli.Context) (error) {
-//	symbol := c.String("symbol")
-//	if len(symbol) == 0 {
-//		log.Error("Argument -s <symbol> is missing")
-//	}
-//	m := assets.GetWMD(symbol).(assets.NodeManager)
-//	if m == nil {
-//		log.Log.Errorf("%s wallet manager is not register\n", symbol)
-//	}
-//	//配置钱包
-//	err := m.InitNodeConfig()
-//	if err != nil {
-//		log.Error("unexpected error: ", err)
-//	}
-//	return err
-//}
-//
-//func buildImage(c *cli.Context) error {
-//	symbol := c.String("symbol")
-//	if len(symbol) == 0 {
-//		log.Error("Argument -s <symbol> is missing")
-//	}
-//	m := assets.GetWMD(symbol).(assets.NodeManager)
-//	if m == nil {
-//		log.Log.Errorf("%s wallet manager is not register\n", symbol)
-//	}
-//	//配置钱包
-//	err := m.BuildImage()
-//	if err != nil {
-//		log.Error("unexpected error: ", err)
-//	}
-//	return err
-//}
-//
+func logsNode(c *cli.Context) error {
+	symbol := c.String("symbol")
+	if len(symbol) == 0 {
+		log.Error("Argument -s <symbol> is missing")
+		return nil
+	}
+	m := assets.NodeManager(&wn.NodeManager{})
+	if m == nil {
+		log.Error(symbol, " walletnode manager did not load")
+		return nil
+	}
+	if err := m.LogsNodeFlow(symbol); err != nil {
+		log.Error("unexpected error: ", err)
+	}
+	return nil
+}
+
 //func loginContainer(c *cli.Context) error {
 //	symbol := c.String("symbol")
 //	if len(symbol) == 0 {

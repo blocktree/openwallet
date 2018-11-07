@@ -16,34 +16,39 @@
 package litecoin
 
 import (
-	"github.com/shopspring/decimal"
-	"testing"
-	"github.com/blocktree/OpenWallet/keystore"
-	"github.com/btcsuite/btcutil"
 	"fmt"
-	"path/filepath"
-	"github.com/codeskyblue/go-sh"
 	"math"
-	"github.com/blocktree/OpenWallet/assets/bitcoin"
-	"github.com/btcsuite/btcd/chaincfg"
+	"path/filepath"
+	"testing"
 	"time"
+
+	"github.com/blocktree/OpenWallet/assets/bitcoin"
+	"github.com/blocktree/OpenWallet/keystore"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil"
+	"github.com/codeskyblue/go-sh"
+	"github.com/shopspring/decimal"
 )
 
 var (
 	tw *WalletManager
 )
 
-
 func init() {
 
 	tw = NewWalletManager()
 
-	tw.Config.ServerAPI = "http://192.168.2.192:10004"
+	tw.Config.ServerAPI = "http://192.168.2.194:20061"
 	tw.Config.RpcUser = "walletUser"
 	tw.Config.RpcPassword = "walletPassword2017"
-	tw.Config.IsTestNet = false
+	tw.Config.IsTestNet = true
 	token := bitcoin.BasicAuth(tw.Config.RpcUser, tw.Config.RpcPassword)
 	tw.WalletClient = bitcoin.NewClient(tw.Config.ServerAPI, token, true)
+
+	explorerURL := "http://47.52.97.183:20009/insight-lite-api/"
+	tw.ExplorerClient = bitcoin.NewExplorer(explorerURL, true)
+
+	tw.Config.RPCServerType = bitcoin.RPCServerExplorer
 }
 
 func TestWalletManager(t *testing.T) {
@@ -412,7 +417,7 @@ func TestGetBlockChainInfo(t *testing.T) {
 }
 
 func TestListUnspent(t *testing.T) {
-	utxos, err := tw.ListUnspent(0)
+	utxos, err := tw.ListUnspent(0, "mzM6AphrysEwvk6jwRqgFLQuZfpSeJyrT2")
 	if err != nil {
 		t.Errorf("ListUnspent failed unexpected error: %v\n", err)
 		return

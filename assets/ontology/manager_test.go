@@ -1,7 +1,5 @@
 package ontology
 
-import "testing"
-
-func TestHelloworld(t *testing.T) {
-	Helloworld()
-}
+var (
+	tw *WalletManager
+)

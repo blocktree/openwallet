@@ -16,6 +16,7 @@
 package common
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"reflect"
@@ -187,60 +188,60 @@ func (s String) Float64(def ...float64) float64 {
 // AES AES加密
 // key 密钥key hex字符串
 // return 密文
-//func (s String) AES(key string) (string, error) {
-//	var (
-//		plantext   []byte
-//		keybyte    []byte
-//		err        error
-//		ciphertext []byte
-//		result     string
-//	)
-//	plantext = []byte(s.String())
-//	if keybyte, err = hex.DecodeString(key); err != nil {
-//		return "", err
-//	}
-//
-//	if ciphertext, err = crypto.AESEncrypt(plantext, keybyte); err != nil {
-//		return "", err
-//	}
-//
-//	//转为base64
-//	result = base64.StdEncoding.EncodeToString(ciphertext)
-//
-//	return result, err
-//}
-//
-//// UnAES 通过base64编码的aes密文初始化一个字符串
-//// aesBase64string base64编码的aes密文
-//// key 密钥字符串
-//// return 明文
-//func (s *String) UnAES(aesBase64string string, key string) error {
-//
-//	var (
-//		plantext   []byte
-//		keybyte    []byte
-//		err        error
-//		ciphertext []byte
-//		result     String
-//	)
-//
-//	if keybyte, err = hex.DecodeString(key); err != nil {
-//		return err
-//	}
-//
-//	if ciphertext, err = base64.StdEncoding.DecodeString(aesBase64string); err != nil {
-//		return err
-//	}
-//
-//	if plantext, err = crypto.AESDecrypt(ciphertext, keybyte); err != nil {
-//		return err
-//	}
-//
-//	result = String(plantext)
-//	*s = result
-//
-//	return nil
-//}
+func (s String) AES(key string) (string, error) {
+	var (
+		plantext   []byte
+		keybyte    []byte
+		err        error
+		ciphertext []byte
+		result     string
+	)
+	plantext = []byte(s.String())
+	if keybyte, err = hex.DecodeString(key); err != nil {
+		return "", err
+	}
+
+	if ciphertext, err = crypto.AESEncrypt(plantext, keybyte); err != nil {
+		return "", err
+	}
+
+	//转为base64
+	result = base64.StdEncoding.EncodeToString(ciphertext)
+
+	return result, err
+}
+
+// UnAES 通过base64编码的aes密文初始化一个字符串
+// aesBase64string base64编码的aes密文
+// key 密钥字符串
+// return 明文
+func (s *String) UnAES(aesBase64string string, key string) error {
+
+	var (
+		plantext   []byte
+		keybyte    []byte
+		err        error
+		ciphertext []byte
+		result     String
+	)
+
+	if keybyte, err = hex.DecodeString(key); err != nil {
+		return err
+	}
+
+	if ciphertext, err = base64.StdEncoding.DecodeString(aesBase64string); err != nil {
+		return err
+	}
+
+	if plantext, err = crypto.AESDecrypt(ciphertext, keybyte); err != nil {
+		return err
+	}
+
+	result = String(plantext)
+	*s = result
+
+	return nil
+}
 
 // NewStringByInt 通过int初始化字符串
 func NewStringByInt(v int64) String {
@@ -342,5 +343,10 @@ func Substr(str string, start int, end int) string {
 		panic("end is wrong")
 	}
 
-	return string(rs[start:end])
+	return string(rs[start:end:end])
+}
+
+func FormatStruct(v interface{}) string {
+	objstr, _ := json.MarshalIndent(v, "", " ")
+	return string(objstr) //log.Debugf("event:%v", string(objstr))
 }

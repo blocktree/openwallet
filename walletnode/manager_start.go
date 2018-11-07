@@ -42,7 +42,7 @@ func (w *WalletnodeManager) StartWalletnode(symbol string) error {
 		return err
 	}
 
-	cnf := GetFullnodeConfig(symbol)
+	cnf := getFullnodeConfig(symbol)
 	if cnf == nil {
 		// Config not exist!
 		err := errors.New("Wallet fullnode config no found!")

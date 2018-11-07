@@ -2,143 +2,128 @@ package owtp
 
 import (
 	"fmt"
-	"github.com/imroc/req"
-	"github.com/tidwall/gjson"
-	"encoding/base64"
-	"github.com/blocktree/OpenWallet/log"
-	"errors"
+	"testing"
+	"time"
 )
 
-// A HTTPT is a Bitcoin RPC client. It performs RPCs over HTTP using JSON
-// request and responses. A HTTPT must be configured with a secret token
-// to authenticate with other Cores on the network.
-type HTTPT struct {
-	BaseURL     string
-	AccessToken string
-	Debug       bool
-	client      *req.Req
-	//HTTPT *req.Req
-}
+var (
+	httpHost *OWTPNode
+	httpClient *OWTPNode
+	httpURL = "127.0.0.1:8422"
+	httpHostPrv = "FSomdQBZYzgu9YYuuSr3qXd8sP1sgQyk4rhLFo6gyi32"
+	httpHostNodeID = "54dZTdotBmE9geGJmJcj7Qzm6fzNrEUJ2NcDwZYp2QEp"
+)
 
-type HTTPResponse struct {
-	Code    int         `json:"code,omitempty"`
-	Error   interface{} `json:"error,omitempty"`
-	Result  interface{} `json:"result,omitempty"`
-	Message string      `json:"message,omitempty"`
-	Id      string      `json:"id,omitempty"`
-}
-
-
-func NewHTTPT(url, token string, debug bool) *HTTPT {
-	c := HTTPT{
-		BaseURL:     url,
-		AccessToken: token,
-		Debug:       debug,
-	}
-
-	api := req.New()
-	//trans, _ := api.HTTPT().Transport.(*http.Transport)
-	//trans.TLSHTTPTConfig = &tls.Config{InsecureSkipVerify: true}
-	c.client = api
-
-	return &c
-}
-
-// Call calls a remote procedure on another node, specified by the path.
-func (c *HTTPT) Call(path string, request []interface{}) (*gjson.Result, error) {
+func TestHTTPHostRun(t *testing.T) {
 
 	var (
-		body = make(map[string]interface{}, 0)
+		endRunning = make(chan bool, 1)
 	)
+	cert, _ := NewCertificate(httpHostPrv, "aes")
+	httpHost = NewOWTPNode(cert, 0, 0)
+	fmt.Printf("nodeID = %s \n", httpHost.NodeID())
+	config := make(map[string]string)
+	config["address"] = httpURL
+	config["connectType"] = HTTP
+	httpHost.HandleFunc("getInfo", getInfo)
+	httpHost.Listen(config)
 
-	if c.client == nil {
-		return nil, errors.New("API url is not setup. ")
-	}
-
-	authHeader := req.Header{
-		"Accept":        "application/json",
-		"Authorization": "Basic " + c.AccessToken,
-	}
-
-	//json-rpc
-	body["n"] = 3875
-	body["r"] = 1
-	body["m"] = path
-	body["params"] = request
-
-	if c.Debug {
-		log.Std.Info("Start Request API...")
-	}
-
-	r, err := c.client.Post(c.BaseURL, req.BodyJSON(&body), authHeader)
-
-	if c.Debug {
-		log.Std.Info("Request API Completed")
-	}
-
-	if c.Debug {
-		log.Std.Info("%+v", r)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	resp := gjson.ParseBytes(r.Bytes())
-	err = isError(&resp)
-	if err != nil {
-		return nil, err
-	}
-
-	result := resp.Get("result")
-
-	return &result, nil
+	<- endRunning
 }
 
-// See 2 (end of page 4) http://www.ietf.org/rfc/rfc2617.txt
-// "To receive authorization, the client sends the userid and password,
-// separated by a single colon (":") character, within a base64
-// encoded string in the credentials."
-// It is not meant to be urlencoded.
-func BasicAuth(username, password string) string {
-	auth := username + ":" + password
-	return base64.StdEncoding.EncodeToString([]byte(auth))
+func TestHTTPClientCall(t *testing.T) {
+
+	config := make(map[string]string)
+	config["address"] = httpURL
+	config["connectType"] = HTTP
+
+	httpClient := RandomOWTPNode()
+	err := httpClient.Connect(httpHostNodeID, config)
+	if err != nil {
+		t.Errorf("Connect unexcepted error: %v", err)
+		return
+	}
+	//err = httpClient.KeyAgreement(httpHostNodeID, "aes")
+	//if err != nil {
+	//	t.Errorf("KeyAgreement unexcepted error: %v", err)
+	//	return
+	//}
+
+	params := map[string]interface{}{
+		"name": "chance",
+		"age": 18,
+	}
+
+	err = httpClient.Call(httpHostNodeID, "getInfo", params, false, func(resp Response) {
+
+		result := resp.JsonData()
+		symbols := result.Get("symbols")
+
+		fmt.Printf("symbols: %v\n", symbols)
+	})
+
+	if err != nil {
+		t.Errorf("unexcepted error: %v", err)
+		return
+	}
 }
 
-//isError 是否报错
-func isError(result *gjson.Result) error {
+func TestHTTPKeyAgreement(t *testing.T) {
+
 	var (
-		err error
+		//endRunning = make(chan bool, 1)
+		url = "127.0.0.1:8422"
 	)
+	host := RandomOWTPNode()
+	config := make(map[string]string)
+	config["address"] = url
+	config["connectType"] = HTTP
+	host.HandleFunc("getInfo", getInfo)
+	host.Listen(config)
 
-	/*
-		//failed 返回错误
-		{
-			"result": null,
-			"error": {
-				"code": -8,
-				"message": "Block height out of range"
-			},
-			"id": "foo"
-		}
-	*/
+	time.Sleep(2 * time.Second)
 
-	if !result.Get("error").IsObject() {
-
-		if !result.Get("result").Exists() {
-			return errors.New("Response is empty! ")
-		}
-
-		return nil
-	}
+	client := RandomOWTPNode("aes")
+	client.Connect(host.NodeID(), config)
 
 
+	//cert, _ := NewCertificate(RandomPrivateKey(), "aes")
+	//
+	//pubkey, _ := cert.KeyPair()
 
-	errInfo := fmt.Sprintf("[%d]%s",
-		result.Get("error.code").Int(),
-		result.Get("error.message").String())
-	err = errors.New(errInfo)
+	//pubkey := "2ESGLPkKwK1htLBAY259ARugtwBPzDV3H51QEYKuZqVp"
+	//
+	//fmt.Printf("pubkey: %v \n", pubkey)
+	//
+	//_, tmpPubkeyInitiator := owcrypt.KeyAgreement_initiator_step1(owcrypt.ECC_CURVE_SM2_STANDARD)
+	//
+	//param := map[string]interface{}{
+	//	"pubkey":      pubkey,
+	//	"tmpPubkey":   base58.Encode(tmpPubkeyInitiator),
+	//	"consultType": "aes",
+	//}
+	//
+	//err := client.Call(host.NodeID(), KeyAgreementMethod, param, true, func(resp Response) {
+	//
+	//	result := resp.JsonData()
+	//
+	//	//响应方协商结果
+	//	pubkeyOther := result.Get("pubkeyOther").String()
+	//	tmpPubkeyOther := result.Get("tmpPubkeyOther").String()
+	//	sb := result.Get("sb").String()
+	//
+	//	fmt.Printf("pubkeyOther: %s\n", pubkeyOther)
+	//	fmt.Printf("tmpPubkeyOther: %s\n", tmpPubkeyOther)
+	//	fmt.Printf("sb: %s\n", sb)
+	//})
+	//
+	////result, err := client.Call(KeyAgreementMethod, param)
+	//if err != nil {
+	//	t.Errorf("unexcepted error: %v", err)
+	//	return
+	//}
 
-	return err
+	//<- endRunning
+
+	time.Sleep(5 * time.Second)
 }
-

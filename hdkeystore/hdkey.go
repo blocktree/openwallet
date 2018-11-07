@@ -26,16 +26,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/blocktree/OpenWallet/crypto"
-	"github.com/blocktree/OpenWallet/crypto/sha3"
-	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
-	"github.com/blocktree/go-OWCrypt"
-	"golang.org/x/crypto/pbkdf2"
-	"golang.org/x/crypto/scrypt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/blocktree/OpenWallet/crypto"
+	"github.com/blocktree/OpenWallet/crypto/sha3"
+	"github.com/blocktree/go-owcdrivers/owkeychain"
+	"github.com/blocktree/go-owcrypt"
+	"golang.org/x/crypto/pbkdf2"
+	"golang.org/x/crypto/scrypt"
 )
 
 const (

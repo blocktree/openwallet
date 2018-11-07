@@ -16,8 +16,12 @@
 package bitcoin
 
 import (
-	"testing"
+	"github.com/asdine/storm"
+	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/pborman/uuid"
+	"path/filepath"
+	"testing"
 )
 
 func TestGetBTCBlockHeight(t *testing.T) {
@@ -28,7 +32,6 @@ func TestGetBTCBlockHeight(t *testing.T) {
 	}
 	t.Logf("GetBlockHeight height = %d \n", height)
 }
-
 
 func TestBTCBlockScanner_GetCurrentBlockHeight(t *testing.T) {
 	bs := NewBTCBlockScanner(tw)
@@ -76,14 +79,34 @@ func TestGetBlock(t *testing.T) {
 }
 
 func TestGetTransaction(t *testing.T) {
-	raw, err := tw.GetTransaction("6595e0d9f21800849360837b85a7933aeec344a89f5c54cf5db97b79c803c462")
+	raw, err := tw.GetTransaction("7792d54a7eb9f467de7a1292c0d317b2d5462e7ec35d229a383d948c18d9c873")
 	if err != nil {
 		t.Errorf("GetTransaction failed unexpected error: %v\n", err)
 		return
 	}
-	t.Logf("GetTransaction = %v \n", raw)
-}
 
+	t.Logf("BlockHash = %v \n", raw.BlockHash)
+	t.Logf("BlockHeight = %v \n", raw.BlockHeight)
+	t.Logf("Blocktime = %v \n", raw.Blocktime)
+	t.Logf("Fees = %v \n", raw.Fees)
+
+	t.Logf("========= vins ========= \n")
+
+	for i, vin := range raw.Vins {
+		t.Logf("TxID[%d] = %v \n", i, vin.TxID)
+		t.Logf("Vout[%d] = %v \n", i, vin.Vout)
+		t.Logf("Addr[%d] = %v \n", i, vin.Addr)
+		t.Logf("Value[%d] = %v \n", i, vin.Value)
+	}
+
+	t.Logf("========= vouts ========= \n")
+
+	for i, out := range raw.Vouts {
+		t.Logf("ScriptPubKey[%d] = %v \n", i, out.ScriptPubKey)
+		t.Logf("Addr[%d] = %v \n", i, out.Addr)
+		t.Logf("Value[%d] = %v \n", i, out.Value)
+	}
+}
 
 func TestGetTxOut(t *testing.T) {
 	raw, err := tw.GetTxOut("7768a6436475ed804344a3711e90e7f10f7db42da8918580c8b669dd63d64cc3", 0)
@@ -105,8 +128,8 @@ func TestGetTxIDsInMemPool(t *testing.T) {
 
 func TestBTCBlockScanner_scanning(t *testing.T) {
 
-	accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
-	address := "miphUAzHHeM1VXGSFnw6owopsQW3jAQZAk"
+	//accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
+	//address := "miphUAzHHeM1VXGSFnw6owopsQW3jAQZAk"
 
 	//wallet, err := tw.GetWalletInfo(accountID)
 	//if err != nil {
@@ -121,7 +144,7 @@ func TestBTCBlockScanner_scanning(t *testing.T) {
 	bs.SetRescanBlockHeight(1384586)
 	//tw.SaveLocalNewBlock(1355030, "00000000000000125b86abb80b1f94af13a5d9b07340076092eda92dade27686")
 
-	bs.AddAddress(address, accountID)
+	//bs.AddAddress(address, accountID)
 
 	bs.ScanBlockTask()
 }
@@ -132,8 +155,8 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 		endRunning = make(chan bool, 1)
 	)
 
-	accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
-	address := "msnYsBdBXQZqYYqNNJZsjShzwCx9fJVSin"
+	//accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
+	//address := "msnYsBdBXQZqYYqNNJZsjShzwCx9fJVSin"
 
 	//wallet, err := tw.GetWalletInfo(accountID)
 	//if err != nil {
@@ -147,35 +170,35 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 
 	//bs.SetRescanBlockHeight(1384586)
 
-	bs.AddAddress(address, accountID)
+	//bs.AddAddress(address, accountID)
 
 	bs.Run()
 
-	<- endRunning
+	<-endRunning
 
 }
 
 func TestBTCBlockScanner_ScanBlock(t *testing.T) {
 
-	accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
-	address := "msnYsBdBXQZqYYqNNJZsjShzwCx9fJVSin"
+	//accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
+	//address := "msnYsBdBXQZqYYqNNJZsjShzwCx9fJVSin"
 
 	bs := tw.Blockscanner
-	bs.AddAddress(address, accountID)
+	//bs.AddAddress(address, accountID)
 	bs.ScanBlock(1384961)
 }
 
 func TestBTCBlockScanner_ExtractTransaction(t *testing.T) {
 
-	accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
-	address := "msnYsBdBXQZqYYqNNJZsjShzwCx9fJVSin"
+	//accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
+	//address := "msHemmfSZ3au6h9S1annGcTGrTVryRbSFV"
 
-	bs := tw.Blockscanner
-	bs.AddAddress(address, accountID)
-	bs.ExtractTransaction(
-		1384961,
-		"000000000000001d2f5750ebdeddc17f39c6365c6c9243b0a7c2f79e4b34b39e",
-		"a5866d27379bf4fb446c71e18d0822bfb9c676e9388310389b7eb4d44c44f7a6")
+	//bs := tw.Blockscanner
+	////bs.AddAddress(address, accountID)
+	//bs.ExtractTransaction(
+	//	1435497,
+	//	"00000000e271b8234ed2271cb80f1cf2701469a4e02b0536fdce4f4306ff7852",
+	//	"c550ae3ffafdda46c13217797dd0aa8ee870727d3e8cab1551d6a3f5e3f7ace0", bs.GetSourceKeyByAddress)
 
 }
 
@@ -222,10 +245,43 @@ func TestBTCBlockScanner_RescanFailedRecord(t *testing.T) {
 	bs.RescanFailedRecord()
 }
 
-func TestFullAddress (t *testing.T) {
+func TestFullAddress(t *testing.T) {
 
 	dic := make(map[string]string)
-	for i := 0;i<20000000;i++ {
+	for i := 0; i < 20000000; i++ {
 		dic[uuid.NewUUID().String()] = uuid.NewUUID().String()
 	}
+}
+
+func TestBTCBlockScanner_GetTransactionsByAddress(t *testing.T) {
+	coin := openwallet.Coin{
+		Symbol:     "BTC",
+		IsContract: false,
+	}
+	txExtractDatas, err := tw.Blockscanner.GetTransactionsByAddress(0, 50, coin, "2N7Mh6PLX39japSF76r2MAf7wT7WKU5TdpK")
+	if err != nil {
+		t.Errorf("GetTransactionsByAddress failed unexpected error: %v\n", err)
+		return
+	}
+
+	for _, ted := range txExtractDatas {
+		t.Logf("tx = %v", ted.Transaction)
+	}
+
+}
+
+func TestGetLocalBlock(t *testing.T) {
+	db, err := storm.Open(filepath.Join(tw.Config.dbPath, tw.Config.BlockchainFile))
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	var blocks []*Block
+	err = db.All(&blocks)
+	if err != nil {
+		log.Error("no find")
+		return
+	}
+	log.Info("blocks = ", len(blocks))
 }

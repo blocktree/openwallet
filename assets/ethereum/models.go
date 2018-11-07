@@ -15,11 +15,13 @@
 package ethereum
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/big"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/asdine/storm"
@@ -27,7 +29,8 @@ import (
 	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/logger"
-	owcrypt "github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/OpenWallet/openwallet"
+	owcrypt "github.com/blocktree/go-owcrypt"
 	"github.com/bytom/common"
 )
 
@@ -51,6 +54,75 @@ type ERC20Token struct {
 	Name     string `json:"name"`
 	Decimals int    `json:"decimals"`
 	balance  *big.Int
+}
+
+type EthEvent struct {
+	Address string   `json:"address"`
+	Topics  []string `json:"topics"`
+	Data    string   `josn:"data"`
+	//BlockNumber string
+	LogIndex string `json:"logIndex"`
+	Removed  bool   `json:"removed"`
+}
+
+type EthTransactionReceipt struct {
+	Logs    []EthEvent `json:"logs"`
+	GasUsed string     `json:"gasUsed"`
+}
+
+type TransferEvent struct {
+	TokenFrom     string
+	TokenTo       string
+	Value         string
+	FromSourceKey string //transaction scanning 的时候对其进行赋值
+	ToSourceKey   string //transaction scanning 的时候对其进行赋值
+}
+
+func (this *EthTransactionReceipt) ParseTransferEvent() *TransferEvent {
+	var transferEvent TransferEvent
+	removePrefix0 := func(num string) string {
+		num = removeOxFromHex(num)
+		array := []byte(num)
+		i := 0
+
+		for i, _ = range num {
+			if num[i] != '0' {
+				break
+			}
+		}
+
+		return string(array[i:len(num)])
+	}
+
+	for i, _ := range this.Logs {
+		if len(this.Logs[i].Topics) != 3 {
+			continue
+		}
+
+		if this.Logs[i].Topics[0] != ETH_TRANSFER_EVENT_ID {
+			continue
+		}
+
+		if len(this.Logs[i].Data) != 66 {
+			continue
+		}
+
+		prefix := string([]byte(this.Logs[i].Topics[1])[0:26:26])
+		if prefix != "0x000000000000000000000000" {
+			continue
+		}
+
+		prefix = string([]byte(this.Logs[i].Topics[2])[0:26:26])
+		if prefix != "0x000000000000000000000000" {
+			continue
+		}
+
+		transferEvent.TokenFrom = "0x" + string([]byte(this.Logs[i].Topics[1])[26:66:66])
+		transferEvent.TokenTo = "0x" + string([]byte(this.Logs[i].Topics[2])[26:66:66])
+		transferEvent.Value = "0x" + removePrefix0(this.Logs[i].Data)
+		return &transferEvent
+	}
+	return nil
 }
 
 type Address struct {
@@ -101,9 +173,47 @@ type BlockTransaction struct {
 	Gas              string `json:"gas"`
 	GasPrice         string `json:"gasPrice"`
 	Value            string `json:"value"`
-	Data             string `json:"data"`
+	Data             string `json:"input"`
 	TransactionIndex string `json:"transactionIndex"`
 	Timestamp        string `json:"timestamp"`
+	BlockHeight      uint64 //transaction scanning 的时候对其进行赋值
+	filterFunc       openwallet.BlockScanAddressFunc
+}
+
+func (this *BlockTransaction) GetAmountEthString() (string, error) {
+	amount, err := ConvertToBigInt(this.Value, 16)
+	if err != nil {
+		log.Errorf("convert amount to big.int failed, err= %v", err)
+		return "", err
+	}
+	amountVal, err := ConverWeiStringToEthDecimal(amount.String())
+	if err != nil {
+		log.Errorf("convert tx.Amount to eth decimal failed, err=%v", err)
+		return "", err
+	}
+	return amountVal.String(), nil
+}
+
+func (this *BlockTransaction) GetTxFeeEthString() (string, error) {
+	gasPrice, err := ConvertToBigInt(this.GasPrice, 16)
+	if err != nil {
+		log.Errorf("convert tx.GasPrice failed, err= %v", err)
+		return "", err
+	}
+
+	gas, err := ConvertToBigInt(this.Gas, 16)
+	if err != nil {
+		log.Errorf("convert tx.Gas failed, err=%v", err)
+		return "", err
+	}
+	fee := big.NewInt(0)
+	fee.Mul(gasPrice, gas)
+	feeprice, err := ConverWeiStringToEthDecimal(fee.String())
+	if err != nil {
+		log.Errorf("convert fee failed, err=%v", err)
+		return "", err
+	}
+	return feeprice.String(), nil
 }
 
 type BlockHeader struct {
@@ -115,6 +225,7 @@ type BlockHeader struct {
 	Difficulty      string `json:"difficulty"`
 	TotalDifficulty string `json:"totalDifficulty"`
 	PreviousHash    string `json:"parentHash"`
+	blockHeight     uint64 //RecoverBlockHeader的时候进行初始化
 }
 
 func (this *Wallet) SaveAddress(dbpath string, addr *Address) error {
@@ -168,6 +279,8 @@ func (this *Wallet) RestoreFromDb(dbPath string) error {
 		return err
 	}
 
+	wstr, _ := json.MarshalIndent(w, "", " ")
+	log.Debugf("wallet:%v", string(wstr))
 	*this = w
 	return nil
 }
@@ -244,45 +357,45 @@ func (this *WalletManager) ClearBlockScanDb() {
 	}
 }
 
-func (this *WalletManager) DumpBlockScanDb() {
-	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
-	if err != nil {
-		openwLogger.Log.Errorf("open db failed, err = %v", err)
-		return
-	}
-	defer db.Close()
-
-	var unscanTransactions []UnscanTransaction
-	var blocks []BlockHeader
-	var blockHeightStr string
-	err = db.All(&unscanTransactions)
-	if err != nil {
-		openwLogger.Log.Errorf("get transactions failed, err = %v", err)
-		return
-	}
-
-	for i, _ := range unscanTransactions {
-		fmt.Printf("Print unscanned transaction [%v] = %v\n", unscanTransactions[i].TxID, unscanTransactions[i])
-	}
-
-	err = db.All(&blocks)
-	if err != nil {
-		openwLogger.Log.Errorf("get blocks failed failed, err = %v", err)
-		return
-	}
-
-	for i, _ := range blocks {
-		fmt.Printf("print block [%v] = %v\n", blocks[i].BlockNumber, blocks[i])
-	}
-
-	err = db.Get(BLOCK_CHAIN_BUCKET, "BlockNumber", &blockHeightStr)
-	if err != nil {
-		openwLogger.Log.Errorf("get block height from db failed, err=%v", err)
-		return
-	}
-
-	fmt.Println("print block number = ", blockHeightStr)
-}
+//func (this *WalletManager) DumpBlockScanDb() {
+//	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
+//	if err != nil {
+//		openwLogger.Log.Errorf("open db failed, err = %v", err)
+//		return
+//	}
+//	defer db.Close()
+//
+//	var unscanTransactions []UnscanTransaction
+//	var blocks []BlockHeader
+//	var blockHeightStr string
+//	err = db.All(&unscanTransactions)
+//	if err != nil {
+//		openwLogger.Log.Errorf("get transactions failed, err = %v", err)
+//		return
+//	}
+//
+//	for i, _ := range unscanTransactions {
+//		fmt.Printf("Print unscanned transaction [%v] = %v\n", unscanTransactions[i].TxID, unscanTransactions[i])
+//	}
+//
+//	err = db.All(&blocks)
+//	if err != nil {
+//		openwLogger.Log.Errorf("get blocks failed failed, err = %v", err)
+//		return
+//	}
+//
+//	for i, _ := range blocks {
+//		fmt.Printf("print block [%v] = %v\n", blocks[i].BlockNumber, blocks[i])
+//	}
+//
+//	err = db.Get(BLOCK_CHAIN_BUCKET, "BlockNumber", &blockHeightStr)
+//	if err != nil {
+//		openwLogger.Log.Errorf("get block height from db failed, err=%v", err)
+//		return
+//	}
+//
+//	fmt.Println("print block number = ", blockHeightStr)
+//}
 
 func (this *Wallet) SaveTransactions(dbPath string, txs []BlockTransaction) error {
 	db, err := this.OpenDB(dbPath)
@@ -310,7 +423,7 @@ func (this *Wallet) SaveTransactions(dbPath string, txs []BlockTransaction) erro
 	return nil
 }
 
-func (this *Wallet) DeleteTransactionByHeight(dbPath string, height *big.Int) error {
+func (this *Wallet) DeleteTransactionByHeight(dbPath string, height uint64) error {
 	db, err := this.OpenDB(dbPath)
 	if err != nil {
 		openwLogger.Log.Errorf("open db for delete txs failed, err = %v", err)
@@ -320,12 +433,12 @@ func (this *Wallet) DeleteTransactionByHeight(dbPath string, height *big.Int) er
 
 	var txs []BlockTransaction
 
-	err = db.Find("BlockNumber", "0x"+height.Text(16), &txs)
+	err = db.Find("BlockNumber", "0x"+strconv.FormatUint(height, 16), &txs)
 	if err != nil && err != storm.ErrNotFound {
-		openwLogger.Log.Errorf("get transactions from block[%v] failed, err=%v", "0x"+height.Text(16), err)
+		openwLogger.Log.Errorf("get transactions from block[%v] failed, err=%v", "0x"+strconv.FormatUint(height, 16), err)
 		return err
 	} else if err == storm.ErrNotFound {
-		openwLogger.Log.Infof("no transactions found in block[%v] ", "0x"+height.Text(16))
+		openwLogger.Log.Infof("no transactions found in block[%v] ", "0x"+strconv.FormatUint(height, 16))
 		return nil
 	}
 

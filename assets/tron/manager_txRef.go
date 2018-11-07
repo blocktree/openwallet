@@ -17,23 +17,22 @@
 package tron
 
 import (
-	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
 	"time"
 
-	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
-	"github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
+	"github.com/blocktree/go-owcrypt"
+	"github.com/shopspring/decimal"
 
-	// "github.com/gogo/protobuf/proto"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/tronprotocol/grpc-gateway/core"
 )
 
-func GetTxHash(tx *core.Transaction) (txHash []byte, err error) {
+func getTxHash(tx *core.Transaction) (txHash []byte, err error) {
 
 	txRaw, err := proto.Marshal(tx.GetRawData())
 	if err != nil {
@@ -43,9 +42,10 @@ func GetTxHash(tx *core.Transaction) (txHash []byte, err error) {
 	return txHash, err
 }
 
-// Done
+// Done!
 // Function: Create a transaction
 //
+// Java Reference:
 // public static Transaction setReference(Transaction transaction, Block newestBlock) {
 // 	long blockHeight = newestBlock.getBlockHeader().getRawData().getNumber();
 // 	byte[] blockHash = getBlockHash(newestBlock).getBytes();
@@ -93,9 +93,6 @@ func (wm *WalletManager) CreateTransactionRef(to_address, owner_address string, 
 		return "", err
 	} else {
 		to_address_bytes = append([]byte{0x41}, to_address_bytes...)
-
-		// to_address_bytes, err = base58.Decode(to_address, base58.BitcoinAlphabet)
-		// to_address_bytes = to_address_bytes[:len(to_address_bytes)-4]
 	}
 
 	owner_address_bytes, err := addressEncoder.AddressDecode(owner_address, addressEncoder.TRON_mainnetAddress)
@@ -104,8 +101,6 @@ func (wm *WalletManager) CreateTransactionRef(to_address, owner_address string, 
 	} else {
 		owner_address_bytes = append([]byte{0x41}, owner_address_bytes...)
 	}
-	// fmt.Println("to_address = ", hex.EncodeToString(to_address_bytes))
-	// fmt.Println("owner_addr = ", hex.EncodeToString(owner_address_bytes))
 
 	// --------------------- Generate TX Contract ------------------------
 
@@ -128,42 +123,15 @@ func (wm *WalletManager) CreateTransactionRef(to_address, owner_address string, 
 	}
 
 	// ----------------------- Get Reference Block ----------------------
-	block, err := tw.GetNowBlock()
-	if err != nil {
-		return txRawHex, err
-	}
-
-	blockHight := block.GetBlockHeader().GetRawData().GetNumber()
-	blockHightBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(blockHightBytes, uint64(blockHight))
-
-	blockHeaderRaw, err := proto.Marshal(block.GetBlockHeader().GetRawData())
+	block, err := wm.GetNowBlock()
 	if err != nil {
 		return "", err
 	}
-	blockHashBytes := owcrypt.Hash(blockHeaderRaw, 0, owcrypt.HASH_ALG_SHA256)
-
-	refBlockBytes := blockHightBytes[6:8]
-	refBlockHash := blockHashBytes[8:16]
-
-	// // refBlockHash2 := []byte(base64.StdEncoding.EncodeToString(blockHashBytes))
-	// // refBlockHash2 := []byte(base64.StdEncoding.EncodeToString([]byte(hex.EncodeToString(blockHashBytes)[8:16])))
-	// fmt.Println("\tBlockHight Bytes: ", blockHightBytes, "Len: ", len(blockHightBytes))
-	// fmt.Println("\tBlockHight Hex  : ", hex.EncodeToString(blockHightBytes), "Len: ", len(hex.EncodeToString(blockHightBytes)))
-	// fmt.Println("\trefBlockBytes:    ", refBlockBytes, "Len: ", len(refBlockBytes))
-	// fmt.Println("\trefBlockBytes Hex:", hex.EncodeToString(refBlockBytes), "Len: ", len(hex.EncodeToString(refBlockBytes)))
-	// fmt.Println("")
-	// // block.GetBlockHeader()
-	// bparentHashBytes := block.GetBlockHeader().GetRawData().GetParentHash()
-	// fmt.Println("\tBlock Prt Bytes: ", bparentHashBytes, "Len: ", len(bparentHashBytes))
-	// fmt.Println("\tBlockHash Bytes: ", blockHashBytes, "Len: ", len(blockHashBytes))
-	// fmt.Println("\tBlockHash Hex:   ", hex.EncodeToString(blockHashBytes), "Len: ", len(hex.EncodeToString(blockHashBytes)))
-	// fmt.Println("\trefBlockHash:    ", refBlockHash, "Len: ", len(refBlockHash))
-	// fmt.Println("\trefBlockHash Hex:", hex.EncodeToString(refBlockHash), "Len: ", len(hex.EncodeToString(refBlockHash)))
-	// // fmt.Println("\trefBlockHash2:    ", refBlockHash2, "Len: ", len(refBlockHash2))
-	// // fmt.Println("\trefBlockHash2 Hex:", hex.EncodeToString(refBlockHash2), "Len: ", len(hex.EncodeToString(refBlockHash2)))
-	// // fmt.Println("\tBlockHash Hex:   ", hex.EncodeToString(blockHashBytes), "Len: ", len(blockHashBytes))
-	// // fmt.Println("\tBlockHash refBlockBytes Hex: ", hex.EncodeToString(refBlockBytes))
+	blockID, err := hex.DecodeString(block.GetBlockHashID())
+	if err != nil {
+		return txRawHex, err
+	}
+	refBlockBytes, refBlockHash := blockID[6:8], blockID[8:16]
 
 	// -------------------- Set timestamp --------------------
 	/*
@@ -181,10 +149,9 @@ func (wm *WalletManager) CreateTransactionRef(to_address, owner_address string, 
 	txRaw := &core.TransactionRaw{
 		RefBlockBytes: refBlockBytes,
 		RefBlockHash:  refBlockHash,
-		// RefBlockNum:   int64(0),
-		Contract: []*core.Transaction_Contract{txContact},
-		// Timestamp:     int64(0), //  timestamp,
-		Expiration: timestamp + 10*60*60,
+		Contract:      []*core.Transaction_Contract{txContact},
+		Expiration:    timestamp + 10*60*60*60,
+		// Timestamp:     timestamp,
 	}
 	tx := &core.Transaction{
 		RawData: txRaw,
@@ -202,6 +169,7 @@ func (wm *WalletManager) CreateTransactionRef(to_address, owner_address string, 
 	return txRawHex, nil
 }
 
+// Done!
 // public static Transaction sign(Transaction transaction, ECKey myKey) {
 // 	Transaction.Builder transactionBuilderSigned = transaction.toBuilder();
 //
@@ -229,11 +197,13 @@ func (wm *WalletManager) SignTransactionRef(txRawhex string, privateKey string) 
 			return signedTxRaw, err
 		}
 	}
+	// tx.GetRawData().GetRefBlockBytes()
 
-	txHash, err := GetTxHash(tx)
+	txHash, err := getTxHash(tx)
 	if err != nil {
 		return signedTxRaw, err
 	}
+	fmt.Println("Tx Hash = ", hex.EncodeToString(txHash))
 
 	pk, err := hex.DecodeString(privateKey)
 	if err != nil {
@@ -262,6 +232,7 @@ func (wm *WalletManager) SignTransactionRef(txRawhex string, privateKey string) 
 
 }
 
+// Done!
 //   /*
 //    * 1. check hash
 //    * 2. check double spent
@@ -317,7 +288,7 @@ func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
 	listContracts := tx.RawData.GetContract()
 	countSignature := len(tx.Signature)
 
-	txHash, err := GetTxHash(tx)
+	txHash, err := getTxHash(tx)
 	if err != nil {
 		return err
 	}
@@ -344,20 +315,13 @@ func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
 			log.Println(err)
 			return err
 		}
-		// fmt.Println("  signature = ", hex.EncodeToString(tx.Signature[i]))
-		// fmt.Println("  publickey = ", hex.EncodeToString(pkBytes))
-		// fmt.Println("  Tx_txHash = ", hex.EncodeToString(txHash))
 
-		pkgen_address_bytes, err := CreateAddressByPkRef(pkBytes)
+		pkgen_address_bytes, err := createAddressByPkRef(pkBytes)
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 		pkgen_address_hex := hex.EncodeToString(pkgen_address_bytes[:len(pkgen_address_bytes)-4])
-
-		// fmt.Println("")
-		// fmt.Println("  owner_address = ", owner_address_hex)
-		// fmt.Println("  pk_to_address = ", pkgen_address_hex)
 
 		// Check whether the address is equal between signature generating and contract owner pointed
 		if pkgen_address_hex != owner_address_hex {
@@ -368,8 +332,9 @@ func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
 	return nil
 }
 
-func (wm *WalletManager) BroadcastTransactionRef(signature, txID, raw_data string) error {
-	return nil
+//SendTransaction 发送交易
+func (wm *WalletManager) SendTransaction(walletID, to string, amount decimal.Decimal, password string, feesInSender bool) ([]string, error) {
+	return nil, nil
 }
 
 // ------------------------------------------------------------------------------------------------------
@@ -386,7 +351,7 @@ func debugPrintTx(txRawhex string) {
 
 	fmt.Println("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv Print Test vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv")
 
-	txHash, err := GetTxHash(tx)
+	txHash, err := getTxHash(tx)
 	if err != nil {
 		fmt.Println(err)
 	}

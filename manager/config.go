@@ -41,11 +41,11 @@ func NewConfig() *Config {
 	//备份路径
 	c.BackupDir = filepath.Join(defaultDataDir, "backup")
 	//支持资产
-	c.SupportAssets = []string{"BTC", "ETH", "QTUM"}
+	c.SupportAssets = []string{"BTC", "ETH", "QTUM","NAS"}
 	//开启区块扫描
 	c.EnableBlockScan = false
 	//测试网
-	c.IsTestnet = false
+	c.IsTestnet = true
 
 	return &c
 }

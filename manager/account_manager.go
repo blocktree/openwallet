@@ -20,7 +20,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blocktree/OpenWallet/assets"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/shopspring/decimal"
@@ -45,7 +44,7 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID, password string, a
 		account.Required = 1
 	}
 
-	symbolInfo, err := assets.GetSymbolInfo(account.Symbol)
+	symbolInfo, err := GetSymbolInfo(account.Symbol)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -300,17 +299,10 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 	//	}
 	//}()
 
-
 	//导入新地址到区块扫描器
-	scanner := assetsMgr.GetBlockScanner()
-
-	if scanner == nil {
-		log.Warn(account.Symbol, "is not support block scan")
-	} else {
-		for _, address := range addrs {
-			key := wm.encodeSourceKey(appID, address.AccountID)
-			scanner.AddAddress(address.Address, key)
-		}
+	for _, address := range addrs {
+		key := wm.encodeSourceKey(appID, address.AccountID)
+		wm.AddAddressForBlockScan(address.Address, key)
 	}
 
 	log.Debug("new addresses create success:", addrs)
@@ -340,7 +332,6 @@ func (wm *WalletManager) GetAddressList(appID, walletID, accountID string, offse
 	return addrs, nil
 }
 
-
 // GetAddress 获取单个地址信息
 func (wm *WalletManager) GetAddress(appID, walletID, accountID, address string) (*openwallet.Address, error) {
 
@@ -363,8 +354,6 @@ func (wm *WalletManager) GetAddress(appID, walletID, accountID, address string) 
 	return addr, nil
 }
 
-
-
 // ImportWatchOnlyAddress
 func (wm *WalletManager) ImportWatchOnlyAddress(appID, walletID, accountID string, addresses []*openwallet.Address) error {
 
@@ -384,16 +373,16 @@ func (wm *WalletManager) ImportWatchOnlyAddress(appID, walletID, accountID strin
 	//	return err
 	//}
 
-	assetsMgr, err := GetAssetsManager(account.Symbol)
-	if err != nil {
-		return err
-	}
+	//assetsMgr, err := GetAssetsManager(account.Symbol)
+	//if err != nil {
+	//	return err
+	//}
 
 	//导入地址到核心钱包中
 	//go assetsMgr.ImportWatchOnlyAddress(addresses...)
 
 	//导入新地址到区块扫描器
-	scanner := assetsMgr.GetBlockScanner()
+	//scanner := assetsMgr.GetBlockScanner()
 
 	createdAt := time.Now()
 
@@ -416,20 +405,14 @@ func (wm *WalletManager) ImportWatchOnlyAddress(appID, walletID, accountID strin
 		a.WatchOnly = true //观察地址
 		a.Symbol = strings.ToUpper(account.Symbol)
 		a.AccountID = account.AccountID
-		a.CreatedAt = createdAt.Unix()
+		a.CreatedTime = createdAt.Unix()
 		err = tx.Save(a)
 		if err != nil {
 			return err
 		}
 
-		if scanner == nil {
-			log.Warn(account.Symbol, "is not support block scan")
-		} else {
-			//导入新地址到区块扫描器
-			key := wm.encodeSourceKey(appID, a.AccountID)
-			scanner := assetsMgr.GetBlockScanner()
-			scanner.AddAddress(a.Address, key)
-		}
+		key := wm.encodeSourceKey(appID, a.AccountID)
+		wm.AddAddressForBlockScan(a.Address, key)
 
 		//记录要导入到核心钱包的地址
 		imported := openwallet.ImportAddress{
@@ -452,7 +435,6 @@ func (wm *WalletManager) ImportWatchOnlyAddress(appID, walletID, accountID strin
 	return nil
 }
 
-
 // importNewAddressToCoreWallet 导入新地址到核心钱包
 func (wm *WalletManager) importNewAddressToCoreWallet() {
 
@@ -460,7 +442,7 @@ func (wm *WalletManager) importNewAddressToCoreWallet() {
 
 	var (
 		importAddressMap map[string][]*openwallet.Address
-		limit = 50
+		limit            = 50
 	)
 
 	//加载已存在所有app
@@ -470,7 +452,7 @@ func (wm *WalletManager) importNewAddressToCoreWallet() {
 	}
 
 	//处理所有App待导入地址，导入到核心钱包
-	LoopApp:
+LoopApp:
 	for _, appID := range appIDs {
 
 		importAddressMap = make(map[string][]*openwallet.Address)
@@ -523,7 +505,6 @@ func (wm *WalletManager) importNewAddressToCoreWallet() {
 				continue LoopApp
 			}
 
-
 		}
 
 		//导入地址成功删除记录
@@ -548,3 +529,4 @@ func (wm *WalletManager) importNewAddressToCoreWallet() {
 
 	return
 }
+

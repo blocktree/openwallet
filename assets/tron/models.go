@@ -19,8 +19,7 @@ import (
 	"fmt"
 
 	"github.com/blocktree/OpenWallet/crypto"
-	"github.com/blocktree/OpenWallet/openwallet"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/bytom/common"
 	"github.com/tidwall/gjson"
 )
 
@@ -40,166 +39,157 @@ type BlockchainInfo struct {
 func NewBlockchainInfo(json *gjson.Result) *BlockchainInfo {
 	b := &BlockchainInfo{}
 	//解析json
-	b.Chain = gjson.Get(json.Raw, "chain").String()
-	b.Blocks = gjson.Get(json.Raw, "blocks").Uint()
-	b.Headers = gjson.Get(json.Raw, "headers").Uint()
-	b.Bestblockhash = gjson.Get(json.Raw, "bestblockhash").String()
-	b.Difficulty = gjson.Get(json.Raw, "difficulty").String()
-	b.Mediantime = gjson.Get(json.Raw, "mediantime").Uint()
-	b.Verificationprogress = gjson.Get(json.Raw, "verificationprogress").String()
-	b.Chainwork = gjson.Get(json.Raw, "chainwork").String()
-	b.Pruned = gjson.Get(json.Raw, "pruned").Bool()
+	// b.Chain = gjson.Get(json.Raw, "chain").String()
+	// b.Blocks = gjson.Get(json.Raw, "blocks").Uint()
+	// b.Headers = gjson.Get(json.Raw, "headers").Uint()
+	// b.Bestblockhash = gjson.Get(json.Raw, "bestblockhash").String()
+	// b.Difficulty = gjson.Get(json.Raw, "difficulty").String()
+	// b.Mediantime = gjson.Get(json.Raw, "mediantime").Uint()
+	// b.Verificationprogress = gjson.Get(json.Raw, "verificationprogress").String()
+	// b.Chainwork = gjson.Get(json.Raw, "chainwork").String()
+	// b.Pruned = gjson.Get(json.Raw, "pruned").Bool()
 	return b
 }
 
-//Unspent 未花记录
-type Unspent struct {
-
-	/*
-			{
-		        "txid" : "d54994ece1d11b19785c7248868696250ab195605b469632b7bd68130e880c9a",
-		        "vout" : 1,
-		        "address" : "mgnucj8nYqdrPFh2JfZSB1NmUThUGnmsqe",
-		        "account" : "test label",
-		        "scriptPubKey" : "76a9140dfc8bafc8419853b34d5e072ad37d1a5159f58488ac",
-		        "amount" : 0.00010000,
-		        "confirmations" : 6210,
-		        "spendable" : true,
-		        "solvable" : true
-		    }
-	*/
-	Key           string `storm:"id"`
-	TxID          string `json:"txid"`
-	Vout          uint64 `json:"vout"`
-	Address       string `json:"address"`
-	AccountID     string `json:"account" storm:"index"`
-	ScriptPubKey  string `json:"scriptPubKey"`
-	Amount        string `json:"amount"`
-	Confirmations uint64 `json:"confirmations"`
-	Spendable     bool   `json:"spendable"`
-	Solvable      bool   `json:"solvable"`
-	HDAddress     openwallet.Address
-}
-
-func NewUnspent(json *gjson.Result) *Unspent {
-	obj := &Unspent{}
-	//解析json
-	obj.TxID = gjson.Get(json.Raw, "txid").String()
-	obj.Vout = gjson.Get(json.Raw, "vout").Uint()
-	obj.Address = gjson.Get(json.Raw, "address").String()
-	obj.AccountID = gjson.Get(json.Raw, "account").String()
-	obj.ScriptPubKey = gjson.Get(json.Raw, "scriptPubKey").String()
-	obj.Amount = gjson.Get(json.Raw, "amount").String()
-	obj.Confirmations = gjson.Get(json.Raw, "confirmations").Uint()
-	//obj.Spendable = gjson.Get(json.Raw, "spendable").Bool()
-	obj.Spendable = true
-	obj.Solvable = gjson.Get(json.Raw, "solvable").Bool()
-
-	return obj
-}
-
-type UnspentSort struct {
-	values     []*Unspent
-	comparator func(a, b *Unspent) int
-}
-
-func (s UnspentSort) Len() int {
-	return len(s.values)
-}
-func (s UnspentSort) Swap(i, j int) {
-	s.values[i], s.values[j] = s.values[j], s.values[i]
-}
-func (s UnspentSort) Less(i, j int) bool {
-	return s.comparator(s.values[i], s.values[j]) < 0
-}
-
-//type Address struct {
-//	Address   string `json:"address" storm:"id"`
-//	Account   string `json:"account" storm:"index"`
-//	HDPath    string `json:"hdpath"`
-//	CreatedAt time.Time
-//}
-
-type User struct {
-	UserKey string `storm:"id"`     // primary key
-	Group   string `storm:"index"`  // this field will be indexed
-	Email   string `storm:"unique"` // this field will be indexed with a unique constraint
-	Name    string // this field will not be indexed
-	Age     int    `storm:"index"`
-}
-
 type Block struct {
-
 	/*
-
-		"hash": "000000000000000127454a8c91e74cf93ad76752cceb7eb3bcff0c398ba84b1f",
-		"confirmations": 2,
-		"strippedsize": 191875,
-		"size": 199561,
-		"weight": 775186,
-		"height": 1354760,
-		"version": 536870912,
-		"versionHex": "20000000",
-		"merkleroot": "48239e76f8b37d9c8824fef93d42ac3d7c433029c1e9fa23b6416dd0356f3e57",
-		"tx": ["c1e12febeb58aefb0b01c04360262138f4ee0faeb207276e79ea3866608ed84f"]
-		"time": 1532143012,
-		"mediantime": 1532140298,
-		"nonce": 3410287696,
-		"bits": "19499855",
-		"difficulty": 58358570.79038175,
-		"chainwork": "00000000000000000000000000000000000000000000006f68c43926cd6c2d1f",
-		"previousblockhash": "00000000000000292d142fcc1ddbd9dafd4518310009f152bdca2a66cc589f97",
-		"nextblockhash": "0000000000004a50ef5733ab333f718e6ef5c1995e2cfd5a7caa0875f118cd30"
-
+		{
+			"blockID":"000000000035e1c0f60afaa8387fd17fd9b84fe4381265ff084d739f814558ea",
+			"block_header":{
+				"raw_data":{"number":3531200,
+						"txTrieRoot":"9d98f6cbbde8302774ab87c003831333e132c89e00009cb1f7da35e1e59ae8ca",
+						"witness_address":"41d1dbde8b8f71b48655bec4f6bb532a0142b88bc0",
+						"parentHash":"000000000035e1bfb3b6f244e5316ce408aa8cea4c348eabe2545247f5a4600c",
+						"version":3,
+						"timestamp":1540545240000},
+				"witness_signature":"6ceedcacd8d0111b48eb4131484de3d13f27a2f4bd8156279d03d4208690158e20a641b77d900e026ee33adc328f9ec674f6483ea7b1ca5a27fa24d7fb23964100"
+			},
+			"transactions":[
+				{"ret":[{"contractRet":"SUCCESS"}],
+				 "signature":["40aa520f01cebf12948615b9c5a5df5fe7d57e1a7f662d53907b4aa14f647a3a47be2a097fdb58159d0bee7eb1ff0a15ac738f24643fe5114cab8ec0d52cc04d01"],
+				 "txID":"ac005b0a195a130914821a6c28db1eec44b4ec3a2358388ceb6c87b677866f1f",
+				 "raw_data":{
+					 "contract":[
+						{"parameter":{"value":{"amount":1,"asset_name":"48756f6269546f6b656e","owner_address":"416b201fb7b9f2b97bbdaf5e0920191229767c30ee","to_address":"412451d09536fca47760ea6513372bbbbef8583105"},
+								  "type_url":"type.googleapis.com/protocol.TransferAssetContract"},
+						 "type":"TransferAssetContract"}
+					 ],
+					 "ref_block_bytes":"e1be",
+					 "ref_block_hash":"8dbf5f0cf4c324f2",
+					 "expiration":1540545294000,
+					 "timestamp":1540545235358}
+				},
+				...]
+		}
 	*/
-
-	Hash              string
-	Confirmations     uint64
-	Merkleroot        string
-	tx                []string
+	Hash              string // 这里采用 BlockID
+	tx                []*Transaction
 	Previousblockhash string
 	Height            uint64 `storm:"id"`
 	Version           uint64
 	Time              uint64
 	Fork              bool
+	// Merkleroot        string
+	//Confirmations     uint64
 }
 
 func NewBlock(json *gjson.Result) *Block {
-	obj := &Block{}
-	//解析json
-	obj.Hash = gjson.Get(json.Raw, "hash").String()
-	obj.Confirmations = gjson.Get(json.Raw, "confirmations").Uint()
-	obj.Merkleroot = gjson.Get(json.Raw, "merkleroot").String()
 
-	txs := make([]string, 0)
-	for _, tx := range gjson.Get(json.Raw, "tx").Array() {
-		txs = append(txs, tx.String())
+	header := gjson.Get(json.Raw, "block_header").Get("raw_data")
+
+	// 解析json
+	b := &Block{}
+	b.Hash = gjson.Get(json.Raw, "blockID").String()
+	b.Previousblockhash = header.Get("parentHash").String()
+	b.Height = header.Get("number").Uint()
+	b.Version = header.Get("version").Uint()
+	b.Time = header.Get("timestamp").Uint()
+
+	txs := []*Transaction{}
+	for _, x := range gjson.Get(json.Raw, "transactions").Array() {
+		tx := NewTransaction(&x)
+		txs = append(txs, tx)
 	}
+	b.tx = txs
 
-	obj.tx = txs
-	obj.Previousblockhash = gjson.Get(json.Raw, "previousblockhash").String()
-	obj.Height = gjson.Get(json.Raw, "height").Uint()
-	obj.Version = gjson.Get(json.Raw, "version").Uint()
-	obj.Time = gjson.Get(json.Raw, "time").Uint()
-
-	return obj
+	return b
 }
 
-//BlockHeader 区块链头
-func (b *Block) BlockHeader() *openwallet.BlockHeader {
+func (block *Block) GetHeight() uint64 {
+	return block.Height
+}
 
-	obj := openwallet.BlockHeader{}
-	//解析json
-	obj.Hash = b.Hash
-	obj.Confirmations = b.Confirmations
-	obj.Merkleroot = b.Merkleroot
-	obj.Previousblockhash = b.Previousblockhash
-	obj.Height = b.Height
-	obj.Version = b.Version
-	obj.Time = b.Time
-	obj.Symbol = Symbol
+func (block *Block) GetBlockHashID() string {
+	return block.Hash
+}
 
-	return &obj
+func (block *Block) GetTransactions() []*Transaction {
+	return block.tx
+}
+
+type Transaction struct {
+	/*
+		{
+			 "txID":"ac005b0a195a130914821a6c28db1eec44b4ec3a2358388ceb6c87b677866f1f",
+			 "ret":[{"contractRet":"SUCCESS"}],
+			 "signature":["40aa520f01cebf12948615b9c5a5df5fe7d57e1a7f662d53907b4aa14f647a3a47be2a097fdb58159d0bee7eb1ff0a15ac738f24643fe5114cab8ec0d52cc04d01"],
+			 "raw_data":{
+				 "contract":[
+					{"parameter":{"value":{"amount":1,"asset_name":"48756f6269546f6b656e","owner_address":"416b201fb7b9f2b97bbdaf5e0920191229767c30ee","to_address":"412451d09536fca47760ea6513372bbbbef8583105"},
+							  "type_url":"type.googleapis.com/protocol.TransferAssetContract"},
+					 "type":"TransferAssetContract"}
+				 ],
+				 "ref_block_bytes":"e1be",
+				 "ref_block_hash":"8dbf5f0cf4c324f2",
+				 "expiration":1540545294000,
+				 "timestamp":1540545235358}
+		},
+	*/
+	TxID        string
+	ContractRet []map[string]string // 交易合约执行状态
+	IsSuccess   bool
+	//Size          uint64
+	//Version       uint64
+	//LockTime      int64
+	//Hex           string
+	BlockHash   string
+	BlockHeight uint64
+	//Confirmations uint64
+	Blocktime  uint64
+	IsCoinBase bool
+	// Fees          string
+
+}
+
+func NewTransaction(json *gjson.Result) *Transaction {
+
+	// 交易合约执行状态
+	cr := []map[string]string{}
+	isSuccess := true
+	for _, ret := range gjson.Get(json.Raw, "ret").Array() {
+		tmp := ret.Map()
+		for k := range tmp {
+			value := tmp[k].String()
+			cr = append(cr, map[string]string{k: value})
+
+			if value != "SUCCESS" {
+				isSuccess = false
+			}
+		}
+	}
+
+	rawData := gjson.Get(json.Raw, "raw_data")
+
+	// 解析json
+	b := &Transaction{}
+	b.TxID = gjson.Get(json.Raw, "txID").String()
+	b.ContractRet = cr
+	b.IsSuccess = isSuccess
+	b.BlockHash = rawData.Get("ref_block_hash").String()
+	b.BlockHeight = rawData.Get("ref_block_bytes").Uint()
+	b.Blocktime = rawData.Get("timestamp").Uint()
+
+	return b
 }
 
 //UnscanRecords 扫描失败的区块及交易
@@ -218,47 +208,3 @@ func NewUnscanRecord(height uint64, txID, reason string) *UnscanRecord {
 	obj.ID = common.Bytes2Hex(crypto.SHA256([]byte(fmt.Sprintf("%d_%s", height, txID))))
 	return &obj
 }
-
-//type Transaction struct {
-
-/*
-
-	{
-		"txid": "c1e12febeb58aefb0b01c04360262138f4ee0faeb207276e79ea3866608ed84f",
-		"hash": "c0bfbc4db1c6ed4356555c6f520df99640a42e39efa8939f4787d4c3d7aa2585",
-		"version": 1,
-		"size": 204,
-		"vsize": 177,
-		"locktime": 0,
-		"vin": [{
-			"coinbase": "0308ac1404a4a5525b081ffffe24dcd602000d2ff09fa498f09f988e204d722e204d6f2f",
-			"sequence": 0
-		}],
-		"vout": [{
-			"value": 0.00000000,
-			"n": 0,
-			"scriptPubKey": {
-				"asm": "OP_RETURN aa21a9edf9be7d36da3e5fea8130b031d254b9a6ff2dd471fbceb0f460d8fcca101d27ad",
-				"hex": "6a24aa21a9edf9be7d36da3e5fea8130b031d254b9a6ff2dd471fbceb0f460d8fcca101d27ad",
-				"type": "nulldata"
-			}
-		}, {
-			"value": 1.40257806,
-			"n": 1,
-			"scriptPubKey": {
-				"asm": "OP_DUP OP_HASH160 48b5c6986b7bc6390bd1cc416154d1874fe116fd OP_EQUALVERIFY OP_CHECKSIG",
-				"hex": "76a91448b5c6986b7bc6390bd1cc416154d1874fe116fd88ac",
-				"reqSigs": 1,
-				"type": "pubkeyhash",
-				"addresses": ["mn9QhsFiX2eEXtF6zrGn5N49iS8BHXFjBt"]
-			}
-		}],
-		"hex": "010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff240308ac1404a4a5525b081ffffe24dcd602000d2ff09fa498f09f988e204d722e204d6f2f00000000020000000000000000266a24aa21a9edf9be7d36da3e5fea8130b031d254b9a6ff2dd471fbceb0f460d8fcca101d27ad0e2a5c08000000001976a91448b5c6986b7bc6390bd1cc416154d1874fe116fd88ac0120000000000000000000000000000000000000000000000000000000000000000000000000",
-		"blockhash": "000000000000000127454a8c91e74cf93ad76752cceb7eb3bcff0c398ba84b1f",
-		"confirmations": 25,
-		"time": 1532143012,
-		"blocktime": 1532143012
-	}
-
-*/
-//}

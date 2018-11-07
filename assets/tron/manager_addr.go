@@ -16,15 +16,14 @@
 package tron
 
 import (
-	"fmt"
-
-	// "github.com/blocktree/OpenWallet/assets/tron/protocol/api"
-	"github.com/tidwall/gjson"
-	"github.com/tronprotocol/grpc-gateway/api"
+	"errors"
 
 	"github.com/imroc/req"
+	"github.com/tidwall/gjson"
+	"github.com/tronprotocol/grpc-gateway/api"
 )
 
+// Done!
 // Function: Create address from a specified password string (NOT PRIVATE KEY)
 // Demo: curl -X POST http://127.0.0.1:8090/wallet/createaddress -d ‘
 // 	{“value”: “7465737470617373776f7264” }’
@@ -35,20 +34,18 @@ import (
 // 	Convert it to base58 to use as the address.
 // Warning:
 // 	Please control risks when using this API. To ensure environmental security, please do not invoke APIs provided by other or invoke this very API on a public network.
-func (wm *WalletManager) CreateAddress(passValue string) (addr string, err error) {
+func (wm *WalletManager) CreateAddress(passValue string) (addr *gjson.Result, err error) {
 
-	params := req.Param{
-		"value": passValue,
-	}
-	r, err := wm.WalletClient.Call2("/wallet/createaddress", params)
+	params := req.Param{"value": passValue}
+	r, err := wm.WalletClient.Call("/wallet/createaddress", params)
 	if err != nil {
-		return "nil", err
+		return nil, err
 	}
-	fmt.Println("Result = ", r)
 
-	return "", nil
+	return r, nil
 }
 
+// Done!
 // Function: Generates a random private key and address pair
 // Demo：curl -X POST -k http://127.0.0.1:8090/wallet/generateaddress
 // Parameters:
@@ -61,21 +58,20 @@ func (wm *WalletManager) CreateAddress(passValue string) (addr string, err error
 // 	To ensure environmental security, please do not invoke APIs provided by other or invoke this very API on a public network.
 func (wm *WalletManager) GenerateAddress() (addr *api.AddressPrKeyPairMessage, err error) {
 
-	// res = map[string]string{"addr": "", "privatekey": ""}
-
-	r, err := wm.WalletClient.Call2("/wallet/generateaddress", nil)
+	r, err := wm.WalletClient.Call("/wallet/generateaddress", nil)
 	if err != nil {
 		return nil, err
 	}
 
 	addr = &api.AddressPrKeyPairMessage{}
-	if err := gjson.Unmarshal(r, addr); err != nil {
+	if err := gjson.Unmarshal([]byte(r.Raw), addr); err != nil {
 		return nil, err
 	}
 
 	return addr, nil
 }
 
+// Done!
 // Function：validate address
 // Demo: curl -X POST http://127.0.0.1:8090/wallet/validateaddress -d ‘
 // 	{“address”: “4189139CB1387AF85E3D24E212A008AC974967E561”}’
@@ -87,11 +83,13 @@ func (wm *WalletManager) ValidateAddress(address string) (err error) {
 	params := req.Param{
 		"address": address,
 	}
-	r, err := wm.WalletClient.Call2("/wallet/validateaddress", params)
+	r, err := wm.WalletClient.Call("/wallet/validateaddress", params)
 	if err != nil {
 		return err
 	}
-	fmt.Println("Result = ", r)
+	if r.Get("result").Bool() != true {
+		return errors.New("Invalid!")
+	}
 
 	return nil
 }

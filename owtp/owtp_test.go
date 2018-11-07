@@ -226,15 +226,20 @@ func TestMQConnectNode(t *testing.T) {
 }
 
 func TestHttp(t *testing.T) {
+
+	var (
+		endRunning = make(chan bool, 1)
+	)
 	transfer := RandomOWTPNode()
 	config := make(map[string]string)
 	config["address"] = "127.0.0.1:8422"
 	config["connectType"] = HTTP
 	transfer.HandleFunc("getInfo", getInfo)
 	transfer.Listen(config)
-	time.Sleep(4 * time.Second)
-	httpTestClient := NewHTTPT("http://"+config["address"], "", true)
-	httpTestClient.Call("getInfo", nil)
+
+	//httpTestClient := NewHTTPT("http://"+config["address"], "", true)
+	//httpTestClient.Call("getInfo", nil)
+	<- endRunning
 }
 
 func TestMQtNode(t *testing.T) {

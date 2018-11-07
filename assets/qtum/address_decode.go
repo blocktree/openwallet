@@ -16,8 +16,11 @@
 package qtum
 
 import (
-	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
-	"github.com/blocktree/go-OWCrypt"
+	"encoding/hex"
+	"strings"
+
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
+	"github.com/blocktree/go-owcrypt"
 )
 
 func init() {
@@ -33,7 +36,7 @@ func init() {
 //	}
 //)
 
-type addressDecoder struct{
+type addressDecoder struct {
 	wm *WalletManager //钱包管理者
 }
 
@@ -122,5 +125,24 @@ func (decoder *addressDecoder) WIFToPrivateKey(wif string, isTestnet bool) ([]by
 	}
 
 	return priv, err
+
+}
+
+//HashAddressToBaseAddress 哈希地址转编码地址
+func HashAddressToBaseAddress(token string, isTestnet bool) string {
+	token = strings.TrimPrefix(token, "0x")
+	cfg := addressEncoder.QTUM_mainnetAddressP2PKH
+	if isTestnet {
+		cfg = addressEncoder.QTUM_testnetAddressP2PKH
+	}
+
+	hash, err := hex.DecodeString(token)
+	if err != nil {
+		return ""
+	}
+
+	tokenAddressBase := addressEncoder.AddressEncode(hash, cfg)
+
+	return tokenAddressBase
 
 }

@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"strconv"
 	"sync"
 
 	//	"log"
@@ -34,6 +35,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/asdine/storm"
 	"github.com/tidwall/gjson"
 
 	"github.com/blocktree/OpenWallet/common"
@@ -43,8 +45,8 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/openwallet"
-	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
-	owcrypt "github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-owcdrivers/owkeychain"
+	owcrypt "github.com/blocktree/go-owcrypt"
 	ethKStore "github.com/ethereum/go-ethereum/accounts/keystore"
 )
 
@@ -79,17 +81,18 @@ type WalletManager struct {
 	WalletClient *Client                       // 节点客户端
 	Config       *WalletConfig                 //钱包管理配置
 	WalletsInSum map[string]*openwallet.Wallet //参与汇总的钱包
-	Blockscanner *ETHBlockScanner              //区块扫描器
+	Blockscanner *ETHBLockScanner              //区块扫描器
 	Decoder      openwallet.AddressDecoder     //地址编码器
 	TxDecoder    openwallet.TransactionDecoder //交易单编码器
 	//	RootDir        string                        //
-	locker         sync.Mutex //防止并发修改和读取配置, 可能用不上
-	WalletInSumOld map[string]*Wallet
-	StorageOld     *keystore.HDKeystore
-	ConfigPath     string
-	RootPath       string
-	DefaultConfig  string
-	SymbolID       string
+	locker          sync.Mutex //防止并发修改和读取配置, 可能用不上
+	WalletInSumOld  map[string]*Wallet
+	ContractDecoder openwallet.SmartContractDecoder //
+	StorageOld      *keystore.HDKeystore
+	ConfigPath      string
+	RootPath        string
+	DefaultConfig   string
+	SymbolID        string
 }
 
 func (this *WalletManager) GetConfig() WalletConfig {
@@ -103,7 +106,7 @@ func NewWalletManager() *WalletManager {
 	wm.RootPath = "data"
 	wm.ConfigPath = "conf"
 	wm.SymbolID = Symbol
-	wm.Config = &WalletConfig{}
+	//wm.Config = &WalletConfig{}
 	wm.DefaultConfig = makeEthDefaultConfig(wm.ConfigPath)
 
 	//参与汇总的钱包
@@ -112,6 +115,17 @@ func NewWalletManager() *WalletManager {
 	wm.Blockscanner = NewETHBlockScanner(&wm)
 	wm.Decoder = &AddressDecoder{}
 	wm.TxDecoder = NewTransactionDecoder(&wm)
+
+	wm.NewConfig(wm.RootPath, MasterKey)
+
+	wm.StorageOld = keystore.NewHDKeystore(wm.Config.KeyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	storage := hdkeystore.NewHDKeystore(wm.Config.KeyDir, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
+	wm.Storage = storage
+	client := &Client{BaseURL: wm.Config.ServerAPI, Debug: false}
+	wm.WalletClient = client
+	wm.ContractDecoder = &EthContractDecoder{
+		wm: &wm,
+	}
 
 	wm.WalletInSumOld = make(map[string]*Wallet)
 	return &wm
@@ -323,11 +337,16 @@ func (this *WalletManager) ERC20GetWalletList(erc20Token *ERC20Token) ([]*Wallet
 	}
 
 	for i, _ := range wallets {
+		err = wallets[i].RestoreFromDb(this.GetConfig().DbPath)
+		if err != nil {
+			log.Error("restore wallet[", wallets[i].WalletID, "] from db failed, err=", err)
+			return nil, err
+		}
+
 		wallets[i].erc20Token = &ERC20Token{}
 		*wallets[i].erc20Token = *erc20Token
 		tokenBanlance, err := this.ERC20GetWalletBalance(wallets[i])
 		if err != nil {
-
 			openwLogger.Log.Errorf(fmt.Sprintf("find wallet balance failed, err=%v\n", err))
 			return nil, err
 		}
@@ -600,8 +619,11 @@ func (this *WalletManager) CreateBatchAddress2(name, password string, count uint
 	errcount := uint64(0)
 	errMaximum := uint64(15)
 	threadControl := make(chan int, 20)
+	defer close(threadControl)
 	addressChan := make(chan *Address, 100)
+	defer close(addressChan)
 	done := make(chan int, 1)
+	defer close(done)
 
 	generateAddress := func(addressIndex uint64) {
 		threadControl <- 1
@@ -851,12 +873,12 @@ func (this *WalletManager) GetSimpleTransactionFeeEstimated(from string, to stri
 	return this.GetTransactionFeeEstimated(from, to, amount, "")
 }
 
-func (this *WalletManager) ERC20SendTransaction(wallet *Wallet, to string, amount *big.Int, password string, feesInSender bool) ([]string, error) {
+func (this *WalletManager) ERC20SendTransaction2(wallet *Wallet, to string, amount *big.Int, password string,
+	feesInSender bool) ([]string, error) {
 	var txIds []string
-
-	err := this.UnlockWallet(wallet, password)
+	masterKey, err := wallet.HDKey2(password)
 	if err != nil {
-		openwLogger.Log.Errorf("unlock wallet [%v]. failed, err=%v", wallet.WalletID, err)
+		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
 		return nil, err
 	}
 
@@ -867,20 +889,11 @@ func (this *WalletManager) ERC20SendTransaction(wallet *Wallet, to string, amoun
 	}
 
 	sort.Sort(&TokenAddrVec{addrs: addrs})
-	//检查下地址排序是否正确, 仅用于测试
-	/*for _, theAddr := range addrs {
-		fmt.Println("theAddr[", theAddr.Address, "]:", theAddr.tokenBalance)
-	}*/
 
 	for i := len(addrs) - 1; i >= 0 && amount.Cmp(big.NewInt(0)) > 0; i-- {
 		var fee *txFeeInfo
 		var amountToSend big.Int
 		fmt.Println("amount remained:", amount.String())
-		//空的token账户直接跳过
-		//if addrs[i].tokenBalance.Cmp(big.NewInt(0)) == 0 {
-		//	openwLogger.Log.Infof("skip the address[%v] with 0 balance. ", addrs[i].Address)
-		//	continue
-		//}
 
 		if addrs[i].tokenBalance.Cmp(amount) >= 0 {
 			amountToSend = *amount
@@ -894,6 +907,7 @@ func (this *WalletManager) ERC20SendTransaction(wallet *Wallet, to string, amoun
 			openwLogger.Log.Errorf("make token transaction data failed, err=%v", err)
 			return nil, err
 		}
+
 		fee, err = this.GetERC20TokenTransactionFeeEstimated(addrs[i].Address, wallet.erc20Token.Address, dataPara)
 		if err != nil {
 			openwLogger.Log.Errorf("get erc token transaction fee estimated failed, err = %v", err)
@@ -905,19 +919,203 @@ func (this *WalletManager) ERC20SendTransaction(wallet *Wallet, to string, amoun
 			continue
 		}
 
-		txid, err := this.SendTransactionToAddr(makeERC20TokenTransactionPara(addrs[i], wallet.erc20Token.Address, dataPara, password, fee))
+		priKey, err := addrs[i].CalcPrivKey(masterKey)
 		if err != nil {
-			openwLogger.Log.Errorf("SendTransactionToAddr failed, err=%v", err)
-			if txid == "" {
-				continue //txIds = append(txIds, txid)
+			log.Error("calc private key failed, err=", err)
+			continue
+		}
+
+		nonce := addrs[i].TxCount
+		if !this.GetConfig().LocalNonce {
+			nonce, err = this.GetNonceForAddress2(addrs[i].Address)
+			if err != nil {
+				log.Error("get nonce failed, err=", err)
+				continue
 			}
 		}
 
+		raw, err := signEthTransaction(priKey, wallet.erc20Token.Address, big.NewInt(0), nonce, dataPara, fee, this.GetConfig().ChainID)
+		if err != nil {
+			log.Error("signEthTransaction failed, err=", err)
+			continue
+		}
+
+		txid, err := this.WalletClient.ethSendRawTransaction(raw)
+		if err != nil {
+			openwLogger.Log.Errorf("SendTransactionToAddr failed, err=%v", err)
+			if txid == "" {
+				if this.GetConfig().LocalNonce {
+					txCount, err := this.WalletClient.ethGetTransactionCount(addrs[i].Address)
+					if err != nil {
+						log.Error("ethGetTransactionCount failed, err=", err)
+						continue
+					}
+
+					if nonce < txCount {
+						addrs[i].TxCount = txCount
+						err = wallet.SaveAddress(this.GetConfig().DbPath, addrs[i])
+						if err != nil {
+							log.Error("update address[", addrs[i].Address, "] tx count to ", addrs[i].TxCount, " failed, err=", err)
+						}
+						continue
+					}
+				}
+				return txIds, err //continue //txIds = append(txIds, txid)
+			}
+		}
+
+		addrs[i].TxCount = nonce + 1
+		err = wallet.SaveAddress(this.GetConfig().DbPath, addrs[i])
+		if err != nil {
+			log.Error("update address[", addrs[i].Address, "] tx count to ", addrs[i].TxCount, " failed, err=", err)
+			continue
+		}
 		txIds = append(txIds, txid)
 		amount.Sub(amount, &amountToSend)
 	}
-
 	return txIds, nil
+}
+
+func (this *WalletManager) SimpleSendEthTokenTransaction(from string, to string, value string, dbpath string, wpassword string, chainId uint64,
+	tokenContract string) (string, error) {
+	db, err := storm.Open(dbpath)
+	if err != nil {
+		log.Errorf("open db[%v] failed, err=%v", dbpath, err)
+		return "", err
+	}
+	defer db.Close()
+
+	var addr Address
+	var wallet Wallet
+
+	err = db.One("Address", removeOxFromHex(from), &addr)
+	if err != nil {
+		log.Errorf("find address[%v] in db failed, err=%v", removeOxFromHex(from), err)
+		return "", err
+	}
+
+	err = db.One("WalletID", addr.Account, &wallet)
+	if err != nil {
+		log.Errorf("find wallet[%v] in db failed, err=%v", addr.Account, err)
+		return "", err
+	}
+
+	masterKey, err := wallet.HDKey2(wpassword)
+	if err != nil {
+		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
+		return "", err
+	}
+
+	amount, err := ConvertToBigInt(value, 10)
+	if err != nil {
+		log.Errorf("convert amount failed, err=%v", err)
+		return "", err
+	}
+
+	dataPara, err := makeERC20TokenTransData(tokenContract, to, amount)
+	if err != nil {
+		openwLogger.Log.Errorf("make token transaction data failed, err=%v", err)
+		return "", err
+	}
+
+	fee, err := this.GetERC20TokenTransactionFeeEstimated(addr.Address, tokenContract, dataPara)
+	if err != nil {
+		openwLogger.Log.Errorf("get erc token transaction fee estimated failed, err = %v", err)
+		return "", err
+	}
+
+	priKey, err := addr.CalcPrivKey(masterKey)
+	if err != nil {
+		log.Error("calc private key failed, err=", err)
+		return "", err
+	}
+
+	nonce, err := this.GetNonceForAddress2(addr.Address)
+	if err != nil {
+		log.Error("get nonce failed, err=", err)
+		return "", err
+	}
+
+	raw, err := signEthTransaction(priKey, tokenContract, big.NewInt(0), nonce, dataPara, fee, chainId)
+	if err != nil {
+		log.Error("signEthTransaction failed, err=", err)
+		return "", err
+	}
+
+	txid, err := this.WalletClient.ethSendRawTransaction(raw)
+	if err != nil {
+		log.Error("send raw transaction failed, err=", err)
+		return "", err
+	}
+	return txid, nil
+}
+
+func (this *WalletManager) SimpleSendEthTransaction(from string, to string, value string, dbpath string, wpassword string, chainId uint64) (string, error) {
+	log.Debugf("dbpath:%v", dbpath)
+	db, err := storm.Open(dbpath)
+	if err != nil {
+		log.Errorf("open db[%v] failed, err=%v", dbpath, err)
+		return "", err
+	}
+	defer db.Close()
+
+	var addr Address
+	var wallet Wallet
+
+	err = db.One("Address", removeOxFromHex(from), &addr)
+	if err != nil {
+		log.Errorf("find address[%v] in db failed, err=%v", removeOxFromHex(from), err)
+		return "", err
+	}
+
+	err = db.One("WalletID", addr.Account, &wallet)
+	if err != nil {
+		log.Errorf("find wallet[%v] in db failed, err=%v", addr.Account, err)
+		return "", err
+	}
+
+	masterKey, err := wallet.HDKey2(wpassword)
+	if err != nil {
+		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
+		return "", err
+	}
+
+	amount, err := ConvertEthStringToWei(value)
+	if err != nil {
+		log.Errorf("convert amount failed, err=%v", err)
+		return "", err
+	}
+
+	fee, err := this.GetSimpleTransactionFeeEstimated(addr.Address, to, amount)
+	if err != nil {
+		openwLogger.Log.Errorf("%v", err)
+		return "", err
+	}
+
+	priKey, err := addr.CalcPrivKey(masterKey)
+	if err != nil {
+		log.Error("calc private key failed, err=", err)
+		return "", err
+	}
+
+	nonce, err := this.GetNonceForAddress2(addr.Address)
+	if err != nil {
+		log.Error("get nonce failed, err=", err)
+		return "", err
+	}
+
+	raw, err := signEthTransaction(priKey, to, amount, nonce, "", fee, chainId)
+	if err != nil {
+		log.Error("signEthTransaction failed, err=", err)
+		return "", err
+	}
+
+	txid, err := this.WalletClient.ethSendRawTransaction(raw)
+	if err != nil {
+		log.Error("send raw transaction failed, err=", err)
+		return "", err
+	}
+	return txid, nil
 }
 
 func (this *WalletManager) SendTransaction2(wallet *Wallet, to string,
@@ -1054,11 +1252,25 @@ func (this *WalletManager) SendTransaction2(wallet *Wallet, to string,
 }
 
 func removeOxFromHex(value string) string {
-	var result string
+	result := value
 	if strings.Index(value, "0x") != -1 {
 		result = common.Substr(value, 2, len(value))
 	}
 	return result
+}
+
+func ConvertToUint64(value string, base int) (uint64, error) {
+	v := value
+	if base == 16 {
+		v = removeOxFromHex(v)
+	}
+
+	rst, err := strconv.ParseUint(v, base, 64)
+	if err != nil {
+		log.Errorf("convert string[%v] to int failed, err = %v", value, err)
+		return 0, err
+	}
+	return rst, nil
 }
 
 func ConvertToBigInt(value string, base int) (*big.Int, error) {
@@ -1066,6 +1278,10 @@ func ConvertToBigInt(value string, base int) (*big.Int, error) {
 	var success bool
 	if base == 16 {
 		value = removeOxFromHex(value)
+	}
+
+	if value == "" {
+		value = "0"
 	}
 
 	_, success = bigvalue.SetString(value, base)
@@ -1217,7 +1433,58 @@ func (this *WalletManager) ERC20GetAddressesByWallet(dbPath string, wallet *Wall
 		return addrs, err
 	}
 
+	count := len(addrs)
+
+	queryBalanceChan := make(chan int, 20)
+	defer close(queryBalanceChan)
+	resultChan := make(chan *Address, 100)
+	defer close(resultChan)
+	done := make(chan int, 1)
+	defer close(done)
+
+	queryBalance := func(theAddr *Address) {
+		queryBalanceChan <- 1
+		var paddr *Address
+		defer func() {
+			resultChan <- paddr
+			<-queryBalanceChan
+		}()
+
+		tokenBalance, err := this.WalletClient.ERC20GetAddressBalance(theAddr.Address, wallet.erc20Token.Address)
+		if err != nil {
+			log.Errorf("get address[%v] erc20 token balance failed, err=%v", theAddr.Address, err)
+			return
+		}
+
+		balance, err := this.WalletClient.GetAddrBalance(theAddr.Address)
+		if err != nil {
+			errinfo := fmt.Sprintf("get balance of addr[%v] failed, err=%v", theAddr.Address, err)
+			log.Error(errinfo)
+			return
+		}
+
+		theAddr.balance = balance
+		theAddr.tokenBalance = tokenBalance
+		paddr = theAddr
+	}
+
+	var addrResults []*Address
+	go func() {
+		for i := 0; i < count; i++ {
+			paddr := <-resultChan
+			if paddr != nil {
+				addrResults = append(addrResults, paddr)
+			}
+		}
+		done <- 1
+	}()
+
 	for i, _ := range addrs {
+		go queryBalance(addrs[i])
+	}
+	<-done
+
+	/*for i, _ := range addrs {
 		tokenBalance, err := this.WalletClient.ERC20GetAddressBalance(addrs[i].Address, wallet.erc20Token.Address)
 		if err != nil {
 			openwLogger.Log.Errorf("get address[%v] erc20 token balance failed, err=%v", addrs[i].Address, err)
@@ -1231,8 +1498,12 @@ func (this *WalletManager) ERC20GetAddressesByWallet(dbPath string, wallet *Wall
 		}
 		addrs[i].tokenBalance = tokenBalance
 		addrs[i].balance = balance
+	}*/
+	if len(addrResults) != count {
+		log.Error("get address balance failed in this wallet.")
+		return make([]*Address, 0), errors.New("get address balance failed in this wallet.")
 	}
-	return addrs, nil
+	return addrResults, nil
 }
 
 func (this *WalletManager) GetAddressesByWallet(dbPath string, wallet *Wallet) ([]*Address, error) {
@@ -1251,8 +1522,11 @@ func (this *WalletManager) GetAddressesByWallet(dbPath string, wallet *Wallet) (
 	count := len(addrs)
 
 	queryBalanceChan := make(chan int, 20)
+	defer close(queryBalanceChan)
 	resultChan := make(chan *Address, 100)
+	defer close(resultChan)
 	done := make(chan int, 1)
+	defer close(done)
 
 	queryBalance := func(theAddr *Address) {
 		queryBalanceChan <- 1
@@ -1421,6 +1695,7 @@ func (this *WalletManager) RestoreWallet2(backupPath string, password string) er
 }
 
 func (this *WalletManager) GetNonceForAddress2(address string) (uint64, error) {
+	address = appendOxToAddress(address)
 	txpool, err := this.WalletClient.ethGetTxPoolContent()
 	if err != nil {
 		openwLogger.Log.Errorf("ethGetTxPoolContent failed, err = %v", err)

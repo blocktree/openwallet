@@ -36,14 +36,21 @@ func init() {
 
 	tw = NewWalletManager()
 
-	tw.config.serverAPI = "http://120.78.220.105:3889"
+	tw.config.serverAPI = "http://120.78.220.105:13889"
 	tw.config.rpcUser = "test"
 	tw.config.rpcPassword = "test1234"
 	//tw.config.serverAPI = "http://192.168.2.194:10031"
 	//tw.config.rpcUser = "wallet"
 	//tw.config.rpcPassword = "walletPassword2017"
 	token := basicAuth(tw.config.rpcUser, tw.config.rpcPassword)
-	tw.walletClient = NewClient(tw.config.serverAPI, token, true)
+	tw.walletClient = NewClient(tw.config.serverAPI, token, false)
+
+	tw.config.isTestNet = false
+
+	explorerURL := "http://47.52.97.183:20007/qtum-insight-api/"
+	tw.ExplorerClient = NewExplorer(explorerURL, true)
+
+	tw.config.RPCServerType = RPCServerExplorer
 }
 
 func TestImportPrivKey(t *testing.T) {
@@ -141,7 +148,7 @@ func TestCreateReceiverAddress(t *testing.T) {
 		tag     string
 	}{
 		{
-			account: "sunny",
+			account: "",
 			tag:     "normal",
 		},
 		//{
@@ -164,7 +171,7 @@ func TestCreateReceiverAddress(t *testing.T) {
 }
 
 func TestGetAddressesByAccount(t *testing.T) {
-	addresses, err := tw.GetAddressesByAccount("WG8QXeEW7CVmRRbvw7Yb2f9wQf9ufR32M3")
+	addresses, err := tw.GetAddressesByAccount("")
 	if err != nil {
 		t.Errorf("GetAddressesByAccount failed unexpected error: %v\n", err)
 		return
@@ -176,7 +183,7 @@ func TestGetAddressesByAccount(t *testing.T) {
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	_, _, err := tw.CreateBatchAddress("WG8QXeEW7CVmRRbvw7Yb2f9wQf9ufR32M3", "1234qwer", 1000)
+	_, _, err := tw.CreateBatchAddress("", "1234qwer", 100)
 	if err != nil {
 		t.Errorf("CreateBatchAddress failed unexpected error: %v\n", err)
 		return
@@ -202,7 +209,7 @@ func TestEncryptWallet(t *testing.T) {
 }
 
 func TestUnlockWallet(t *testing.T) {
-	err := tw.UnlockWallet("1234qwer", 1)
+	err := tw.UnlockWallet("1234qwer", 100)
 	if err != nil {
 		t.Errorf("UnlockWallet failed unexpected error: %v\n", err)
 		return
@@ -503,7 +510,7 @@ func TestEstimateFee(t *testing.T) {
 func TestSendTransaction(t *testing.T) {
 
 	sends := []string{
-		"QjmAVaLPhZxFeWPmz9mwPTZVzMeua4MG82",
+		"QdgMxJDYDG7Y1PMxAooqhDtzM3fWsJZyqF",
 	}
 
 	tw.RebuildWalletUnspent("W8C6dcVGbuPxJJ5imguFQNzK7vMtBhg58J")
@@ -588,9 +595,9 @@ func TestRestoreWallet(t *testing.T) {
 }
 
 func TestSendFrom(t *testing.T) {
-	fromaccount := "W8C6dcVGbuPxJJ5imguFQNzK7vMtBhg58J"
-	toaddress := "QjmAVaLPhZxFeWPmz9mwPTZVzMeua4MG82"
-	txIDs, err := tw.SendFrom(fromaccount, toaddress, "0.04", "1234qwer")
+	fromaccount := "WG8QXeEW7CVmRRbvw7Yb2f9wQf9ufR32M3"
+	toaddress := "QdgMxJDYDG7Y1PMxAooqhDtzM3fWsJZyqF"
+	txIDs, err := tw.SendFrom(fromaccount, toaddress, "0.05", "1234qwer")
 
 	if err != nil {
 		t.Errorf("SendTransaction failed unexpected error: %v\n", err)
@@ -601,8 +608,8 @@ func TestSendFrom(t *testing.T) {
 }
 
 func TestSendToAddress(t *testing.T){
-	address := "QjmAVaLPhZxFeWPmz9mwPTZVzMeua4MG82"
-	txIDs, err := tw.SendToAddress(address, "0.002","", false,"1234qwer")
+	address := "qJRyTVtn1bUjeYDztupJzinnN7sn7nZms7"
+	txIDs, err := tw.SendToAddress(address, "0.5","", false,"1234qwer")
 
 	if err != nil {
 		t.Errorf("SendTransaction failed unexpected error: %v\n", err)

@@ -16,8 +16,8 @@
 package litecoin
 
 import (
-	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
-	"github.com/blocktree/go-OWCrypt"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
+	"github.com/blocktree/go-owcrypt"
 )
 
 func init() {
@@ -32,7 +32,7 @@ func init() {
 //	}
 //)
 
-type addressDecoder struct{
+type addressDecoder struct {
 	wm *WalletManager //钱包管理者
 }
 
@@ -42,7 +42,6 @@ func NewAddressDecoder(wm *WalletManager) *addressDecoder {
 	decoder.wm = wm
 	return &decoder
 }
-
 
 //PrivateKeyToWIF 私钥转WIF
 func (decoder *addressDecoder) PrivateKeyToWIF(priv []byte, isTestnet bool) (string, error) {
@@ -86,13 +85,12 @@ func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (s
 
 }
 
-
 //RedeemScriptToAddress 多重签名赎回脚本转地址
 func (decoder *addressDecoder) RedeemScriptToAddress(pubs [][]byte, required uint64, isTestnet bool) (string, error) {
 
-	cfg := addressEncoder.LTC_mainnetAddressP2SH
+	cfg := addressEncoder.LTC_mainnetAddressP2SH2
 	if decoder.wm.Config.IsTestNet {
-		cfg = addressEncoder.LTC_testnetAddressP2SH
+		cfg = addressEncoder.LTC_testnetAddressP2SH2
 	}
 
 	redeemScript := make([]byte, 0)

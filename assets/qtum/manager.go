@@ -37,10 +37,12 @@ import (
 	"strings"
 	"time"
 	"github.com/asdine/storm/q"
-	"github.com/blocktree/go-OWCrypt"
-	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
+	"github.com/blocktree/go-owcrypt"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
+	"github.com/blocktree/go-owcdrivers/owkeychain"
+	"encoding/hex"
+	"crypto/rand"
 )
 
 var(
@@ -61,13 +63,18 @@ const (
 )
 
 type WalletManager struct {
+
+	openwallet.AssetsAdapterBase
+
 	storage      *hdkeystore.HDKeystore          //秘钥存取
 	walletClient *Client                       // 节点客户端
+	ExplorerClient *Explorer                     // 浏览器API客户端
 	config       *WalletConfig                 //钱包管理配置
 	walletsInSum map[string]*openwallet.Wallet //参与汇总的钱包
 	blockscanner *BTCBlockScanner              //区块扫描器
 	Decoder      openwallet.AddressDecoder     //地址编码器
 	TxDecoder    openwallet.TransactionDecoder //交易单编码器
+	ContractDecoder openwallet.SmartContractDecoder //
 }
 
 func NewWalletManager() *WalletManager {
@@ -81,6 +88,7 @@ func NewWalletManager() *WalletManager {
 	wm.blockscanner = NewBTCBlockScanner(&wm)
 	wm.Decoder = NewAddressDecoder(&wm)
 	wm.TxDecoder = NewTransactionDecoder(&wm)
+	wm.ContractDecoder = NewContractDecoder(&wm)
 	return &wm
 }
 
@@ -707,7 +715,7 @@ func (wm *WalletManager) CreateNewPrivateKey(accountID string, key *owkeychain.E
 		Address:   address,
 		AccountID: accountID,
 		HDPath:    derivedPath,
-		CreatedAt: time.Now().Unix(),
+		CreatedTime: time.Now().Unix(),
 		Symbol:    wm.config.symbol,
 		Index:     index,
 		WatchOnly: false,
@@ -975,6 +983,16 @@ func (wm *WalletManager) GetBlockChainInfo() (*BlockchainInfo, error) {
 //ListUnspent 获取未花记录
 func (wm *WalletManager) ListUnspent(min uint64, addresses ...string) ([]*Unspent, error) {
 
+	if wm.config.RPCServerType == RPCServerExplorer {
+		return wm.listUnspentByExplorer(addresses...)
+	} else {
+		return wm.getListUnspentByCore(min, addresses...)
+	}
+}
+
+//getTransactionByCore 获取交易单
+func (wm *WalletManager) getListUnspentByCore(min uint64, addresses ...string) ([]*Unspent, error) {
+
 	var (
 		utxos = make([]*Unspent, 0)
 	)
@@ -999,7 +1017,6 @@ func (wm *WalletManager) ListUnspent(min uint64, addresses ...string) ([]*Unspen
 	}
 
 	return utxos, nil
-
 }
 
 //RebuildWalletUnspent 批量插入未花记录到本地
@@ -1225,6 +1242,16 @@ func (wm *WalletManager) SignRawTransaction(txHex, walletID string, key *hdkeyst
 
 //SendRawTransaction 广播交易
 func (wm *WalletManager) SendRawTransaction(txHex string) (string, error) {
+
+	if wm.config.RPCServerType == RPCServerExplorer {
+		return wm.sendRawTransactionByExplorer(txHex)
+	} else {
+		return wm.sendRawTransactionByCore(txHex)
+	}
+}
+
+//sendRawTransactionByCore 广播交易
+func (wm *WalletManager) sendRawTransactionByCore(txHex string) (string, error) {
 
 	request := []interface{}{
 		txHex,
@@ -1673,8 +1700,19 @@ func (wm *WalletManager) EstimateFee(inputs, outputs int64, feeRate decimal.Deci
 	return trx_fee, nil
 }
 
+
 //EstimateFeeRate 预估的没KB手续费率
 func (wm *WalletManager) EstimateFeeRate() (decimal.Decimal, error) {
+
+	if wm.config.RPCServerType == RPCServerExplorer {
+		return wm.estimateFeeRateByExplorer()
+	} else {
+		return wm.estimateFeeRateByCore()
+	}
+}
+
+//estimateFeeRateByCore 预估的没KB手续费率
+func (wm *WalletManager) estimateFeeRateByCore() (decimal.Decimal, error) {
 
 	defaultRate, _ := decimal.NewFromString("0.004")
 
@@ -1881,29 +1919,8 @@ func (wm *WalletManager) loadConfig() error {
 		return errors.New("Config is not setup. Please run 'wmd config -s <symbol>' ")
 	}
 
-	wm.config.serverAPI = c.String("apiURL")
-	wm.config.threshold, _ = decimal.NewFromString(c.String("threshold"))
-	wm.config.sumAddress = c.String("sumAddress")
-	wm.config.rpcUser = c.String("rpcUser")
-	wm.config.rpcPassword = c.String("rpcPassword")
-	wm.config.nodeInstallPath = c.String("nodeInstallPath")
-	wm.config.isTestNet, _ = c.Bool("isTestNet")
-	if wm.config.isTestNet {
-		wm.config.walletDataPath = c.String("testNetDataPath")
-	} else {
-		wm.config.walletDataPath = c.String("mainNetDataPath")
-	}
+	wm.LoadAssetsConfig(c)
 
-	cyclesec := c.String("cycleSeconds")
-	if cyclesec == "" {
-		return errors.New(fmt.Sprintf(" cycleSeconds is not set, sample: 1m , 30s, 3m20s etc... Please set it in './conf/%s.ini' \n", Symbol))
-	}
-
-	wm.config.cycleSeconds, _ = time.ParseDuration(cyclesec)
-
-	token := basicAuth(wm.config.rpcUser, wm.config.rpcPassword)
-
-	wm.walletClient = NewClient(wm.config.serverAPI, token, false)
 
 	return nil
 }
@@ -1983,23 +2000,31 @@ func (wm *WalletManager) cmdCall(cmd string, wait bool) error {
 
 func (wm *WalletManager) GenQtumAddress() (string, error){
 
-	prikey := [32]byte{0x95, 0x59, 0xdb, 0xab, 0xf4, 0xd0, 0xb9, 0xf8, 0xae, 0x9a, 0x09, 0x5c, 0x93, 0x0e, 0xed, 0xe9, 0x32, 0xa5, 0x14, 0x76, 0x51, 0x86, 0xf8, 0xeb, 0x6d, 0xc3, 0x61, 0x6d, 0xcd, 0xf6, 0x68, 0xdb}
+	//prikey := [32]byte{0x95, 0x59, 0xdb, 0xab, 0xf4, 0xd0, 0xb9, 0xf8, 0xae, 0x9a, 0x09, 0x5c, 0x93, 0x0e, 0xed, 0xe9, 0x32, 0xa5, 0x14, 0x76, 0x51, 0x86, 0xf8, 0xeb, 0x6d, 0xc3, 0x61, 0x6d, 0xcd, 0xf6, 0x68, 0xdb}
+
+	prikey := make([]byte, 32)
+	_, err := rand.Read(prikey)
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Printf("prikey: %s\n",hex.EncodeToString(prikey))
 
 	pubkey, _ := owcrypt.GenPubkey(prikey[:], owcrypt.ECC_CURVE_SECP256K1)
 
-	//fmt.Println(hex.EncodeToString(pubkey))
+	fmt.Printf("pubkey: %s\n",hex.EncodeToString(pubkey))
 
 	pubdata := append([]byte{0x04}, pubkey[:]...)
 
-	//fmt.Println(hex.EncodeToString(pubdata))
+	fmt.Printf("pubdata: %s\n",hex.EncodeToString(pubdata))
 
 	pubkeyHash := owcrypt.Hash(pubdata, 0, owcrypt.HASH_ALG_HASH160)
 
-	//fmt.Println(hex.EncodeToString(pubkeyHash))
+	fmt.Printf("pubkeyHash: %s\n",hex.EncodeToString(pubkeyHash))
 
 	address := addressEncoder.AddressEncode(pubkeyHash, addressEncoder.QTUM_mainnetAddressP2PKH)
 
-	fmt.Println(address)
+	fmt.Printf("address: %s\n",address)
 
 	return address, nil
 }
@@ -2039,10 +2064,10 @@ func (wm *WalletManager) SendToAddress(address,amount,comment string,subtractfee
 	}
 
 	//解锁钱包
-	err := wm.UnlockWallet(password, 120)
-	if err != nil {
-		return "", err
-	}
+	//err := wm.UnlockWallet(password, 120)
+	//if err != nil {
+	//	return "", err
+	//}
 
 	result, err := wm.walletClient.Call("sendtoaddress", request)
 	if err != nil {

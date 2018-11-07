@@ -16,6 +16,7 @@ package walletnode
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	s "strings"
@@ -111,18 +112,22 @@ func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 		return nil
 	}
 
+	if WNConfig.isTestNetCheck() == true && ctn_config.NOTESTNET == true {
+		return errors.New("!!!Fullnode does not support Testnet now!")
+	}
+
 	portBindings = map[nat.Port][]nat.PortBinding{}
 	for _, v := range ctn_config.PORT {
 		if WNConfig.isTestNet == "true" {
 			portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{HostIP: DockerAllowed, HostPort: v[2]}}
 			//exposedPorts[nat.Port(v[0])] = struct{}{}
-			if v[0] == ctn_config.RPCPORT {
+			if v[0] == ctn_config.APIPORT[0] {
 				RPCPort = v[2]
 			}
 		} else {
 			portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{HostIP: DockerAllowed, HostPort: v[1]}}
 			// exposedPorts[nat.Port(v[0])] = struct{}{}
-			if v[0] == ctn_config.RPCPORT {
+			if v[0] == ctn_config.APIPORT[0] {
 				RPCPort = v[1]
 			}
 		}

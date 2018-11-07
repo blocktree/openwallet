@@ -17,7 +17,7 @@ package openwallet
 
 import (
 	"github.com/blocktree/OpenWallet/crypto"
-	"github.com/blocktree/go-OWCBasedFuncs/owkeychain"
+	"github.com/blocktree/go-owcdrivers/owkeychain"
 	"github.com/btcsuite/btcutil/hdkeychain"
 )
 
@@ -46,13 +46,16 @@ type AssetsAccount struct {
 	PublicKey string   `json:"publicKey"`            //主公钥
 	OwnerKeys []string `json:"ownerKeys"`            //公钥数组，大于1为多签
 	//Owners          map[string]AccountOwner //拥有者列表, 账户公钥: 拥有者
-	ContractAddress string      `json:"contractAddress"` //多签合约地址
-	Required        uint64      `json:"required"`        //必要签名数
-	Symbol          string      `json:"symbol"`          //资产币种类别
-	AddressIndex    int         `json:"addressIndex"`
-	Balance         string      `json:"balance"`
-	IsTrust         bool        `json:"isTrust"` //是否托管密钥
-	core            interface{} //核心账户指针
+	ContractAddress string `json:"contractAddress"` //多签合约地址
+	Required        uint64 `json:"required"`        //必要签名数
+	Symbol          string `json:"symbol"`          //资产币种类别
+	AddressIndex    int    `json:"addressIndex"`
+	Balance         string `json:"balance"`
+	IsTrust         bool   `json:"isTrust"`   //是否托管密钥
+	ExtParam        string `json:"extParam"`  //扩展参数，用于调用智能合约，json结构
+	ModelType       uint64 `json:"modelType"` //模型类别, 1: utxo模型(BTC), 2: account模型（ETH），3: 账户别名模型(EOS)
+
+	core interface{} //核心账户指针
 }
 
 func NewMultiSigAccount(wallets []*Wallet, required uint, creator *Wallet) (*AssetsAccount, error) {

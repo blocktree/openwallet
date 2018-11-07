@@ -40,7 +40,7 @@ func TestNewOWTPAuthWithCertificate(t *testing.T) {
 	}
 	//t.Logf("localPublicKey: %v", auth.localPublicKey)
 	t.Logf("nodeID: %v", auth.LocalPID())
-	t.Logf("auth header: %v", auth.AuthHeader())
+	t.Logf("auth header: %v", auth.HTTPAuthHeader())
 }
 
 func TestCertificate(t *testing.T) {

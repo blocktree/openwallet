@@ -76,7 +76,7 @@ func TestGetBlock(t *testing.T) {
 }
 
 func TestGetTransaction(t *testing.T) {
-	raw, err := tw.GetTransaction("7768a6436475ed804344a3711e90e7f10f7db42da8918580c8b669dd63d64cc3")
+	raw, err := tw.GetTransaction("a991f44b917740a0de3765da26ff5904d6643560542a21b8e4dcf68e39c80a60")
 	if err != nil {
 		t.Errorf("GetTransaction failed unexpected error: %v\n", err)
 		return
@@ -95,8 +95,8 @@ func TestGetTxIDsInMemPool(t *testing.T) {
 
 func TestBTCBlockScanner_scanning(t *testing.T) {
 
-	accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
-	address := "miphUAzHHeM1VXGSFnw6owopsQW3jAQZAk"
+	//accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
+	//address := "miphUAzHHeM1VXGSFnw6owopsQW3jAQZAk"
 
 	//wallet, err := tw.GetWalletInfo(accountID)
 	//if err != nil {
@@ -111,7 +111,7 @@ func TestBTCBlockScanner_scanning(t *testing.T) {
 	bs.SetRescanBlockHeight(1384586)
 	//tw.SaveLocalNewBlock(1355030, "00000000000000125b86abb80b1f94af13a5d9b07340076092eda92dade27686")
 
-	bs.AddAddress(address, accountID)
+	//bs.AddAddress(address, accountID)
 
 	bs.ScanBlockTask()
 }
@@ -122,8 +122,8 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 		endRunning = make(chan bool, 1)
 	)
 
-	accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
-	address := "mpkUFiXonEZriywHUhig6PTDQXKzT6S5in"
+	//accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
+	//address := "mpkUFiXonEZriywHUhig6PTDQXKzT6S5in"
 
 	//wallet, err := tw.GetWalletInfo(accountID)
 	//if err != nil {
@@ -137,7 +137,7 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 
 	bs.SetRescanBlockHeight(1384586)
 
-	bs.AddAddress(address, accountID)
+	//bs.AddAddress(address, accountID)
 
 	bs.Run()
 

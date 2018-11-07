@@ -11,7 +11,7 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/manager"
 	"github.com/blocktree/OpenWallet/openwallet"
-	owcrypt "github.com/blocktree/go-OWCrypt"
+	owcrypt "github.com/blocktree/go-owcrypt"
 	"github.com/bytom/common"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -44,7 +44,7 @@ func NewEthTestConfig() *manager.Config {
 }
 
 func TestFrameWalletManager_CreateWallet() {
-	w := &openwallet.Wallet{Alias: "MAI", IsTrust: true, Password: "12345678"}
+	w := &openwallet.Wallet{Alias: "framepeter", IsTrust: true, Password: "12345678"}
 	nw, key, err := tm.CreateWallet(testApp, w)
 	if err != nil {
 		log.Error(err)
@@ -57,12 +57,12 @@ func TestFrameWalletManager_CreateWallet() {
 
 func TestWalletManager_CreateAssetsAccount() {
 
-	walletID := "W6EZ35wMPeYG7QJjVTpU6heCE4AxmkVzJd" //"WFPHAs2uyeHcfBzKF4vN4NkMpArX8wkCxp"
+	walletID := "W9cRnfgyZ7T4imjbQuiafz6Ca5aUf8qJRJ" //"WFPHAs2uyeHcfBzKF4vN4NkMpArX8wkCxp"
 
 	//account := &openwallet.AssetsAccount{Alias: "Tim", WalletID: walletID, Required: 1, Symbol: "BTC", IsTrust: true}
 	//account, err := tm.CreateAssetsAccount(testApp, walletID, "12345678", account, nil)
 	account := &openwallet.AssetsAccount{Alias: "Alice", WalletID: walletID, Required: 1, Symbol: "ETH", IsTrust: true}
-	account,_, err := tm.CreateAssetsAccount(testApp, walletID, "12345678", account, nil)
+	account, _, err := tm.CreateAssetsAccount(testApp, walletID, "12345678", account, nil)
 	if err != nil {
 		log.Error(err)
 		return
@@ -74,9 +74,9 @@ func TestWalletManager_CreateAssetsAccount() {
 }
 
 func TestFrameWalletManager_CreateAddress() {
-	walletID := "W6EZ35wMPeYG7QJjVTpU6heCE4AxmkVzJd" //"WFPHAs2uyeHcfBzKF4vN4NkMpArX8wkCxp"
+	walletID := "W9cRnfgyZ7T4imjbQuiafz6Ca5aUf8qJRJ" //"WFPHAs2uyeHcfBzKF4vN4NkMpArX8wkCxp"
 	//accountID := "KhJdnr4UJLdbeQcMvZgedyYykRVTdLaMLbsV2mx3GZiMva9Kfb"
-	accountID := "KaszkQZb2xsaNuW5UoAukhM5MhzAqtPBWYTwkk4m2QhtDYN9E8" //"L77QWWMRhsKMiArgaMTiVaxa6knz2Wo2eNk5F3Bw764XeDyq3T"
+	accountID := "4mNzv15wSPeUgqfw2Y4UieRJzUoJJMS9DM1L136gxFMZ" //"L77QWWMRhsKMiArgaMTiVaxa6knz2Wo2eNk5F3Bw764XeDyq3T"
 	address, err := tm.CreateAddress(testApp, walletID, accountID, 1)
 	if err != nil {
 		log.Error(err)
@@ -193,8 +193,8 @@ func TestSendRawTransaction() {
 	//pssword:12345678
 	//from:2d3a164eD8019d3111b0726399a6a9B10F05a8e6
 	//to:5813387dE3fAF2012a8D63580A23090Eca337f61
-	manager := &ethereum.WalletManager{}
-	raw, err := signOWEIP155("W6EZ35wMPeYG7QJjVTpU6heCE4AxmkVzJd", "12345678", "428cc834ac78043050cf7245dee433aed9d884a8", "0x584a9ed7f95cd04337df791fac32bed88e13b77a", 4)
+	manager, _ := GetEthWalletManager()
+	raw, err := signOWEIP155("W9wpMYxZNB1tRc64dHFuGswBh6NavpJMg8", "12345678", "31ab40e917f646581be5f0d3112d2b06366ce8ce", "0x584a9ed7f95cd04337df791fac32bed88e13b77a", 0)
 	if err != nil {
 		log.Error("signOWEIP155 failed, err=", err)
 		return
@@ -325,3 +325,75 @@ func signOWEIP155(walletID string, password string, from string, to string, nonc
 	//fmt.Println("signature:",)
 	return raw, nil
 }*/
+
+func TestTokenBalance() {
+	manager, _ := GetEthWalletManager()
+
+	addrs := []ethereum.AddrBalanceInf{
+		&ethereum.AddrBalance{Address: "0x50068fD632c1A6e6c5bD407b4cCf8861A589E776", Index: 0},
+		&ethereum.AddrBalance{Address: "0x2A63B2203955b84FefE52BAca3881b3614991b34", Index: 1},
+		&ethereum.AddrBalance{Address: "0x584a9Ed7f95Cd04337df791Fac32bED88E13b77a", Index: 2},
+		&ethereum.AddrBalance{Address: "0xdb9a569f7b80030956dc9686b89D5fF15922E175", Index: 3},
+	}
+
+	err := manager.GetTokenBalanceByAddress("0x8847E5F841458ace82dbb0692C97115799fe28d3", addrs...)
+	if err != nil {
+		log.Errorf("get token balance by address failed, err=%v", err)
+		return
+	}
+	objStr, _ := json.MarshalIndent(addrs, "", " ")
+	log.Debugf("balance list:%v", string(objStr))
+}
+
+func TestGetBalanceByAddress() {
+	manager, _ := GetEthWalletManager()
+	addrs := []string{
+		"0x50068fD632c1A6e6c5bD407b4cCf8861A589E776",
+		"0x2A63B2203955b84FefE52BAca3881b3614991b34",
+		"0x584a9Ed7f95Cd04337df791Fac32bED88E13b77a",
+		"0xdb9a569f7b80030956dc9686b89D5fF15922E175",
+	}
+
+	balanceList, err := manager.Blockscanner.GetBalanceByAddress(addrs...)
+	if err != nil {
+		log.Errorf("get token balance by address failed, err=%v", err)
+		return
+	}
+
+	objStr, _ := json.MarshalIndent(balanceList, "", " ")
+	log.Debugf("balance list:%v", string(objStr))
+}
+
+func TestGetTxByHash() {
+	manager, _ := GetEthWalletManager()
+	tx, err := manager.WalletClient.EthGetTransactionByHash("0x5b1bf99b02d3e8463aa03dde28bea3b6d04be55d098dbe67a49e715b8c3be313")
+	if err != nil {
+		log.Errorf("eth get transaction by hash failed, err=%v", err)
+		return
+	}
+	objStr, _ := json.MarshalIndent(tx, "", " ")
+	log.Debugf("tx:%v", string(objStr))
+}
+
+func TestTokenDecode() {
+	manager, _ := GetEthWalletManager()
+
+	contract := openwallet.SmartContract{
+		Address:  "0x8847E5F841458ace82dbb0692C97115799fe28d3",
+		Decimals: 3,
+	}
+	addrs := []string{
+		"0x50068fD632c1A6e6c5bD407b4cCf8861A589E776",
+		"0x2A63B2203955b84FefE52BAca3881b3614991b34",
+		"0x584a9Ed7f95Cd04337df791Fac32bED88E13b77a",
+		"0xdb9a569f7b80030956dc9686b89D5fF15922E175",
+	}
+	balanceList, err := manager.ContractDecoder.GetTokenBalanceByAddress(contract, addrs...)
+	if err != nil {
+		log.Errorf("get token balance by address failed, err=%v", err)
+		return
+	}
+
+	objStr, _ := json.MarshalIndent(balanceList, "", " ")
+	log.Debugf("balance list:%v", string(objStr))
+}

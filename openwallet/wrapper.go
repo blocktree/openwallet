@@ -16,16 +16,18 @@
 package openwallet
 
 import (
-	"github.com/asdine/storm"
-	"github.com/coreos/bbolt"
 	"sync"
 	"time"
+
+	"github.com/asdine/storm"
+	"github.com/coreos/bbolt"
 )
 
 type WrapperSourceFile string
 
 // Wrapper 基于OpenWallet钱包体系模型，专门处理钱包的持久化问题，关系数据查询
 type Wrapper struct {
+	WalletDAIBase
 	sourceDB     *StormDB     //存储钱包相关数据的数据库，目前使用boltdb作为持久方案
 	mu           sync.RWMutex //锁
 	isExternalDB bool         //是否外部加载的数据库，非内部打开，内部打开需要关闭
@@ -76,6 +78,7 @@ func (wrapper *Wrapper) OpenStormDB() (*StormDB, error) {
 		return wrapper.sourceDB, nil
 	}
 
+	//log.Debugf("sourceFile :%v", wrapper.sourceFile)
 	db, err = OpenStormDB(
 		wrapper.sourceFile,
 		storm.BoltOptions(0600, &bolt.Options{Timeout: 3 * time.Second}),

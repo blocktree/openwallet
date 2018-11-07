@@ -29,7 +29,8 @@ func createTransaction(walletID, accountID, to string) (*openwallet.RawTransacti
 		return nil, err
 	}
 
-	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "0.005", to, "0.002", "")
+	rawTx, err := tm.CreateTransaction(testApp, walletID, accountID, "0.1", to, "0.1", "", nil)
+
 	if err != nil {
 		log.Error("CreateTransaction failed, unexpected error:", err)
 		return nil, err
@@ -40,9 +41,9 @@ func createTransaction(walletID, accountID, to string) (*openwallet.RawTransacti
 
 func TestWalletManager_CreateTransaction(t *testing.T) {
 
-	walletID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
-	accountID := "JYCcXtC18vnd1jbcJX47msDFbQMBDNjsq3xbvvK6qCHKAAqoQq"
-	to := "QjPGf82YKxygtr7H2Tm9A8P7ETBsWG2ih9"
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
+	to := "d35f9Ea14D063af9B3567064FAB567275b09f03D"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
 
@@ -54,11 +55,84 @@ func TestWalletManager_CreateTransaction(t *testing.T) {
 
 }
 
+func TestWalletManager_CreateQrc20TokenTransaction(t *testing.T) {
+	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
+	accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
+	to := "qYHPRYDUNq6ScqbweP5Cawnyp566VWBfUi"
+	feeRate := "0.00000040"
+	contractAddr := "91a6081095ef860d28874c9db613e7a4107b0281"
+	tokenName := "QRC ZB TEST"
+	tokeSymbol := "QZTC"
+	var tokenDecimal uint64 = 8
+
+	err := tm.RefreshAssetsAccountBalance(testApp, accountID)
+	if err != nil {
+		log.Error("RefreshAssetsAccountBalance failed, unexpected error:", err)
+	}
+
+	rawTx, err := tm.CreateQrc20TokenTransaction(testApp, walletID, accountID,"0.4", to, feeRate,"",contractAddr, tokenName, tokeSymbol, tokenDecimal)
+	if err != nil {
+		log.Error("CreateQrc20TokenTransaction failed, unexpected error:", err)
+	}else {
+		log.Info("rawTx:", rawTx)
+	}
+}
+
+func TestWalletManager_SendQrc20TokenTransaction(t *testing.T) {
+	walletID := "WBiuSsYdPgzZhLSMkAA7XYQuKUgsb6DQgJ"
+	accountID := "HYZs6qySNUCj5w1Px7Btm1VF1TLkFvhGcL1FTN9gTUz"
+	to := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
+	feeRate := "0.01"
+	contractAddr := "0x91a6081095ef860d28874c9db613e7a4107b0281"
+	tokenName := "QRC ZB TEST"
+	tokeSymbol := "QZTC"
+	var tokenDecimal uint64 = 8
+
+	err := tm.RefreshAssetsAccountBalance(testApp, accountID)
+	if err != nil {
+		log.Error("RefreshAssetsAccountBalance failed, unexpected error:", err)
+	}
+
+	rawTx, err := tm.CreateQrc20TokenTransaction(testApp, walletID, accountID,"1", to, feeRate,"",contractAddr, tokenName, tokeSymbol, tokenDecimal)
+	if err != nil {
+		log.Error("CreateQrc20TokenTransaction failed, unexpected error:", err)
+		return
+	}else {
+		log.Info("rawTx:", rawTx)
+	}
+
+	log.Info("rawTx unsigned:", rawTx.RawHex)
+
+	_, err = tm.SignTransaction(testApp, walletID, accountID, "12345678", rawTx)
+	if err != nil {
+		log.Error("SignTransaction failed, unexpected error:", err)
+		return
+	}
+
+	log.Info("rawTx.Signatures:", rawTx.Signatures)
+
+	_, err = tm.VerifyTransaction(testApp, walletID, accountID, rawTx)
+	if err != nil {
+		log.Error("VerifyTransaction failed, unexpected error:", err)
+		return
+	}
+
+	log.Info("rawTx signed:", rawTx.RawHex)
+
+	tx, err := tm.SubmitTransaction(testApp, walletID, accountID, rawTx)
+	if err != nil {
+		log.Error("SubmitTransaction failed, unexpected error:", err)
+		return
+	}
+	log.Info("wxID:", tx.WxID)
+	log.Info("txID:", rawTx.TxID)
+}
+
 func TestWalletManager_SignTransaction(t *testing.T) {
 
-	walletID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
-	accountID := "JYCcXtC18vnd1jbcJX47msDFbQMBDNjsq3xbvvK6qCHKAAqoQq"
-	to := "QjPGf82YKxygtr7H2Tm9A8P7ETBsWG2ih9"
+	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
+	accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
+	to := "qYHPRYDUNq6ScqbweP5Cawnyp566VWBfUi"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
 	if err != nil {
@@ -77,9 +151,9 @@ func TestWalletManager_SignTransaction(t *testing.T) {
 
 func TestWalletManager_VerifyTransaction(t *testing.T) {
 
-	walletID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
-	accountID := "JYCcXtC18vnd1jbcJX47msDFbQMBDNjsq3xbvvK6qCHKAAqoQq"
-	to := "QjPGf82YKxygtr7H2Tm9A8P7ETBsWG2ih9"
+	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
+	accountID := "HCkvzSiWd4CLvRbkwUMzsjvydgRmGEbohrPPJTDy3PQb"
+	to := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
 	if err != nil {
@@ -106,9 +180,9 @@ func TestWalletManager_VerifyTransaction(t *testing.T) {
 
 func TestWalletManager_SubmitTransaction(t *testing.T) {
 
-	walletID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
-	accountID := "JYCcXtC18vnd1jbcJX47msDFbQMBDNjsq3xbvvK6qCHKAAqoQq"
-	to := "QWM5VccpAt5BwGFsxq7aVwFshQvADhvkDm"
+	walletID := "WBiuSsYdPgzZhLSMkAA7XYQuKUgsb6DQgJ"
+	accountID := "HYZs6qySNUCj5w1Px7Btm1VF1TLkFvhGcL1FTN9gTUz"
+	to := "qVT4jAoQDJ6E4FbjW1HPcwgXuF2ZdM2CAP"
 
 	rawTx, err := createTransaction(walletID, accountID, to)
 	if err != nil {
@@ -123,7 +197,7 @@ func TestWalletManager_SubmitTransaction(t *testing.T) {
 		return
 	}
 
-	//log.Info("rawTx.Signatures:", rawTx.Signatures)
+	log.Info("rawTx.Signatures:", rawTx.Signatures)
 
 	_, err = tm.VerifyTransaction(testApp, walletID, accountID, rawTx)
 	if err != nil {
@@ -133,12 +207,12 @@ func TestWalletManager_SubmitTransaction(t *testing.T) {
 
 	log.Info("rawTx signed:", rawTx.RawHex)
 
-	_, err = tm.SubmitTransaction(testApp, walletID, accountID, rawTx)
+	tx, err := tm.SubmitTransaction(testApp, walletID, accountID, rawTx)
 	if err != nil {
 		log.Error("SubmitTransaction failed, unexpected error:", err)
 		return
 	}
-
+	log.Info("wxID:", tx.WxID)
 	log.Info("txID:", rawTx.TxID)
 }
 
@@ -195,4 +269,56 @@ func TestWalletManager_ExtractUTXO(t *testing.T) {
 		log.Info("ExtractUTXO[", i, "] :", tx)
 	}
 
+}
+
+func TestWalletManager_GetTransactionByWxID(t *testing.T) {
+	wxID := openwallet.GenTransactionWxID(&openwallet.Transaction{
+		TxID: "bfa6febb33c8ddde9f7f7b4d93043956cce7e0f4e95da259a78dc9068d178fee",
+		Coin: openwallet.Coin{
+			Symbol: "LTC",
+			IsContract: false,
+			ContractID: "",
+		},
+	})
+	log.Info("wxID:", wxID)
+	//"D0+rxcKSqEsFMfGesVzBdf6RloM="
+	tx, err := tm.GetTransactionByWxID(testApp, wxID)
+	if err != nil {
+		log.Error("GetTransactionByTxID failed, unexpected error:", err)
+		return
+	}
+	log.Info("tx:", tx)
+}
+
+func TestWalletManager_GetAssetsAccountBalance(t *testing.T) {
+
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
+
+	balance, err := tm.GetAssetsAccountBalance(testApp, walletID, accountID)
+	if err != nil {
+		log.Error("GetAssetsAccountBalance failed, unexpected error:", err)
+		return
+	}
+	log.Info("balance:", balance)
+}
+
+func TestWalletManager_GetAssetsAccountTokenBalance(t *testing.T) {
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
+
+	contract := openwallet.SmartContract{
+		Address:  "0x4092678e4E78230F46A1534C0fbc8fA39780892B",
+		Symbol:   "ETH",
+		Name:     "OCoin",
+		Token:    "OCN",
+		Decimals: 18,
+	}
+
+	balance, err := tm.GetAssetsAccountTokenBalance(testApp, walletID, accountID, contract)
+	if err != nil {
+		log.Error("GetAssetsAccountTokenBalance failed, unexpected error:", err)
+		return
+	}
+	log.Info("balance:", balance.Balance)
 }

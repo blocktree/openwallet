@@ -158,3 +158,15 @@ func (nm *NodeManager) RemoveNodeFlow(symbol string) error {
 
 	return nil
 }
+
+func (nm *NodeManager) LogsNodeFlow(symbol string) error {
+	wn := WalletnodeManager{}
+
+	if err := wn.LogsWalletnode(symbol); err != nil {
+		return err
+	} else {
+		fmt.Printf("%s walletnode logs in success!\n", symbol)
+	}
+
+	return nil
+}

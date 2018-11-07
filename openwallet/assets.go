@@ -17,91 +17,56 @@ package openwallet
 
 //Coin 币种信息
 type Coin struct {
-	Symbol     string `json:"symbol"`
-	IsContract bool   `json:"isContract"`
-	ContractID string `json:"contractID"`
+	Symbol     string        `json:"symbol"`
+	IsContract bool          `json:"isContract"`
+	ContractID string        `json:"contractID"`
+	Contract   SmartContract `json:"contract"`
 }
 
-//资产类型
-type Assets struct {
-	Symbol string
-	//代币
-	Tokens []*Assets
+// AssetsAdapter 资产适配器接口
+// 适配OpenWallet钱包体系的抽象接口
+type AssetsAdapter interface {
+
+	//币种信息
+	SymbolInfo
+
+	//配置
+	AssetsConfig
+
+	//GetAddressDecode 地址解析器
+	GetAddressDecode() AddressDecoder
+
+	//GetTransactionDecoder 交易单解析器
+	GetTransactionDecoder() TransactionDecoder
+
+	//GetBlockScanner 获取区块链扫描器
+	GetBlockScanner() BlockScanner
+
+	//GetSmartContractDecoder 获取智能合约解析器
+	GetSmartContractDecoder() SmartContractDecoder
 }
 
-//AssetsInferface 是一个给钱包调用资产的抽象接口
-type AssetsInferface interface {
-	//Deposit 返回钱包对该资产的充值地址
-	Deposit() []byte
-	//Transfer 转账amount数量，to目标地址
-	Transfer(amount uint, to []byte) Transaction
-	//GetBalance 获取资产
-	GetBalance() uint
-	//资产ABI
-	ContractABI() string
-	//资产的合约地址
-	ContractAddress() []byte
-	//资产名字
-	Name() string
-	//Init 初始化资产控制器
-	Init(w *Wallet, app interface{})
-	//DeployMultiSigWallet 部署多重签名钱包
-	DeployMultiSigWallet(by Wallet) []byte
-	//Boardcast 广播交易
-	Boardcast(tx Transaction) []byte
-	//MethodMapping() map[string]func()
+type AssetsAdapterBase struct {
+	SymbolInfoBase
+	AssetsConfigBase
 }
 
-//AssetsController 资产控制器基类
-type AssetsController struct {
-
-	//钱包
-	Wallet *Wallet
-	//主体控制器
-	AppController interface{}
+//GetAddressDecode 地址解析器
+func (a *AssetsAdapterBase) GetAddressDecode() AddressDecoder {
+	return nil
 }
 
-//Init 初始化资产控制器
-func (a *AssetsController) Init(w *Wallet, app interface{}) {
-
+//GetTransactionDecoder 交易单解析器
+func (a *AssetsAdapterBase) GetTransactionDecoder() TransactionDecoder {
+	return nil
 }
 
-//DeployMultiSigWallet 部署多重签名钱包
-func (a *AssetsController) DeployMultiSigWallet(by Wallet) []byte {
-	return []byte{}
+//GetBlockScanner 获取区块链扫描器
+func (a *AssetsAdapterBase) GetBlockScanner() BlockScanner {
+	return nil
 }
 
-//Deposit 返回钱包对该资产的充值地址
-func (a *AssetsController) Deposit() []byte {
-	return []byte{}
-}
-
-//Transfer 转账amount数量，to目标地址
-func (a *AssetsController) Transfer(amount uint, to []byte) Transaction {
-	return Transaction{}
-}
-
-//GetBalance 获取资产
-func (a *AssetsController) GetBalance() uint {
-	return 0
-}
-
-//资产ABI
-func (a *AssetsController) ContractABI() string {
-	return ""
-}
-
-//资产的合约地址
-func (a *AssetsController) ContractAddress() []byte {
-	return []byte{}
-}
-
-//资产名字
-func (a *AssetsController) Name() string {
-	return ""
-}
-
-//Boardcast 广播交易
-func (a *AssetsController) Boardcast(tx Transaction) []byte {
-	return []byte{}
+//GetBlockScanner 获取智能合约解析器
+func (a *AssetsAdapterBase) GetSmartContractDecoder() SmartContractDecoder {
+	return nil
 }

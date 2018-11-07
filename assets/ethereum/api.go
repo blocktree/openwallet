@@ -25,9 +25,12 @@ import (
 	"strconv"
 	"strings"
 
+	"time"
+
 	tool "github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/logger"
+	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/bytom/common"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -47,17 +50,6 @@ type Response struct {
 	Version string      `json:"jsonrpc"`
 	Result  interface{} `json:"result"`
 }
-
-const (
-	ETH_GET_TOKEN_BALANCE_METHOD      = "0x70a08231"
-	ETH_TRANSFER_TOKEN_BALANCE_METHOD = "0xa9059cbb"
-)
-
-const (
-	SOLIDITY_TYPE_ADDRESS = "address"
-	SOLIDITY_TYPE_UINT256 = "uint256"
-	SOLIDITY_TYPE_UINT160 = "uint160"
-)
 
 /*
 1. eth block example
@@ -105,12 +97,21 @@ const (
 type EthBlock struct {
 	BlockHeader
 	Transactions []BlockTransaction `json:"transactions"`
-	blockHeight  *big.Int
+}
+
+func (this *EthBlock) CreateOpenWalletBlockHeader() *openwallet.BlockHeader {
+	header := &openwallet.BlockHeader{
+		Hash:              this.BlockHash,
+		Previousblockhash: this.PreviousHash,
+		Height:            this.blockHeight,
+		Time:              uint64(time.Now().Unix()),
+	}
+	return header
 }
 
 func (this *EthBlock) Init() error {
 	var err error
-	this.blockHeight, err = ConvertToBigInt(this.BlockNumber, 16) //strconv.ParseUint(this.BlockNumber, 16, 64)
+	this.blockHeight, err = strconv.ParseUint(removeOxFromHex(this.BlockNumber), 16, 64) //ConvertToBigInt(this.BlockNumber, 16) //
 	if err != nil {
 		openwLogger.Log.Errorf("init blockheight failed, err=%v", err)
 		return err
@@ -136,6 +137,7 @@ func (this *TxpoolContent) GetSequentTxNonce(addr string) (uint64, uint64, uint6
 		return 0, 0, 0, nil
 	}*/
 	for theAddr, _ := range txpool {
+		//log.Debugf("theAddr:%v, addr:%v", strings.ToLower(theAddr), strings.ToLower(addr))
 		if strings.ToLower(theAddr) == strings.ToLower(addr) {
 			target = txpool[theAddr]
 		}
@@ -240,6 +242,35 @@ func (this *Client) ethGetTxPoolContent() (*TxpoolContent, error) {
 	return &txpool, nil
 }
 
+func (this *Client) ethGetTransactionReceipt(transactionId string) (*EthTransactionReceipt, error) {
+	params := []interface{}{
+		transactionId,
+	}
+
+	var txReceipt EthTransactionReceipt
+	result, err := this.Call("eth_getTransactionReceipt", 1, params)
+	if err != nil {
+		//errInfo := fmt.Sprintf("get block[%v] failed, err = %v \n", blockNumStr,  err)
+		log.Errorf("get tx[%v] receipt failed, err = %v \n", transactionId, err)
+		return nil, err
+	}
+
+	if result.Type != gjson.JSON {
+		errInfo := fmt.Sprintf("get tx[%v] receipt result type failed, result type is %v", transactionId, result.Type)
+		log.Errorf(errInfo)
+		return nil, errors.New(errInfo)
+	}
+
+	err = json.Unmarshal([]byte(result.Raw), &txReceipt)
+	if err != nil {
+		log.Errorf("decode json [%v] failed, err=%v", []byte(result.Raw), err)
+		return nil, err
+	}
+
+	return &txReceipt, nil
+
+}
+
 func (this *Client) ethGetBlockSpecByHash(blockHash string, showTransactionSpec bool) (*EthBlock, error) {
 	params := []interface{}{
 		blockHash,
@@ -274,6 +305,35 @@ func (this *Client) ethGetBlockSpecByHash(blockHash string, showTransactionSpec 
 	return &ethBlock, nil
 }
 
+func (this *Client) EthGetTransactionByHash(txid string) (*BlockTransaction, error) {
+	params := []interface{}{
+		appendOxToAddress(txid),
+	}
+
+	var tx BlockTransaction
+
+	result, err := this.Call("eth_getTransactionByHash", 1, params)
+	if err != nil {
+		//errInfo := fmt.Sprintf("get block[%v] failed, err = %v \n", blockNumStr,  err)
+		log.Errorf("get transaction[%v] failed, err = %v \n", appendOxToAddress(txid), err)
+		return nil, err
+	}
+
+	if result.Type != gjson.JSON {
+		errInfo := fmt.Sprintf("get transaction[%v] result type failed, result type is %v", appendOxToAddress(txid), result.Type)
+		log.Errorf(errInfo)
+		return nil, errors.New(errInfo)
+	}
+
+	err = json.Unmarshal([]byte(result.Raw), &tx)
+	if err != nil {
+		openwLogger.Log.Errorf("decode json [%v] failed, err=%v", result.Raw, err)
+		return nil, err
+	}
+
+	return &tx, nil
+}
+
 func (this *Client) ethGetBlockSpecByBlockNum2(blockNum string, showTransactionSpec bool) (*EthBlock, error) {
 	params := []interface{}{
 		blockNum,
@@ -288,9 +348,13 @@ func (this *Client) ethGetBlockSpecByBlockNum2(blockNum string, showTransactionS
 		return nil, err
 	}
 
-	err = json.Unmarshal([]byte(result.Raw), &ethBlock)
+	if showTransactionSpec {
+		err = json.Unmarshal([]byte(result.Raw), &ethBlock)
+	} else {
+		err = json.Unmarshal([]byte(result.Raw), &ethBlock.BlockHeader)
+	}
 	if err != nil {
-		openwLogger.Log.Errorf("decode json [%v] failed, err=%v", err)
+		openwLogger.Log.Errorf("decode json [%v] failed, err=%v", result.Raw, err)
 		return nil, err
 	}
 
@@ -302,8 +366,8 @@ func (this *Client) ethGetBlockSpecByBlockNum2(blockNum string, showTransactionS
 	return &ethBlock, nil
 }
 
-func (this *Client) ethGetBlockSpecByBlockNum(blockNum *big.Int, showTransactionSpec bool) (*EthBlock, error) {
-	blockNumStr := "0x" + blockNum.Text(16)
+func (this *Client) ethGetBlockSpecByBlockNum(blockNum uint64, showTransactionSpec bool) (*EthBlock, error) {
+	blockNumStr := "0x" + strconv.FormatUint(blockNum, 16)
 	return this.ethGetBlockSpecByBlockNum2(blockNumStr, showTransactionSpec)
 }
 
@@ -311,7 +375,7 @@ func (this *Client) ethGetTxpoolStatus() (uint64, uint64, error) {
 	result, err := this.Call("txpool_status", 1, nil)
 	if err != nil {
 		//errInfo := fmt.Sprintf("get block[%v] failed, err = %v \n", blockNumStr,  err)
-		openwLogger.Log.Errorf("get block[%v] failed, err = %v \n", err)
+		//openwLogger.Log.Errorf("get block[%v] failed, err = %v \n", err)
 		return 0, 0, err
 	}
 
@@ -378,7 +442,7 @@ func makeTransactionData(methodId string, params []SolidityParam) (string, error
 				return "", errors.New("integer overflow.")
 			}
 			param = makeRepeatString("0", uint(64-l)) + param
-			fmt.Println("makeTransactionData intParam:", intParam.String(), " param:", param)
+			//fmt.Println("makeTransactionData intParam:", intParam.String(), " param:", param)
 		} else {
 			return "", errors.New("not support solidity type")
 		}
@@ -388,7 +452,10 @@ func makeTransactionData(methodId string, params []SolidityParam) (string, error
 	return data, nil
 }
 
-func (this *Client) ERC20GetAddressBalance(address string, contractAddr string) (*big.Int, error) {
+func (this *Client) ERC20GetAddressBalance2(address string, contractAddr string, sign string) (*big.Int, error) {
+	if sign != "latest" && sign != "pending" {
+		return nil, errors.New("unknown sign was put through.")
+	}
 
 	var funcParams []SolidityParam
 	funcParams = append(funcParams, SolidityParam{
@@ -426,13 +493,21 @@ func (this *Client) ERC20GetAddressBalance(address string, contractAddr string) 
 		return big.NewInt(0), errors.New(errInfo)
 	}
 	return balance, nil
+
 }
 
-func (this *Client) GetAddrBalance(address string) (*big.Int, error) {
+func (this *Client) ERC20GetAddressBalance(address string, contractAddr string) (*big.Int, error) {
+	return this.ERC20GetAddressBalance2(address, contractAddr, "pending")
+}
+
+func (this *Client) GetAddrBalance2(address string, sign string) (*big.Int, error) {
+	if sign != "latest" && sign != "pending" {
+		return nil, errors.New("unknown sign was put through.")
+	}
 
 	params := []interface{}{
 		appendOxToAddress(address),
-		"pending",
+		sign,
 	}
 	result, err := this.Call("eth_getBalance", 1, params)
 	if err != nil {
@@ -454,6 +529,10 @@ func (this *Client) GetAddrBalance(address string) (*big.Int, error) {
 	return balance, nil
 }
 
+func (this *Client) GetAddrBalance(address string) (*big.Int, error) {
+	return this.GetAddrBalance2(address, "pending")
+}
+
 func appendOxToAddress(addr string) string {
 	if strings.Index(addr, "0x") == -1 {
 		return "0x" + addr
@@ -465,9 +544,9 @@ func signEthTransaction(priKey []byte, toAddr string, amount *big.Int, nonce uin
 	var err error
 	signer := types.NewEIP155Signer(big.NewInt(int64(chainId)))
 	tx := types.NewTransaction(nonce, ethcommon.HexToAddress(toAddr),
-		amount, fee.GasLimit.Uint64(), fee.GasPrice, []byte(data))
-	msg := signer.Hash(tx)
+		amount, fee.GasLimit.Uint64(), fee.GasPrice, common.FromHex(data))
 
+	msg := signer.Hash(tx)
 	sig, err := secp256k1.Sign(msg[:], priKey)
 	if err != nil {
 		log.Error("secp256k1.Sign failed, err=", err)
@@ -548,6 +627,7 @@ func makeERC20TokenTransData(contractAddr string, toAddr string, amount *big.Int
 		openwLogger.Log.Errorf("make transaction data failed, err = %v", err)
 		return "", err
 	}
+	log.Debugf("data:%v", data)
 	return data, nil
 }
 
@@ -796,23 +876,23 @@ func (this *Client) ethGetAccounts() ([]string, error) {
 	return accounts, nil
 }
 
-func (this *Client) ethGetBlockNumber() (*big.Int, error) {
+func (this *Client) ethGetBlockNumber() (uint64, error) {
 	param := make([]interface{}, 0)
 	result, err := this.Call("eth_blockNumber", 1, param)
 	if err != nil {
 		openwLogger.Log.Errorf("get block number faield, err = %v \n", err)
-		return nil, err
+		return 0, err
 	}
 
 	if result.Type != gjson.String {
 		openwLogger.Log.Errorf("result of block number type error")
-		return nil, errors.New("result of block number type error")
+		return 0, errors.New("result of block number type error")
 	}
 
-	blockNum, err := ConvertToBigInt(result.String(), 16)
+	blockNum, err := ConvertToUint64(result.String(), 16)
 	if err != nil {
 		openwLogger.Log.Errorf("parse block number to big.Int failed, err=%v", err)
-		return nil, err
+		return 0, err
 	}
 
 	return blockNum, nil

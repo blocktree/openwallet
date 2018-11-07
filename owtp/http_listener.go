@@ -16,24 +16,22 @@
 package owtp
 
 import (
+	"context"
 	"fmt"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/pkg/errors"
 	"net"
 	"net/http"
-	"context"
 )
-
-
-
 
 //owtp监听器
 type httpListener struct {
 	net.Listener
-	handler  PeerHandler
-	closed   chan struct{}
-	incoming chan Peer
-	laddr    string
+	handler   PeerHandler
+	closed    chan struct{}
+	incoming  chan Peer
+	laddr     string
+	peerstore Peerstore //节点存储器
 }
 
 //serve 监听服务
@@ -58,26 +56,29 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	//创建一个上下文通知，监控节点是否已经关闭
 	ctx, cancel := context.WithCancel(context.Background())
 
-	var cnCh <-chan bool
-	if cn, ok := w.(http.CloseNotifier); ok {
-		cnCh = cn.CloseNotify()
-	}
+	//var cnCh <-chan bool
+	//if cn, ok := w.(http.CloseNotifier); ok {
+	//	cnCh = cn.CloseNotify()
+	//}
 
-	auth, err := NewOWTPAuthWithHTTPHeader(r.Header)
-	if err != nil {
-		log.Debug("NewOWTPAuth unexpected error:", err)
-		http.Error(w, "Failed to upgrade websocket", 400)
+	httpCtx := r.Context()
+
+	header := r.Header
+	if header == nil {
+		log.Debug("header is nil")
+		http.Error(w, "Header is nil", 400)
 		return
 	}
 
-	log.Debug("NewOWTPAuth successfully")
+	var err error
 
-	peer, err := NewHTTPClient(auth.RemotePID(), w,r, l.handler, auth, cancel)
+	peer, err := NewHTTPClientWithHeader(header, w, r, l.handler, cancel)
 	if err != nil {
 		log.Debug("NewClient unexpected error:", err)
 		http.Error(w, "authorization not passed", 401)
 		return
 	}
+
 	// Just to make sure.
 	//defer peer.Close()
 
@@ -88,20 +89,22 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case <-l.closed:
 		//peer.Close()
 		return
-	case <-cnCh:
+	//case <-cnCh:
+	case <-httpCtx.Done():
 		log.Debug("http CloseNotify")
 		return
 	}
 
 	// wait until conn gets closed, otherwise the handler closes it early
 	select {
-	case <-ctx.Done():	//收到节点关闭的通知
+	case <-ctx.Done(): //收到节点关闭的通知
 		//log.Debug("peer 1:", peer.PID(), "closed")
 		return
 	case <-l.closed:
 		//log.Debug("peer 2:", peer.PID(), "closed")
 		peer.Close()
-	case <-cnCh:
+	//case <-cnCh:
+	case <-httpCtx.Done():
 		log.Debug("http CloseNotify")
 		return
 	}

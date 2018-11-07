@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"strings"
+	"github.com/shopspring/decimal"
 )
 
 type Vin struct {
@@ -14,6 +15,15 @@ type Vin struct {
 type Vout struct {
 	Address string
 	Amount  uint64
+}
+
+type Vcontract struct {
+	ContractAddr string
+	To string
+	SendAmount decimal.Decimal
+	GasLimit string
+	GasPrice string
+	Amount uint32
 }
 
 type TxUnlock struct {
@@ -29,8 +39,22 @@ const (
 	DefaultHashType  = uint32(1)
 )
 
-func CreateEmptyRawTransaction(vins []Vin, vouts []Vout, lockTime uint32, replaceable bool) (string, error) {
-	emptyTrans, err := newTransaction(vins, vouts, lockTime, replaceable)
+func CreateEmptyRawTransaction(vins []Vin, vouts []Vout, lockTime uint32, replaceable bool, isTestNet bool) (string, error) {
+	emptyTrans, err := newTransaction(vins, vouts, lockTime, replaceable, isTestNet)
+	if err != nil {
+		return "", err
+	}
+
+	txBytes, err := emptyTrans.encodeToBytes()
+	if err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(txBytes), nil
+}
+
+func CreateQRC20TokenEmptyRawTransaction(vins []Vin, contract Vcontract, vout []Vout, lockTime uint32, replaceable bool, isTestNet bool) (string, error) {
+	emptyTrans, err := newQRC20TokenTransaction(vins, contract, vout, lockTime, replaceable, isTestNet)
 	if err != nil {
 		return "", err
 	}
@@ -269,3 +293,5 @@ func VerifyRawTransaction(txHex string, unlockData []TxUnlock) bool {
 
 	return verifyHashes(hashes, sigAndPub)
 }
+
+

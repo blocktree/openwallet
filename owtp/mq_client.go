@@ -189,12 +189,12 @@ func (c *MQClient) Send(data DataPacket) error {
 		return err
 	}
 
-	if c.auth != nil && c.auth.EnableAuth() {
-		respBytes, err = c.auth.EncryptData(respBytes)
-		if err != nil {
-			return errors.New("OWTP: EncryptData failed")
-		}
-	}
+	//if c.auth != nil && c.auth.EnableAuth() {
+	//	respBytes, err = c.auth.EncryptData(respBytes)
+	//	if err != nil {
+	//		return errors.New("OWTP: EncryptData failed")
+	//	}
+	//}
 
 	//log.Printf("Send: %s\n", string(respBytes))
 	c.send <- respBytes
@@ -259,15 +259,22 @@ func (c *MQClient) write(mt int, message []byte) error {
 
 // ReadPump 监听消息
 func (c *MQClient) readPump() {
+	defer func() {
+		c.Close()
+		log.Error("mq readPump end")
+	}()
+
 	if c.channel == nil {
 		return
 	}
 
 	queueName := c.config["receiveQueueName"]
 	exchange := c.config["exchange"]
+	//首次启动声明创建通道
 	c.channel.QueueDeclare(queueName,true,false,false,false,nil)
 	c.channel.QueueBind(queueName,queueName,exchange,false,nil)
-	msgs, err := c.channel.Consume(queueName, "", true, false, false, false, nil)
+
+	messages, err := c.channel.Consume(queueName, "", true, false, false, false, nil)
 
 	if err!=nil{
 		log.Error("readPump: ",err)
@@ -277,14 +284,23 @@ func (c *MQClient) readPump() {
 
 	go func() {
 		//fmt.Println(*msgs)
-		for d := range msgs {
+		for d := range messages {
 			packet := NewDataPacket(gjson.ParseBytes(d.Body))
 			fmt.Printf("packet：%s",string(d.Body))
 			//开一个goroutine处理消息
 			go c.handler.OnPeerNewDataPacketReceived(c, packet)
 		}
 	}()
-	fmt.Printf(" [*] Waiting for messages. To exit press CTRL+C\n")
+
+	errChan := make(chan *amqp.Error)
+
+	//监听断开时重连
+	go func() {
+		<-c.channel.NotifyClose(errChan)
+		forever <- false
+	}()
+
+
 	<-forever
 
 }

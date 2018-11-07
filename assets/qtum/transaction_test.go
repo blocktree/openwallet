@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"testing"
 	"github.com/blocktree/OpenWallet/assets/qtum/btcLikeTxDriver"
-	"github.com/blocktree/go-OWCBasedFuncs/addressEncoder"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
 )
 
 //案例一：
@@ -45,7 +45,7 @@ func Test_case1(t *testing.T) {
 	replaceable := false
 
 	/////////构建空交易单
-	emptyTrans, err := btcLikeTxDriver.CreateEmptyRawTransaction([]btcLikeTxDriver.Vin{in1, in2}, []btcLikeTxDriver.Vout{out}, lockTime, replaceable)
+	emptyTrans, err := btcLikeTxDriver.CreateEmptyRawTransaction([]btcLikeTxDriver.Vin{in1, in2}, []btcLikeTxDriver.Vout{out}, lockTime, replaceable, isTestNet)
 
 	if err != nil {
 		t.Error("构建空交易单失败")
@@ -170,7 +170,7 @@ func Test_case2(t *testing.T) {
 	replaceable := false
 
 	///////构建空交易单
-	emptyTrans, err := btcLikeTxDriver.CreateEmptyRawTransaction([]btcLikeTxDriver.Vin{in1, in2}, []btcLikeTxDriver.Vout{out}, lockTime, replaceable)
+	emptyTrans, err := btcLikeTxDriver.CreateEmptyRawTransaction([]btcLikeTxDriver.Vin{in1, in2}, []btcLikeTxDriver.Vout{out}, lockTime, replaceable, isTestNet)
 
 	if err != nil {
 		t.Error("构建空交易单失败")
@@ -288,7 +288,7 @@ func Test_case3(t *testing.T) {
 	replaceable := false
 
 	///////构建空交易单
-	emptyTrans, err := btcLikeTxDriver.CreateEmptyRawTransaction([]btcLikeTxDriver.Vin{in1, in2}, []btcLikeTxDriver.Vout{out}, lockTime, replaceable)
+	emptyTrans, err := btcLikeTxDriver.CreateEmptyRawTransaction([]btcLikeTxDriver.Vin{in1, in2}, []btcLikeTxDriver.Vout{out}, lockTime, replaceable, isTestNet)
 
 	if err != nil {
 		t.Error("构建空交易单失败")

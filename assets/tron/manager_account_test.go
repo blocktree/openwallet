@@ -26,6 +26,26 @@ func TestGetAccountNet(t *testing.T) {
 		t.Errorf("GetAccountNet failed: %v\n", err)
 	} else {
 		t.Logf("GetAccountNet return: \n\t%+v\n", r)
+
+		if r.GetTotalNetWeight() < int64(5850505050) {
+			t.Errorf("GetAccountNet failed: %v\n", "Data Invalid!")
+		}
+	}
+}
+
+func TestGetAccount(t *testing.T) {
+
+	var addr string
+	addr = OWNERADDRESS
+
+	if r, err := tw.GetAccount(addr); err != nil {
+		t.Errorf("GetAccount failed: %v\n", err)
+	} else {
+		t.Logf("GetAccount return: \n\t%+v\n", r)
+
+		if r.GetCreateTime() < int64(1537940919000) {
+			t.Errorf("GetAccount failed: %v\n", "Data Invalid!")
+		}
 	}
 }
 
@@ -48,5 +68,9 @@ func TestUpdateAccount(t *testing.T) {
 		t.Errorf("UpdateAccount failed: %v\n", err)
 	} else {
 		t.Logf("UpdateAccount return: \n\t%+v\n", r)
+
+		if r.Get("txID").String() == "" {
+			t.Errorf("UpdateAccount failed: %v\n", "Data Invalid!")
+		}
 	}
 }

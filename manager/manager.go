@@ -16,6 +16,7 @@
 package manager
 
 import (
+	"github.com/astaxie/beego/config"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -34,6 +35,8 @@ import (
 
 var (
 	PeriodOfTask = 5 * time.Second
+	//配置文件路径
+	configFilePath = filepath.Join("conf")
 )
 
 type NotificationObject interface {
@@ -53,6 +56,7 @@ type WalletManager struct {
 	mu                sync.RWMutex
 	observers         map[NotificationObject]bool //观察者
 	importAddressTask *timer.TaskTimer
+	AddressInScanning map[string]string                    //加入扫描的地址
 }
 
 // NewWalletManager
@@ -80,17 +84,18 @@ func (wm *WalletManager) Init() {
 
 	wm.observers = make(map[NotificationObject]bool)
 	wm.appDB = make(map[string]*openwallet.StormDB)
+	wm.AddressInScanning = make(map[string]string)
 
 	wm.initialized = true
 
 	wm.mu.Unlock()
 
-	wm.initBlockScanner()
+	wm.initSupportAssetsAdapter()
 
 	//启动定时导入地址到核心钱包
-	task := timer.NewTask(PeriodOfTask, wm.importNewAddressToCoreWallet)
-	wm.importAddressTask = task
-	wm.importAddressTask.Start()
+	//task := timer.NewTask(PeriodOfTask, wm.importNewAddressToCoreWallet)
+	//wm.importAddressTask = task
+	//wm.importAddressTask.Start()
 
 	log.Info("OpenWallet Manager has been initialized!")
 }
@@ -212,16 +217,33 @@ func (wm *WalletManager) loadAllAppIDs() ([]string, error) {
 }
 
 // initBlockScanner 初始化区块链扫描器
-func (wm *WalletManager) initBlockScanner() error {
-
-	if !wm.cfg.EnableBlockScan {
-		return nil
-	}
+func (wm *WalletManager) initSupportAssetsAdapter() error {
 
 	//加载已存在所有app
 	appIDs, err := wm.loadAllAppIDs()
 	if err != nil {
 		return err
+	}
+
+	wm.ClearAddressForBlockScan()
+
+	for _, appID := range appIDs {
+
+		wrapper, err := wm.newWalletWrapper(appID, "")
+		if err != nil {
+			log.Error("wallet manager init unexpected error:", err)
+			continue
+		}
+
+		addrs, err := wrapper.GetAddressList(0, -1)
+
+		for _, address := range addrs {
+			key := wm.encodeSourceKey(appID, address.AccountID)
+			wm.AddAddressForBlockScan(address.Address, key)
+
+			//log.Debug("import address:", address, "key:", key, "to block scanner")
+		}
+
 	}
 
 	for _, symbol := range wm.cfg.SupportAssets {
@@ -230,7 +252,21 @@ func (wm *WalletManager) initBlockScanner() error {
 			log.Error(symbol, "is not support")
 			continue
 		}
-		//log.Debug("already got scanner:", assetsMgr)
+
+		//读取配置
+		absFile := filepath.Join(configFilePath, symbol + ".ini")
+
+		c, err := config.NewConfig("ini", absFile)
+		if err != nil {
+			continue
+		}
+		assetsMgr.LoadAssetsConfig(c)
+
+		if !wm.cfg.EnableBlockScan {
+			//不加载区块扫描
+			continue
+		}
+
 		scanner := assetsMgr.GetBlockScanner()
 
 		if scanner == nil {
@@ -244,24 +280,8 @@ func (wm *WalletManager) initBlockScanner() error {
 		//添加观测者到区块扫描器
 		scanner.AddObserver(wm)
 
-		for _, appID := range appIDs {
-
-			wrapper, err := wm.newWalletWrapper(appID, "")
-			if err != nil {
-				log.Error("wallet manager init unexpected error:", err)
-				continue
-			}
-
-			addrs, err := wrapper.GetAddressList(0, -1)
-
-			for _, address := range addrs {
-				key := wm.encodeSourceKey(appID, address.AccountID)
-				scanner.AddAddress(address.Address, key)
-
-				//log.Debug("import address:", address, "key:", key, "to block scanner")
-			}
-
-		}
+		//设置查找地址算法
+		scanner.SetBlockScanAddressFunc(wm.GetSourceKeyByAddressForBlockScan)
 
 		scanner.Run()
 	}

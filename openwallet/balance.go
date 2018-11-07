@@ -15,12 +15,16 @@
 
 package openwallet
 
-
-
 type Balance struct {
 	Symbol           string
 	AccountID        string
+	Address          string
 	ConfirmBalance   string
 	UnconfirmBalance string
 	Balance          string
+}
+
+type TokenBalance struct {
+	Contract *SmartContract
+	Balance  *Balance
 }

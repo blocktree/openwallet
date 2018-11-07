@@ -52,7 +52,7 @@ var (
 	//地址导出路径
 	addressDir = filepath.Join(dataDir, "address")
 	//配置文件名
-	configFileName = Symbol + ".ini"
+	configFileName = Symbol + ".json"
 	//接口授权密码
 	rpcPassword = "123"
 	//备份路径

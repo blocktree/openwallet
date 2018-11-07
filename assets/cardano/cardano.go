@@ -26,6 +26,7 @@ import (
 	"github.com/shopspring/decimal"
 	"log"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -370,31 +371,37 @@ func (w *WalletManager) BackupWalletFlow() error {
 	backupPath := filepath.Join(keyDir, "backup")
 	file.MkdirAll(backupPath)
 
-	//linux
-	//备份secret.key, secret.key.lock, wallet-db
-	err = file.Copy(filepath.Join(walletPath, "secret.key"), backupPath)
-	if err != nil {
-		return err
-	}
-	err = file.Copy(filepath.Join(walletPath, "secret.key.lock"), backupPath)
-	if err != nil {
-		return err
-	}
-	err = file.Copy(filepath.Join(walletPath, "wallet-db"), backupPath)
-	if err != nil {
-		return err
-	}
+	switch runtime.GOOS {
+	case "darwin":
+		//macOS
+		//备份secret.key, secret.key.lock, wallet-db
+		err = file.Copy(filepath.Join(walletPath, "Secrets-1.0"), filepath.Join(backupPath))
+		if err != nil {
+			return err
+		}
+		err = file.Copy(filepath.Join(walletPath, "Wallet-1.0"), filepath.Join(backupPath))
+		if err != nil {
+			return err
+		}
+	case "linux":
 
-	//macOS
-	//备份secret.key, secret.key.lock, wallet-db
-	//err = file.Copy(filepath.Join(walletPath, "Secrets-1.0"), filepath.Join(backupPath))
-	//if err != nil {
-	//	return err
-	//}
-	//err = file.Copy(filepath.Join(walletPath, "Wallet-1.0"), filepath.Join(backupPath))
-	//if err != nil {
-	//	return err
-	//}
+		//linux
+		//备份secret.key, secret.key.lock, wallet-db
+		err = file.Copy(filepath.Join(walletPath, "secret.key"), backupPath)
+		if err != nil {
+			return err
+		}
+		err = file.Copy(filepath.Join(walletPath, "secret.key.lock"), backupPath)
+		if err != nil {
+			return err
+		}
+		err = file.Copy(filepath.Join(walletPath, "wallet-db"), backupPath)
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unsupport operation system")
+	}
 
 	//输出备份导出目录
 	fmt.Printf("Wallet backup file path: %s", backupPath)
@@ -537,7 +544,6 @@ func (w *WalletManager) RestoreWalletFlow() error {
 
 	return nil
 }
-
 
 //SetConfigFlow 初始化配置流程
 func (w *WalletManager) SetConfigFlow(subCmd string) error {

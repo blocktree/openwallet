@@ -15,9 +15,33 @@
 
 package openwallet
 
+import (
+	"encoding/base64"
+	"fmt"
+	"github.com/blocktree/OpenWallet/crypto"
+)
+
 type SmartContract struct {
-	Symbol string
-	ContractAddress string
-	Token string
-	Protocol string
+	ContractID string `json:"contractID" storm:"id"` //计算ID：base64(sha256({symbol}_{address})) 主链symbol
+	Symbol     string `json:"symbol"`	//主币的symbol
+	Address    string `json:"address"`
+	Token      string `json:"token"`    //合约的symbol
+	Protocol   string `json:"protocol"`
+	Name       string `json:"name"`
+	Decimals   uint64 `json:"decimals"`
+}
+
+//GenContractID 合约ID
+func GenContractID(symbol, address string) string {
+	return base64.StdEncoding.EncodeToString(crypto.SHA256([]byte(fmt.Sprintf("%v_%v", symbol, address))))
+}
+
+//SmartContractDecoder 智能合约解析器
+type SmartContractDecoder interface {
+
+	//GetTokenBalanceByAddress 查询地址token余额列表
+	GetTokenBalanceByAddress(contract SmartContract, address ...string) ([]*TokenBalance, error)
+
+	//GetSmartContractInfo 获取智能合约信息
+	//GetSmartContractInfo(contractAddress string) (*SmartContract, error)
 }

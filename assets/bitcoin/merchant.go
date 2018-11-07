@@ -16,12 +16,12 @@
 package bitcoin
 
 import (
+	"fmt"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 	"strings"
-	"github.com/blocktree/OpenWallet/log"
-	"github.com/pkg/errors"
-	"fmt"
 	"time"
 )
 
@@ -97,7 +97,7 @@ func (wm *WalletManager) ImportMerchantAddress(wallet *openwallet.Wallet, accoun
 		a.WatchOnly = true //观察地址
 		a.Symbol = strings.ToLower(Symbol)
 		a.AccountID = account.AccountID
-		a.CreatedAt = createdAt.Unix()
+		a.CreatedTime = createdAt.Unix()
 		err = tx.Save(a)
 		if err != nil {
 			return err
@@ -207,7 +207,7 @@ func (wm *WalletManager) RemoveMerchantObserverForBlockScan(obj openwallet.Block
 	wm.Blockscanner.RemoveObserver(obj)
 	if len(wm.Blockscanner.Observers) == 0 {
 		wm.Blockscanner.Stop()
-		wm.Blockscanner.Clear()
+		//wm.Blockscanner.Clear()
 	}
 }
 

@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/blocktree/OpenWallet/common/file"
-	owcrypt "github.com/blocktree/go-OWCrypt"
+	owcrypt "github.com/blocktree/go-owcrypt"
 	"github.com/shopspring/decimal"
 )
 
@@ -41,7 +41,7 @@ const (
 	//币种
 	Symbol    = "TRON"
 	MasterKey = "Troncoin seed"
-	CurveType = owcrypt.ECC_CURVE_SECP256K1
+	CurveType = owcrypt.ECC_CURVE_SECP256K1 // to generate ChildKey by BIP32
 )
 
 type WalletConfig struct {

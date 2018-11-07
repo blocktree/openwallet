@@ -22,8 +22,8 @@ import (
 	"time"
 
 	"github.com/blocktree/OpenWallet/common/file"
+	"github.com/blocktree/go-owcrypt"
 	"github.com/shopspring/decimal"
-	"github.com/blocktree/go-OWCrypt"
 )
 
 /*
@@ -39,11 +39,19 @@ import (
 
 const (
 	//币种
-	Symbol    = "QTUM"
-	 MasterKey = "qtum seed"
-	CurveType = owcrypt.ECC_CURVE_SECP256K1
+	Symbol             = "QTUM"
+	MasterKey          = "qtum seed"
+	CurveType          = owcrypt.ECC_CURVE_SECP256K1
+	RPCServerCore      = 0   //RPC服务，bitcoin核心钱包
+	RPCServerExplorer  = 1   //RPC服务，insight-API
+	StakeConfirmations = 500 //qtum规定500个确认的权益
 )
 
+const (
+	QTUM_GET_TOKEN_BALANCE_METHOD      = "0x70a08231"
+	QTUM_TRANSFER_TOKEN_BALANCE_METHOD = "0xa9059cbb"
+	QTUM_TRANSFER_EVENT_ID             = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+)
 
 type WalletConfig struct {
 
@@ -97,6 +105,8 @@ type WalletConfig struct {
 	CurveType uint32
 	//小数位长度
 	CoinDecimal decimal.Decimal
+	//后台数据源类型
+	RPCServerType int
 }
 
 func NewConfig() *WalletConfig {
@@ -129,7 +139,7 @@ func NewConfig() *WalletConfig {
 	//区块链数据文件
 	c.blockchainFile = "blockchain.db"
 	//是否测试网络
-	c.isTestNet = false
+	c.isTestNet = true
 	// 核心钱包是否只做监听
 	c.CoreWalletWatchOnly = true
 	//最大的输入数量
@@ -152,7 +162,8 @@ func NewConfig() *WalletConfig {
 	c.cycleSeconds = time.Second * 10
 	//小数位长度
 	c.CoinDecimal = decimal.NewFromFloat(100000000)
-
+	//后台数据源类型
+	c.RPCServerType = RPCServerCore
 
 	//默认配置内容
 	c.defaultConfig = `
@@ -166,6 +177,8 @@ nodeInstallPath = ""
 mainNetDataPath = ""
 # testnet data path
 testNetDataPath = ""
+# RPC Server Type，0: CoreWallet RPC; 1: Explorer API
+rpcServerType = 0
 # Qtum api url
 chainAPI = ""
 # Qtum server url
