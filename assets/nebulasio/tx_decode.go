@@ -85,7 +85,13 @@ func (decoder *TransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 
 	addrsBalanceList := make([]AddrBalance, 0, len(addresses))
 	for i, addr := range addresses {
-		balance, err := ConvertNasStringToWei(addr.Balance) //ConvertToBigInt(addr.Balance, 16)
+
+		addrBalance, err := decoder.wm.BsGetBalanceByAddress(addr.Address)
+		if err != nil {
+			continue
+		}
+
+		balance, err := ConvertNasStringToWei(addrBalance.Balance) //ConvertToBigInt(addr.Balance, 16)
 		if err != nil {
 			openwLogger.Log.Errorf("convert address [%v] balance [%v] to big.int failed, err = %v ", addr.Address, addr.Balance, err)
 			return err

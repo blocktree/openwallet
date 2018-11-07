@@ -245,9 +245,9 @@ func TestTransfer_NAS(t *testing.T) {
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "7VftKuNoDtwZ3mn3wDA4smTDMz4iqCg3fNna1fXicVDg"
-	to := "n1J6e6RhZXuG1RpbcMYeeUShAo1e3QsJTXb"
+	to := "n1WW4shxJK3iUDsZ9aYuQFNwDyb4CtX8xC3"
 
-	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.2", "",nil)
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.02", "",nil)
 	if err != nil {
 		return
 	}
