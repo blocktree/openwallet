@@ -76,7 +76,7 @@ func TestGetBlock(t *testing.T) {
 }
 
 func TestGetTransaction(t *testing.T) {
-	raw, err := tw.GetTransaction("05e4029db276ca65b293086f085db407197432fbacfeabda325d4d87cd4e8c6a")
+	raw, err := tw.GetTransaction("a991f44b917740a0de3765da26ff5904d6643560542a21b8e4dcf68e39c80a60")
 	if err != nil {
 		t.Errorf("GetTransaction failed unexpected error: %v\n", err)
 		return

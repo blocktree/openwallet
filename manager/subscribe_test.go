@@ -261,6 +261,7 @@ func TestSubscribeAddress_LTC(t *testing.T) {
 		addrs      = map[string]string{
 			"mkSfFCHPAaHAyx9gBokXQMGWmyRtzpk4JK": accountID, //主链转账
 			"my2S5LBREZ8YCcuAHZz1YChoZpGPZN28uw": accountID, //主链转账
+			"mzZYMMuTNEHTQ1zqpSGkgpZvv8g3ZYWoGX": accountID,
 		}
 	)
 
@@ -290,7 +291,7 @@ func TestSubscribeAddress_LTC(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	//scanner.SetRescanBlockHeight(	837001)
+	scanner.SetRescanBlockHeight(	838844)
 
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")
