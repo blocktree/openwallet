@@ -33,3 +33,7 @@ func TestAddressDecoder_PublicKeyToAddress(t *testing.T) {
 	t.Logf("addr: %s", addr)
 }
 
+func TestHashAddressToBaseAddress(t *testing.T) {
+	addr := HashAddressToBaseAddress("", true)
+	t.Logf("addr: %s", addr)
+}

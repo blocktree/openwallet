@@ -140,7 +140,9 @@ func HashAddressToBaseAddress(token string, isTestnet bool) string {
 	if err != nil {
 		return ""
 	}
-
+	if len(hash) == 0 {
+		return ""
+	}
 	tokenAddressBase := addressEncoder.AddressEncode(hash, cfg)
 
 	return tokenAddressBase
