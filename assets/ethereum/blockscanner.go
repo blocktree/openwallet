@@ -965,7 +965,7 @@ func (this *ETHBLockScanner) MakeTokenTxFromExtractData(tx *BlockTransaction, to
 	}
 
 	feeTx := &openwallet.Transaction{
-		WxID:        openwallet.GenTransactionWxID2(tx.Hash, this.wm.Symbol(), contractId),
+		WxID:        openwallet.GenTransactionWxID2(tx.Hash, this.wm.Symbol(), ""),
 		TxID:        tx.Hash,
 		From:        from,
 		To:          to,
