@@ -16,12 +16,12 @@
 package ontology
 
 import (
-"github.com/asdine/storm"
-"github.com/blocktree/OpenWallet/log"
-"github.com/blocktree/OpenWallet/openwallet"
-"github.com/pborman/uuid"
-"path/filepath"
-"testing"
+	"github.com/asdine/storm"
+	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/pborman/uuid"
+	"path/filepath"
+	"testing"
 )
 
 func TestGetBTCBlockHeight(t *testing.T) {
