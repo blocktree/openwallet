@@ -276,5 +276,12 @@ testNetDataPath = "/data"
 			IMAGE:    string("openw/nebulasio:v1.0.8"),
 			LOGFIELS: [2]string{"logs/neb.log", "logs/neb.log"},
 		},
+		"ont": &FullnodeContainerConfig{ // Release0929
+			NAME:     "Ontology",
+			PORT:     [][3]string{{"20336/tcp", "20336", "30336"}},
+			APIPORT:  []string{"20336/tcp"},
+			IMAGE:    string("openw/ontology:v1.5.1"),
+			LOGFIELS: [2]string{"run.log", "run.log"},
+		},
 	}
 }
