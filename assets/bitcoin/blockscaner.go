@@ -371,9 +371,9 @@ func (bs *BTCBlockScanner) RescanFailedRecord() {
 //newBlockNotify 获得新区块后，通知给观测者
 func (bs *BTCBlockScanner) newBlockNotify(block *Block, isFork bool) {
 	for o, _ := range bs.Observers {
-		header := block.BlockHeader()
+		header := block.BlockHeader(bs.wm.Symbol())
 		header.Fork = isFork
-		o.BlockScanNotify(block.BlockHeader())
+		o.BlockScanNotify(header)
 	}
 }
 
