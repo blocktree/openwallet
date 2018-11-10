@@ -22,6 +22,7 @@ import (
 	"docker.io/go-docker/api/types"
 )
 
+// RemoveWalletnode remove walletnode
 func (w *WalletnodeManager) RemoveWalletnode(symbol string) error {
 
 	if err := loadConfig(symbol); err != nil {

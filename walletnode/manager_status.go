@@ -19,13 +19,8 @@ import (
 	"context"
 )
 
+// GetWalletnodeStatus get walletnode status
 func (w *WalletnodeManager) GetWalletnodeStatus(symbol string) (status string, err error) {
-	// func(vals ...interface{}) {}(
-	// 	context.Background, log.New, time.Saturday,
-	// 	docker.NewClient, types.ContainerListOptions{},
-	// 	container.Config{}, network.NetworkingConfig{},
-	// 	api.DefaultVersion, s.ToLower("jij"),
-	// ) // Delete before commit
 
 	if err := loadConfig(symbol); err != nil {
 		return "", err
@@ -48,6 +43,7 @@ func (w *WalletnodeManager) GetWalletnodeStatus(symbol string) (status string, e
 	if err != nil {
 		return "", err
 	}
+
 	// Get results
 	status = res.State.Status
 	return status, nil

@@ -1,4 +1,4 @@
-## Walletnode
+# Walletnode
 
 Openwallet 基础架构中，生产环境使用 Docker 作为全节点钱包。这将使得重启，备份等操作，都需要实现 “远程”，也就是跨 Docker 容器的调用。
 
@@ -10,7 +10,7 @@ Openwallet 基础架构中，生产环境使用 Docker 作为全节点钱包。�
 - copy/back，远程备份和恢复(如：生产环境中使用docker，而不是本地安装来部署全节点，这时候显然需要跨容器远程复制，而不是本地 cp，因为数据在容器)全节点钱包数据（如：wallet.dat等文件）
 - `兼容本地操作`的功能，已开发，待讨论决定
 
-### 其中 Golang 接口调用示例一：启动，重启，关闭
+## 其中 Golang 接口调用示例一：启动，重启，关闭
 
 ```golang
 import "github.com/blocktree/OpenWallet/walletnode"
@@ -34,7 +34,7 @@ if err := wn.RestartNodeFlow(symbol); err != nil {
 }
 ```
 
-### Golang 接口调用示例二：备份/恢复(only files)
+## Golang 接口调用示例二：备份/恢复(only files)
 
 ```golang
 import "github.com/blocktree/OpenWallet/walletnode"
@@ -57,7 +57,7 @@ if err := wn.CopyToContainer(symbol, src, dst); err != nil {
 }
 ```
 
-### 使用 wmd node 创建全节点
+## 使用 wmd node 创建全节点
 
 如果使用 `docker+自制镜像` 作为钱包节点（无论docker是在本地还是远程），都需要先执行 `wmd node create -s Symbol`， 否则跳过。过程：
 
@@ -93,7 +93,8 @@ simonluo@MBP15L:mainnet/$
 ```
 
 如果选择本地安装的全节点（一般用来自己测试或开发）
-```
+
+```bash
 Within testnet('testnet','main')[testnet]:
 Where to run Walletnode: local/docker [docker]: local
 Start walletnode command: /usr/local/bin/bitcoin-cli XXXX       // 输入启动命令
@@ -144,7 +145,6 @@ Done!
 ## 其他技术细节
 
   1. 为了兼容开发，测试，生产环境中 walletnode 不同的部署方式，通过 .ini 文件中 `ServerType=local/docker` 三个参数来指定全节点是 直接安装在裸机或本地PC/安装在本地Docker/安装在远程服务器的Docker。指定后，接口中将自动处理后续问题（连接，pull镜像，创建，备份，恢复等）
-
 
   2. 同样，备份也有上述需求（本地的 copy，或 远程的网络传输），通过 WalletnodeManager 这个 Interface 实现几个方法，解决：
     - 自动选择是从本地还是Docker中备份/恢复文件，避免开发时采用本地 cp，而生产中需要 docker cp（经过 docker 处理备份）的冲突

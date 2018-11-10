@@ -27,7 +27,7 @@ import (
 // Update <Symbol>.ini file
 func updateConfig(symbol string) error {
 	if WNConfig == nil {
-		return errors.New("getDockerClient: WalletnodeConfig does not initialized!")
+		return errors.New("getDockerClient: WalletnodeConfig does not initialized")
 	}
 
 	configFilePath, _ := filepath.Abs("conf")
@@ -36,7 +36,7 @@ func updateConfig(symbol string) error {
 
 	c, err := bconfig.NewConfig("ini", absFile)
 	if err != nil {
-		return (errors.New(fmt.Sprintf("Load Config Failed: %s", err)))
+		return fmt.Errorf("Load Config Failed: %s", err)
 	}
 
 	err = c.Set("isTestNet", WNConfig.isTestNet)

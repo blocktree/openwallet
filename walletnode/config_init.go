@@ -32,10 +32,10 @@ func initConfig(symbol string) error {
 	absFile := filepath.Join(configFilePath, configFileName)
 	if !file.Exists(absFile) {
 		if file.MkdirAll(configFilePath) != true {
-			return errors.New("initConfig: MkdirAll failed!")
+			return errors.New("initConfig: MkdirAll failed")
 		}
 		if file.WriteFile(absFile, []byte(WNConfig.defaultConfig), false) != true {
-			return errors.New("initConfig: WriteFile failed!")
+			return errors.New("initConfig: WriteFile failed")
 		}
 	}
 	return nil
