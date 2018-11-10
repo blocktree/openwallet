@@ -51,9 +51,9 @@ func TestGetAccount(t *testing.T) {
 
 func TestCreateAccount(t *testing.T) {
 
-	var owner_address, account_address string = OWNERADDRESS, OWNERADDRESS
+	var ownerAddress, accountAddress string = OWNERADDRESS, OWNERADDRESS
 
-	if r, err := tw.CreateAccount(owner_address, account_address); err != nil {
+	if r, err := tw.CreateAccount(ownerAddress, accountAddress); err != nil {
 		t.Errorf("CreateAccount failed: %v\n", err)
 	} else {
 		t.Logf("CreateAccount return: \n\t%+v\n", r)
@@ -62,9 +62,9 @@ func TestCreateAccount(t *testing.T) {
 
 func TestUpdateAccount(t *testing.T) {
 
-	var account_name, owner_address string = "XX2", OWNERADDRESS
+	var accountName, ownerAddress string = "XX2", OWNERADDRESS
 
-	if r, err := tw.UpdateAccount(account_name, owner_address); err != nil {
+	if r, err := tw.UpdateAccount(accountName, ownerAddress); err != nil {
 		t.Errorf("UpdateAccount failed: %v\n", err)
 	} else {
 		t.Logf("UpdateAccount return: \n\t%+v\n", r)

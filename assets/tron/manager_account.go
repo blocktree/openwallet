@@ -29,15 +29,15 @@ import (
 )
 
 func convertAddrToHex(address string) string {
-	to_address_bytes, err := addressEncoder.AddressDecode(address, addressEncoder.TRON_mainnetAddress)
+	toAddressBytes, err := addressEncoder.AddressDecode(address, addressEncoder.TRON_mainnetAddress)
 	if err != nil {
 		log.Println(err)
 	}
-	to_address_bytes = append([]byte{0x41}, to_address_bytes...)
-	return hex.EncodeToString(to_address_bytes)
+	toAddressBytes = append([]byte{0x41}, toAddressBytes...)
+	return hex.EncodeToString(toAddressBytes)
 }
 
-// Done
+// GetAccountNet Done!
 // Function：Query bandwidth information.
 // demo: curl -X POST http://127.0.0.1:8090/wallet/getaccountnet -d ‘
 // 	{“address”: “4112E621D5577311998708F4D7B9F71F86DAE138B5”}’
@@ -65,7 +65,7 @@ func (wm *WalletManager) GetAccountNet(address string) (account *api.AccountNetM
 	return account, nil
 }
 
-// Done
+// GetAccount Done!
 // Function：Query bandwidth information.
 // Parameters：
 // 	Account address，converted to a base64 string
@@ -87,7 +87,7 @@ func (wm *WalletManager) GetAccount(address string) (account *core.Account, err 
 	return account, nil
 }
 
-// Done!
+// CreateAccount Done!
 // Function：Create an account. Uses an already activated account to create a new account
 // demo：curl -X POST http://127.0.0.1:8090/wallet/createaccount -d ‘
 // 	{
@@ -98,12 +98,12 @@ func (wm *WalletManager) GetAccount(address string) (account *core.Account, err 
 // 	Owner_address is an activated account，converted to a hex String;
 // 	account_address is the address of the new account, converted to a hex string, this address needs to be calculated in advance
 // Return value：Create account Transaction raw data
-func (wm *WalletManager) CreateAccount(owner_address, account_address string) (txRaw *gjson.Result, err error) {
+func (wm *WalletManager) CreateAccount(ownerAddress, accountAddress string) (txRaw *gjson.Result, err error) {
 
-	owner_address = convertAddrToHex(owner_address)
-	account_address = convertAddrToHex(account_address)
+	ownerAddress = convertAddrToHex(ownerAddress)
+	accountAddress = convertAddrToHex(accountAddress)
 
-	params := req.Param{"owner_address": owner_address, "account_address": account_address}
+	params := req.Param{"owner_address": ownerAddress, "account_address": accountAddress}
 	r, err := wm.WalletClient.Call("/wallet/createaccount", params)
 	if err != nil {
 		return nil, err
@@ -116,7 +116,7 @@ func (wm *WalletManager) CreateAccount(owner_address, account_address string) (t
 	return r, nil
 }
 
-// Done
+// UpdateAccount Done!
 // Function：Modify account name
 // demo：curl -X POSThttp://127.0.0.1:8090/wallet/updateaccount -d ‘
 // 	{
@@ -127,11 +127,11 @@ func (wm *WalletManager) CreateAccount(owner_address, account_address string) (t
 // 	account_name is the name of the account, converted into a hex string；
 // 	owner_address is the account address of the name to be modified, converted to a hex string.
 // Return value：modified Transaction Object
-func (wm *WalletManager) UpdateAccount(account_name, owner_address string) (tx *gjson.Result, err error) {
+func (wm *WalletManager) UpdateAccount(accountName, ownerAddress string) (tx *gjson.Result, err error) {
 
 	params := req.Param{
-		"account_name":  hex.EncodeToString([]byte(account_name)),
-		"owner_address": convertAddrToHex(owner_address),
+		"account_name":  hex.EncodeToString([]byte(accountName)),
+		"owner_address": convertAddrToHex(ownerAddress),
 	}
 
 	r, err := wm.WalletClient.Call("/wallet/updateaccount", params)

@@ -29,8 +29,10 @@ const (
 	// periodOfTask      = 5 * time.Second //定时任务执行隔间
 	maxExtractingSize = 20 //并发的扫描线程数
 
-	RPCServerCore     = 0 //RPC服务，核心钱包
-	RPCServerExplorer = 1 //RPC服务，insight-API
+	//RPCServerCore RPC服务，核心钱包
+	RPCServerCore = 0
+	//RPCServerExplorer RPC服务，insight-API
+	RPCServerExplorer = 1
 )
 
 //TronBlockScanner tron的区块链扫描器
@@ -80,11 +82,12 @@ type SaveResult struct {
 }
 
 // ---------------------------------------- Interface -----------------------------------------
+
 //SetRescanBlockHeight 重置区块链扫描高度
 func (bs *TronBlockScanner) SetRescanBlockHeight(height uint64) error {
 	height = height - 1
 	if height < 0 {
-		return errors.New("block height to rescan must greater than 0.")
+		return errors.New("block height to rescan must greater than 0")
 	}
 
 	block, err := bs.wm.GetBlockByNum(height)
@@ -98,6 +101,7 @@ func (bs *TronBlockScanner) SetRescanBlockHeight(height uint64) error {
 }
 
 // ---------------------------------------- Scanner -------------------------------------------
+
 //ScanBlockTask 扫描任务
 func (bs *TronBlockScanner) ScanBlockTask() {
 
@@ -134,7 +138,7 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 		log.Std.Info("\n ------------------------------------ Foreach Start")
 
 		time.Sleep(time.Second * (5 * time.Duration(i*i)))
-		i += 1
+		i++
 
 		block, err := bs.wm.GetNowBlock()
 		if err != nil {

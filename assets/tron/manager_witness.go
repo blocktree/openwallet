@@ -21,7 +21,7 @@ import (
 	"github.com/tronprotocol/grpc-gateway/api"
 )
 
-// Done!
+// ListWitnesses Done!
 // Function：
 // 	Query the list of Super Representatives
 // demo:
@@ -43,7 +43,7 @@ func (wm *WalletManager) ListWitnesses() (witnesses *api.WitnessList, err error)
 	return witnesses, nil
 }
 
-// Done!
+// ListNodes Done!
 // Function：
 // 	List the nodes which the api fullnode is connecting on the network
 // demo:

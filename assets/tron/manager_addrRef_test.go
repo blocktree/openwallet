@@ -61,8 +61,8 @@ func TestValidateAddressRef(t *testing.T) {
 func TestCreateBatchAddress(t *testing.T) {
 
 	var (
-		walletID string = "W4Hv5qiUb3R7GVQ9wgmX8MfhZ1GVR6dqL7"
-		password string = "1234qwer"
+		walletID        = "W4Hv5qiUb3R7GVQ9wgmX8MfhZ1GVR6dqL7"
+		password        = "1234qwer"
 		count    uint64 = 1000
 	)
 	if s, r, err := tw.CreateBatchAddress(walletID, password, count); err != nil {
@@ -76,9 +76,9 @@ func TestCreateBatchAddress(t *testing.T) {
 func TestGetAddressesFromLocalDB(t *testing.T) {
 
 	var (
-		walletID string = "W4Hv5qiUb3R7GVQ9wgmX8MfhZ1GVR6dqL7"
-		offset   int    = 0
-		limit    int    = -1
+		walletID = "W4Hv5qiUb3R7GVQ9wgmX8MfhZ1GVR6dqL7"
+		offset   int
+		limit    = -1
 	)
 	if r, err := tw.GetAddressesFromLocalDB(walletID, offset, limit); err != nil {
 		t.Errorf("GetAddressesFromLocalDB failed: \n\t%+v\n", err)

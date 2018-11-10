@@ -26,6 +26,7 @@ func init() {
 	log.SetFlags(log.Lshortfile | log.LstdFlags)
 }
 
+// WalletManager struct
 type WalletManager struct {
 	Config         *WalletConfig                 //钱包管理配置
 	Storage        *hdkeystore.HDKeystore        //秘钥存取
@@ -35,6 +36,7 @@ type WalletManager struct {
 	WalletsInSum   map[string]*openwallet.Wallet //参与汇总的钱包
 }
 
+// NewWalletManager create instance
 func NewWalletManager() *WalletManager {
 	wm := WalletManager{}
 	wm.Config = NewConfig(Symbol, MasterKey)

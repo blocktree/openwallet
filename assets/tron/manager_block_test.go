@@ -44,7 +44,7 @@ func TestGetBlockByNum(t *testing.T) {
 
 func TestGetBlockByID(t *testing.T) {
 
-	var blockID string = "0000000000341190edc6eb2c61e2efd0b6c45177962b43cd13c0cd32da62cc0e"
+	var blockID = "0000000000341190edc6eb2c61e2efd0b6c45177962b43cd13c0cd32da62cc0e"
 
 	if r, err := tw.GetBlockByID(blockID); err != nil {
 		t.Errorf("GetBlockByID failed: %v\n", err)
