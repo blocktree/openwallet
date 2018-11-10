@@ -27,7 +27,7 @@ import (
 	"docker.io/go-docker/api/types"
 )
 
-// Copy file from container to local filesystem
+// CopyFromContainer copy file from container to local filesystem
 //
 //	src := "wallet.dat"  // 备份来源，全节点中的文件名 (MainDataPath + '/' + src)
 //	dst := "2018.....wallet.dat" // 备份目标，自设
@@ -89,7 +89,7 @@ func (w *WalletnodeManager) CopyFromContainer(symbol, src, dst string) error {
 	return nil
 }
 
-// Copy file to container from local filesystem
+// CopyToContainer copy file to container from local filesystem
 //
 // Define:
 //	src: filename
@@ -97,7 +97,6 @@ func (w *WalletnodeManager) CopyFromContainer(symbol, src, dst string) error {
 // Example:
 //	src := "/tmp/2018......wallet.dat"  // 恢复来源，用户提供
 //	dst := "wallet.dat" // 恢复目标的文件名 (MainDataPath + '/' + dst)
-
 func (w *WalletnodeManager) CopyToContainer(symbol, src, dst string) error {
 
 	var content io.Reader
