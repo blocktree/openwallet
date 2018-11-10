@@ -25,6 +25,7 @@ import (
 	"docker.io/go-docker/api/types"
 )
 
+// StartWalletnode start walletnode
 func (w *WalletnodeManager) StartWalletnode(symbol string) error {
 
 	if err := loadConfig(symbol); err != nil {
@@ -45,7 +46,7 @@ func (w *WalletnodeManager) StartWalletnode(symbol string) error {
 	cnf := getFullnodeConfig(symbol)
 	if cnf == nil {
 		// Config not exist!
-		err := errors.New("Wallet fullnode config no found!")
+		err := errors.New("Wallet fullnode config no found")
 		log.Println(err)
 		return err
 	}
@@ -65,28 +66,28 @@ func (w *WalletnodeManager) StartWalletnode(symbol string) error {
 
 		time.Sleep(time.Second * 10)
 
-		exec := types.ExecConfig{Cmd: cnf.ENCRYPT}
-		if res, err := c.ContainerExecCreate(context.Background(), cName, exec); err != nil {
+		res, err := c.ContainerExecCreate(context.Background(), cName, types.ExecConfig{Cmd: cnf.ENCRYPT})
+		if err != nil {
 			log.Println(err)
 			return err
-		} else {
-			if err := c.ContainerExecStart(context.Background(), res.ID, types.ExecStartCheck{}); err != nil {
-				log.Println(err)
-				return err
-			} else {
-				// update .ini to set isencrypted=true
-				WNConfig.walletnodeIsEncrypted = "true"
-				if updateConfig(symbol); err != nil {
-					log.Println(err)
-					return err
-				}
+		}
 
-				time.Sleep(time.Second * 3)
+		if err := c.ContainerExecStart(context.Background(), res.ID, types.ExecStartCheck{}); err != nil {
+			log.Println(err)
+			return err
+		}
 
-				if err := c.ContainerStart(context.Background(), cName, types.ContainerStartOptions{}); err != nil {
-					return err
-				}
-			}
+		// update .ini to set isencrypted=true
+		WNConfig.walletnodeIsEncrypted = "true"
+		if updateConfig(symbol); err != nil {
+			log.Println(err)
+			return err
+		}
+
+		time.Sleep(time.Second * 3)
+
+		if err := c.ContainerStart(context.Background(), cName, types.ContainerStartOptions{}); err != nil {
+			return err
 		}
 
 		fmt.Printf("\t Encrypt success!\n\n")
@@ -94,16 +95,3 @@ func (w *WalletnodeManager) StartWalletnode(symbol string) error {
 
 	return nil
 }
-
-// type ExecConfig struct {
-// 	User         string   // User that will run the command
-// 	Privileged   bool     // Is the container in privileged mode
-// 	Tty          bool     // Attach standard streams to a tty.
-// 	AttachStdin  bool     // Attach the standard input, makes possible user interaction
-// 	AttachStderr bool     // Attach the standard error
-// 	AttachStdout bool     // Attach the standard output
-// 	Detach       bool     // Execute in detach mode
-// 	DetachKeys   string   // Escape keys for detach
-// 	Env          []string // Environment variables
-// 	Cmd          []string // Execution commands and args
-// }

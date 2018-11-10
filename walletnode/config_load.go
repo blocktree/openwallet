@@ -7,7 +7,6 @@ import (
 	s "strings"
 
 	bconfig "github.com/astaxie/beego/config"
-	"github.com/pkg/errors"
 )
 
 // Load settings for global from local conf/<Symbol>.ini
@@ -24,7 +23,7 @@ func loadConfig(symbol string) error {
 	c, err := bconfig.NewConfig("ini", absFile)
 	if err != nil {
 		log.Println(err)
-		return errors.New(fmt.Sprintf("Load Config Failed-> %s", err))
+		return fmt.Errorf("Load config failed: %s", err)
 	}
 
 	WNConfig.RPCUser = c.String("rpcUser")

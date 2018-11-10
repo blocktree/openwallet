@@ -25,6 +25,7 @@ import (
 	"docker.io/go-docker/api/types"
 )
 
+// StopWalletnode stop walletnode
 func (w *WalletnodeManager) StopWalletnode(symbol string) error {
 
 	if err := loadConfig(symbol); err != nil {
@@ -44,7 +45,7 @@ func (w *WalletnodeManager) StopWalletnode(symbol string) error {
 
 	cnf := getFullnodeConfig(symbol)
 	if cnf == nil {
-		return errors.New("Fullnode config no found!")
+		return errors.New("Fullnode config no found")
 	}
 
 	if cnf.STOPCMD == nil {
@@ -72,7 +73,6 @@ func (w *WalletnodeManager) StopWalletnode(symbol string) error {
 			}
 
 			time.Sleep(time.Second * 16)
-
 		}
 	}
 

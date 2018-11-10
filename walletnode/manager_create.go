@@ -30,7 +30,7 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
-// Check wallet container, create if not
+// CheckAdnCreateContainer check wallet container, create if not
 //
 // Pre-requirement
 //		INI file exists!
@@ -74,6 +74,7 @@ func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 		fmt.Println(time.Duration(10))
 		// return err
 	}
+
 	if _, err = c.ContainerCreate( // 创建目录
 		context.Background(),
 		&container.Config{
@@ -85,16 +86,18 @@ func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 			}},
 		&network.NetworkingConfig{},
 		"temp"); err != nil {
+
 		log.Error(err)
+
 		return err
-	} else {
-		// Start
-		if err = c.ContainerStart(context.Background(), "temp", types.ContainerStartOptions{}); err != nil {
-			log.Error(err)
-		}
-		if err = c.ContainerRemove(context.Background(), "temp", types.ContainerRemoveOptions{Force: true}); err != nil {
-			log.Error(err)
-		}
+	}
+
+	// Start
+	if err = c.ContainerStart(context.Background(), "temp", types.ContainerStartOptions{}); err != nil {
+		log.Error(err)
+	}
+	if err = c.ContainerRemove(context.Background(), "temp", types.ContainerRemoveOptions{Force: true}); err != nil {
+		log.Error(err)
 	}
 
 	// --------------------------------- Create Container -----------------------------------------
@@ -107,27 +110,27 @@ func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 	var Env []string
 	var MountSrcDir string
 
-	ctn_config, ok := FullnodeContainerConfigs[s.ToLower(symbol)]
+	ctnConfig, ok := FullnodeContainerConfigs[s.ToLower(symbol)]
 	if !ok {
 		return nil
 	}
 
-	if WNConfig.isTestNetCheck() == true && ctn_config.NOTESTNET == true {
-		return errors.New("!!!Fullnode does not support Testnet now!")
+	if WNConfig.isTestNetCheck() == true && ctnConfig.NOTESTNET == true {
+		return errors.New("!!!Fullnode does not support Testnet now")
 	}
 
 	portBindings = map[nat.Port][]nat.PortBinding{}
-	for _, v := range ctn_config.PORT {
+	for _, v := range ctnConfig.PORT {
 		if WNConfig.isTestNet == "true" {
 			portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{HostIP: DockerAllowed, HostPort: v[2]}}
 			//exposedPorts[nat.Port(v[0])] = struct{}{}
-			if v[0] == ctn_config.APIPORT[0] {
+			if v[0] == ctnConfig.APIPORT[0] {
 				RPCPort = v[2]
 			}
 		} else {
 			portBindings[nat.Port(v[0])] = []nat.PortBinding{nat.PortBinding{HostIP: DockerAllowed, HostPort: v[1]}}
 			// exposedPorts[nat.Port(v[0])] = struct{}{}
-			if v[0] == ctn_config.APIPORT[0] {
+			if v[0] == ctnConfig.APIPORT[0] {
 				RPCPort = v[1]
 			}
 		}
@@ -151,7 +154,7 @@ func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 		// string, List of environment variable to set in the container
 		Env: Env,
 		// string, Name of the image as it was passed by the operator(e.g. could be symbolic)
-		Image: ctn_config.IMAGE,
+		Image: ctnConfig.IMAGE,
 		// nat.PortSet         `json:",omitempty"` , List of exposed ports
 		// ExposedPorts: exposedPorts,
 		// string, Current directory (PWD) in the command will be launched
@@ -217,13 +220,11 @@ func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 		// EndpointsConfig: map[string]*network.EndpointSettings{"endporint": &endpointSetting},
 	}
 
-	if ctn, err := c.ContainerCreate(context.Background(), &cConfig, &hConfig, &nConfig, cName); err != nil {
+	if _, err := c.ContainerCreate(context.Background(), &cConfig, &hConfig, &nConfig, cName); err != nil {
 		log.Error(err)
 		return err
-	} else {
-		fmt.Println(ctn)
-		fmt.Printf("%s walletnode created in success!\n", symbol)
 	}
+	fmt.Printf("%s walletnode created in success!\n", symbol)
 
 	// // Get exposed port
 	// apiPort := string("")
