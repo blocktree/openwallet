@@ -38,7 +38,7 @@ func getDockerClient(symbol string) (c *docker.Client, err error) {
 	symbol = s.ToLower(symbol)
 
 	if WNConfig == nil {
-		return nil, errors.New("getDockerClient: WalletnodeConfig does not initialized!")
+		return nil, errors.New("getDockerClient: WalletnodeConfig does not initialized")
 	}
 
 	// Init docker client
@@ -64,13 +64,13 @@ func getDockerClient(symbol string) (c *docker.Client, err error) {
 // Private function, generate container name by <Symbol> and <isTestNet>
 func getCName(symbol string) (string, error) {
 	if WNConfig == nil {
-		return "", errors.New("getCName: WalletnodeConfig does not initialized!")
+		return "", errors.New("getCName: WalletnodeConfig does not initialized")
 	}
 
 	// Within testnet, use "<Symbol>_testnet" as container name
 	if WNConfig.isTestNet == "true" {
 		return s.ToLower(symbol) + "_t", nil
-	} else {
-		return s.ToLower(symbol), nil
 	}
+
+	return s.ToLower(symbol), nil
 }

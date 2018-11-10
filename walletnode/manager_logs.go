@@ -25,6 +25,7 @@ import (
 	sh "github.com/codeskyblue/go-sh"
 )
 
+// LogsWalletnode watch logs now
 func (w *WalletnodeManager) LogsWalletnode(symbol string) error {
 
 	if err := loadConfig(symbol); err != nil {
@@ -38,12 +39,12 @@ func (w *WalletnodeManager) LogsWalletnode(symbol string) error {
 
 	cnf := getFullnodeConfig(symbol)
 	if cnf == nil {
-		return errors.New("Wallet fullnode configs can not found!")
+		return errors.New("Wallet fullnode configs can not found")
 	}
 
 	logfile := cnf.getLogFile()
 	if logfile == "" {
-		return errors.New("Logfile no found!")
+		return errors.New("Logfile no found")
 	}
 
 	host := ""
