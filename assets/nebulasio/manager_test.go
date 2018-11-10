@@ -27,7 +27,7 @@ var wm *WalletManager
 func init() {
 	wm = NewWalletManager()
 	wm.InitConfigFlow()
-	wm.Config.ServerAPI = "http://127.0.0.1:8685"
+	wm.Config.ServerAPI = "http://47.75.78.16:20012"
 	//wm.Config.ServerAPI = "https://mainnet.nebulas.io"
 	wm.WalletClient = NewClient(wm.Config.ServerAPI, false)
 }
