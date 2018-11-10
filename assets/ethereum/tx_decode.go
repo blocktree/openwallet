@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/tidwall/gjson"
 
 	//"log"
@@ -177,7 +178,7 @@ func (this *EthTransactionDecoder) RemoveOutdatedAddrStatic() {
 		defer statis.AddressLocker.Unlock()
 		if statis.LastModifiedTime.Before(time.Now().Add(-1 * (ADRESS_STATIS_OVERDATED_TIME * time.Minute))) {
 			*statis.Valid = 0
-			this.AddrTxStatisMap.Delete(statis)
+			this.AddrTxStatisMap.Delete(statis.Address)
 		}
 	}
 
