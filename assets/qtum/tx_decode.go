@@ -71,6 +71,11 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	if err != nil {
 		return err
 	}
+
+	if len(address) == 0 {
+		return fmt.Errorf("[%s] account: %s has not addresses", decoder.wm.Symbol(), accountID)
+	}
+
 	searchAddrs := make([]string, 0)
 	for _, address := range address {
 		searchAddrs = append(searchAddrs, address.Address)
@@ -83,6 +88,8 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	if err != nil {
 		return err
 	}
+
+
 
 	if len(rawTx.To) == 0 {
 		return errors.New("Receiver addresses is empty!")
@@ -238,6 +245,9 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 			}
 
 			actualFees = contractFees.Mul(decoder.wm.config.CoinDecimal)
+
+			rawTx.Fees = contractFees.StringFixed(decoder.wm.Decimal())
+			rawTx.FeeRate = feesRate.StringFixed(decoder.wm.Decimal())
 
 			break
 
