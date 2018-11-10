@@ -122,8 +122,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	//
 	//changeAddress := changeAddrs[0]
 
-	//取账户最后一个地址
-	changeAddress := address[len(address)-1]
+
 
 	if len(rawTx.FeeRate) == 0 {
 		feesRate, err = decoder.wm.EstimateFeeRate()
@@ -185,6 +184,9 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		return errors.New(errStr)
 	}
 
+	//取账户最后一个地址
+	changeAddress := usedUTXO[0].Address
+
 	changeAmount := balance.Sub(computeTotalSend).Sub(actualFees)
 	rawTx.FeeRate = feesRate.StringFixed(decoder.wm.Decimal())
 	rawTx.Fees = actualFees.StringFixed(decoder.wm.Decimal())
@@ -196,7 +198,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	log.Std.Notice("Fees: %v", actualFees.StringFixed(8))
 	log.Std.Notice("Receive: %v", computeTotalSend.StringFixed(8))
 	log.Std.Notice("Change: %v", changeAmount.StringFixed(8))
-	log.Std.Notice("Change Address: %v", changeAddress.Address)
+	log.Std.Notice("Change Address: %v", changeAddress)
 	log.Std.Notice("-----------------------------------------------")
 
 	//装配输入
@@ -219,7 +221,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	//changeAmount := balance.Sub(totalSend).Sub(actualFees)
 	if changeAmount.GreaterThan(decimal.New(0, 0)) {
 		deamount := changeAmount.Mul(decoder.wm.Config.CoinDecimal)
-		out := btcTransaction.Vout{changeAddress.Address, uint64(deamount.IntPart())}
+		out := btcTransaction.Vout{changeAddress, uint64(deamount.IntPart())}
 		vouts = append(vouts, out)
 
 		//fmt.Printf("Create change address for receiving %s coin.", outputs[change])
