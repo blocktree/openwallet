@@ -82,9 +82,9 @@ func TestTransfer_ETH(t *testing.T) {
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
-	to := "d35f9Ea14D063af9B3567064FAB567275b09f03D"
+	to := "d1ffd8c9b59b6c2696ebdaa143c73226ea34d02c"
 
-	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.0003", "", nil)
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.01", "", nil)
 	if err != nil {
 		return
 	}
@@ -112,7 +112,7 @@ func TestTransfer_ERC20(t *testing.T) {
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
-	to := "0xd35f9Ea14D063af9B3567064FAB567275b09f03D"
+	to := "0xd1ffd8c9b59b6c2696ebdaa143c73226ea34d02c"
 
 	contract := openwallet.SmartContract{
 		Address:  "4092678e4E78230F46A1534C0fbc8fA39780892B",
@@ -122,7 +122,7 @@ func TestTransfer_ERC20(t *testing.T) {
 		Decimals: 18,
 	}
 
-	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "1.1", "", &contract)
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "20", "", &contract)
 	if err != nil {
 		return
 	}
@@ -178,7 +178,7 @@ func TestTransfer_QTUM(t *testing.T) {
 	accountID := "2by6wzbzw7cnWkxiA31xMHpFmE99bqL3BnjkUJnJtEN6"
 	to := "QTdtEdduBTybwnRpDWc2A44oUiLTpp227k"
 
-	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.5", "", nil)
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.4", "", nil)
 	if err != nil {
 		return
 	}
@@ -205,7 +205,7 @@ func TestTransfer_QRC20(t *testing.T) {
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "2by6wzbzw7cnWkxiA31xMHpFmE99bqL3BnjkUJnJtEN6"
-	to := "QTdtEdduBTybwnRpDWc2A44oUiLTpp227k"
+	to := "Qf6t5Ww14ZWVbG3kpXKoTt4gXeKNVxM9QJ"
 
 	contract := openwallet.SmartContract{
 		Address:  "f2033ede578e17fa6231047265010445bca8cf1c",
@@ -215,7 +215,7 @@ func TestTransfer_QRC20(t *testing.T) {
 		Decimals: 8,
 	}
 
-	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "2", "", &contract)
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.01", "", &contract)
 	if err != nil {
 		return
 	}
