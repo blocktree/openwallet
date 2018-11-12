@@ -997,11 +997,11 @@ func (bs *BTCBlockScanner) GetSourceKeyByAddress(address string) (string, bool) 
 //GetBlockHeight 获取区块链高度
 func (wm *WalletManager) GetBlockHeight() (uint64, error) {
 
-	//if wm.Config.RPCServerType == RPCServerExplorer {
-	//	return wm.getBlockHeightByExplorer()
-	//} else {
+	if wm.Config.RPCServerType == RPCServerExplorer {
+		return wm.getBlockHeightByExplorer()
+	} else {
 		return wm.getBlockHeightByCore()
-	//}
+	}
 }
 
 //getBlockHeightByCore 获取区块链高度
@@ -1065,11 +1065,11 @@ func (wm *WalletManager) SaveLocalBlock(block *Block) {
 //GetBlockHash 根据区块高度获得区块hash
 func (wm *WalletManager) GetBlockHash(height uint64) (string, error) {
 
-	//if wm.Config.RPCServerType == RPCServerExplorer {
-	//	return wm.getBlockHashByExplorer(height)
-	//} else {
+	if wm.Config.RPCServerType == RPCServerExplorer {
+		return wm.getBlockHashByExplorer(height)
+	} else {
 		return wm.getBlockHashByCore(height)
-	//}
+	}
 }
 
 //getBlockHashByCore 根据区块高度获得区块hash
@@ -1111,11 +1111,11 @@ func (wm *WalletManager) GetLocalBlock(height uint64) (*Block, error) {
 //GetBlock 获取区块数据
 func (wm *WalletManager) GetBlock(hash string) (*Block, error) {
 
-	//if wm.Config.RPCServerType == RPCServerExplorer {
-	//	return wm.getBlockByExplorer(hash)
-	//} else {
+	if wm.Config.RPCServerType == RPCServerExplorer {
+		return wm.getBlockByExplorer(hash)
+	} else {
 		return wm.getBlockByCore(hash)
-	//}
+	}
 }
 
 //getBlockByCore 获取区块数据
@@ -1136,11 +1136,11 @@ func (wm *WalletManager) getBlockByCore(hash string) (*Block, error) {
 //GetTxIDsInMemPool 获取待处理的交易池中的交易单IDs
 func (wm *WalletManager) GetTxIDsInMemPool() ([]string, error) {
 
-	//if wm.Config.RPCServerType == RPCServerExplorer {
-	//	return wm.getTxIDsInMemPoolByExplorer()
-	//} else {
+	if wm.Config.RPCServerType == RPCServerExplorer {
+		return wm.getTxIDsInMemPoolByExplorer()
+	} else {
 		return wm.getTxIDsInMemPoolByCore()
-	//}
+	}
 }
 
 //getTxIDsInMemPoolByCore 获取待处理的交易池中的交易单IDs
@@ -1181,11 +1181,11 @@ func (wm *WalletManager) GetTransaction(txid string) (*Transaction, error) {
 	//
 	//return result, nil
 
-	//if wm.Config.RPCServerType == RPCServerExplorer {
-	//	return wm.getTransactionByExplorer(txid)
-	//} else {
+	if wm.Config.RPCServerType == RPCServerExplorer {
+		return wm.getTransactionByExplorer(txid)
+	} else {
 		return wm.getTransactionByCore(txid)
-	//}
+	}
 
 }
 
@@ -1208,11 +1208,11 @@ func (wm *WalletManager) getTransactionByCore(txid string) (*Transaction, error)
 //GetTxOut 获取交易单输出信息，用于追溯交易单输入源头
 func (wm *WalletManager) GetTxOut(txid string, vout uint64) (*Vout, error) {
 
-	//if wm.Config.RPCServerType == RPCServerExplorer {
-	//	return wm.getTxOutByExplorer(txid, vout)
-	//} else {
+	if wm.Config.RPCServerType == RPCServerExplorer {
+		return wm.getTxOutByExplorer(txid, vout)
+	} else {
 		return wm.getTxOutByCore(txid, vout)
-	//}
+	}
 }
 
 //getTxOutByCore 获取交易单输出信息，用于追溯交易单输入源头
