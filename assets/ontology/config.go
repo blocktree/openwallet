@@ -132,7 +132,7 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	//核心钱包密码，配置有值用于自动解锁钱包
 	c.WalletPassword = ""
 	//后台数据源类型
-	c.RPCServerType = RPCServerCore
+	c.RPCServerType = 0
 	//支持隔离见证
 	c.SupportSegWit = true
 
