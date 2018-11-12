@@ -20,7 +20,13 @@ func serilizeS(sig []byte) []byte {
 		numOrder := new(big.Int).SetBytes(CurveOrder)
 		numS.Sub(numOrder, numS)
 
-		return append(sig[:32], numS.Bytes()...)
+		s = numS.Bytes()
+		if len(s) < 32 {
+			for i := 0; i < 32-len(s); i++ {
+				s = append([]byte{0x00}, s...)
+			}
+		}
+		return append(sig[:32], s...)
 	}
 	return sig
 }
