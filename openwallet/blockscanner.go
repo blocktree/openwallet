@@ -31,11 +31,6 @@ type BlockScanAddressFunc func(address string) (string, bool)
 // 负责扫描新区块，给观察者推送订阅地址的新交易单。
 type BlockScanner interface {
 
-	//AddWallet 添加扫描地址
-	//@param address 地址
-	//@param sourceKey 数据源标识，可以是地址所属的应用钱包的唯一标识，资产账户唯一标识
-	//AddAddress(address, sourceKey string) error
-
 	//SetBlockScanAddressFunc 设置区块扫描过程，查找地址过程方法
 	//@required
 	SetBlockScanAddressFunc(scanAddressFunc BlockScanAddressFunc) error
@@ -45,9 +40,6 @@ type BlockScanner interface {
 
 	//RemoveObserver 移除观测者
 	RemoveObserver(obj BlockScanNotificationObject) error
-
-	//Clear 清理订阅扫描的内容
-	//Clear() error
 
 	//SetRescanBlockHeight 重置区块链扫描高度
 	//@required
@@ -73,8 +65,9 @@ type BlockScanner interface {
 	//@required
 	GetCurrentBlockHeader() (*BlockHeader, error)
 
-	//IsExistAddress 指定地址是否已登记扫描
-	//IsExistAddress(address string) bool
+	//GetGlobalMaxBlockHeight 获取区块链全网最大高度
+	//@required
+	GetGlobalMaxBlockHeight() uint64
 
 	//GetScannedBlockHeight 获取已扫区块高度
 	//@required
@@ -264,6 +257,12 @@ func (bs *BlockScannerBase) ScanBlock(height uint64) error {
 //GetCurrentBlockHeight 获取当前区块高度
 func (bs *BlockScannerBase) GetCurrentBlockHeader() (*BlockHeader, error) {
 	return nil, fmt.Errorf("GetCurrentBlockHeader is not implemented")
+}
+
+//GetGlobalMaxBlockHeight 获取区块链全网最大高度
+//@required
+func (bs *BlockScannerBase) GetGlobalMaxBlockHeight() uint64 {
+	return 0
 }
 
 //GetScannedBlockHeight 获取已扫区块高度

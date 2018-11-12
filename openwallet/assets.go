@@ -28,21 +28,27 @@ type Coin struct {
 type AssetsAdapter interface {
 
 	//币种信息
+	//@required
 	SymbolInfo
 
 	//配置
+	//@required
 	AssetsConfig
 
 	//GetAddressDecode 地址解析器
+	//@required
 	GetAddressDecode() AddressDecoder
 
 	//GetTransactionDecoder 交易单解析器
+	//@required
 	GetTransactionDecoder() TransactionDecoder
 
 	//GetBlockScanner 获取区块链扫描器
+	//@required
 	GetBlockScanner() BlockScanner
 
 	//GetSmartContractDecoder 获取智能合约解析器
+	//@optional
 	GetSmartContractDecoder() SmartContractDecoder
 }
 
