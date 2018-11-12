@@ -505,6 +505,7 @@ func (wm *WalletManager) GetAssetsAccountTokenBalance(appID, walletID, accountID
 	return &accountTokenBalance, nil
 }
 
+
 //GetTransactions
 func (wm *WalletManager) GetTransactions(appID string, offset, limit int, cols ...interface{}) ([]*openwallet.Transaction, error) {
 

@@ -19,7 +19,7 @@ import "testing"
 
 func TestCreateAddress(t *testing.T) {
 
-	var passValue string = "7465737470617373776f7264"
+	var passValue = "7465737470617373776f7264"
 
 	if r, err := tw.CreateAddress(passValue); err != nil {
 		t.Errorf("CreateAddress failed: %v\n", err)
@@ -43,7 +43,7 @@ func TestGenerateAddress(t *testing.T) {
 
 func TestValidateAddress(t *testing.T) {
 
-	var addr string = OWNERADDRESS
+	var addr = OWNERADDRESS
 
 	if err := tw.ValidateAddress(addr); err != nil {
 		t.Errorf("ValidateAddress failed: %v\n", err)

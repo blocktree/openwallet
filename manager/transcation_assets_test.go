@@ -245,9 +245,41 @@ func TestTransfer_NAS(t *testing.T) {
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "7VftKuNoDtwZ3mn3wDA4smTDMz4iqCg3fNna1fXicVDg"
-	to := "n1WW4shxJK3iUDsZ9aYuQFNwDyb4CtX8xC3"
+	to := "n1LyK9R1jZuMWut28kUiQn8dEoMQUezt9GC"
 
-	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.02", "",nil)
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.005", "",nil)
+	if err != nil {
+		return
+	}
+
+	_, err = testSignTransactionStep(rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testVerifyTransactionStep(rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testSubmitTransactionStep(rawTx)
+	if err != nil {
+		return
+	}
+
+}
+
+
+func TestTransfer_BTC(t *testing.T) {
+	//ms9NeTGFtaMcjrqRyRogkHqRoR8b1sQwu3
+	//mp1JDsi7Dr2PkcWu1j4SUSTXJqXjFMaeVx
+	//n1ZurJRnQyoRwBrx6B7DMndjBWAxnRbxKJ
+	//mxoCkSBmiLQ86N73kXNLHEUgcUBoKdFawH
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "2m27uVj2xx645dDCEcGD1whPQGcB4fZv16TzBoLGCyKB"
+	to := "ms9NeTGFtaMcjrqRyRogkHqRoR8b1sQwu3"
+
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.04", "", nil)
 	if err != nil {
 		return
 	}

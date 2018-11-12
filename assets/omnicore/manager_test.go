@@ -489,7 +489,7 @@ func TestWalletManager_Omni_Transfer(t *testing.T) {
 	from := "mjsb9e91C6xLsFUh1Z51XEUwNYcAgV4ZW7"
 	to := "mxoozXoNBekg2GoujWG42oB31nsd36deyR"
 	amount := "2"
-	tx, err := tw.Omni_Transfer(walletId, "1234qwer", from, to, amount)
+	tx, err := tw.Omni_Transfer(walletId, "1234qwer", from, to, "", amount)
 	if err != nil {
 		t.Logf(err.Error())
 		return

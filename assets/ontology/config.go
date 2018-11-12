@@ -1,3 +1,18 @@
+/*
+ * Copyright 2018 The OpenWallet Authors
+ * This file is part of the OpenWallet library.
+ *
+ * The OpenWallet library is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The OpenWallet library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ */
+
 package ontology
 
 import (
@@ -116,7 +131,7 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	//备份路径
 	c.backupDir = filepath.Join("data", strings.ToLower(c.Symbol), "backup")
 	//钱包服务API
-	c.ServerAPI = "http://127.0.0.1:10000"
+	c.ServerAPI = "http://127.0.0.1:20336"
 	//钱包安装的路径
 	c.NodeInstallPath = ""
 	//钱包数据文件目录
@@ -132,7 +147,7 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	//核心钱包密码，配置有值用于自动解锁钱包
 	c.WalletPassword = ""
 	//后台数据源类型
-	c.RPCServerType = RPCServerCore
+	c.RPCServerType = 0
 	//支持隔离见证
 	c.SupportSegWit = true
 
