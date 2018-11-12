@@ -50,8 +50,8 @@ import (
 func (bs *TronBlockScanner) GetLocalNewBlock() (uint64, string) {
 
 	var (
-		blockHeight uint64 = 0
-		blockHash   string = ""
+		blockHeight uint64
+		blockHash   string
 	)
 
 	//获取本地区块高度
@@ -88,7 +88,7 @@ func (bs *TronBlockScanner) GetLocalBlock(height uint64) (*Block, error) {
 	return &block, nil
 }
 
-//SaveTxToWalletDB 保存交易记录到钱包数据库
+//SaveUnscanRecord 保存交易记录到钱包数据库
 func (bs *TronBlockScanner) SaveUnscanRecord(record *UnscanRecord) error {
 
 	if record == nil {

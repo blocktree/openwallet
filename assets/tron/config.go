@@ -38,7 +38,7 @@ import (
 */
 
 const (
-	//币种
+	// Symbol 币种
 	Symbol    = "TRON"
 	MasterKey = "Troncoin seed"
 	CurveType = owcrypt.ECC_CURVE_SECP256K1 // to generate ChildKey by BIP32
@@ -50,7 +50,7 @@ type WalletConfig struct {
 	Symbol    string
 	MasterKey string
 
-	//RPC认证账户名
+	//RpcUser RPC认证账户名
 	RpcUser string
 	//RPC认证账户密码
 	RpcPassword string

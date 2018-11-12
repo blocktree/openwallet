@@ -35,6 +35,7 @@ type Client struct {
 	client *req.Req
 }
 
+// NewClient create new client to connect
 func NewClient(url, token string, debug bool) *Client {
 	c := Client{
 		BaseURL: url,

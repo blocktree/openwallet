@@ -33,10 +33,11 @@ func TestGetWallets(t *testing.T) {
 func TestCreateNewWallet(t *testing.T) {
 
 	var (
-		wallet_name string = "simon"
-		wallet_pass string = "1234qwer"
+		walletName = "simon"
+		walletPass = "1234qwer"
 	)
-	if r, s, err := tw.CreateNewWallet(wallet_name, wallet_pass); err != nil {
+
+	if r, s, err := tw.CreateNewWallet(walletName, walletPass); err != nil {
 		t.Errorf("CreateNewWallet failed: %v\n", err)
 	} else {
 		t.Logf("TestCreateTrCreateNewWalletansaction return: \n%+v\n", r)
