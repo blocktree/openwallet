@@ -23,10 +23,10 @@ import (
 
 func TestGetPrivateKeyRef(t *testing.T) {
 	var (
-		walletID   string = "W4Hv5qiUb3R7GVQ9wgmX8MfhZ1GVR6dqL7"
-		password   string = "1234qwer"
+		walletID          = "W4Hv5qiUb3R7GVQ9wgmX8MfhZ1GVR6dqL7"
+		password          = "1234qwer"
 		index      uint64 = 1539142990
-		serializes uint32 = 0
+		serializes uint32
 	)
 
 	if r, err := tw.GetPrivateKeyRef(walletID, password, index, serializes); err != nil {

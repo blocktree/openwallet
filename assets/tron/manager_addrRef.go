@@ -47,35 +47,35 @@ func createAddressByPkRef(pubKey []byte) (addrBytes []byte, err error) {
 	return addrBytes, nil
 }
 
-// Done
+// CreateAddressRef Done!
 // Function: Create address from a specified private key string
 func (wm *WalletManager) CreateAddressRef(key []byte, isPrivate bool) (addrBase58 string, err error) {
 
 	var pubKey []byte
 
 	if isPrivate {
-		if r, res := owcrypt.GenPubkey(key, owcrypt.ECC_CURVE_SECP256K1); res != owcrypt.SUCCESS {
-			err := errors.New("Error from owcrypt.GenPubkey: failed!")
+		r, res := owcrypt.GenPubkey(key, owcrypt.ECC_CURVE_SECP256K1)
+		if res != owcrypt.SUCCESS {
+			err := errors.New("Error from owcrypt.GenPubkey: failed")
 			log.Println(err)
 			return "", err
-		} else {
-			pubKey = r
 		}
+		pubKey = r
 	} else {
 		pubKey = key
 	}
 
-	if address, err := createAddressByPkRef(pubKey); err != nil {
+	address, err := createAddressByPkRef(pubKey)
+	if err != nil {
 		return "", err
-	} else {
-		// Last: encoding with Base58(alphabet use BitcoinAlphabet)
-		addrBase58 = base58.Encode(address, base58.BitcoinAlphabet)
 	}
+	// Last: encoding with Base58(alphabet use BitcoinAlphabet)
+	addrBase58 = base58.Encode(address, base58.BitcoinAlphabet)
 
 	return addrBase58, nil
 }
 
-// Done
+// ValidateAddressRef Done!
 func (wm *WalletManager) ValidateAddressRef(addrBase58 string) (err error) {
 
 	addressBytes, err := base58.Decode(addrBase58, base58.BitcoinAlphabet)
@@ -88,13 +88,14 @@ func (wm *WalletManager) ValidateAddressRef(addrBase58 string) (err error) {
 	sha256_0_1 := owcrypt.Hash(addressBytes, 0, owcrypt.HASh_ALG_DOUBLE_SHA256)
 
 	if hex.EncodeToString(sha256_0_1[0:4]) != hex.EncodeToString(checksum) {
-		return errors.New("Address invalid!")
+		return errors.New("Address invalid")
 	}
 
 	return nil
 }
 
 // -------------------------------------------------------------------------------------------------------------------------------
+
 //CreateBatchAddress 批量创建地址
 func (wm *WalletManager) CreateBatchAddress(name, password string, count uint64) (string, []*openwallet.Address, error) {
 
@@ -227,7 +228,7 @@ func (wm *WalletManager) CreateBatchAddress(name, password string, count uint64)
 		}
 	}
 
-	return filePath, outputAddress, nil
+	// return filePath, outputAddress, nil
 }
 
 //createAddressWork 创建地址过程

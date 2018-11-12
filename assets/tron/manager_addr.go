@@ -23,7 +23,7 @@ import (
 	"github.com/tronprotocol/grpc-gateway/api"
 )
 
-// Done!
+// CreateAddress Done!
 // Function: Create address from a specified password string (NOT PRIVATE KEY)
 // Demo: curl -X POST http://127.0.0.1:8090/wallet/createaddress -d ‘
 // 	{“value”: “7465737470617373776f7264” }’
@@ -45,7 +45,7 @@ func (wm *WalletManager) CreateAddress(passValue string) (addr *gjson.Result, er
 	return r, nil
 }
 
-// Done!
+// GenerateAddress Done!
 // Function: Generates a random private key and address pair
 // Demo：curl -X POST -k http://127.0.0.1:8090/wallet/generateaddress
 // Parameters:
@@ -71,7 +71,7 @@ func (wm *WalletManager) GenerateAddress() (addr *api.AddressPrKeyPairMessage, e
 	return addr, nil
 }
 
-// Done!
+// ValidateAddress Done!
 // Function：validate address
 // Demo: curl -X POST http://127.0.0.1:8090/wallet/validateaddress -d ‘
 // 	{“address”: “4189139CB1387AF85E3D24E212A008AC974967E561”}’
@@ -88,7 +88,7 @@ func (wm *WalletManager) ValidateAddress(address string) (err error) {
 		return err
 	}
 	if r.Get("result").Bool() != true {
-		return errors.New("Invalid!")
+		return errors.New("Invalid")
 	}
 
 	return nil

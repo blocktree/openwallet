@@ -27,7 +27,7 @@ const (
 	maxAddresNum = 10000
 )
 
-//loadConfig 读取配置
+//LoadConfig 读取配置
 func (wm *WalletManager) LoadConfig() error {
 
 	var (
