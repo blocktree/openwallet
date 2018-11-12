@@ -332,9 +332,6 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 			}
 		}
 
-		//取账户最后一个地址
-		changeAddress := address[len(address)-1]
-
 		log.Info("Calculating wallet unspent record to build transaction...")
 		//循环的计算余额是否足够支付发送数额+手续费
 		for {
@@ -390,6 +387,9 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		}
 
 
+		//取账户最后一个地址
+		changeAddress := usedUTXO[0].Address
+
 
 		log.Std.Notice("-----------------------------------------------")
 		log.Std.Notice("From Account: %s", accountID)
@@ -398,7 +398,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		log.Std.Notice("Fees: %v", actualFees.StringFixed(8))
 		log.Std.Notice("Receive: %v", computeTotalSend.StringFixed(8))
 		log.Std.Notice("Change: %v", changeAmount.StringFixed(8))
-		log.Std.Notice("Change Address: %v", changeAddress.Address)
+		log.Std.Notice("Change Address: %v", changeAddress)
 		log.Std.Notice("-----------------------------------------------")
 
 		//装配输入
@@ -421,7 +421,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		//changeAmount := balance.Sub(totalSend).Sub(actualFees)
 		if changeAmount.GreaterThan(decimal.New(0, 0)) {
 			deamount := changeAmount.Mul(decoder.wm.config.CoinDecimal)
-			out := btcLikeTxDriver.Vout{changeAddress.Address, uint64(deamount.IntPart())}
+			out := btcLikeTxDriver.Vout{changeAddress, uint64(deamount.IntPart())}
 			vouts = append(vouts, out)
 
 			//fmt.Printf("Create change address for receiving %s coin.", outputs[change])

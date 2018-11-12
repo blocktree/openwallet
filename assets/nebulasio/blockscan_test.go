@@ -83,8 +83,8 @@ func TestGetTxIDsInMemPool(t *testing.T) {
 
 func TestBTCBlockScanner_scanning(t *testing.T) {
 
-	accountID := "wjq2"
-	address := "n1Prn7ZbZtd5CTN8Yrj4K9c3gD4u8tjFQzX"
+	//accountID := "wjq2"
+	//address := "n1Prn7ZbZtd5CTN8Yrj4K9c3gD4u8tjFQzX"
 
 	bs := NewNASBlockScanner(wm)
 
@@ -101,7 +101,7 @@ func TestBTCBlockScanner_scanning(t *testing.T) {
 	//tw.SaveLocalNewBlock(1355030, "00000000000000125b86abb80b1f94af13a5d9b07340076092eda92dade27686")
 
 	//AddAddress 添加订阅地址
-	bs.AddAddress(address, accountID)
+	//bs.AddAddress(address, accountID)
 
 	bs.ScanBlockTask()
 }
@@ -112,8 +112,8 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 		endRunning = make(chan bool, 1)
 	)
 
-	accountID := "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
-	address := "n1NCdn2vo1vz2didNfnvxPaAPZbh634CLqM"
+	//accountID := "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
+	//address := "n1NCdn2vo1vz2didNfnvxPaAPZbh634CLqM"
 
 	bs := NewNASBlockScanner(wm)
 
@@ -123,7 +123,7 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 
 	bs.SetRescanBlockHeight(1165601)
 
-	bs.AddAddress(address, accountID)
+	//bs.AddAddress(address, accountID)
 
 	bs.Run()
 
@@ -133,26 +133,26 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 
 func TestBTCBlockScanner_ScanBlock(t *testing.T) {
 
-	accountID := "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
-	address := "n1a5JWwqVug7CjvsEbVAGRE5KQsKjK2Jy56"
+	//accountID := "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
+	//address := "n1a5JWwqVug7CjvsEbVAGRE5KQsKjK2Jy56"
 
 	bs := NewNASBlockScanner(wm)
-	bs.AddAddress(address, accountID)
+	//bs.AddAddress(address, accountID)
 	bs.ScanBlock(15037)
 }
 
 func TestBTCBlockScanner_ExtractTransaction(t *testing.T) {
 
-	accountID := "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
-	address := "n1a5JWwqVug7CjvsEbVAGRE5KQsKjK2Jy56"
+	//accountID := "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
+	//address := "n1a5JWwqVug7CjvsEbVAGRE5KQsKjK2Jy56"
 
-	bs := NewNASBlockScanner(wm)
-	bs.AddAddress(address, accountID)
+	//bs := NewNASBlockScanner(wm)
+	//bs.AddAddress(address, accountID)
 
-	bs.ExtractTransaction(
-		0,
-		"",
-		"26e6f69d472a53c93030ae6c262d6fa5219c715966933c15a9247abd5478184b")
+	//bs.ExtractTransaction(
+	//	0,
+	//	"",
+	//	"26e6f69d472a53c93030ae6c262d6fa5219c715966933c15a9247abd5478184b")
 
 }
 
