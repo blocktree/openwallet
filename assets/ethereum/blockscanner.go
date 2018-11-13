@@ -520,7 +520,7 @@ func (this *ETHBLockScanner) UpdateTxByReceipt(tx *BlockTransaction) (*TransferE
 	return receipt.ParseTransferEvent(), nil
 }
 
-func (this *ETHBLockScanner) GetErc20TokenEvent(tx *BlockTransaction) (*TransferEvent, error) {
+/*func (this *ETHBLockScanner) GetErc20TokenEvent(tx *BlockTransaction) (*TransferEvent, error) {
 	//非合约交易或未打包交易跳过
 	//obj, _ := json.MarshalIndent(tx, "", " ")
 	//log.Debugf("tx:%v", string(obj))
@@ -529,7 +529,7 @@ func (this *ETHBLockScanner) GetErc20TokenEvent(tx *BlockTransaction) (*Transfer
 	}
 
 	return this.wm.GetErc20TokenEvent(tx.Hash)
-}
+}*/
 
 func (this *ETHBLockScanner) MakeToExtractData(tx *BlockTransaction, tokenEvent *TransferEvent) (string, []*openwallet.TxExtractData, error) {
 	if tokenEvent == nil {
@@ -1031,11 +1031,17 @@ func (this *ETHBLockScanner) TransactionScanning(tx *BlockTransaction) (*Extract
 	}
 
 	tokenEvent, err := this.UpdateTxByReceipt(tx)
-	if err != nil {
+	if err != nil && strings.Index(err.Error(), "result type is Null") == -1 {
 		log.Errorf("UpdateTxByReceipt failed, err=%v", err)
 		return nil, err
+	} else if err != nil && strings.Index(err.Error(), "result type is Null") != -1 {
+		err = this.wm.SaveUnscannedTransaction(tx, "get tx receipt reply with null result")
+		if err != nil {
+			log.Errorf("block height: %d, save unscan record failed. unexpected error: %v", tx.BlockHeight, err)
+			return nil, err
+		}
+		return &result, nil
 	}
-	//log.Debugf("get token Event:%v", tokenEvent)
 
 	FromSourceKey, fromExtractDataList, err := this.MakeFromExtractData(tx, tokenEvent)
 	if err != nil {
