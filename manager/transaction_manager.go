@@ -17,11 +17,11 @@ package manager
 
 import (
 	"fmt"
-	"github.com/shopspring/decimal"
 	"time"
 
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/shopspring/decimal"
 )
 
 func (wm *WalletManager) CreateErc20TokenTransaction(appID, walletID, accountID, amount, address, feeRate, memo,
@@ -504,7 +504,6 @@ func (wm *WalletManager) GetAssetsAccountTokenBalance(appID, walletID, accountID
 
 	return &accountTokenBalance, nil
 }
-
 
 //GetTransactions
 func (wm *WalletManager) GetTransactions(appID string, offset, limit int, cols ...interface{}) ([]*openwallet.Transaction, error) {

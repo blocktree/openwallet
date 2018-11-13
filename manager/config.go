@@ -22,11 +22,11 @@ var (
 )
 
 type Config struct {
-	KeyDir    string //钥匙备份路径
-	DBPath    string //本地数据库文件路径
-	BackupDir string //备份路径
-	IsTestnet bool   //是否测试网
-	SupportAssets []string //支持的资产类型
+	KeyDir          string   //钥匙备份路径
+	DBPath          string   //本地数据库文件路径
+	BackupDir       string   //备份路径
+	IsTestnet       bool     //是否测试网
+	SupportAssets   []string //支持的资产类型
 	EnableBlockScan bool
 }
 
@@ -41,7 +41,7 @@ func NewConfig() *Config {
 	//备份路径
 	c.BackupDir = filepath.Join(defaultDataDir, "backup")
 	//支持资产
-	c.SupportAssets = []string{"BTC", "ETH", "QTUM","NAS"}
+	c.SupportAssets = []string{"BTC", "ETH", "QTUM", "NAS", "TRON"}
 	//开启区块扫描
 	c.EnableBlockScan = false
 	//测试网

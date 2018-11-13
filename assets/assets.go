@@ -28,15 +28,15 @@ import (
 	"github.com/blocktree/OpenWallet/assets/decred"
 	"github.com/blocktree/OpenWallet/assets/ethereum"
 	"github.com/blocktree/OpenWallet/assets/hypercash"
+	"github.com/blocktree/OpenWallet/assets/icon"
 	"github.com/blocktree/OpenWallet/assets/iota"
 	"github.com/blocktree/OpenWallet/assets/litecoin"
+	"github.com/blocktree/OpenWallet/assets/nebulasio"
 	"github.com/blocktree/OpenWallet/assets/qtum"
 	"github.com/blocktree/OpenWallet/assets/sia"
 	"github.com/blocktree/OpenWallet/assets/stc2345"
 	"github.com/blocktree/OpenWallet/assets/tezos"
 	"github.com/blocktree/OpenWallet/assets/tron"
-	"github.com/blocktree/OpenWallet/assets/nebulasio"
-	"github.com/blocktree/OpenWallet/assets/icon"
 )
 
 //WalletManager 钱包管理器

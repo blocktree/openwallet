@@ -45,8 +45,8 @@ func (wm *WalletManager) LoadConfig() error {
 	wm.Config.ServerAPI = c.String("serverAPI")
 	wm.Config.Threshold, _ = decimal.NewFromString(c.String("threshold"))
 	wm.Config.SumAddress = c.String("sumAddress")
-	wm.Config.RpcUser = c.String("rpcUser")
-	wm.Config.RpcPassword = c.String("rpcPassword")
+	wm.Config.RPCUser = c.String("rpcUser")
+	wm.Config.RPCPassword = c.String("rpcPassword")
 	wm.Config.NodeInstallPath = c.String("nodeInstallPath")
 	wm.Config.IsTestNet, _ = c.Bool("isTestNet")
 	if wm.Config.IsTestNet {

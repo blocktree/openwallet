@@ -17,17 +17,15 @@ package tron
 
 import (
 	"encoding/hex"
-	"errors"
 	"fmt"
 
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/golang/protobuf/proto"
 	"github.com/imroc/req"
-	"github.com/tidwall/gjson"
 	"github.com/tronprotocol/grpc-gateway/core"
 )
 
-// Done!
+// GetTotalTransaction Done!
 // Function：Count all transactions (number) on the network
 // demo: curl -X POST http://127.0.0.1:8090/wallet/totaltransaction
 // Parameters：Nones
@@ -44,7 +42,7 @@ func (wm *WalletManager) GetTotalTransaction() (num uint64, err error) {
 	return num, nil
 }
 
-// Done!
+// GetTransactionByID Done!
 // Function：Query transaction by ID
 // 	demo: curl -X POST http://127.0.0.1:8090/wallet/gettransactionbyid -d ‘
 // 		{“value”: “d5ec749ecc2a615399d8a6c864ea4c74ff9f523c2be0e341ac9be5d47d7c2d62”}’
@@ -62,7 +60,7 @@ func (wm *WalletManager) GetTransactionByID(txID string) (tx *Transaction, err e
 	return tx, err
 }
 
-// Done!
+// CreateTransaction Writing!
 // Function：Creates a transaction of transfer. If the recipient address does not exist, a corresponding account will be created on the blockchain.
 // demo: curl -X POST http://127.0.0.1:8090/wallet/createtransaction -d ‘
 // 	{“to_address”: “41e9d79cc47518930bc322d9bf7cddd260a0260a8d”,
@@ -87,11 +85,20 @@ func (wm *WalletManager) CreateTransaction(to_address, owner_address string, amo
 		return "", err
 	}
 
-	tx := &core.Transaction_Contract{}
-	if err := gjson.Unmarshal([]byte(r.Raw), tx); err != nil {
-		log.Errorf("Proto Unmarshal: ", err)
-		return "", err
-	}
+	// // type Transaction_Contract struct {
+	// // 	Type                 Transaction_Contract_ContractType `protobuf:"varint,1,opt,name=type,proto3,enum=protocol.Transaction_Contract_ContractType" json:"type,omitempty"`
+	// // 	Parameter            *any.Any                          `protobuf:"bytes,2,opt,name=parameter,proto3" json:"parameter,omitempty"`
+	// // 	Provider             []byte                            `protobuf:"bytes,3,opt,name=provider,proto3" json:"provider,omitempty"`
+	// // 	ContractName         []byte                            `protobuf:"bytes,4,opt,name=ContractName,proto3" json:"ContractName,omitempty"`
+	// // 	XXX_NoUnkeyedLiteral struct{}                          `json:"-"`
+	// // 	XXX_unrecognized     []byte                            `json:"-"`
+	// // 	XXX_sizecache        int32                             `json:"-"`
+	// // }
+	// tx := &core.Transaction_Contract{}
+	// if err := gjson.Unmarshal([]byte(r.Raw), tx); err != nil {
+	// 	log.Errorf("Proto Unmarshal: ", err)
+	// 	return "", err
+	// }
 	raw = hex.EncodeToString([]byte(r.Raw))
 
 	return raw, nil
@@ -132,7 +139,7 @@ func (wm *WalletManager) GetTransactionSign(transaction, privateKey string) (raw
 	return rawSinged, nil
 }
 
-// Done!
+// BroadcastTransaction Done!
 // Function：Broadcast the signed transaction
 // 	demo：curl -X POST http://127.0.0.1:8090/wallet/broadcasttransaction -d ‘
 // 		{“signature”:[“97c825b41c77de2a8bd65b3df55cd4c0df59c307c0187e42321dcc1cc455ddba583dd9502e17cfec5945b34cad0511985a6165999092a6dec84c2bdd97e649fc01”],
@@ -236,9 +243,9 @@ func (wm *WalletManager) BroadcastTransaction(raw string) error {
 
 			if r.Get("message").String() != "" {
 				msg, _ := hex.DecodeString(r.Get("message").String())
-				err = errors.New(fmt.Sprintf("BroadcastTransaction error message: %+v", string(msg)))
+				err = fmt.Errorf("BroadcastTransaction error message: %+v", string(msg))
 			} else {
-				err = errors.New(fmt.Sprintf("BroadcastTransaction return error: %+v", r))
+				err = fmt.Errorf("BroadcastTransaction return error: %+v", r)
 			}
 			log.Error(err)
 

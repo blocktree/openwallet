@@ -351,6 +351,7 @@ func (wm *WalletManager) SummaryFollow() error {
 }
 
 //------------------------------------------------------------------------------------------------
+
 // //SetConfigFlow 初始化配置流程
 // func (wm *WalletManager) SetConfigFlow(subCmd string) error {
 // 	file := wm.Config.configFilePath + wm.Config.configFileName
@@ -364,50 +365,13 @@ func (wm *WalletManager) SummaryFollow() error {
 // 	return nil
 // }
 
-// //CurveType 曲线类型
-// func (wm *WalletManager) CurveType() uint32 {
-// 	return wm.Config.CurveType
-// }
-
-// //FullName 币种全名
-// func (wm *WalletManager) FullName() string {
-// 	return "Tron"
-// }
-
-// //Symbol 币种标识
-// func (wm *WalletManager) Symbol() string {
-// 	return wm.Config.Symbol
-// }
-
-// //小数位精度
-// func (wm *WalletManager) Decimal() int32 {
-// 	return 8
-// }
-
-// //AddressDecode 地址解析器
-// func (wm *WalletManager) GetAddressDecode() openwallet.AddressDecoder {
-// 	return wm.Decoder
-// }
-
-// //TransactionDecoder 交易单解析器
-// func (wm *WalletManager) GetTransactionDecoder() openwallet.TransactionDecoder {
-// 	return wm.TxDecoder
-// }
-
-//GetBlockScanner 获取区块链
-func (wm *WalletManager) GetBlockScanner() openwallet.BlockScanner {
-
-	// 设计为 Java 实现
-	return nil
-}
-
 //ImportWatchOnlyAddress 导入观测地址
 func (wm *WalletManager) ImportWatchOnlyAddress(address ...*openwallet.Address) error {
 
 	return nil
 }
 
-//GetAddressWithBalance
+//GetAddressWithBalance 获取地址对应的余额
 func (wm *WalletManager) GetAddressWithBalance(address ...*openwallet.Address) error {
 
 	var (
@@ -443,5 +407,4 @@ func (wm *WalletManager) GetAddressWithBalance(address ...*openwallet.Address) e
 	// }
 
 	return nil
-
 }
