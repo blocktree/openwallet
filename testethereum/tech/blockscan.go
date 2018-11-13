@@ -38,9 +38,9 @@ func TestSubscribe() {
 	//   wm, _ := GetAssetsManager(symbol)
 	sub := subscriber{}
 	tm.AddObserver(&sub)
-	manager, _ := GetEthWalletManager()
-	manager.Blockscanner.AddAddress("0xe7134824df22750a42726483e64047ef652d6194", "openw:KaszkQZb2xsaNuW5UoAukhM5MhzAqtPBWYTwkk4m2QhtDYN9E8")
-	manager.Blockscanner.AddAddress("0xdfe55e4f7c1f24a7d9b05a0ac39c0390eb918564", "openw:KaszkQZb2xsaNuW5UoAukhM5MhzAqtPBWYTwkk4m2QhtDYN9E8")
+	//manager, _ := GetEthWalletManager()
+	//manager.Blockscanner.AddAddress("0xe7134824df22750a42726483e64047ef652d6194", "openw:KaszkQZb2xsaNuW5UoAukhM5MhzAqtPBWYTwkk4m2QhtDYN9E8")
+	//manager.Blockscanner.AddAddress("0xdfe55e4f7c1f24a7d9b05a0ac39c0390eb918564", "openw:KaszkQZb2xsaNuW5UoAukhM5MhzAqtPBWYTwkk4m2QhtDYN9E8")
 
 	err := PrepareTestForBlockScan()
 	if err != nil {
@@ -58,7 +58,7 @@ func TestScanBlockByHeight() {
 	sub := subscriber{}
 	tm.AddObserver(&sub)
 	manager, _ := GetEthWalletManager()
-	manager.Blockscanner.AddAddress("0xe7134824df22750a42726483e64047ef652d6194", "openw:KaszkQZb2xsaNuW5UoAukhM5MhzAqtPBWYTwkk4m2QhtDYN9E8")
+	//manager.Blockscanner.AddAddress("0xe7134824df22750a42726483e64047ef652d6194", "openw:KaszkQZb2xsaNuW5UoAukhM5MhzAqtPBWYTwkk4m2QhtDYN9E8")
 
 	err := manager.Blockscanner.ScanBlock(319482)
 	if err != nil {
