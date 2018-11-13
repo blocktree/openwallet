@@ -29,7 +29,7 @@ var (
 	tc = NewConfig()
 	//testApp = "openw"
 	testApp = "b4b1962d415d4d30ec71b28769fda585"
-	tm *WalletManager
+	tm      *WalletManager
 )
 
 func init() {
@@ -41,6 +41,7 @@ func init() {
 		"LTC",
 		"ETH",
 		"NAS",
+		"TRON",
 	}
 	tm = NewWalletManager(tc)
 	//tm.Init()

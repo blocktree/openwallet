@@ -15,18 +15,26 @@
 
 package tron
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestCreateAddress(t *testing.T) {
 
-	var passValue = "7465737470617373776f7264"
+	var (
+		passValue = "7465737470617373776f7264"
+
+		predictBase58checkAddress = "TWwv3YcHJ1NfMemQSmXCPY48RR1tsY3n9N"
+		// predictAddressHex         = "41e61c1205ee029fb4e41f294afd448cc5d578c8ef"
+	)
 
 	if r, err := tw.CreateAddress(passValue); err != nil {
 		t.Errorf("CreateAddress failed: %v\n", err)
 	} else {
-		t.Logf("CreateAddress return: \n\t%+v\n", r)
+		fmt.Printf("CreateAddress return: \n\t%+v\n", r)
 
-		if r.Get("base58checkAddress").String() != "TWwv3YcHJ1NfMemQSmXCPY48RR1tsY3n9N" || r.Get("value").String() != "41e61c1205ee029fb4e41f294afd448cc5d578c8ef" {
+		if r != predictBase58checkAddress {
 			t.Errorf("CreateAddress failed: %v\n", "Data Invalid!")
 		}
 	}
@@ -37,7 +45,7 @@ func TestGenerateAddress(t *testing.T) {
 	if r, err := tw.GenerateAddress(); err != nil {
 		t.Errorf("GenerateAddress failed: %v\n", err)
 	} else {
-		t.Logf("GenerateAddress return: \n\t%+v\n", r)
+		fmt.Printf("GenerateAddress return: \n\t%+v\n", r)
 	}
 }
 
@@ -48,6 +56,6 @@ func TestValidateAddress(t *testing.T) {
 	if err := tw.ValidateAddress(addr); err != nil {
 		t.Errorf("ValidateAddress failed: %v\n", err)
 	} else {
-		t.Logf("ValidateAddress return: \n\t%+v\n", "Success!")
+		fmt.Printf("ValidateAddress return: \n\t%+v\n", "Success!")
 	}
 }

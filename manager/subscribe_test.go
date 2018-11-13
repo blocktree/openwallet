@@ -16,11 +16,12 @@
 package manager
 
 import (
+	"path/filepath"
+	"testing"
+
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
-	"path/filepath"
-	"testing"
 )
 
 type subscriber struct {
@@ -291,7 +292,7 @@ func TestSubscribeAddress_LTC(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	scanner.SetRescanBlockHeight(	838844)
+	scanner.SetRescanBlockHeight(838844)
 
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")
@@ -361,4 +362,8 @@ func TestSubscribeAddress_NAS(t *testing.T) {
 	scanner.Run()
 
 	<-endRunning
+}
+
+func TestSubscribeAddress_TRON(t *testing.T) {
+
 }

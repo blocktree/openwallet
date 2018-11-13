@@ -20,12 +20,11 @@ import (
 	"errors"
 	"log"
 
+	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/tidwall/gjson"
 
 	"github.com/imroc/req"
-	"github.com/tronprotocol/grpc-gateway/api"
-	"github.com/tronprotocol/grpc-gateway/core"
 )
 
 func convertAddrToHex(address string) string {
@@ -47,7 +46,7 @@ func convertAddrToHex(address string) string {
 // 	Bandwidth information for the account.
 // 	If a field doesn’t appear, then the corresponding value is 0.
 // 	{“freeNetUsed”: 557,”freeNetLimit”: 5000,”NetUsed”: 353,”NetLimit”: 5239157853,”TotalNetLimit”: 43200000000,”TotalNetWeight”: 41228}
-func (wm *WalletManager) GetAccountNet(address string) (account *api.AccountNetMessage, err error) {
+func (wm *WalletManager) GetAccountNet(address string) (blockchain *openwallet.Blockchain, err error) {
 
 	address = convertAddrToHex(address)
 
@@ -56,13 +55,28 @@ func (wm *WalletManager) GetAccountNet(address string) (account *api.AccountNetM
 	if err != nil {
 		return nil, err
 	}
+	blockchain = &openwallet.Blockchain{}
+	// // type AccountNetMessage struct {
+	// // 	FreeNetUsed          int64            `protobuf:"varint,1,opt,name=freeNetUsed,proto3" json:"freeNetUsed,omitempty"`
+	// // 	FreeNetLimit         int64            `protobuf:"varint,2,opt,name=freeNetLimit,proto3" json:"freeNetLimit,omitempty"`
+	// // 	NetUsed              int64            `protobuf:"varint,3,opt,name=NetUsed,proto3" json:"NetUsed,omitempty"`
+	// // 	NetLimit             int64            `protobuf:"varint,4,opt,name=NetLimit,proto3" json:"NetLimit,omitempty"`
+	// // 	AssetNetUsed         map[string]int64 `protobuf:"bytes,5,rep,name=assetNetUsed,proto3" json:"assetNetUsed,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
+	// // 	AssetNetLimit        map[string]int64 `protobuf:"bytes,6,rep,name=assetNetLimit,proto3" json:"assetNetLimit,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
+	// // 	TotalNetLimit        int64            `protobuf:"varint,7,opt,name=TotalNetLimit,proto3" json:"TotalNetLimit,omitempty"`
+	// // 	TotalNetWeight       int64            `protobuf:"varint,8,opt,name=TotalNetWeight,proto3" json:"TotalNetWeight,omitempty"`
+	// // 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	// // 	XXX_unrecognized     []byte           `json:"-"`
+	// // 	XXX_sizecache        int32            `json:"-"`
+	// // }
+	// account = &api.AccountNetMessage{}
+	// if err := gjson.Unmarshal([]byte(r.Raw), account); err != nil {
+	// 	return nil, err
+	// }
+	TotalNetWeight := r.Get("totalnetweight").Uint()
+	blockchain.Blocks = uint64(TotalNetWeight)
 
-	account = &api.AccountNetMessage{}
-	if err := gjson.Unmarshal([]byte(r.Raw), account); err != nil {
-		return nil, err
-	}
-
-	return account, nil
+	return blockchain, nil
 }
 
 // GetAccount Done!
@@ -70,7 +84,7 @@ func (wm *WalletManager) GetAccountNet(address string) (account *api.AccountNetM
 // Parameters：
 // 	Account address，converted to a base64 string
 // Return value：
-func (wm *WalletManager) GetAccount(address string) (account *core.Account, err error) {
+func (wm *WalletManager) GetAccount(address string) (account *openwallet.AssetsAccount, err error) {
 	address = convertAddrToHex(address)
 
 	params := req.Param{"address": address}
@@ -78,11 +92,57 @@ func (wm *WalletManager) GetAccount(address string) (account *core.Account, err 
 	if err != nil {
 		return nil, err
 	}
+	account = &openwallet.AssetsAccount{}
 
-	account = &core.Account{}
-	if err := gjson.Unmarshal([]byte(r.Raw), account); err != nil {
-		return nil, err
-	}
+	// // type Account struct {
+	// // 	AccountName []byte      `protobuf:"bytes,1,opt,name=account_name,json=accountName,proto3" json:"account_name,omitempty"`
+	// // 	Type        AccountType `protobuf:"varint,2,opt,name=type,proto3,enum=protocol.AccountType" json:"type,omitempty"`
+	// // 	// the create address
+	// // 	Address []byte `protobuf:"bytes,3,opt,name=address,proto3" json:"address,omitempty"`
+	// // 	// the trx balance
+	// // 	Balance int64 `protobuf:"varint,4,opt,name=balance,proto3" json:"balance,omitempty"`
+	// // 	// the votes
+	// // 	Votes []*Vote `protobuf:"bytes,5,rep,name=votes,proto3" json:"votes,omitempty"`
+	// // 	// the other asset owned by this account
+	// // 	Asset map[string]int64 `protobuf:"bytes,6,rep,name=asset,proto3" json:"asset,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
+	// // 	// latest asset operation time
+	// // 	// the frozen balance
+	// // 	Frozen []*Account_Frozen `protobuf:"bytes,7,rep,name=frozen,proto3" json:"frozen,omitempty"`
+	// // 	// bandwidth, get from frozen
+	// // 	NetUsage int64 `protobuf:"varint,8,opt,name=net_usage,json=netUsage,proto3" json:"net_usage,omitempty"`
+	// // 	// this account create time
+	// // 	CreateTime int64 `protobuf:"varint,9,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	// // 	// this last operation time, including transfer, voting and so on. //FIXME fix grammar
+	// // 	LatestOprationTime int64 `protobuf:"varint,10,opt,name=latest_opration_time,json=latestOprationTime,proto3" json:"latest_opration_time,omitempty"`
+	// // 	// witness block producing allowance
+	// // 	Allowance int64 `protobuf:"varint,11,opt,name=allowance,proto3" json:"allowance,omitempty"`
+	// // 	// last withdraw time
+	// // 	LatestWithdrawTime int64 `protobuf:"varint,12,opt,name=latest_withdraw_time,json=latestWithdrawTime,proto3" json:"latest_withdraw_time,omitempty"`
+	// // 	// not used so far
+	// // 	Code        []byte `protobuf:"bytes,13,opt,name=code,proto3" json:"code,omitempty"`
+	// // 	IsWitness   bool   `protobuf:"varint,14,opt,name=is_witness,json=isWitness,proto3" json:"is_witness,omitempty"`
+	// // 	IsCommittee bool   `protobuf:"varint,15,opt,name=is_committee,json=isCommittee,proto3" json:"is_committee,omitempty"`
+	// // 	// frozen asset(for asset issuer)
+	// // 	FrozenSupply []*Account_Frozen `protobuf:"bytes,16,rep,name=frozen_supply,json=frozenSupply,proto3" json:"frozen_supply,omitempty"`
+	// // 	// asset_issued_name
+	// // 	AssetIssuedName          []byte           `protobuf:"bytes,17,opt,name=asset_issued_name,json=assetIssuedName,proto3" json:"asset_issued_name,omitempty"`
+	// // 	LatestAssetOperationTime map[string]int64 `protobuf:"bytes,18,rep,name=latest_asset_operation_time,json=latestAssetOperationTime,proto3" json:"latest_asset_operation_time,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
+	// // 	FreeNetUsage             int64            `protobuf:"varint,19,opt,name=free_net_usage,json=freeNetUsage,proto3" json:"free_net_usage,omitempty"`
+	// // 	FreeAssetNetUsage        map[string]int64 `protobuf:"bytes,20,rep,name=free_asset_net_usage,json=freeAssetNetUsage,proto3" json:"free_asset_net_usage,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
+	// // 	LatestConsumeTime        int64            `protobuf:"varint,21,opt,name=latest_consume_time,json=latestConsumeTime,proto3" json:"latest_consume_time,omitempty"`
+	// // 	LatestConsumeFreeTime    int64            `protobuf:"varint,22,opt,name=latest_consume_free_time,json=latestConsumeFreeTime,proto3" json:"latest_consume_free_time,omitempty"`
+	// // 	XXX_NoUnkeyedLiteral     struct{}         `json:"-"`
+	// // 	XXX_unrecognized         []byte           `json:"-"`
+	// // 	XXX_sizecache            int32            `json:"-"`
+	// // }
+	// account = &core.Account{}
+	// if err := gjson.Unmarshal([]byte(r.Raw), account); err != nil {
+	// 	return nil, err
+	// }
+
+	account.Balance = r.Get("balance").String()
+	account.Symbol = wm.Config.Symbol
+	account.Required = 1
 
 	return account, nil
 }
@@ -137,6 +197,10 @@ func (wm *WalletManager) UpdateAccount(accountName, ownerAddress string) (tx *gj
 	r, err := wm.WalletClient.Call("/wallet/updateaccount", params)
 	if err != nil {
 		return nil, err
+	}
+
+	if r.Get("raw_data").Map()["contract"].Array()[0].Map()["parameter"].Map()["value"].Map()["owner_address"].String() != convertAddrToHex(ownerAddress) {
+		return nil, errors.New("UpdateAccount: Update failed")
 	}
 
 	return r, nil
