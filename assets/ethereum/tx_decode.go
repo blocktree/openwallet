@@ -296,7 +296,7 @@ func (this *EthTransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 				fee.CalcFee()
 			}
 
-			totalAmount.Add(totalAmount, fee.Fee)
+			totalAmount.Add(amount, fee.Fee)
 			if addrsBalanceList[i].Balance.Cmp(totalAmount) > 0 {
 				//fromAddr = addrsBalanceList[i].address
 				fromAddr := &openwallet.Address{
@@ -761,8 +761,8 @@ func (this *EthTransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet
 
 		txid, err := this.wm.WalletClient.ethSendRawTransaction(common.ToHex(rawTxPara))
 		if err != nil {
-			openwLogger.Log.Errorf("sent raw tx faield, err=%v", err)
-			return errors.New("sent raw tx faield. ")
+			openwLogger.Log.Errorf("sent raw tx faild, err=%v", err)
+			return errors.New("sent raw tx faild. ")
 		}
 
 		rawTx.TxID = txid
@@ -886,8 +886,8 @@ func (this *EthTransactionDecoder) SubmitErc20TokenRawTransaction(wrapper openwa
 
 		txid, err := this.wm.WalletClient.ethSendRawTransaction(common.ToHex(rawTxPara))
 		if err != nil {
-			openwLogger.Log.Errorf("sent raw tx faield, err=%v", err)
-			return errors.New("sent raw tx faield. ")
+			openwLogger.Log.Errorf("sent raw tx faild, err=%v", err)
+			return errors.New("sent raw tx faild. ")
 		}
 
 		rawTx.TxID = txid
