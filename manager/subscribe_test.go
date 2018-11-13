@@ -178,7 +178,7 @@ func TestSubscribeAddress_ETH(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	scanner.SetRescanBlockHeight(4840986)
+	scanner.SetRescanBlockHeight(6693400)
 
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")

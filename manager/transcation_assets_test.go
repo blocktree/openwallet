@@ -82,9 +82,9 @@ func TestTransfer_ETH(t *testing.T) {
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
-	to := "d1ffd8c9b59b6c2696ebdaa143c73226ea34d02c"
+	to := "0xd35f9Ea14D063af9B3567064FAB567275b09f03D"
 
-	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.01", "", nil)
+	rawTx, err := testCreateTransactionStep(walletID, accountID, to, "0.0003", "", nil)
 	if err != nil {
 		return
 	}
