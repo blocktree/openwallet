@@ -16,16 +16,15 @@
 package manager
 
 import (
-	"github.com/astaxie/beego/config"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
-	"fmt"
-
 	"github.com/asdine/storm"
+	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
@@ -56,7 +55,7 @@ type WalletManager struct {
 	mu                sync.RWMutex
 	observers         map[NotificationObject]bool //观察者
 	importAddressTask *timer.TaskTimer
-	AddressInScanning map[string]string                    //加入扫描的地址
+	AddressInScanning map[string]string //加入扫描的地址
 }
 
 // NewWalletManager
@@ -247,6 +246,7 @@ func (wm *WalletManager) initSupportAssetsAdapter() error {
 	}
 
 	for _, symbol := range wm.cfg.SupportAssets {
+		fmt.Println("\t\t\t symbol = ", symbol)
 		assetsMgr, err := GetAssetsManager(symbol)
 		if err != nil {
 			log.Error(symbol, "is not support")
@@ -254,7 +254,7 @@ func (wm *WalletManager) initSupportAssetsAdapter() error {
 		}
 
 		//读取配置
-		absFile := filepath.Join(configFilePath, symbol + ".ini")
+		absFile := filepath.Join(configFilePath, symbol+".ini")
 
 		c, err := config.NewConfig("ini", absFile)
 		if err != nil {

@@ -39,21 +39,24 @@ import (
 
 const (
 	// Symbol 币种
-	Symbol    = "TRON"
+	Symbol = "TRON"
+	//MasterKey key for master
 	MasterKey = "Troncoin seed"
-	CurveType = owcrypt.ECC_CURVE_SECP256K1 // to generate ChildKey by BIP32
+	//CurveType to generate ChildKey by BIP32
+	CurveType = owcrypt.ECC_CURVE_SECP256K1
 )
 
+//WalletConfig configs for Wallet
 type WalletConfig struct {
 
 	//币种
 	Symbol    string
 	MasterKey string
 
-	//RpcUser RPC认证账户名
-	RpcUser string
-	//RPC认证账户密码
-	RpcPassword string
+	//RPCUser RPC认证账户名
+	RPCUser string
+	//RPCPassword RPC认证账户密码
+	RPCPassword string
 	//证书目录
 	CertsDir string
 	//钥匙备份路径
@@ -98,19 +101,20 @@ type WalletConfig struct {
 	CoinDecimal decimal.Decimal
 }
 
-func NewConfig(symbol string, masterKey string) *WalletConfig {
+//NewConfig Create config instance
+func NewConfig() *WalletConfig {
 
 	c := WalletConfig{}
 
 	//币种
-	c.Symbol = symbol
-	c.MasterKey = masterKey
+	c.Symbol = Symbol
+	c.MasterKey = MasterKey
 	c.CurveType = CurveType
 
 	//RPC认证账户名
-	c.RpcUser = ""
+	c.RPCUser = ""
 	//RPC认证账户密码
-	c.RpcPassword = ""
+	c.RPCPassword = ""
 	//证书目录
 	c.CertsDir = filepath.Join("data", strings.ToLower(c.Symbol), "certs")
 	//钥匙备份路径

@@ -20,12 +20,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/imroc/req"
-
 	"github.com/blocktree/OpenWallet/log"
+	"github.com/imroc/req"
 )
 
-// Done
+// GetNowBlock Done!
 // Function：Query the latest block
 // 	demo: curl -X POST http://127.0.0.1:8090/wallet/getnowblock
 // Parameters：None
@@ -39,7 +38,7 @@ func (wm *WalletManager) GetNowBlock() (block *Block, err error) {
 
 	block = NewBlock(r)
 	if block.GetBlockHashID() == "" || block.GetHeight() <= 0 {
-		return nil, errors.New("GetNowBlock failed: No found <block>!")
+		return nil, errors.New("GetNowBlock failed: No found <block>")
 	}
 
 	// Check for TX
@@ -54,13 +53,13 @@ func (wm *WalletManager) GetNowBlock() (block *Block, err error) {
 		log.Error(fmt.Sprintf("Get block timestamp: %d [%+v]", timestamp, time.Unix(timestamp/1000, 0)))
 		// log.Error(fmt.Sprintf("Current d timestamp: %d [%+v]", currstamp, time.Unix(currstamp/1000, 0)))
 		log.Error(fmt.Sprintf("Now block height: %d", block.GetHeight()))
-		return nil, errors.New("GetNowBlock returns with unsynced!")
+		return nil, errors.New("GetNowBlock returns with unsynced")
 	}
 
 	return block, nil
 }
 
-// Done!
+// GetBlockByNum Done!
 // Function：Query block by height
 // 	demo: curl -X POST http://127.0.0.1:8090/wallet/getblockbynum -d ‘
 // 		{“num” : 100}’
@@ -76,13 +75,13 @@ func (wm *WalletManager) GetBlockByNum(num uint64) (block *Block, error error) {
 
 	block = NewBlock(r)
 	if block.GetBlockHashID() == "" || block.GetHeight() <= 0 {
-		return nil, errors.New("GetBlockByNum failed: No found <block>!")
+		return nil, errors.New("GetBlockByNum failed: No found <block>")
 	}
 
 	return block, nil
 }
 
-// Done!
+// GetBlockByID Done!
 // Function：Query block by ID
 // 	demo: curl -X POST http://127.0.0.1:8090/wallet/getblockbyid -d ‘
 // 		{“value”: “0000000000038809c59ee8409a3b6c051e369ef1096603c7ee723c16e2376c73”}’
@@ -97,13 +96,13 @@ func (wm *WalletManager) GetBlockByID(blockID string) (block *Block, err error) 
 
 	block = NewBlock(r)
 	if block.GetBlockHashID() == "" || block.GetHeight() <= 0 {
-		return nil, errors.New("GetBlockByID failed: No found <block>!")
+		return nil, errors.New("GetBlockByID failed: No found <block>")
 	}
 
 	return block, nil
 }
 
-// Done!
+// GetBlockByLimitNext Done!
 // Function：Query a range of blocks by block height
 // 	demo: curl -X POST http://127.0.0.1:8090/wallet/getblockbylimitnext -d ‘
 // 		{“startNum”: 1, “endNum”: 2}’
@@ -132,7 +131,7 @@ func (wm *WalletManager) GetBlockByLimitNext(startNum, endNum uint64) (blocks []
 	return blocks, nil
 }
 
-// Done!
+// GetBlockByLatestNum Done!
 // Function：Query the latest blocks
 // 	demo: curl -X POST http://127.0.0.1:8090/wallet/getblockbylatestnum -d ‘
 // 		{“num”: 5}’
@@ -141,7 +140,7 @@ func (wm *WalletManager) GetBlockByLimitNext(startNum, endNum uint64) (blocks []
 func (wm *WalletManager) GetBlockByLatestNum(num uint64) (blocks []*Block, err error) {
 
 	if num >= 1000 {
-		return nil, errors.New("Too large with parameter num to search!")
+		return nil, errors.New("Too large with parameter num to search")
 	}
 
 	r, err := wm.WalletClient.Call("/wallet/getblockbylatestnum", req.Param{"num": num})

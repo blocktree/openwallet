@@ -41,6 +41,7 @@ func testInitWalletManager() *WalletManager {
 		"LTC",
 		"ETH",
 		"NAS",
+		"TRON",
 	}
 	return NewWalletManager(tc)
 	//tm.Init()

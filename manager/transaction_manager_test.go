@@ -17,6 +17,7 @@ package manager
 
 import (
 	"testing"
+
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 )
@@ -70,10 +71,10 @@ func TestWalletManager_CreateQrc20TokenTransaction(t *testing.T) {
 		log.Error("RefreshAssetsAccountBalance failed, unexpected error:", err)
 	}
 
-	rawTx, err := tm.CreateQrc20TokenTransaction(testApp, walletID, accountID,"0.4", to, feeRate,"",contractAddr, tokenName, tokeSymbol, tokenDecimal)
+	rawTx, err := tm.CreateQrc20TokenTransaction(testApp, walletID, accountID, "0.4", to, feeRate, "", contractAddr, tokenName, tokeSymbol, tokenDecimal)
 	if err != nil {
 		log.Error("CreateQrc20TokenTransaction failed, unexpected error:", err)
-	}else {
+	} else {
 		log.Info("rawTx:", rawTx)
 	}
 }
@@ -93,11 +94,11 @@ func TestWalletManager_SendQrc20TokenTransaction(t *testing.T) {
 		log.Error("RefreshAssetsAccountBalance failed, unexpected error:", err)
 	}
 
-	rawTx, err := tm.CreateQrc20TokenTransaction(testApp, walletID, accountID,"1", to, feeRate,"",contractAddr, tokenName, tokeSymbol, tokenDecimal)
+	rawTx, err := tm.CreateQrc20TokenTransaction(testApp, walletID, accountID, "1", to, feeRate, "", contractAddr, tokenName, tokeSymbol, tokenDecimal)
 	if err != nil {
 		log.Error("CreateQrc20TokenTransaction failed, unexpected error:", err)
 		return
-	}else {
+	} else {
 		log.Info("rawTx:", rawTx)
 	}
 
@@ -278,7 +279,7 @@ func TestWalletManager_GetTransactionByWxID(t *testing.T) {
 	wxID := openwallet.GenTransactionWxID(&openwallet.Transaction{
 		TxID: "bfa6febb33c8ddde9f7f7b4d93043956cce7e0f4e95da259a78dc9068d178fee",
 		Coin: openwallet.Coin{
-			Symbol: "LTC",
+			Symbol:     "LTC",
 			IsContract: false,
 			ContractID: "",
 		},

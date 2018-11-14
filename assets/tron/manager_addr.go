@@ -19,8 +19,6 @@ import (
 	"errors"
 
 	"github.com/imroc/req"
-	"github.com/tidwall/gjson"
-	"github.com/tronprotocol/grpc-gateway/api"
 )
 
 // CreateAddress Done!
@@ -34,15 +32,18 @@ import (
 // 	Convert it to base58 to use as the address.
 // Warning:
 // 	Please control risks when using this API. To ensure environmental security, please do not invoke APIs provided by other or invoke this very API on a public network.
-func (wm *WalletManager) CreateAddress(passValue string) (addr *gjson.Result, err error) {
+func (wm *WalletManager) CreateAddress(passValue string) (addr string, err error) {
 
 	params := req.Param{"value": passValue}
 	r, err := wm.WalletClient.Call("/wallet/createaddress", params)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return r, nil
+	base58checkAddress := r.Get("base58checkAddress").String()
+	// addressHex := r.Get("value").String()
+
+	return base58checkAddress, nil
 }
 
 // GenerateAddress Done!
@@ -56,19 +57,32 @@ func (wm *WalletManager) CreateAddress(passValue string) (addr *gjson.Result, er
 // Warning:
 // 	Please control risks when using this API.
 // 	To ensure environmental security, please do not invoke APIs provided by other or invoke this very API on a public network.
-func (wm *WalletManager) GenerateAddress() (addr *api.AddressPrKeyPairMessage, err error) {
+func (wm *WalletManager) GenerateAddress() (address map[string]string, err error) {
 
 	r, err := wm.WalletClient.Call("/wallet/generateaddress", nil)
 	if err != nil {
 		return nil, err
 	}
 
-	addr = &api.AddressPrKeyPairMessage{}
-	if err := gjson.Unmarshal([]byte(r.Raw), addr); err != nil {
-		return nil, err
+	// type AddressPrKeyPairMessage struct {
+	// 	Address              string   `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	// 	PrivateKey           string   `protobuf:"bytes,2,opt,name=privateKey,proto3" json:"privateKey,omitempty"`
+	// 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	// 	XXX_unrecognized     []byte   `json:"-"`
+	// 	XXX_sizecache        int32    `json:"-"`
+	// }
+
+	addr := r.Get("address").String()
+	pKey := r.Get("privateKey").String()
+	if addr == "" || pKey == "" {
+		return nil, errors.New("GenerateAddress: Return none")
 	}
 
-	return addr, nil
+	address = map[string]string{
+		"Address":    addr,
+		"PrivateKey": pKey,
+	}
+	return address, nil
 }
 
 // ValidateAddress Done!

@@ -21,6 +21,11 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/big"
+	"path/filepath"
+	"strconv"
+	"time"
+
 	"github.com/asdine/storm"
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
@@ -38,10 +43,6 @@ import (
 	"github.com/nebulasio/go-nebulas/util"
 	"github.com/nebulasio/go-nebulas/util/byteutils"
 	"github.com/shopspring/decimal"
-	"math/big"
-	"path/filepath"
-	"strconv"
-	"time"
 )
 
 //from nebulasio
@@ -51,20 +52,20 @@ const (
 	TxPayloadCallType   = "call"
 )
 
-
 const (
 	maxAddresNum = 10000000
 )
+
 var (
 	//coinDecimal decimal.Decimal = decimal.NewFromFloat(1000000)
 	coinDecimal decimal.Decimal = decimal.NewFromFloat(1000000000000000000)
 )
 
-var(
+var (
 	//Account Address前缀
-	addr_prefix = []byte{0x19,0x57}
+	addr_prefix = []byte{0x19, 0x57}
 	//Smart Contract Address前缀
-	Contract_prefix = []byte{0x19,0x58}
+	Contract_prefix = []byte{0x19, 0x58}
 )
 
 //保存每个账户的地址、公钥、私钥、nonce
@@ -72,22 +73,21 @@ type Key struct {
 	Address    string `storm:"id"`
 	PublicKey  []byte
 	PrivateKey []byte
-	Nonce  	   string
+	Nonce      string
 }
 
 type WalletManager struct {
-
 	openwallet.AssetsAdapterBase
 
-	Storage      *hdkeystore.HDKeystore         //秘钥存取
-	WalletClient *Client                        // 节点客户端
-	Config       *WalletConfig                  //钱包管理配置
-	WalletsInSum map[string]*openwallet.Wallet  //参与汇总的钱包
-	Blockscanner *NASBlockScanner             //区块扫描器
-	Decoder        openwallet.AddressDecoder     //地址编码器
-	TxDecoder      openwallet.TransactionDecoder //交易单编码器
+	Storage         *hdkeystore.HDKeystore          //秘钥存取
+	WalletClient    *Client                         // 节点客户端
+	Config          *WalletConfig                   //钱包管理配置
+	WalletsInSum    map[string]*openwallet.Wallet   //参与汇总的钱包
+	Blockscanner    *NASBlockScanner                //区块扫描器
+	Decoder         openwallet.AddressDecoder       //地址编码器
+	TxDecoder       openwallet.TransactionDecoder   //交易单编码器
 	ContractDecoder openwallet.SmartContractDecoder //智能合约解析器
-	Log            *log.OWLogger                 //日志工具
+	Log             *log.OWLogger                   //日志工具
 }
 
 func NewWalletManager() *WalletManager {
@@ -100,59 +100,57 @@ func NewWalletManager() *WalletManager {
 	//区块扫描器
 	wm.Blockscanner = NewNASBlockScanner(&wm)
 	//地址解析器
-	wm.Decoder =  NewAddressDecoder(&wm)
+	wm.Decoder = NewAddressDecoder(&wm)
 	//交易单解析器
 	wm.TxDecoder = NewTransactionDecoder(&wm)
 	wm.Log = log.NewOWLogger(wm.Symbol())
 	return &wm
 }
 
-
 //SubmitTransaction 存放最终广播出去的交易单信息
-type SubmitTransaction struct{
-	Hash []byte		//交易hash
-	From []byte
-	To	 []byte
-	Value[]byte
-	Nonce uint64
+type SubmitTransaction struct {
+	Hash      []byte //交易hash
+	From      []byte
+	To        []byte
+	Value     []byte
+	Nonce     uint64
 	Timestamp int64
-	Data *corepb.Data
-	ChainId uint32
-	GasPrice []byte
-	GasLimit []byte
-	Alg	uint32
-	Sign []byte		//交易hash签名结果
+	Data      *corepb.Data
+	ChainId   uint32
+	GasPrice  []byte
+	GasLimit  []byte
+	Alg       uint32
+	Sign      []byte //交易hash签名结果
 }
 
-
 //将入参address string地址转成[]byte
-func NasAddrTobyte(addr string) ([]byte, error){
-		//解压出20字节地址部分hash
-		only_address,err := addressEncoder.AddressDecode(addr,addressEncoder.NAS_AccountAddress)
-		if err != nil{
-			return nil,err
-		}
-		//拼接前缀+20字节地址hash
-		addr_tmp := [][]byte{
-			addr_prefix,
-			only_address,
-		}
-		prefix_address  := bytes.Join(addr_tmp, []byte(""))
-		//对前缀+20字节地址算哈希后取哈希值后4字节为后缀
-		hash_prefix_address := owcrypt.Hash(prefix_address,32,owcrypt.HASH_ALG_SHA3_256)
-		//前缀+20字节地址+后缀
-		addr_tmp2 := [][]byte{
-			prefix_address,
-			hash_prefix_address[0:4],
-		}
-		//前缀+20字节地址+后缀 ：[]byte
-		address := bytes.Join(addr_tmp2, []byte(""))
+func NasAddrTobyte(addr string) ([]byte, error) {
+	//解压出20字节地址部分hash
+	only_address, err := addressEncoder.AddressDecode(addr, addressEncoder.NAS_AccountAddress)
+	if err != nil {
+		return nil, err
+	}
+	//拼接前缀+20字节地址hash
+	addr_tmp := [][]byte{
+		addr_prefix,
+		only_address,
+	}
+	prefix_address := bytes.Join(addr_tmp, []byte(""))
+	//对前缀+20字节地址算哈希后取哈希值后4字节为后缀
+	hash_prefix_address := owcrypt.Hash(prefix_address, 32, owcrypt.HASH_ALG_SHA3_256)
+	//前缀+20字节地址+后缀
+	addr_tmp2 := [][]byte{
+		prefix_address,
+		hash_prefix_address[0:4],
+	}
+	//前缀+20字节地址+后缀 ：[]byte
+	address := bytes.Join(addr_tmp2, []byte(""))
 
-		return address,err
+	return address, err
 }
 
 //对签名结果按照官方进行编码
-func (tx *SubmitTransaction) ToProto() (proto.Message) {
+func (tx *SubmitTransaction) ToProto() proto.Message {
 
 	return &corepb.Transaction{
 		Hash:      tx.Hash,
@@ -169,7 +167,6 @@ func (tx *SubmitTransaction) ToProto() (proto.Message) {
 		Sign:      tx.Sign,
 	}
 }
-
 
 //NewSubmitTransactionByProto
 func NewSubmitTransactionByProto(tx corepb.Transaction) *SubmitTransaction {
@@ -190,17 +187,17 @@ func NewSubmitTransactionByProto(tx corepb.Transaction) *SubmitTransaction {
 }
 
 //CreateRawTransaction创建交易单hash
-func (wm *WalletManager) CreateRawTransaction(from , to, gasLimit, gasPrice,value string, nonce uint64) (*SubmitTransaction,error){
+func (wm *WalletManager) CreateRawTransaction(from, to, gasLimit, gasPrice, value string, nonce uint64) (*SubmitTransaction, error) {
 
-	chainID,_ := wm.GetChainID()
+	chainID, _ := wm.GetChainID()
 	timestamp := time.Now().Unix()
-	address_from ,err := NasAddrTobyte(from)
-	if err != nil{
-		return nil,err
+	address_from, err := NasAddrTobyte(from)
+	if err != nil {
+		return nil, err
 	}
-	address_to ,err := NasAddrTobyte(to)
-	if err != nil{
-		return nil,err
+	address_to, err := NasAddrTobyte(to)
+	if err != nil {
+		return nil, err
 	}
 	payloadType := TxPayloadBinaryType
 	payload := []byte{}
@@ -248,9 +245,9 @@ func (wm *WalletManager) CreateRawTransaction(from , to, gasLimit, gasPrice,valu
 		gasPrice_byte,
 		gasLimit_byte,
 	}
-	transaction  := bytes.Join(transaction_tmp, []byte(""))
+	transaction := bytes.Join(transaction_tmp, []byte(""))
 	//计算交易hash
-	transaction_hash := owcrypt.Hash( transaction, uint16(len(transaction)), owcrypt.HASH_ALG_SHA3_256)
+	transaction_hash := owcrypt.Hash(transaction, uint16(len(transaction)), owcrypt.HASH_ALG_SHA3_256)
 
 	Submit_tx := &SubmitTransaction{
 		transaction_hash,
@@ -258,7 +255,7 @@ func (wm *WalletManager) CreateRawTransaction(from , to, gasLimit, gasPrice,valu
 		address_to,
 		value_byte,
 		nonce,
-		timestamp ,//int64(1), //timestamp
+		timestamp, //int64(1), //timestamp
 		data_p,
 		chainID,
 		gasPrice_byte,
@@ -267,41 +264,41 @@ func (wm *WalletManager) CreateRawTransaction(from , to, gasLimit, gasPrice,valu
 		nil,
 	}
 
-	return Submit_tx,err
+	return Submit_tx, err
 }
 
 //SignRawTransaction对交易hash进行签名
-func SignRawTransaction(PrivateKey []byte,txhash []byte) ([]byte,error){
+func SignRawTransaction(PrivateKey []byte, txhash []byte) ([]byte, error) {
 
 	//调用ow库签名交易结果
-	signed,ret := owcrypt.NAS_signature(PrivateKey,txhash)   //对交易体进行签名结果 //65字节
+	signed, ret := owcrypt.NAS_signature(PrivateKey, txhash) //对交易体进行签名结果 //65字节
 	if ret != owcrypt.SUCCESS {
 		errdesc := fmt.Sprintln("signature error, ret:", "0x"+strconv.FormatUint(uint64(ret), 16))
 		log.Error(errdesc)
-		return nil,errors.New(errdesc)
+		return nil, errors.New(errdesc)
 	}
 	//log.Std.Info("sigx=%x\n",sig)
 	//调用ow库签名交易结果	End
 
-	return signed,nil
+	return signed, nil
 }
 
 //VerifyRawTransaction对签名进行验签
 //return :owcrypt.SUCCESS：成功，其他：失败
-func VerifyRawTransaction(PubKey []byte, txhash []byte, signed []byte) uint16{
+func VerifyRawTransaction(PubKey []byte, txhash []byte, signed []byte) uint16 {
 
 	//调用ow库进行验证签名
 	//公钥为33字节，需要解压缩出65字节公钥
-	PublicKey :=owcrypt.PointDecompress(PubKey , CurveType)
+	PublicKey := owcrypt.PointDecompress(PubKey, CurveType)
 	//去掉65字节公钥的第一个字节后进行验签
-	verify :=owcrypt.Verify(PublicKey[1:65],nil,0,txhash,32,signed[0:64],owcrypt.ECC_CURVE_SECP256K1 | (1<<9))
+	verify := owcrypt.Verify(PublicKey[1:65], nil, 0, txhash, 32, signed[0:64], owcrypt.ECC_CURVE_SECP256K1|(1<<9))
 	//log.Std.Info("Verify success! verify=%x\n", verify)
 	//调用ow库进行验证签名 End
 	return verify
 }
 
 //SubmitRawTransaction对签名结果进行编码
-func EncodeTransaction(submit_tx *SubmitTransaction)(string ,error){
+func EncodeTransaction(submit_tx *SubmitTransaction) (string, error) {
 
 	//参照官方对广播交易体进行编码
 	message := submit_tx.ToProto()
@@ -312,11 +309,11 @@ func EncodeTransaction(submit_tx *SubmitTransaction)(string ,error){
 	data := rpcpb.SignTransactionPassphraseResponse{Data: data_tmp}
 	broadcastsend_data := base64.StdEncoding.EncodeToString(data.Data)
 
-	return broadcastsend_data,nil
+	return broadcastsend_data, nil
 }
 
 //EncodeToTransactionRawHex
-func EncodeToTransactionRawHex(submit_tx *SubmitTransaction)(string ,error){
+func EncodeToTransactionRawHex(submit_tx *SubmitTransaction) (string, error) {
 
 	//参照官方对广播交易体进行编码
 	message := submit_tx.ToProto()
@@ -329,7 +326,7 @@ func EncodeToTransactionRawHex(submit_tx *SubmitTransaction)(string ,error){
 }
 
 //DecodeRawHexToTransaction
-func DecodeRawHexToTransaction(rawHex string)(*SubmitTransaction ,error){
+func DecodeRawHexToTransaction(rawHex string) (*SubmitTransaction, error) {
 
 	data, err := hex.DecodeString(rawHex)
 	if err != nil {
@@ -342,60 +339,56 @@ func DecodeRawHexToTransaction(rawHex string)(*SubmitTransaction ,error){
 	}
 	//参照官方对广播交易体进行编码
 	tx := NewSubmitTransactionByProto(txMsg)
-	return tx,nil
+	return tx, nil
 }
 
 //SubmitRawTransaction对签名编码后的数据进行广播
-func (wm *WalletManager) SubmitRawTransaction(submit_data string)(string ,error){
-
+func (wm *WalletManager) SubmitRawTransaction(submit_data string) (string, error) {
 
 	txhash, err := wm.WalletClient.CallSendRawTransaction(submit_data)
-	if (err != nil) || (len(txhash)==0){
-		return "" ,err
+	if (err != nil) || (len(txhash) == 0) {
+		return "", err
 	}
 
 	log.Std.Info("txhash=%v\n", txhash)
-	return txhash,nil
+	return txhash, nil
 }
 
-
-
 //发送交易
-func (wm *WalletManager) Transfer(key *Key, from ,to, gasLimit, value string) (string, error) {
+func (wm *WalletManager) Transfer(key *Key, from, to, gasLimit, value string) (string, error) {
 
 	//CreateRawTransaction 创建交易单
 	gasPrice := wm.EstimateFeeRate()
 	nonce := wm.WalletClient.CheckNonce(key)
-	transaction,err := wm.CreateRawTransaction(from, to, gasLimit, gasPrice,value,nonce)
-	if err != nil{
-		return "",err
+	transaction, err := wm.CreateRawTransaction(from, to, gasLimit, gasPrice, value, nonce)
+	if err != nil {
+		return "", err
 	}
 	//SignRawTransaction 签名交易单
-	signed, err := SignRawTransaction(key.PrivateKey,transaction.Hash)
-	if err != nil{
-		return "",err
+	signed, err := SignRawTransaction(key.PrivateKey, transaction.Hash)
+	if err != nil {
+		return "", err
 	}
 	//VerifyRawTransaction 验证交易单，
-	verify_result := VerifyRawTransaction(key.PublicKey,transaction.Hash,signed)
+	verify_result := VerifyRawTransaction(key.PublicKey, transaction.Hash, signed)
 	if verify_result != owcrypt.SUCCESS {
 		return "", errors.New("Verify Failed !")
 	}
 	//验证通过后对交易单进行相应的编码
 	transaction.Sign = signed
-	SubmitData,err := EncodeTransaction(transaction)
+	SubmitData, err := EncodeTransaction(transaction)
 	if err != nil {
 		return "", err
 	}
 
 	//SendRawTransaction 广播交易单
-	txid ,err := wm.SubmitRawTransaction(SubmitData)
-	if err != nil{
-		return "",err
+	txid, err := wm.SubmitRawTransaction(SubmitData)
+	if err != nil {
+		return "", err
 	}
 
-	return txid,nil
+	return txid, nil
 }
-
 
 //CreateNewWallet 创建钱包
 func (wm *WalletManager) CreateNewWallet(name, password string) (*openwallet.Wallet, string, error) {
@@ -445,7 +438,6 @@ func (wm *WalletManager) CreateNewWallet(name, password string) (*openwallet.Wal
 	return w, keyFile, nil
 }
 
-
 //GetWalletKeys 通过给定的文件路径加载keystore文件得到钱包列表
 func (wm *WalletManager) GetWallets() ([]*openwallet.Wallet, error) {
 	wallets, err := openwallet.GetWalletsByKeyDir(wm.Config.keyDir)
@@ -467,10 +459,10 @@ func (wm *WalletManager) AddWalletInSummary(wid string, wallet *openwallet.Walle
 //获取钱包余额
 func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.Decimal, []*openwallet.Address, error) {
 	var (
-		synCount      int = 10
-		quit              = make(chan struct{})
-		done              = 0 //完成标记
-		shouldDone        = 0 //需要完成的总数
+		synCount   int = 10
+		quit           = make(chan struct{})
+		done           = 0 //完成标记
+		shouldDone     = 0 //需要完成的总数
 	)
 
 	db, err := wallet.OpenDB()
@@ -484,7 +476,7 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 
 	var balance decimal.Decimal = decimal.NewFromFloat(0)
 	count := len(addrs)
-	if  count <= 0 {
+	if count <= 0 {
 		log.Std.Info("This wallet have 0 address!!!")
 		return decimal.NewFromFloat(0), nil, nil
 	} else {
@@ -505,7 +497,7 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 			//
 			balances := <-addrs
 
-			for _, b := range(balances) {
+			for _, b := range balances {
 				balance = balance.Add(decimal.RequireFromString(b.Balance))
 			}
 
@@ -515,7 +507,7 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 				close(quit) //关闭通道，等于给通道传入nil
 			}
 		}
-	} (worker)
+	}(worker)
 
 	/*	计算synCount个线程，内部运行的次数	*/
 	//每个线程内循环的数量，以synCount个线程并行处理
@@ -533,8 +525,8 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 
 			go func(producer chan []*openwallet.Address, addrs []*openwallet.Address, wm *WalletManager) {
 				var bs []*openwallet.Address
-				for _, a := range(addrs) {
-					b,_ := wm.WalletClient.CallGetaccountstate(a.Address,"balance")
+				for _, a := range addrs {
+					b, _ := wm.WalletClient.CallGetaccountstate(a.Address, "balance")
 					//fmt.Printf("runCount_a.Address=%s,balance=%s\n",a.Address,b)
 
 					a.Balance = b
@@ -551,13 +543,13 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 	if otherCount > 0 {
 		//
 		//log.Std.Info("Start get balance thread[REST]")
-		start := runCount*synCount
+		start := runCount * synCount
 		as := addrs[start:]
 
 		go func(producer chan []*openwallet.Address, addrs []*openwallet.Address, wm *WalletManager) {
 			var bs []*openwallet.Address
-			for _, a := range(addrs) {
-				b,_ := wm.WalletClient.CallGetaccountstate(a.Address,"balance")
+			for _, a := range addrs {
+				b, _ := wm.WalletClient.CallGetaccountstate(a.Address, "balance")
 				//fmt.Printf("otherCount_a.Address=%s,balance=%s\n",a.Address,b)
 
 				a.Balance = b
@@ -602,7 +594,6 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 	return balance.Div(coinDecimal), outputAddress, nil
 }
 
-
 //冒泡算法，对一个钱包下面的所有地址进行从大到小排序后供转账使用，提高效率
 func SortAddrFromBalance(MixAddr []*openwallet.Address) []*openwallet.Address {
 
@@ -616,14 +607,14 @@ func SortAddrFromBalance(MixAddr []*openwallet.Address) []*openwallet.Address {
 				MixAddr[i], MixAddr[j] = MixAddr[j], MixAddr[i]
 			}
 		}
-		BigTosmall = append(BigTosmall,MixAddr[i])
+		BigTosmall = append(BigTosmall, MixAddr[i])
 		//log.Std.Info("BigTosmall[%d],addr=%v,balance=%v",i,BigTosmall[i].Address,BigTosmall[i].Balance)
 	}
 	return BigTosmall
 }
 
 //打印钱包列表
-func (wm *WalletManager) printWalletList(list []*openwallet.Wallet, getBalance bool) ([][]*openwallet.Address) {
+func (wm *WalletManager) printWalletList(list []*openwallet.Wallet, getBalance bool) [][]*openwallet.Address {
 	tableInfo := make([][]interface{}, 0)
 	var addrs [][]*openwallet.Address
 	for i, w := range list {
@@ -650,9 +641,9 @@ func (wm *WalletManager) printWalletList(list []*openwallet.Wallet, getBalance b
 	t := gotabulate.Create(tableInfo)
 	// Set Headers
 	if getBalance {
-		t.SetHeaders([]string{"No.", "ID", "Name", "DBFile", "Balance",})
+		t.SetHeaders([]string{"No.", "ID", "Name", "DBFile", "Balance"})
 	} else {
-		t.SetHeaders([]string{"No.", "ID", "Name", "DBFile",})
+		t.SetHeaders([]string{"No.", "ID", "Name", "DBFile"})
 	}
 
 	//打印信息
@@ -660,7 +651,6 @@ func (wm *WalletManager) printWalletList(list []*openwallet.Wallet, getBalance b
 
 	return addrs
 }
-
 
 /*//CreateNewPrivateKey 创建私钥，返回私钥wif格式字符串
 func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index uint64) (string, *openwallet.Address, error) {
@@ -733,7 +723,7 @@ func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index
 */
 
 //CreateAddrFromPublic 创建地址
-func (wm *WalletManager) CreateAddrFromPublic (key *hdkeystore.HDKey, start, index uint64) (*openwallet.Address, error) {
+func (wm *WalletManager) CreateAddrFromPublic(key *hdkeystore.HDKey, start, index uint64) (*openwallet.Address, error) {
 	derivedPath := fmt.Sprintf("%s/%d/%d", key.RootPath, start, index)
 	//根据derivedPath和曲线得到childkey
 	childKey, err := key.DerivedKeyWithPath(derivedPath, wm.Config.CurveType)
@@ -746,7 +736,7 @@ func (wm *WalletManager) CreateAddrFromPublic (key *hdkeystore.HDKey, start, ind
 	//fmt.Printf("publicKey_encode=%x\n", publicKey)
 	// 对压缩的公钥进行解压,65字节
 	// 04730923f3f99eb587cbbcfa4876a9be518d8893a2106ebb93e40def9af95c308ce09de098076869d067c3e82564e673de3f965585d2466383349b20bd8bface0a
-	PublicKey_decode :=owcrypt.PointDecompress(publicKey , owcrypt.ECC_CURVE_SECP256K1)
+	PublicKey_decode := owcrypt.PointDecompress(publicKey, owcrypt.ECC_CURVE_SECP256K1)
 	//log.Std.Info("PublicKey_decode=%x\n", PublicKey_decode)
 
 	//对于有些币种只对整个解压的公钥[1:65]或者压缩的33字节公钥算hash之后编码得到地址
@@ -758,14 +748,14 @@ func (wm *WalletManager) CreateAddrFromPublic (key *hdkeystore.HDKey, start, ind
 	//log.Std.Info("Create_address=%v\n",address)
 
 	addr := openwallet.Address{
-		Address:   address,
-		AccountID: key.KeyID,
-		HDPath:    derivedPath,
+		Address:     address,
+		AccountID:   key.KeyID,
+		HDPath:      derivedPath,
 		CreatedTime: time.Now().Unix(),
-		Symbol:    wm.Config.Symbol,
-		Index:     index,
-		WatchOnly: false,
-		ExtParam:  "0",			//创建地址时初始nonce为0
+		Symbol:      wm.Config.Symbol,
+		Index:       index,
+		WatchOnly:   false,
+		ExtParam:    "0", //创建地址时初始nonce为0
 	}
 
 	return &addr, err
@@ -914,7 +904,7 @@ func (wm *WalletManager) CreateBatchAddress(walletId, password string, count uin
 	return filePath, outputAddress, nil
 }
 
-func (wm *WalletManager) summaryWallet(wallet *openwallet.Wallet, password string) error{
+func (wm *WalletManager) summaryWallet(wallet *openwallet.Wallet, password string) error {
 	db, err := wallet.OpenDB()
 	if err != nil {
 		return err
@@ -923,7 +913,6 @@ func (wm *WalletManager) summaryWallet(wallet *openwallet.Wallet, password strin
 
 	var addrs []*openwallet.Address
 	db.All(&addrs)
-
 
 	//加载钱包
 	key, err := wallet.HDKey(password)
@@ -935,13 +924,13 @@ func (wm *WalletManager) summaryWallet(wallet *openwallet.Wallet, password strin
 		k, _ := wm.getKeys(key, a)
 
 		//get balance,单位Wei
-		balance ,_ := wm.WalletClient.CallGetaccountstate(a.Address,"balance")
+		balance, _ := wm.WalletClient.CallGetaccountstate(a.Address, "balance")
 		balance_decimal := decimal.RequireFromString(balance)
 
 		//该地址预留一点币，否则交易会失败，暂定0.00001 NAS
 		balance_leave := decimal.RequireFromString("10000000000000")
 		cmp_result := balance_decimal.Cmp(balance_leave)
-		if  cmp_result==0 ||cmp_result==-1{
+		if cmp_result == 0 || cmp_result == -1 {
 			continue
 		}
 		balance_safe := balance_decimal.Sub(balance_leave)
@@ -950,15 +939,15 @@ func (wm *WalletManager) summaryWallet(wallet *openwallet.Wallet, password strin
 		//log.Std.Info("Threshold:%v", wm.Config.Threshold.String())
 		//log.Std.Info("balance_safe=%v",balance_safe)
 		if balance_safe.GreaterThan(wm.Config.Threshold) {
-			txid, err := wm.Transfer(k,k.Address, wm.Config.SumAddress, wm.Config.GasLimit.String(),
+			txid, err := wm.Transfer(k, k.Address, wm.Config.SumAddress, wm.Config.GasLimit.String(),
 				balance_safe.String())
 			//log.Std.Info("summary form address:%s, to address:%s, amount:%s, txid:%s", k.Address, wm.Config.SumAddress, balance_safe.String(), txid)
-			if err != nil{
-				log.Std.Info("Transfer Fail!\n",)
-			}else{
-				log.Std.Info("Transfer Success! txid=%s\n",txid)
+			if err != nil {
+				log.Std.Info("Transfer Fail!\n")
+			} else {
+				log.Std.Info("Transfer Success! txid=%s\n", txid)
 
-				err := NotenonceInDB(k.Address,db)
+				err := NotenonceInDB(k.Address, db)
 				if err != nil {
 					log.Std.Info("NotenonceInDB error!\n")
 				}
@@ -1053,25 +1042,24 @@ func (wm *WalletManager) LoadConfig() error {
 
 	/*	、、wm.Config.ServerAPI = c.String("apiUrl")
 
-	if  c.String("threshold") == ""{
-		return errors.New(fmt.Sprintf(" threshold is not set, uint is NAS... Please set it in './conf/%s.ini' \n", Symbol))
-	}
-	wm.Config.Threshold = (decimal.RequireFromString(c.String("threshold"))).Mul(coinDecimal)
-	wm.Config.SumAddress = c.String("sumAddress")
-	wm.Config.GasLimit = (decimal.RequireFromString(c.String("gasLimit"))).Mul(coinDecimal)
+		if  c.String("threshold") == ""{
+			return errors.New(fmt.Sprintf(" threshold is not set, uint is NAS... Please set it in './conf/%s.ini' \n", Symbol))
+		}
+		wm.Config.Threshold = (decimal.RequireFromString(c.String("threshold"))).Mul(coinDecimal)
+		wm.Config.SumAddress = c.String("sumAddress")
+		wm.Config.GasLimit = (decimal.RequireFromString(c.String("gasLimit"))).Mul(coinDecimal)
 
-	cyclesec := c.String("cycleSeconds")
-	if cyclesec == "" {
-		return errors.New(fmt.Sprintf(" cycleSeconds is not set, sample: 1m , 30s, 3m20s etc... Please set it in './conf/%s.ini' \n", Symbol))
-	}
-	wm.Config.CycleSeconds, _ = time.ParseDuration(cyclesec)
-	wm.WalletClient = NewClient(wm.Config.ServerAPI,false)
-*/
+		cyclesec := c.String("cycleSeconds")
+		if cyclesec == "" {
+			return errors.New(fmt.Sprintf(" cycleSeconds is not set, sample: 1m , 30s, 3m20s etc... Please set it in './conf/%s.ini' \n", Symbol))
+		}
+		wm.Config.CycleSeconds, _ = time.ParseDuration(cyclesec)
+		wm.WalletClient = NewClient(wm.Config.ServerAPI,false)
+	*/
 
 	wm.LoadAssetsConfig(c)
 	return nil
 }
-
 
 //RestoreWallet 恢复钱包
 func (wm *WalletManager) RestoreWallet(keyFile, dbFile, password string) error {
@@ -1082,8 +1070,8 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, password string) error {
 	//复制钱包数据库文件到data/btc/db/。
 
 	var (
-		err            error
-		key            *hdkeystore.HDKey
+		err error
+		key *hdkeystore.HDKey
 		//sleepTime      = 30 * time.Second
 	)
 
@@ -1119,7 +1107,7 @@ func (wm *WalletManager) EstimateFeeRate() string {
 }
 
 //通过hdpath获取地址、公钥、私钥、数据库nonce值
-func (wm *WalletManager) getKeys(key *hdkeystore.HDKey, a *openwallet.Address) (*Key, error){
+func (wm *WalletManager) getKeys(key *hdkeystore.HDKey, a *openwallet.Address) (*Key, error) {
 	childKey, err := key.DerivedKeyWithPath(a.HDPath, wm.Config.CurveType)
 	if err != nil {
 		return nil, err
@@ -1127,7 +1115,7 @@ func (wm *WalletManager) getKeys(key *hdkeystore.HDKey, a *openwallet.Address) (
 
 	prikey, err := childKey.GetPrivateKeyBytes()
 	if err != nil {
-		return  nil, err
+		return nil, err
 	}
 
 	pubkey := childKey.GetPublicKeyBytes()
@@ -1135,7 +1123,7 @@ func (wm *WalletManager) getKeys(key *hdkeystore.HDKey, a *openwallet.Address) (
 	//创建地址时ExtParam记录每个地址的nonce
 	nonce := a.ExtParam
 
-	k := &Key{a.Address,pubkey,prikey,nonce}
+	k := &Key{a.Address, pubkey, prikey, nonce}
 
 	//转换成带前缀公钥，交易结构中需要填充此类型公钥 for xtz
 	//pk := base58checkEncode(pubkey, prefix["edpk"])
@@ -1156,10 +1144,10 @@ func (wm *WalletManager) GetChainID() (uint32, error) {
 }
 
 //将签名成功广播出去后的nonce值记录在对应address的DB中
-func  NotenonceInDB(addr string, db *storm.DB) error{
+func NotenonceInDB(addr string, db *storm.DB) error {
 
 	//有db说明db已经在前文打开，不需要重复打开
-/*	if db == nil{
+	/*	if db == nil{
 		db, err := wallet.OpenDB()
 		if err != nil {
 			log.Error("open db failed, err=", err)
@@ -1200,37 +1188,36 @@ func  NotenonceInDB(addr string, db *storm.DB) error{
 	return nil
 }
 
-
-type estimateGasParameter struct{
-	from  string
-	to    string
-	value string
-	nonce uint64
+type estimateGasParameter struct {
+	from     string
+	to       string
+	value    string
+	nonce    uint64
 	gasPrice string
 	gasLimit string
 }
 
 //构建gas估算入参
-func (wm *WalletManager) CreatestimateGasParameters(from string, to string, value *big.Int) (*estimateGasParameter,error){
+func (wm *WalletManager) CreatestimateGasParameters(from string, to string, value *big.Int) (*estimateGasParameter, error) {
 
 	Parameter := &estimateGasParameter{
-		from : from,
-		to   : to,
-		value: value.String(),
+		from:     from,
+		to:       to,
+		value:    value.String(),
 		gasLimit: Gaslimit,
 	}
 
-	nonce,err := wm.WalletClient.CallGetaccountstate(from , "nonce")
-	if err != nil{
-		return nil,err
+	nonce, err := wm.WalletClient.CallGetaccountstate(from, "nonce")
+	if err != nil {
+		return nil, err
 	}
-	Nonce,_ :=strconv.ParseUint(nonce, 10, 64)
+	Nonce, _ := strconv.ParseUint(nonce, 10, 64)
 	Parameter.nonce = Nonce
 
 	gasPrice := wm.EstimateFeeRate()
 	Parameter.gasPrice = gasPrice
 
-	return Parameter ,err
+	return Parameter, err
 }
 
 //计算花费gas所用的Wei = gasuse * gasprice
@@ -1244,28 +1231,28 @@ func (feeinfo *txFeeInfo) CalcFee() error {
 //估算gas花费的Wei
 func (wm *WalletManager) Getestimatefee(from string, to string, value *big.Int) (*txFeeInfo, error) {
 
-	Parameter,err := wm.CreatestimateGasParameters(from,to,value)
-	if err != nil{
-		return nil,err
+	Parameter, err := wm.CreatestimateGasParameters(from, to, value)
+	if err != nil {
+		return nil, err
 	}
 
-	result ,err := wm.WalletClient.CallGetestimateGas(Parameter)
-	if err != nil{
-		return nil,err
+	result, err := wm.WalletClient.CallGetestimateGas(Parameter)
+	if err != nil {
+		return nil, err
 	}
 
 	EstimateGas, err := ConvertToBigInt(result.Get("gas").String())
-	if err != nil{
-		return nil,err
+	if err != nil {
+		return nil, err
 	}
 
 	GasPrice, err := ConvertToBigInt(Parameter.gasPrice)
-	if err != nil{
-		return nil,err
+	if err != nil {
+		return nil, err
 	}
 
 	estimatefee := &txFeeInfo{
-		GasUse: EstimateGas,
+		GasUse:   EstimateGas,
 		GasPrice: GasPrice,
 	}
 	estimatefee.CalcFee()
@@ -1274,18 +1261,18 @@ func (wm *WalletManager) Getestimatefee(from string, to string, value *big.Int) 
 }
 
 //ConfirmTxdecodeNonce  确定txdecode nonce值
-func (wm *WalletManager) ConfirmTxdecodeNonce(addr string,nonce_DB string) uint64{
+func (wm *WalletManager) ConfirmTxdecodeNonce(addr string, nonce_DB string) uint64 {
 
 	var nonce_submit uint64
-	nonce_get,_ := wm.WalletClient.CallGetaccountstate(addr,"nonce")
-	nonce_chain ,_ := strconv.ParseUint(nonce_get,10,64) 	//当前链上nonce值
-	nonce_db,_ := strconv.ParseUint(nonce_DB,10,64)	//本地记录的nonce值
+	nonce_get, _ := wm.WalletClient.CallGetaccountstate(addr, "nonce")
+	nonce_chain, _ := strconv.ParseUint(nonce_get, 10, 64) //当前链上nonce值
+	nonce_db, _ := strconv.ParseUint(nonce_DB, 10, 64)     //本地记录的nonce值
 
 	//如果本地nonce_db > 链上nonce,采用本地nonce,否则采用链上nonce
-	if nonce_db > nonce_chain{
+	if nonce_db > nonce_chain {
 		nonce_submit = nonce_db + 1
 		//log.Std.Info("%s nonce_db=%d > nonce_chain=%d,Use nonce_db+1...",key.Address,nonce_db,nonce_chain)
-	}else{
+	} else {
 		nonce_submit = nonce_chain + 1
 		//log.Std.Info("%s nonce_db=%d <= nonce_chain=%d,Use nonce_chain+1...",key.Address,nonce_db,nonce_chain)
 	}
@@ -1294,19 +1281,19 @@ func (wm *WalletManager) ConfirmTxdecodeNonce(addr string,nonce_DB string) uint6
 }
 
 //BsGetBalanceByAddress区块扫描器获取余额
-func (wm *WalletManager) BsGetBalanceByAddress(addr string) (*openwallet.Balance, error){
+func (wm *WalletManager) BsGetBalanceByAddress(addr string) (*openwallet.Balance, error) {
 
-	balance_wei ,err := wm.WalletClient.CallGetaccountstate(addr,"balance")
-	if err != nil{
-		return nil ,err
+	balance_wei, err := wm.WalletClient.CallGetaccountstate(addr, "balance")
+	if err != nil {
+		return nil, err
 	}
-	balance_decimal ,_:= decimal.NewFromString(balance_wei)
+	balance_decimal, _ := decimal.NewFromString(balance_wei)
 	balance := balance_decimal.Div(coinDecimal)
 
 	Balance := &openwallet.Balance{
-		Address:	addr,
-		Balance:	balance.String(),
+		Address: addr,
+		Balance: balance.String(),
 	}
 
-	return Balance,nil
+	return Balance, nil
 }

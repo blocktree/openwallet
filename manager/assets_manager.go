@@ -24,7 +24,6 @@ import (
 )
 
 type AssetsManager interface {
-
 	openwallet.AssetsAdapter
 
 	//ImportWatchOnlyAddress 导入观测地址
@@ -32,9 +31,7 @@ type AssetsManager interface {
 
 	//GetAddressWithBalance 获取多个地址余额，使用查账户和单地址
 	GetAddressWithBalance(address ...*openwallet.Address) error
-
 }
-
 
 // GetSymbolInfo 获取资产的币种信息
 func GetSymbolInfo(symbol string) (openwallet.SymbolInfo, error) {
@@ -45,8 +42,7 @@ func GetSymbolInfo(symbol string) (openwallet.SymbolInfo, error) {
 	return manager, nil
 }
 
-
-// GetAssetsController 获取资产控制器
+// GetAssetsManager 获取资产控制器
 func GetAssetsManager(symbol string) (AssetsManager, error) {
 	manager, ok := assets.Managers[strings.ToLower(symbol)]
 	if !ok {
