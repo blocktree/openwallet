@@ -24,7 +24,7 @@ import (
 )
 
 func TestTronWalletManager_CreateWallet(t *testing.T) {
-
+	tm := testInitWalletManager()
 	w := &openwallet.Wallet{Alias: "HELLO KITTY", IsTrust: true, Password: "12345678"}
 	nw, key, err := tm.CreateWallet(testApp, w)
 	if err != nil {
@@ -37,6 +37,7 @@ func TestTronWalletManager_CreateWallet(t *testing.T) {
 }
 
 func TestTronWalletManager_GetWalletInfo(t *testing.T) {
+	tm := testInitWalletManager()
 	wallet, err := tm.GetWalletInfo(testApp, "W33vxQiNcgjJgMvowsNerXao6LZjwR61zp")
 	if err != nil {
 		log.Error("unexpected error:", err)
@@ -46,7 +47,7 @@ func TestTronWalletManager_GetWalletInfo(t *testing.T) {
 }
 
 func TestTronWalletManager_CreateAssetsAccount(t *testing.T) {
-
+	tm := testInitWalletManager()
 	walletID := "W33vxQiNcgjJgMvowsNerXao6LZjwR61zp"
 	account := &openwallet.AssetsAccount{Alias: "HELLO KITTY", WalletID: walletID, Required: 1, Symbol: "TRON", IsTrust: true}
 	account, address, err := tm.CreateAssetsAccount(testApp, walletID, "12345678", account, nil)
@@ -66,7 +67,7 @@ func TestTronWalletManager_CreateAssetsAccount(t *testing.T) {
 // address: &{GEGdASep1uA7RBarNNZuJjgnE8T3DyJGTRGz4JfNE4Me TDG9rDZfoHqdT5CotrUQ5ukSfZujsBKWTu 02851a8fface19bda036dcbbf18e3c73f6c322cc3c70d86b28ed478f5af9a949ac   0 m/44'/88'/1'/0/0 false tron  false  1542107768 false  <nil>}
 
 func TestTronWalletManager_GetAssetsAccountList(t *testing.T) {
-
+	tm := testInitWalletManager()
 	walletID := "W33vxQiNcgjJgMvowsNerXao6LZjwR61zp"
 	list, err := tm.GetAssetsAccountList(testApp, walletID, 0, 10000000)
 	if err != nil {
@@ -83,7 +84,7 @@ func TestTronWalletManager_GetAssetsAccountList(t *testing.T) {
 }
 
 func TestTronWalletManager_CreateAddress(t *testing.T) {
-
+	tm := testInitWalletManager()
 	walletID := "W33vxQiNcgjJgMvowsNerXao6LZjwR61zp"
 	accountID := "GEGdASep1uA7RBarNNZuJjgnE8T3DyJGTRGz4JfNE4Me"
 	address, err := tm.CreateAddress(testApp, walletID, accountID, 3)
@@ -98,6 +99,7 @@ func TestTronWalletManager_CreateAddress(t *testing.T) {
 }
 
 func TestTronWalletManager_GetAddressList(t *testing.T) {
+	tm := testInitWalletManager()
 	walletID := "W33vxQiNcgjJgMvowsNerXao6LZjwR61zp"
 	accountID := "GEGdASep1uA7RBarNNZuJjgnE8T3DyJGTRGz4JfNE4Me"
 	list, err := tm.GetAddressList(testApp, walletID, accountID, 0, -1, false)

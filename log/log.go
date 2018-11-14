@@ -17,8 +17,6 @@ package log
 
 import (
 	"strings"
-
-	"github.com/astaxie/beego/logs"
 )
 
 // Log levels to control the logging output.
@@ -34,7 +32,7 @@ const (
 )
 
 // BeeLogger references the used application logger.
-var Std = logs.GetBeeLogger()
+var Std = newLogger("")
 
 // SetLevel sets the global log level used by the simple logger.
 func SetLevel(l int) {

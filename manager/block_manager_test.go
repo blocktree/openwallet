@@ -25,7 +25,7 @@ func init() {
 }
 
 func TestWalletManager_RescanBlockHeight(t *testing.T) {
-
+	tm := testInitWalletManager()
 	sub := subscriber{}
 	tm.AddObserver(&sub)
 	tm.RescanBlockHeight("QTUM", 235000, 235002)
@@ -33,6 +33,7 @@ func TestWalletManager_RescanBlockHeight(t *testing.T) {
 
 
 func TestWalletManager_GetNewBlockHeight(t *testing.T) {
+	tm := testInitWalletManager()
 	currentHeight, scannedHeight, err := tm.GetNewBlockHeight("BTC")
 	if err != nil {
 		log.Error("unexpected error:", err)

@@ -654,3 +654,8 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 func (wm *WalletManager) InitAssetsConfig() (config.Configer, error) {
 	return config.NewConfigData("ini", []byte(wm.Config.DefaultConfig))
 }
+
+//GetAssetsLogger 获取资产账户日志工具
+func (wm *WalletManager) GetAssetsLogger() *log.OWLogger {
+	return wm.Log
+}
