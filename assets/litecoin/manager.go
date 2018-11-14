@@ -17,6 +17,7 @@ package litecoin
 
 import (
 	"github.com/blocktree/OpenWallet/assets/bitcoin"
+	"github.com/blocktree/OpenWallet/log"
 )
 
 const (
@@ -33,5 +34,6 @@ func NewWalletManager() *WalletManager {
 	wm.WalletManager = bitcoin.NewWalletManager()
 	wm.Config = bitcoin.NewConfig(Symbol, MasterKey)
 	wm.Decoder = NewAddressDecoder(&wm)
+	wm.Log = log.NewOWLogger(wm.Symbol())
 	return &wm
 }

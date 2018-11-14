@@ -23,7 +23,7 @@ import (
 )
 
 func TestWalletManager_RefreshAssetsAccountBalance(t *testing.T) {
-
+	tm := testInitWalletManager()
 	walletID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
 	accountID := "JYCcXtC18vnd1jbcJX47msDFbQMBDNjsq3xbvvK6qCHKAAqoQq"
 	err := tm.RefreshAssetsAccountBalance(testApp, accountID)
@@ -42,7 +42,7 @@ func TestWalletManager_RefreshAssetsAccountBalance(t *testing.T) {
 }
 
 func TestWalletManager_ImportWatchOnlyAddress(t *testing.T) {
-
+	tm := testInitWalletManager()
 	walletID := "WEP6cD2YSV773QZw5UuSS5U74XKdw6oQE2"
 	accountID := "LLjgXvQqkiRBLsGJwHMdunrDt4YrVZu7n3cqtcBueEjtAcCbHp"
 

@@ -26,15 +26,15 @@ import (
 )
 
 var (
-	tc = NewConfig()
-	//testApp = "openw"
 	testApp = "b4b1962d415d4d30ec71b28769fda585"
-	tm      *WalletManager
 )
 
-func init() {
+func testInitWalletManager() *WalletManager {
+
+	tc := NewConfig()
+
 	tc.IsTestnet = true
-	tc.EnableBlockScan = false
+	tc.EnableBlockScan = true
 	tc.SupportAssets = []string{
 		"BTC",
 		"QTUM",
@@ -43,12 +43,12 @@ func init() {
 		"NAS",
 		"TRON",
 	}
-	tm = NewWalletManager(tc)
+	return NewWalletManager(tc)
 	//tm.Init()
 }
 
 func TestWalletManager_CreateWallet(t *testing.T) {
-
+	tm := testInitWalletManager()
 	w := &openwallet.Wallet{Alias: "HELLO KITTY", IsTrust: true, Password: "12345678"}
 	nw, key, err := tm.CreateWallet(testApp, w)
 	if err != nil {
@@ -69,6 +69,8 @@ func TestWalletManager_ConcurrentCreateWallet(t *testing.T) {
 	//	log.Error(err)
 	//	return
 	//}
+
+	tm := testInitWalletManager()
 
 	var wg sync.WaitGroup
 	timestamp := time.Now().Unix()
@@ -99,6 +101,9 @@ func TestWalletManager_ConcurrentCreateWallet(t *testing.T) {
 }
 
 func TestWalletManager_GetWalletInfo(t *testing.T) {
+
+	tm := testInitWalletManager()
+
 	wallet, err := tm.GetWalletInfo(testApp, "VzQTLspxvbXSmfRGcN6LJVB8otYhJwAGWc")
 	if err != nil {
 		log.Error("unexpected error:", err)
@@ -108,6 +113,9 @@ func TestWalletManager_GetWalletInfo(t *testing.T) {
 }
 
 func TestWalletManager_GetWalletList(t *testing.T) {
+
+	tm := testInitWalletManager()
+
 	list, err := tm.GetWalletList(testApp, 0, 10000000)
 	if err != nil {
 		log.Error("unexpected error:", err)
@@ -122,6 +130,8 @@ func TestWalletManager_GetWalletList(t *testing.T) {
 }
 
 func TestWalletManager_CreateAssetsAccount(t *testing.T) {
+
+	tm := testInitWalletManager()
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	account := &openwallet.AssetsAccount{Alias: "HELLO KITTY", WalletID: walletID, Required: 1, Symbol: "BTC", IsTrust: true}
@@ -138,6 +148,8 @@ func TestWalletManager_CreateAssetsAccount(t *testing.T) {
 }
 
 func TestWalletManager_GetAssetsAccountList(t *testing.T) {
+
+	tm := testInitWalletManager()
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	list, err := tm.GetAssetsAccountList(testApp, walletID, 0, 10000000)
@@ -156,6 +168,8 @@ func TestWalletManager_GetAssetsAccountList(t *testing.T) {
 
 func TestWalletManager_CreateAddress(t *testing.T) {
 
+	tm := testInitWalletManager()
+
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "2m27uVj2xx645dDCEcGD1whPQGcB4fZv16TzBoLGCyKB"
 	address, err := tm.CreateAddress(testApp, walletID, accountID, 3)
@@ -170,6 +184,9 @@ func TestWalletManager_CreateAddress(t *testing.T) {
 }
 
 func TestWalletManager_GetAddressList(t *testing.T) {
+
+	tm := testInitWalletManager()
+
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "2m27uVj2xx645dDCEcGD1whPQGcB4fZv16TzBoLGCyKB"
 	list, err := tm.GetAddressList(testApp, walletID, accountID, 0, -1, false)

@@ -75,6 +75,7 @@ type WalletManager struct {
 	Decoder      openwallet.AddressDecoder     //地址编码器
 	TxDecoder    openwallet.TransactionDecoder //交易单编码器
 	ContractDecoder openwallet.SmartContractDecoder //
+	Log            *log.OWLogger                 //日志工具
 }
 
 func NewWalletManager() *WalletManager {
@@ -89,6 +90,7 @@ func NewWalletManager() *WalletManager {
 	wm.Decoder = NewAddressDecoder(&wm)
 	wm.TxDecoder = NewTransactionDecoder(&wm)
 	wm.ContractDecoder = NewContractDecoder(&wm)
+	wm.Log = log.NewOWLogger(wm.Symbol())
 	return &wm
 }
 

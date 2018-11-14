@@ -45,7 +45,7 @@ func (sub *subscriber) BlockTxExtractDataNotify(account *openwallet.AssetsAccoun
 }
 
 func TestSubscribe(t *testing.T) {
-
+	tm := testInitWalletManager()
 	var (
 		endRunning = make(chan bool, 1)
 	)

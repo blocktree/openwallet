@@ -16,9 +16,20 @@
 package log
 
 import (
+	"github.com/astaxie/beego/logs"
 	"testing"
 )
 
 func TestInfo(t *testing.T) {
 	Debug("hello","world")
+}
+
+func TestCustomLogger(t *testing.T) {
+	l := logs.GetLogger("BTC")
+	l.Println("hello", "world")
+}
+
+func TestOWLogger(t *testing.T) {
+	l := NewOWLogger("BTC")
+	l.Info("hello", "world")
 }

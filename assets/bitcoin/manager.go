@@ -47,7 +47,6 @@ const (
 )
 
 type WalletManager struct {
-
 	openwallet.AssetsAdapterBase
 
 	Storage        *hdkeystore.HDKeystore        //秘钥存取
@@ -58,6 +57,7 @@ type WalletManager struct {
 	Blockscanner   *BTCBlockScanner              //区块扫描器
 	Decoder        openwallet.AddressDecoder     //地址编码器
 	TxDecoder      openwallet.TransactionDecoder //交易单编码器
+	Log            *log.OWLogger                 //日志工具
 }
 
 func NewWalletManager() *WalletManager {
@@ -71,6 +71,7 @@ func NewWalletManager() *WalletManager {
 	wm.Blockscanner = NewBTCBlockScanner(&wm)
 	wm.Decoder = NewAddressDecoder(&wm)
 	wm.TxDecoder = NewTransactionDecoder(&wm)
+	wm.Log = log.NewOWLogger(wm.Symbol())
 	return &wm
 }
 
@@ -697,13 +698,13 @@ func (wm *WalletManager) CreateNewPrivateKey(accountID string, key *owkeychain.E
 	}
 
 	addr := openwallet.Address{
-		Address:   address,
-		AccountID: accountID,
-		HDPath:    derivedPath,
+		Address:     address,
+		AccountID:   accountID,
+		HDPath:      derivedPath,
 		CreatedTime: time.Now().Unix(),
-		Symbol:    wm.Config.Symbol,
-		Index:     index,
-		WatchOnly: false,
+		Symbol:      wm.Config.Symbol,
+		Index:       index,
+		WatchOnly:   false,
 	}
 
 	//addr := Address{

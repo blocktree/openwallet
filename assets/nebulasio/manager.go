@@ -21,6 +21,11 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/big"
+	"path/filepath"
+	"strconv"
+	"time"
+
 	"github.com/asdine/storm"
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/common"
@@ -38,10 +43,6 @@ import (
 	"github.com/nebulasio/go-nebulas/util"
 	"github.com/nebulasio/go-nebulas/util/byteutils"
 	"github.com/shopspring/decimal"
-	"math/big"
-	"path/filepath"
-	"strconv"
-	"time"
 )
 
 //from nebulasio
@@ -76,6 +77,8 @@ type Key struct {
 }
 
 type WalletManager struct {
+	openwallet.AssetsAdapterBase
+
 	Storage         *hdkeystore.HDKeystore          //秘钥存取
 	WalletClient    *Client                         // 节点客户端
 	Config          *WalletConfig                   //钱包管理配置
@@ -84,6 +87,7 @@ type WalletManager struct {
 	Decoder         openwallet.AddressDecoder       //地址编码器
 	TxDecoder       openwallet.TransactionDecoder   //交易单编码器
 	ContractDecoder openwallet.SmartContractDecoder //智能合约解析器
+	Log             *log.OWLogger                   //日志工具
 }
 
 func NewWalletManager() *WalletManager {
@@ -99,7 +103,7 @@ func NewWalletManager() *WalletManager {
 	wm.Decoder = NewAddressDecoder(&wm)
 	//交易单解析器
 	wm.TxDecoder = NewTransactionDecoder(&wm)
-
+	wm.Log = log.NewOWLogger(wm.Symbol())
 	return &wm
 }
 
