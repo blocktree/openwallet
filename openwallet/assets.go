@@ -15,6 +15,8 @@
 
 package openwallet
 
+import "github.com/blocktree/OpenWallet/log"
+
 //Coin 币种信息
 type Coin struct {
 	Symbol     string        `json:"symbol"`
@@ -50,6 +52,10 @@ type AssetsAdapter interface {
 	//GetSmartContractDecoder 获取智能合约解析器
 	//@optional
 	GetSmartContractDecoder() SmartContractDecoder
+
+	//GetAssetsLogger 获取资产日志工具
+	//@optional
+	GetAssetsLogger() *log.OWLogger
 }
 
 type AssetsAdapterBase struct {
@@ -74,5 +80,10 @@ func (a *AssetsAdapterBase) GetBlockScanner() BlockScanner {
 
 //GetBlockScanner 获取智能合约解析器
 func (a *AssetsAdapterBase) GetSmartContractDecoder() SmartContractDecoder {
+	return nil
+}
+
+//GetAssetsLogger 获取资产账户日志工具
+func (a *AssetsAdapterBase) GetAssetsLogger() *log.OWLogger {
 	return nil
 }

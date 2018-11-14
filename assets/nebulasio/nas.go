@@ -543,3 +543,8 @@ func (w *WalletManager) RestoreWalletFlow() error {
 
 	return nil
 }
+
+//GetAssetsLogger 获取资产账户日志工具
+func (w *WalletManager) GetAssetsLogger() *log.OWLogger {
+	return w.Log
+}

@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/asdine/storm"
-	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/shopspring/decimal"
@@ -113,7 +112,7 @@ func (bs *NASBlockScanner) ScanBlockTask() {
 	//获取本地区块高度
 	blockHeader, err := bs.GetCurrentBlockHeader()
 	if err != nil {
-		log.Std.Info("block scanner can not get new block height; unexpected error: %v", err)
+		bs.wm.Log.Std.Info("block scanner can not get new block height; unexpected error: %v", err)
 	}
 
 	currentHeight := blockHeader.Height
@@ -125,36 +124,36 @@ func (bs *NASBlockScanner) ScanBlockTask() {
 		maxHeight, err := bs.wm.GetBlockHeight()
 		if err != nil {
 			//下一个高度找不到会报异常
-			log.Std.Info("block scanner can not get rpc-server block height; unexpected error: %v", err)
+			bs.wm.Log.Std.Info("block scanner can not get rpc-server block height; unexpected error: %v", err)
 			break
 		}
 
 		//是否已到最新高度
 		if currentHeight == maxHeight {
-			log.Std.Info("block scanner has scanned full chain data. Current height: %d", maxHeight)
+			bs.wm.Log.Std.Info("block scanner has scanned full chain data. Current height: %d", maxHeight)
 			break
 		}
 
 		//继续扫描下一个区块
 		currentHeight = currentHeight + 1
 
-		log.Std.Info("block scanner scanning height: %d ...", currentHeight)
+		bs.wm.Log.Std.Info("block scanner scanning height: %d ...", currentHeight)
 
 		hash, err := bs.wm.GetBlockHashByHeight(currentHeight)
 		if err != nil {
 			//下一个高度找不到会报异常
-			log.Std.Info("block scanner can not get new block hash; unexpected error: %v", err)
+			bs.wm.Log.Std.Info("block scanner can not get new block hash; unexpected error: %v", err)
 			break
 		}
 
 		block, err := bs.wm.GetBlockByHash(hash)
 		if err != nil {
-			log.Std.Info("block scanner can not get new block data; unexpected error: %v", err)
+			bs.wm.Log.Std.Info("block scanner can not get new block data; unexpected error: %v", err)
 
 			//记录未扫区块
 			unscanRecord := NewUnscanRecord(currentHeight, "", err.Error())
 			bs.SaveUnscanRecord(unscanRecord)
-			log.Std.Info("block height: %d extract failed.", currentHeight)
+			bs.wm.Log.Std.Info("block height: %d extract failed.", currentHeight)
 			continue
 		}
 
@@ -163,11 +162,11 @@ func (bs *NASBlockScanner) ScanBlockTask() {
 		//判断hash是否上一区块的hash
 		if currentHash != block.Previousblockhash {
 
-			log.Std.Info("block has been fork on height: %d.", currentHeight)
-			log.Std.Info("block height: %d local hash = %s ", currentHeight-1, currentHash)
-			log.Std.Info("block height: %d mainnet hash = %s ", currentHeight-1, block.Previousblockhash)
+			bs.wm.Log.Std.Info("block has been fork on height: %d.", currentHeight)
+			bs.wm.Log.Std.Info("block height: %d local hash = %s ", currentHeight-1, currentHash)
+			bs.wm.Log.Std.Info("block height: %d mainnet hash = %s ", currentHeight-1, block.Previousblockhash)
 
-			log.Std.Info("delete recharge records on block height: %d.", currentHeight-1)
+			bs.wm.Log.Std.Info("delete recharge records on block height: %d.", currentHeight-1)
 
 			//删除上一区块链的所有充值记录
 			//bs.DeleteRechargesByHeight(currentHeight - 1)
@@ -180,20 +179,20 @@ func (bs *NASBlockScanner) ScanBlockTask() {
 
 			localBlock, err := bs.wm.GetLocalBlock(currentHeight)
 			if err != nil {
-				log.Std.Error("block scanner can not get local block; unexpected error: %v", err)
+				bs.wm.Log.Std.Error("block scanner can not get local block; unexpected error: %v", err)
 
 				//查找core钱包的RPC
-				log.Info("block scanner prev block height:", currentHeight)
+				bs.wm.Log.Info("block scanner prev block height:", currentHeight)
 
 				prevHash, err := bs.wm.GetBlockHashByHeight(currentHeight)
 				if err != nil {
-					log.Std.Error("block scanner can not get prev block; unexpected error: %v", err)
+					bs.wm.Log.Std.Error("block scanner can not get prev block; unexpected error: %v", err)
 					break
 				}
 
 				localBlock, err = bs.wm.GetBlockByHash(prevHash)
 				if err != nil {
-					log.Std.Error("block scanner can not get prev block; unexpected error: %v", err)
+					bs.wm.Log.Std.Error("block scanner can not get prev block; unexpected error: %v", err)
 					break
 				}
 
@@ -202,7 +201,7 @@ func (bs *NASBlockScanner) ScanBlockTask() {
 			//重置当前区块的hash
 			currentHash = localBlock.Hash
 
-			log.Std.Info("rescan block on height: %d, hash: %s .", currentHeight, currentHash)
+			bs.wm.Log.Std.Info("rescan block on height: %d, hash: %s .", currentHeight, currentHash)
 
 			//重新记录一个新扫描起点
 			bs.wm.SaveLocalNewBlock(localBlock.Height, localBlock.Hash)
@@ -212,7 +211,7 @@ func (bs *NASBlockScanner) ScanBlockTask() {
 		} else {
 			err = bs.BatchExtractTransaction(block.Height, block.Hash, block.tx)
 			if err != nil {
-				log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
+				bs.wm.Log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
 			}
 
 			//重置当前区块的hash
@@ -245,29 +244,29 @@ func (bs *NASBlockScanner) ScanBlockTask() {
 //ScanBlock 扫描指定高度区块
 func (bs *NASBlockScanner) ScanBlock(height uint64) error {
 
-	log.Std.Info("block scanner scanning height: %d ...", height)
+	bs.wm.Log.Std.Info("block scanner scanning height: %d ...", height)
 
 	hash, err := bs.wm.GetBlockHashByHeight(height)
 	if err != nil {
 		//下一个高度找不到会报异常
-		log.Std.Info("block scanner can not get new block hash; unexpected error: %v", err)
+		bs.wm.Log.Std.Info("block scanner can not get new block hash; unexpected error: %v", err)
 		return err
 	}
 
 	block, err := bs.wm.GetBlockByHash(hash)
 	if err != nil {
-		log.Std.Info("block scanner can not get new block data; unexpected error: %v", err)
+		bs.wm.Log.Std.Info("block scanner can not get new block data; unexpected error: %v", err)
 
 		//记录未扫区块
 		unscanRecord := NewUnscanRecord(height, "", err.Error())
 		bs.SaveUnscanRecord(unscanRecord)
-		log.Std.Info("block height: %d extract failed.", height)
+		bs.wm.Log.Std.Info("block height: %d extract failed.", height)
 		return err
 	}
 
 	err = bs.BatchExtractTransaction(block.Height, block.Hash, block.tx)
 	if err != nil {
-		log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
+		bs.wm.Log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
 	}
 
 	//保存区块
@@ -282,17 +281,17 @@ func (bs *NASBlockScanner) ScanBlock(height uint64) error {
 //ScanTxMemPool 扫描交易内存池
 func (bs *BTCBlockScanner) ScanTxMemPool() {
 
-	log.Std.Info("block scanner scanning mempool ...")
+	bs.wm.Log.Std.Info("block scanner scanning mempool ...")
 
 	//提取未确认的交易单
 	txIDsInMemPool, err := bs.wm.GetTxIDsInMemPool()
 	if err != nil {
-		log.Std.Info("block scanner can not get mempool data; unexpected error: %v", err)
+		bs.wm.Log.Std.Info("block scanner can not get mempool data; unexpected error: %v", err)
 	}
 
 	err = bs.BatchExtractTransaction(0, "", txIDsInMemPool)
 	if err != nil {
-		log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
+		bs.wm.Log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
 	}
 
 }
@@ -306,7 +305,7 @@ func (bs *NASBlockScanner) RescanFailedRecord() {
 
 	list, err := bs.wm.GetUnscanRecords()
 	if err != nil {
-		log.Std.Info("block scanner can not get rescan data; unexpected error: %v", err)
+		bs.wm.Log.Std.Info("block scanner can not get rescan data; unexpected error: %v", err)
 	}
 
 	//组合成批处理
@@ -328,20 +327,20 @@ func (bs *NASBlockScanner) RescanFailedRecord() {
 
 		var hash string
 
-		log.Std.Info("block scanner rescanning height: %d ...", height)
+		bs.wm.Log.Std.Info("block scanner rescanning height: %d ...", height)
 
 		if len(txs) == 0 {
 
 			hash, err := bs.wm.GetBlockHashByHeight(height)
 			if err != nil {
 				//下一个高度找不到会报异常
-				log.Std.Info("block scanner can not get new block hash; unexpected error: %v", err)
+				bs.wm.Log.Std.Info("block scanner can not get new block hash; unexpected error: %v", err)
 				continue
 			}
 
 			block, err := bs.wm.GetBlockByHash(hash)
 			if err != nil {
-				log.Std.Info("block scanner can not get new block data; unexpected error: %v", err)
+				bs.wm.Log.Std.Info("block scanner can not get new block data; unexpected error: %v", err)
 				continue
 			}
 
@@ -350,7 +349,7 @@ func (bs *NASBlockScanner) RescanFailedRecord() {
 
 		err = bs.BatchExtractTransaction(height, hash, txs)
 		if err != nil {
-			log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
+			bs.wm.Log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
 			continue
 		}
 
@@ -404,19 +403,19 @@ func (bs *NASBlockScanner) BatchExtractTransaction(blockHeight uint64, blockHash
 				//saveErr := bs.SaveRechargeToWalletDB(height, gets.Recharges)
 				if notifyErr != nil {
 					failed++ //标记保存失败数
-					log.Std.Info("newExtractDataNotify unexpected error: %v", notifyErr)
+					bs.wm.Log.Std.Info("newExtractDataNotify unexpected error: %v", notifyErr)
 				}
 			} else {
 				//记录未扫区块
 				unscanRecord := NewUnscanRecord(height, "", "Scan failed!")
 				bs.SaveUnscanRecord(unscanRecord)
-				log.Std.Info("block height: %d extract failed.", height)
+				bs.wm.Log.Std.Info("block height: %d extract failed.", height)
 				failed++ //标记保存失败数
 			}
 			//累计完成的线程数
 			done++
 			if done == shouldDone {
-				//log.Std.Info("done = %d, shouldDone = %d ", done, len(txs))
+				//bs.wm.Log.Std.Info("done = %d, shouldDone = %d ", done, len(txs))
 				close(quit) //关闭通道，等于给通道传入nil
 			}
 		}
@@ -473,7 +472,7 @@ func (bs *NASBlockScanner) extractRuntime(producer chan ExtractResult, worker ch
 			values = append(values, pa)
 		case <-quit:
 			//退出
-			//log.Std.Info("block scanner have been scanned!")
+			//bs.wm.Log.Std.Info("block scanner have been scanned!")
 			return
 		default:
 
@@ -671,32 +670,32 @@ func (bs *NASBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 			extractData: make(map[string]*openwallet.TxExtractData),
 		}
 	)
-	//log.Std.Debug("block scanner scanning tx: %s ...", txid)
+	//bs.wm.Log.Std.Debug("block scanner scanning tx: %s ...", txid)
 
 	tx_nas, err := bs.wm.GetTransaction(txid,blockHeight)
 	if err != nil {
-		log.Std.Info("block scanner can not extract transaction data; unexpected error: %v", err)
+		bs.wm.Log.Std.Info("block scanner can not extract transaction data; unexpected error: %v", err)
 		//记录哪个区块哪个交易单没有完成扫描
 		success = false
 		//return nil, failedTx, nil
 	} else {
-			//log.Std.Info("block scanner scanning tx: %+v", txid)
+			//bs.wm.Log.Std.Info("block scanner scanning tx: %+v", txid)
 			//订阅地址为交易单中的发送者
 			if _, ok := scanAddressFunc(tx_nas.From); ok {
-				log.Std.Info("tx.from found in transaction [%v] .", tx_nas.Hash)
+				bs.wm.Log.Std.Info("tx.from found in transaction [%v] .", tx_nas.Hash)
 				if accountId, exist := scanAddressFunc(tx_nas.From); exist {
 					tx_nas.FromAccountId = accountId
 					bs.InitNasExtractResult(tx_nas, &result, true)
 				} else {
-					log.Std.Info("tx.from unexpected error.")
+					bs.wm.Log.Std.Info("tx.from unexpected error.")
 				}
 			} else {
-				//log.Std.Info("tx.from[%v] not found in scanning address.", tx_nas.From)
+				//bs.wm.Log.Std.Info("tx.from[%v] not found in scanning address.", tx_nas.From)
 			}
 
 			//订阅地址为交易单中的接收者
 			if _, ok2 := scanAddressFunc(tx_nas.To); ok2 {
-				log.Std.Info("tx.to found in transaction [%v].", tx_nas.Hash)
+				bs.wm.Log.Std.Info("tx.to found in transaction [%v].", tx_nas.Hash)
 				if accountId, exist := scanAddressFunc(tx_nas.To); exist {
 					if _, exist = result.extractData[accountId]; !exist {
 						tx_nas.ToAccountId = accountId
@@ -704,11 +703,11 @@ func (bs *NASBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 					}
 
 				} else {
-					log.Std.Info("tx.to unexpected error.")
+					bs.wm.Log.Std.Info("tx.to unexpected error.")
 				}
 
 			} else if len(result.extractData) == 0 {
-				//log.Std.Info("tx.to[%v] not found in scanning address.", tx_nas.To)
+				//bs.wm.Log.Std.Info("tx.to[%v] not found in scanning address.", tx_nas.To)
 			}
 		success = true
 	}
@@ -798,7 +797,7 @@ func (bs *BTCBlockScanner) ExtractTxOutput(blockHeight uint64, blockHash string,
 	confirmations := trx.Confirmations
 	vout := trx.Vouts
 	txid := trx.TxID
-	//log.Debug("vout:", vout.Array())
+	//bs.wm.Log.Debug("vout:", vout.Array())
 	createAt := time.Now().Unix()
 	for _, output := range vout {
 
@@ -862,12 +861,12 @@ func (bs *NASBlockScanner) newExtractDataNotify(height uint64, extractData map[s
 		for key, data := range extractData {
 			err := o.BlockExtractDataNotify(key, data)
 			if err != nil {
-				log.Error("BlockExtractDataNotify unexpected error:", err)
+				bs.wm.Log.Error("BlockExtractDataNotify unexpected error:", err)
 				//记录未扫区块
 				unscanRecord := NewUnscanRecord(height, "", "ExtractData Notify failed.")
 				err = bs.SaveUnscanRecord(unscanRecord)
 				if err != nil {
-					log.Std.Error("block height: %d, save unscan record failed. unexpected error: %v", height, err.Error())
+					bs.wm.Log.Std.Error("block height: %d, save unscan record failed. unexpected error: %v", height, err.Error())
 				}
 			}
 		}
@@ -931,11 +930,11 @@ func (wm *WalletManager) DeleteUnscanRecordNotFindTX() error {
 //				unscanRecord := NewUnscanRecord(height, r.TxID, "save to wallet failed.")
 //				err = bs.SaveUnscanRecord(unscanRecord)
 //				if err != nil {
-//					log.Std.Error("block height: %d, txID: %s save unscan record failed. unexpected error: %v", height, r.TxID, err.Error())
+//					bs.wm.Log.Std.Error("block height: %d, txID: %s save unscan record failed. unexpected error: %v", height, r.TxID, err.Error())
 //				}
 //
 //			} else {
-//				log.Info("block scanner save blockHeight:", height, "txid:", r.TxID, "address:", r.Address, "successfully.")
+//				bs.wm.Log.Info("block scanner save blockHeight:", height, "txid:", r.TxID, "address:", r.Address, "successfully.")
 //			}
 //		} else {
 //			return errors.New("address in wallet is not found")

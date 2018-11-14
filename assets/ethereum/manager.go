@@ -77,6 +77,9 @@ var (
 }*/
 
 type WalletManager struct {
+
+	openwallet.AssetsAdapterBase
+
 	Storage      *hdkeystore.HDKeystore        //秘钥存取
 	WalletClient *Client                       // 节点客户端
 	Config       *WalletConfig                 //钱包管理配置
@@ -93,6 +96,8 @@ type WalletManager struct {
 	RootPath        string
 	DefaultConfig   string
 	SymbolID        string
+
+	Log            *log.OWLogger                 //日志工具
 }
 
 func (this *WalletManager) GetConfig() WalletConfig {
@@ -128,6 +133,8 @@ func NewWalletManager() *WalletManager {
 	}
 
 	wm.WalletInSumOld = make(map[string]*Wallet)
+	wm.Log = log.NewOWLogger(wm.Symbol())
+
 	return &wm
 }
 
