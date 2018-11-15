@@ -16,14 +16,13 @@
 package tron
 
 import (
-	"log"
-
 	"github.com/blocktree/OpenWallet/hdkeystore"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 func init() {
-	log.SetFlags(log.Lshortfile | log.LstdFlags)
+	// log.SetFlags(log.Lshortfile | log.LstdFlags)
 }
 
 // WalletManager struct
@@ -34,6 +33,7 @@ type WalletManager struct {
 	Storage        *hdkeystore.HDKeystore //秘钥存取
 	FullnodeClient *Client                // 全节点客户端
 	WalletClient   *Client                // 节点客户端
+	Log            *log.OWLogger          //日志工具
 
 	WalletsInSum map[string]*openwallet.Wallet //参与汇总的钱包
 
@@ -52,6 +52,7 @@ func NewWalletManager() *WalletManager {
 	wm.Blockscanner = NewTronBlockScanner(&wm)
 	wm.AddrDecoder = NewAddressDecoder(&wm)
 	wm.TxDecoder = NewTransactionDecoder(&wm)
+	wm.Log = log.NewOWLogger(wm.Symbol())
 	return &wm
 }
 
