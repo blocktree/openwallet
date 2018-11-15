@@ -199,14 +199,14 @@ func (this *EthTransactionDecoder) GetRawTransactionFeeRate() (feeRate string, u
 	price, err := this.wm.WalletClient.ethGetGasPrice()
 	if err != nil {
 		log.Errorf("get gas price failed, err=%v", err)
-		return "", "", err
+		return "", "Gas", err
 	}
 
 	pricedecimal, err := ConverWeiStringToEthDecimal(price.String())
 	if err != nil {
 		log.Errorf("wrong gas price format.")
 	}
-	return pricedecimal.String(), "", nil
+	return pricedecimal.String(), "Gas", nil
 }
 
 func VerifyRawTransaction(rawTx *openwallet.RawTransaction) error {
