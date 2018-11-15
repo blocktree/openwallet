@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/blocktree/OpenWallet/common"
@@ -223,7 +224,7 @@ func (wm *WalletManager) TransferFlow() error {
 
 	to_address := receiver
 	owner_address := ""
-	amountR := int64(20)
+	amountR, _ := strconv.ParseFloat(amount, 64) // 500
 
 	// 构建交易单
 	if _, err := wm.CreateTransactionRef(to_address, owner_address, amountR); err != nil {

@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+
 	"github.com/blocktree/OpenWallet/crypto"
 	"github.com/tidwall/gjson"
 )
@@ -69,6 +70,13 @@ func (decoder *TransactionDecoderBase) GetRawTransactionFeeRate() (feeRate strin
 }
 
 //RawTransaction 原始交易单
+//
+// Workflow：
+// 	首先：App(openw-server)中，提供 Coin/To/Account 参数
+// 	其次：APP 调用 tx_decoder 需处理：
+// 		1. 第一步调用交易单构建：计算手续费/构建签名结构，给 RawHex，Fees，FeeRate，Signatures，IsBuilt = true 赋值
+// 		2. 第二步调用交易单签名：获取到 RawHex 完成签名，完成参数 Signatures
+// 		3. 第三步调用交易单广播：解析rawHex，合并签名，验证签名，广播交易, 设置参数 TxID，IsSubmit = true
 type RawTransaction struct {
 	Coin        Coin                       `json:"coin"`       //@required 区块链类型标识
 	TxID        string                     `json:"txID"`       //交易单ID，广播后会生成
