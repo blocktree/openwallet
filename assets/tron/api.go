@@ -63,7 +63,7 @@ func (c *Client) Call(path string, param interface{}) (*gjson.Result, error) {
 
 	r, err := req.Post(url, req.BodyJSON(&param), authHeader)
 	if err != nil {
-		log.Error("Failed: %+v >\n", err)
+		log.Errorf("Failed: %+v >\n", err)
 		return nil, err
 	}
 	// log.Std.Info("%+v", r)

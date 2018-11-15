@@ -72,7 +72,7 @@ func (wm *WalletManager) GetTransactionByID(txID string) (tx *Transaction, err e
 // 	amount is the transfer amount
 // Return value：
 // 	Transaction contract data
-func (wm *WalletManager) CreateTransaction(toAddress, ownerAddress string, amount int64) (raw string, err error) {
+func (wm *WalletManager) CreateTransaction(toAddress, ownerAddress string, amount float64) (raw string, err error) {
 
 	params := req.Param{
 		"to_address":    toAddress,
