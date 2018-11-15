@@ -14,7 +14,6 @@ import (
 	"math/big"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/blocktree/OpenWallet/log"
 	base58 "github.com/itchyny/base58-go"
@@ -276,6 +275,13 @@ func SerializePublicKey(key *PublicKey) []byte {
 
 	return buf.Bytes()
 }
+func GetNamedCurve(name string) (elliptic.Curve, error) {
+	label, err := GetNamedCurveLabel(name)
+	if err != nil {
+		return nil, err
+	}
+	return GetCurve(label)
+}
 
 func GetCurveLabel(c elliptic.Curve) (byte, error) {
 	return GetNamedCurveLabel(c.Params().Name)
@@ -455,16 +461,6 @@ func NewEncryptError(msg string) *EncryptError {
 	return &EncryptError{detail: msg}
 }
 
-type DecryptError EncryptError
-
-func (e *DecryptError) Error() string {
-	return "decrypt private key error: " + e.detail
-}
-
-func NewDecryptError(msg string) *DecryptError {
-	return &DecryptError{detail: msg}
-}
-
 func EncryptWithCustomScrypt(pri *PrivateKey, addr string, pwd []byte, param *ScryptParam) (*ProtectedKey, error) {
 	var res = ProtectedKey{
 		Address: addr,
@@ -551,20 +547,6 @@ type Controller struct {
 	ID     string `json:"id"`
 	Public string `json:"publicKey,omitemtpy"`
 	ProtectedKey
-}
-
-/* crypto object */
-type Account struct {
-	PrivateKey *PrivateKey
-	PublicKey  *PublicKey
-	Address    Address
-	SigScheme  SignatureScheme
-}
-
-type unlockAccountInfo struct {
-	acc        *Account
-	unlockTime time.Time
-	expiredAt  int //s
 }
 
 func FileExisted(filename string) bool {

@@ -143,6 +143,17 @@ func TestWalletManager_SubmitTokenTransaction() {
 		return
 	}
 }
+func TestGetRawTransactionFeeRate() {
+	manager, _ := GetEthWalletManager()
+	//decoder := ethereum.EthTransactionDecoder{}
+	decoder := manager.TxDecoder
+	gasprice, gaslimit, err := decoder.GetRawTransactionFeeRate()
+	if err != nil {
+		log.Errorf("GetRawTransactionFeeRate failed, err=%v", err)
+		return
+	}
+	log.Debugf("gasprice:%v gaslimit:%v", gasprice, gaslimit)
+}
 
 func TestWalletManager_SubmitTransaction() {
 
