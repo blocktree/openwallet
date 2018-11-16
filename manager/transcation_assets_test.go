@@ -281,7 +281,49 @@ func TestTransfer_BTC(t *testing.T) {
 	accountID := "2m27uVj2xx645dDCEcGD1whPQGcB4fZv16TzBoLGCyKB"
 	to := "ms9NeTGFtaMcjrqRyRogkHqRoR8b1sQwu3"
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.04", "", nil)
+	contract := openwallet.SmartContract{
+		Address:  "2",
+		Symbol:   "BTC",
+		Name:     "TetherUSD",
+		Token:    "USDT",
+		Decimals: 8,
+	}
+
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.0489", "", &contract)
+	if err != nil {
+		return
+	}
+
+	_, err = testSignTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testVerifyTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testSubmitTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+}
+
+
+
+func TestTransfer_OMNI(t *testing.T) {
+	tm := testInitWalletManager()
+	//ms9NeTGFtaMcjrqRyRogkHqRoR8b1sQwu3
+	//mp1JDsi7Dr2PkcWu1j4SUSTXJqXjFMaeVx
+	//n1ZurJRnQyoRwBrx6B7DMndjBWAxnRbxKJ
+	//mxoCkSBmiLQ86N73kXNLHEUgcUBoKdFawH
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "2m27uVj2xx645dDCEcGD1whPQGcB4fZv16TzBoLGCyKB"
+	to := "n1ZurJRnQyoRwBrx6B7DMndjBWAxnRbxKJ"
+
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.0489", "", nil)
 	if err != nil {
 		return
 	}

@@ -410,5 +410,5 @@ func (decoder *TransactionDecoder) GetRawTransactionFeeRate() (feeRate string, u
 	rate := decoder.wm.EstimateFeeRate()
 	rate_decimal := decimal.RequireFromString(rate).Div(coinDecimal)
 
-	return rate_decimal.StringFixed(decoder.wm.Decimal()), "NAS", nil
+	return rate_decimal.StringFixed(decoder.wm.Decimal()), "Gas", nil
 }

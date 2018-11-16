@@ -23,6 +23,7 @@ type OWLogger struct {
 	Std *logger
 }
 
+//NewOWLogger 初始化一个日志工具，以[prefix]前缀
 func NewOWLogger(prefix string) *OWLogger {
 	l := OWLogger{
 		Std: newLogger(prefix),
@@ -30,12 +31,12 @@ func NewOWLogger(prefix string) *OWLogger {
 	return &l
 }
 
-// SetPrefix
+// SetPrefix 设置前缀
 func (logger *OWLogger)SetPrefix(prefix string) {
 	logger.Std.SetPrefix(prefix)
 }
 
-// SetLevel sets the global log level used by the simple logger.
+// SetLevel 设置打印级别
 func (logger *OWLogger)SetLevel(l int) {
 	logger.Std.SetLevel(l)
 }

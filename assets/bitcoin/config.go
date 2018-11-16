@@ -102,6 +102,8 @@ type WalletConfig struct {
 	RPCServerType int
 	//s是否支持隔离验证
 	SupportSegWit bool
+	//Omni代币转账最低成本
+	OmniTransferCost string
 }
 
 func NewConfig(symbol string, masterKey string) *WalletConfig {
@@ -194,6 +196,9 @@ threshold = ""
 cycleSeconds = ""
 # walletPassword use to unlock bitcoin core wallet
 walletPassword = ""
+# Omni token transfer minimum cost
+omniTransferCost = "0.00000546"
+
 `
 
 	//创建目录

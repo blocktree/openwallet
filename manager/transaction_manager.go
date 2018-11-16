@@ -572,3 +572,20 @@ func (wm *WalletManager) GetTxSpent(appID string, offset, limit int, cols ...int
 
 	return trx, nil
 }
+
+//GetEstimateFeeRate 获取币种推荐手续费
+func (wm *WalletManager) GetEstimateFeeRate(coin openwallet.Coin) (feeRate string, unit string, err error) {
+
+	assetsMgr, err := GetAssetsManager(coin.Symbol)
+	if err != nil {
+		return "", "", err
+	}
+
+	txDecoder := assetsMgr.GetTransactionDecoder()
+	if txDecoder == nil {
+		return "", "", fmt.Errorf("[%s] is not support transaction. ", coin.Symbol)
+	}
+
+	return txDecoder.GetRawTransactionFeeRate()
+
+}

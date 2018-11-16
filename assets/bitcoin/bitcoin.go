@@ -629,6 +629,7 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 	wm.Config.NodeInstallPath = c.String("nodeInstallPath")
 	wm.Config.IsTestNet, _ = c.Bool("isTestNet")
 	wm.Config.WalletPassword = c.String("walletPassword")
+	wm.Config.OmniTransferCost = c.String("omniTransferCost")
 	if wm.Config.IsTestNet {
 		wm.Config.WalletDataPath = c.String("testNetDataPath")
 	} else {

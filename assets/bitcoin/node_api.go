@@ -24,6 +24,10 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 )
 
+type ClientInterface interface {
+	Call(path string, request []interface{}) (*gjson.Result, error)
+}
+
 // A Client is a Bitcoin RPC client. It performs RPCs over HTTP using JSON
 // request and responses. A Client must be configured with a secret token
 // to authenticate with other Cores on the network.

@@ -51,6 +51,7 @@ type WalletManager struct {
 
 	Storage        *hdkeystore.HDKeystore        //秘钥存取
 	WalletClient   *Client                       // 节点客户端
+	OnmiClient     *Client                       // Omni代币节点客户端
 	ExplorerClient *Explorer                     // 浏览器API客户端
 	Config         *WalletConfig                 //钱包管理配置
 	WalletsInSum   map[string]*openwallet.Wallet //参与汇总的钱包
