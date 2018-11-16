@@ -192,7 +192,7 @@ cycleSeconds = ""
 	return &c
 }
 
-//printConfig Print config information
+//PrintConfig Print config information
 func (wc *WalletConfig) PrintConfig() error {
 
 	wc.InitConfig()
@@ -225,7 +225,7 @@ func (wc *WalletConfig) PrintConfig() error {
 
 }
 
-//initConfig 初始化配置文件
+//InitConfig 初始化配置文件
 func (wc *WalletConfig) InitConfig() {
 
 	//读取配置

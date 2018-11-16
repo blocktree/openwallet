@@ -84,29 +84,31 @@ func getTxHash(tx *core.Transaction) (txHash []byte, err error) {
 // 	Transaction refTransaction = setReference(transaction, newestBlock);
 // 	return refTransaction;
 // }
-func (wm *WalletManager) CreateTransactionRef(to_address, owner_address string, amount int64) (txRawHex string, err error) {
+func (wm *WalletManager) CreateTransactionRef(toAddress, ownerAddress string, amount float64) (txRawHex string, err error) {
 
 	// addressEncoder.AddressDecode return 20 bytes of the center of Address
-	to_address_bytes, err := addressEncoder.AddressDecode(to_address, addressEncoder.TRON_mainnetAddress)
+	toAddressBytes, err := addressEncoder.AddressDecode(toAddress, addressEncoder.TRON_mainnetAddress)
 	if err != nil {
 		return "", err
-	} else {
-		to_address_bytes = append([]byte{0x41}, to_address_bytes...)
 	}
+	toAddressBytes = append([]byte{0x41}, toAddressBytes...)
 
-	owner_address_bytes, err := addressEncoder.AddressDecode(owner_address, addressEncoder.TRON_mainnetAddress)
+	ownerAddressBytes, err := addressEncoder.AddressDecode(ownerAddress, addressEncoder.TRON_mainnetAddress)
 	if err != nil {
 		return "", err
-	} else {
-		owner_address_bytes = append([]byte{0x41}, owner_address_bytes...)
 	}
+	ownerAddressBytes = append([]byte{0x41}, ownerAddressBytes...)
+
+	// Check amount
+	// if amount * 1000000
+	// 500
 
 	// --------------------- Generate TX Contract ------------------------
 
 	tc := &core.TransferContract{
-		OwnerAddress: owner_address_bytes,
-		ToAddress:    to_address_bytes,
-		Amount:       amount * 1000000,
+		OwnerAddress: ownerAddressBytes,
+		ToAddress:    toAddressBytes,
+		Amount:       int64(amount * 1000000),
 	}
 
 	tcRaw, err := proto.Marshal(tc)
@@ -168,7 +170,7 @@ func (wm *WalletManager) CreateTransactionRef(to_address, owner_address string, 
 	return txRawHex, nil
 }
 
-// Done!
+// SignTransactionRef Done!
 // public static Transaction sign(Transaction transaction, ECKey myKey) {
 // 	Transaction.Builder transactionBuilderSigned = transaction.toBuilder();
 //
@@ -209,12 +211,12 @@ func (wm *WalletManager) SignTransactionRef(txRawhex string, privateKey string) 
 		return signedTxRaw, err
 	}
 
-	for i, _ := range tx.GetRawData().GetContract() {
+	for i := range tx.GetRawData().GetContract() {
 
 		// sign, ret := owcrypt.Signature(privateKey, nil, 0, txHash, uint16(len(txHash)), owcrypt.ECC_CURVE_SECP256K1)
 		sign, ret := owcrypt.Tron_signature(pk, txHash)
 		if ret != owcrypt.SUCCESS {
-			err := errors.New(fmt.Sprintf("Signature[%d] faild!", i))
+			err := fmt.Errorf("Signature[%d] faild", i)
 			log.Println(err)
 			return signedTxRaw, err
 		}
@@ -231,7 +233,7 @@ func (wm *WalletManager) SignTransactionRef(txRawhex string, privateKey string) 
 
 }
 
-// Done!
+// ValidSignedTransactionRef Done!
 //   /*
 //    * 1. check hash
 //    * 2. check double spent
@@ -270,16 +272,16 @@ func (wm *WalletManager) SignTransactionRef(txRawhex string, privateKey string) 
 func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
 
 	tx := &core.Transaction{}
-	if txBytes, err := hex.DecodeString(txHex); err != nil {
-		return nil
-	} else {
-		if err := proto.Unmarshal(txBytes, tx); err != nil {
-			return err
-		}
+	txBytes, err := hex.DecodeString(txHex)
+	if err != nil {
+		return err
+	}
+	if err := proto.Unmarshal(txBytes, tx); err != nil {
+		return err
 	}
 
 	if len(tx.GetSignature()) != len(tx.GetRawData().GetContract()) {
-		err := errors.New("ValidSignedTransactionRef faild: no signature found!")
+		err := errors.New("ValidSignedTransactionRef faild: no signature found")
 		log.Println(err)
 		return err
 	}
@@ -293,7 +295,7 @@ func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
 	}
 
 	if countSignature == 0 {
-		return errors.New("No signature found!")
+		return errors.New("No signature found")
 	}
 
 	for i := 0; i < countSignature; i++ {
@@ -305,26 +307,26 @@ func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
 			return err
 		}
 
-		owner_address_hex := hex.EncodeToString(tc.GetOwnerAddress())
+		ownerAddressHex := hex.EncodeToString(tc.GetOwnerAddress())
 
 		// pkBytes, ret := owcrypt.RecoverPubkey(tx.Signature[i], txHash, owcrypt.ECC_CURVE_SECP256K1|owcrypt.HASH_OUTSIDE_FLAG)
 		pkBytes, ret := owcrypt.RecoverPubkey(tx.Signature[i], txHash, owcrypt.ECC_CURVE_SECP256K1)
 		if ret != owcrypt.SUCCESS {
-			err := errors.New("ValidSignedTransactionRef faild: owcryt.RecoverPubkey return err!")
+			err := errors.New("ValidSignedTransactionRef faild: owcryt.RecoverPubkey return err")
 			log.Println(err)
 			return err
 		}
 
-		pkgen_address_bytes, err := createAddressByPkRef(pkBytes)
+		pkgenAddressBytes, err := createAddressByPkRef(pkBytes)
 		if err != nil {
 			log.Println(err)
 			return err
 		}
-		pkgen_address_hex := hex.EncodeToString(pkgen_address_bytes[:len(pkgen_address_bytes)-4])
+		pkgenAddressHex := hex.EncodeToString(pkgenAddressBytes[:len(pkgenAddressBytes)-4])
 
 		// Check whether the address is equal between signature generating and contract owner pointed
-		if pkgen_address_hex != owner_address_hex {
-			return errors.New("Validate failed, signed address is not the owner address!")
+		if pkgenAddressHex != ownerAddressHex {
+			return errors.New("Validate failed, signed address is not the owner address")
 		}
 	}
 

@@ -16,9 +16,10 @@
 package manager
 
 import (
+	"testing"
+
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
-	"testing"
 )
 
 func testCreateTransactionStep(tm *WalletManager, walletID, accountID, to, amount, feeRate string, contract *openwallet.SmartContract) (*openwallet.RawTransaction, error) {
@@ -201,7 +202,6 @@ func TestTransfer_QTUM(t *testing.T) {
 
 }
 
-
 func TestTransfer_QRC20(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
@@ -248,7 +248,7 @@ func TestTransfer_NAS(t *testing.T) {
 	accountID := "7VftKuNoDtwZ3mn3wDA4smTDMz4iqCg3fNna1fXicVDg"
 	to := "n1LyK9R1jZuMWut28kUiQn8dEoMQUezt9GC"
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.005", "",nil)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.005", "", nil)
 	if err != nil {
 		return
 	}
@@ -269,7 +269,6 @@ func TestTransfer_NAS(t *testing.T) {
 	}
 
 }
-
 
 func TestTransfer_BTC(t *testing.T) {
 	tm := testInitWalletManager()
@@ -327,6 +326,35 @@ func TestTransfer_OMNI(t *testing.T) {
 	if err != nil {
 		return
 	}
+
+	_, err = testSignTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testVerifyTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testSubmitTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+}
+
+func TestTransfer_TRON(t *testing.T) {
+	tm := testInitWalletManager()
+	walletID := "W33vxQiNcgjJgMvowsNerXao6LZjwR61zp"
+	accountID := "GEGdASep1uA7RBarNNZuJjgnE8T3DyJGTRGz4JfNE4Me"
+	to := "TWVRXXN5tsggjUCDmqbJ4KxPdJKQiynaG6" // t2
+
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1", "", nil)
+	if err != nil {
+		return
+	}
+	_ = rawTx
 
 	_, err = testSignTransactionStep(tm, rawTx)
 	if err != nil {

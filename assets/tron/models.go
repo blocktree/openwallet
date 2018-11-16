@@ -23,34 +23,6 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-//BlockchainInfo 本地节点区块链信息
-type BlockchainInfo struct {
-	Chain                string `json:"chain"`
-	Blocks               uint64 `json:"blocks"`
-	Headers              uint64 `json:"headers"`
-	Bestblockhash        string `json:"bestblockhash"`
-	Difficulty           string `json:"difficulty"`
-	Mediantime           uint64 `json:"mediantime"`
-	Verificationprogress string `json:"verificationprogress"`
-	Chainwork            string `json:"chainwork"`
-	Pruned               bool   `json:"pruned"`
-}
-
-func NewBlockchainInfo(json *gjson.Result) *BlockchainInfo {
-	b := &BlockchainInfo{}
-	//解析json
-	// b.Chain = gjson.Get(json.Raw, "chain").String()
-	// b.Blocks = gjson.Get(json.Raw, "blocks").Uint()
-	// b.Headers = gjson.Get(json.Raw, "headers").Uint()
-	// b.Bestblockhash = gjson.Get(json.Raw, "bestblockhash").String()
-	// b.Difficulty = gjson.Get(json.Raw, "difficulty").String()
-	// b.Mediantime = gjson.Get(json.Raw, "mediantime").Uint()
-	// b.Verificationprogress = gjson.Get(json.Raw, "verificationprogress").String()
-	// b.Chainwork = gjson.Get(json.Raw, "chainwork").String()
-	// b.Pruned = gjson.Get(json.Raw, "pruned").Bool()
-	return b
-}
-
 type Block struct {
 	/*
 		{
