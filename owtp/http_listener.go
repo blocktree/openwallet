@@ -106,6 +106,7 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	//case <-cnCh:
 	case <-httpCtx.Done():
 		log.Debug("http CloseNotify")
+		peer.Close()
 		return
 	}
 

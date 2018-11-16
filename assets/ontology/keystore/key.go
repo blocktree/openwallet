@@ -1,8 +1,9 @@
 package keystore
 
 import (
-	"crypto"
 	"crypto/ecdsa"
+	"crypto/elliptic"
+	"math/big"
 )
 
 const (
@@ -17,7 +18,7 @@ type PrivateKey struct {
 	*ecdsa.PrivateKey
 }
 
-func (this *PrivateKey) Public() crypto.PublicKey {
+func (this *PrivateKey) Public() *PublicKey {
 	return &PublicKey{Algorithm: this.Algorithm, PublicKey: &this.PublicKey}
 }
 
@@ -35,4 +36,18 @@ type ProtectedKey struct {
 	Salt    []byte            `json:"salt,omitempty"`
 	Hash    string            `json:"hash,omitempty"`
 	Param   map[string]string `json:"parameters,omitempty"`
+}
+
+func ConstructPrivateKey(data []byte, curve elliptic.Curve) *ecdsa.PrivateKey {
+	d := new(big.Int).SetBytes(data)
+	x, y := curve.ScalarBaseMult(data)
+
+	return &ecdsa.PrivateKey{
+		D: d,
+		PublicKey: ecdsa.PublicKey{
+			X:     x,
+			Y:     y,
+			Curve: curve,
+		},
+	}
 }
