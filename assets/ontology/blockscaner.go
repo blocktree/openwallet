@@ -1007,7 +1007,11 @@ func (wm *WalletManager) GetBlockHeight() (uint64, error) {
 //getBlockHeightByCore 获取区块链高度
 func (wm *WalletManager) getBlockHeightByCore() (uint64, error) {
 
-	result, err := wm.WalletClient.Call("getblockcount", nil)
+	request := []interface{}{
+
+	}
+
+	result, err := wm.WalletClient.Call("getblockcount", request)
 	if err != nil {
 		return 0, err
 	}
