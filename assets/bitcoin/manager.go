@@ -49,16 +49,17 @@ const (
 type WalletManager struct {
 	openwallet.AssetsAdapterBase
 
-	Storage        *hdkeystore.HDKeystore        //秘钥存取
-	WalletClient   *Client                       // 节点客户端
-	OnmiClient     *Client                       // Omni代币节点客户端
-	ExplorerClient *Explorer                     // 浏览器API客户端
-	Config         *WalletConfig                 //钱包管理配置
-	WalletsInSum   map[string]*openwallet.Wallet //参与汇总的钱包
-	Blockscanner   *BTCBlockScanner              //区块扫描器
-	Decoder        openwallet.AddressDecoder     //地址编码器
-	TxDecoder      openwallet.TransactionDecoder //交易单编码器
-	Log            *log.OWLogger                 //日志工具
+	Storage         *hdkeystore.HDKeystore        //秘钥存取
+	WalletClient    *Client                       // 节点客户端
+	OnmiClient      *Client                       // Omni代币节点客户端
+	ExplorerClient  *Explorer                     // 浏览器API客户端
+	Config          *WalletConfig                 //钱包管理配置
+	WalletsInSum    map[string]*openwallet.Wallet //参与汇总的钱包
+	Blockscanner    *BTCBlockScanner              //区块扫描器
+	Decoder         openwallet.AddressDecoder     //地址编码器
+	TxDecoder       openwallet.TransactionDecoder //交易单编码器
+	Log             *log.OWLogger                 //日志工具
+	ContractDecoder *ContractDecoder              //智能合约解析器
 }
 
 func NewWalletManager() *WalletManager {
@@ -73,6 +74,7 @@ func NewWalletManager() *WalletManager {
 	wm.Decoder = NewAddressDecoder(&wm)
 	wm.TxDecoder = NewTransactionDecoder(&wm)
 	wm.Log = log.NewOWLogger(wm.Symbol())
+	wm.ContractDecoder = NewContractDecoder(&wm)
 	return &wm
 }
 

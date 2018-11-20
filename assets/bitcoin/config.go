@@ -104,6 +104,12 @@ type WalletConfig struct {
 	SupportSegWit bool
 	//Omni代币转账最低成本
 	OmniTransferCost string
+	//OmniCore API
+	OmniCoreAPI string
+	//Omni rpc user
+	OmniRPCUser string
+	//Omni rpc password
+	OmniRPCPassword string
 }
 
 func NewConfig(symbol string, masterKey string) *WalletConfig {
@@ -196,6 +202,14 @@ threshold = ""
 cycleSeconds = ""
 # walletPassword use to unlock bitcoin core wallet
 walletPassword = ""
+# RPC api url
+serverAPI = ""
+# Omni Core RPC API
+omniCoreAPI = ""
+# Omni Core RPC Authentication Username
+omniRPCUser = ""
+# Omni Core RPC Authentication Password
+omniRPCPassword = ""
 # Omni token transfer minimum cost
 omniTransferCost = "0.00000546"
 

@@ -246,7 +246,7 @@ func (wm *WalletManager) initSupportAssetsAdapter() error {
 	}
 
 	for _, symbol := range wm.cfg.SupportAssets {
-		fmt.Println("\t\t\t symbol = ", symbol)
+		//fmt.Println("\t\t\t symbol = ", symbol)
 		assetsMgr, err := GetAssetsManager(symbol)
 		if err != nil {
 			log.Error(symbol, "is not support")

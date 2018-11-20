@@ -630,6 +630,9 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 	wm.Config.IsTestNet, _ = c.Bool("isTestNet")
 	wm.Config.WalletPassword = c.String("walletPassword")
 	wm.Config.OmniTransferCost = c.String("omniTransferCost")
+	wm.Config.OmniCoreAPI = c.String("omniCoreAPI")
+	wm.Config.OmniRPCUser = c.String("omniRPCUser")
+	wm.Config.OmniRPCPassword = c.String("omniRPCPassword")
 	if wm.Config.IsTestNet {
 		wm.Config.WalletDataPath = c.String("testNetDataPath")
 	} else {
@@ -641,12 +644,15 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 	wm.Config.CycleSeconds, _ = time.ParseDuration(cyclesec)
 
 	token := BasicAuth(wm.Config.RpcUser, wm.Config.RpcPassword)
+	omniToken := BasicAuth(wm.Config.OmniRPCUser, wm.Config.OmniRPCPassword)
 
 	if wm.Config.RPCServerType == RPCServerCore {
 		wm.WalletClient = NewClient(wm.Config.ServerAPI, token, false)
 	} else {
 		wm.ExplorerClient = NewExplorer(wm.Config.ServerAPI, false)
 	}
+
+	wm.OnmiClient = NewClient(wm.Config.OmniCoreAPI, omniToken, false)
 
 	return nil
 }
@@ -659,4 +665,9 @@ func (wm *WalletManager) InitAssetsConfig() (config.Configer, error) {
 //GetAssetsLogger 获取资产账户日志工具
 func (wm *WalletManager) GetAssetsLogger() *log.OWLogger {
 	return wm.Log
+}
+
+//GetSmartContractDecoder 获取智能合约解析器
+func (wm *WalletManager) GetSmartContractDecoder() openwallet.SmartContractDecoder {
+	return wm.ContractDecoder
 }
