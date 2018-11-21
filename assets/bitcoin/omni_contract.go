@@ -19,6 +19,7 @@ import (
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/shopspring/decimal"
+	"github.com/tidwall/gjson"
 )
 
 func (wm *WalletManager) GetOmniBalance(propertyId uint64, address string) (decimal.Decimal, error) {
@@ -51,6 +52,18 @@ func (wm *WalletManager) GetOmniTransaction(txid string) (*OmniTransaction, erro
 	}
 
 	return NewOmniTx(result), nil
+}
+
+
+//GetOmniInfo
+func (wm *WalletManager) GetOmniInfo() (*gjson.Result, error) {
+
+	result, err := wm.OnmiClient.Call("omni_getinfo", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 type ContractDecoder struct {

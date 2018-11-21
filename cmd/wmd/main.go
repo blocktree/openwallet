@@ -45,9 +45,9 @@ func init() {
 	app.Version = version
 	app.Commands = []cli.Command{
 		commands.CmdWallet,
-		commands.CmdConfig,
 		commands.CmdNode,
-		commands.CmdMerchant,
+		//commands.CmdConfig,
+		//commands.CmdMerchant,
 	}
 	app.Flags = []cli.Flag{
 		utils.AppNameFlag,

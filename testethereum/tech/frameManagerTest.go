@@ -23,9 +23,9 @@ const (
 	FRAME_DEFAULT_DIR = "frame_data/eth"
 )
 
-func NewEthTestConfig() *manager.Config {
+func NewEthTestConfig() *openw.Config {
 
-	c := manager.Config{}
+	c := openw.Config{}
 
 	//钥匙备份路径
 	c.KeyDir = filepath.Join(FRAME_DEFAULT_DIR, "key")

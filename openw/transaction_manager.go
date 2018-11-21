@@ -13,7 +13,7 @@
  * GNU Lesser General Public License for more details.
  */
 
-package manager
+package openw
 
 import (
 	"fmt"
@@ -36,7 +36,7 @@ func (wm *WalletManager) CreateErc20TokenTransaction(appID, walletID, accountID,
 		return nil, err
 	}
 
-	assetsMgr, err := GetAssetsManager(account.Symbol)
+	assetsMgr, err := GetAssetsAdapter(account.Symbol)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func (wm *WalletManager) CreateQrc20TokenTransaction(appID, walletID, accountID,
 		return nil, err
 	}
 
-	assetsMgr, err := GetAssetsManager(account.Symbol)
+	assetsMgr, err := GetAssetsAdapter(account.Symbol)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func (wm *WalletManager) CreateTransaction(appID, walletID, accountID, amount, a
 		return nil, err
 	}
 
-	assetsMgr, err := GetAssetsManager(account.Symbol)
+	assetsMgr, err := GetAssetsAdapter(account.Symbol)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +200,7 @@ func (wm *WalletManager) SignTransaction(appID, walletID, accountID, password st
 		return nil, err
 	}
 
-	assetsMgr, err := GetAssetsManager(account.Symbol)
+	assetsMgr, err := GetAssetsAdapter(account.Symbol)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +239,7 @@ func (wm *WalletManager) VerifyTransaction(appID, walletID, accountID string, ra
 		return nil, err
 	}
 
-	assetsMgr, err := GetAssetsManager(account.Symbol)
+	assetsMgr, err := GetAssetsAdapter(account.Symbol)
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +272,7 @@ func (wm *WalletManager) SubmitTransaction(appID, walletID, accountID string, ra
 		return nil, err
 	}
 
-	assetsMgr, err := GetAssetsManager(account.Symbol)
+	assetsMgr, err := GetAssetsAdapter(account.Symbol)
 	if err != nil {
 		return nil, err
 	}
@@ -396,7 +396,7 @@ func (wm *WalletManager) GetAssetsAccountBalance(appID, walletID, accountID stri
 		return nil, err
 	}
 
-	assetsMgr, err := GetAssetsManager(account.Symbol)
+	assetsMgr, err := GetAssetsAdapter(account.Symbol)
 	if err != nil {
 		return nil, err
 	}
@@ -457,7 +457,7 @@ func (wm *WalletManager) GetAssetsAccountTokenBalance(appID, walletID, accountID
 		return nil, err
 	}
 
-	assetsMgr, err := GetAssetsManager(account.Symbol)
+	assetsMgr, err := GetAssetsAdapter(account.Symbol)
 	if err != nil {
 		return nil, err
 	}
@@ -576,7 +576,7 @@ func (wm *WalletManager) GetTxSpent(appID string, offset, limit int, cols ...int
 //GetEstimateFeeRate 获取币种推荐手续费
 func (wm *WalletManager) GetEstimateFeeRate(coin openwallet.Coin) (feeRate string, unit string, err error) {
 
-	assetsMgr, err := GetAssetsManager(coin.Symbol)
+	assetsMgr, err := GetAssetsAdapter(coin.Symbol)
 	if err != nil {
 		return "", "", err
 	}

@@ -13,7 +13,7 @@
  * GNU Lesser General Public License for more details.
  */
 
-package manager
+package openw
 
 import (
 	"fmt"
@@ -62,7 +62,7 @@ func (wm *WalletManager) GetSourceKeyByAddressForBlockScan(address string) (stri
 
 func (wm *WalletManager) RescanBlockHeight(symbol string, startHeight uint64, endHeight uint64) error {
 
-	assetsMgr, err := GetAssetsManager(symbol)
+	assetsMgr, err := GetAssetsAdapter(symbol)
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func (wm *WalletManager) RescanBlockHeight(symbol string, startHeight uint64, en
 //SetRescanBlockHeight 重置区块高度起扫描
 func (wm *WalletManager) SetRescanBlockHeight(symbol string, height uint64) error {
 
-	assetsMgr, err := GetAssetsManager(symbol)
+	assetsMgr, err := GetAssetsAdapter(symbol)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func (wm *WalletManager) SetRescanBlockHeight(symbol string, height uint64) erro
 //GetNewBlockHeight 获取区块高度，（最新高度，已扫描高度）
 func (wm *WalletManager) GetNewBlockHeight(symbol string) (uint64, uint64, error) {
 
-	assetsMgr, err := GetAssetsManager(symbol)
+	assetsMgr, err := GetAssetsAdapter(symbol)
 	if err != nil {
 		return 0, 0, err
 	}

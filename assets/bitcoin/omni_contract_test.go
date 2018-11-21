@@ -39,3 +39,12 @@ func TestWalletManager_GetOmniTransaction(t *testing.T) {
 	}
 	t.Logf("transaction: %+v", transaction)
 }
+
+func TestWalletManager_GetOmniInfo(t *testing.T) {
+	result, err := tw.GetOmniInfo()
+	if err != nil {
+		t.Errorf("TestWalletManager_GetOmniInfo failed unexpected error: %v\n", err)
+		return
+	}
+	t.Logf("OmniInfo: %+v", result)
+}

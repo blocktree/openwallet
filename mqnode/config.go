@@ -151,12 +151,12 @@ func loadConfig() (NodeConfig, error) {
 }
 
 //loadConfig 读取配置
-func loadManagerConfig() (*manager.Config, error) {
+func loadManagerConfig() (*openw.Config, error) {
 
 	var (
 		c       config.Configer
 		err     error
-		configs = manager.Config{}
+		configs = openw.Config{}
 	)
 
 	//读取配置

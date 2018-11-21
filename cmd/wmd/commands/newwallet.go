@@ -19,6 +19,7 @@ import (
 	"github.com/blocktree/OpenWallet/assets"
 	"github.com/blocktree/OpenWallet/cmd/utils"
 	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/OpenWallet/wmd"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -170,7 +171,7 @@ func walletConfig(c *cli.Context) error {
 		log.Error("Argument -s <symbol> is missing")
 		return nil
 	}
-	m, ok := assets.GetWMD(symbol).(assets.WalletManager)
+	m, ok := assets.GetWMD(symbol).(wmd.WalletManagerInterface)
 	if !ok {
 		log.Error(symbol, " wallet manager is not registered!")
 		return nil
@@ -192,7 +193,7 @@ func createNewWallet(c *cli.Context) error {
 		log.Error("Argument -s <symbol> is missing")
 		return nil
 	}
-	m, ok := assets.GetWMD(symbol).(assets.WalletManager)
+	m, ok := assets.GetWMD(symbol).(wmd.WalletManagerInterface)
 	if !ok {
 		log.Error(symbol, " wallet manager is not registered!")
 		return nil
@@ -213,7 +214,7 @@ func batchAddress(c *cli.Context) error {
 		log.Error("Argument -s <symbol> is missing")
 		return nil
 	}
-	m, ok := assets.GetWMD(symbol).(assets.WalletManager)
+	m, ok := assets.GetWMD(symbol).(wmd.WalletManagerInterface)
 	if !ok {
 		log.Error(symbol, " wallet manager is not registered!")
 		return nil
@@ -234,7 +235,7 @@ func startSummary(c *cli.Context) error {
 		log.Error("Argument -s <symbol> is missing")
 		return nil
 	}
-	m, ok := assets.GetWMD(symbol).(assets.WalletManager)
+	m, ok := assets.GetWMD(symbol).(wmd.WalletManagerInterface)
 	if !ok {
 		log.Error(symbol, " wallet manager is not registered!")
 		return nil
@@ -254,7 +255,7 @@ func backupWalletKey(c *cli.Context) error {
 		log.Error("Argument -s <symbol> is missing")
 		return nil
 	}
-	m, ok := assets.GetWMD(symbol).(assets.WalletManager)
+	m, ok := assets.GetWMD(symbol).(wmd.WalletManagerInterface)
 	if !ok {
 		log.Error(symbol, " wallet manager is not registered!")
 		return nil
@@ -273,7 +274,7 @@ func getWalletList(c *cli.Context) error {
 		log.Error("Argument -s <symbol> is missing")
 		return nil
 	}
-	m, ok := assets.GetWMD(symbol).(assets.WalletManager)
+	m, ok := assets.GetWMD(symbol).(wmd.WalletManagerInterface)
 	if !ok {
 		log.Error(symbol, " wallet manager is not registered!")
 		return nil
@@ -292,7 +293,7 @@ func sendTransaction(c *cli.Context) error {
 		log.Error("Argument -s <symbol> is missing")
 		return nil
 	}
-	m, ok := assets.GetWMD(symbol).(assets.WalletManager)
+	m, ok := assets.GetWMD(symbol).(wmd.WalletManagerInterface)
 	if !ok {
 		log.Error(symbol, " wallet manager is not registered!")
 		return nil
@@ -311,7 +312,7 @@ func restoreWallet(c *cli.Context) error {
 		log.Error("Argument -s <symbol> is missing")
 		return nil
 	}
-	m, ok := assets.GetWMD(symbol).(assets.WalletManager)
+	m, ok := assets.GetWMD(symbol).(wmd.WalletManagerInterface)
 	if !ok {
 		log.Error(symbol, " wallet manager is not registered!")
 		return nil

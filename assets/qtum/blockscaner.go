@@ -790,7 +790,7 @@ func (bs *BTCBlockScanner) extractTokenTransfer(trx *Transaction, result *Extrac
 						},
 					}
 					input.Index = 0
-					input.Sid = openwallet.GenTxInputSID(trx.TxID, bs.wm.Symbol(), contractId, 0)
+					input.Sid = openwallet.GenTxInputSID(tokenReceipt.TxHash, bs.wm.Symbol(), contractId, 0)
 					//input.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", result.TxID, i, addr))))
 					input.CreateAt = createAt
 					//在哪个区块高度时消费
