@@ -22,24 +22,24 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 )
 
-func TestWalletManager_RefreshAssetsAccountBalance(t *testing.T) {
-	tm := testInitWalletManager()
-	walletID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
-	accountID := "JYCcXtC18vnd1jbcJX47msDFbQMBDNjsq3xbvvK6qCHKAAqoQq"
-	err := tm.RefreshAssetsAccountBalance(testApp, accountID)
-	if err != nil {
-		log.Error("RefreshAssetsAccountBalance failed, unexpected error:", err)
-		return
-	}
-
-	account, err := tm.GetAssetsAccountInfo(testApp, walletID, accountID)
-	if err != nil {
-		log.Error("unexpected error:", err)
-		return
-	}
-
-	log.Info("account:", account)
-}
+//func TestWalletManager_RefreshAssetsAccountBalance(t *testing.T) {
+//	tm := testInitWalletManager()
+//	walletID := "WJwzaG2G4LoyuEb7NWAYiDa6DbtARtbUGv"
+//	accountID := "JYCcXtC18vnd1jbcJX47msDFbQMBDNjsq3xbvvK6qCHKAAqoQq"
+//	err := tm.RefreshAssetsAccountBalance(testApp, accountID)
+//	if err != nil {
+//		log.Error("RefreshAssetsAccountBalance failed, unexpected error:", err)
+//		return
+//	}
+//
+//	account, err := tm.GetAssetsAccountInfo(testApp, walletID, accountID)
+//	if err != nil {
+//		log.Error("unexpected error:", err)
+//		return
+//	}
+//
+//	log.Info("account:", account)
+//}
 
 func TestWalletManager_ImportWatchOnlyAddress(t *testing.T) {
 	tm := testInitWalletManager()

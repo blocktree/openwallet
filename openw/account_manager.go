@@ -22,7 +22,6 @@ import (
 
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
-	"github.com/shopspring/decimal"
 )
 
 // CreateAssetsAccount
@@ -179,72 +178,72 @@ func (wm *WalletManager) GetAssetsAccountInfo(appID, walletID, accountID string)
 }
 
 //RefreshAssetsAccountBalance 刷新资产账户余额
-func (wm *WalletManager) RefreshAssetsAccountBalance(appID, accountID string) error {
-
-	wrapper, err := wm.newWalletWrapper(appID, "")
-	if err != nil {
-		return err
-	}
-
-	account, err := wrapper.GetAssetsAccountInfo(accountID)
-	if err != nil {
-		return err
-	}
-
-	assetsMgr, err := GetAssetsAdapter(account.Symbol)
-	if err != nil {
-		return err
-	}
-
-	addresses, err := wrapper.GetAddressList(0, -1, "AccountID", accountID)
-	if err != nil {
-		return err
-	}
-
-	err = assetsMgr.GetAddressWithBalance(addresses...)
-	if err != nil {
-		return err
-	}
-
-	balanceDel := decimal.New(0, 0)
-
-	//打开数据库
-	db, err := wrapper.OpenStormDB()
-	if err != nil {
-		return err
-	}
-	defer wrapper.CloseDB()
-
-	tx, err := db.Begin(true)
-	if err != nil {
-		return err
-	}
-
-	defer tx.Rollback()
-
-	//批量插入到本地数据库
-	//设置utxo的钱包账户
-	for _, address := range addresses {
-
-		amount, _ := decimal.NewFromString(address.Balance)
-		balanceDel = balanceDel.Add(amount)
-		//log.Debug("address:", address.Address, "amount:", amount)
-		address.Balance = amount.StringFixed(assetsMgr.Decimal())
-		err = tx.Save(address)
-		if err != nil {
-			return err
-		}
-	}
-
-	account.Balance = balanceDel.StringFixed(assetsMgr.Decimal())
-
-	err = tx.Save(account)
-	if err != nil {
-		return err
-	}
-
-	return tx.Commit()
-}
+//func (wm *WalletManager) RefreshAssetsAccountBalance(appID, accountID string) error {
+//
+//	wrapper, err := wm.newWalletWrapper(appID, "")
+//	if err != nil {
+//		return err
+//	}
+//
+//	account, err := wrapper.GetAssetsAccountInfo(accountID)
+//	if err != nil {
+//		return err
+//	}
+//
+//	assetsMgr, err := GetAssetsAdapter(account.Symbol)
+//	if err != nil {
+//		return err
+//	}
+//
+//	addresses, err := wrapper.GetAddressList(0, -1, "AccountID", accountID)
+//	if err != nil {
+//		return err
+//	}
+//
+//	err = assetsMgr.GetAddressWithBalance(addresses...)
+//	if err != nil {
+//		return err
+//	}
+//
+//	balanceDel := decimal.New(0, 0)
+//
+//	//打开数据库
+//	db, err := wrapper.OpenStormDB()
+//	if err != nil {
+//		return err
+//	}
+//	defer wrapper.CloseDB()
+//
+//	tx, err := db.Begin(true)
+//	if err != nil {
+//		return err
+//	}
+//
+//	defer tx.Rollback()
+//
+//	//批量插入到本地数据库
+//	//设置utxo的钱包账户
+//	for _, address := range addresses {
+//
+//		amount, _ := decimal.NewFromString(address.Balance)
+//		balanceDel = balanceDel.Add(amount)
+//		//log.Debug("address:", address.Address, "amount:", amount)
+//		address.Balance = amount.StringFixed(assetsMgr.Decimal())
+//		err = tx.Save(address)
+//		if err != nil {
+//			return err
+//		}
+//	}
+//
+//	account.Balance = balanceDel.StringFixed(assetsMgr.Decimal())
+//
+//	err = tx.Save(account)
+//	if err != nil {
+//		return err
+//	}
+//
+//	return tx.Commit()
+//}
 
 // GetAssetsAccountList
 func (wm *WalletManager) GetAssetsAccountList(appID, walletID string, offset, limit int) ([]*openwallet.AssetsAccount, error) {

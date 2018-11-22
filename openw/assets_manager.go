@@ -28,15 +28,15 @@ import (
 )
 
 
-type AssetsManager interface {
-	openwallet.AssetsAdapter
-
-	//ImportWatchOnlyAddress 导入观测地址
-	ImportWatchOnlyAddress(address ...*openwallet.Address) error
-
-	//GetAddressWithBalance 获取多个地址余额，使用查账户和单地址
-	GetAddressWithBalance(address ...*openwallet.Address) error
-}
+//type AssetsManager interface {
+//	openwallet.AssetsAdapter
+//
+//	//ImportWatchOnlyAddress 导入观测地址
+//	ImportWatchOnlyAddress(address ...*openwallet.Address) error
+//
+//	//GetAddressWithBalance 获取多个地址余额，使用查账户和单地址
+//	GetAddressWithBalance(address ...*openwallet.Address) error
+//}
 
 
 //注册钱包管理工具
@@ -66,14 +66,14 @@ func GetSymbolInfo(symbol string) (openwallet.SymbolInfo, error) {
 }
 
 // GetAssetsAdapter 获取资产控制器
-func GetAssetsAdapter(symbol string) (AssetsManager, error) {
+func GetAssetsAdapter(symbol string) (openwallet.AssetsAdapter, error) {
 
 	adapter := assets.GetAssets(symbol)
 	if adapter == nil {
 		return nil, fmt.Errorf("assets: %s is not support", symbol)
 	}
 
-	manager, ok := adapter.(AssetsManager)
+	manager, ok := adapter.(openwallet.AssetsAdapter)
 	if !ok {
 		return nil, fmt.Errorf("assets: %s is not support", symbol)
 	}
