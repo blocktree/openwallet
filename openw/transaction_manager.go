@@ -362,10 +362,10 @@ func (wm *WalletManager) SubmitTransaction(appID, walletID, accountID string, ra
 	log.Info("Save new transaction data successfully")
 
 	//更新账户余额
-	err = wm.RefreshAssetsAccountBalance(appID, accountID)
-	if err != nil {
-		log.Error("RefreshAssetsAccountBalance error:", err)
-	}
+	//err = wm.RefreshAssetsAccountBalance(appID, accountID)
+	//if err != nil {
+	//	log.Error("RefreshAssetsAccountBalance error:", err)
+	//}
 
 	//perfectTx, err := wm.GetTransactionByWxID(appID, tx.WxID)
 	//if err != nil {
