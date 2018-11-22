@@ -34,7 +34,6 @@ import (
 	"github.com/blocktree/OpenWallet/assets/tezos"
 	"github.com/blocktree/OpenWallet/assets/tron"
 	"github.com/blocktree/OpenWallet/log"
-	"strings"
 )
 
 //WalletManagerInterface 钱包管理器
@@ -94,21 +93,21 @@ type NodeManagerInterface interface {
 func init() {
 	//注册钱包管理工具
 	log.Notice("Wallet Manager Driver Load Successfully.")
-	assets.RegWMD(strings.ToLower(cardano.Symbol), &cardano.WalletManager{})
-	assets.RegWMD(strings.ToLower(bytom.Symbol), &bytom.WalletManager{})
+	assets.RegAssets(cardano.Symbol, &cardano.WalletManager{})
+	assets.RegAssets(bytom.Symbol, &bytom.WalletManager{})
 	//RegWMD(strings.ToLower(bopo.Symbol), &bopo.WalletManager{})
-	assets.RegWMD(strings.ToLower(bitcoincash.Symbol), &bitcoincash.WalletManager{})
-	assets.RegWMD(strings.ToLower(sia.Symbol), &sia.WalletManager{})
-	assets.RegWMD(strings.ToLower(ethereum.Symbol), ethereum.NewWalletManager())
-	assets.RegWMD(strings.ToLower(stc2345.Symbol), stc2345.NewWalletManager())
-	assets.RegWMD(strings.ToLower(bitcoin.Symbol), bitcoin.NewWalletManager())
-	assets.RegWMD(strings.ToLower(hypercash.Symbol), hypercash.NewWalletManager())
-	assets.RegWMD(strings.ToLower(iota.Symbol), &iota.WalletManager{})
-	assets.RegWMD(strings.ToLower(tezos.Symbol), tezos.NewWalletManager())
-	assets.RegWMD(strings.ToLower(litecoin.Symbol), litecoin.NewWalletManager())
-	assets.RegWMD(strings.ToLower(qtum.Symbol), qtum.NewWalletManager())
-	assets.RegWMD(strings.ToLower(decred.Symbol), decred.NewWalletManager())
-	assets.RegWMD(strings.ToLower(tron.Symbol), tron.NewWalletManager())
-	assets.RegWMD(strings.ToLower(nebulasio.Symbol), nebulasio.NewWalletManager())
-	assets.RegWMD(strings.ToLower(icon.Symbol), icon.NewWalletManager())
+	assets.RegAssets(bitcoincash.Symbol, &bitcoincash.WalletManager{})
+	assets.RegAssets(sia.Symbol, &sia.WalletManager{})
+	assets.RegAssets(ethereum.Symbol, ethereum.NewWalletManager())
+	assets.RegAssets(stc2345.Symbol, stc2345.NewWalletManager())
+	assets.RegAssets(bitcoin.Symbol, bitcoin.NewWalletManager())
+	assets.RegAssets(hypercash.Symbol, hypercash.NewWalletManager())
+	assets.RegAssets(iota.Symbol, &iota.WalletManager{})
+	assets.RegAssets(tezos.Symbol, tezos.NewWalletManager())
+	assets.RegAssets(litecoin.Symbol, litecoin.NewWalletManager())
+	assets.RegAssets(qtum.Symbol, qtum.NewWalletManager())
+	assets.RegAssets(decred.Symbol, decred.NewWalletManager())
+	assets.RegAssets(tron.Symbol, tron.NewWalletManager())
+	assets.RegAssets(nebulasio.Symbol, nebulasio.NewWalletManager())
+	assets.RegAssets(icon.Symbol, icon.NewWalletManager())
 }

@@ -43,16 +43,16 @@ type AssetsManager interface {
 func initAssetAdapter() {
 	//注册钱包管理工具
 	log.Notice("Wallet Manager Load Successfully.")
-	assets.RegWMD(ethereum.Symbol, ethereum.NewWalletManager())
-	assets.RegWMD(bitcoin.Symbol, bitcoin.NewWalletManager())
-	assets.RegWMD(litecoin.Symbol, litecoin.NewWalletManager())
-	assets.RegWMD(qtum.Symbol, qtum.NewWalletManager())
-	assets.RegWMD(nebulasio.Symbol, nebulasio.NewWalletManager())
+	assets.RegAssets(ethereum.Symbol, ethereum.NewWalletManager())
+	assets.RegAssets(bitcoin.Symbol, bitcoin.NewWalletManager())
+	assets.RegAssets(litecoin.Symbol, litecoin.NewWalletManager())
+	assets.RegAssets(qtum.Symbol, qtum.NewWalletManager())
+	assets.RegAssets(nebulasio.Symbol, nebulasio.NewWalletManager())
 }
 
 // GetSymbolInfo 获取资产的币种信息
 func GetSymbolInfo(symbol string) (openwallet.SymbolInfo, error) {
-	adapter := assets.GetWMD(symbol)
+	adapter := assets.GetAssets(symbol)
 	if adapter == nil {
 		return nil, fmt.Errorf("assets: %s is not support", symbol)
 	}
@@ -68,7 +68,7 @@ func GetSymbolInfo(symbol string) (openwallet.SymbolInfo, error) {
 // GetAssetsAdapter 获取资产控制器
 func GetAssetsAdapter(symbol string) (AssetsManager, error) {
 
-	adapter := assets.GetWMD(symbol)
+	adapter := assets.GetAssets(symbol)
 	if adapter == nil {
 		return nil, fmt.Errorf("assets: %s is not support", symbol)
 	}
