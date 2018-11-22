@@ -15,12 +15,7 @@
 
 package commands
 
-import (
-	"github.com/blocktree/OpenWallet/assets"
-	"github.com/blocktree/OpenWallet/cmd/utils"
-	"gopkg.in/urfave/cli.v1"
-	"github.com/blocktree/OpenWallet/log"
-)
+/*
 
 var (
 	// 钱包命令
@@ -134,3 +129,5 @@ func configSee(c *cli.Context) error {
 	}
 	return err
 }
+
+*/

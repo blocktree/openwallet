@@ -58,7 +58,7 @@ func TestNewNode(t *testing.T) {
 	config := NewConfig()
 	config.EnableBlockScan  = true
 	config.IsTestnet = true
-	node.manager = manager.NewWalletManager(config)
+	node.manager = openw.NewWalletManager(config)
 	node.manager.Init()
 	node.Run()
 	time.Sleep(10000 * time.Second)
@@ -105,7 +105,7 @@ func TestCreateWallet(t *testing.T) {
 	}
 	node,_ := NewBitNodeNode(nodeConfig)
 	config := NewConfig()
-	node.manager = manager.NewWalletManager(config)
+	node.manager = openw.NewWalletManager(config)
 	node.manager.Init()
 	node.Run()
 	time.Sleep(10000 * time.Second)
@@ -135,7 +135,7 @@ func TestCreateAddress(t *testing.T) {
 	}
 	node,_ := NewBitNodeNode(nodeConfig)
 	config := NewConfig()
-	node.manager = manager.NewWalletManager(config)
+	node.manager = openw.NewWalletManager(config)
 	node.manager.Init()
 	node.Run()
 }
@@ -165,7 +165,7 @@ func TestCreateAssetsAccount(t *testing.T) {
 	}
 	node,_ := NewBitNodeNode(nodeConfig)
 	config := NewConfig()
-	node.manager = manager.NewWalletManager(config)
+	node.manager = openw.NewWalletManager(config)
 	node.manager.Init()
 	node.Run()
 }
@@ -194,15 +194,15 @@ func TestCreateTransaction(t *testing.T) {
 	}
 	node,_ := NewBitNodeNode(nodeConfig)
 	config := NewConfig()
-	node.manager = manager.NewWalletManager(config)
+	node.manager = openw.NewWalletManager(config)
 	node.manager.Init()
 	node.manager.RefreshAssetsAccountBalance(walletID, account)
 	node.Run()
 }
 
-func NewConfig() *manager.Config {
+func NewConfig() *openw.Config {
 
-	c := manager.Config{}
+	c := openw.Config{}
 	defaultDataDir := filepath.Join(".", "openw_data")
 	//钥匙备份路径
 	c.KeyDir = filepath.Join(defaultDataDir, "key")
@@ -235,7 +235,7 @@ func TestWalletManager_ClearInvaildAddressList(t *testing.T) {
 	tc := NewConfig()
 	tc.IsTestnet = true
 	tc.EnableBlockScan = true
-	tm := manager.NewWalletManager(tc)
+	tm := openw.NewWalletManager(tc)
 
 	walletID := "W6UT2YyBb2uo7LgPQ46YG1emPsDwZJXVSP"
 	accountID := "KHWkP2HwdmqCmdGXHMKxNj85Ek8SFviRYWXxkf52tNbaGJ4KWS"
@@ -266,8 +266,8 @@ func TestWalletManager_ClearInvaildAddressList(t *testing.T) {
 
 func TestGetAddress(t *testing.T) {
 
-	config := manager.NewConfig()
-	ow := manager.NewWalletManager(config)
+	config := openw.NewConfig()
+	ow := openw.NewWalletManager(config)
 	o,_ := ow.GetAddress("b4b1962d415d4d30ec71b28769fda585","W6UT2YyBb2uo7LgPQ46YG1emPsDwZJXVSP","KHWkP2HwdmqCmdGXHMKxNj85Ek8SFviRYWXxkf52tNbaGJ4KWS","n4Ghgf1NwaN2bBzBXWwKBMSPTiQz4ajQZ3")
 	log.Info("address count:",o)
 }
@@ -277,7 +277,7 @@ func TestWalletManager_GetAddressList(t *testing.T) {
 	tc := NewConfig()
 	tc.IsTestnet = true
 	tc.EnableBlockScan = false
-	tm := manager.NewWalletManager(tc)
+	tm := openw.NewWalletManager(tc)
 
 	walletID := ""
 	accountID := "KHWkP2HwdmqCmdGXHMKxNj85Ek8SFviRYWXxkf52tNbaGJ4KWS"

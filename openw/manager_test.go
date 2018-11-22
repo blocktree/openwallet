@@ -13,7 +13,7 @@
  * GNU Lesser General Public License for more details.
  */
 
-package manager
+package openw
 
 import (
 	"fmt"
@@ -34,7 +34,7 @@ func testInitWalletManager() *WalletManager {
 	tc := NewConfig()
 
 	tc.IsTestnet = true
-	tc.EnableBlockScan = true
+	tc.EnableBlockScan = false
 	tc.SupportAssets = []string{
 		"BTC",
 		"QTUM",

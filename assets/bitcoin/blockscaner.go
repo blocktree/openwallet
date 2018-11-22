@@ -43,20 +43,21 @@ const (
 type BTCBlockScanner struct {
 	*openwallet.BlockScannerBase
 
-	CurrentBlockHeight   uint64         //当前区块高度
-	extractingCH         chan struct{}  //扫描工作令牌
-	wm                   *WalletManager //钱包管理者
-	IsScanMemPool        bool           //是否扫描交易池
-	RescanLastBlockCount uint64         //重扫上N个区块数量
-	socketIO *gosocketio.Client //socketIO客户端
+	CurrentBlockHeight   uint64             //当前区块高度
+	extractingCH         chan struct{}      //扫描工作令牌
+	wm                   *WalletManager     //钱包管理者
+	IsScanMemPool        bool               //是否扫描交易池
+	RescanLastBlockCount uint64             //重扫上N个区块数量
+	socketIO             *gosocketio.Client //socketIO客户端
 }
 
 //ExtractResult 扫描完成的提取结果
 type ExtractResult struct {
-	extractData map[string]*openwallet.TxExtractData
-	TxID        string
-	BlockHeight uint64
-	Success     bool
+	extractData     map[string]*openwallet.TxExtractData
+	extractOmniData map[string]*openwallet.TxExtractData //代币交易
+	TxID            string
+	BlockHeight     uint64
+	Success         bool
 }
 
 //SaveResult 保存结果
@@ -507,6 +508,7 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 	)
 
 	//bs.wm.Log.Std.Debug("block scanner scanning tx: %s ...", txid)
+	//获取bitcoin的交易单
 	trx, err := bs.wm.GetTransaction(txid)
 
 	if err != nil {
@@ -520,8 +522,149 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 		trx.BlockHeight = blockHeight
 		trx.BlockHash = blockHash
 	}
+
 	bs.extractTransaction(trx, &result, scanAddressFunc)
+
+	//获取omni的交易单
+	omniTrx, err := bs.wm.GetOmniTransaction(txid)
+	if err != nil {
+		bs.wm.Log.Std.Info("block scanner can not extract omni transaction data; unexpected error: %v", err)
+		result.Success = false
+		return result
+	}
+
+	bs.extractOmniTransaction(omniTrx, &result, scanAddressFunc)
+
 	return result
+
+}
+
+//extractOmniTransaction 提取Omni交易单
+func (bs *BTCBlockScanner) extractOmniTransaction(trx *OmniTransaction, result *ExtractResult, scanAddressFunc openwallet.BlockScanAddressFunc) {
+
+	var (
+		success = true
+	)
+
+	if trx == nil {
+		success = true
+	} else {
+
+		if trx.Valid {
+			createAt := time.Now().Unix()
+			propertyID := common.NewString(trx.PropertyId).String()
+			contractId := openwallet.GenContractID(bs.wm.Symbol(), propertyID)
+
+			sourceKey, ok := scanAddressFunc(trx.SendingAddress)
+			if ok {
+				input := openwallet.TxInput{}
+				input.TxID = trx.TxID
+				input.Address = trx.SendingAddress
+				//transaction.AccountID = a.AccountID
+				input.Amount = trx.Amount
+				input.Coin = openwallet.Coin{
+					Symbol:     bs.wm.Symbol(),
+					IsContract: true,
+					Contract: openwallet.SmartContract{
+						ContractID: contractId,
+						Address:    propertyID,
+						Protocol:   "omnicore",
+						Symbol:     bs.wm.Symbol(),
+					},
+				}
+				input.Index = 0
+				input.Sid = openwallet.GenTxInputSID(trx.TxID, bs.wm.Symbol(), contractId, 0)
+				//input.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", result.TxID, i, addr))))
+				input.CreateAt = createAt
+				//在哪个区块高度时消费
+				input.BlockHeight = trx.Block
+				input.BlockHash = trx.BlockHash
+
+				//transactions = append(transactions, &transaction)
+
+				ed := result.extractOmniData[sourceKey]
+				if ed == nil {
+					ed = openwallet.NewBlockExtractData()
+					result.extractOmniData[sourceKey] = ed
+				}
+
+				ed.TxInputs = append(ed.TxInputs, &input)
+
+			}
+
+			sourceKey2, ok2 := scanAddressFunc(trx.ReferenceAddress)
+			if ok2 {
+				output := openwallet.TxOutPut{}
+				output.TxID = trx.TxID
+				output.Address = trx.ReferenceAddress
+				//transaction.AccountID = a.AccountID
+				output.Amount = trx.Amount
+
+				output.Coin = openwallet.Coin{
+					Symbol:     bs.wm.Symbol(),
+					IsContract: true,
+					Contract: openwallet.SmartContract{
+						ContractID: contractId,
+						Address:    propertyID,
+						Protocol:   "omnicore",
+						Symbol:     bs.wm.Symbol(),
+					},
+				}
+				output.Index = 0
+				output.Sid = openwallet.GenTxOutPutSID(trx.TxID, bs.wm.Symbol(), contractId, 0)
+				//input.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", result.TxID, i, addr))))
+				output.CreateAt = createAt
+				//在哪个区块高度时消费
+				output.BlockHeight = trx.Block
+				output.BlockHash = trx.BlockHash
+
+				//transactions = append(transactions, &transaction)
+
+				ed := result.extractOmniData[sourceKey2]
+				if ed == nil {
+					ed = openwallet.NewBlockExtractData()
+					result.extractOmniData[sourceKey2] = ed
+				}
+
+				ed.TxOutputs = append(ed.TxOutputs, &output)
+			}
+
+			blocktime := trx.BlockTime
+
+			for _, extractData := range result.extractOmniData {
+				tx := &openwallet.Transaction{
+					From: []string{trx.SendingAddress + ":" + trx.Amount},
+					To:   []string{trx.ReferenceAddress + ":" + trx.Amount},
+					Fees: "0",
+					Coin: openwallet.Coin{
+						Symbol:     bs.wm.Symbol(),
+						IsContract: true,
+						Contract: openwallet.SmartContract{
+							ContractID: contractId,
+							Address:    propertyID,
+							Protocol:   "omnicore",
+							Symbol:     bs.wm.Symbol(),
+						},
+					},
+					BlockHash:   trx.BlockHash,
+					BlockHeight: trx.Block,
+					TxID:        trx.TxID,
+					Decimal:     0,
+					ConfirmTime: blocktime,
+				}
+				wxID := openwallet.GenTransactionWxID(tx)
+				tx.WxID = wxID
+				extractData.Transaction = tx
+
+				//bs.wm.Log.Debug("Transaction:", extractData.Transaction)
+			}
+		}
+
+		success = true
+
+	}
+
+	result.Success = success
 
 }
 
@@ -675,7 +818,7 @@ func (bs *BTCBlockScanner) extractTxInput(trx *Transaction, result *ExtractResul
 
 		}
 
-		from = append(from, addr + ":" + amount)
+		from = append(from, addr+":"+amount)
 		dAmount, _ := decimal.NewFromString(amount)
 		totalAmount = totalAmount.Add(dAmount)
 
@@ -741,7 +884,7 @@ func (bs *BTCBlockScanner) extractTxOutput(trx *Transaction, result *ExtractResu
 
 		}
 
-		to = append(to, addr + ":" + amount)
+		to = append(to, addr+":"+amount)
 		dAmount, _ := decimal.NewFromString(amount)
 		totalAmount = totalAmount.Add(dAmount)
 
@@ -1346,7 +1489,6 @@ func (bs *BTCBlockScanner) GetTransactionsByAddress(offset, limit int, coin open
 	return array, nil
 }
 
-
 //Run 运行
 func (bs *BTCBlockScanner) Run() error {
 
@@ -1440,26 +1582,26 @@ func (bs *BTCBlockScanner) setupSocketIO() error {
 	}
 
 	/*
-	err = bs.socketIO.On("block", func(h *gosocketio.Channel, args interface{}) {
-		bs.wm.Log.Info("block scanner socketIO get new block received: ", args)
-		hash, ok := args.(string)
-		if ok {
+		err = bs.socketIO.On("block", func(h *gosocketio.Channel, args interface{}) {
+			bs.wm.Log.Info("block scanner socketIO get new block received: ", args)
+			hash, ok := args.(string)
+			if ok {
 
-			block, errInner := bs.wm.GetBlock(hash)
-			if errInner != nil {
-				bs.wm.Log.Std.Info("block scanner can not get new block data; unexpected error: %v", errInner)
+				block, errInner := bs.wm.GetBlock(hash)
+				if errInner != nil {
+					bs.wm.Log.Std.Info("block scanner can not get new block data; unexpected error: %v", errInner)
+				}
+
+				errInner = bs.scanBlock(block)
+				if errInner != nil {
+					bs.wm.Log.Std.Info("block scanner can not block: %d; unexpected error: %v", block.Height, errInner)
+				}
 			}
 
-			errInner = bs.scanBlock(block)
-			if errInner != nil {
-				bs.wm.Log.Std.Info("block scanner can not block: %d; unexpected error: %v", block.Height, errInner)
-			}
+		})
+		if err != nil {
+			return err
 		}
-
-	})
-	if err != nil {
-		return err
-	}
 	*/
 
 	err = bs.socketIO.On(gosocketio.OnDisconnection, func(h *gosocketio.Channel) {

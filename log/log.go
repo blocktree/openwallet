@@ -42,7 +42,7 @@ func SetLevel(l int) {
 // SetLogFuncCall set the CallDepth, default is 3
 func SetLogFuncCall(b bool) {
 	Std.EnableFuncCallDepth(b)
-	Std.SetLogFuncCallDepth(3)
+	Std.SetLogFuncCallDepth(4)
 }
 
 // SetLogger sets a new logger.

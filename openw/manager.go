@@ -13,7 +13,7 @@
  * GNU Lesser General Public License for more details.
  */
 
-package manager
+package openw
 
 import (
 	"fmt"
@@ -45,6 +45,11 @@ type NotificationObject interface {
 
 	//BlockTxExtractDataNotify 区块提取结果通知
 	BlockTxExtractDataNotify(account *openwallet.AssetsAccount, data *openwallet.TxExtractData) error
+}
+
+func init() {
+	//加载资产适配器
+	initAssetAdapter()
 }
 
 //WalletManager OpenWallet钱包管理器
@@ -246,8 +251,8 @@ func (wm *WalletManager) initSupportAssetsAdapter() error {
 	}
 
 	for _, symbol := range wm.cfg.SupportAssets {
-		fmt.Println("\t\t\t symbol = ", symbol)
-		assetsMgr, err := GetAssetsManager(symbol)
+		//fmt.Println("\t\t\t symbol = ", symbol)
+		assetsMgr, err := GetAssetsAdapter(symbol)
 		if err != nil {
 			log.Error(symbol, "is not support")
 			continue

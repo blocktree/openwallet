@@ -2,6 +2,7 @@ package owtp
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 )
@@ -126,4 +127,59 @@ func TestHTTPKeyAgreement(t *testing.T) {
 	//<- endRunning
 
 	time.Sleep(5 * time.Second)
+}
+
+
+func TestConcurrentHTTPConnect(t *testing.T) {
+
+	var wait sync.WaitGroup
+
+
+	config := make(map[string]string)
+	config["address"] = httpURL
+	config["connectType"] = HTTP
+
+	for i := 0; i < 100; i++ {
+		wait.Add(100)
+		go func() {
+
+			httpClient := RandomOWTPNode()
+			err := httpClient.Connect(httpHostNodeID, config)
+			if err != nil {
+				t.Errorf("Connect unexcepted error: %v", err)
+				return
+			}
+			//err = httpClient.KeyAgreement(httpHostNodeID, "aes")
+			//if err != nil {
+			//	t.Errorf("KeyAgreement unexcepted error: %v", err)
+			//	return
+			//}
+
+			params := map[string]interface{}{
+				"name": "chance",
+				"age": 18,
+			}
+
+			for i := 0; i<100;i++ {
+				err = httpClient.Call(httpHostNodeID, "getInfo", params, false, func(resp Response) {
+
+					result := resp.JsonData()
+					symbols := result.Get("symbols")
+
+					fmt.Printf("symbols: %v\n", symbols)
+					wait.Done()
+				})
+
+				if err != nil {
+					t.Errorf("unexcepted error: %v", err)
+					return
+				}
+
+				time.Sleep(500)
+			}
+		}()
+	}
+
+	wait.Wait()
+
 }

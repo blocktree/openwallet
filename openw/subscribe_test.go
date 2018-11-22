@@ -13,7 +13,7 @@
  * GNU Lesser General Public License for more details.
  */
 
-package manager
+package openw
 
 import (
 	"path/filepath"
@@ -106,7 +106,7 @@ func TestSubscribeAddress_BTC(t *testing.T) {
 		return key, true
 	}
 
-	assetsMgr, err := GetAssetsManager(symbol)
+	assetsMgr, err := GetAssetsAdapter(symbol)
 	if err != nil {
 		log.Error(symbol, "is not support")
 		return
@@ -162,7 +162,7 @@ func TestSubscribeAddress_ETH(t *testing.T) {
 		return key, true
 	}
 
-	assetsMgr, err := GetAssetsManager(symbol)
+	assetsMgr, err := GetAssetsAdapter(symbol)
 	if err != nil {
 		log.Error(symbol, "is not support")
 		return
@@ -219,7 +219,7 @@ func TestSubscribeAddress_QTUM(t *testing.T) {
 		return key, true
 	}
 
-	assetsMgr, err := GetAssetsManager(symbol)
+	assetsMgr, err := GetAssetsAdapter(symbol)
 	if err != nil {
 		log.Error(symbol, "is not support")
 		return
@@ -275,7 +275,7 @@ func TestSubscribeAddress_LTC(t *testing.T) {
 		return key, true
 	}
 
-	assetsMgr, err := GetAssetsManager(symbol)
+	assetsMgr, err := GetAssetsAdapter(symbol)
 	if err != nil {
 		log.Error(symbol, "is not support")
 		return
@@ -330,7 +330,7 @@ func TestSubscribeAddress_NAS(t *testing.T) {
 		return key, true
 	}
 
-	assetsMgr, err := GetAssetsManager(symbol)
+	assetsMgr, err := GetAssetsAdapter(symbol)
 	if err != nil {
 		log.Error(symbol, "is not support")
 		return

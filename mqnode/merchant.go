@@ -107,7 +107,7 @@ func RunServer() error {
 	if err != nil {
 		return err
 	}
-	merchantNode.manager = manager.NewWalletManager(config)
+	merchantNode.manager = openw.NewWalletManager(config)
 	merchantNode.Run()
 
 	return nil

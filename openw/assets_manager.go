@@ -13,15 +13,20 @@
  * GNU Lesser General Public License for more details.
  */
 
-package manager
+package openw
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/blocktree/OpenWallet/assets"
+	"github.com/blocktree/OpenWallet/assets/bitcoin"
+	"github.com/blocktree/OpenWallet/assets/ethereum"
+	"github.com/blocktree/OpenWallet/assets/litecoin"
+	"github.com/blocktree/OpenWallet/assets/nebulasio"
+	"github.com/blocktree/OpenWallet/assets/qtum"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 )
+
 
 type AssetsManager interface {
 	openwallet.AssetsAdapter
@@ -33,20 +38,44 @@ type AssetsManager interface {
 	GetAddressWithBalance(address ...*openwallet.Address) error
 }
 
+
+//注册钱包管理工具
+func initAssetAdapter() {
+	//注册钱包管理工具
+	log.Notice("Wallet Manager Load Successfully.")
+	assets.RegAssets(ethereum.Symbol, ethereum.NewWalletManager())
+	assets.RegAssets(bitcoin.Symbol, bitcoin.NewWalletManager())
+	assets.RegAssets(litecoin.Symbol, litecoin.NewWalletManager())
+	assets.RegAssets(qtum.Symbol, qtum.NewWalletManager())
+	assets.RegAssets(nebulasio.Symbol, nebulasio.NewWalletManager())
+}
+
 // GetSymbolInfo 获取资产的币种信息
 func GetSymbolInfo(symbol string) (openwallet.SymbolInfo, error) {
-	manager, ok := assets.Managers[strings.ToLower(symbol)].(openwallet.SymbolInfo)
+	adapter := assets.GetAssets(symbol)
+	if adapter == nil {
+		return nil, fmt.Errorf("assets: %s is not support", symbol)
+	}
+
+	manager, ok := adapter.(openwallet.SymbolInfo)
+	if !ok {
+		return nil, fmt.Errorf("assets: %s is not support", symbol)
+	}
+
+	return manager, nil
+}
+
+// GetAssetsAdapter 获取资产控制器
+func GetAssetsAdapter(symbol string) (AssetsManager, error) {
+
+	adapter := assets.GetAssets(symbol)
+	if adapter == nil {
+		return nil, fmt.Errorf("assets: %s is not support", symbol)
+	}
+
+	manager, ok := adapter.(AssetsManager)
 	if !ok {
 		return nil, fmt.Errorf("assets: %s is not support", symbol)
 	}
 	return manager, nil
-}
-
-// GetAssetsManager 获取资产控制器
-func GetAssetsManager(symbol string) (AssetsManager, error) {
-	manager, ok := assets.Managers[strings.ToLower(symbol)]
-	if !ok {
-		return nil, fmt.Errorf("assets: %s is not support", symbol)
-	}
-	return manager.(AssetsManager), nil
 }

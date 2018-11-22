@@ -45,6 +45,10 @@ func init() {
 	explorerURL := "http://192.168.32.107:20003/insight-api/"
 	tw.ExplorerClient = NewExplorer(explorerURL, true)
 
+	omniToken := BasicAuth("test", "test")
+	omniURL := "http://47.106.102.2:10008"
+	tw.OnmiClient = NewClient(omniURL, omniToken, true)
+
 	tw.Config.RPCServerType = RPCServerExplorer
 }
 

@@ -3,14 +3,75 @@ package keystore
 import (
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/blocktree/OpenWallet/log"
 )
+
+type DecryptError struct {
+	detail string
+}
+
+func (e *DecryptError) Error() string {
+	return "encrypt private key error: " + e.detail
+}
+
+func NewDecryptError(msg string) *DecryptError {
+	return &DecryptError{detail: msg}
+}
+
+func DecryptWithCustomScrypt(prot *ProtectedKey, pwd []byte, param *ScryptParam) (*PrivateKey, error) {
+	if prot == nil || len(pwd) == 0 {
+		return nil, NewDecryptError("invalid argument")
+	}
+
+	var plaintext []byte
+
+	// Check parameters
+	switch prot.EncAlg {
+	case "aes-256-gcm":
+		// generate random salt
+		salt := prot.Salt
+		dkey, err := kdf(pwd, salt, param)
+		if err != nil {
+			return nil, NewDecryptError(err.Error())
+		}
+		ekey := dkey[len(dkey)-32:]
+		nonce := dkey[:12]
+		gcm, err := gcmCipher(ekey)
+		plaintext, err = gcm.Open(nil, nonce, prot.Key, []byte(prot.Address))
+		if err != nil {
+			return nil, NewDecryptError(err.Error())
+		}
+	default:
+		return nil, NewDecryptError("unsupported encryption algorithm")
+	}
+
+	switch prot.Alg {
+	case "ECDSA", "SM2":
+		curve, err := GetNamedCurve(prot.Param["curve"])
+		if err != nil {
+			return nil, NewDecryptError(err.Error())
+		}
+		pri := PrivateKey{PrivateKey: ConstructPrivateKey(plaintext, curve)}
+		if prot.Alg == "ECDSA" {
+			pri.Algorithm = ECDSA
+		} else if prot.Alg == "SM2" {
+			pri.Algorithm = SM2
+		} else {
+			return nil, NewDecryptError("unknown ec algorithm")
+		}
+		return &pri, nil
+	default:
+		return nil, NewDecryptError("unknown key type")
+	}
+}
 
 // AccountData - 私钥文件保存的json格式
 type AccountData struct {
@@ -109,6 +170,23 @@ func (this *WalletData) GetAccountByAddress(address string) (*AccountData, int) 
 	return accData, index
 }
 
+func (this *WalletData) GetAccountByIndex(index int) *AccountData {
+	if index < 0 || index >= len(this.Accounts) {
+		return nil
+	}
+	return this.Accounts[index]
+}
+
+func GetScheme(name string) (SignatureScheme, error) {
+	for i, v := range names {
+		if strings.ToUpper(v) == strings.ToUpper(name) {
+			return SignatureScheme(i), nil
+		}
+	}
+
+	return 0, errors.New("unknown signature scheme " + name)
+}
+
 //ClientImpl keystore实例, 或者叫钱包实例
 type ClientImpl struct {
 	path       string
@@ -152,6 +230,67 @@ func checkSigScheme(keyType, sigScheme string) bool {
 		return false
 	}
 	return true
+}
+
+func (this *ClientImpl) GetDefaultAccount(passwd []byte) (*Account, error) {
+	this.lock.RLock()
+	defer this.lock.RUnlock()
+	if this.defaultAcc == nil {
+		return nil, fmt.Errorf("cannot found default account")
+	}
+	return this.getAccount(this.defaultAcc, passwd)
+}
+
+func (this *ClientImpl) getAccount(accData *AccountData, passwd []byte) (*Account, error) {
+	privateKey, err := DecryptWithCustomScrypt(&accData.ProtectedKey, passwd, this.walletData.Scrypt)
+	if err != nil {
+		return nil, err
+	}
+	publicKey := privateKey.Public()
+	addr := AddressFromPubKey(publicKey)
+	scheme, err := GetScheme(accData.SigSch)
+	if err != nil {
+		return nil, fmt.Errorf("signature scheme error:%s", err)
+	}
+	return &Account{
+		PrivateKey: privateKey,
+		PublicKey:  publicKey,
+		Address:    addr,
+		SigScheme:  scheme,
+	}, nil
+}
+
+func (this *ClientImpl) GetAccountByAddress(address string, passwd []byte) (*Account, error) {
+	this.lock.RLock()
+	defer this.lock.RUnlock()
+	accData, ok := this.accAddrs[address]
+	if !ok {
+		return nil, nil
+	}
+	return this.getAccount(accData, passwd)
+}
+
+func (this *ClientImpl) GetAccountByLabel(label string, passwd []byte) (*Account, error) {
+	if len(label) == 0 {
+		return nil, nil
+	}
+	this.lock.RLock()
+	defer this.lock.RUnlock()
+	accData, ok := this.accLabels[label]
+	if !ok {
+		return nil, nil
+	}
+	return this.getAccount(accData, passwd)
+}
+
+func (this *ClientImpl) GetAccountByIndex(index int, passwd []byte) (*Account, error) {
+	this.lock.RLock()
+	defer this.lock.RUnlock()
+	accData := this.walletData.GetAccountByIndex(index - 1)
+	if accData == nil {
+		return nil, nil
+	}
+	return this.getAccount(accData, passwd)
 }
 
 func (this *ClientImpl) addAccountData(accData *AccountData) error {
@@ -230,6 +369,20 @@ func NewWalletData() *WalletData {
 }
 
 type SignatureScheme byte
+
+/* crypto object */
+type Account struct {
+	PrivateKey *PrivateKey
+	PublicKey  *PublicKey
+	Address    Address
+	SigScheme  SignatureScheme
+}
+
+type unlockAccountInfo struct {
+	acc        *Account
+	unlockTime time.Time
+	expiredAt  int //s
+}
 
 const (
 	SHA224withECDSA SignatureScheme = iota

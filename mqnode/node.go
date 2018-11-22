@@ -63,7 +63,7 @@ type BitBankNode struct {
 	//定时器任务
 	TaskTimers map[string]*timer.TaskTimer
 
-	manager *manager.WalletManager
+	manager *openw.WalletManager
 }
 
 func NewBitNodeNode(config NodeConfig) (*BitBankNode, error) {

@@ -13,7 +13,7 @@
  * GNU Lesser General Public License for more details.
  */
 
-package manager
+package openw
 
 import (
 	"fmt"
@@ -191,7 +191,7 @@ func (wm *WalletManager) RefreshAssetsAccountBalance(appID, accountID string) er
 		return err
 	}
 
-	assetsMgr, err := GetAssetsManager(account.Symbol)
+	assetsMgr, err := GetAssetsAdapter(account.Symbol)
 	if err != nil {
 		return err
 	}
@@ -279,7 +279,7 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 		return nil, err
 	}
 
-	assetsMgr, err := GetAssetsManager(account.Symbol)
+	assetsMgr, err := GetAssetsAdapter(account.Symbol)
 	if err != nil {
 		return nil, err
 	}
@@ -373,7 +373,7 @@ func (wm *WalletManager) ImportWatchOnlyAddress(appID, walletID, accountID strin
 	//	return err
 	//}
 
-	//assetsMgr, err := GetAssetsManager(account.Symbol)
+	//assetsMgr, err := GetAssetsAdapter(account.Symbol)
 	//if err != nil {
 	//	return err
 	//}
@@ -436,97 +436,97 @@ func (wm *WalletManager) ImportWatchOnlyAddress(appID, walletID, accountID strin
 }
 
 // importNewAddressToCoreWallet 导入新地址到核心钱包
-func (wm *WalletManager) importNewAddressToCoreWallet() {
-
-	//log.Notice("import new address to core wallet start")
-
-	var (
-		importAddressMap map[string][]*openwallet.Address
-		limit            = 50
-	)
-
-	//加载已存在所有app
-	appIDs, err := wm.loadAllAppIDs()
-	if err != nil {
-		return
-	}
-
-	//处理所有App待导入地址，导入到核心钱包
-LoopApp:
-	for _, appID := range appIDs {
-
-		importAddressMap = make(map[string][]*openwallet.Address)
-
-		wrapper, err := wm.newWalletWrapper(appID, "")
-		if err != nil {
-			continue LoopApp
-		}
-
-		//获取应用所有待导入的地址
-		addresses, err := wrapper.GetImportAddressList(0, limit)
-		if err != nil {
-			continue LoopApp
-		}
-
-		for _, a := range addresses {
-			imported, ok := importAddressMap[a.Symbol]
-			if !ok {
-				imported = make([]*openwallet.Address, 0)
-			}
-
-			imported = append(imported, &a.Address)
-
-			importAddressMap[a.Symbol] = imported
-		}
-
-		db, err := wm.OpenDB(appID)
-		if err != nil {
-			continue LoopApp
-		}
-
-		tx, err := db.Begin(true)
-		if err != nil {
-			continue LoopApp
-		}
-
-		defer tx.Rollback()
-
-		for symbol, importeds := range importAddressMap {
-
-			assetsMgr, err := GetAssetsManager(symbol)
-			if err != nil {
-				continue LoopApp
-			}
-
-			//导入地址到核心钱包中
-			err = assetsMgr.ImportWatchOnlyAddress(importeds...)
-			if err != nil {
-				log.Error("ImportWatchOnlyAddress failed unexpected error:", err)
-				continue LoopApp
-			}
-
-		}
-
-		//导入地址成功删除记录
-		for _, a := range addresses {
-			err = tx.DeleteStruct(a)
-			if err != nil {
-				log.Error("delete import address failed, unexpected error:", err)
-				continue
-			}
-		}
-
-		err = tx.Commit()
-		if err != nil {
-			continue
-		}
-
-		log.Debug("import", "App:", appID, "addresses to core wallet success count:", len(addresses))
-
-	}
-
-	//log.Notice("import new address to core wallet end")
-
-	return
-}
+//func (wm *WalletManager) importNewAddressToCoreWallet() {
+//
+//	//log.Notice("import new address to core wallet start")
+//
+//	var (
+//		importAddressMap map[string][]*openwallet.Address
+//		limit            = 50
+//	)
+//
+//	//加载已存在所有app
+//	appIDs, err := wm.loadAllAppIDs()
+//	if err != nil {
+//		return
+//	}
+//
+//	//处理所有App待导入地址，导入到核心钱包
+//LoopApp:
+//	for _, appID := range appIDs {
+//
+//		importAddressMap = make(map[string][]*openwallet.Address)
+//
+//		wrapper, err := wm.newWalletWrapper(appID, "")
+//		if err != nil {
+//			continue LoopApp
+//		}
+//
+//		//获取应用所有待导入的地址
+//		addresses, err := wrapper.GetImportAddressList(0, limit)
+//		if err != nil {
+//			continue LoopApp
+//		}
+//
+//		for _, a := range addresses {
+//			imported, ok := importAddressMap[a.Symbol]
+//			if !ok {
+//				imported = make([]*openwallet.Address, 0)
+//			}
+//
+//			imported = append(imported, &a.Address)
+//
+//			importAddressMap[a.Symbol] = imported
+//		}
+//
+//		db, err := wm.OpenDB(appID)
+//		if err != nil {
+//			continue LoopApp
+//		}
+//
+//		tx, err := db.Begin(true)
+//		if err != nil {
+//			continue LoopApp
+//		}
+//
+//		defer tx.Rollback()
+//
+//		for symbol, importeds := range importAddressMap {
+//
+//			assetsMgr, err := GetAssetsAdapter(symbol)
+//			if err != nil {
+//				continue LoopApp
+//			}
+//
+//			//导入地址到核心钱包中
+//			err = assetsMgr.ImportWatchOnlyAddress(importeds...)
+//			if err != nil {
+//				log.Error("ImportWatchOnlyAddress failed unexpected error:", err)
+//				continue LoopApp
+//			}
+//
+//		}
+//
+//		//导入地址成功删除记录
+//		for _, a := range addresses {
+//			err = tx.DeleteStruct(a)
+//			if err != nil {
+//				log.Error("delete import address failed, unexpected error:", err)
+//				continue
+//			}
+//		}
+//
+//		err = tx.Commit()
+//		if err != nil {
+//			continue
+//		}
+//
+//		log.Debug("import", "App:", appID, "addresses to core wallet success count:", len(addresses))
+//
+//	}
+//
+//	//log.Notice("import new address to core wallet end")
+//
+//	return
+//}
 

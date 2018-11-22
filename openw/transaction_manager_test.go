@@ -13,7 +13,7 @@
  * GNU Lesser General Public License for more details.
  */
 
-package manager
+package openw
 
 import (
 	"testing"
@@ -297,7 +297,7 @@ func TestWalletManager_GetTransactionByWxID(t *testing.T) {
 func TestWalletManager_GetAssetsAccountBalance(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
-	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
+	accountID := "2m27uVj2xx645dDCEcGD1whPQGcB4fZv16TzBoLGCyKB"
 
 	balance, err := tm.GetAssetsAccountBalance(testApp, walletID, accountID)
 	if err != nil {
@@ -326,4 +326,38 @@ func TestWalletManager_GetAssetsAccountTokenBalance(t *testing.T) {
 		return
 	}
 	log.Info("balance:", balance.Balance)
+}
+
+func TestWalletManager_GetAssetsAccountOnmiBalance(t *testing.T) {
+	tm := testInitWalletManager()
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "2m27uVj2xx645dDCEcGD1whPQGcB4fZv16TzBoLGCyKB"
+
+	contract := openwallet.SmartContract{
+		Address:  "2",
+		Symbol:   "BTC",
+		Name:     "TetherUSD",
+		Token:    "USDT",
+		Decimals: 8,
+	}
+
+	balance, err := tm.GetAssetsAccountTokenBalance(testApp, walletID, accountID, contract)
+	if err != nil {
+		log.Error("GetAssetsAccountTokenBalance failed, unexpected error:", err)
+		return
+	}
+	log.Info("balance:", balance.Balance)
+}
+
+func TestWalletManager_GetEstimateFeeRate(t *testing.T) {
+	tm := testInitWalletManager()
+	coin := openwallet.Coin{
+		Symbol: "ETH",
+	}
+	feeRate, unit, err := tm.GetEstimateFeeRate(coin)
+	if err != nil {
+		log.Error("GetEstimateFeeRate failed, unexpected error:", err)
+		return
+	}
+	log.Std.Info("feeRate: %s %s/%s", feeRate, coin.Symbol, unit)
 }

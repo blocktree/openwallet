@@ -15,12 +15,7 @@
 
 package commands
 
-import (
-	"github.com/blocktree/OpenWallet/cmd/utils"
-	"github.com/blocktree/OpenWallet/log"
-	"github.com/blocktree/OpenWallet/merchant"
-	"gopkg.in/urfave/cli.v1"
-)
+/*
 
 var (
 	// 钱包命令
@@ -139,3 +134,4 @@ func configMerchantNode(c *cli.Context) error {
 	}
 	return err
 }
+*/
