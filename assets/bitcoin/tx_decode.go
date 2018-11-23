@@ -756,7 +756,7 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 
 	omniDetail := omniTransaction.OmniStruct{
 		TxType:     omniTransaction.SimpleSend,
-		PropertyId: omniTransaction.DefaultTetherUSID,
+		PropertyId: uint32(propertyID),
 		Amount:     uint64(omniAmount.IntPart()),
 		Ecosystem:  0,
 		Address:    "",
