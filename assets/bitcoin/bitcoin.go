@@ -633,6 +633,7 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 	wm.Config.OmniCoreAPI = c.String("omniCoreAPI")
 	wm.Config.OmniRPCUser = c.String("omniRPCUser")
 	wm.Config.OmniRPCPassword = c.String("omniRPCPassword")
+	wm.Config.OmniSupport, _ = c.Bool("omniSupport")
 	if wm.Config.IsTestNet {
 		wm.Config.WalletDataPath = c.String("testNetDataPath")
 	} else {
