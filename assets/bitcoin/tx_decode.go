@@ -699,6 +699,10 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 			}
 		}
 
+		if balance.LessThan(computeTotalSend) {
+			return fmt.Errorf("The [%s] balance: %s is not enough! ", decoder.wm.Symbol(), balance.StringFixed(decoder.wm.Decimal()))
+		}
+
 		//计算手续费，输出地址有2个，一个是发送，一个是找零，一个是op_reture
 		fees, err := decoder.wm.EstimateFee(int64(len(usedUTXO)), int64(3), feesRate)
 		if err != nil {
