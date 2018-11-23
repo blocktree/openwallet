@@ -66,6 +66,20 @@ func (wm *WalletManager) GetOmniInfo() (*gjson.Result, error) {
 	return result, nil
 }
 
+//GetOmniProperty 获取Omni资产信息
+func (wm *WalletManager)GetOmniProperty(propertyId uint64) (*gjson.Result, error) {
+
+	request := []interface{}{
+		propertyId,
+	}
+
+	result, err := wm.OnmiClient.Call("omni_getproperty", request)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 type ContractDecoder struct {
 	wm *WalletManager
 }

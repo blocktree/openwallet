@@ -565,14 +565,16 @@ func (bs *BTCBlockScanner) extractOmniTransaction(trx *OmniTransaction, result *
 			createAt := time.Now().Unix()
 			propertyID := common.NewString(trx.PropertyId).String()
 			contractId := openwallet.GenContractID(bs.wm.Symbol(), propertyID)
-
+			amountDec, _ := decimal.NewFromString(trx.Amount)
+			amountDec = amountDec.Shift(bs.wm.Decimal())
+			amount := amountDec.StringFixed(0)
 			sourceKey, ok := scanAddressFunc(trx.SendingAddress)
 			if ok {
 				input := openwallet.TxInput{}
 				input.TxID = trx.TxID
 				input.Address = trx.SendingAddress
 				//transaction.AccountID = a.AccountID
-				input.Amount = trx.Amount
+				input.Amount = amount
 				input.Coin = openwallet.Coin{
 					Symbol:     bs.wm.Symbol(),
 					IsContract: true,
@@ -609,7 +611,7 @@ func (bs *BTCBlockScanner) extractOmniTransaction(trx *OmniTransaction, result *
 				output.TxID = trx.TxID
 				output.Address = trx.ReferenceAddress
 				//transaction.AccountID = a.AccountID
-				output.Amount = trx.Amount
+				output.Amount = amount
 
 				output.Coin = openwallet.Coin{
 					Symbol:     bs.wm.Symbol(),
@@ -644,8 +646,8 @@ func (bs *BTCBlockScanner) extractOmniTransaction(trx *OmniTransaction, result *
 
 			for _, extractData := range result.extractOmniData {
 				tx := &openwallet.Transaction{
-					From: []string{trx.SendingAddress + ":" + trx.Amount},
-					To:   []string{trx.ReferenceAddress + ":" + trx.Amount},
+					From: []string{trx.SendingAddress + ":" + amount},
+					To:   []string{trx.ReferenceAddress + ":" + amount},
 					Fees: "0",
 					Coin: openwallet.Coin{
 						Symbol:     bs.wm.Symbol(),
