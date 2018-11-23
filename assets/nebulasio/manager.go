@@ -1103,6 +1103,11 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, password string) error {
 func (wm *WalletManager) EstimateFeeRate() string {
 
 	gasprice := wm.WalletClient.CallGetGasPrice()
+
+	if len(gasprice) == 0 {
+		gasprice = "1"
+	}
+
 	return gasprice
 }
 

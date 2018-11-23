@@ -110,6 +110,8 @@ type WalletConfig struct {
 	OmniRPCUser string
 	//Omni rpc password
 	OmniRPCPassword string
+	//是否支持omni
+	OmniSupport bool
 }
 
 func NewConfig(symbol string, masterKey string) *WalletConfig {
@@ -171,6 +173,8 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	c.RPCServerType = RPCServerCore
 	//支持隔离见证
 	c.SupportSegWit = true
+	//是否支持omni
+	c.OmniSupport = false
 
 	//默认配置内容
 	c.DefaultConfig = `
@@ -212,6 +216,8 @@ omniRPCUser = ""
 omniRPCPassword = ""
 # Omni token transfer minimum cost
 omniTransferCost = "0.00000546"
+# support omnicore
+omniSupport = false
 
 `
 

@@ -352,7 +352,7 @@ func TestWalletManager_GetAssetsAccountOnmiBalance(t *testing.T) {
 func TestWalletManager_GetEstimateFeeRate(t *testing.T) {
 	tm := testInitWalletManager()
 	coin := openwallet.Coin{
-		Symbol: "ETH",
+		Symbol: "NAS",
 	}
 	feeRate, unit, err := tm.GetEstimateFeeRate(coin)
 	if err != nil {

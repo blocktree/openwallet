@@ -562,6 +562,10 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 		accountID         = rawTx.Account.AccountID
 	)
 
+	if !decoder.wm.Config.OmniSupport {
+		return fmt.Errorf("%s is not support omnicore transfer", decoder.wm.Symbol())
+	}
+
 	if len(rawTx.Coin.Contract.Address) == 0 {
 		return fmt.Errorf("contract address is empty")
 	}

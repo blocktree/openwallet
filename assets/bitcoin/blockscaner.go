@@ -413,6 +413,14 @@ func (bs *BTCBlockScanner) BatchExtractTransaction(blockHeight uint64, blockHash
 					failed++ //标记保存失败数
 					bs.wm.Log.Std.Info("newExtractDataNotify unexpected error: %v", notifyErr)
 				}
+
+				notifyErr = nil
+				notifyErr = bs.newExtractDataNotify(height, gets.extractOmniData)
+				if notifyErr != nil {
+					failed++ //标记保存失败数
+					bs.wm.Log.Std.Info("newExtractDataNotify unexpected error: %v", notifyErr)
+				}
+
 			} else {
 				//记录未扫区块
 				unscanRecord := NewUnscanRecord(height, "", "")
@@ -501,9 +509,10 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 
 	var (
 		result = ExtractResult{
-			BlockHeight: blockHeight,
-			TxID:        txid,
-			extractData: make(map[string]*openwallet.TxExtractData),
+			BlockHeight:     blockHeight,
+			TxID:            txid,
+			extractData:     make(map[string]*openwallet.TxExtractData),
+			extractOmniData: make(map[string]*openwallet.TxExtractData),
 		}
 	)
 
@@ -525,15 +534,17 @@ func (bs *BTCBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 
 	bs.extractTransaction(trx, &result, scanAddressFunc)
 
-	//获取omni的交易单
-	omniTrx, err := bs.wm.GetOmniTransaction(txid)
-	if err != nil {
-		bs.wm.Log.Std.Info("block scanner can not extract omni transaction data; unexpected error: %v", err)
-		result.Success = false
-		return result
-	}
+	if bs.wm.Config.OmniSupport {
+		//获取omni的交易单
+		omniTrx, err := bs.wm.GetOmniTransaction(txid)
+		if err != nil {
+			//bs.wm.Log.Std.Info("block scanner can not extract omni transaction data; unexpected error: %v", err)
+			result.Success = true
+			return result
+		}
 
-	bs.extractOmniTransaction(omniTrx, &result, scanAddressFunc)
+		bs.extractOmniTransaction(omniTrx, &result, scanAddressFunc)
+	}
 
 	return result
 
