@@ -312,17 +312,17 @@ func TestTransfer_OMNI(t *testing.T) {
 	//mxoCkSBmiLQ86N73kXNLHEUgcUBoKdFawH
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "2m27uVj2xx645dDCEcGD1whPQGcB4fZv16TzBoLGCyKB"
-	to := "n1ZurJRnQyoRwBrx6B7DMndjBWAxnRbxKJ"
+	to := "midiZgstuUWHJhNgpWxX9unT7g9chBvzwd"
 
 	contract := openwallet.SmartContract{
 		Address:  "2",
 		Symbol:   "BTC",
-		Name:     "TetherUSD",
-		Token:    "USDT",
+		Name:     "Test Omni",
+		Token:    "Omni",
 		Decimals: 8,
 	}
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.123", "", &contract)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "10", "", &contract)
 	if err != nil {
 		return
 	}

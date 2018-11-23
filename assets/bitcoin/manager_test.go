@@ -42,7 +42,7 @@ func init() {
 	token := BasicAuth(tw.Config.RpcUser, tw.Config.RpcPassword)
 	tw.WalletClient = NewClient(tw.Config.ServerAPI, token, false)
 
-	explorerURL := "http://192.168.32.107:20003/insight-api/"
+	explorerURL := "http://47.52.97.183:20005/insight-api/"
 	tw.ExplorerClient = NewExplorer(explorerURL, true)
 
 	omniToken := BasicAuth("test", "test")
