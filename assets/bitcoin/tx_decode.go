@@ -638,7 +638,7 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 		} else {
 
 			//判断是否可用Token余额超过可发送数量，则停止遍历
-			if useTokenBalance.GreaterThanOrEqual(toAmount) {
+			if useTokenBalance.GreaterThanOrEqual(toAmount) && len(missUtxoAddress) == 0 {
 				continue
 			}
 
@@ -651,14 +651,15 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 			}
 
 			//取最大余额
-			if tokenBalance.GreaterThan(useTokenBalance) {
-				useTokenBalance = tokenBalance
-				useTokenAddress = address.Address
-			}
+			//if tokenBalance.GreaterThanOrEqual(toAmount) {
+			useTokenBalance = tokenBalance
+			useTokenAddress = address.Address
+			//}
 
 			//记录缺少utxo的地址
 			if len(unspents) == 0 {
 				missUtxoAddress = address.Address
+				//log.Debug("missUtxoAddress:", missUtxoAddress)
 			} else {
 				missUtxoAddress = ""
 			}
@@ -676,16 +677,16 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 
 	//遍历所有地址后，全部Token余额不足， 返回错误Token余额不足
 	if totalTokenBalance.LessThan(toAmount) {
-		return fmt.Errorf("[%s] omni[%s] balance: %s is not enough! ", accountID, tokenCoin, totalTokenBalance.StringFixed(tokenDecimals))
+		return fmt.Errorf("account[%s] omni[%s] total balance: %s is not enough! ", accountID, tokenCoin, totalTokenBalance.StringFixed(tokenDecimals))
 	}
 
 	//单个地址的可用Token余额不足够
 	if useTokenBalance.LessThan(toAmount) {
-		return fmt.Errorf("[%s] omni[%s] balance is enough, but the max balance: %s of address[%s] is not enough! ", accountID, tokenCoin, useTokenBalance.StringFixed(tokenDecimals), useTokenAddress)
+		return fmt.Errorf("account[%s] omni[%s] total balance is enough, but the available balance: %s of address[%s] is not enough! ", accountID, tokenCoin, useTokenBalance.StringFixed(tokenDecimals), useTokenAddress)
 	} else {
 		//可用Token余额足够，但没有utxo，返回错误及有Token余额的地址没有可用主链币
-		if len(missUtxoAddress) == 0 {
-			return fmt.Errorf("[%s] omni[%s] balance is enough, but the utxo of address[%s] is empty! ", accountID, tokenCoin, missUtxoAddress)
+		if len(missUtxoAddress) > 0 {
+			return fmt.Errorf("account[%s] omni[%s] total balance is enough, but the utxo of address[%s] is empty! ", accountID, tokenCoin, missUtxoAddress)
 		}
 	}
 
