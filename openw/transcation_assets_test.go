@@ -278,9 +278,9 @@ func TestTransfer_BTC(t *testing.T) {
 	//mxoCkSBmiLQ86N73kXNLHEUgcUBoKdFawH
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "2m27uVj2xx645dDCEcGD1whPQGcB4fZv16TzBoLGCyKB"
-	to := "ms9NeTGFtaMcjrqRyRogkHqRoR8b1sQwu3"
+	to := "mp1JDsi7Dr2PkcWu1j4SUSTXJqXjFMaeVx"
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.0489", "", nil)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1.2", "", nil)
 	if err != nil {
 		return
 	}
@@ -312,7 +312,7 @@ func TestTransfer_OMNI(t *testing.T) {
 	//mxoCkSBmiLQ86N73kXNLHEUgcUBoKdFawH
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "2m27uVj2xx645dDCEcGD1whPQGcB4fZv16TzBoLGCyKB"
-	to := "midiZgstuUWHJhNgpWxX9unT7g9chBvzwd"
+	to := "mxoCkSBmiLQ86N73kXNLHEUgcUBoKdFawH"
 
 	contract := openwallet.SmartContract{
 		Address:  "2",
@@ -322,7 +322,7 @@ func TestTransfer_OMNI(t *testing.T) {
 		Decimals: 8,
 	}
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "10", "", &contract)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "29", "", &contract)
 	if err != nil {
 		return
 	}

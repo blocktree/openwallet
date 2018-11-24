@@ -75,7 +75,7 @@ func TestGetTransactionByExplorer(t *testing.T) {
 }
 
 func TestGetBalanceByExplorer(t *testing.T) {
-	raw, err := tw.getBalanceByExplorer("2N1GguXdTZb7fG2axJnAMUsy3ueWL7YSPHM ")
+	raw, err := tw.getBalanceByExplorer("mxoCkSBmiLQ86N73kXNLHEUgcUBoKdFawH")
 	if err != nil {
 		t.Errorf("getBalanceByExplorer failed unexpected error: %v\n", err)
 		return

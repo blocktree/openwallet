@@ -21,7 +21,7 @@ import (
 
 func TestWalletManager_GetOmniBalance(t *testing.T) {
 	propertyID := uint64(2)
-	address := "n1ZurJRnQyoRwBrx6B7DMndjBWAxnRbxKJ"
+	address := "ms9NeTGFtaMcjrqRyRogkHqRoR8b1sQwu3"
 	balance, err := tw.GetOmniBalance(propertyID, address)
 	if err != nil {
 		t.Errorf("GetOmniBalance failed unexpected error: %v\n", err)
@@ -31,7 +31,7 @@ func TestWalletManager_GetOmniBalance(t *testing.T) {
 }
 
 func TestWalletManager_GetOmniTransaction(t *testing.T) {
-	txid := "605fd31e072a94d223e38c2f84301b9b580b0c9553387a4a641970f62c829f1c"
+	txid := "c0aad040a04bba0168a63da3d41509722c49005d2fd045d9d0f81ad551c56f1d"
 	transaction, err := tw.GetOmniTransaction(txid)
 	if err != nil {
 		t.Errorf("GetOmniBalance failed unexpected error: %v\n", err)

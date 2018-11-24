@@ -527,7 +527,6 @@ func (decoder *TransactionDecoder) VerifyBTCRawTransaction(wrapper openwallet.Wa
 	return nil
 }
 
-
 //GetRawTransactionFeeRate 获取交易单的费率
 func (decoder *TransactionDecoder) GetRawTransactionFeeRate() (feeRate string, unit string, err error) {
 	rate, err := decoder.wm.EstimateFeeRate()
@@ -555,11 +554,13 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 		usedUTXO          = make([]*Unspent, 0)
 		totalTokenBalance = decimal.Zero
 		useTokenBalance   = decimal.Zero
-		missUtxo          = make([]string, 0)
-		balance           = decimal.New(0, 0)
-		actualFees        = decimal.New(0, 0)
-		feesRate          = decimal.New(0, 0)
-		accountID         = rawTx.Account.AccountID
+		useTokenAddress   = ""
+		missUtxoAddress   = ""
+		missToken  = make([]string, 0)
+		balance    = decimal.New(0, 0)
+		actualFees = decimal.New(0, 0)
+		feesRate   = decimal.New(0, 0)
+		accountID  = rawTx.Account.AccountID
 	)
 
 	if !decoder.wm.Config.OmniSupport {
@@ -604,14 +605,17 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 	/*
 
 		1. 遍历所有地址，获取token余额。
-			1）查询有token余额的地址的utxo，累加全部Token余额。
-			2）没有utxo的加入到缺少utxo的miss数组中。
-			3）有utxo的，累加可用utxo，累加可用Token余额，判断是否可用Token余额超过可发送数量，则停止遍历。
-		4. 遍历所有地址后，全部Token余额不足， 返回错误Token余额不足。
-		5. 全部Token余额足够，可用Token余额不足，，返回错误及有Token余额的地址没有可用主链币。
-		3. 可用utxo不足，遍历所有utxo获取查看，累加不在存在，差额的utxo。
-		4. 最后可用的utxo不足，返回错误主链币不足。
-		5. 可用token和可用utxo足够，构建交易单。
+			1）累计所有地址token余额。
+			2）没有token余额的地址，加入到没有token余额数组，其地址有utxo可用于手续费使用。
+			3）判断是否可用Token余额超过可发送数量，是则继续遍历。
+			4）记录最大的可余额，记录可用token余额地址。
+			5）查询有token余额的地址的utxo，没有utxo，记录缺少utxo地址，记录可用utxo。
+		2. 遍历所有地址后，全部Token余额不足， 返回错误Token余额不足。
+		3. 全部Token余额足够，可用余额不足，返回地址的最大Token余额不足。
+		4. 全部Token余额足够，可用余额足够，地址的没有utxo，返回错误。
+		5. 先排序可用utxo，再把没有token余额的地址所有utxo查出来，加入到可用utxo数组最后。
+		6. 最后可用的utxo不足，返回错误主链币不足。
+		7. 可用token和可用utxo足够，构建交易单。
 
 
 	*/
@@ -624,27 +628,50 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 			return checkErr
 		}
 
+		//合计总token余额
 		totalTokenBalance = totalTokenBalance.Add(tokenBalance)
 
-		//查找账户的utxo
-		unspents, checkErr := decoder.wm.ListUnspent(0, address.Address)
-		if err != nil {
-			return err
-		}
-
-		if len(unspents) == 0 {
-			//没有utxo的加入到缺少utxo的miss数组中。
-			missUtxo = append(missUtxo, address.Address)
+		//没有余额的地址可以作为手续费使用
+		if tokenBalance.LessThanOrEqual(decimal.Zero) {
+			missToken = append(missToken, address.Address)
+			continue
 		} else {
-			//有utxo的，累加可用utxo，累加可用Token余额
-			useTokenBalance = useTokenBalance.Add(tokenBalance)
-			availableUTXO = append(availableUTXO, unspents...)
+
+			//判断是否可用Token余额超过可发送数量，则停止遍历
+			if useTokenBalance.GreaterThanOrEqual(toAmount) {
+				continue
+			}
+
+			//totalTokenBalance = totalTokenBalance.Add(tokenBalance)
+
+			//查找账户的utxo
+			unspents, tokenErr := decoder.wm.ListUnspent(0, address.Address)
+			if tokenErr != nil {
+				return err
+			}
+
+			//取最大余额
+			if tokenBalance.GreaterThan(useTokenBalance) {
+				useTokenBalance = tokenBalance
+				useTokenAddress = address.Address
+			}
+
+			//记录缺少utxo的地址
+			if len(unspents) == 0 {
+				missUtxoAddress = address.Address
+			} else {
+				missUtxoAddress = ""
+			}
+			//else {
+				//useTokenBalance = tokenBalance
+				//useTokenBalance = useTokenBalance.Add(tokenBalance)
+			//}
+
+			availableUTXO = unspents
+			//availableUTXO = append(availableUTXO, unspents...)
+
 		}
 
-		//判断是否可用Token余额超过可发送数量，则停止遍历
-		if useTokenBalance.GreaterThanOrEqual(toAmount) {
-			break
-		}
 	}
 
 	//遍历所有地址后，全部Token余额不足， 返回错误Token余额不足
@@ -652,10 +679,14 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 		return fmt.Errorf("[%s] omni[%s] balance: %s is not enough! ", accountID, tokenCoin, totalTokenBalance.StringFixed(tokenDecimals))
 	}
 
-	//全部Token余额足够，可用Token余额不足，，返回错误及有Token余额的地址没有可用主链币
+	//单个地址的可用Token余额不足够
 	if useTokenBalance.LessThan(toAmount) {
-		addrs := strings.Join(missUtxo, ", ")
-		return fmt.Errorf("[%s] omni[%s] balance is enough, but addrsse[%s] %s balance not enough!  ", accountID, tokenCoin, addrs, decoder.wm.Symbol())
+		return fmt.Errorf("[%s] omni[%s] balance is enough, but the max balance: %s of address[%s] is not enough! ", accountID, tokenCoin, useTokenBalance.StringFixed(tokenDecimals), useTokenAddress)
+	} else {
+		//可用Token余额足够，但没有utxo，返回错误及有Token余额的地址没有可用主链币
+		if len(missUtxoAddress) == 0 {
+			return fmt.Errorf("[%s] omni[%s] balance is enough, but the utxo of address[%s] is empty! ", accountID, tokenCoin, missUtxoAddress)
+		}
 	}
 
 	//获取utxo，按小到大排序
@@ -667,6 +698,14 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 			return -1
 		}
 	}})
+
+	//查找账户没有token余额的utxo，可用于手续费
+	missTokenUnspents, err := decoder.wm.ListUnspent(0, missToken...)
+	if err != nil {
+		return err
+	}
+
+	availableUTXO = append(availableUTXO, missTokenUnspents...)
 
 	//获取手续费率
 	if len(rawTx.FeeRate) == 0 {
@@ -700,7 +739,7 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 		}
 
 		if balance.LessThan(computeTotalSend) {
-			return fmt.Errorf("The [%s] balance: %s is not enough! ", decoder.wm.Symbol(), balance.StringFixed(decoder.wm.Decimal()))
+			return fmt.Errorf("The [%s] available utxo balance: %s is not enough! ", decoder.wm.Symbol(), balance.StringFixed(decoder.wm.Decimal()))
 		}
 
 		//计算手续费，输出地址有2个，一个是发送，一个是找零，一个是op_reture
