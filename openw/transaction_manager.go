@@ -425,6 +425,7 @@ func (wm *WalletManager) GetAssetsAccountBalance(appID, walletID, accountID stri
 	}
 
 	for _, b := range balances {
+		//log.Debug("b.Balance:", b.Balance)
 		addrBalance, _ := decimal.NewFromString(b.Balance)
 		accountBalanceDec = accountBalanceDec.Add(addrBalance)
 	}
@@ -486,6 +487,7 @@ func (wm *WalletManager) GetAssetsAccountTokenBalance(appID, walletID, accountID
 	}
 
 	for _, b := range balances {
+		//log.Debug("b.Balance:", b.Balance)
 		addrBalance, _ := decimal.NewFromString(b.Balance.Balance)
 		accountBalanceDec = accountBalanceDec.Add(addrBalance)
 	}

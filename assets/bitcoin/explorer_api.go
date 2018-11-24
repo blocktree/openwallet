@@ -399,11 +399,11 @@ func newBalanceByExplorer(json *gjson.Result) *openwallet.Balance {
 	obj := openwallet.Balance{}
 	//解析json
 	obj.Address = gjson.Get(json.Raw, "addrStr").String()
-	obj.Balance = gjson.Get(json.Raw, "balance").String()
+	obj.ConfirmBalance = gjson.Get(json.Raw, "balance").String()
 	obj.UnconfirmBalance = gjson.Get(json.Raw, "unconfirmedBalance").String()
-	u, _ := decimal.NewFromString(obj.UnconfirmBalance)
+	u, _ := decimal.NewFromString(obj.ConfirmBalance)
 	b, _ := decimal.NewFromString(obj.UnconfirmBalance)
-	obj.ConfirmBalance = b.Sub(u).StringFixed(8)
+	obj.Balance = u.Add(b).StringFixed(8)
 
 	return &obj
 }

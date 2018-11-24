@@ -565,6 +565,19 @@ func (bs *BTCBlockScanner) extractOmniTransaction(trx *OmniTransaction, result *
 			createAt := time.Now().Unix()
 			propertyID := common.NewString(trx.PropertyId).String()
 			contractId := openwallet.GenContractID(bs.wm.Symbol(), propertyID)
+
+			coin := openwallet.Coin{
+				Symbol:     bs.wm.Symbol(),
+				IsContract: true,
+				ContractID: contractId,
+				Contract: openwallet.SmartContract{
+					ContractID: contractId,
+					Address:    propertyID,
+					Protocol:   "omnicore",
+					Symbol:     bs.wm.Symbol(),
+				},
+			}
+
 			amountDec, _ := decimal.NewFromString(trx.Amount)
 			amountDec = amountDec.Shift(bs.wm.Decimal())
 			amount := amountDec.StringFixed(0)
@@ -575,16 +588,7 @@ func (bs *BTCBlockScanner) extractOmniTransaction(trx *OmniTransaction, result *
 				input.Address = trx.SendingAddress
 				//transaction.AccountID = a.AccountID
 				input.Amount = amount
-				input.Coin = openwallet.Coin{
-					Symbol:     bs.wm.Symbol(),
-					IsContract: true,
-					Contract: openwallet.SmartContract{
-						ContractID: contractId,
-						Address:    propertyID,
-						Protocol:   "omnicore",
-						Symbol:     bs.wm.Symbol(),
-					},
-				}
+				input.Coin = coin
 				input.Index = 0
 				input.Sid = openwallet.GenTxInputSID(trx.TxID, bs.wm.Symbol(), contractId, 0)
 				//input.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", result.TxID, i, addr))))
@@ -613,16 +617,7 @@ func (bs *BTCBlockScanner) extractOmniTransaction(trx *OmniTransaction, result *
 				//transaction.AccountID = a.AccountID
 				output.Amount = amount
 
-				output.Coin = openwallet.Coin{
-					Symbol:     bs.wm.Symbol(),
-					IsContract: true,
-					Contract: openwallet.SmartContract{
-						ContractID: contractId,
-						Address:    propertyID,
-						Protocol:   "omnicore",
-						Symbol:     bs.wm.Symbol(),
-					},
-				}
+				output.Coin = coin
 				output.Index = 0
 				output.Sid = openwallet.GenTxOutPutSID(trx.TxID, bs.wm.Symbol(), contractId, 0)
 				//input.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", result.TxID, i, addr))))
@@ -649,16 +644,7 @@ func (bs *BTCBlockScanner) extractOmniTransaction(trx *OmniTransaction, result *
 					From: []string{trx.SendingAddress + ":" + amount},
 					To:   []string{trx.ReferenceAddress + ":" + amount},
 					Fees: "0",
-					Coin: openwallet.Coin{
-						Symbol:     bs.wm.Symbol(),
-						IsContract: true,
-						Contract: openwallet.SmartContract{
-							ContractID: contractId,
-							Address:    propertyID,
-							Protocol:   "omnicore",
-							Symbol:     bs.wm.Symbol(),
-						},
-					},
+					Coin: coin,
 					BlockHash:   trx.BlockHash,
 					BlockHeight: trx.Block,
 					TxID:        trx.TxID,
