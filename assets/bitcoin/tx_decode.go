@@ -701,12 +701,14 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 	}})
 
 	//查找账户没有token余额的utxo，可用于手续费
-	missTokenUnspents, err := decoder.wm.ListUnspent(0, missToken...)
-	if err != nil {
-		return err
-	}
+	if len(missToken) > 0 {
+		missTokenUnspents, err := decoder.wm.ListUnspent(0, missToken...)
+		if err != nil {
+			return err
+		}
 
-	availableUTXO = append(availableUTXO, missTokenUnspents...)
+		availableUTXO = append(availableUTXO, missTokenUnspents...)
+	}
 
 	//获取手续费率
 	if len(rawTx.FeeRate) == 0 {

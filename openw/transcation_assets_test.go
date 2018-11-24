@@ -322,7 +322,7 @@ func TestTransfer_OMNI(t *testing.T) {
 		Decimals: 8,
 	}
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "19", "", &contract)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "9", "", &contract)
 	if err != nil {
 		return
 	}
