@@ -36,7 +36,7 @@ const (
 const (
 	blockchainBucket = "blockchain" //区块链数据集合
 	//periodOfTask      = 5 * time.Second //定时任务执行隔间
-	maxExtractingSize = 20 //并发的扫描线程数
+	maxExtractingSize = 15 //并发的扫描线程数
 
 	//RPCServerCore     = 1 //RPC服务，bitcoin核心钱包
 	//RPCServerExplorer = 2 //RPC服务，insight-API
