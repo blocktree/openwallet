@@ -16,24 +16,29 @@
 package bitcoincash
 
 import (
-	"github.com/blocktree/OpenWallet/assets/bitcoin"
-	"github.com/blocktree/OpenWallet/log"
+	"encoding/hex"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
+	"testing"
 )
 
-const (
-	maxAddresNum = 10000
-)
+func TestAddressDecoder_AddressToHash(t *testing.T) {
+	hash, _ := hex.DecodeString("85537b4e0e2ecea63e4cec6573c319bf7925192c")
 
-type WalletManager struct {
-	*bitcoin.WalletManager
+	cfg := addressEncoder.LTC_testnetAddressP2SH2
+
+	addr :=addressEncoder.AddressEncode(hash, cfg)
+	t.Logf("addr: %s", addr)
 }
 
+func TestAddressDecoder_HashToAddress(t *testing.T) {
+	addr := "2N5QBsCqE6NvEUswatz7awNUMQMXxiePPF6"
 
-func NewWalletManager() *WalletManager {
-	wm := WalletManager{}
-	wm.WalletManager = bitcoin.NewWalletManager()
-	wm.Config = bitcoin.NewConfig(Symbol, MasterKey)
-	wm.Decoder = NewAddressDecoder(&wm)
-	wm.Log = log.NewOWLogger(wm.Symbol())
-	return &wm
+	cfg := addressEncoder.LTC_testnetAddressP2SH
+
+	hash, err :=addressEncoder.AddressDecode(addr, cfg)
+	if err != nil {
+		t.Errorf("AddressDecode failed unexpected error: %v\n", err)
+		return
+	}
+	t.Logf("hash: %s", hex.EncodeToString(hash))
 }

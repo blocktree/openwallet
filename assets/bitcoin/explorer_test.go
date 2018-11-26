@@ -54,7 +54,7 @@ func TestGetBlockByExplorer(t *testing.T) {
 }
 
 func TestListUnspentByExplorer(t *testing.T) {
-	list, err := tw.listUnspentByExplorer("msHemmfSZ3au6h9S1annGcTGrTVryRbSFV")
+	list, err := tw.listUnspentByExplorer("midiZgstuUWHJhNgpWxX9unT7g9chBvzwd")
 	if err != nil {
 		t.Errorf("listUnspentByExplorer failed unexpected error: %v\n", err)
 		return
@@ -75,7 +75,7 @@ func TestGetTransactionByExplorer(t *testing.T) {
 }
 
 func TestGetBalanceByExplorer(t *testing.T) {
-	raw, err := tw.getBalanceByExplorer("2N1GguXdTZb7fG2axJnAMUsy3ueWL7YSPHM ")
+	raw, err := tw.getBalanceByExplorer("ms9NeTGFtaMcjrqRyRogkHqRoR8b1sQwu3")
 	if err != nil {
 		t.Errorf("getBalanceByExplorer failed unexpected error: %v\n", err)
 		return

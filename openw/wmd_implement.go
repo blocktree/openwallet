@@ -13,10 +13,12 @@
  * GNU Lesser General Public License for more details.
  */
 
-package bitcoincash
+package openw
 
 
-//FullName 币种全名
-func (wm *WalletManager) FullName() string {
-	return "bitcoincash"
-}
+/*
+	实现openw支持wmd接口
+	1. 初始化WalletManager可配置key，db保存路径。
+	2. 只能创建一个应用一个钱包一个币种账户。
+	3. 创建单个应用单个钱包一个币种账户批量地址。
+ */

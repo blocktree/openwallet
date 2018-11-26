@@ -33,7 +33,7 @@ import (
 const (
 	blockchainBucket = "blockchain" //区块链数据集合
 	//periodOfTask      = 5 * time.Second //定时任务执行隔间
-	maxExtractingSize = 20 //并发的扫描线程数
+	maxExtractingSize = 10 //并发的扫描线程数
 
 	RPCServerCore     = 0 //RPC服务，bitcoin核心钱包
 	RPCServerExplorer = 1 //RPC服务，insight-API
@@ -566,23 +566,29 @@ func (bs *BTCBlockScanner) extractOmniTransaction(trx *OmniTransaction, result *
 			propertyID := common.NewString(trx.PropertyId).String()
 			contractId := openwallet.GenContractID(bs.wm.Symbol(), propertyID)
 
+			coin := openwallet.Coin{
+				Symbol:     bs.wm.Symbol(),
+				IsContract: true,
+				ContractID: contractId,
+				Contract: openwallet.SmartContract{
+					ContractID: contractId,
+					Address:    propertyID,
+					Protocol:   "omnicore",
+					Symbol:     bs.wm.Symbol(),
+				},
+			}
+
+			amountDec, _ := decimal.NewFromString(trx.Amount)
+			amountDec = amountDec.Shift(bs.wm.Decimal())
+			amount := amountDec.StringFixed(0)
 			sourceKey, ok := scanAddressFunc(trx.SendingAddress)
 			if ok {
 				input := openwallet.TxInput{}
 				input.TxID = trx.TxID
 				input.Address = trx.SendingAddress
 				//transaction.AccountID = a.AccountID
-				input.Amount = trx.Amount
-				input.Coin = openwallet.Coin{
-					Symbol:     bs.wm.Symbol(),
-					IsContract: true,
-					Contract: openwallet.SmartContract{
-						ContractID: contractId,
-						Address:    propertyID,
-						Protocol:   "omnicore",
-						Symbol:     bs.wm.Symbol(),
-					},
-				}
+				input.Amount = amount
+				input.Coin = coin
 				input.Index = 0
 				input.Sid = openwallet.GenTxInputSID(trx.TxID, bs.wm.Symbol(), contractId, 0)
 				//input.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", result.TxID, i, addr))))
@@ -609,18 +615,9 @@ func (bs *BTCBlockScanner) extractOmniTransaction(trx *OmniTransaction, result *
 				output.TxID = trx.TxID
 				output.Address = trx.ReferenceAddress
 				//transaction.AccountID = a.AccountID
-				output.Amount = trx.Amount
+				output.Amount = amount
 
-				output.Coin = openwallet.Coin{
-					Symbol:     bs.wm.Symbol(),
-					IsContract: true,
-					Contract: openwallet.SmartContract{
-						ContractID: contractId,
-						Address:    propertyID,
-						Protocol:   "omnicore",
-						Symbol:     bs.wm.Symbol(),
-					},
-				}
+				output.Coin = coin
 				output.Index = 0
 				output.Sid = openwallet.GenTxOutPutSID(trx.TxID, bs.wm.Symbol(), contractId, 0)
 				//input.Sid = base64.StdEncoding.EncodeToString(crypto.SHA1([]byte(fmt.Sprintf("input_%s_%d_%s", result.TxID, i, addr))))
@@ -644,19 +641,10 @@ func (bs *BTCBlockScanner) extractOmniTransaction(trx *OmniTransaction, result *
 
 			for _, extractData := range result.extractOmniData {
 				tx := &openwallet.Transaction{
-					From: []string{trx.SendingAddress + ":" + trx.Amount},
-					To:   []string{trx.ReferenceAddress + ":" + trx.Amount},
+					From: []string{trx.SendingAddress + ":" + amount},
+					To:   []string{trx.ReferenceAddress + ":" + amount},
 					Fees: "0",
-					Coin: openwallet.Coin{
-						Symbol:     bs.wm.Symbol(),
-						IsContract: true,
-						Contract: openwallet.SmartContract{
-							ContractID: contractId,
-							Address:    propertyID,
-							Protocol:   "omnicore",
-							Symbol:     bs.wm.Symbol(),
-						},
-					},
+					Coin: coin,
 					BlockHash:   trx.BlockHash,
 					BlockHeight: trx.Block,
 					TxID:        trx.TxID,
