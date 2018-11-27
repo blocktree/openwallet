@@ -233,6 +233,9 @@ func (this *ETHBLockScanner) ScanBlockTask() {
 			//	break
 			//}
 
+			//查询本地分叉的区块
+			forkBlock, _ := this.wm.RecoverBlockHeader(previousHeight)
+
 			err = this.wm.DeleteUnscannedTransactionByHeight(previousHeight)
 			if err != nil {
 				this.wm.Log.Errorf("DeleteUnscannedTransaction failed, height=%v, err=%v", previousHeight, err)
@@ -262,6 +265,13 @@ func (this *ETHBLockScanner) ScanBlockTask() {
 			}
 
 			isFork = true
+
+			if forkBlock != nil {
+
+				//通知分叉区块给观测者，异步处理
+				go this.newBlockNotify(forkBlock, isFork)
+			}
+
 		} else {
 			err = this.BatchExtractTransaction(curBlock.Transactions)
 			if err != nil {
@@ -275,11 +285,13 @@ func (this *ETHBLockScanner) ScanBlockTask() {
 			}
 
 			isFork = false
+
+			go this.newBlockNotify(curBlock, isFork)
 		}
 
 		curBlockHeight = curBlock.blockHeight
 		curBlockHash = curBlock.BlockHash
-		go this.newBlockNotify(curBlock, isFork)
+
 	}
 
 	if this.IsScanMemPool {

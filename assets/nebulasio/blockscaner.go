@@ -171,6 +171,10 @@ func (bs *NASBlockScanner) ScanBlockTask() {
 			//删除上一区块链的所有充值记录
 			//bs.DeleteRechargesByHeight(currentHeight - 1)
 			//删除上一区块链的未扫记录
+
+			//查询本地分叉的区块
+			forkBlock, _ := bs.wm.GetLocalBlock(currentHeight-1)
+
 			bs.wm.DeleteUnscanRecord(currentHeight - 1)
 			currentHeight = currentHeight - 2 //倒退2个区块重新扫描
 			if currentHeight <= 0 {
@@ -208,6 +212,12 @@ func (bs *NASBlockScanner) ScanBlockTask() {
 
 			isFork = true
 
+			if forkBlock != nil {
+
+				//通知分叉区块给观测者，异步处理
+				go bs.newBlockNotify(forkBlock, isFork)
+			}
+
 		} else {
 			err = bs.BatchExtractTransaction(block.Height, block.Hash, block.tx)
 			if err != nil {
@@ -222,10 +232,12 @@ func (bs *NASBlockScanner) ScanBlockTask() {
 			bs.wm.SaveLocalBlock(block)
 
 			isFork = false
+
+			//通知新区块给观测者，异步处理
+			go bs.newBlockNotify(block, isFork)
 		}
 
-		//通知新区块给观测者，异步处理
-		go bs.newBlockNotify(block, isFork)
+
 	}
 
 	//重扫前N个块，为保证记录找到
@@ -382,7 +394,7 @@ func (bs *NASBlockScanner) BatchExtractTransaction(blockHeight uint64, blockHash
 	)
 
 	if len(txs) == 0 {
-		return errors.New("BatchExtractTransaction block is nil.")
+		return nil
 	}
 
 	//生产通道

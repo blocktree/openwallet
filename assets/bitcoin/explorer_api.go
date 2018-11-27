@@ -147,7 +147,7 @@ func (wm *WalletManager) getBlockHeightByExplorer() (uint64, error) {
 //getTxIDsInMemPoolByExplorer 获取待处理的交易池中的交易单IDs
 func (wm *WalletManager) getTxIDsInMemPoolByExplorer() ([]string, error) {
 
-	return nil, fmt.Errorf("insight-api unsupport query mempool transactions")
+	return nil, nil
 }
 
 //GetTransaction 获取交易单
