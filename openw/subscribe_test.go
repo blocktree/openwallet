@@ -237,7 +237,7 @@ func TestSubscribeAddress_QTUM(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	//scanner.SetRescanBlockHeight(255323)
+	scanner.SetRescanBlockHeight(270679)
 
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")
@@ -348,7 +348,7 @@ func TestSubscribeAddress_NAS(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	scanner.SetRescanBlockHeight(1215)
+	scanner.SetRescanBlockHeight(1357044)
 
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")

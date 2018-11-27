@@ -38,10 +38,10 @@ func init() {
 
 	tw = NewWalletManager()
 
-	tw.Config.ServerAPI = "http://192.168.2.194:20061"
-	tw.Config.RpcUser = "walletUser"
-	tw.Config.RpcPassword = "walletPassword2017"
-	tw.Config.IsTestNet = true
+	tw.Config.ServerAPI = "http://47.106.102.2:8332"
+	tw.Config.RpcUser = "bitcoin"
+	tw.Config.RpcPassword = "local321"
+	tw.Config.IsTestNet = false
 	token := bitcoin.BasicAuth(tw.Config.RpcUser, tw.Config.RpcPassword)
 	tw.WalletClient = bitcoin.NewClient(tw.Config.ServerAPI, token, true)
 
@@ -412,7 +412,7 @@ func TestGetBlockChainInfo(t *testing.T) {
 	if err != nil {
 		t.Errorf("GetBlockChainInfo failed unexpected error: %v\n", err)
 	} else {
-		t.Errorf("GetBlockChainInfo info: %v\n", b)
+		t.Logf("GetBlockChainInfo info: %v\n", b)
 	}
 }
 
