@@ -22,74 +22,60 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+var wm *WalletManager
+
 func init() {
-	serverAPI = "https://192.168.2.224:10026/api/"
+	wm = NewWalletManager()
+	wm.InitConfigFlow()
+	wm.Config.ServerAPI = "https://47.106.34.230:10026/api/v1/"
+	wm.WalletClient = NewClient(wm.Config.ServerAPI, true, "./certs")
 }
 
 func TestGetWalletInfo(t *testing.T) {
-	tests := []struct {
-		wid string
-		tag string
-	}{
-		{
-			wid: "",
-			tag: "all",
-		},
-		//{
-		//	wid: "124556",
-		//	tag: "id no exist",
-		//},
-		//{
-		//	wid: "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj",
-		//	tag: "id exist",
-		//},
+	//ret := wm.WalletClient.callGetWalletAPI("Ae2tdPwUPEZ7R5jNgL8SKRtG8QFTi2QuQrsScydp3GJAPStvivfjTXPTSKX")
+	//t.Log(string(ret))
+
+	//ret = wm.WalletClient.callGetWalletAPI()
+	//t.Log(string(ret))
+
+	list, err := wm.GetWalletInfo()
+	if err != nil {
+		t.Log(err)
 	}
 
-	for i, test := range tests {
 
-		wallets, err := GetWalletInfo(test.wid)
-		if err != nil {
-			t.Errorf("GetWalletInfo[%d] failed unexpected error: %v", i, err)
-		}
-		for j, w := range wallets {
-			t.Logf("GetWalletInfo[%d] wallet[%d]  = %v", i, j, w)
-		}
-
-	}
+	//打印钱包列表
+	wm.printWalletList(list)
 }
 
 func TestCreateNewWallet(t *testing.T) {
 	//密钥32
-	password := common.NewString("12345678").SHA256()
+	password := common.NewString("1234qwer").SHA256()
 	words := genMnemonic()
 	//annual only pact client fatigue choice arrive achieve country indoor engage coil spatial engine among paper dawn tackle bonus task lock pepper deny eye
-	result := callCreateWalletAPI("12 words wallet", words, password, true)
-	t.Logf("%v\n", result)
+	result := wm.WalletClient.callCreateWalletAPI("12 words wallet", words, password, true)
+	t.Logf("%v\n", string(result))
 }
 
 func TestGetAccountInfo(t *testing.T) {
 
 	tests := []struct {
+		wid string
 		aid string
-		tag string
 	}{
 		//{
-		//	aid: "",
-		//	tag: "all",
-		//},
-		//{
-		//	aid: "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj",
-		//	tag: "id no exist",
+		//	wid: "Ae2tdPwUPEZ7R5jNgL8SKRtG8QFTi2QuQrsScydp3GJAPStvivfjTXPTSKX",
+		//	aid: "4257117526",
 		//},
 		{
-			aid: "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj",
-			tag: "KKK",
+			wid: "Ae2tdPwUPEZ2mvUueYDm8JCy7nSV6VybMkwf3umv3hFkB3y1Gvze9NUkDLT",
+			aid: "123",
 		},
 	}
 
 	for i, test := range tests {
 
-		accounts, err := GetAccountInfo(test.aid)
+		accounts, err := wm.GetAccountInfo(test.wid, "")
 		if err != nil {
 			t.Errorf("GetAccountInfo[%d] failed unexpected error: %v", i, err)
 		}
@@ -106,65 +92,67 @@ func TestCreateAccount(t *testing.T) {
 		wid      string
 		name     string
 		password string
-		tag      string
 	}{
-		{
-			wid:      "Ae2tdPwUPEZMYbseGswFLCyN1vG6CjyGNcAvNujB3JXbuovD6GVc535GTtB",
-			name:     "chance2",
-			password: common.NewString("12345678").SHA256(),
-			tag:      "normal",
-		},
 		//{
-		//	wid:      "Ae2tdPwUPEZKrS6hL1E9XgKSet8ydFYHQkV3gmEG8RGUwh5XKugoUFEk7Lx",
-		//	name:     "zhiquan911",
-		//	password: "",
-		//	tag:      "Passphrase doesn't match",
+		//	wid:      "Ae2tdPwUPEZ7R5jNgL8SKRtG8QFTi2QuQrsScydp3GJAPStvivfjTXPTSKX",
+		//	name:     "test1",
+		//	password: common.NewString("1234qwer").SHA256(),
 		//},
+		{
+			wid:      "Ae2tdPwUPEZ2mvUueYDm8JCy7nSV6VybMkwf3umv3hFkB3y1Gvze9NUkDLT",
+			name:     "test2",
+			password: common.NewString("1234qwer").SHA256(),
+		},
 	}
 
 	for i, test := range tests {
 
-		a, err := CreateNewAccount(test.name, test.wid, test.password)
+		a, err := wm.CreateNewAccount(test.name, test.wid, test.password)
 		if err != nil {
 			t.Fatalf("CreateAccount[%d] failed unexpected error: %v", i, err)
 		}
-		t.Logf("CreateAccount[%d] AcountID = %s", i, a.AcountID)
+		t.Log(a)
+		t.Logf("CreateAccount[%d] AcountID = %d", i, a.Index)
 	}
 
 }
 
 func TestCreateBatchAddress(t *testing.T) {
-	//	Ae2tdPwUPEZKrS6hL1E9XgKSet8ydFYHQkV3gmEG8RGUwh5XKugoUFEk7Lx@2727649476
+	//	Ae2tdPwUPEZ7R5jNgL8SKRtG8QFTi2QuQrsScydp3GJAPStvivfjTXPTSKX
 
 	var (
 	//results = make(chan []*Address, 0)
 	)
 
-	password := common.NewString("12345678").SHA256()
+	password := common.NewString("1234qwer").SHA256()
 
 	tests := []struct {
-		aid   string
+		wid string
+		aid   int64
 		count uint
 	}{
-		{
-			aid:   "Ae2tdPwUPEYynni3SmWmLnDkgMkyXFraSz2MJqhgqFiAWHXtacmE9Dpk23z@2147483648",
-			count: 100000,
-		},
 		//{
-		//	aid:   "",
-		//	count: 1,
+		//	wid: "Ae2tdPwUPEZ7R5jNgL8SKRtG8QFTi2QuQrsScydp3GJAPStvivfjTXPTSKX",
+		//	aid:   4257117526,
+		//	count: 10,
 		//},
+		{
+			wid: "Ae2tdPwUPEZ2mvUueYDm8JCy7nSV6VybMkwf3umv3hFkB3y1Gvze9NUkDLT",
+			aid: 2335833927,
+			count: 10,
+		},
 	}
 
 	for i, test := range tests {
 
-		_, _, err := CreateBatchAddress(test.aid, password, test.count)
+		addrs, _, err := wm.CreateBatchAddress(test.wid, test.aid, password, test.count)
 		if err != nil {
 			t.Fatalf("CreateBatchAddress[%d] failed unexpected error: %v", i, err)
 		}
-		//for j, a := range addrs {
-		//	t.Logf("CreateBatchAddress[%d] NewAddress[%d]  = %s", i, j, a.Address)
-		//}
+
+		for j, a := range addrs {
+			t.Logf("CreateBatchAddress[%d] NewAddress[%d]  = %s", i, j, a.Address)
+		}
 
 	}
 }
@@ -173,23 +161,19 @@ func TestCreateBatchAddress(t *testing.T) {
 func TestGetAddressInfo(t *testing.T) {
 
 	tests := []struct {
+		wid string
 		aid string
-		tag string
 	}{
-		//{
-		//	aid: "",
-		//	tag: "all",
-		//},
 		{
-			aid: "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj@2147483648",
-			tag: "chance2",
+			wid: "Ae2tdPwUPEZ7R5jNgL8SKRtG8QFTi2QuQrsScydp3GJAPStvivfjTXPTSKX",
+			aid: "4257117526",
 		},
 
 	}
 
 	for i, test := range tests {
 
-		addrs, err := GetAddressInfo(test.aid)
+		addrs, err := wm.GetAddressInfo(test.wid, test.aid)
 		if err != nil {
 			t.Errorf("GetAddressInfo[%d] failed unexpected error: %v", i, err)
 		}
@@ -202,33 +186,25 @@ func TestGetAddressInfo(t *testing.T) {
 
 func TestSendTx(t *testing.T) {
 	tests := []struct {
-		aid    string
+		wid    string
+		aid    int64
 		to     string
 		amount uint64
-		tag    string
 	}{
-		//{
-		//	aid: "",
-		//	tag: "all",
-		//},
-		//{
-		//	aid: "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj@999",
-		//	tag: "id no exist",
-		//},
 		{
-			aid:    "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj@2147483648",
-			to:     "DdzFFzCqrhtAFVdoEx9jtTUhovkRnuMNUiCnuv8pQ2WYxhDVXAAhYJCVuydGSa1qJeSCYH8x6ZV8QjCaTiAHr9QReMaMRVtUQk9fMNTW",
+			wid:    "Ae2tdPwUPEZ7R5jNgL8SKRtG8QFTi2QuQrsScydp3GJAPStvivfjTXPTSKX",
+			aid:    4257117526,
+			to:     "DdzFFzCqrhsz6RtTEaL1WzrjAMzVdLwwQdQ5ivAA58hSWnG9oTk9LgczLAcvEEDxgKegfcLwWBdihBaHyBQyGwQg8ReRq6R41qXbmXkG",
 			amount: 2500000,
-			tag:    "sendTx by acount id",
 		},
 	}
 
 	//密钥32
-	password := common.NewString("12345678").SHA256()
+	password := common.NewString("1234qwer").SHA256()
 
 	for i, test := range tests {
 
-		tx, err := SendTx(test.aid, test.to, test.amount, password)
+		tx, err := wm.SendTx(test.wid, test.aid, test.to, test.amount, password)
 		if err != nil {
 			t.Errorf("SendTx[%d] failed unexpected error: %v", i, err)
 		} else {
@@ -245,67 +221,39 @@ func TestSummaryFollow(t *testing.T) {
 func TestEstimateFees(t *testing.T) {
 
 	tests := []struct {
-		aid    string
+		wid    string
+		aid    int64
 		to     string
 		amount uint64
-		tag    string
 	}{
-		//{
-		//	aid: "",
-		//	tag: "all",
-		//},
-		//{
-		//	aid: "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj@999",
-		//	tag: "id no exist",
-		//},
 		{
-			aid:    "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj@2147483648",
-			to:     "DdzFFzCqrhtAFVdoEx9jtTUhovkRnuMNUiCnuv8pQ2WYxhDVXAAhYJCVuydGSa1qJeSCYH8x6ZV8QjCaTiAHr9QReMaMRVtUQk9fMNTW",
-			amount: 6113197 - 255381,
-			tag:    "sendTx by acount id",
+			wid:    "Ae2tdPwUPEZ7R5jNgL8SKRtG8QFTi2QuQrsScydp3GJAPStvivfjTXPTSKX",
+			aid:    4257117526,
+			to:     "DdzFFzCqrhsz6RtTEaL1WzrjAMzVdLwwQdQ5ivAA58hSWnG9oTk9LgczLAcvEEDxgKegfcLwWBdihBaHyBQyGwQg8ReRq6R41qXbmXkG",
+			amount: 2500000,
 		},
 	}
 
+	//密钥32
+	password := common.NewString("1234qwer").SHA256()
 	for _, test := range tests {
 
-		result := callEstimateFeesAPI(test.aid, test.to, test.amount)
+		result, _ := wm.WalletClient.callEstimateFeesAPI(test.wid, test.aid, test.to, test.amount, password)
 		err := isError(result)
 		if err != nil {
 			log.Printf("%v\n", err)
 		}
-		fees := gjson.GetBytes(result, "Right.getCCoin")
+		fees := gjson.GetBytes(result, "data.estimatedAmount")
 		log.Printf("fees %s\n", fees.String())
 	}
 
 
 }
 
-func TestExportWallet(t *testing.T) {
-	tests := []struct {
-		wid    string
-	}{
-		//{
-		//	aid: "",
-		//	tag: "all",
-		//},
-		//{
-		//	aid: "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj@999",
-		//	tag: "id no exist",
-		//},
-		{
-			wid:    "Ae2tdPwUPEYyDotaZtiqRJMeu55Ukt9CHm3XMoWcxipoRC9QSxgU9KPjEMj",
-		},
-	}
-
-	for _, test := range tests {
-
-		callExportWalletAPI(test.wid, "1.key")
-	}
-}
 
 func TestDeleteWallet(t *testing.T) {
 	wid := "Ae2tdPwUPEZMYbseGswFLCyN1vG6CjyGNcAvNujB3JXbuovD6GVc535GTtB"
-	result := callDeleteWallet(wid)
+	result := wm.WalletClient.callDeleteWallet(wid)
 	content := gjson.ParseBytes(result)
 	t.Logf("DeleteWalle %v\n", content)
 }
@@ -315,11 +263,16 @@ func TestRestoreWallet(t *testing.T) {
 	password := common.NewString("12345678").SHA256()
 	words := "traffic horror food daughter account satisfy alley stuff paddle urge hollow cook arena there include know catalog sting brother crack math buddy identify demise"
 	//annual only pact client fatigue choice arrive achieve country indoor engage coil spatial engine among paper dawn tackle bonus task lock pepper deny eye
-	result := callCreateWalletAPI("test wallet", words, password, true)
+	result := wm.WalletClient.callCreateWalletAPI("test wallet", words, password, true)
 	content := gjson.ParseBytes(result)
 	t.Logf("RestoreWallet %v\n", content)
 }
 
 func TestBackupWalletkey(t *testing.T) {
 	//BackupWalletkey()
+}
+
+func TestGetNodeInfo(t *testing.T) {
+	ret := wm.WalletClient.callGetNodeInfo()
+	t.Log(string(ret))
 }

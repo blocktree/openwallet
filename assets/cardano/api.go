@@ -22,79 +22,98 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"crypto/x509"
+	"io/ioutil"
 )
 
-var (
-	api      = req.New()
-	apiDebug = false
-)
+type Client struct {
+	BaseURL     string
+	Debug       bool
+	Client      *req.Req
+	Header      req.Header
+}
 
-func init() {
+func NewClient(url string, debug bool, certsDir string) *Client {
+	c := Client{
+		BaseURL:     url,
+		Debug:       debug,
+	}
 
-	//改http
+	api := req.New()
+
+	//tls
+	pair, e := tls.LoadX509KeyPair(certsDir + "/client.crt", certsDir + "/client.key")
+	if e != nil {
+		log.Fatal("LoadX509KeyPair:", e)
+	}
 	trans, _ := api.Client().Transport.(*http.Transport)
-	trans.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	trans.TLSClientConfig = &tls.Config{
+		RootCAs:      loadCA(certsDir + "/ca.crt"),
+		Certificates: []tls.Certificate{pair},
+	}
 
+	c.Client = api
+
+	return &c
+}
+
+//加载ca证书
+func loadCA(caFile string) *x509.CertPool {
+	pool := x509.NewCertPool()
+
+	if ca, e := ioutil.ReadFile(caFile); e != nil {
+		log.Fatal("ReadFile: ", e)
+	} else {
+		pool.AppendCertsFromPEM(ca)
+	}
+	return pool
 }
 
 //callCreateWalletAPI 调用创建钱包接口
-func callCreateWalletAPI(name, words, passphrase string, create bool) []byte {
+func (c *Client) callCreateWalletAPI(name, words, passphrase string, create bool) []byte {
 
 	var (
-		//result         map[string]interface{}
-		cwInitMeta     = make(map[string]interface{}, 0)
 		body           = make(map[string]interface{}, 0)
-		cwBackupPhrase = make(map[string]interface{}, 0)
 		method         string
 	)
 
 	if create {
-		method = "wallets/new"
+		method = "create"
 	} else {
-		method = "wallets/restore"
+		method = "restore"
 	}
 
-	url := serverAPI + method
-	param := make(req.QueryParam, 0)
-	if len(passphrase) > 0 {
-		//设置密码
-		param["passphrase"] = passphrase
-	}
+	url := c.BaseURL + "wallets"
 
+	body["operation"] = method
 	//分割助记词
 	mnemonicArray := strings.Split(words, " ")
-	cwBackupPhrase["bpToList"] = mnemonicArray
+	body["backupPhrase"] = mnemonicArray
 
-	cwInitMeta["cwName"] = name
-	cwInitMeta["cwAssurance"] = "CWANormal"
-	cwInitMeta["cwUnit"] = 0
+	body["assuranceLevel"] = "normal"
+	body["name"] = name
 
-	body["cwInitMeta"] = cwInitMeta
-	body["cwBackupPhrase"] = cwBackupPhrase
+	if len(passphrase) > 0 {
+		//设置密码
+		body["spendingPassword"] = passphrase
+	}
 
-	//log.Println("开始请求钱包API")
-
-	r, err := api.Post(url, param, req.BodyJSON(&body))
+	r, err := c.Client.Post(url, req.BodyJSON(&body))
 	if err != nil {
 		log.Println(err)
 		return nil
 	}
-	//r.ToJSON(&result)
-	if apiDebug {
+
+	if c.Debug {
 		log.Printf("%+v\n", r)
 	}
 	return r.Bytes()
 }
 
-//GetWalletInfo 查询钱包信息，因ADA的接口限制，只接收1个wid
-func callGetWalletAPI(wid ...string) []byte {
-
-	var (
-	//result map[string]interface{}
-	)
-
+//GetWalletInfo 查询钱包信息,输入一个表示查询指定钱包，空则查询全部
+func (c *Client) callGetWalletAPI(wid ...string) []byte {
 	method := "wallets"
-	url := serverAPI + method
+	url := c.BaseURL + method
 	param := make(req.Param, 0)
 	if len(wid) > 0 && len(wid[0]) > 0 {
 		//查询wid的钱包信息
@@ -103,139 +122,134 @@ func callGetWalletAPI(wid ...string) []byte {
 		//查询全部钱包信息
 
 	}
-	r, err := api.Get(url, param)
+	r, err := c.Client.Get(url, param)
 	if err != nil {
 		log.Println(err)
 		return nil
 	}
 
-	if apiDebug {
+	if c.Debug {
 		log.Printf("%v\n", r)
 	}
 
 	/*
-		//success 返回结果
-		{
-			"Right": [{
-				"cwId": "Ae2tdPwUPEZ2CVLXYWiatEb2aSwaR573k4NY581fMde9N2GiCqtL7h6ybhU",
-				"cwMeta": {
-					"cwName": "Personal Wallet 1",
-					"cwAssurance": "CWANormal",
-					"cwUnit": 0
-				},
-				"cwAccountsNumber": 3,
-				"cwAmount": {
-					"getCCoin": "3829106"
-				},
-				"cwHasPassphrase": false,
-				"cwPassphraseLU": 1.517391540346574584e9
-			}, ...]
+	success 返回结果
+	{
+	  "data": {
+		"createdAt": "2032-07-26T13:46:01.035803",
+		"syncState": {
+		  "tag": "synced",
+		  "data": null
+		},
+		"balance": 41984918983627330,
+		"hasSpendingPassword": false,
+		"assuranceLevel": "normal",
+		"name": "My wallet",
+		"id": "J7rQqaLLHBFPrgJXwpktaMB1B1kQBXAyc2uRSfRPzNVGiv6TdxBzkPNBUWysZZZdhFG9gRy3sQFfX5wfpLbi4XTFGFxTg",
+		"spendingPasswordLastUpdate": "2029-04-05T12:13:13.241896"
+	  },
+	  "status": "success",
+	  "meta": {
+		"pagination": {
+		  "totalPages": 0,
+		  "page": 1,
+		  "perPage": 10,
+		  "totalEntries": 0
 		}
+	  }
+	}
 	*/
-
-	//r.ToJSON(&result)
 
 	return r.Bytes()
 }
 
 // callCreateNewAccountAPI 调用创建账户API，传入账户名，钱包id
-func callCreateNewAccountAPI(name, wid, passphrase string) []byte {
+func (c *Client) callCreateNewAccountAPI(name, wid, passphrase string) []byte {
 	var (
-		//result map[string]interface{}
 		body  map[string]interface{}
 		param = make(req.QueryParam, 0)
 	)
-
+	///api/v1/wallets/{walletId}/accounts
 	method := "accounts"
-	url := serverAPI + method
+	url := c.BaseURL + "wallets/" + wid + "/" + method
 
 	/*
 		传入参数
 		{
-			"caInitMeta": {
-				"caName": "string"
-			},
-			"caInitWId": "string"
+		"name": "𶂯",
+		"spendingPassword": ""
 		}
 	*/
 
 	body = map[string]interface{}{
-		"caInitMeta": map[string]interface{}{
-			"caName": name,
-		},
-		"caInitWId": wid,
+		"name": name,
+		"spendingPassword": passphrase,
 	}
 
-	//设置密码
-	param["passphrase"] = passphrase
+	param["walletId"] = wid
 
-	r, err := api.Post(url, param, req.BodyJSON(&body))
+	r, err := c.Client.Post(url, param, req.BodyJSON(&body))
 
 	if err != nil {
 		log.Println(err)
 		return nil
 	}
 
-	if apiDebug {
+	if c.Debug {
 		log.Printf("%v\n", r)
 	}
 
 	/*
 		success 返回结果
 		{
-			"Right": {
-				"caId": "Ae2tdPwUPEZKrS6hL1E9XgKSet8ydFYHQkV3gmEG8RGUwh5XKugoUFEk7Lx@2237891267",
-				"caMeta": {
-					"caName": "chance"
-				},
-				"caAddresses": [{
-					"cadId": "DdzFFzCqrht5DnfoXe47MEs12Tkhzd9JHkZ1f1QDMy1FEFsZd3UDRCHcjQmkNSX5j6w8L9gbm5J1VGbz59yjjsX2AL85A7FYUmHMrNXe",
-					"cadAmount": {
-						"getCCoin": "0"
-					},
-					"cadIsUsed": false,
-					"cadIsChange": false
-				}],
-				"caAmount": {
-					"getCCoin": "0"
-				}
+		  "data": {
+			"amount": 11091176260625604,
+			"addresses": [
+			  {
+				"used": true,
+				"changeAddress": true,
+				"id": "Ae2tdPwUPEZ3hmyBxBGfSLZHzETDof8afvg1vFogbukKJS75xChNyvwiuR6"
+			  }
+			],
+			"name": "My account",
+			"walletId": "J7rQqaLLHBFPrgJXwpktaMB1B1kQBXAyc2uRSfRPzNVGiv6TdxBzkPNBUWysZZZdhFG9gRy3sQFfX5wfpLbi4XTFGFxTg",
+			"index": 1
+		  },
+		  "status": "success",
+		  "meta": {
+			"pagination": {
+			  "totalPages": 0,
+			  "page": 1,
+			  "perPage": 10,
+			  "totalEntries": 0
 			}
-		}
-
-		//failed 返回错误
-		{
-			"Left": {
-				"tag": "RequestError",
-				"contents": "Passphrase doesn't match"
-			}
-		}
+		  }
+	}
 	*/
-	//r.ToJSON(&result)
 
 	return r.Bytes()
 }
 
 // callGetAccountsAPI 获取账户信息
-func callGetAccountsAPI(accountId ...string) []byte {
+func (c *Client) callGetAccountsAPI(wid string, accountId ...string) []byte {
 
 	var (
-		//result map[string]interface{}
 		param = make(req.QueryParam, 0)
 	)
-
+	///api/v1/wallets/{walletId}/accounts/{accountId}
 	method := "accounts"
-	url := serverAPI + method
+	url := c.BaseURL + "wallets/" + wid + "/" + method
 	if len(accountId) > 0 && len(accountId[0]) > 0 {
 		//查询wid的钱包信息
-		param["accountId"] = accountId[0]
+		url = fmt.Sprint(url, "/", accountId[0])
 	}
-	r, err := api.Get(url, param)
+	r, err := c.Client.Get(url, param)
 	if err != nil {
 		log.Println(err)
 		return nil
 	}
-	//r.ToJSON(&result)
-	if apiDebug {
+
+	if c.Debug {
 		log.Printf("%v\n", r)
 	}
 
@@ -244,22 +258,17 @@ func callGetAccountsAPI(accountId ...string) []byte {
 }
 
 // callGetAccountByIDAPI 获取置顶aid账户的信息
-func callGetAccountByIDAPI(accountId string) []byte {
-
-	var (
-	//result map[string]interface{}
-	//param = make(req.QueryParam, 0)
-	)
-
+func (c *Client) callGetAccountByIDAPI(wid, accountId string) []byte {
+	///api/v1/wallets/{walletId}/accounts/{accountId}
 	method := "accounts"
-	url := fmt.Sprintf("%s%s/%s", serverAPI, method, accountId)
-	r, err := api.Get(url)
+	url := fmt.Sprintf("%swallets/%s/%s/%s", c.BaseURL, wid, method, accountId)
+	r, err := c.Client.Get(url)
 	if err != nil {
 		log.Println(err)
 		return nil
 	}
-	//r.ToJSON(&result)
-	if apiDebug {
+
+	if c.Debug {
 		log.Printf("%+v\n", r)
 	}
 
@@ -268,85 +277,136 @@ func callGetAccountByIDAPI(accountId string) []byte {
 }
 
 // callCreateNewAddressAPI 调用创建账户地址
-// @param aid
-// @param passphrase
-func callCreateNewAddressAPI(aid, passphrase string) []byte {
+// @param wid        钱包id
+// @param aid        账户index
+//@param passphrase  钱包密码
+func (c *Client) callCreateNewAddressAPI(wid string, aid int64, passphrase string) []byte {
 	var (
 		//result map[string]interface{}
-		body  interface{}
+	    body = make(map[string]interface{})
 		param = make(req.QueryParam, 0)
 	)
 
 	method := "addresses"
-	url := serverAPI + method
+	url := c.BaseURL + method
 
 	/*
 		传入参数
-		CAccountId
+		{
+			"accountIndex": 2,
+			"walletId": "J7rQqaLLHBFPrgJXwpktaMB1B1kQBXAyc2uRSfRPzNVGiv6TdxBzkPNBUWysZZZdhFG9gRy3sQFfX5wfpLbi4XTFGFxTg",
+			"spendingPassword": "0001010001010101010200020001010201000200010201020202000200010000"
+		}
 	*/
 
-	body = aid
 
 	//设置密码
-	param["passphrase"] = passphrase
+	body["spendingPassword"] = passphrase
+	body["accountIndex"] = aid
+	body["walletId"] = wid
 
-	r, err := api.Post(url, param, req.BodyJSON(&body))
+	r, err := c.Client.Post(url, param, req.BodyJSON(&body))
 
 	if err != nil {
 		log.Println(err)
 		return nil
 	}
 
-	//log.Printf("%+v\n", r)
+	if c.Debug {
+		log.Printf("%+v\n", r)
+	}
 
 	/*
 		success 返回结果
-		{
-		  "cadId": "string",
-		  "cadAmount": {
-			"getCCoin": "string"
-		  },
-		  "cadIsUsed": true,
-		  "cadIsChange": true
+	{
+		"data": {
+			"used": false,
+			"changeAddress": true,
+			"id": "YQdiVKZwx4SzRjJNqf6TNvRa8PYARGWRhPYHuJzfxAy5yydanhUhuuhE3j9LTuV5FBytAfN"
+		},
+		"status": "success",
+		"meta": {
+		"pagination": {
+			"totalPages": 0,
+			"page": 1,
+			"perPage": 10,
+			"totalEntries": 0
+			}
 		}
+	}
+
 
 	*/
-	//r.ToJSON(&result)
 
 	return r.Bytes()
 }
 
 // callSendTxAPI 发送交易
-// @param from
-// @param to
-// @param amount
-// @param passphrase
-func callSendTxAPI(from, to string, amount uint64, passphrase string) ([]byte, error) {
+// @param wid           钱包ID
+// @param aid           账户index
+// @param to            接收地址
+// @param amount        发送数量
+// @param passphrase    钱包密码
+func (c *Client) callSendTxAPI(wid string, aid int64, to string, amount uint64, passphrase string) ([]byte, error) {
 	var (
-		//result map[string]interface{}
 		body  map[string]interface{}
 		param = make(req.QueryParam, 0)
 	)
 
-	//https://127.0.0.1:8090/api/txs/payments/{from}/{to}/{amount}
-	method := "txs/payments"
-	url := fmt.Sprintf("%s%s/%s/%s/%d", serverAPI, method, from, to, amount)
+	///api/v1/transactions
+	method := "transactions"
+	url := c.BaseURL + method
+	//参数
+	/*
+	{
+		  "groupingPolicy": null,
+		  "destinations": [
+			{
+			  "amount": 27889372662178400,
+			  "address": "AL91N9VXRTCv3vnvq89Wj4DxEV6atyovsJoi7fBR7vU9bvecgDi4wxmS78FfdjxcBB99JeqkFjjxCAZL8czYPwSGX6frfPFt8nLnyp3V4Yh362d48Mz"
+			},
+			{
+			  "amount": 33829516096667580,
+			  "address": "2cWKMJemoBamMBMBYJWe5aQR3xitBLbjVbt4yxQUWUWC8KGGHvYF8BfUQwmAs5je5fSii"
+			}
+		  ],
+		  "source": {
+			"accountIndex": 2,
+			"walletId": "J7rQqaLLHBFPrgJXwpktaMB1B1kQBXAyc2uRSfRPzNVGiv6TdxBzkPNBUWysZZZdhFG9gRy3sQFfX5wfpLbi4XTFGFxTg"
+		  },
+		  "spendingPassword": "0200020002020202010000010101020100020001020201020001000101010101"
+		}
+	 */
 
 	body = map[string]interface{}{
 		"groupingPolicy": "OptimizeForHighThroughput",
+		"spendingPassword": passphrase,
 	}
 
-	//设置密码
-	param["passphrase"] = passphrase
+	source := map[string]interface{} {
+		"accountIndex": aid,
+		"walletId": wid,
+	}
 
-	r, err := api.Post(url, param, req.BodyJSON(&body))
+	dst1 := map[string]interface{} {
+		"amount": amount,
+		"address": to,
+	}
+
+	body["source"] = source
+
+	var dst []interface{}
+	dst = append(dst, dst1)
+	body["destinations"] = dst
+
+	r, err := c.Client.Post(url, param, req.BodyJSON(&body))
 
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
-	if apiDebug {
+	if c.Debug {
 		log.Printf("%v\n", r)
 	}
 
@@ -354,64 +414,77 @@ func callSendTxAPI(from, to string, amount uint64, passphrase string) ([]byte, e
 }
 
 //callEstimateFeesAPI 计算矿工费
-func callEstimateFeesAPI(from, to string, amount uint64) []byte {
+func (c *Client) callEstimateFeesAPI(wid string, aid int64, to string, amount uint64, passphrase string) ([]byte, error){
 	var (
-		//result map[string]interface{}
 		body  map[string]interface{}
 		param = make(req.QueryParam, 0)
 	)
 
-	//https://127.0.0.1:8090/api/txs/payments/{from}/{to}/{amount}
-	method := "txs/fee"
-	url := fmt.Sprintf("%s%s/%s/%s/%d", serverAPI, method, from, to, amount)
+	///api/v1/transactions
+	method := "transactions/fees"
+	url := c.BaseURL + method
+	//参数参考例子
+	/*
+	{
+		  "groupingPolicy": null,
+		  "destinations": [
+			{
+			  "amount": 27889372662178400,
+			  "address": "AL91N9VXRTCv3vnvq89Wj4DxEV6atyovsJoi7fBR7vU9bvecgDi4wxmS78FfdjxcBB99JeqkFjjxCAZL8czYPwSGX6frfPFt8nLnyp3V4Yh362d48Mz"
+			},
+			{
+			  "amount": 33829516096667580,
+			  "address": "2cWKMJemoBamMBMBYJWe5aQR3xitBLbjVbt4yxQUWUWC8KGGHvYF8BfUQwmAs5je5fSii"
+			}
+		  ],
+		  "source": {
+			"accountIndex": 2,
+			"walletId": "J7rQqaLLHBFPrgJXwpktaMB1B1kQBXAyc2uRSfRPzNVGiv6TdxBzkPNBUWysZZZdhFG9gRy3sQFfX5wfpLbi4XTFGFxTg"
+		  },
+		  "spendingPassword": "0200020002020202010000010101020100020001020201020001000101010101"
+		}
+	 */
 
 	body = map[string]interface{}{
 		"groupingPolicy": "OptimizeForHighThroughput",
+		"spendingPassword": passphrase,
 	}
 
-	r, err := api.Post(url, param, req.BodyJSON(&body))
+	source := map[string]interface{} {
+		"accountIndex": aid,
+		"walletId": wid,
+	}
+
+	dst1 := map[string]interface{} {
+		"amount": amount,
+		"address": to,
+	}
+
+	body["source"] = source
+
+	var dst []interface{}
+	dst = append(dst, dst1)
+	body["destinations"] = dst
+
+	//设置密码
+	param["passphrase"] = passphrase
+
+	r, err := c.Client.Post(url, param, req.BodyJSON(&body))
 
 	if err != nil {
 		log.Println(err)
-		return nil
+		return nil, err
 	}
 
-	if apiDebug {
+	if c.Debug {
 		log.Printf("%v\n", r)
 	}
 
-	return r.Bytes()
-}
-
-//callExportWalletAPI 导出钱包	[这个API不起作用]
-func callExportWalletAPI(wid, fileName string) {
-
-	var (
-		body interface{}
-	)
-
-	//https://127.0.0.1:8090/api/backup/export/{walletId}
-	method := "backup/export"
-	url := fmt.Sprintf("%s%s/%s", serverAPI, method, wid)
-
-	//home/chbtc/openwallet/
-	body = "/home/chbtc/openwallet/"
-
-	r, err := api.Get(url, req.BodyJSON(&body))
-
-	if err != nil {
-		log.Println(err)
-	}
-
-	if apiDebug {
-		log.Printf("%+v\n", r)
-	}
-
-	r.ToFile(fileName)
+	return r.Bytes(), nil
 }
 
 //callDeleteWallet 调用删除钱包所有信息API
-func callDeleteWallet(wid string) []byte {
+func (c *Client) callDeleteWallet(wid string) []byte {
 	var (
 	//result map[string]interface{}
 	//body  map[string]interface{}
@@ -420,17 +493,29 @@ func callDeleteWallet(wid string) []byte {
 
 	//https://127.0.0.1:8090/api/wallets/{walletId}
 	method := "wallets"
-	url := fmt.Sprintf("%s%s/%s", serverAPI, method, wid)
+	url := fmt.Sprintf("%s%s/%s", c.BaseURL, method, wid)
 
-	r, err := api.Delete(url)
+	r, err := c.Client.Delete(url)
 
 	if err != nil {
 		log.Println(err)
 		return nil
 	}
 
-	if apiDebug {
+	if c.Debug {
 		log.Printf("%v\n", r)
+	}
+
+	return r.Bytes()
+}
+
+//查询节点状态信息
+func (c *Client) callGetNodeInfo() []byte {
+	url := c.BaseURL + "node-info"
+	r, err := c.Client.Get(url)
+	if err != nil {
+		log.Println(err)
+		return nil
 	}
 
 	return r.Bytes()

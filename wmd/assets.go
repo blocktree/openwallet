@@ -93,7 +93,7 @@ type NodeManagerInterface interface {
 func init() {
 	//注册钱包管理工具
 	log.Notice("Wallet Manager Driver Load Successfully.")
-	assets.RegAssets(cardano.Symbol, &cardano.WalletManager{})
+	assets.RegAssets(cardano.Symbol, cardano.NewWalletManager())
 	assets.RegAssets(bytom.Symbol, &bytom.WalletManager{})
 	//RegWMD(strings.ToLower(bopo.Symbol), &bopo.WalletManager{})
 	assets.RegAssets(bitcoincash.Symbol, &bitcoincash.WalletManager{})
