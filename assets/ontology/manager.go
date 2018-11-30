@@ -16,22 +16,23 @@
 package ontology
 
 import (
-	"github.com/blocktree/OpenWallet/openwallet"
-	"github.com/blocktree/OpenWallet/hdkeystore"
-	"path/filepath"
 	"errors"
+	"path/filepath"
+
+	"github.com/blocktree/OpenWallet/hdkeystore"
+	"github.com/blocktree/OpenWallet/openwallet"
 )
 
 type WalletManager struct {
-
 	openwallet.AssetsAdapterBase
 
 	Storage        *hdkeystore.HDKeystore        //秘钥存取
 	WalletClient   *Client                       // 节点客户端
+	LocalClient    *Local                        // 本地API客户端
 	ExplorerClient *Explorer                     // 浏览器API客户端
 	Config         *WalletConfig                 //钱包管理配置
 	WalletsInSum   map[string]*openwallet.Wallet //参与汇总的钱包
-	Blockscanner   *BTCBlockScanner              //区块扫描器
+	Blockscanner   *ONTBlockScanner              //区块扫描器
 	Decoder        openwallet.AddressDecoder     //地址编码器
 	TxDecoder      openwallet.TransactionDecoder //交易单编码器
 }
@@ -44,7 +45,7 @@ func NewWalletManager() *WalletManager {
 	//参与汇总的钱包
 	wm.WalletsInSum = make(map[string]*openwallet.Wallet)
 	//区块扫描器
-	wm.Blockscanner = NewBTCBlockScanner(&wm)
+	wm.Blockscanner = NewONTBlockScanner(&wm)
 	//wm.Decoder = NewAddressDecoder(&wm)
 	//wm.TxDecoder = NewTransactionDecoder(&wm)
 	return &wm

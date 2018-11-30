@@ -15,7 +15,18 @@
 
 package ontology
 
-import "github.com/blocktree/OpenWallet/openwallet"
+import (
+	"encoding/hex"
+	"fmt"
+	"math/big"
+	"sort"
+	"strings"
+
+	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/go-owcdrivers/btcTransaction"
+	"github.com/blocktree/go-owcdrivers/ontologyTransaction"
+)
 
 type TransactionDecoder struct {
 	openwallet.TransactionDecoderBase
@@ -27,4 +38,318 @@ func NewTransactionDecoder(wm *WalletManager) *TransactionDecoder {
 	decoder := TransactionDecoder{}
 	decoder.wm = wm
 	return &decoder
+}
+
+//CreateRawTransaction 创建交易单
+func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
+	return decoder.CreateONTRawTransaction(wrapper, rawTx)
+}
+
+//SignRawTransaction 签名交易单
+func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
+	return decoder.SignONTRawTransaction(wrapper, rawTx)
+}
+
+//VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
+func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
+	return decoder.VerifyONTRawTransaction(wrapper, rawTx)
+}
+
+func (decoder *TransactionDecoder) CreateONTRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
+
+	var (
+		txState  ontologyTransaction.TxState
+		gasPrice = ontologyTransaction.DefaultGasPrice
+		gasLimit = ontologyTransaction.DefaultGasLimit
+	)
+
+	addresses, err := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID)
+
+	if err != nil {
+		return err
+	}
+
+	if len(addresses) == 0 {
+		return fmt.Errorf("No addresses found in wallet [%s]", rawTx.Account.AccountID)
+	}
+
+	addressesBalanceList := make([]AddrBalance, 0, len(addresses))
+
+	for i, addr := range addresses {
+		balance, err := decoder.wm.getBalanceByLocal(addr.Address)
+
+		if err != nil {
+			return err
+		}
+		balance.index = i
+		addressesBalanceList = append(addressesBalanceList, *balance)
+	}
+
+	sort.Slice(addressesBalanceList, func(i int, j int) bool {
+		return addressesBalanceList[i].ONTBalance.Cmp(addressesBalanceList[j].ONTBalance) < 0
+	})
+
+	fee := big.NewInt(int64(gasLimit * gasPrice))
+
+	var amountStr, to string
+	for k, v := range rawTx.To {
+		to = k
+		amountStr = v
+		break
+	}
+	signatureMap := make(map[string][]*openwallet.KeySignature)
+	keySignList := make([]*openwallet.KeySignature, 0, 1)
+
+	if rawTx.Coin.ContractID == ontologyTransaction.ONGContractAddress {
+		amount, err := convertFlostStringToBigInt(amountStr)
+		if err != nil {
+			return err
+		}
+
+		if amount.Cmp(big.NewInt(0)) == 0 { // ONG unbound
+			txState.AssetType = ontologyTransaction.AssetONGWithdraw
+			txState.From = to
+			txState.To = to
+
+			for i, a := range addressesBalanceList {
+				if a.Address != to {
+					continue
+				}
+				if a.ONGUnbound.Cmp(big.NewInt(0)) == 0 {
+					log.Error("No unbound ONG to withdraw in address : "+to, err)
+					return err
+				}
+
+				if a.ONGUnbound.Cmp(fee) <= 0 {
+					log.Error("Unbound ONG is not enough to withdraw in address : "+to, err)
+					return err
+				}
+
+				txState.Amount = amount.Sub(a.ONGUnbound, fee).Uint64()
+				keySignList = append(keySignList, &openwallet.KeySignature{
+					Address: &openwallet.Address{
+						AccountID:   addresses[addressesBalanceList[i].index].AccountID,
+						Address:     addresses[addressesBalanceList[i].index].Address,
+						PublicKey:   addresses[addressesBalanceList[i].index].PublicKey,
+						Alias:       addresses[addressesBalanceList[i].index].Alias,
+						Tag:         addresses[addressesBalanceList[i].index].Tag,
+						Index:       addresses[addressesBalanceList[i].index].Index,
+						HDPath:      addresses[addressesBalanceList[i].index].HDPath,
+						WatchOnly:   addresses[addressesBalanceList[i].index].WatchOnly,
+						Symbol:      addresses[addressesBalanceList[i].index].Symbol,
+						Balance:     addresses[addressesBalanceList[i].index].Balance,
+						IsMemo:      addresses[addressesBalanceList[i].index].IsMemo,
+						Memo:        addresses[addressesBalanceList[i].index].Memo,
+						CreatedTime: addresses[addressesBalanceList[i].index].CreatedTime,
+					},
+				})
+				break
+			}
+
+			if amount.Cmp(big.NewInt(0)) == 0 {
+				log.Error("Address : "+to+" not found!", err)
+				return err
+			}
+
+		} else { // ONG transaction
+			txState.AssetType = ontologyTransaction.AssetONG
+			txState.Amount = amount.Uint64()
+			txState.To = to
+			count := big.NewInt(0)
+			countList := []uint64{}
+			for _, a := range addressesBalanceList {
+				if a.ONGBalance.Cmp(amount) < 0 {
+					count.Add(count, a.ONGBalance)
+					if count.Cmp(amount) >= 0 {
+						countList = append(countList, a.ONGBalance.Sub(a.ONGBalance, count.Sub(count, amount)).Uint64())
+						log.Error("The ONG of the account is enough,"+
+							" but cannot be sent in just one transaction!\n"+
+							"the amount can be sent in "+string(len(countList))+
+							"times with amounts :\n"+strings.Replace(strings.Trim(fmt.Sprint(countList), "[]"), " ", ",", -1), err)
+						return err
+					} else {
+						countList = append(countList, a.ONGBalance.Uint64())
+					}
+					continue
+				}
+				txState.From = a.Address
+				break
+			}
+
+			if txState.From == "" {
+				log.Error("No enough ONT to send!", err)
+				return err
+			}
+		}
+	} else { // ONT transaction
+		amount, err := convertIntStringToBigInt(amountStr)
+		if err != nil {
+			return err
+		}
+		txState.AssetType = ontologyTransaction.AssetONT
+		txState.Amount = amount.Uint64()
+		txState.To = to
+		count := big.NewInt(0)
+		countList := []uint64{}
+		for _, a := range addressesBalanceList {
+			if a.ONTBalance.Cmp(amount) < 0 {
+				count.Add(count, a.ONTBalance)
+				if count.Cmp(amount) >= 0 {
+					countList = append(countList, a.ONTBalance.Sub(a.ONTBalance, count.Sub(count, amount)).Uint64())
+					log.Error("The ONT of the account is enough,"+
+						" but cannot be sent in just one transaction!\n"+
+						"the amount can be sent in "+string(len(countList))+
+						"times with amounts :\n"+strings.Replace(strings.Trim(fmt.Sprint(countList), "[]"), " ", ",", -1), err)
+					return err
+				} else {
+					countList = append(countList, a.ONTBalance.Uint64())
+				}
+				continue
+			}
+			txState.From = a.Address
+			break
+		}
+
+		if txState.From == "" {
+			log.Error("No enough ONT to send!", err)
+			return err
+		}
+	}
+
+	feeInONG, _ := convertBigIntToFloatDecimal(fee.String())
+
+	rawTx.Fees = feeInONG.String()
+
+	txHex, err := ontologyTransaction.CreateEmptyRawTransaction(gasPrice, gasLimit, txState)
+	if err != nil {
+		return nil
+	}
+
+	txHash, err := ontologyTransaction.CreateRawTransactionHashForSig(txHex)
+	if err != nil {
+		return nil
+	}
+	keySignList[0].Message = txHash.Hash
+	rawTx.RawHex = txHex
+
+	rawTx.Signatures = signatureMap
+
+	rawTx.FeeRate = big.NewInt(int64(gasPrice)).String()
+
+	rawTx.IsBuilt = true
+
+	return nil
+}
+
+func (decoder *TransactionDecoder) SignONTRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
+	key, err := wrapper.HDKey()
+	if err != nil {
+		return nil
+	}
+
+	keySignatures := rawTx.Signatures[rawTx.Account.AccountID]
+
+	if keySignatures != nil {
+		for _, keySignature := range keySignatures {
+
+			childKey, err := key.DerivedKeyWithPath(keySignature.Address.HDPath, keySignature.EccType)
+			keyBytes, err := childKey.GetPrivateKeyBytes()
+			if err != nil {
+				return err
+			}
+			log.Debug("privateKey:", hex.EncodeToString(keyBytes))
+
+			//privateKeys = append(privateKeys, keyBytes)
+			txHash := ontologyTransaction.TxHash{
+				Hash: keySignature.Message,
+				Normal: &ontologyTransaction.NormalTx{
+					Address: keySignature.Address.Address,
+					SigType: btcTransaction.SigHashAll,
+				},
+			}
+
+			log.Debug("hash:", txHash.GetTxHashHex())
+
+			//签名交易
+			/////////交易单哈希签名
+			sigPub, err := ontologyTransaction.SignRawTransactionHash(txHash.GetTxHashHex(), keyBytes)
+			if err != nil {
+				return fmt.Errorf("transaction hash sign failed, unexpected error: %v", err)
+			} else {
+
+				//for i, s := range sigPub {
+				//	log.Info("第", i+1, "个签名结果")
+				//	log.Info()
+				//	log.Info("对应的公钥为")
+				//	log.Info(hex.EncodeToString(s.Pubkey))
+				//}
+
+				//txHash.Normal.SigPub = *sigPub
+			}
+
+			keySignature.Signature = hex.EncodeToString(sigPub.Signature)
+		}
+	}
+
+	log.Info("transaction hash sign success")
+
+	rawTx.Signatures[rawTx.Account.AccountID] = keySignatures
+
+	return nil
+}
+
+func (decoder *TransactionDecoder) VerifyONTRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
+
+	var (
+		emptyTrans = rawTx.RawHex
+		transHash  = make([]ontologyTransaction.TxHash, 0)
+	)
+
+	for accountID, keySignatures := range rawTx.Signatures {
+		log.Debug("accountID Signatures:", accountID)
+		for _, keySignature := range keySignatures {
+
+			signature, _ := hex.DecodeString(keySignature.Signature)
+			pubkey, _ := hex.DecodeString(keySignature.Address.PublicKey)
+
+			signaturePubkey := ontologyTransaction.SigPub{
+				Signature: signature,
+				PublicKey: pubkey,
+			}
+
+			//sigPub = append(sigPub, signaturePubkey)
+
+			txHash := ontologyTransaction.TxHash{
+				Hash: keySignature.Message,
+				Normal: &ontologyTransaction.NormalTx{
+					Address: keySignature.Address.Address,
+					SigType: btcTransaction.SigHashAll,
+					SigPub:  signaturePubkey,
+				},
+			}
+
+			transHash = append(transHash, txHash)
+
+			log.Debug("Signature:", keySignature.Signature)
+			log.Debug("PublicKey:", keySignature.Address.PublicKey)
+		}
+	}
+
+	signedTrans, err := ontologyTransaction.InsertSignatureIntoEmptyTransaction(emptyTrans, transHash[0].Normal.SigPub)
+	if err != nil {
+		return fmt.Errorf("transaction compose signatures failed")
+	}
+
+	pass := ontologyTransaction.VerifyRawTransaction(signedTrans)
+
+	if pass {
+		log.Debug("transaction verify passed")
+		rawTx.IsCompleted = true
+		rawTx.RawHex = signedTrans
+	} else {
+		log.Debug("transaction verify failed")
+		rawTx.IsCompleted = false
+	}
+
+	return nil
 }

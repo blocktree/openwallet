@@ -32,5 +32,8 @@ func init() {
 	//explorerURL := "http://192.168.32.107:20003/insight-api/"
 	//tw.ExplorerClient = NewExplorer(explorerURL, true)
 
+	localURL := "http://localhost:20334/api/v1/"
+	tw.LocalClient = NewLocal(localURL, true)
+
 	tw.Config.RPCServerType = RPCServerCore
 }

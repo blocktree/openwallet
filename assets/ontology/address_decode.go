@@ -16,8 +16,11 @@
 package ontology
 
 import (
-	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"fmt"
+
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
+	"github.com/blocktree/go-owcdrivers/ontologyTransaction"
+	owcrypt "github.com/blocktree/go-owcrypt"
 )
 
 type addressDecoder struct {
@@ -29,6 +32,20 @@ func NewAddressDecoder(wm *WalletManager) *addressDecoder {
 	decoder := addressDecoder{}
 	decoder.wm = wm
 	return &decoder
+}
+
+//PublicKeyToAddress 公钥转地址
+func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (string, error) {
+	cfg := addressEncoder.ONT_Address
+
+	pub = append([]byte{byte(len(pub))}, pub...)
+	pub = append(pub, ontologyTransaction.OpCodeCheckSig)
+
+	pkHash := owcrypt.Hash(pub, 0, owcrypt.HASH_ALG_HASH160)
+
+	address := addressEncoder.AddressEncode(pkHash, cfg)
+
+	return address, nil
 }
 
 //ScriptPubKeyToBech32Address scriptPubKey转Bech32地址
