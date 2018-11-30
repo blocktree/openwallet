@@ -16,12 +16,13 @@
 package ontology
 
 import (
+	"path/filepath"
+	"testing"
+
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/pborman/uuid"
-	"path/filepath"
-	"testing"
 )
 
 func TestGetBTCBlockHeight(t *testing.T) {
@@ -33,8 +34,8 @@ func TestGetBTCBlockHeight(t *testing.T) {
 	t.Logf("GetBlockHeight height = %d \n", height)
 }
 
-func TestBTCBlockScanner_GetCurrentBlockHeight(t *testing.T) {
-	bs := NewBTCBlockScanner(tw)
+func TestONTBlockScanner_GetCurrentBlockHeight(t *testing.T) {
+	bs := NewONTBlockScanner(tw)
 	header, _ := bs.GetCurrentBlockHeader()
 	t.Logf("GetCurrentBlockHeight height = %d \n", header.Height)
 	t.Logf("GetCurrentBlockHeight hash = %v \n", header.Hash)
@@ -52,7 +53,7 @@ func TestGetLocalNewBlock(t *testing.T) {
 }
 
 func TestSaveLocalBlockHeight(t *testing.T) {
-	bs := NewBTCBlockScanner(tw)
+	bs := NewONTBlockScanner(tw)
 	header, _ := bs.GetCurrentBlockHeader()
 	t.Logf("SaveLocalBlockHeight height = %d \n", header.Height)
 	t.Logf("GetLocalBlockHeight hash = %v \n", header.Hash)
@@ -126,18 +127,18 @@ func TestGetTxIDsInMemPool(t *testing.T) {
 	t.Logf("GetTxIDsInMemPool = %v \n", txids)
 }
 
-func TestBTCBlockScanner_scanning(t *testing.T) {
+func TestONTBlockScanner_scanning(t *testing.T) {
 
 	//accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
 	//address := "miphUAzHHeM1VXGSFnw6owopsQW3jAQZAk"
 
 	//wallet, err := tw.GetWalletInfo(accountID)
 	//if err != nil {
-	//	t.Errorf("BTCBlockScanner_scanning failed unexpected error: %v\n", err)
+	//	t.Errorf("ONTBlockScanner_scanning failed unexpected error: %v\n", err)
 	//	return
 	//}
 
-	bs := NewBTCBlockScanner(tw)
+	bs := NewONTBlockScanner(tw)
 
 	//bs.DropRechargeRecords(accountID)
 
@@ -149,7 +150,7 @@ func TestBTCBlockScanner_scanning(t *testing.T) {
 	bs.ScanBlockTask()
 }
 
-func TestBTCBlockScanner_Run(t *testing.T) {
+func TestONTBlockScanner_Run(t *testing.T) {
 
 	var (
 		endRunning = make(chan bool, 1)
@@ -160,11 +161,11 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 
 	//wallet, err := tw.GetWalletInfo(accountID)
 	//if err != nil {
-	//	t.Errorf("BTCBlockScanner_Run failed unexpected error: %v\n", err)
+	//	t.Errorf("ONTBlockScanner_Run failed unexpected error: %v\n", err)
 	//	return
 	//}
 
-	bs := NewBTCBlockScanner(tw)
+	bs := NewONTBlockScanner(tw)
 
 	//bs.DropRechargeRecords(accountID)
 
@@ -178,7 +179,7 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 
 }
 
-func TestBTCBlockScanner_ScanBlock(t *testing.T) {
+func TestONTBlockScanner_ScanBlock(t *testing.T) {
 
 	//accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
 	//address := "msnYsBdBXQZqYYqNNJZsjShzwCx9fJVSin"
@@ -188,7 +189,7 @@ func TestBTCBlockScanner_ScanBlock(t *testing.T) {
 	bs.ScanBlock(1384961)
 }
 
-func TestBTCBlockScanner_ExtractTransaction(t *testing.T) {
+func TestONTBlockScanner_ExtractTransaction(t *testing.T) {
 
 	//accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
 	//address := "msHemmfSZ3au6h9S1annGcTGrTVryRbSFV"
@@ -222,9 +223,9 @@ func TestWallet_GetRecharges(t *testing.T) {
 	//}
 }
 
-//func TestBTCBlockScanner_DropRechargeRecords(t *testing.T) {
+//func TestONTBlockScanner_DropRechargeRecords(t *testing.T) {
 //	accountID := "W4ruoAyS5HdBMrEeeHQTBxo4XtaAixheXQ"
-//	bs := NewBTCBlockScanner(tw)
+//	bs := NewONTBlockScanner(tw)
 //	bs.DropRechargeRecords(accountID)
 //}
 
@@ -240,8 +241,8 @@ func TestGetUnscanRecords(t *testing.T) {
 	}
 }
 
-func TestBTCBlockScanner_RescanFailedRecord(t *testing.T) {
-	bs := NewBTCBlockScanner(tw)
+func TestONTBlockScanner_RescanFailedRecord(t *testing.T) {
+	bs := NewONTBlockScanner(tw)
 	bs.RescanFailedRecord()
 }
 
@@ -253,7 +254,7 @@ func TestFullAddress(t *testing.T) {
 	}
 }
 
-func TestBTCBlockScanner_GetTransactionsByAddress(t *testing.T) {
+func TestONTBlockScanner_GetTransactionsByAddress(t *testing.T) {
 	coin := openwallet.Coin{
 		Symbol:     "BTC",
 		IsContract: false,
@@ -285,4 +286,3 @@ func TestGetLocalBlock(t *testing.T) {
 	}
 	log.Info("blocks = ", len(blocks))
 }
-

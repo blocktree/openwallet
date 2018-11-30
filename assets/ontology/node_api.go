@@ -19,9 +19,10 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
-	"github.com/blocktree/OpenWallet/log"
 )
 
 // A Client is a Bitcoin RPC client. It performs RPCs over HTTP using JSON
@@ -42,7 +43,6 @@ type Response struct {
 	Message string      `json:"message,omitempty"`
 	Id      string      `json:"id,omitempty"`
 }
-
 
 func NewClient(url, token string, debug bool) *Client {
 	c := Client{
@@ -147,8 +147,6 @@ func isError(result *gjson.Result) error {
 		return nil
 	}
 
-
-
 	errInfo := fmt.Sprintf("[%d]%s",
 		result.Get("error.code").Int(),
 		result.Get("error.message").String())
@@ -156,4 +154,3 @@ func isError(result *gjson.Result) error {
 
 	return err
 }
-

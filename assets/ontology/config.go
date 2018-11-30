@@ -16,19 +16,21 @@
 package ontology
 
 import (
-	"github.com/shopspring/decimal"
-	"time"
+	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
+
 	"github.com/blocktree/OpenWallet/common/file"
-	"fmt"
+	owcrypt "github.com/blocktree/go-owcrypt"
+	"github.com/shopspring/decimal"
 )
 
 const (
 	//币种
 	Symbol    = "ONT"
 	MasterKey = "Ontology seed"
-	//CurveType = owcrypt.ECC_CURVE_SECP256K1
+	CurveType = owcrypt.ECC_CURVE_SECP256R1
 )
 
 type WalletConfig struct {
