@@ -67,6 +67,7 @@ func (decoder *addressDecoder) PrivateKeyToWIF(priv []byte, isTestnet bool) (str
 func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (string, error) {
 
 	cfg := addressEncoder.BTC_mainnetAddressP2PKH
+
 	if decoder.wm.Config.IsTestNet {
 		cfg = addressEncoder.BTC_testnetAddressP2PKH
 	}

@@ -280,7 +280,7 @@ func TestTransfer_BTC(t *testing.T) {
 	accountID := "2m27uVj2xx645dDCEcGD1whPQGcB4fZv16TzBoLGCyKB"
 	to := "mp1JDsi7Dr2PkcWu1j4SUSTXJqXjFMaeVx"
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1.2", "", nil)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.2", "", nil)
 	if err != nil {
 		return
 	}
@@ -355,6 +355,36 @@ func TestTransfer_TRON(t *testing.T) {
 		return
 	}
 	_ = rawTx
+
+	_, err = testSignTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testVerifyTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testSubmitTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+}
+
+
+func TestTransfer_BCH(t *testing.T) {
+	tm := testInitWalletManager()
+	//1AYKNVJKqfrCtiDP7iKscZA8HB7tbdzZmK
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "3a9izmhbaDLRitpw811mjRM5JwuGV7i5LB6pb6Awe844"
+	to := "1MfQh4Lvk4xmRPcV5VbWdFmQshErHgPCh2"
+
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.2", "", nil)
+	if err != nil {
+		return
+	}
 
 	_, err = testSignTransactionStep(tm, rawTx)
 	if err != nil {

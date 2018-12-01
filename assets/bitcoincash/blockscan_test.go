@@ -135,7 +135,7 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 
 	//bs.DropRechargeRecords(accountID)
 
-	bs.SetRescanBlockHeight(1384586)
+	bs.SetRescanBlockHeight(558337)
 
 	//bs.AddAddress(address, accountID)
 

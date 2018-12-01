@@ -628,6 +628,7 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 	wm.Config.RpcPassword = c.String("rpcPassword")
 	wm.Config.NodeInstallPath = c.String("nodeInstallPath")
 	wm.Config.IsTestNet, _ = c.Bool("isTestNet")
+	wm.Config.SupportSegWit, _ = c.Bool("supportSegWit")
 	wm.Config.WalletPassword = c.String("walletPassword")
 	wm.Config.OmniTransferCost = c.String("omniTransferCost")
 	wm.Config.OmniCoreAPI = c.String("omniCoreAPI")
@@ -650,7 +651,7 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 	if wm.Config.RPCServerType == RPCServerCore {
 		wm.WalletClient = NewClient(wm.Config.ServerAPI, token, false)
 	} else {
-		wm.ExplorerClient = NewExplorer(wm.Config.ServerAPI, false)
+		wm.ExplorerClient = NewExplorer(wm.Config.ServerAPI, true)
 	}
 
 	wm.OnmiClient = NewClient(wm.Config.OmniCoreAPI, omniToken, false)

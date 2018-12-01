@@ -260,13 +260,13 @@ func (wm *WalletManager) initSupportAssetsAdapter() error {
 
 		//读取配置
 		absFile := filepath.Join(configFilePath, symbol+".ini")
-
+		//log.Debug("absFile:", absFile)
 		c, err := config.NewConfig("ini", absFile)
 		if err != nil {
 			continue
 		}
 		assetsMgr.LoadAssetsConfig(c)
-
+		//log.Debug("c:", c)
 		if !wm.cfg.EnableBlockScan {
 			//不加载区块扫描
 			continue

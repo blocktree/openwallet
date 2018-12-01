@@ -37,16 +37,17 @@ var (
 func init() {
 
 	tw = NewWalletManager()
-
-	tw.Config.ServerAPI = "http://47.106.102.2:8332"
-	tw.Config.RpcUser = "bitcoin"
-	tw.Config.RpcPassword = "local321"
+	//bch abc  —> 112.74.174.138:10101
+	//bch sv    —> 112.74.174.138:10118
+	tw.Config.ServerAPI = "http://112.74.174.138:10101"
+	tw.Config.RpcUser = "wallet"
+	tw.Config.RpcPassword = "walletPassword2017"
 	tw.Config.IsTestNet = false
 	token := bitcoin.BasicAuth(tw.Config.RpcUser, tw.Config.RpcPassword)
 	tw.WalletClient = bitcoin.NewClient(tw.Config.ServerAPI, token, true)
 
-	explorerURL := "http://47.52.97.183:20009/insight-lite-api/"
-	tw.ExplorerClient = bitcoin.NewExplorer(explorerURL, true)
+	explorerURL := "http://47.106.102.2:20007/insight-api/"
+	tw.ExplorerClient = bitcoin.NewExplorer(explorerURL, false)
 
 	tw.Config.RPCServerType = bitcoin.RPCServerExplorer
 }

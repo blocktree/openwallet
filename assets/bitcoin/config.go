@@ -218,6 +218,8 @@ omniRPCPassword = ""
 omniTransferCost = "0.00000546"
 # support omnicore
 omniSupport = false
+# support segWit
+supportSegWit = true
 
 `
 
