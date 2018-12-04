@@ -33,7 +33,7 @@ type TransactionDecoder interface {
 	//SignRawTransaction 签名交易单
 	SignRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error
 	//SendRawTransaction 广播交易单
-	SubmitRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error
+	SubmitRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) (*Transaction, error)
 	//VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
 	VerifyRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error
 	//GetRawTransactionFeeRate 获取交易单的费率
@@ -55,8 +55,8 @@ func (decoder *TransactionDecoderBase) SignRawTransaction(wrapper *WalletWrapper
 }
 
 //SendRawTransaction 广播交易单
-func (decoder *TransactionDecoderBase) SubmitRawTransaction(wrapper *WalletWrapper, rawTx *RawTransaction) error {
-	return fmt.Errorf("not implement")
+func (decoder *TransactionDecoderBase) SubmitRawTransaction(wrapper *WalletWrapper, rawTx *RawTransaction) (*Transaction, error) {
+	return nil, fmt.Errorf("not implement")
 }
 
 //VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
@@ -92,7 +92,13 @@ type RawTransaction struct {
 	IsSubmit    bool                       `json:"isSubmit"`   //是否已广播
 	Change      *Address                   `json:"change"`     //找零地址
 	ExtParam    string                     `json:"extParam"`   //扩展参数，用于调用智能合约，json结构
+
+	/* 以下字段作为备注，实际生成Transaction时填充相关字段 */
+
 	Fees        string                     `json:"fees"`       //手续费
+	TxAmount    string                     `json:"txAmount"`   //交易单实际对账户发生的数量变化
+	TxFrom      []string                   `json:"txFrom"`     //格式："地址":"数量"，备注订单使用
+	TxTo        []string                   `json:"txTo"`       //格式："地址":"数量"，备注订单使用
 }
 
 //KeySignature 签名信息

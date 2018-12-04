@@ -22,6 +22,24 @@ import (
 	"github.com/blocktree/OpenWallet/openwallet"
 )
 
+func testGetAssetsAccountBalance(tm *WalletManager, walletID, accountID string) {
+	balance, err := tm.GetAssetsAccountBalance(testApp, walletID, accountID)
+	if err != nil {
+		log.Error("GetAssetsAccountBalance failed, unexpected error:", err)
+		return
+	}
+	log.Info("balance:", balance)
+}
+
+func testGetAssetsAccountTokenBalance(tm *WalletManager, walletID, accountID string, contract openwallet.SmartContract) {
+	balance, err := tm.GetAssetsAccountTokenBalance(testApp, walletID, accountID, contract)
+	if err != nil {
+		log.Error("GetAssetsAccountTokenBalance failed, unexpected error:", err)
+		return
+	}
+	log.Info("token balance:", balance.Balance)
+}
+
 func testCreateTransactionStep(tm *WalletManager, walletID, accountID, to, amount, feeRate string, contract *openwallet.SmartContract) (*openwallet.RawTransaction, error) {
 
 	//err := tm.RefreshAssetsAccountBalance(testApp, accountID)
@@ -73,6 +91,8 @@ func testSubmitTransactionStep(tm *WalletManager, rawTx *openwallet.RawTransacti
 		log.Error("SubmitTransaction failed, unexpected error:", err)
 		return nil, err
 	}
+
+	log.Std.Info("tx: %+v", tx)
 	log.Info("wxID:", tx.WxID)
 	log.Info("txID:", rawTx.TxID)
 
@@ -84,6 +104,8 @@ func TestTransfer_ETH(t *testing.T) {
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
 	to := "0xd35f9Ea14D063af9B3567064FAB567275b09f03D"
+
+	testGetAssetsAccountBalance(tm, walletID, accountID)
 
 	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.0003", "", nil)
 	if err != nil {
@@ -123,7 +145,11 @@ func TestTransfer_ERC20(t *testing.T) {
 		Decimals: 18,
 	}
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1", "", &contract)
+	testGetAssetsAccountBalance(tm, walletID, accountID)
+
+	testGetAssetsAccountTokenBalance(tm, walletID, accountID, contract)
+
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "2.3", "", &contract)
 	if err != nil {
 		return
 	}
@@ -149,7 +175,9 @@ func TestTransfer_LTC(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "EbUsW3YaHQ61eNt3f4hDXJAFh9LGmLZWH1VTTSnQmhnL"
-	to := "my2S5LBREZ8YCcuAHZz1YChoZpGPZN28uw"
+	to := "mkSfFCHPAaHAyx9gBokXQMGWmyRtzpk4JK"
+
+	testGetAssetsAccountBalance(tm, walletID, accountID)
 
 	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.01", "0.001", nil)
 	if err != nil {
@@ -178,9 +206,11 @@ func TestTransfer_QTUM(t *testing.T) {
 	//Qf6t5Ww14ZWVbG3kpXKoTt4gXeKNVxM9QJ
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "2by6wzbzw7cnWkxiA31xMHpFmE99bqL3BnjkUJnJtEN6"
-	to := "QTdtEdduBTybwnRpDWc2A44oUiLTpp227k"
+	to := "QfY78pcvLTYrU8YLvCSpb2bKDXrW3Lk6g3"
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.4", "", nil)
+	testGetAssetsAccountBalance(tm, walletID, accountID)
+
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.01", "", nil)
 	if err != nil {
 		return
 	}
@@ -206,7 +236,7 @@ func TestTransfer_QRC20(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "2by6wzbzw7cnWkxiA31xMHpFmE99bqL3BnjkUJnJtEN6"
-	to := "Qf6t5Ww14ZWVbG3kpXKoTt4gXeKNVxM9QJ"
+	to := "QfY78pcvLTYrU8YLvCSpb2bKDXrW3Lk6g3"
 
 	contract := openwallet.SmartContract{
 		Address:  "f2033ede578e17fa6231047265010445bca8cf1c",
@@ -215,6 +245,10 @@ func TestTransfer_QRC20(t *testing.T) {
 		Token:    "QC",
 		Decimals: 8,
 	}
+
+	testGetAssetsAccountBalance(tm, walletID, accountID)
+
+	testGetAssetsAccountTokenBalance(tm, walletID, accountID, contract)
 
 	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.01", "", &contract)
 	if err != nil {
@@ -246,9 +280,11 @@ func TestTransfer_NAS(t *testing.T) {
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "7VftKuNoDtwZ3mn3wDA4smTDMz4iqCg3fNna1fXicVDg"
-	to := "n1LyK9R1jZuMWut28kUiQn8dEoMQUezt9GC"
+	to := "n1VkvsbgRJ6Tjro1mTUUaevPM3wv69z5njB"
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.005", "", nil)
+	testGetAssetsAccountBalance(tm, walletID, accountID)
+
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.23", "", nil)
 	if err != nil {
 		return
 	}
@@ -322,6 +358,10 @@ func TestTransfer_OMNI(t *testing.T) {
 		Decimals: 8,
 	}
 
+	testGetAssetsAccountBalance(tm, walletID, accountID)
+
+	testGetAssetsAccountTokenBalance(tm, walletID, accountID, contract)
+
 	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "9", "", &contract)
 	if err != nil {
 		return
@@ -337,10 +377,10 @@ func TestTransfer_OMNI(t *testing.T) {
 		return
 	}
 
-	//_, err = testSubmitTransactionStep(tm, rawTx)
-	//if err != nil {
-	//	return
-	//}
+	_, err = testSubmitTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
 
 }
 

@@ -651,7 +651,7 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 	if wm.Config.RPCServerType == RPCServerCore {
 		wm.WalletClient = NewClient(wm.Config.ServerAPI, token, false)
 	} else {
-		wm.ExplorerClient = NewExplorer(wm.Config.ServerAPI, true)
+		wm.ExplorerClient = NewExplorer(wm.Config.ServerAPI, false)
 	}
 
 	wm.OnmiClient = NewClient(wm.Config.OmniCoreAPI, omniToken, false)

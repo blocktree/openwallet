@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/shopspring/decimal"
 
 	"github.com/tidwall/gjson"
 
@@ -229,6 +230,13 @@ func NewTransactionDecoder(wm *WalletManager) *EthTransactionDecoder {
 }
 
 func (this *EthTransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
+
+	var (
+		accountTotalSent = decimal.Zero
+		txFrom           = make([]string, 0)
+		txTo             = make([]string, 0)
+	)
+
 	//check交易交易单基本字段
 	err := VerifyRawTransaction(rawTx)
 	if err != nil {
@@ -282,6 +290,15 @@ func (this *EthTransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 		break
 	}
 
+	//计算账户的实际转账amount
+	accountTotalSentAddresses, findErr := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID, "Address", to)
+	if findErr != nil || len(accountTotalSentAddresses) == 0 {
+		amountDec, _ := decimal.NewFromString(amountStr)
+		accountTotalSent = accountTotalSent.Add(amountDec)
+	}
+
+	txTo = []string{fmt.Sprintf("%s:%s", to, amountStr)}
+
 	amount, err := ConvertEthStringToWei(amountStr) //ConvertToBigInt(amountStr, 16)
 	if err != nil {
 		log.Std.Error("convert tx amount to big.int failed, err=%v", err)
@@ -332,6 +349,9 @@ func (this *EthTransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 					Address: fromAddr,
 				})
 				totalFee.Add(totalFee, fee.Fee)
+
+				txFrom = []string{fmt.Sprintf("%s:%s", fromAddr.Address, amountStr)}
+
 				break
 			}
 		}
@@ -390,13 +410,26 @@ func (this *EthTransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 		log.Error("convert wei string to gas price failed, err=", err)
 		return err
 	}
+
+	accountTotalSent = accountTotalSent.Add(totalFeeDecimal)
+
 	rawTx.FeeRate = gasprice.String()
 	rawTx.IsBuilt = true
+	rawTx.TxAmount = "-" + accountTotalSent.StringFixed(this.wm.Decimal())
+	rawTx.TxFrom = txFrom
+	rawTx.TxTo = txTo
 
 	return nil
 }
 
 func (this *EthTransactionDecoder) CreateErc20TokenRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
+
+	var (
+		accountTotalSent = decimal.Zero
+		txFrom           = make([]string, 0)
+		txTo             = make([]string, 0)
+	)
+
 	//check交易交易单基本字段
 	err := VerifyRawTransaction(rawTx)
 	if err != nil {
@@ -462,6 +495,15 @@ func (this *EthTransactionDecoder) CreateErc20TokenRawTransaction(wrapper openwa
 		break
 	}
 
+	//计算账户的实际转账amount
+	accountTotalSentAddresses, findErr := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID, "Address", to)
+	if findErr != nil || len(accountTotalSentAddresses) == 0 {
+		amountDec, _ := decimal.NewFromString(amountStr)
+		accountTotalSent = accountTotalSent.Add(amountDec)
+	}
+
+	txTo = []string{fmt.Sprintf("%s:%s", to, amountStr)}
+
 	amount, err := ConvertFloatStringToBigInt(amountStr, int(rawTx.Coin.Contract.Decimals)) //ConvertToBigInt(amountStr, 10)
 	if err != nil {
 		log.Std.Error("convert tx amount to big.int failed, err=%v", err)
@@ -517,6 +559,9 @@ func (this *EthTransactionDecoder) CreateErc20TokenRawTransaction(wrapper openwa
 				})
 
 				totalFee.Add(totalFee, fee.Fee)
+
+				txFrom = []string{fmt.Sprintf("%s:%s", fromAddr.Address, amountStr)}
+
 				break
 			}
 		}
@@ -581,6 +626,10 @@ func (this *EthTransactionDecoder) CreateErc20TokenRawTransaction(wrapper openwa
 	}
 	rawTx.FeeRate = gasprice.String()
 	rawTx.IsBuilt = true
+	rawTx.TxAmount = "-" + accountTotalSent.StringFixed(this.wm.Decimal())
+	rawTx.TxFrom = txFrom
+	rawTx.TxTo = txTo
+
 	return nil
 }
 
@@ -662,21 +711,21 @@ func (this *EthTransactionDecoder) SignRawTransaction(wrapper openwallet.WalletD
 	return nil
 }
 
-func (this *EthTransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
+func (this *EthTransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) (*openwallet.Transaction, error) {
 	//check交易交易单基本字段
 	err := VerifyRawTransaction(rawTx)
 	if err != nil {
 		log.Std.Error("Verify raw tx failed, err=%v", err)
-		return err
+		return nil, err
 	}
 	if len(rawTx.Signatures) != 1 {
 		log.Std.Error("len of signatures error. ")
-		return errors.New("len of signatures error. ")
+		return nil, errors.New("len of signatures error. ")
 	}
 
 	if _, exist := rawTx.Signatures[rawTx.Account.AccountID]; !exist {
 		log.Std.Error("wallet[%v] signature not found ", rawTx.Account.AccountID)
-		return errors.New("wallet signature not found ")
+		return nil, errors.New("wallet signature not found ")
 	}
 
 	from := rawTx.Signatures[rawTx.Account.AccountID][0].Address.Address
@@ -707,7 +756,7 @@ func (this *EthTransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet
 	txStatis, _, err := this.GetTransactionCount2(from)
 	if err != nil {
 		log.Std.Error("get transaction count2 failed, err=%v", err)
-		return errors.New("get transaction count2 faile")
+		return nil, errors.New("get transaction count2 faile")
 	}
 
 	//log.Debug("extPara.GasLimit:", extPara.GasLimit)
@@ -726,7 +775,7 @@ func (this *EthTransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet
 	rawHex, err := hex.DecodeString(rawTx.RawHex)
 	if err != nil {
 		log.Error("rawTx.RawHex decode failed, err:", err)
-		return err
+		return nil, err
 	}
 
 	err = func() error {
@@ -789,27 +838,49 @@ func (this *EthTransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet
 
 	if err != nil {
 		log.Errorf("send raw transaction failed, err= %v", err)
-		return err
+		return nil, err
 	}
 
-	return nil
+	decimals := int32(0)
+	if rawTx.Coin.IsContract {
+		decimals = int32(rawTx.Coin.Contract.Decimals)
+	} else {
+		decimals = int32(this.wm.Decimal())
+	}
+
+	//记录一个交易单
+	tx := &openwallet.Transaction{
+		From:       rawTx.TxFrom,
+		To:         rawTx.TxTo,
+		Amount:     rawTx.TxAmount,
+		Coin:       rawTx.Coin,
+		TxID:       rawTx.TxID,
+		Decimal:    decimals,
+		AccountID:  rawTx.Account.AccountID,
+		Fees:       rawTx.Fees,
+		SubmitTime: time.Now().Unix(),
+	}
+
+	tx.WxID = openwallet.GenTransactionWxID(tx)
+
+	return tx, nil
 }
 
-func (this *EthTransactionDecoder) SubmitErc20TokenRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
+func (this *EthTransactionDecoder) SubmitErc20TokenRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) (*openwallet.Transaction, error) {
 	//check交易交易单基本字段
 	err := VerifyRawTransaction(rawTx)
 	if err != nil {
 		log.Std.Error("Verify raw tx failed, err=%v", err)
-		return err
+		return nil, err
 	}
 	if len(rawTx.Signatures) != 1 {
 		log.Std.Error("len of signatures error. ")
-		return errors.New("len of signatures error. ")
+		return nil, errors.New("len of signatures error. ")
 	}
 
 	if _, exist := rawTx.Signatures[rawTx.Account.AccountID]; !exist {
 		log.Std.Error("wallet[%v] signature not found ", rawTx.Account.AccountID)
-		return errors.New("wallet signature not found ")
+		return nil, errors.New("wallet signature not found ")
 	}
 
 	from := rawTx.Signatures[rawTx.Account.AccountID][0].Address.Address
@@ -837,7 +908,7 @@ func (this *EthTransactionDecoder) SubmitErc20TokenRawTransaction(wrapper openwa
 	txStatis, _, err := this.GetTransactionCount2(from)
 	if err != nil {
 		log.Std.Error("get transaction count2 failed, err=%v", err)
-		return errors.New("get transaction count2 faile")
+		return nil, errors.New("get transaction count2 faile")
 	}
 
 	//gasPrice, err := ConvertEthStringToWei(rawTx.FeeRate) //ConvertToBigInt(rawTx.FeeRate, 16)
@@ -849,7 +920,7 @@ func (this *EthTransactionDecoder) SubmitErc20TokenRawTransaction(wrapper openwa
 	rawHex, err := hex.DecodeString(rawTx.RawHex)
 	if err != nil {
 		log.Error("rawTx.RawHex decode failed, err:", err)
-		return err
+		return nil, err
 	}
 
 	err = func() error {
@@ -914,13 +985,36 @@ func (this *EthTransactionDecoder) SubmitErc20TokenRawTransaction(wrapper openwa
 
 	if err != nil {
 		log.Errorf("send raw transaction failed, err= %v", err)
-		return err
+		return nil, err
 	}
-	return nil
+
+	decimals := int32(0)
+	if rawTx.Coin.IsContract {
+		decimals = int32(rawTx.Coin.Contract.Decimals)
+	} else {
+		decimals = int32(this.wm.Decimal())
+	}
+
+	//记录一个交易单
+	tx := &openwallet.Transaction{
+		From:       rawTx.TxFrom,
+		To:         rawTx.TxTo,
+		Amount:     rawTx.TxAmount,
+		Coin:       rawTx.Coin,
+		TxID:       rawTx.TxID,
+		Decimal:    decimals,
+		AccountID:  rawTx.Account.AccountID,
+		Fees:       "0",
+		SubmitTime: time.Now().Unix(),
+	}
+
+	tx.WxID = openwallet.GenTransactionWxID(tx)
+
+	return tx, nil
 }
 
 //SendRawTransaction 广播交易单
-func (this *EthTransactionDecoder) SubmitRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
+func (this *EthTransactionDecoder) SubmitRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) (*openwallet.Transaction, error) {
 	if !rawTx.Coin.IsContract {
 		return this.SubmitSimpleRawTransaction(wrapper, rawTx)
 	}
