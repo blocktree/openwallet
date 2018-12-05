@@ -277,14 +277,15 @@ func TestTransfer_NAS(t *testing.T) {
 	//walletID := "VzQTLspxvbXSmfRGcN6LJVB8otYhJwAGWc"
 	//accountID := "BjLtC1YN4sWQKzYHtNPdvx3D8yVfXmbyeCQTMHv4JUGG"
 	//to := "n1Prn7ZbZtd5CTN8Yrj4K9c3gD4u8tjFQzX"
-
+	//n1JrqddgEYqiZqZB3kRrC2zEHtVA7Y1VZts
+	//n1VkvsbgRJ6Tjro1mTUUaevPM3wv69z5njB
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "7VftKuNoDtwZ3mn3wDA4smTDMz4iqCg3fNna1fXicVDg"
-	to := "n1VkvsbgRJ6Tjro1mTUUaevPM3wv69z5njB"
+	to := "n1JrqddgEYqiZqZB3kRrC2zEHtVA7Y1VZts"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.03", "", nil)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.01", "", nil)
 	if err != nil {
 		return
 	}

@@ -343,25 +343,13 @@ func (c *Client) CallSendRawTransaction( data string ) (string, error) {
 
 //isError 是否报错
 func isError(result *gjson.Result) error {
-	var (
-		err error
-	)
 
-	if !result.Get("error").IsObject() {
+	if result.Get("error").Exists() {
 
-		if !result.Get("result").Exists() {
-			return errors.New("Response is empty! ")
-		}
-
-		return nil
+		return errors.New(result.Get("error").String())
 	}
 
-	errInfo := fmt.Sprintf("[%d]%s",
-		result.Get("error.code").Int(),
-		result.Get("error.message").String())
-	err = errors.New(errInfo)
-
-	return err
+	return nil
 }
 
 //根据区块高度获取区块信息
