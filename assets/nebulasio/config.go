@@ -191,7 +191,7 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 	cyclesec := c.String("cycleSeconds")
 	wm.Config.CycleSeconds, _ = time.ParseDuration(cyclesec)
 
-	wm.WalletClient = NewClient(wm.Config.ServerAPI, true)
+	wm.WalletClient = NewClient(wm.Config.ServerAPI, false)
 
 	return nil
 }

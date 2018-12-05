@@ -28,6 +28,7 @@ import (
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/go-owcrypt"
 	"github.com/bytom/common"
+	ow "github.com/blocktree/OpenWallet/common"
 	"github.com/shopspring/decimal"
 )
 
@@ -217,10 +218,13 @@ func (decoder *TransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 	}
 	//判断nonce_db是否为空,为空则说明当前nonce是0
 	if nonce_db == nil {
-		nonce = 1
+		nonce = 0
 	} else {
-		nonce = decoder.wm.ConfirmTxdecodeNonce(keySignList[0].Address.Address, nonce_db.(string))
+		nonce = ow.NewString(nonce_db).UInt64()
 	}
+
+	nonce = decoder.wm.ConfirmTxdecodeNonce(keySignList[0].Address.Address, nonce)
+
 	//构建交易单
 	var TX *SubmitTransaction
 	TX, err = decoder.wm.CreateRawTransaction(keySignList[0].Address.Address, to, Gaslimit, gasprice.Mul(coinDecimal).String(), amount.String(), nonce)
