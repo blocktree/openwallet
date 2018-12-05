@@ -32,7 +32,7 @@ type TransactionDecoder interface {
 	CreateRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error
 	//SignRawTransaction 签名交易单
 	SignRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error
-	//SendRawTransaction 广播交易单
+	//SubmitRawTransaction 广播交易单
 	SubmitRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) (*Transaction, error)
 	//VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
 	VerifyRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error
