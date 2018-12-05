@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/blocktree/OpenWallet/assets"
 	"github.com/blocktree/OpenWallet/assets/bitcoin"
+	"github.com/blocktree/OpenWallet/assets/bitcoincash"
 	"github.com/blocktree/OpenWallet/assets/ethereum"
 	"github.com/blocktree/OpenWallet/assets/litecoin"
 	"github.com/blocktree/OpenWallet/assets/nebulasio"
@@ -48,6 +49,7 @@ func initAssetAdapter() {
 	assets.RegAssets(litecoin.Symbol, litecoin.NewWalletManager())
 	assets.RegAssets(qtum.Symbol, qtum.NewWalletManager())
 	assets.RegAssets(nebulasio.Symbol, nebulasio.NewWalletManager())
+	assets.RegAssets(bitcoincash.Symbol, bitcoincash.NewWalletManager())
 }
 
 // GetSymbolInfo 获取资产的币种信息

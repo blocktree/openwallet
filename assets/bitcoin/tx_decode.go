@@ -27,6 +27,7 @@ import (
 	"github.com/shopspring/decimal"
 	"sort"
 	"strings"
+	"time"
 )
 
 type TransactionDecoder struct {
@@ -69,31 +70,50 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 }
 
 //SendRawTransaction 广播交易单
-func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
-
-	//先加载是否有配置文件
-	//err := decoder.wm.LoadConfig()
-	//if err != nil {
-	//	return err
-	//}
+func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) (*openwallet.Transaction, error) {
 
 	if len(rawTx.RawHex) == 0 {
-		return fmt.Errorf("transaction hex is empty")
+		return nil, fmt.Errorf("transaction hex is empty")
 	}
 
 	if !rawTx.IsCompleted {
-		return fmt.Errorf("transaction is not completed validation")
+		return nil, fmt.Errorf("transaction is not completed validation")
 	}
 
 	txid, err := decoder.wm.SendRawTransaction(rawTx.RawHex)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	rawTx.TxID = txid
 	rawTx.IsSubmit = true
 
-	return nil
+	decimals := int32(0)
+	fees := "0"
+	if rawTx.Coin.IsContract {
+		decimals = int32(rawTx.Coin.Contract.Decimals)
+		fees = "0"
+	} else {
+		decimals = int32(decoder.wm.Decimal())
+		fees = rawTx.Fees
+	}
+
+	//记录一个交易单
+	tx := &openwallet.Transaction{
+		From:       rawTx.TxFrom,
+		To:         rawTx.TxTo,
+		Amount:     rawTx.TxAmount,
+		Coin:       rawTx.Coin,
+		TxID:       rawTx.TxID,
+		Decimal:    decimals,
+		AccountID:  rawTx.Account.AccountID,
+		Fees:       fees,
+		SubmitTime: time.Now().Unix(),
+	}
+
+	tx.WxID = openwallet.GenTransactionWxID(tx)
+
+	return tx, nil
 }
 
 ////////////////////////// BTC implement //////////////////////////
@@ -114,6 +134,10 @@ func (decoder *TransactionDecoder) CreateBTCRawTransaction(wrapper openwallet.Wa
 		feesRate     = decimal.New(0, 0)
 		accountID    = rawTx.Account.AccountID
 		destinations = make([]string, 0)
+
+		accountTotalSent = decimal.Zero
+		txFrom           = make([]string, 0)
+		txTo             = make([]string, 0)
 	)
 
 	address, err := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID)
@@ -149,6 +173,12 @@ func (decoder *TransactionDecoder) CreateBTCRawTransaction(wrapper openwallet.Wa
 		deamount, _ := decimal.NewFromString(amount)
 		totalSend = totalSend.Add(deamount)
 		destinations = append(destinations, addr)
+		//计算账户的实际转账amount
+		addresses, findErr := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID, "Address", addr)
+		if findErr != nil || len(addresses) == 0 {
+			amountDec, _ := decimal.NewFromString(amount)
+			accountTotalSent = accountTotalSent.Add(amountDec)
+		}
 	}
 
 	//获取utxo，按小到大排序
@@ -259,6 +289,8 @@ func (decoder *TransactionDecoder) CreateBTCRawTransaction(wrapper openwallet.Wa
 
 		txUnlock := btcTransaction.TxUnlock{LockScript: utxo.ScriptPubKey, SigType: btcTransaction.SigHashAll}
 		txUnlocks = append(txUnlocks, txUnlock)
+
+		txFrom = append(txFrom, fmt.Sprintf("%s:%s", utxo.Address, utxo.Amount))
 	}
 
 	//装配输入
@@ -267,6 +299,8 @@ func (decoder *TransactionDecoder) CreateBTCRawTransaction(wrapper openwallet.Wa
 		deamount = deamount.Mul(decoder.wm.Config.CoinDecimal)
 		out := btcTransaction.Vout{to, uint64(deamount.IntPart())}
 		vouts = append(vouts, out)
+
+		txTo = append(txTo, fmt.Sprintf("%s:%s", to, amount))
 	}
 
 	//changeAmount := balance.Sub(totalSend).Sub(actualFees)
@@ -275,6 +309,7 @@ func (decoder *TransactionDecoder) CreateBTCRawTransaction(wrapper openwallet.Wa
 		out := btcTransaction.Vout{changeAddress, uint64(deamount.IntPart())}
 		vouts = append(vouts, out)
 
+		txTo = append(txTo, fmt.Sprintf("%s:%s", changeAddress, changeAmount.StringFixed(decoder.wm.Decimal())))
 		//fmt.Printf("Create change address for receiving %s coin.", outputs[change])
 	}
 
@@ -344,10 +379,16 @@ func (decoder *TransactionDecoder) CreateBTCRawTransaction(wrapper openwallet.Wa
 
 	}
 
+	feesDec, _ := decimal.NewFromString(rawTx.Fees)
+	accountTotalSent = accountTotalSent.Add(feesDec)
+
 	//TODO:多重签名要使用owner的公钥填充
 
 	rawTx.Signatures[rawTx.Account.AccountID] = keySigs
 	rawTx.IsBuilt = true
+	rawTx.TxAmount = "-" + accountTotalSent.StringFixed(decoder.wm.Decimal())
+	rawTx.TxFrom = txFrom
+	rawTx.TxTo = txTo
 
 	return nil
 }
@@ -556,11 +597,15 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 		useTokenBalance   = decimal.Zero
 		useTokenAddress   = ""
 		missUtxoAddress   = ""
-		missToken  = make([]string, 0)
-		balance    = decimal.New(0, 0)
-		actualFees = decimal.New(0, 0)
-		feesRate   = decimal.New(0, 0)
-		accountID  = rawTx.Account.AccountID
+		missToken         = make([]string, 0)
+		balance           = decimal.New(0, 0)
+		actualFees        = decimal.New(0, 0)
+		feesRate          = decimal.New(0, 0)
+		accountID         = rawTx.Account.AccountID
+
+		accountTotalSent = decimal.Zero
+		txFrom           = make([]string, 0)
+		txTo             = make([]string, 0)
 	)
 
 	if !decoder.wm.Config.OmniSupport {
@@ -600,6 +645,12 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 	for to, amount := range rawTx.To {
 		toAddress = to
 		toAmount, _ = decimal.NewFromString(amount)
+
+		//计算账户的实际转账amount
+		addresses, findErr := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID, "Address", to)
+		if findErr != nil || len(addresses) == 0 {
+			accountTotalSent = accountTotalSent.Add(toAmount)
+		}
 	}
 
 	/*
@@ -664,8 +715,8 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 				missUtxoAddress = ""
 			}
 			//else {
-				//useTokenBalance = tokenBalance
-				//useTokenBalance = useTokenBalance.Add(tokenBalance)
+			//useTokenBalance = tokenBalance
+			//useTokenBalance = useTokenBalance.Add(tokenBalance)
 			//}
 
 			availableUTXO = unspents
@@ -689,6 +740,9 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 			return fmt.Errorf("account[%s] omni[%s] total balance is enough, but the utxo of address[%s] is empty! ", accountID, tokenCoin, missUtxoAddress)
 		}
 	}
+
+	//选择一个地址作为发送
+	txFrom = []string{fmt.Sprintf("%s:%s", availableUTXO[0].Address, toAmount.StringFixed(tokenDecimals))}
 
 	//获取utxo，按小到大排序
 	sort.Sort(UnspentSort{availableUTXO, func(a, b *Unspent) int {
@@ -809,7 +863,8 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 		Memo:       "",
 	}
 
-	//装配输入
+	//装配输出
+	txTo = []string{fmt.Sprintf("%s:%s", toAddress, toAmount.StringFixed(tokenDecimals))}
 	deamount := computeTotalSend.Shift(decoder.wm.Decimal())
 	out := omniTransaction.Vout{toAddress, uint64(deamount.IntPart())}
 	vouts = append(vouts, out)
@@ -893,6 +948,9 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 
 	rawTx.Signatures[rawTx.Account.AccountID] = keySigs
 	rawTx.IsBuilt = true
+	rawTx.TxAmount = "-" + accountTotalSent.StringFixed(decoder.wm.Decimal())
+	rawTx.TxFrom = txFrom
+	rawTx.TxTo = txTo
 
 	return nil
 }

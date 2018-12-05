@@ -456,7 +456,7 @@ func (this *Client) ERC20GetAddressBalance2(address string, contractAddr string,
 	if sign != "latest" && sign != "pending" {
 		return nil, errors.New("unknown sign was put through.")
 	}
-
+	contractAddr = "0x" + strings.Trim(contractAddr, "0x")
 	var funcParams []SolidityParam
 	funcParams = append(funcParams, SolidityParam{
 		ParamType:  SOLIDITY_TYPE_ADDRESS,

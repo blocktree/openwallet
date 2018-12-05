@@ -282,46 +282,46 @@ func (wm *WalletManager) SubmitTransaction(appID, walletID, accountID string, ra
 		return nil, fmt.Errorf("[%s] is not support transaction. ", account.Symbol)
 	}
 
-	err = txdecoder.SubmitRawTransaction(wrapper, rawTx)
+	tx, err := txdecoder.SubmitRawTransaction(wrapper, rawTx)
 	if err != nil {
 		return nil, err
 	}
 
 	log.Debug("transaction has been submitted successfully")
 
-	des := make([]string, 0)
-	totalSent := decimal.New(0, 0)
-	decimals := int32(0)
-	for to, amount := range rawTx.To {
-		des = append(des, to)
-		amountDec, decErr := decimal.NewFromString(amount)
-		if decErr != nil {
-			continue
-		}
-		totalSent = totalSent.Add(amountDec)
-	}
+	//des := make([]string, 0)
+	//totalSent := decimal.New(0, 0)
+	//decimals := int32(0)
+	//for to, amount := range rawTx.To {
+	//	des = append(des, to)
+	//	amountDec, decErr := decimal.NewFromString(amount)
+	//	if decErr != nil {
+	//		continue
+	//	}
+	//	totalSent = totalSent.Add(amountDec)
+	//}
+	//
+	//feesDec, _ := decimal.NewFromString(rawTx.Fees)
+	//totalSent = totalSent.Add(feesDec)
+	//
+	//if rawTx.Coin.IsContract {
+	//	decimals = int32(rawTx.Coin.Contract.Decimals)
+	//} else {
+	//	decimals = int32(assetsMgr.Decimal())
+	//}
 
-	feesDec, _ := decimal.NewFromString(rawTx.Fees)
-	totalSent = totalSent.Add(feesDec)
-
-	if rawTx.Coin.IsContract {
-		decimals = int32(rawTx.Coin.Contract.Decimals)
-	} else {
-		decimals = int32(assetsMgr.Decimal())
-	}
-
-	tx := &openwallet.Transaction{
-		To:         des,
-		Amount:     totalSent.StringFixed(decimals),
-		Coin:       rawTx.Coin,
-		TxID:       rawTx.TxID,
-		Decimal:    decimals,
-		AccountID:  rawTx.Account.AccountID,
-		Fees:       rawTx.Fees,
-		SubmitTime: time.Now().Unix(),
-	}
-
-	tx.WxID = openwallet.GenTransactionWxID(tx)
+	//tx := &openwallet.Transaction{
+	//	To:         des,
+	//	Amount:     totalSent.StringFixed(decimals),
+	//	Coin:       rawTx.Coin,
+	//	TxID:       rawTx.TxID,
+	//	Decimal:    decimals,
+	//	AccountID:  rawTx.Account.AccountID,
+	//	Fees:       rawTx.Fees,
+	//	SubmitTime: time.Now().Unix(),
+	//}
+	//
+	//tx.WxID = openwallet.GenTransactionWxID(tx)
 
 	//提取交易单
 	//scanner := assetsMgr.GetBlockScanner()

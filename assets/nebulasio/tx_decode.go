@@ -21,6 +21,7 @@ import (
 	"math/big"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/logger"
@@ -65,6 +66,12 @@ type txFeeInfo struct {
 }
 
 func (decoder *TransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
+
+	var (
+		accountTotalSent = decimal.Zero
+		txFrom           = make([]string, 0)
+		txTo             = make([]string, 0)
+	)
 
 	//check交易交易单基本字段
 	err := CheckRawTransaction(rawTx)
@@ -119,6 +126,15 @@ func (decoder *TransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 		break
 	}
 
+	//计算账户的实际转账amount
+	accountTotalSentAddresses, findErr := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID, "Address", to)
+	if findErr != nil || len(accountTotalSentAddresses) == 0 {
+		amountDec, _ := decimal.NewFromString(amountStr)
+		accountTotalSent = accountTotalSent.Add(amountDec)
+	}
+
+	txTo = []string{fmt.Sprintf("%s:%s", to, amountStr)}
+
 	amount, err := ConvertNasStringToWei(amountStr)
 	if err != nil {
 		openwLogger.Log.Errorf("convert tx amount to big.int failed, err=%v", err)
@@ -168,6 +184,9 @@ func (decoder *TransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 				keySignList = append(keySignList, &openwallet.KeySignature{
 					Address: fromAddr,
 				})
+
+				txFrom = []string{fmt.Sprintf("%s:%s", fromAddr.Address, amountStr)}
+
 				break
 			}
 		}
@@ -218,11 +237,16 @@ func (decoder *TransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 	keySignList[0].Message = hex.EncodeToString(TX.Hash[:])
 	signatureMap[rawTx.Account.AccountID] = keySignList
 
+	accountTotalSent = accountTotalSent.Add(fee)
+
 	rawTx.RawHex = rawHex
 	rawTx.Signatures = signatureMap
 	rawTx.FeeRate = gasprice.String()
 	rawTx.Fees = fee.StringFixed(decoder.wm.Decimal())
 	rawTx.IsBuilt = true
+	rawTx.TxAmount = "-" + accountTotalSent.StringFixed(decoder.wm.Decimal())
+	rawTx.TxFrom = txFrom
+	rawTx.TxTo = txTo
 
 	return nil
 }
@@ -333,54 +357,54 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 	return nil
 }
 
-func (decoder *TransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
+func (decoder *TransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) (*openwallet.Transaction, error) {
 	//check交易交易单基本字段
 	err := CheckRawTransaction(rawTx)
 	if err != nil {
 		openwLogger.Log.Errorf("Verify raw tx failed, err=%v", err)
-		return err
+		return nil, err
 	}
 	if len(rawTx.Signatures) != 1 {
 		openwLogger.Log.Errorf("len of signatures error. ")
-		return errors.New("len of signatures error. ")
+		return nil, errors.New("len of signatures error. ")
 	}
 
 	accSignatures, exist := rawTx.Signatures[rawTx.Account.AccountID]
 	if !exist {
 		openwLogger.Log.Errorf("wallet[%v] signature not found ", rawTx.Account.AccountID)
-		return errors.New("wallet signature not found ")
+		return nil, errors.New("wallet signature not found ")
 	}
 
 	if len(accSignatures) == 0 {
 		openwLogger.Log.Errorf("wallet[%v] signature is empty ", rawTx.Account.AccountID)
-		return errors.New("wallet signature not found ")
+		return nil, errors.New("wallet signature not found ")
 	}
 
 	if len(rawTx.RawHex) == 0 {
-		return fmt.Errorf("transaction hex is empty")
+		return nil, fmt.Errorf("transaction hex is empty")
 	}
 
 	if !rawTx.IsCompleted {
-		return fmt.Errorf("transaction is not completed validation")
+		return nil, fmt.Errorf("transaction is not completed validation")
 	}
 
 	keySignature := accSignatures[0]
 
-	tx, err := DecodeRawHexToTransaction(rawTx.RawHex)
+	trx, err := DecodeRawHexToTransaction(rawTx.RawHex)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	tx.Sign = common.FromHex(keySignature.Signature)
+	trx.Sign = common.FromHex(keySignature.Signature)
 
-	submitRawHex, err := EncodeTransaction(tx)
+	submitRawHex, err := EncodeTransaction(trx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	txid, err := decoder.wm.SubmitRawTransaction(submitRawHex)
 	if err != nil {
-		return err
+		return nil, err
 	} else {
 		//广播成功后记录nonce值到本地
 		//fmt.Printf("Submit Success , Save nonce To AddressExtParam!\n")
@@ -389,18 +413,40 @@ func (decoder *TransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet
 	rawTx.TxID = txid
 	rawTx.IsSubmit = true
 
+	decimals := int32(0)
+	if rawTx.Coin.IsContract {
+		decimals = int32(rawTx.Coin.Contract.Decimals)
+	} else {
+		decimals = int32(decoder.wm.Decimal())
+	}
+
+	//记录一个交易单
+	tx := &openwallet.Transaction{
+		From:       rawTx.TxFrom,
+		To:         rawTx.TxTo,
+		Amount:     rawTx.TxAmount,
+		Coin:       rawTx.Coin,
+		TxID:       rawTx.TxID,
+		Decimal:    decimals,
+		AccountID:  rawTx.Account.AccountID,
+		Fees:       rawTx.Fees,
+		SubmitTime: time.Now().Unix(),
+	}
+
+	tx.WxID = openwallet.GenTransactionWxID(tx)
+
 	//fmt.Printf("rawTx=%+v\n", rawTx)
 
-	return nil
+	return tx, nil
 }
 
 //SendRawTransaction 广播交易单
-func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
+func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) (*openwallet.Transaction, error) {
 	if !rawTx.Coin.IsContract {
 		return decoder.SubmitSimpleRawTransaction(wrapper, rawTx)
 	}
 
-	return nil
+	return nil, fmt.Errorf("Contract is not supported. ")
 	//wjq return decoder.SubmitErc20TokenRawTransaction(wrapper, rawTx)
 }
 

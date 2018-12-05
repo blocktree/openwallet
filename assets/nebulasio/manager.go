@@ -1276,10 +1276,10 @@ func (wm *WalletManager) ConfirmTxdecodeNonce(addr string, nonce_DB string) uint
 	//如果本地nonce_db > 链上nonce,采用本地nonce,否则采用链上nonce
 	if nonce_db > nonce_chain {
 		nonce_submit = nonce_db + 1
-		//log.Std.Info("%s nonce_db=%d > nonce_chain=%d,Use nonce_db+1...",key.Address,nonce_db,nonce_chain)
+		//log.Std.Info("%s nonce_db=%d > nonce_chain=%d,Use nonce_db+1...",addr,nonce_db,nonce_chain)
 	} else {
 		nonce_submit = nonce_chain + 1
-		//log.Std.Info("%s nonce_db=%d <= nonce_chain=%d,Use nonce_chain+1...",key.Address,nonce_db,nonce_chain)
+		//log.Std.Info("%s nonce_db=%d <= nonce_chain=%d,Use nonce_chain+1...",addr,nonce_db,nonce_chain)
 	}
 
 	return nonce_submit
