@@ -26,6 +26,7 @@ func TestHTTPHostRun(t *testing.T) {
 	config := make(map[string]string)
 	config["address"] = httpURL
 	config["connectType"] = HTTP
+	config["enableSignature"] = "1"
 	httpHost.HandleFunc("getInfo", getInfo)
 	httpHost.Listen(config)
 
@@ -37,7 +38,7 @@ func TestHTTPClientCall(t *testing.T) {
 	config := make(map[string]string)
 	config["address"] = httpURL
 	config["connectType"] = HTTP
-
+	config["enableSignature"] = "1"
 	httpClient := RandomOWTPNode()
 	err := httpClient.Connect(httpHostNodeID, config)
 	if err != nil {

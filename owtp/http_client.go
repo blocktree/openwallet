@@ -92,7 +92,7 @@ func HTTPDial(
 	return client, nil
 }
 
-func NewHTTPClientWithHeader(header http.Header, responseWriter http.ResponseWriter, request *http.Request, hander PeerHandler, done func()) (*HTTPClient, error) {
+func NewHTTPClientWithHeader(header http.Header, responseWriter http.ResponseWriter, request *http.Request, hander PeerHandler, enableSignature bool, done func()) (*HTTPClient, error) {
 
 	/*
 			| 参数名称 | 类型   | 是否可空   | 描述                                                                              |
@@ -106,7 +106,7 @@ func NewHTTPClientWithHeader(header http.Header, responseWriter http.ResponseWri
 	*/
 
 	var (
-		enableSig       bool
+		//enableSig       bool
 		//isConsult       bool
 		tmpPublicKey    []byte
 		remotePublicKey []byte
@@ -114,7 +114,7 @@ func NewHTTPClientWithHeader(header http.Header, responseWriter http.ResponseWri
 		//nodeID          string
 	)
 
-	log.Debug("header:", header)
+	//log.Debug("header:", header)
 
 	a := header.Get("a")
 
@@ -122,32 +122,32 @@ func NewHTTPClientWithHeader(header http.Header, responseWriter http.ResponseWri
 	_, tmpPublicKey = owcrypt.KeyAgreement_initiator_step1(owcrypt.ECC_CURVE_SM2_STANDARD)
 
 	if len(a) == 0 {
+		//开启签名授权一定要有授权公钥
+		if enableSignature {
+			return nil, fmt.Errorf("enableSignature is true, http header should have parameter: a")
+		}
+
 		//没有授权公钥，不授权的HTTP访问，不建立协商密码，不进行签名授权
 		remotePublicKey = tmpPublicKey
-		//isConsult = false
-		enableSig = false
 	} else {
 		//有授权公钥，必须授权的HTTP访问，不建立协商密码，进行签名授权
 		remotePublicKey, err = base58.Decode(a)
 		if err != nil {
 			return nil, err
 		}
-		enableSig = true
 	}
 
 	//nodeID = base58.Encode(owcrypt.Hash(tmpPublicKey, 0, owcrypt.HASH_ALG_SHA256))
 
 	auth := &OWTPAuth{
 		remotePublicKey: remotePublicKey,
-		//consultType:     c,
-		//isConsult:       isConsult,
-		enable:          enableSig,
+		enable:          enableSignature,
 	}
 
-	err = auth.VerifyHeader()
-	if err != nil {
-		return nil, err
-	}
+	//err = auth.VerifyHeader()
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	client, err := NewHTTPClient(auth.RemotePID(), responseWriter, request, hander, auth, done)
 
@@ -312,7 +312,7 @@ func (c *HTTPClient) OpenPipe() error {
 
 // writeResponse 输出数据
 func (c *HTTPClient) writeResponse(data DataPacket) error {
-	log.Debug("writeResponse")
+	//log.Debug("writeResponse")
 	respBytes, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -337,7 +337,7 @@ func (c *HTTPClient) readPump() {
 
 	defer func() {
 		c.Close()
-		log.Debug("readPump end")
+		//log.Debug("readPump end")
 	}()
 
 	s, _ := ioutil.ReadAll(c.request.Body)
@@ -353,10 +353,10 @@ func (c *HTTPClient) readPump() {
 		return
 	}
 
-	if Debug {
+	//if Debug {
 
-		log.Debug("readPump: ", string(s))
-	}
+		//log.Debug("readPump: ", string(s))
+	//}
 
 	packet := NewDataPacket(gjson.ParseBytes(s))
 

@@ -248,7 +248,7 @@ func (c *WebSocketClient) writePump() {
 	defer func() {
 		ticker.Stop()
 		c.Close()
-		log.Debug("writePump end")
+		//log.Debug("writePump end")
 	}()
 	for {
 		select {
@@ -292,7 +292,7 @@ func (c *WebSocketClient) readPump() {
 	})
 	defer func() {
 		c.Close()
-		log.Debug("readPump end")
+		//log.Debug("readPump end")
 	}()
 
 	for {

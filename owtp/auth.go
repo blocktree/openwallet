@@ -18,6 +18,7 @@ package owtp
 import (
 	"crypto/rand"
 	"fmt"
+	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/crypto"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/go-owcrypt"
@@ -223,7 +224,7 @@ func NewOWTPAuthWithHTTPHeader(header http.Header, def ...Certificate) (*OWTPAut
 		err             error
 	)
 
-	log.Debug("header:", header)
+	//log.Debug("header:", header)
 
 	a := header.Get("a")
 	//p := header.Get("p")
@@ -264,7 +265,7 @@ func NewOWTPAuthWithHTTPHeader(header http.Header, def ...Certificate) (*OWTPAut
 	return auth, nil
 }
 
-func NewOWTPAuthWithCertificate(cert Certificate) (*OWTPAuth, error) {
+func NewOWTPAuthWithCertificate(cert Certificate, enable bool) (*OWTPAuth, error) {
 
 	//var (
 	//	isConsult bool
@@ -281,7 +282,7 @@ func NewOWTPAuthWithCertificate(cert Certificate) (*OWTPAuth, error) {
 		localPublicKey:  cert.PublicKeyBytes(),
 		//consultType:     cert.consultType,
 		//isConsult:       isConsult,
-		enable:          true,
+		enable: enable,
 	}
 
 	return auth, nil
@@ -306,16 +307,40 @@ func (auth *OWTPAuth) LocalPID() string {
 
 //GenerateSignature 生成签名，并把签名加入到DataPacket中
 func (auth *OWTPAuth) GenerateSignature(data *DataPacket) bool {
-
-	//TODO:给数据包生成签名
+	if auth.EnableAuth() {
+		//给数据包生成签名
+		dataString := common.NewString(data.Data)
+		plainText := fmt.Sprintf("%d%s%d%d%s", data.Req, data.Method, data.Nonce, data.Timestamp, dataString)
+		hash := owcrypt.Hash([]byte(plainText), 0, owcrypt.HASh_ALG_DOUBLE_SHA256)
+		nodeID := owcrypt.Hash(auth.localPublicKey, 0, owcrypt.HASH_ALG_SHA256)
+		signature, ret := owcrypt.Signature(auth.localPrivateKey, nodeID, 32, hash, 32, owcrypt.ECC_CURVE_SM2_STANDARD)
+		if ret != owcrypt.SUCCESS {
+			return false
+		}
+		data.Signature = base58.Encode(signature)
+		//log.Debug("GenerateSignature packet.Signature: ", data.Signature)
+	}
 	return true
 }
 
 //VerifySignature 校验签名，若验证错误，可更新错误信息到DataPacket中
 func (auth *OWTPAuth) VerifySignature(data *DataPacket) bool {
-	//TODO:验证数据包签名是否合法
+	//验证数据包签名是否合法
 	if auth.EnableAuth() {
-
+		//log.Debug("VerifySignature packet.Req: ", data.Req)
+		//log.Debug("VerifySignature packet.Signature: ", data.Signature)
+		dataString := data.Data.(string)
+		plainText := fmt.Sprintf("%d%s%d%d%s", data.Req, data.Method, data.Nonce, data.Timestamp, dataString)
+		hash := owcrypt.Hash([]byte(plainText), 0, owcrypt.HASh_ALG_DOUBLE_SHA256)
+		nodeID := owcrypt.Hash(auth.remotePublicKey, 0, owcrypt.HASH_ALG_SHA256)
+		signature, err := base58.Decode(data.Signature)
+		if err != nil {
+			return false
+		}
+		ret := owcrypt.Verify(auth.remotePublicKey, nodeID, 32, hash, 32, signature, owcrypt.ECC_CURVE_SM2_STANDARD)
+		if ret != owcrypt.SUCCESS {
+			return false
+		}
 	}
 	return true
 }
@@ -343,7 +368,7 @@ func (auth *OWTPAuth) EncryptData(data []byte, key []byte) ([]byte, error) {
 //DecryptData 解密数据
 func (auth *OWTPAuth) DecryptData(data []byte, key []byte) ([]byte, error) {
 	//TODO:使用协商密钥解密数据
-	if auth.EnableKeyAgreement() && len(key) > 0 && len(data) > 0  {
+	if auth.EnableKeyAgreement() && len(key) > 0 && len(data) > 0 {
 		encD, err := base58.Decode(string(data))
 		if err != nil {
 			return data, err
@@ -536,8 +561,8 @@ func (auth *OWTPAuth) ResponseKeyAgreement(params map[string]interface{}) (map[s
 	auth.isConsult = true
 
 	result := map[string]interface{}{
-		"secretKey":      base58.Encode(key),
-		"localChecksum":  base58.Encode(sa),
+		"secretKey":     base58.Encode(key),
+		"localChecksum": base58.Encode(sa),
 	}
 
 	return result, nil
