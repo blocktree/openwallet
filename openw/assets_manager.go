@@ -17,17 +17,18 @@ package openw
 
 import (
 	"fmt"
+
 	"github.com/blocktree/OpenWallet/assets"
 	"github.com/blocktree/OpenWallet/assets/bitcoin"
 	"github.com/blocktree/OpenWallet/assets/bitcoincash"
 	"github.com/blocktree/OpenWallet/assets/ethereum"
 	"github.com/blocktree/OpenWallet/assets/litecoin"
 	"github.com/blocktree/OpenWallet/assets/nebulasio"
+	"github.com/blocktree/OpenWallet/assets/ontology"
 	"github.com/blocktree/OpenWallet/assets/qtum"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 )
-
 
 //type AssetsManager interface {
 //	openwallet.AssetsAdapter
@@ -39,7 +40,6 @@ import (
 //	GetAddressWithBalance(address ...*openwallet.Address) error
 //}
 
-
 //注册钱包管理工具
 func initAssetAdapter() {
 	//注册钱包管理工具
@@ -50,6 +50,7 @@ func initAssetAdapter() {
 	assets.RegAssets(qtum.Symbol, qtum.NewWalletManager())
 	assets.RegAssets(nebulasio.Symbol, nebulasio.NewWalletManager())
 	assets.RegAssets(bitcoincash.Symbol, bitcoincash.NewWalletManager())
+	assets.RegAssets(ontology.Symbol, ontology.NewWalletManager())
 }
 
 // GetSymbolInfo 获取资产的币种信息
@@ -79,5 +80,6 @@ func GetAssetsAdapter(symbol string) (openwallet.AssetsAdapter, error) {
 	if !ok {
 		return nil, fmt.Errorf("assets: %s is not support", symbol)
 	}
+
 	return manager, nil
 }

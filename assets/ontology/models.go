@@ -16,30 +16,30 @@
 package ontology
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/blocktree/OpenWallet/crypto"
 	"fmt"
+
+	"github.com/blocktree/OpenWallet/crypto"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/tidwall/gjson"
-	"encoding/hex"
 )
 
-type Vin struct {
-	Coinbase string
-	TxID     string
-	Vout     uint64
-	N        uint64
-	Addr     string
-	Value    string
-}
+// type Vin struct {
+// 	Coinbase string
+// 	TxID     string
+// 	Vout     uint64
+// 	N        uint64
+// 	Addr     string
+// 	Value    string
+// }
 
-type Vout struct {
-	N            uint64
-	Addr         string
-	Value        string
-	ScriptPubKey string
-	Type         string
-}
+// type Vout struct {
+// 	N            uint64
+// 	Addr         string
+// 	Value        string
+// 	ScriptPubKey string
+// 	Type         string
+// }
 
 type Block struct {
 
@@ -66,127 +66,68 @@ type Block struct {
 
 	*/
 
-	Hash              string
-	Confirmations     uint64
-	Merkleroot        string
-	tx                []string
-	Previousblockhash string
-	Height            uint64 `storm:"id"`
-	Version           uint64
-	Time              uint64
-	Fork              bool
+	Hash             string
+	Size             uint64
+	Version          byte
+	PrevBlockHash    string
+	TransactionsRoot string
+	BlockRoot        string
+	Timestamp        uint64
+	Height           uint64
+	ConsensusData    string
+	ConsensusPayload string
+	NextBookkeeper   string
+	Bookkeepers      []string
+	SigData          []string
+	Transactions     []string
 }
 
 type Transaction struct {
-	TxID          string
-	Size          uint64
-	Version       uint64
-	LockTime      int64
-	Hex           string
-	BlockHash     string
-	BlockHeight   uint64
-	Confirmations uint64
-	Blocktime     int64
-	IsCoinBase    bool
-	Fees          string
-
-	Vins  []*Vin
-	Vouts []*Vout
-}
-
-//Unspent 未花记录
-type Unspent struct {
-
-	/*
-			{
-		        "txid" : "d54994ece1d11b19785c7248868696250ab195605b469632b7bd68130e880c9a",
-		        "vout" : 1,
-		        "address" : "mgnucj8nYqdrPFh2JfZSB1NmUThUGnmsqe",
-		        "account" : "test label",
-		        "scriptPubKey" : "76a9140dfc8bafc8419853b34d5e072ad37d1a5159f58488ac",
-		        "amount" : 0.00010000,
-		        "confirmations" : 6210,
-		        "spendable" : true,
-		        "solvable" : true
-		    }
-	*/
-	Key           string `storm:"id"`
-	TxID          string `json:"txid"`
-	Vout          uint64 `json:"vout"`
-	Address       string `json:"address"`
-	AccountID     string `json:"account" storm:"index"`
-	ScriptPubKey  string `json:"scriptPubKey"`
-	Amount        string `json:"amount"`
-	Confirmations uint64 `json:"confirmations"`
-	Spendable     bool   `json:"spendable"`
-	Solvable      bool   `json:"solvable"`
-	HDAddress     openwallet.Address
-}
-
-func NewUnspent(json *gjson.Result) *Unspent {
-	obj := &Unspent{}
-	//解析json
-	obj.TxID = gjson.Get(json.Raw, "txid").String()
-	obj.Vout = gjson.Get(json.Raw, "vout").Uint()
-	obj.Address = gjson.Get(json.Raw, "address").String()
-	obj.AccountID = gjson.Get(json.Raw, "account").String()
-	obj.ScriptPubKey = gjson.Get(json.Raw, "scriptPubKey").String()
-	obj.Amount = gjson.Get(json.Raw, "amount").String()
-	obj.Confirmations = gjson.Get(json.Raw, "confirmations").Uint()
-	//obj.Spendable = gjson.Get(json.Raw, "spendable").Bool()
-	obj.Spendable = true
-	obj.Solvable = gjson.Get(json.Raw, "solvable").Bool()
-
-	return obj
-}
-
-
-func newTxVinByCore(json *gjson.Result) *Vin {
-
-	/*
-		{
-			"txid": "55c4b35a16df289851d8016b454f766485520ead4776670e04083c0277308acc",
-			"vout": 1,
-			"scriptSig": {
-				"asm": "0014aa59f94152351c79b57b14a53e538a923e332468",
-				"hex": "160014aa59f94152351c79b57b14a53e538a923e332468"
-			},
-			"txinwitness": ["304402205e667171c1798cde426282bb8bff45901866ad6bf0d209e856c1765eda65ba4802203aaa319ea3de00eccef0006e6ee2089aed4b91ada7953f420a47c9c258d424ca01", "033cfda2f93d13b01d46ecc406b03ebaba3e1bd526d2148a0a5d579d52f8c7cf02"],
-			"sequence": 4294967294
-		}
-	*/
-	obj := Vin{}
-	//解析json
-	obj.TxID = gjson.Get(json.Raw, "txid").String()
-	obj.Vout = gjson.Get(json.Raw, "vout").Uint()
-	obj.Coinbase = gjson.Get(json.Raw, "coinbase").String()
-	//obj.Addr = gjson.Get(json.Raw, "addr").String()
-	//obj.Value = gjson.Get(json.Raw, "value").String()
-
-	return &obj
+	TxID        string
+	Version     byte
+	Nonce       uint32
+	GasPrice    uint64
+	GasLimit    uint64
+	Payer       string
+	TxType      byte
+	Payload     string
+	BlockHeight uint64
+	BlockHash   string
 }
 
 func NewBlock(json *gjson.Result) *Block {
 	obj := &Block{}
-	//解析json
-	obj.Hash = gjson.Get(json.Raw, "hash").String()
-	obj.Confirmations = gjson.Get(json.Raw, "confirmations").Uint()
-	obj.Merkleroot = gjson.Get(json.Raw, "merkleroot").String()
 
-	txs := make([]string, 0)
-	for _, tx := range gjson.Get(json.Raw, "tx").Array() {
-		txs = append(txs, tx.String())
+	fmt.Println(json.Raw)
+	// 解析
+	obj.Hash = gjson.Get(json.Raw, "Hash").String()
+	obj.Size = gjson.Get(json.Raw, "Size").Uint()
+	obj.Version = byte(gjson.Get(json.Raw, "Header").Get("Version").Uint())
+	obj.PrevBlockHash = gjson.Get(json.Raw, "Header").Get("PrevBlockHash").String()
+	obj.TransactionsRoot = gjson.Get(json.Raw, "Header").Get("TransactionsRoot").String()
+	obj.BlockRoot = gjson.Get(json.Raw, "Header").Get("BlockRoot").String()
+	obj.Timestamp = gjson.Get(json.Raw, "Header").Get("Timestamp").Uint()
+	obj.Height = gjson.Get(json.Raw, "Header").Get("Height").Uint()
+	obj.ConsensusData = gjson.Get(json.Raw, "Header").Get("ConsensusData").String()
+	obj.ConsensusPayload = gjson.Get(json.Raw, "Header").Get("ConsensusPayload").String()
+	obj.NextBookkeeper = gjson.Get(json.Raw, "Header").Get("NextBookkeeper").String()
+	bookkeepers := gjson.Get(json.Raw, "Header").Get("Bookkeepers").Array()
+	for _, bk := range bookkeepers {
+		obj.Bookkeepers = append(obj.Bookkeepers, bk.String())
+	}
+	sigdatas := gjson.Get(json.Raw, "Header").Get("SigData").Array()
+	for _, sd := range sigdatas {
+		obj.SigData = append(obj.SigData, sd.String())
 	}
 
-	obj.tx = txs
-	obj.Previousblockhash = gjson.Get(json.Raw, "previousblockhash").String()
-	obj.Height = gjson.Get(json.Raw, "height").Uint()
-	obj.Version = gjson.Get(json.Raw, "version").Uint()
-	obj.Time = gjson.Get(json.Raw, "time").Uint()
+	txs := gjson.Get(json.Raw, "Transactions").Array()
+
+	for _, tx := range txs {
+		obj.Transactions = append(obj.Transactions, gjson.Get(tx.Raw, "Hash").String())
+	}
 
 	return obj
 }
-
 
 //BlockHeader 区块链头
 func (b *Block) BlockHeader() *openwallet.BlockHeader {
@@ -194,12 +135,12 @@ func (b *Block) BlockHeader() *openwallet.BlockHeader {
 	obj := openwallet.BlockHeader{}
 	//解析json
 	obj.Hash = b.Hash
-	obj.Confirmations = b.Confirmations
-	obj.Merkleroot = b.Merkleroot
-	obj.Previousblockhash = b.Previousblockhash
+	//obj.Confirmations = b.Confirmations
+	obj.Merkleroot = b.BlockRoot
+	obj.Previousblockhash = b.PrevBlockHash
 	obj.Height = b.Height
-	obj.Version = b.Version
-	obj.Time = b.Time
+	obj.Version = uint64(b.Version)
+	obj.Time = b.Timestamp
 	obj.Symbol = Symbol
 
 	return &obj
@@ -219,92 +160,5 @@ func NewUnscanRecord(height uint64, txID, reason string) *UnscanRecord {
 	obj.TxID = txID
 	obj.Reason = reason
 	obj.ID = common.Bytes2Hex(crypto.SHA256([]byte(fmt.Sprintf("%d_%s", height, txID))))
-	return &obj
-}
-
-func newTxByCore(json *gjson.Result, isTestnet bool) *Transaction {
-
-	/*
-		{
-			"txid": "6595e0d9f21800849360837b85a7933aeec344a89f5c54cf5db97b79c803c462",
-			"hash": "f758cb5181d51f8bee1512b4a862faad5b51c7c85a1a11cd6092ffc1c6649bc5",
-			"version": 2,
-			"size": 249,
-			"vsize": 168,
-			"locktime": 1414190,
-			"vin": [],
-			"vout": [],
-			"hex": "02000000000101cc8a3077023c08040e677647ad0e528564764f456b01d8519828df165ab3c4550100000017160014aa59f94152351c79b57b14a53e538a923e332468feffffff02a716167c6f00000017a914a0fe07f130a36d9c7581ccd2886895c049b0cc8287ece29c00000000001976a9148c0bceb59d452b3e077f73a420b8bfe09e0550a788ac0247304402205e667171c1798cde426282bb8bff45901866ad6bf0d209e856c1765eda65ba4802203aaa319ea3de00eccef0006e6ee2089aed4b91ada7953f420a47c9c258d424ca0121033cfda2f93d13b01d46ecc406b03ebaba3e1bd526d2148a0a5d579d52f8c7cf022e941500",
-			"blockhash": "0000000040730ea7935cce346ce68bf4c07c10b137ba31960bf8a47c4f7da4ec",
-			"confirmations": 20076,
-			"time": 1537841342,
-			"blocktime": 1537841342
-		}
-	*/
-	obj := Transaction{}
-	//解析json
-	obj.TxID = gjson.Get(json.Raw, "txid").String()
-	obj.Version = gjson.Get(json.Raw, "version").Uint()
-	obj.LockTime = gjson.Get(json.Raw, "locktime").Int()
-	obj.BlockHash = gjson.Get(json.Raw, "blockhash").String()
-	//obj.BlockHeight = gjson.Get(json.Raw, "blockheight").Uint()
-	obj.Confirmations = gjson.Get(json.Raw, "confirmations").Uint()
-	obj.Blocktime = gjson.Get(json.Raw, "blocktime").Int()
-	obj.Size = gjson.Get(json.Raw, "size").Uint()
-	//obj.Fees = gjson.Get(json.Raw, "fees").String()
-
-	obj.Vins = make([]*Vin, 0)
-	if vins := gjson.Get(json.Raw, "vin"); vins.IsArray() {
-		for i, vin := range vins.Array() {
-			input := newTxVinByCore(&vin)
-			input.N = uint64(i)
-			obj.Vins = append(obj.Vins, input)
-		}
-	}
-
-	obj.Vouts = make([]*Vout, 0)
-	if vouts := gjson.Get(json.Raw, "vout"); vouts.IsArray() {
-		for _, vout := range vouts.Array() {
-			output := newTxVoutByCore(&vout, isTestnet)
-			obj.Vouts = append(obj.Vouts, output)
-		}
-	}
-
-	return &obj
-}
-
-func newTxVoutByCore(json *gjson.Result, isTestnet bool) *Vout {
-
-	/*
-		{
-			"value": 4788.23192231,
-			"n": 0,
-			"scriptPubKey": {
-				"asm": "OP_HASH160 a0fe07f130a36d9c7581ccd2886895c049b0cc82 OP_EQUAL",
-				"hex": "a914a0fe07f130a36d9c7581ccd2886895c049b0cc8287",
-				"reqSigs": 1,
-				"type": "scripthash",
-				"addresses": ["2N7vURMwMDjqgijLNFsErFLAWtAg58S6qNv"]
-			}
-		}
-	*/
-	obj := Vout{}
-	//解析json
-	obj.Value = gjson.Get(json.Raw, "value").String()
-	obj.N = gjson.Get(json.Raw, "n").Uint()
-	obj.ScriptPubKey = gjson.Get(json.Raw, "scriptPubKey,hex").String()
-
-	//提取地址
-	if addresses := gjson.Get(json.Raw, "scriptPubKey.addresses"); addresses.IsArray() {
-		obj.Addr = addresses.Array()[0].String()
-	}
-
-	obj.Type = gjson.Get(json.Raw, "scriptPubKey.type").String()
-
-	if len(obj.Addr) == 0 {
-		scriptBytes, _ := hex.DecodeString(obj.ScriptPubKey)
-		obj.Addr, _ = ScriptPubKeyToBech32Address(scriptBytes, isTestnet)
-	}
-
 	return &obj
 }

@@ -55,6 +55,29 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 	return decoder.VerifyONTRawTransaction(wrapper, rawTx)
 }
 
+func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) (*openwallet.Transaction, error) {
+	if len(rawTx.RawHex) == 0 {
+		return nil, fmt.Errorf("transaction hex is empty")
+	}
+
+	if !rawTx.IsCompleted {
+		return nil, fmt.Errorf("transaction is not completed validation")
+	}
+
+	txid, err := decoder.wm.SendRawTransaction(rawTx.RawHex)
+	if err != nil {
+		return nil, err
+	}
+
+	rawTx.TxID = txid
+	rawTx.IsSubmit = true
+	tx := openwallet.Transaction{
+		WxID: txid,
+		TxID: txid,
+	}
+	return &tx, nil
+}
+
 func (decoder *TransactionDecoder) CreateONTRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	var (
@@ -76,7 +99,7 @@ func (decoder *TransactionDecoder) CreateONTRawTransaction(wrapper openwallet.Wa
 	addressesBalanceList := make([]AddrBalance, 0, len(addresses))
 
 	for i, addr := range addresses {
-		balance, err := decoder.wm.getBalanceByLocal(addr.Address)
+		balance, err := decoder.wm.RPCClient.getBalance(addr.Address)
 
 		if err != nil {
 			return err
@@ -86,7 +109,7 @@ func (decoder *TransactionDecoder) CreateONTRawTransaction(wrapper openwallet.Wa
 	}
 
 	sort.Slice(addressesBalanceList, func(i int, j int) bool {
-		return addressesBalanceList[i].ONTBalance.Cmp(addressesBalanceList[j].ONTBalance) < 0
+		return addressesBalanceList[i].ONTBalance.Cmp(addressesBalanceList[j].ONTBalance) >= 0
 	})
 
 	fee := big.NewInt(int64(gasLimit * gasPrice))
@@ -97,8 +120,7 @@ func (decoder *TransactionDecoder) CreateONTRawTransaction(wrapper openwallet.Wa
 		amountStr = v
 		break
 	}
-	signatureMap := make(map[string][]*openwallet.KeySignature)
-	keySignList := make([]*openwallet.KeySignature, 0, 1)
+	keySignList := make([]*openwallet.KeySignature, 1, 1)
 
 	if rawTx.Coin.ContractID == ontologyTransaction.ONGContractAddress {
 		amount, err := convertFlostStringToBigInt(amountStr)
@@ -220,19 +242,37 @@ func (decoder *TransactionDecoder) CreateONTRawTransaction(wrapper openwallet.Wa
 
 	rawTx.Fees = feeInONG.String()
 
-	txHex, err := ontologyTransaction.CreateEmptyRawTransaction(gasPrice, gasLimit, txState)
+	emptyTrans, err := ontologyTransaction.CreateEmptyRawTransaction(gasPrice, gasLimit, txState)
 	if err != nil {
-		return nil
+		return err
 	}
 
-	txHash, err := ontologyTransaction.CreateRawTransactionHashForSig(txHex)
+	transHash, err := ontologyTransaction.CreateRawTransactionHashForSig(emptyTrans)
 	if err != nil {
-		return nil
+		return err
 	}
-	keySignList[0].Message = txHash.Hash
-	rawTx.RawHex = txHex
+	rawTx.RawHex = emptyTrans
 
-	rawTx.Signatures = signatureMap
+	if rawTx.Signatures == nil {
+		rawTx.Signatures = make(map[string][]*openwallet.KeySignature)
+	}
+
+	keySigs := make([]*openwallet.KeySignature, 0)
+
+	addr, err := wrapper.GetAddress(transHash.GetNormalTxAddress())
+	if err != nil {
+		return err
+	}
+	signature := openwallet.KeySignature{
+		EccType: decoder.wm.Config.CurveType,
+		Nonce:   "",
+		Address: addr,
+		Message: transHash.GetTxHashHex(),
+	}
+
+	keySigs = append(keySigs, &signature)
+
+	rawTx.Signatures[rawTx.Account.AccountID] = keySigs
 
 	rawTx.FeeRate = big.NewInt(int64(gasPrice)).String()
 
