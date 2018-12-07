@@ -16,6 +16,7 @@
 package ontology
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -61,8 +62,7 @@ func TestSaveLocalBlockHeight(t *testing.T) {
 }
 
 func TestGetBlockHash(t *testing.T) {
-	//height := GetLocalBlockHeight()
-	hash, err := tw.GetBlockHash(1354918)
+	hash, err := tw.GetBlockHash(94573)
 	if err != nil {
 		t.Errorf("GetBlockHash failed unexpected error: %v\n", err)
 		return
@@ -80,42 +80,33 @@ func TestGetBlock(t *testing.T) {
 }
 
 func TestGetTransaction(t *testing.T) {
-	raw, err := tw.GetTransaction("7792d54a7eb9f467de7a1292c0d317b2d5462e7ec35d229a383d948c18d9c873")
-	if err != nil {
-		t.Errorf("GetTransaction failed unexpected error: %v\n", err)
-		return
-	}
+	// raw, err := tw.GetTransaction("7792d54a7eb9f467de7a1292c0d317b2d5462e7ec35d229a383d948c18d9c873")
+	// if err != nil {
+	// 	t.Errorf("GetTransaction failed unexpected error: %v\n", err)
+	// 	return
+	// }
 
-	t.Logf("BlockHash = %v \n", raw.BlockHash)
-	t.Logf("BlockHeight = %v \n", raw.BlockHeight)
-	t.Logf("Blocktime = %v \n", raw.Blocktime)
-	t.Logf("Fees = %v \n", raw.Fees)
+	// t.Logf("BlockHash = %v \n", raw.BlockHash)
+	// t.Logf("BlockHeight = %v \n", raw.BlockHeight)
+	// t.Logf("Blocktime = %v \n", raw.Blocktime)
+	// t.Logf("Fees = %v \n", raw.Fees)
 
-	t.Logf("========= vins ========= \n")
+	// t.Logf("========= vins ========= \n")
 
-	for i, vin := range raw.Vins {
-		t.Logf("TxID[%d] = %v \n", i, vin.TxID)
-		t.Logf("Vout[%d] = %v \n", i, vin.Vout)
-		t.Logf("Addr[%d] = %v \n", i, vin.Addr)
-		t.Logf("Value[%d] = %v \n", i, vin.Value)
-	}
+	// for i, vin := range raw.Vins {
+	// 	t.Logf("TxID[%d] = %v \n", i, vin.TxID)
+	// 	t.Logf("Vout[%d] = %v \n", i, vin.Vout)
+	// 	t.Logf("Addr[%d] = %v \n", i, vin.Addr)
+	// 	t.Logf("Value[%d] = %v \n", i, vin.Value)
+	// }
 
-	t.Logf("========= vouts ========= \n")
+	// t.Logf("========= vouts ========= \n")
 
-	for i, out := range raw.Vouts {
-		t.Logf("ScriptPubKey[%d] = %v \n", i, out.ScriptPubKey)
-		t.Logf("Addr[%d] = %v \n", i, out.Addr)
-		t.Logf("Value[%d] = %v \n", i, out.Value)
-	}
-}
-
-func TestGetTxOut(t *testing.T) {
-	raw, err := tw.GetTxOut("7768a6436475ed804344a3711e90e7f10f7db42da8918580c8b669dd63d64cc3", 0)
-	if err != nil {
-		t.Errorf("GetTxOut failed unexpected error: %v\n", err)
-		return
-	}
-	t.Logf("GetTxOut = %v \n", raw)
+	// for i, out := range raw.Vouts {
+	// 	t.Logf("ScriptPubKey[%d] = %v \n", i, out.ScriptPubKey)
+	// 	t.Logf("Addr[%d] = %v \n", i, out.Addr)
+	// 	t.Logf("Value[%d] = %v \n", i, out.Value)
+	// }
 }
 
 func TestGetTxIDsInMemPool(t *testing.T) {
@@ -285,4 +276,26 @@ func TestGetLocalBlock(t *testing.T) {
 		return
 	}
 	log.Info("blocks = ", len(blocks))
+}
+
+func Test_GetTransaction(t *testing.T) {
+	txid := "dc55118ac9442af38a0ec85bcce54a8f8d68ba65de0120a8739d90b9d93b6ca2"
+
+	trans, err := tw.GetTransaction(txid)
+	if err != nil {
+		log.Error("get transaction failed!")
+	} else {
+		log.Info(trans)
+	}
+}
+func Test_tmp(t *testing.T) {
+	addr := "AWMfG65wV2FeHDUBjevGNLTD7ciQz4hhok"
+	params := []interface{}{addr}
+	c := NewRpcClient("http://localhost:20336")
+
+	txid, err := c.sendRpcRequest("0", "getbalance", params)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(string(txid))
 }

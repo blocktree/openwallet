@@ -26,15 +26,14 @@ import (
 type WalletManager struct {
 	openwallet.AssetsAdapterBase
 
-	Storage        *hdkeystore.HDKeystore        //秘钥存取
-	WalletClient   *Client                       // 节点客户端
-	LocalClient    *Local                        // 本地API客户端
-	ExplorerClient *Explorer                     // 浏览器API客户端
-	Config         *WalletConfig                 //钱包管理配置
-	WalletsInSum   map[string]*openwallet.Wallet //参与汇总的钱包
-	Blockscanner   *ONTBlockScanner              //区块扫描器
-	Decoder        openwallet.AddressDecoder     //地址编码器
-	TxDecoder      openwallet.TransactionDecoder //交易单编码器
+	Storage   *hdkeystore.HDKeystore //秘钥存取
+	RPCClient *RpcClient             // RPC API
+	//	RestClient   *Rest                         // RestAPI客户端
+	Config       *WalletConfig                 //钱包管理配置
+	WalletsInSum map[string]*openwallet.Wallet //参与汇总的钱包
+	Blockscanner *ONTBlockScanner              //区块扫描器
+	Decoder      openwallet.AddressDecoder     //地址编码器
+	TxDecoder    openwallet.TransactionDecoder //交易单编码器
 }
 
 func NewWalletManager() *WalletManager {
@@ -46,8 +45,10 @@ func NewWalletManager() *WalletManager {
 	wm.WalletsInSum = make(map[string]*openwallet.Wallet)
 	//区块扫描器
 	wm.Blockscanner = NewONTBlockScanner(&wm)
-	//wm.Decoder = NewAddressDecoder(&wm)
-	//wm.TxDecoder = NewTransactionDecoder(&wm)
+	wm.Decoder = NewAddressDecoder(&wm)
+	wm.TxDecoder = NewTransactionDecoder(&wm)
+
+	//	wm.RPCClient = NewRpcClient("http://localhost:20336/")
 	return &wm
 }
 
@@ -84,4 +85,20 @@ func (wm *WalletManager) GetWallets() ([]*openwallet.Wallet, error) {
 
 	return wallets, nil
 
+}
+
+//SendRawTransaction 广播交易
+func (wm *WalletManager) SendRawTransaction(txHex string) (string, error) {
+
+	return wm.sendRawTransactionByRest(txHex)
+}
+
+func (wm *WalletManager) sendRawTransactionByRest(txHex string) (string, error) {
+	params := []interface{}{txHex}
+
+	txid, err := wm.RPCClient.sendRpcRequest("0", "sendrawtransaction", params)
+	if err != nil {
+		return "", err
+	}
+	return string(txid), nil
 }

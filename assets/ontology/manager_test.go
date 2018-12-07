@@ -22,18 +22,11 @@ var (
 func init() {
 
 	tw = NewWalletManager()
-
-	tw.Config.ServerAPI = "http://127.0.0.1:20336"
+	//tw.Config.ServerAPI = "http://127.0.0.1:20336"
 	tw.Config.RpcUser = ""
 	tw.Config.RpcPassword = ""
-	token := BasicAuth(tw.Config.RpcUser, tw.Config.RpcPassword)
-	tw.WalletClient = NewClient(tw.Config.ServerAPI, token, false)
-
-	//explorerURL := "http://192.168.32.107:20003/insight-api/"
-	//tw.ExplorerClient = NewExplorer(explorerURL, true)
-
-	localURL := "http://localhost:20334/api/v1/"
-	tw.LocalClient = NewLocal(localURL, true)
-
-	tw.Config.RPCServerType = RPCServerCore
+	// restURL := "http://localhost:20336"
+	//	tw.RestClient = NewRest(restURL, true)
+	tw.RPCClient = NewRpcClient("http://localhost:20336")
+	tw.Config.RPCServerType = RPCServerRest
 }

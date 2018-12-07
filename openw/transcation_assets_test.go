@@ -16,10 +16,12 @@
 package openw
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/go-owcdrivers/ontologyTransaction"
 )
 
 func testGetAssetsAccountBalance(tm *WalletManager, walletID, accountID string) {
@@ -339,8 +341,6 @@ func TestTransfer_BTC(t *testing.T) {
 
 }
 
-
-
 func TestTransfer_OMNI(t *testing.T) {
 	tm := testInitWalletManager()
 	//ms9NeTGFtaMcjrqRyRogkHqRoR8b1sQwu3
@@ -414,7 +414,6 @@ func TestTransfer_TRON(t *testing.T) {
 
 }
 
-
 func TestTransfer_BCH(t *testing.T) {
 	tm := testInitWalletManager()
 	//1AYKNVJKqfrCtiDP7iKscZA8HB7tbdzZmK
@@ -423,6 +422,91 @@ func TestTransfer_BCH(t *testing.T) {
 	to := "1MfQh4Lvk4xmRPcV5VbWdFmQshErHgPCh2"
 
 	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.2", "", nil)
+	if err != nil {
+		return
+	}
+
+	_, err = testSignTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testVerifyTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testSubmitTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+}
+
+func TestTransfer_ONT(t *testing.T) {
+	tm := testONTInitWalletManager()
+
+	walletID := "W33vxQiNcgjJgMvowsNerXao6LZjwR61zp"
+	accountID := "7NHXSXEaBViL5koJgexd3qHeGLggHjen99nyjEigdGnn"
+	to := "ANeTozd4yxTa5nTyfc3mxzuu7RqabV1iow"
+
+	//  ONT transaction
+	contract := openwallet.SmartContract{
+		ContractID: ontologyTransaction.ONTContractAddress,
+		Symbol:     "ONT",
+	}
+
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1", "0", &contract)
+	fmt.Println(rawTx.RawHex)
+	if err != nil {
+		return
+	}
+
+	_, err = testSignTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testVerifyTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testSubmitTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	// ONG withdraw
+	contract.ContractID = ontologyTransaction.ONGContractAddress
+	to = "ASyQp8fTtr7gCaCHuRDrtaTr2ZTqSzeE1J"
+
+	rawTx, err = testCreateTransactionStep(tm, walletID, accountID, to, "0", "0", &contract)
+	fmt.Println(rawTx.RawHex)
+	if err != nil {
+		return
+	}
+
+	_, err = testSignTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testVerifyTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testSubmitTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	// ONG transaction
+	to = "ANeTozd4yxTa5nTyfc3mxzuu7RqabV1iow"
+
+	rawTx, err = testCreateTransactionStep(tm, walletID, accountID, to, "1", "0", &contract)
+	fmt.Println(rawTx.RawHex)
 	if err != nil {
 		return
 	}

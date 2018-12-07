@@ -69,6 +69,8 @@ type WalletConfig struct {
 	backupDir string
 	//钱包服务API
 	ServerAPI string
+	//Restful API
+	RestfulServerAPI string
 	//钱包安装的路径
 	NodeInstallPath string
 	//钱包数据文件目录
@@ -100,7 +102,7 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	//币种
 	c.Symbol = symbol
 	c.MasterKey = masterKey
-	//c.CurveType = CurveType
+	c.CurveType = CurveType
 
 	//RPC认证账户名
 	c.RpcUser = ""
@@ -134,6 +136,8 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	c.backupDir = filepath.Join("data", strings.ToLower(c.Symbol), "backup")
 	//钱包服务API
 	c.ServerAPI = "http://127.0.0.1:20336"
+	//Rest url
+	c.RestfulServerAPI = "http://127.0.0.1:20336"
 	//钱包安装的路径
 	c.NodeInstallPath = ""
 	//钱包数据文件目录
@@ -165,7 +169,7 @@ nodeInstallPath = ""
 mainNetDataPath = ""
 # testnet data path
 testNetDataPath = ""
-# RPC Server Type，0: CoreWallet RPC; 1: Explorer API
+# RPC Server Type，0: Rest API
 rpcServerType = 0
 # RPC api url
 serverAPI = ""

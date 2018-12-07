@@ -18,7 +18,7 @@ type AddrBalance struct {
 	index      int
 }
 
-func newAddrBalance(json []*gjson.Result) *AddrBalance {
+func newAddrBalance(data []string) *AddrBalance {
 	// getbalance
 	/*
 		{
@@ -44,17 +44,17 @@ func newAddrBalance(json []*gjson.Result) *AddrBalance {
 		}
 	*/
 
-	ontBalance, err := strconv.ParseInt(gjson.Get(json[0].Raw, "Result").Get("ont").String(), 10, 64)
+	ontBalance, err := strconv.ParseInt(gjson.Get(data[0], "ont").String(), 10, 64)
 	if err != nil {
 		return nil
 	}
 
-	ongBalance, err := strconv.ParseInt(gjson.Get(json[0].Raw, "Result").Get("ong").String(), 10, 64)
+	ongBalance, err := strconv.ParseInt(gjson.Get(data[0], "ong").String(), 10, 64)
 	if err != nil {
 		return nil
 	}
 
-	ongUnbound, err := strconv.ParseInt(gjson.Get(json[1].Raw, "Result").String(), 10, 64)
+	ongUnbound, err := strconv.ParseInt(data[1][1:len(data[1])-1], 10, 64)
 	if err != nil {
 		return nil
 	}

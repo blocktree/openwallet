@@ -16,8 +16,6 @@
 package ontology
 
 import (
-	"fmt"
-
 	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/blocktree/go-owcdrivers/ontologyTransaction"
 	owcrypt "github.com/blocktree/go-owcrypt"
@@ -34,6 +32,11 @@ func NewAddressDecoder(wm *WalletManager) *addressDecoder {
 	return &decoder
 }
 
+//PrivateKeyToWIF 私钥转WIF
+func (decoder *addressDecoder) PrivateKeyToWIF(priv []byte, isTestnet bool) (string, error) {
+	return "", nil
+}
+
 //PublicKeyToAddress 公钥转地址
 func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (string, error) {
 	cfg := addressEncoder.ONT_Address
@@ -48,27 +51,13 @@ func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (s
 	return address, nil
 }
 
-//ScriptPubKeyToBech32Address scriptPubKey转Bech32地址
-func ScriptPubKeyToBech32Address(scriptPubKey []byte, isTestnet bool) (string, error) {
-	var (
-		hash []byte
-	)
+//RedeemScriptToAddress 多重签名赎回脚本转地址
+func (decoder *addressDecoder) RedeemScriptToAddress(pubs [][]byte, required uint64, isTestnet bool) (string, error) {
+	return "", nil
+}
 
-	cfg := addressEncoder.BTC_mainnetAddressBech32V0
-	if isTestnet {
-		cfg = addressEncoder.BTC_testnetAddressBech32V0
-	}
-
-	if len(scriptPubKey) == 22 || len(scriptPubKey) == 34 {
-
-		hash = scriptPubKey[2:]
-
-		address := addressEncoder.AddressEncode(hash, cfg)
-
-		return address, nil
-
-	} else {
-		return "", fmt.Errorf("scriptPubKey length is invalid")
-	}
+//WIFToPrivateKey WIF转私钥
+func (decoder *addressDecoder) WIFToPrivateKey(wif string, isTestnet bool) ([]byte, error) {
+	return nil, nil
 
 }
