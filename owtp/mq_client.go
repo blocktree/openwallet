@@ -222,7 +222,7 @@ func (c *MQClient) writePump() {
 
 	defer func() {
 		c.Close()
-		log.Debug("writePump end")
+		//log.Debug("writePump end")
 	}()
 	for {
 		select {

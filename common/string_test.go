@@ -70,6 +70,10 @@ func TestTypeToString(t *testing.T) {
 		h  = false
 		i  = []string{"12345", "asdfg"}
 		j  = map[string]interface{}{"a": "12345", "b": "asdfg"}
+		k = struct {
+			Name string
+			Age uint64
+		}{Name: "john", Age: 90}
 		kv = make(map[string]interface{}, 0)
 	)
 
@@ -82,6 +86,7 @@ func TestTypeToString(t *testing.T) {
 	kv["h"] = h
 	kv["i"] = i
 	kv["j"] = j
+	kv["k"] = k
 
 	for k, v := range kv {
 		newString := NewString(v)

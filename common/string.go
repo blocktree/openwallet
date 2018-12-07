@@ -284,7 +284,7 @@ func NewString(value interface{}, def ...String) String {
 		return NewStringByBool(val.Bool())
 	case reflect.String:
 		return String(val.String())
-	case reflect.Slice, reflect.Array, reflect.Map: //如果类型为数组，要继续迭代元素
+	case reflect.Slice, reflect.Array, reflect.Map, reflect.Struct: //如果类型为数组，要继续迭代元素
 		jsonstr, _ := json.Marshal(value)
 		return String(jsonstr)
 	default:

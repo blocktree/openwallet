@@ -61,7 +61,7 @@ func (l *owtpListener) serve() error {
 //ServeHTTP 实现HTTP服务监听
 func (l *owtpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	log.Debug("http url path:", r.URL.Path)
+	//log.Debug("http url path:", r.URL.Path)
 
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -86,7 +86,7 @@ func (l *owtpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Debug("NewOWTPAuth successfully")
+	//log.Debug("NewOWTPAuth successfully")
 
 	peer, err := NewClient(auth.RemotePID(), c, l.handler, auth, cancel)
 	if err != nil {

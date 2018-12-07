@@ -33,7 +33,7 @@ func TestNewOWTPAuthWithCertificate(t *testing.T) {
 		return
 	}
 	//t.Logf("cert: %v", cert)
-	auth, err := NewOWTPAuthWithCertificate(cert)
+	auth, err := NewOWTPAuthWithCertificate(cert, false)
 	if err != nil {
 		t.Errorf("Dial failed unexpected error: %v", err)
 		return

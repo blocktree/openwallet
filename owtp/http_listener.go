@@ -27,11 +27,12 @@ import (
 //owtp监听器
 type httpListener struct {
 	net.Listener
-	handler   PeerHandler
-	closed    chan struct{}
-	incoming  chan Peer
-	laddr     string
-	peerstore Peerstore //节点存储器
+	handler         PeerHandler
+	closed          chan struct{}
+	incoming        chan Peer
+	laddr           string
+	peerstore       Peerstore //节点存储器
+	enableSignature bool
 }
 
 //serve 监听服务
@@ -51,7 +52,7 @@ func (l *httpListener) serve() error {
 //ServeHTTP 实现HTTP服务监听
 func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	log.Debug("http url path:", r.URL.Path)
+	//log.Debug("http url path:", r.URL.Path)
 
 	//创建一个上下文通知，监控节点是否已经关闭
 	ctx, cancel := context.WithCancel(context.Background())
@@ -72,7 +73,7 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
-	peer, err := NewHTTPClientWithHeader(header, w, r, l.handler, cancel)
+	peer, err := NewHTTPClientWithHeader(header, w, r, l.handler, l.enableSignature, cancel)
 	if err != nil {
 		log.Debug("NewClient unexpected error:", err)
 		http.Error(w, "authorization not passed", 401)
@@ -82,7 +83,7 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Just to make sure.
 	//defer peer.Close()
 
-	log.Debug("NewClient successfully")
+	//log.Debug("NewClient successfully")
 
 	select {
 	case l.incoming <- peer:
@@ -126,17 +127,18 @@ func (l *httpListener) Accept() (Peer, error) {
 }
 
 //ListenAddr 创建OWTP协议通信监听
-func HttpListenAddr(addr string, handler PeerHandler) (*httpListener, error) {
+func HttpListenAddr(addr string, enableSignature bool, handler PeerHandler) (*httpListener, error) {
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		return nil, err
 	}
 	listener := httpListener{
-		Listener: l,
-		laddr:    addr,
-		handler:  handler,
-		incoming: make(chan Peer),
-		closed:   make(chan struct{}),
+		Listener:        l,
+		laddr:           addr,
+		handler:         handler,
+		incoming:        make(chan Peer),
+		closed:          make(chan struct{}),
+		enableSignature: enableSignature,
 	}
 
 	go listener.serve()

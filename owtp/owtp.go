@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/HcashOrg/hcutil/base58"
+	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/bwmarrin/snowflake"
 	"math/rand"
@@ -167,6 +168,7 @@ func (node *OWTPNode) Listen(config map[string]string) error {
 
 	addr := config["address"]
 	connectType := config["connectType"]
+	enableSignature := common.NewString(config["enableSignature"]).Bool()
 	if node.listening {
 		return fmt.Errorf("the node is listening, please close listener first")
 	}
@@ -190,7 +192,7 @@ func (node *OWTPNode) Listen(config map[string]string) error {
 
 		node.listening = true
 	} else if connectType == HTTP {
-		l, err := HttpListenAddr(addr, node)
+		l, err := HttpListenAddr(addr, enableSignature, node)
 		if err != nil {
 			return err
 		}
@@ -236,21 +238,20 @@ func (node *OWTPNode) connect(pid string, config map[string]string) (Peer, error
 	}
 
 	addr := config["address"]
+	connectType := config["connectType"]
+	enableSignature := common.NewString(config["enableSignature"]).Bool()
 
 	if len(addr) == 0 {
 		return nil, fmt.Errorf("address must contain by config")
 	}
 
-	auth, err := NewOWTPAuthWithCertificate(node.cert)
+	auth, err := NewOWTPAuthWithCertificate(node.cert, enableSignature)
 
 	//发起协商密钥
 	//err = auth.InitKeyAgreement()
 	if err != nil {
 		return nil, err
 	}
-
-	//链接类型
-	connectType := config["connectType"]
 
 	if len(connectType) == 0 {
 		return nil, fmt.Errorf("connectType must contain by config")
@@ -470,6 +471,10 @@ func (node *OWTPNode) Call(
 		return err
 	}
 
+	if !peer.Auth().GenerateSignature(&packet) {
+		return errors.New("OWTP: authorization failed")
+	}
+
 	//添加请求到队列，异步或同步等待结果，应该在发送前就添加请求，如果发送失败，删除请求
 	node.serveMux.AddRequest(peer.PID(), nonce, time, method, reqFunc, respChan, sync)
 
@@ -498,7 +503,7 @@ func (node *OWTPNode) encryptPacket(peer Peer, packet *DataPacket) error {
 		return nil
 	}
 
-	log.Debug("encryptPacket")
+	//log.Debug("encryptPacket")
 
 	//TODO:加密Data
 	if peer.Auth() != nil && peer.Auth().EnableKeyAgreement() && packet.Data != nil {
@@ -671,20 +676,8 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 		localChecksum []byte
 	)
 
-	//授权检查
-	//if packet.Req == WSRequest {
-
 	//验证授权
 	if peer.Auth() != nil {
-
-		//授权检查
-		if !peer.Auth().VerifySignature(packet) {
-			log.Critical("auth failed: ", packet)
-			packet.Req = WSResponse
-			packet.Data = responseError("unauthorizedd", ErrUnauthorized)
-			peer.Send(*packet) //发送验证失败结果
-			return
-		}
 
 		//协商校验码
 		localChecksumStr, ok := node.Peerstore().Get(peer.PID(), "localChecksum").(string)
@@ -708,23 +701,31 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 			}
 		}
 	}
-	//}
-
-	rawData, ok := packet.Data.(string)
-	if !ok {
-		packet.Req = WSResponse
-		packet.Data = responseError("data parse failed", ErrBadRequest)
-		peer.Send(*packet)
-		return
-	}
-	//log.Debug("rawData:", rawData)
-	decryptData, err := peer.Auth().DecryptData([]byte(rawData), secretKey)
-	//log.Debug("decryptData:", string(decryptData))
 
 	if packet.Req == WSRequest {
 
-		if err != nil {
-			log.Critical("OWTP: DecryptData failed, unexpected err:", err)
+		//授权检查，只检查请求过来的签名
+		if !peer.Auth().VerifySignature(packet) {
+			log.Critical("auth failed: ", packet)
+			packet.Req = WSResponse
+			packet.Data = responseError("verify signature failed, unauthorized", ErrUnauthorized)
+			peer.Send(*packet) //发送验证失败结果
+			return
+		}
+
+		rawData, ok := packet.Data.(string)
+		if !ok {
+			packet.Req = WSResponse
+			packet.Data = responseError("data parse failed", ErrBadRequest)
+			peer.Send(*packet)
+			return
+		}
+		//log.Debug("rawData:", rawData)
+		decryptData, cryptErr := peer.Auth().DecryptData([]byte(rawData), secretKey)
+		//log.Debug("decryptData:", string(decryptData))
+
+		if cryptErr != nil {
+			log.Critical("OWTP: DecryptData failed, unexpected err:", cryptErr)
 			packet.Req = WSResponse
 			packet.Data = responseError("secret key is invalid", ErrSecretKeyInvalid)
 			peer.Send(*packet)
@@ -740,9 +741,9 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 		packet.Req = WSResponse
 		packet.Data = ctx.Resp
 
-		err = node.encryptPacket(peer, packet)
-		if err != nil {
-			log.Critical("OWTP: encryptData failed, unexpected err:", err)
+		cryptErr = node.encryptPacket(peer, packet)
+		if cryptErr != nil {
+			log.Critical("OWTP: encryptData failed, unexpected err:", cryptErr)
 			packet.Req = WSResponse
 			packet.Data = responseError("server encryptData failed", ErrInternalServerError)
 			peer.Send(*packet)
@@ -752,7 +753,16 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 		peer.Send(*packet)
 	} else if packet.Req == WSResponse {
 
-		if err != nil {
+		rawData, ok := packet.Data.(string)
+		if !ok {
+			log.Critical("data parse failed")
+			return
+		}
+		//log.Debug("rawData:", rawData)
+		decryptData, cryptErr := peer.Auth().DecryptData([]byte(rawData), secretKey)
+		//log.Debug("decryptData:", string(decryptData))
+
+		if cryptErr != nil {
 			log.Critical("OWTP: DecryptData failed")
 			return
 		}
