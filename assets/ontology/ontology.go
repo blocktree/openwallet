@@ -616,6 +616,7 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 
 	wm.Config.RPCServerType, _ = c.Int("rpcServerType")
 	wm.Config.RestfulServerAPI = c.String("restfulServerAPI")
+	wm.Config.MainnetNodeAPI = c.String("mainnetNodeAPI")
 	//wm.Config.ServerAPI = c.String("serverAPI")
 	// wm.Config.Threshold, _ = decimal.NewFromString(c.String("threshold"))
 	wm.Config.SumAddress = c.String("sumAddress")
@@ -644,6 +645,8 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 
 	if wm.Config.RPCServerType == RPCServerRest {
 		wm.RPCClient = NewRpcClient(wm.Config.RestfulServerAPI)
+	} else if wm.Config.RPCServerType == RPCServerMainnetNode {
+		wm.RPCClient = NewRpcClient(wm.Config.MainnetNodeAPI)
 	}
 
 	// wm.OnmiClient = NewClient(wm.Config.OmniCoreAPI, omniToken, false)
