@@ -71,6 +71,8 @@ type WalletConfig struct {
 	ServerAPI string
 	//Restful API
 	RestfulServerAPI string
+	//Mainnet node API
+	MainnetNodeAPI string
 	//钱包安装的路径
 	NodeInstallPath string
 	//钱包数据文件目录

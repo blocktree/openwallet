@@ -289,9 +289,10 @@ func Test_GetTransaction(t *testing.T) {
 	}
 }
 func Test_tmp(t *testing.T) {
-	addr := "AWMfG65wV2FeHDUBjevGNLTD7ciQz4hhok"
+	addr := "AYmuoVvtCojm1F3ATMf2fNww3wBNvAxbi5"
 	params := []interface{}{addr}
-	c := NewRpcClient("http://localhost:20336")
+	//c := NewRpcClient("http://192.168.27.124:20336")
+	c := NewRpcClient("http://47.75.78.16:20006")
 
 	txid, err := c.sendRpcRequest("0", "getbalance", params)
 	if err != nil {

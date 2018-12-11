@@ -33,9 +33,10 @@ import (
 )
 
 const (
-	blockchainBucket  = "blockchain" //区块链数据集合
-	maxExtractingSize = 20           //并发的扫描线程数
-	RPCServerRest     = 0            //RPC服务，Restful API
+	blockchainBucket     = "blockchain" //区块链数据集合
+	maxExtractingSize    = 20           //并发的扫描线程数
+	RPCServerRest        = 0            //RPC服务，Restful 测试 API
+	RPCServerMainnetNode = 1            // RPC服务，主网节点 API
 )
 
 //ONTBlockScanner ontology的区块链扫描器
