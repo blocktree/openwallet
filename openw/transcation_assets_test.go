@@ -547,7 +547,7 @@ func TestTransfer_ONT2(t *testing.T) {
 	testGetAssetsAccountTokenBalance(tm, walletID, accountID, contract)
 
 	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1", "", &contract)
-	fmt.Println(rawTx.RawHex)
+	//fmt.Println(rawTx.RawHex)
 	if err != nil {
 		return
 	}
