@@ -156,7 +156,7 @@ func NewServeMux(timeoutSEC int) *ServeMux {
 	//6小时清理一次内存中的请求nonce
 	cache, err := cache.NewCache("memory", `{"interval":21600}`)
 	if err != nil {
-		log.Debug("NewServeMux unexpected err:", err)
+		log.Error("NewServeMux unexpected err:", err)
 	}
 
 	serveMux := ServeMux{

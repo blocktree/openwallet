@@ -58,7 +58,7 @@ func MQDial(pid, url string, handler PeerHandler) (*MQClient, error) {
 	//if auth != nil && auth.EnableAuth() {
 	//	authURL = auth.ConnectAuth(url)
 	//}
-	log.Debug("Connecting URL:", url)
+	log.Info("Connecting URL:", url)
 
 	conn, err := amqp.Dial(url)
 	if err != nil {

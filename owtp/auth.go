@@ -599,7 +599,9 @@ func (auth *OWTPAuth) VerifyKeyAgreement(data *DataPacket, localChecksum []byte)
 		return false
 	}
 
-	log.Debug("VerifyKeyAgreement passed")
+	if Debug {
+		log.Debug("VerifyKeyAgreement passed")
+	}
 
 	auth.isConsult = true
 

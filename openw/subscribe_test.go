@@ -94,7 +94,7 @@ func TestSubscribeAddress_BTC(t *testing.T) {
 			"mh84vzGGA6T5s39BovBJe2dQ3r9KkWQPML":         accountID,
 			"tb1qk7ya4ntkmnc6mrzj7a2ly60524hjue440egv5k": accountID,
 			"mpS3FzHr1WsXWnVw15uiFzLQ9wRmo7rBJZ":         accountID,
-			"mgbZ61Hpbgd55rBk3vvk3r2um1htTxdrrr":         accountID,		//usdt
+			"mgbZ61Hpbgd55rBk3vvk3r2um1htTxdrrr":         accountID, //usdt
 		}
 	)
 
@@ -375,7 +375,7 @@ func TestSubscribeAddress_BCH(t *testing.T) {
 			"mh84vzGGA6T5s39BovBJe2dQ3r9KkWQPML":         accountID,
 			"tb1qk7ya4ntkmnc6mrzj7a2ly60524hjue440egv5k": accountID,
 			"mpS3FzHr1WsXWnVw15uiFzLQ9wRmo7rBJZ":         accountID,
-			"mgbZ61Hpbgd55rBk3vvk3r2um1htTxdrrr":         accountID,		//usdt
+			"mgbZ61Hpbgd55rBk3vvk3r2um1htTxdrrr":         accountID, //usdt
 		}
 	)
 
@@ -424,4 +424,59 @@ func TestSubscribeAddress_BCH(t *testing.T) {
 
 func TestSubscribeAddress_TRON(t *testing.T) {
 
+}
+
+func TestSubscribeAddress_ONT(t *testing.T) {
+
+	var (
+		endRunning = make(chan bool, 1)
+		symbol     = "ONT"
+		accountID  = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
+		addrs      = map[string]string{
+			"AHt5qGrP9HG8zqXAEH5gqUwv2FY9pWqRyE": accountID,
+			"AQ9FxqKbXnZTqf22zy2NFcXhi13fipg48S": accountID,
+		}
+	)
+
+	//GetSourceKeyByAddress 获取地址对应的数据源标识
+	scanAddressFunc := func(address string) (string, bool) {
+		key, ok := addrs[address]
+		if !ok {
+			return "", false
+		}
+		return key, true
+	}
+
+	assetsMgr, err := GetAssetsAdapter(symbol)
+	if err != nil {
+		log.Error(symbol, "is not support")
+		return
+	}
+
+	//读取配置
+	absFile := filepath.Join(configFilePath, symbol+".ini")
+
+	c, err := config.NewConfig("ini", absFile)
+	if err != nil {
+		return
+	}
+	assetsMgr.LoadAssetsConfig(c)
+
+	//log.Debug("already got scanner:", assetsMgr)
+	scanner := assetsMgr.GetBlockScanner()
+	scanner.SetRescanBlockHeight(1184421)
+
+	if scanner == nil {
+		log.Error(symbol, "is not support block scan")
+		return
+	}
+
+	scanner.SetBlockScanAddressFunc(scanAddressFunc)
+
+	sub := subscriberSingle{}
+	scanner.AddObserver(&sub)
+
+	scanner.Run()
+
+	<-endRunning
 }
