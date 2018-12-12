@@ -17,10 +17,12 @@ package ontology
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
@@ -71,10 +73,23 @@ func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.Walle
 
 	rawTx.TxID = txid
 	rawTx.IsSubmit = true
+
+	decimals := int32(0)
+
 	tx := openwallet.Transaction{
-		WxID: txid,
-		TxID: txid,
+		From:       rawTx.TxFrom,
+		To:         rawTx.TxTo,
+		Amount:     rawTx.TxAmount,
+		Coin:       rawTx.Coin,
+		TxID:       rawTx.TxID,
+		Decimal:    decimals,
+		AccountID:  rawTx.Account.AccountID,
+		Fees:       rawTx.Fees,
+		SubmitTime: time.Now().Unix(),
 	}
+
+	tx.WxID = openwallet.GenTransactionWxID(&tx)
+
 	return &tx, nil
 }
 
@@ -112,6 +127,18 @@ func (decoder *TransactionDecoder) CreateONTRawTransaction(wrapper openwallet.Wa
 		return addressesBalanceList[i].ONTBalance.Cmp(addressesBalanceList[j].ONTBalance) >= 0
 	})
 
+	if rawTx.FeeRate != "" {
+		feeprice, err := convertIntStringToBigInt(rawTx.FeeRate)
+		if err != nil {
+			return errors.New("fee rate passed through error")
+		}
+		gasPrice = feeprice.Uint64()
+	}
+
+	if decoder.wm.Config.GasLimit != 0 {
+		gasLimit = decoder.wm.Config.GasLimit
+	}
+
 	fee := big.NewInt(int64(gasLimit * gasPrice))
 
 	var amountStr, to string
@@ -125,7 +152,7 @@ func (decoder *TransactionDecoder) CreateONTRawTransaction(wrapper openwallet.Wa
 	if rawTx.Coin.ContractID == ontologyTransaction.ONGContractAddress {
 		amount, err := convertFlostStringToBigInt(amountStr)
 		if err != nil {
-			return err
+			return errors.New("ONG can be divided,with 100000000 smallest unit equls 1 ONG")
 		}
 
 		if amount.Cmp(big.NewInt(0)) == 0 { // ONG unbound
@@ -206,7 +233,7 @@ func (decoder *TransactionDecoder) CreateONTRawTransaction(wrapper openwallet.Wa
 	} else { // ONT transaction
 		amount, err := convertIntStringToBigInt(amountStr)
 		if err != nil {
-			return err
+			return errors.New("ONT is the smallest unit which cannot be divided,the amount input should never be a float number")
 		}
 		txState.AssetType = ontologyTransaction.AssetONT
 		txState.Amount = amount.Uint64()
