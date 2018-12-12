@@ -456,7 +456,7 @@ func TestTransfer_ONT(t *testing.T) {
 		Symbol:     "ONT",
 	}
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1", "0", &contract)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1", "200", &contract)
 	fmt.Println(rawTx.RawHex)
 	if err != nil {
 		return
