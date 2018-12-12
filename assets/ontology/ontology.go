@@ -625,6 +625,8 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 	// wm.Config.NodeInstallPath = c.String("nodeInstallPath")
 	wm.Config.IsTestNet, _ = c.Bool("isTestNet")
 	wm.Config.WalletPassword = c.String("walletPassword")
+	gaslimit, _ := c.Int64("gasLimit")
+	wm.Config.GasLimit = uint64(gaslimit)
 	// wm.Config.OmniTransferCost = c.String("omniTransferCost")
 	// wm.Config.OmniCoreAPI = c.String("omniCoreAPI")
 	// wm.Config.OmniRPCUser = c.String("omniRPCUser")

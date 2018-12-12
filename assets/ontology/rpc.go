@@ -150,7 +150,7 @@ func (rpc *RpcClient) getBalance(address string) (*AddrBalance, error) {
 	ret := newAddrBalance([]string{string(balance), string(unboundong)})
 
 	if ret == nil {
-		return nil, errors.New("Get balance by rest failed!")
+		return nil, errors.New("Get balance failed!")
 	}
 
 	ret.Address = address

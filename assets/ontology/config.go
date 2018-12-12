@@ -95,6 +95,8 @@ type WalletConfig struct {
 	RPCServerType int
 	//s是否支持隔离验证
 	SupportSegWit bool
+	//GasLimit
+	GasLimit uint64
 }
 
 func NewConfig(symbol string, masterKey string) *WalletConfig {

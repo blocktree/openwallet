@@ -854,7 +854,7 @@ func (wm *WalletManager) GetLocalBlock(height uint64) (*Block, error) {
 
 //GetBlock 获取区块数据
 func (wm *WalletManager) GetBlock(hash string) (*Block, error) {
-	return wm.GetBlock(hash)
+	return wm.RPCClient.getBlock(hash)
 }
 
 //GetTxIDsInMemPool 获取待处理的交易池中的交易单IDs
