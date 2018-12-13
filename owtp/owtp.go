@@ -57,6 +57,8 @@ const (
 	ErrResponseMethodDiffer uint64 = 501
 	//协商失败
 	ErrKeyAgreementFailed uint64 = 502
+	//拒绝服务
+	ErrDenialOfService uint64 = 503
 
 	//60X: 自定义错误
 	ErrCustomError uint64 = 600

@@ -283,7 +283,7 @@ func TestTransfer_NAS(t *testing.T) {
 	//n1VkvsbgRJ6Tjro1mTUUaevPM3wv69z5njB
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "7VftKuNoDtwZ3mn3wDA4smTDMz4iqCg3fNna1fXicVDg"
-	to := "n1JrqddgEYqiZqZB3kRrC2zEHtVA7Y1VZts"
+	to := "n1H2ddXG2oDyn1oqLgNyw18y8GXqhegmUS5"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 

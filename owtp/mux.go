@@ -86,6 +86,8 @@ type Context struct {
 	inputs interface{}
 	//节点会话
 	peerStore Peerstore
+	//是否中断，Context.stop = true，将不再执行后面的绑定的业务
+	stop bool
 }
 
 //NewContext
@@ -125,6 +127,12 @@ func (ctx *Context) Response(result interface{}, status uint64, msg string) {
 	ctx.Resp = resp
 }
 
+// ResponseStopRun 中断操作，Context.stop = true，将不再执行后面的绑定的业务
+// 并完成Response处理
+func (ctx *Context) ResponseStopRun(result interface{}, status uint64, msg string) {
+	ctx.stop = true
+	ctx.Response(result, status, msg)
+}
 
 // SetSession puts value into session.
 func (ctx *Context) SetSession(name string, value interface{}) {
@@ -304,14 +312,19 @@ func (mux *ServeMux) ServeOWTP(pid string, ctx *Context) {
 					prepareFunc.h(ctx)
 				}
 
-
-				//执行路由方法
-				f.h(ctx)
-
-				//执行结束处理方法
-				if finishFunc, exist := mux.m[FinishMethod]; exist {
-					finishFunc.h(ctx)
+				if !ctx.stop {
+					//执行路由方法
+					f.h(ctx)
 				}
+
+				if !ctx.stop {
+					//执行结束处理方法
+					if finishFunc, exist := mux.m[FinishMethod]; exist {
+						finishFunc.h(ctx)
+					}
+				}
+
+
 
 				//添加已完成的请求
 				if mux.peerRequestCache != nil {
