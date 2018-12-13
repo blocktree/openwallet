@@ -26,14 +26,14 @@ import (
 type WalletManager struct {
 	openwallet.AssetsAdapterBase
 
-	Storage   *hdkeystore.HDKeystore //秘钥存取
-	RPCClient *RpcClient             // RPC API
-	//	RestClient   *Rest                         // RestAPI客户端
-	Config       *WalletConfig                 //钱包管理配置
-	WalletsInSum map[string]*openwallet.Wallet //参与汇总的钱包
-	Blockscanner *ONTBlockScanner              //区块扫描器
-	Decoder      openwallet.AddressDecoder     //地址编码器
-	TxDecoder    openwallet.TransactionDecoder //交易单编码器
+	Storage         *hdkeystore.HDKeystore        //秘钥存取
+	RPCClient       *RpcClient                    // RPC API
+	Config          *WalletConfig                 //钱包管理配置
+	WalletsInSum    map[string]*openwallet.Wallet //参与汇总的钱包
+	Blockscanner    *ONTBlockScanner              //区块扫描器
+	Decoder         openwallet.AddressDecoder     //地址编码器
+	TxDecoder       openwallet.TransactionDecoder //交易单编码器
+	ContractDecoder *ContractDecoder              //智能合约解析器
 }
 
 func NewWalletManager() *WalletManager {
@@ -47,6 +47,7 @@ func NewWalletManager() *WalletManager {
 	wm.Blockscanner = NewONTBlockScanner(&wm)
 	wm.Decoder = NewAddressDecoder(&wm)
 	wm.TxDecoder = NewTransactionDecoder(&wm)
+	wm.ContractDecoder = NewContractDecoder(&wm)
 
 	//	wm.RPCClient = NewRpcClient("http://localhost:20336/")
 	return &wm
