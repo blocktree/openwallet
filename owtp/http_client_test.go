@@ -31,6 +31,7 @@ func TestHTTPHostRun(t *testing.T) {
 	httpHost.HandleFunc("getInfo", getInfo)
 	httpHost.HandlePrepareFunc(func(ctx *Context) {
 		log.Notice("prepare")
+		//ctx.ResponseStopRun(nil, StatusSuccess, "success")
 	})
 	httpHost.HandleFinishFunc(func(ctx *Context) {
 		log.Notice("finish")
