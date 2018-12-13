@@ -230,7 +230,7 @@ func (decoder *TransactionDecoder) CreateONTRawTransaction(wrapper openwallet.Wa
 				return err
 			}
 		}
-	} else { // ONT transaction
+	} else if rawTx.Coin.ContractID == ontologyTransaction.ONTContractAddress { // ONT transaction
 		amount, err := convertIntStringToBigInt(amountStr)
 		if err != nil {
 			return errors.New("ONT is the smallest unit which cannot be divided,the amount input should never be a float number")
@@ -263,6 +263,9 @@ func (decoder *TransactionDecoder) CreateONTRawTransaction(wrapper openwallet.Wa
 			log.Error("No enough ONT to send!", err)
 			return err
 		}
+	} else { // other contract
+		log.Error("Contract [%v] is not supported yet!", rawTx.Coin.ContractID, err)
+		return err
 	}
 
 	feeInONG, _ := convertBigIntToFloatDecimal(fee.String())

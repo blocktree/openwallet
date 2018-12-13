@@ -950,7 +950,7 @@ func (bs *ONTBlockScanner) GetBalanceByAddress(address ...string) ([]*openwallet
 	addrsBalance := make([]*openwallet.Balance, 0)
 
 	for _, addr := range address {
-		balance, err := bs.wm.RPCClient.getBalance(addr)
+		balance, err := bs.wm.RPCClient.getONTBalance(addr)
 		if err != nil {
 			return nil, err
 		}

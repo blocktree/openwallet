@@ -153,7 +153,7 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	//汇总执行间隔时间
 	c.CycleSeconds = time.Second * 10
 	//小数位长度
-	c.CoinDecimal = decimal.NewFromFloat(100000000)
+	c.CoinDecimal = decimal.NewFromFloat(1000000000)
 	//核心钱包密码，配置有值用于自动解锁钱包
 	c.WalletPassword = ""
 	//后台数据源类型
