@@ -66,7 +66,7 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	header := r.Header
 	if header == nil {
-		log.Debug("header is nil")
+		log.Error("header is nil")
 		http.Error(w, "Header is nil", 400)
 		return
 	}
@@ -75,7 +75,7 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	peer, err := NewHTTPClientWithHeader(header, w, r, l.handler, l.enableSignature, cancel)
 	if err != nil {
-		log.Debug("NewClient unexpected error:", err)
+		log.Error("NewClient unexpected error:", err)
 		http.Error(w, "authorization not passed", 401)
 		return
 	}
@@ -92,7 +92,7 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	//case <-cnCh:
 	case <-httpCtx.Done():
-		log.Debug("http CloseNotify")
+		log.Warn("http CloseNotify")
 		return
 	}
 
@@ -106,7 +106,7 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		peer.Close()
 	//case <-cnCh:
 	case <-httpCtx.Done():
-		log.Debug("http CloseNotify")
+		log.Warn("http CloseNotify")
 		peer.Close()
 		return
 	}

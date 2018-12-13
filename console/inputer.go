@@ -18,7 +18,7 @@ package console
 import (
 	"fmt"
 	"github.com/blocktree/OpenWallet/common"
-	"github.com/blocktree/OpenWallet/logger"
+	"github.com/blocktree/OpenWallet/log"
 )
 
 //PasswordPrompt 提示输入密码
@@ -36,7 +36,7 @@ func InputPassword(isConfirm bool, minLen int) (string, error) {
 		// 等待用户输入密码
 		password, err = Stdin.PromptPassword("Enter wallet password: ")
 		if err != nil {
-			openwLogger.Log.Errorf("unexpected error: %v\n", err)
+			log.Errorf("unexpected error: %v\n", err)
 			return "", err
 		}
 
@@ -76,7 +76,7 @@ func InputText(prompt string, required bool) (string, error) {
 		// 等待用户输入
 		text, err = Stdin.PromptInput(prompt)
 		if err != nil {
-			openwLogger.Log.Errorf("unexpected error: %v\n", err)
+			log.Errorf("unexpected error: %v\n", err)
 			return "", err
 		}
 
@@ -102,7 +102,7 @@ func InputNumber(prompt string, zero bool) (uint64, error) {
 		// 等待用户输入参数
 		line, err := Stdin.PromptInput(prompt)
 		if err != nil {
-			openwLogger.Log.Errorf("unexpected error: %v\n", err)
+			log.Errorf("unexpected error: %v\n", err)
 			return 0, err
 		}
 		num = common.NewString(line).UInt64()
@@ -131,7 +131,7 @@ func InputRealNumber(prompt string, p bool) (string, error) {
 		// 等待用户输入参数
 		line, err := Stdin.PromptInput(prompt)
 		if err != nil {
-			openwLogger.Log.Errorf("unexpected error: %v\n", err)
+			log.Errorf("unexpected error: %v\n", err)
 			return "0", err
 		}
 		num = common.NewString(line).Float64()
@@ -160,7 +160,7 @@ func InputStartNumber(prompt string, zero bool) (uint64, error) {
 		// 等待用户输入参数
 		line, err := Stdin.PromptInput(prompt)
 		if err != nil {
-			openwLogger.Log.Errorf("unexpected error: %v\n", err)
+			log.Errorf("unexpected error: %v\n", err)
 			return 0, err
 		}
 		num = common.NewString(line).UInt64()

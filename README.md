@@ -44,6 +44,10 @@ $ govendor add +external
 #可以选择 export GO15VENDOREXPERIMENT=1 或 GO15VENDOREXPERIMENT=1 go build 执行编译
 $ export GO15VENDOREXPERIMENT=1
 
+# 如果$GOPATH下已更新本地库，可执行命令以下命令，同步更新vendor包下的库
+# 例如本地的$GOPATH/github.com/blocktree/下的组织项目更新后，可执行下面命令同步更新vendor
+$ govendor update +v
+
 ```
 
 ## 源码编译跨平台工具

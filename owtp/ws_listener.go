@@ -81,7 +81,7 @@ func (l *owtpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	auth, err := NewOWTPAuthWithHTTPHeader(r.Header)
 	if err != nil {
-		log.Debug("NewOWTPAuth unexpected error:", err)
+		log.Error("NewOWTPAuth unexpected error:", err)
 		http.Error(w, "Failed to upgrade websocket", 400)
 		return
 	}
@@ -90,7 +90,7 @@ func (l *owtpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	peer, err := NewClient(auth.RemotePID(), c, l.handler, auth, cancel)
 	if err != nil {
-		log.Debug("NewClient unexpected error:", err)
+		log.Error("NewClient unexpected error:", err)
 		http.Error(w, "authorization not passed", 401)
 		return
 	}

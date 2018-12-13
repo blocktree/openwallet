@@ -84,6 +84,8 @@ type Context struct {
 	Resp Response
 	//传入参数，map的结构
 	inputs interface{}
+	//节点会话
+	peerStore Peerstore
 }
 
 //NewContext
@@ -123,6 +125,22 @@ func (ctx *Context) Response(result interface{}, status uint64, msg string) {
 	ctx.Resp = resp
 }
 
+
+// SetSession puts value into session.
+func (ctx *Context) SetSession(name string, value interface{}) {
+	ctx.peerStore.Put(ctx.PID, name, value)
+}
+
+// GetSession gets value from session.
+func (ctx *Context) GetSession(name string) interface{} {
+	return ctx.peerStore.Get(ctx.PID, name)
+}
+
+// DelSession removes value from session.
+func (ctx *Context) DelSession(name string) {
+	ctx.peerStore.Delete(ctx.PID, name)
+}
+
 //JsonData the result of Response encode gjson
 func (resp *Response) JsonData() gjson.Result {
 	var jsondata gjson.Result
@@ -156,7 +174,7 @@ func NewServeMux(timeoutSEC int) *ServeMux {
 	//6小时清理一次内存中的请求nonce
 	cache, err := cache.NewCache("memory", `{"interval":21600}`)
 	if err != nil {
-		log.Debug("NewServeMux unexpected err:", err)
+		log.Error("NewServeMux unexpected err:", err)
 	}
 
 	serveMux := ServeMux{
@@ -177,13 +195,13 @@ func (mux *ServeMux) HandleFunc(method string, handler HandlerFunc) {
 	defer mux.mu.Unlock()
 
 	if method == "" {
-		panic("OWTP: invalid pattern")
+		log.Error("OWTP: invalid pattern")
 	}
 	if handler == nil {
-		panic("OWTP: nil handler")
+		log.Error("OWTP: nil handler")
 	}
 	if _, exist := mux.m[method]; exist {
-		panic("OWTP: multiple registrations for " + method)
+		log.Error("OWTP: multiple registrations for " + method)
 	}
 
 	if mux.m == nil {
@@ -281,7 +299,19 @@ func (mux *ServeMux) ServeOWTP(pid string, ctx *Context) {
 		} else {
 			f, ok := mux.m[ctx.Method]
 			if ok {
+				//执行准备处理方法
+				if prepareFunc, exist := mux.m[PrepareMethod]; exist {
+					prepareFunc.h(ctx)
+				}
+
+
+				//执行路由方法
 				f.h(ctx)
+
+				//执行结束处理方法
+				if finishFunc, exist := mux.m[FinishMethod]; exist {
+					finishFunc.h(ctx)
+				}
 
 				//添加已完成的请求
 				if mux.peerRequestCache != nil {

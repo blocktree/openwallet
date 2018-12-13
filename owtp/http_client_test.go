@@ -2,6 +2,7 @@ package owtp
 
 import (
 	"fmt"
+	"github.com/blocktree/OpenWallet/log"
 	"sync"
 	"testing"
 	"time"
@@ -28,6 +29,12 @@ func TestHTTPHostRun(t *testing.T) {
 	config["connectType"] = HTTP
 	config["enableSignature"] = "1"
 	httpHost.HandleFunc("getInfo", getInfo)
+	httpHost.HandlePrepareFunc(func(ctx *Context) {
+		log.Notice("prepare")
+	})
+	httpHost.HandleFinishFunc(func(ctx *Context) {
+		log.Notice("finish")
+	})
 	httpHost.Listen(config)
 
 	<- endRunning

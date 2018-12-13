@@ -32,7 +32,6 @@ import (
 	"github.com/blocktree/OpenWallet/assets/sia"
 	"github.com/blocktree/OpenWallet/assets/stc2345"
 	"github.com/blocktree/OpenWallet/assets/tezos"
-	"github.com/blocktree/OpenWallet/assets/tron"
 	"github.com/blocktree/OpenWallet/log"
 )
 
@@ -107,7 +106,7 @@ func init() {
 	assets.RegAssets(litecoin.Symbol, litecoin.NewWalletManager())
 	assets.RegAssets(qtum.Symbol, qtum.NewWalletManager())
 	assets.RegAssets(decred.Symbol, decred.NewWalletManager())
-	assets.RegAssets(tron.Symbol, tron.NewWalletManager())
+	//assets.RegAssets(tron.Symbol, tron.NewWalletManager())
 	assets.RegAssets(nebulasio.Symbol, nebulasio.NewWalletManager())
 	assets.RegAssets(icon.Symbol, icon.NewWalletManager())
 }

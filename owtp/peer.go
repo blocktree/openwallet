@@ -114,12 +114,12 @@ type Peerstore interface {
 	// Put 设置节点属性
 	Put(id string, key string, val interface{}) error
 
-	// Delele 设置节点属性
-	Delele(id string, key string) error
+	// Delete 设置节点属性
+	Delete(id string, key string) error
 }
 
 type owtpPeerstore struct {
-	onlinePeers map[string]Peer
+	//onlinePeers map[string]Peer
 	//peers       map[string]Peer
 	peerInfos   map[string]PeerAttribute
 	mu          sync.RWMutex
@@ -128,7 +128,7 @@ type owtpPeerstore struct {
 // NewPeerstore 创建支持OWTP协议的Peerstore
 func NewOWTPPeerstore() *owtpPeerstore {
 	store := owtpPeerstore{
-		onlinePeers: make(map[string]Peer),
+		//onlinePeers: make(map[string]Peer),
 		//peers:       make(map[string]Peer),
 		peerInfos:   make(map[string]PeerAttribute),
 	}
@@ -234,8 +234,8 @@ func (store *owtpPeerstore) Put(id string, key string, val interface{}) error {
 	return nil
 }
 
-//Delele
-func (store *owtpPeerstore) Delele(id string, key string) error {
+//Delete
+func (store *owtpPeerstore) Delete(id string, key string) error {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 	if store.peerInfos == nil {
