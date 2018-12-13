@@ -68,10 +68,17 @@ const (
 	HTTP string = "http"
 )
 
+//内置方法
 const (
 
 	//校验协商结果
 	KeyAgreementMethod = "internal_keyAgreement"
+
+	//准备前执行的方
+	PrepareMethod = "internal_prepare"
+
+	//结束时执行的方法
+	FinishMethod = "internal_finish"
 )
 
 //节点主配置 作为json解析工具
@@ -539,6 +546,16 @@ func (node *OWTPNode) HandleFunc(method string, handler HandlerFunc) {
 	node.serveMux.HandleFunc(method, handler)
 }
 
+//HandlePrepareFunc 绑定准备前的处理方法
+func (node *OWTPNode) HandlePrepareFunc(handler HandlerFunc) {
+	node.serveMux.HandleFunc(PrepareMethod, handler)
+}
+
+//HandleFinishFunc 绑定结束后的处理方法
+func (node *OWTPNode) HandleFinishFunc(handler HandlerFunc) {
+	node.serveMux.HandleFunc(FinishMethod, handler)
+}
+
 //KeyAgreement 发起协商请求
 //这是一个同步请求
 func (node *OWTPNode) KeyAgreement(pid string, consultType string) error {
@@ -733,7 +750,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 		}
 
 		//创建上下面指针，处理请求参数
-		ctx := Context{PID: peer.PID(), Req: packet.Req, nonce: packet.Nonce, inputs: decryptData, Method: packet.Method}
+		ctx := Context{PID: peer.PID(), Req: packet.Req, nonce: packet.Nonce, inputs: decryptData, Method: packet.Method, peerStore: node.Peerstore()}
 
 		node.serveMux.ServeOWTP(peer.PID(), &ctx)
 
@@ -776,7 +793,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 			resp = responseError("Response decode error", ErrBadRequest)
 		}
 
-		ctx := Context{Req: packet.Req, nonce: packet.Nonce, inputs: nil, Method: packet.Method, Resp: resp}
+		ctx := Context{Req: packet.Req, nonce: packet.Nonce, inputs: nil, Method: packet.Method, Resp: resp, peerStore: node.Peerstore()}
 
 		node.serveMux.ServeOWTP(peer.PID(), &ctx)
 
