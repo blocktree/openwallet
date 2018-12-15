@@ -74,6 +74,8 @@ type Context struct {
 	PID string
 	//传输类型，1：请求，2：响应
 	Req uint64
+	//请求的远程IP
+	RemoteAddress string
 	//请求序号
 	nonce uint64
 	//参数内部

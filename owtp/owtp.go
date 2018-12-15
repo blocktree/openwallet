@@ -762,7 +762,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 		}
 
 		//创建上下面指针，处理请求参数
-		ctx := Context{PID: peer.PID(), Req: packet.Req, nonce: packet.Nonce, inputs: decryptData, Method: packet.Method, peerstore: node.Peerstore()}
+		ctx := Context{PID: peer.PID(), Req: packet.Req, RemoteAddress: peer.RemoteAddr().String(), nonce: packet.Nonce, inputs: decryptData, Method: packet.Method, peerstore: node.Peerstore()}
 
 		node.serveMux.ServeOWTP(peer.PID(), &ctx)
 
@@ -805,7 +805,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 			resp = responseError("Response decode error", ErrBadRequest)
 		}
 
-		ctx := Context{Req: packet.Req, nonce: packet.Nonce, inputs: nil, Method: packet.Method, Resp: resp, peerstore: node.Peerstore()}
+		ctx := Context{Req: packet.Req, RemoteAddress: peer.RemoteAddr().String(), nonce: packet.Nonce, inputs: nil, Method: packet.Method, Resp: resp, peerstore: node.Peerstore()}
 
 		node.serveMux.ServeOWTP(peer.PID(), &ctx)
 

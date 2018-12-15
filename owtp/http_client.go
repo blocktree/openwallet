@@ -114,7 +114,7 @@ func NewHTTPClientWithHeader(header http.Header, responseWriter http.ResponseWri
 		//nodeID          string
 	)
 
-	//log.Debug("header:", header)
+	//log.Debug("http header:", header)
 
 	a := header.Get("a")
 

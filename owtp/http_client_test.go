@@ -1,9 +1,13 @@
 package owtp
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/session"
+	"github.com/blocktree/go-owcrypt"
+	"github.com/imroc/req"
+	"github.com/mr-tron/base58/base58"
 	"sync"
 	"testing"
 	"time"
@@ -45,7 +49,7 @@ func TestHTTPHostRun(t *testing.T) {
 	config["enableSignature"] = "1"
 	httpHost.HandleFunc("getInfo", getInfo)
 	httpHost.HandlePrepareFunc(func(ctx *Context) {
-
+		log.Notice("remoteAddress:", ctx.RemoteAddress)
 		log.Notice("prepare")
 		//ctx.ResponseStopRun(nil, StatusSuccess, "success")
 	})
@@ -66,6 +70,8 @@ func TestHTTPClientCall(t *testing.T) {
 	config["connectType"] = HTTP
 	config["enableSignature"] = "1"
 	httpClient := RandomOWTPNode()
+	//_, pub := httpClient.Certificate().KeyPair()
+	//log.Info("pub:", pub)
 	err := httpClient.Connect(httpHostNodeID, config)
 	if err != nil {
 		t.Errorf("Connect unexcepted error: %v", err)
@@ -206,4 +212,25 @@ func TestConcurrentHTTPConnect(t *testing.T) {
 
 	wait.Wait()
 
+}
+
+func TestHTTPNormalCall(t *testing.T) {
+
+	b, _ := hex.DecodeString("1234abef")
+	a := base58.Encode(b)
+	authHeader := req.Header{
+		"Accept":        "application/json",
+		"a": a,
+	}
+
+	hash := owcrypt.Hash(b, 0, owcrypt.HASH_ALG_SHA256)
+	base := base58.Encode(hash)
+	log.Info("nodeID:", base)
+	res, err := req.Post("http://"+httpURL, authHeader)
+	if err != nil {
+		t.Errorf("Connect unexcepted error: %v", err)
+		return
+	}
+
+	log.Infof("res: +%v", res)
 }
