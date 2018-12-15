@@ -175,3 +175,25 @@ func (rpc *RpcClient) getBalance(address string) (*AddrBalance, error) {
 
 	return ret, nil
 }
+
+func (rpc *RpcClient) getTxResult(txid string) (string, string, string, bool, error) {
+	params := []interface{}{txid}
+
+	resp, err := rpc.sendRpcRequest("0", "getsmartcodeevent", params)
+	if err != nil {
+		return "", "", "", false, errors.New("Get transaction result failed")
+	}
+	if err != nil {
+		return "", "", "", false, errors.New("Get transaction result failed")
+	}
+
+	tmp1 := gjson.Get(string(resp), "result").Get("Notify").Array()
+
+	tmp2 := gjson.Get(tmp1[0].Raw, "States").Array()
+
+	from := tmp2[1].String()
+	to := tmp2[2].String()
+	amount := tmp2[3].String()
+
+	return from, to, amount, true, nil
+}

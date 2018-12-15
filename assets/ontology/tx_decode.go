@@ -149,7 +149,7 @@ func (decoder *TransactionDecoder) CreateONTRawTransaction(wrapper openwallet.Wa
 	}
 	keySignList := make([]*openwallet.KeySignature, 1, 1)
 
-	if rawTx.Coin.ContractID == ontologyTransaction.ONGContractAddress {
+	if rawTx.Coin.Contract.Address == ontologyTransaction.ONGContractAddress {
 		amount, err := convertFlostStringToBigInt(amountStr)
 		if err != nil {
 			return errors.New("ONG can be divided,with 100000000 smallest unit equls 1 ONG")
@@ -230,7 +230,7 @@ func (decoder *TransactionDecoder) CreateONTRawTransaction(wrapper openwallet.Wa
 				return err
 			}
 		}
-	} else if rawTx.Coin.ContractID == ontologyTransaction.ONTContractAddress { // ONT transaction
+	} else if rawTx.Coin.Contract.Address == ontologyTransaction.ONTContractAddress { // ONT transaction
 		amount, err := convertIntStringToBigInt(amountStr)
 		if err != nil {
 			return errors.New("ONT is the smallest unit which cannot be divided,the amount input should never be a float number")
@@ -264,7 +264,7 @@ func (decoder *TransactionDecoder) CreateONTRawTransaction(wrapper openwallet.Wa
 			return err
 		}
 	} else { // other contract
-		log.Error("Contract [%v] is not supported yet!", rawTx.Coin.ContractID, err)
+		log.Error("Contract [%v] is not supported yet!", rawTx.Coin.Contract.Address, err)
 		return err
 	}
 
