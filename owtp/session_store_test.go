@@ -53,17 +53,3 @@ func TestMem(t *testing.T) {
 	fmt.Printf("username = %s \n", username)
 	fmt.Printf("username2 = %s \n", username2)
 }
-
-func TestOWTPNodeBindSessionManager(t *testing.T) {
-
-	config := `{"gclifetime":10}`
-	conf := new(session.ManagerConfig)
-	if err := json.Unmarshal([]byte(config), conf); err != nil {
-		t.Fatal("json decode error", err)
-	}
-	globalSessions, _ := NewSessionManager("memory", conf)
-	go globalSessions.GC()
-
-
-
-}

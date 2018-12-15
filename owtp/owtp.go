@@ -162,6 +162,11 @@ func NewOWTPNode(cert Certificate, readBufferSize, writeBufferSize int) *OWTPNod
 	return node
 }
 
+//Certificate 节点证书
+func (node *OWTPNode) Certificate() Certificate {
+	return node.cert
+}
+
 //NodeID 节点的ID
 func (node *OWTPNode) NodeID() string {
 	return node.cert.ID()
