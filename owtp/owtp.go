@@ -162,9 +162,19 @@ func NewOWTPNode(cert Certificate, readBufferSize, writeBufferSize int) *OWTPNod
 	return node
 }
 
+//Certificate 节点证书
+func (node *OWTPNode) Certificate() Certificate {
+	return node.cert
+}
+
 //NodeID 节点的ID
 func (node *OWTPNode) NodeID() string {
 	return node.cert.ID()
+}
+
+//SetPeerstore 设置一个Peerstore指针
+func (node *OWTPNode) SetPeerstore(store Peerstore) {
+	node.peerstore = store
 }
 
 //Peerstore 节点存储器
@@ -752,7 +762,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 		}
 
 		//创建上下面指针，处理请求参数
-		ctx := Context{PID: peer.PID(), Req: packet.Req, nonce: packet.Nonce, inputs: decryptData, Method: packet.Method, peerStore: node.Peerstore()}
+		ctx := Context{PID: peer.PID(), Req: packet.Req, nonce: packet.Nonce, inputs: decryptData, Method: packet.Method, peerstore: node.Peerstore()}
 
 		node.serveMux.ServeOWTP(peer.PID(), &ctx)
 
@@ -795,7 +805,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 			resp = responseError("Response decode error", ErrBadRequest)
 		}
 
-		ctx := Context{Req: packet.Req, nonce: packet.Nonce, inputs: nil, Method: packet.Method, Resp: resp, peerStore: node.Peerstore()}
+		ctx := Context{Req: packet.Req, nonce: packet.Nonce, inputs: nil, Method: packet.Method, Resp: resp, peerstore: node.Peerstore()}
 
 		node.serveMux.ServeOWTP(peer.PID(), &ctx)
 

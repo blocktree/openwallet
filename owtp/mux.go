@@ -85,7 +85,7 @@ type Context struct {
 	//传入参数，map的结构
 	inputs interface{}
 	//节点会话
-	peerStore Peerstore
+	peerstore Peerstore
 	//是否中断，Context.stop = true，将不再执行后面的绑定的业务
 	stop bool
 }
@@ -136,17 +136,22 @@ func (ctx *Context) ResponseStopRun(result interface{}, status uint64, msg strin
 
 // SetSession puts value into session.
 func (ctx *Context) SetSession(name string, value interface{}) {
-	ctx.peerStore.Put(ctx.PID, name, value)
+	ctx.peerstore.Put(ctx.PID, name, value)
 }
 
 // GetSession gets value from session.
 func (ctx *Context) GetSession(name string) interface{} {
-	return ctx.peerStore.Get(ctx.PID, name)
+	return ctx.peerstore.Get(ctx.PID, name)
 }
 
 // DelSession removes value from session.
 func (ctx *Context) DelSession(name string) {
-	ctx.peerStore.Delete(ctx.PID, name)
+	ctx.peerstore.Delete(ctx.PID, name)
+}
+
+// DestroySession cleans session data
+func (ctx *Context) DestroySession() {
+	ctx.peerstore.Destroy(ctx.PID)
 }
 
 //JsonData the result of Response encode gjson
@@ -323,8 +328,6 @@ func (mux *ServeMux) ServeOWTP(pid string, ctx *Context) {
 						finishFunc.h(ctx)
 					}
 				}
-
-
 
 				//添加已完成的请求
 				if mux.peerRequestCache != nil {

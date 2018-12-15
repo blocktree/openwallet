@@ -35,6 +35,9 @@ func init() {
 }
 
 func getInfo(ctx *Context) {
+
+	ctx.SetSession("username", "kiiik")
+
 	ctx.Resp = Response{
 		Status: 0,
 		Msg:    "success",

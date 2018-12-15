@@ -3,26 +3,41 @@ package owtp
 import (
 	"fmt"
 	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/OpenWallet/session"
 	"sync"
 	"testing"
 	"time"
 )
 
 var (
-	httpHost *OWTPNode
-	httpClient *OWTPNode
-	httpURL = "127.0.0.1:8422"
-	httpHostPrv = "FSomdQBZYzgu9YYuuSr3qXd8sP1sgQyk4rhLFo6gyi32"
+	httpHost       *OWTPNode
+	httpClient     *OWTPNode
+	httpURL        = "127.0.0.1:8422"
+	httpHostPrv    = "FSomdQBZYzgu9YYuuSr3qXd8sP1sgQyk4rhLFo6gyi32"
 	httpHostNodeID = "54dZTdotBmE9geGJmJcj7Qzm6fzNrEUJ2NcDwZYp2QEp"
+	globalSessions *SessionManager
 )
+
+func testSetupGlobalSession() {
+	globalSessions, _ = NewSessionManager("memory", &session.ManagerConfig{
+		Gclifetime: 10,
+	})
+	go globalSessions.GC()
+}
+
+func init() {
+	testSetupGlobalSession()
+}
 
 func TestHTTPHostRun(t *testing.T) {
 
 	var (
 		endRunning = make(chan bool, 1)
 	)
+
 	cert, _ := NewCertificate(httpHostPrv, "aes")
 	httpHost = NewOWTPNode(cert, 0, 0)
+	httpHost.SetPeerstore(globalSessions)
 	fmt.Printf("nodeID = %s \n", httpHost.NodeID())
 	config := make(map[string]string)
 	config["address"] = httpURL
@@ -30,15 +45,18 @@ func TestHTTPHostRun(t *testing.T) {
 	config["enableSignature"] = "1"
 	httpHost.HandleFunc("getInfo", getInfo)
 	httpHost.HandlePrepareFunc(func(ctx *Context) {
+
 		log.Notice("prepare")
 		//ctx.ResponseStopRun(nil, StatusSuccess, "success")
 	})
 	httpHost.HandleFinishFunc(func(ctx *Context) {
+		username := ctx.GetSession("username")
+		log.Notice("username:", username)
 		log.Notice("finish")
 	})
 	httpHost.Listen(config)
 
-	<- endRunning
+	<-endRunning
 }
 
 func TestHTTPClientCall(t *testing.T) {
@@ -61,7 +79,7 @@ func TestHTTPClientCall(t *testing.T) {
 
 	params := map[string]interface{}{
 		"name": "chance",
-		"age": 18,
+		"age":  18,
 	}
 
 	err = httpClient.Call(httpHostNodeID, "getInfo", params, false, func(resp Response) {
@@ -95,7 +113,6 @@ func TestHTTPKeyAgreement(t *testing.T) {
 
 	client := RandomOWTPNode("aes")
 	client.Connect(host.NodeID(), config)
-
 
 	//cert, _ := NewCertificate(RandomPrivateKey(), "aes")
 	//
@@ -138,11 +155,9 @@ func TestHTTPKeyAgreement(t *testing.T) {
 	time.Sleep(5 * time.Second)
 }
 
-
 func TestConcurrentHTTPConnect(t *testing.T) {
 
 	var wait sync.WaitGroup
-
 
 	config := make(map[string]string)
 	config["address"] = httpURL
@@ -166,10 +181,10 @@ func TestConcurrentHTTPConnect(t *testing.T) {
 
 			params := map[string]interface{}{
 				"name": "chance",
-				"age": 18,
+				"age":  18,
 			}
 
-			for i := 0; i<100;i++ {
+			for i := 0; i < 100; i++ {
 				err = httpClient.Call(httpHostNodeID, "getInfo", params, false, func(resp Response) {
 
 					result := resp.JsonData()
