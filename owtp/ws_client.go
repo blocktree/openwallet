@@ -36,10 +36,6 @@ const (
 	MaxMessageSize = 1 * 1024
 )
 
-var (
-	Debug = true
-)
-
 //WebSocketClient 基于websocket的通信客户端
 type WebSocketClient struct {
 	auth            Authorization

@@ -83,6 +83,10 @@ const (
 	FinishMethod = "internal_finish"
 )
 
+var (
+	Debug = true
+)
+
 //节点主配置 作为json解析工具
 type MainConfig struct {
 	Address     string
@@ -447,6 +451,30 @@ func (node *OWTPNode) Close() {
 	//node.client.Close()
 }
 
+//CallSync 同步请求
+func  (node *OWTPNode) CallSync(
+	pid string,
+	method string,
+	params interface{},
+	) (*Response, error) {
+
+	var (
+		err      error
+		respChan = make(chan Response, 1)
+	)
+
+	err = node.Call(pid, method, params, true, func(resp Response) {
+		respChan <- resp
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	response := <- respChan
+	return &response, nil
+}
+
 //Call 向对方节点进行调用
 func (node *OWTPNode) Call(
 	pid string,
@@ -735,7 +763,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 
 		//授权检查，只检查请求过来的签名
 		if !peer.Auth().VerifySignature(packet) {
-			log.Critical("auth failed: ", packet)
+			log.Errorf("auth failed: %+v", packet)
 			packet.Req = WSResponse
 			packet.Data = responseError("verify signature failed, unauthorized", ErrUnauthorized)
 			peer.Send(*packet) //发送验证失败结果

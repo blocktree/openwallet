@@ -273,7 +273,9 @@ func (c *HTTPClient) sendHTTPRequest(data DataPacket) error {
 
 	r, err := c.httpClient.Post(c.baseURL, req.BodyJSON(&data), req.Header(c.authHeader))
 
-	log.Std.Info("%+v", r)
+	if Debug {
+		log.Std.Info("%+v", r)
+	}
 
 	if err != nil {
 		return err
