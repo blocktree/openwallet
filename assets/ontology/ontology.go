@@ -667,7 +667,7 @@ func (wm *WalletManager) GetAssetsLogger() *log.OWLogger {
 	//return wm.Log
 }
 
-//GetSmartContractDecoder 获取智能合约解析器
-// func (wm *WalletManager) GetSmartContractDecoder() openwallet.SmartContractDecoder {
-// 	return wm.ContractDecoder
-// }
+// GetSmartContractDecoder 获取智能合约解析器
+func (wm *WalletManager) GetSmartContractDecoder() openwallet.SmartContractDecoder {
+	return wm.ContractDecoder
+}
