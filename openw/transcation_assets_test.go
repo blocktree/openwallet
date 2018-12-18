@@ -452,11 +452,12 @@ func TestTransfer_ONT(t *testing.T) {
 
 	//  ONT transaction
 	contract := openwallet.SmartContract{
-		ContractID: ontologyTransaction.ONTContractAddress,
-		Symbol:     "ONT",
+		Symbol:   "ONT",
+		Address:  ontologyTransaction.ONTContractAddress,
+		Decimals: 0,
 	}
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1", "200", &contract)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1", "", &contract)
 	fmt.Println(rawTx.RawHex)
 	if err != nil {
 		return
@@ -478,7 +479,7 @@ func TestTransfer_ONT(t *testing.T) {
 	}
 
 	// ONG withdraw
-	contract.ContractID = ontologyTransaction.ONGContractAddress
+	contract.Address = ontologyTransaction.ONGContractAddress
 	to = "ASyQp8fTtr7gCaCHuRDrtaTr2ZTqSzeE1J"
 
 	rawTx, err = testCreateTransactionStep(tm, walletID, accountID, to, "0", "0", &contract)
@@ -527,7 +528,6 @@ func TestTransfer_ONT(t *testing.T) {
 	}
 
 }
-
 
 func TestTransfer_ONT2(t *testing.T) {
 	tm := testONTInitWalletManager()

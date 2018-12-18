@@ -6,6 +6,8 @@ import (
 	"strconv"
 
 	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/go-owcdrivers/ontologyTransaction"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
 )
@@ -16,6 +18,16 @@ type AddrBalance struct {
 	ONGBalance *big.Int
 	ONGUnbound *big.Int
 	index      int
+}
+
+func newONTBalance(data string) *AddrBalance {
+	ontBalance, err := strconv.ParseInt(gjson.Get(data, "ont").String(), 10, 64)
+	if err != nil {
+		return nil
+	}
+	return &AddrBalance{
+		ONTBalance: big.NewInt(ontBalance),
+	}
 }
 
 func newAddrBalance(data []string) *AddrBalance {
@@ -111,4 +123,67 @@ func convertIntStringToBigInt(amount string) (*big.Int, error) {
 	}
 
 	return big.NewInt(vInt64), nil
+}
+
+type ContractDecoder struct {
+	wm *WalletManager
+}
+
+//NewContractDecoder 智能合约解析器
+func NewContractDecoder(wm *WalletManager) *ContractDecoder {
+	decoder := ContractDecoder{}
+	decoder.wm = wm
+	return &decoder
+}
+
+func (decoder *ContractDecoder) GetTokenBalanceByAddress(contract openwallet.SmartContract, address ...string) ([]*openwallet.TokenBalance, error) {
+
+	var tokenBalanceList []*openwallet.TokenBalance
+
+	for i := 0; i < len(address); i++ {
+		tokenBalance := openwallet.TokenBalance{
+			Contract: &contract,
+		}
+		if contract.ContractID == ontologyTransaction.ONTContractAddress {
+			balance, err := decoder.wm.RPCClient.getONTBalance(address[i])
+			if err != nil {
+				log.Error("Get ONT balance of address [%v] failed with error : [%v]", address[i], err)
+				return nil, err
+			}
+			tokenBalance.Balance = &openwallet.Balance{
+				Address:          address[i],
+				Symbol:           contract.Symbol,
+				Balance:          balance.ONTBalance.String(),
+				ConfirmBalance:   balance.ONTBalance.String(),
+				UnconfirmBalance: "0",
+			}
+		} else if contract.ContractID == ontologyTransaction.ONGContractAddress {
+			balance, err := decoder.wm.RPCClient.getONGBalance(address[i])
+			if err != nil {
+				log.Error("Get ONG balance of address [%v] failed with error : [%v]", address[i], err)
+				return nil, err
+			}
+			ong, err := convertBigIntToFloatDecimal(balance.ONGBalance.String())
+			if err != nil {
+				log.Error("Get ONG balance of address [%v] failed with error : [%v]", address[i], err)
+			}
+			ongUnbound, err := convertBigIntToFloatDecimal(balance.ONGUnbound.String())
+			if err != nil {
+				log.Error("Get ONG balance of address [%v] failed with error : [%v]", address[i], err)
+			}
+
+			tokenBalance.Balance = &openwallet.Balance{
+				Address:          address[i],
+				Symbol:           contract.Symbol,
+				Balance:          "0",
+				ConfirmBalance:   ong.String(),
+				UnconfirmBalance: ongUnbound.String(),
+			}
+		} else {
+			// other contract
+		}
+		tokenBalanceList = append(tokenBalanceList, &tokenBalance)
+	}
+
+	return tokenBalanceList, nil
 }

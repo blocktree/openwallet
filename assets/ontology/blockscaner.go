@@ -19,6 +19,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/big"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -528,7 +529,48 @@ func (bs *ONTBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 
 //ExtractTransactionData 提取交易单
 func (bs *ONTBlockScanner) extractTransaction(trx *Transaction, result *ExtractResult, scanAddressFunc openwallet.BlockScanAddressFunc) {
+	var (
+		success = true
+	)
 
+	if trx == nil {
+		//记录哪个区块哪个交易单没有完成扫描
+		success = false
+	} else {
+
+		if success {
+
+			from, to, amount, _, _ := bs.wm.RPCClient.getTxResult(trx.TxID)
+
+			for _, extractData := range result.extractData {
+				tx := &openwallet.Transaction{
+					From:   []string{from},
+					To:     []string{to},
+					Amount: amount,
+					Fees:   big.NewInt(int64(trx.GasPrice * trx.GasLimit)).String(),
+					Coin: openwallet.Coin{
+						Symbol:     bs.wm.Symbol(),
+						IsContract: true,
+					},
+					BlockHash:   trx.BlockHash,
+					BlockHeight: trx.BlockHeight,
+					TxID:        trx.TxID,
+					Decimal:     0,
+					//ConfirmTime: blocktime,
+				}
+				wxID := openwallet.GenTransactionWxID(tx)
+				tx.WxID = wxID
+				extractData.Transaction = tx
+
+				//bs.wm.Log.Debug("Transaction:", extractData.Transaction)
+			}
+
+		}
+
+		success = true
+
+	}
+	result.Success = success
 }
 
 //newExtractDataNotify 发送通知
@@ -651,7 +693,12 @@ func (bs *ONTBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, err
 		}
 	}
 
-	return &openwallet.BlockHeader{Height: blockHeight, Hash: hash}, nil
+	currentBlock, err := bs.wm.GetBlock(hash)
+	if err != nil {
+		return nil, err
+	}
+
+	return currentBlock.BlockHeader(), nil
 }
 
 //GetScannedBlockHeight 获取已扫区块高度
@@ -950,7 +997,7 @@ func (bs *ONTBlockScanner) GetBalanceByAddress(address ...string) ([]*openwallet
 	addrsBalance := make([]*openwallet.Balance, 0)
 
 	for _, addr := range address {
-		balance, err := bs.wm.RPCClient.getBalance(addr)
+		balance, err := bs.wm.RPCClient.getONTBalance(addr)
 		if err != nil {
 			return nil, err
 		}
