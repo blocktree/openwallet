@@ -226,7 +226,7 @@ func (decoder *TransactionDecoder) CreateONTRawTransaction(wrapper openwallet.Wa
 			}
 
 			if txState.From == "" {
-				log.Error("No enough ONT to send!", err)
+				log.Error("No enough ONG to send!", err)
 				return err
 			}
 		}
@@ -354,7 +354,7 @@ func (decoder *TransactionDecoder) SignONTRawTransaction(wrapper openwallet.Wall
 				//	log.Info(hex.EncodeToString(s.Pubkey))
 				//}
 
-				//txHash.Normal.SigPub = *sigPub
+				// txHash.Normal.SigPub = *sigPub
 			}
 
 			keySignature.Signature = hex.EncodeToString(sigPub.Signature)
