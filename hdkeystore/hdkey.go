@@ -260,6 +260,11 @@ func (k *HDKey) FileName() string {
 	return KeyFileName(k.Alias, k.KeyID)
 }
 
+//Seed 密钥种子
+func (k *HDKey) Seed() []byte {
+	return k.seed
+}
+
 // EncryptKey encrypts a key using the specified scrypt parameters into a json
 // blob that can be decrypted later on.
 func EncryptKey(hdkey *HDKey, auth string, scryptN, scryptP int) ([]byte, error) {

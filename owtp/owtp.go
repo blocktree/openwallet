@@ -371,8 +371,8 @@ func (node *OWTPNode) Run() error {
 		select {
 		case peer := <-node.Join:
 			//客户端加入
-			log.Info("Node Join:", peer.PID())
-			log.Info("Node IP:", peer.RemoteAddr().String())
+			log.Debug("Node Join:", peer.PID())
+			log.Debug("Node IP:", peer.RemoteAddr().String())
 			node.AddOnlinePeer(peer)
 			node.peerstore.SavePeer(peer) //HTTP可能会无限增加
 			//加入后打开数据流通道
@@ -387,7 +387,7 @@ func (node *OWTPNode) Run() error {
 
 		case peer := <-node.Leave:
 			//客户端离开
-			log.Info("Node Leave:", peer.PID())
+			log.Debug("Node Leave:", peer.PID())
 			node.serveMux.ResetRequestQueue(peer.PID())
 			node.RemoveOfflinePeer(peer.PID())
 
@@ -403,7 +403,7 @@ func (node *OWTPNode) Run() error {
 			//	p.broadcastMessage(m)
 			//	break
 		}
-		log.Info("Total Nodes:", len(node.onlinePeers))
+		log.Debug("Total Nodes:", len(node.onlinePeers))
 	}
 
 	return nil

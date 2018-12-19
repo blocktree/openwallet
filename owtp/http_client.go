@@ -68,7 +68,7 @@ func HTTPDial(
 	//if auth != nil && auth.EnableAuth() {
 	//	authURL = auth.ConnectAuth(url)
 	//}
-	log.Info("Connecting URL:", url)
+	log.Debug("Connecting URL:", url)
 
 	//if header != nil {
 	//	httpHeader = make(http.Header)

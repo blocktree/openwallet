@@ -67,5 +67,6 @@ func TestNewHDKey(t *testing.T) {
 		}
 		//t.Logf("Key[%d] Mnemonic = %s", i, key.Mnemonic())
 		t.Logf("Key[%d] address = %s", i, key.KeyID)
+		t.Logf("Key[%d] seed = %s", i, hex.EncodeToString(key.Seed()))
 	}
 }

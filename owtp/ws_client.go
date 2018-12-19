@@ -73,7 +73,7 @@ func Dial(
 	//if auth != nil && auth.EnableAuth() {
 	//	authURL = auth.ConnectAuth(url)
 	//}
-	log.Info("Connecting URL:", url)
+	log.Debug("Connecting URL:", url)
 
 	dialer := websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
