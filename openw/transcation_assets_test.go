@@ -538,8 +538,8 @@ func TestTransfer_ONT2(t *testing.T) {
 
 	//  ONT transaction
 	contract := openwallet.SmartContract{
-		ContractID: ontologyTransaction.ONTContractAddress,
 		Symbol:     "ONT",
+		Address: ontologyTransaction.ONGContractAddress,
 	}
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
@@ -580,9 +580,9 @@ func TestTransfer_ONG2(t *testing.T) {
 
 	//  ONT transaction
 	contract := openwallet.SmartContract{
-		ContractID: ontologyTransaction.ONGContractAddress,
 		Symbol:     "ONT",
 		Token: "ONG",
+		Address: ontologyTransaction.ONGContractAddress,
 	}
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
@@ -590,11 +590,11 @@ func TestTransfer_ONG2(t *testing.T) {
 	testGetAssetsAccountTokenBalance(tm, walletID, accountID, contract)
 
 	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0", "", &contract)
-	//fmt.Println(rawTx.RawHex)
+
 	if err != nil {
 		return
 	}
-
+	log.Infof("rawTX: %+v", rawTx)
 	_, err = testSignTransactionStep(tm, rawTx)
 	if err != nil {
 		return
@@ -605,9 +605,9 @@ func TestTransfer_ONG2(t *testing.T) {
 		return
 	}
 
-	_, err = testSubmitTransactionStep(tm, rawTx)
-	if err != nil {
-		return
-	}
+	//_, err = testSubmitTransactionStep(tm, rawTx)
+	//if err != nil {
+	//	return
+	//}
 
 }

@@ -36,10 +36,6 @@ const (
 	MaxMessageSize = 1 * 1024
 )
 
-var (
-	Debug = true
-)
-
 //WebSocketClient 基于websocket的通信客户端
 type WebSocketClient struct {
 	auth            Authorization
@@ -77,7 +73,7 @@ func Dial(
 	//if auth != nil && auth.EnableAuth() {
 	//	authURL = auth.ConnectAuth(url)
 	//}
-	log.Info("Connecting URL:", url)
+	log.Debug("Connecting URL:", url)
 
 	dialer := websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,

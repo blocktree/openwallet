@@ -68,7 +68,7 @@ func HTTPDial(
 	//if auth != nil && auth.EnableAuth() {
 	//	authURL = auth.ConnectAuth(url)
 	//}
-	log.Info("Connecting URL:", url)
+	log.Debug("Connecting URL:", url)
 
 	//if header != nil {
 	//	httpHeader = make(http.Header)
@@ -273,7 +273,9 @@ func (c *HTTPClient) sendHTTPRequest(data DataPacket) error {
 
 	r, err := c.httpClient.Post(c.baseURL, req.BodyJSON(&data), req.Header(c.authHeader))
 
-	log.Std.Info("%+v", r)
+	if Debug {
+		log.Std.Info("%+v", r)
+	}
 
 	if err != nil {
 		return err

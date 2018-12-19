@@ -38,6 +38,8 @@ type TransactionDecoder interface {
 	VerifyRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error
 	//GetRawTransactionFeeRate 获取交易单的费率
 	GetRawTransactionFeeRate() (feeRate string, unit string, err error)
+	//CreateSummaryRawTransaction 创建汇总交易，返回原始交易单数组
+	CreateSummaryRawTransaction(wrapper WalletDAI, sumRawTx *SummaryRawTransaction) ([]*RawTransaction, error)
 }
 
 //TransactionDecoderBase 实现TransactionDecoder的基类
@@ -69,6 +71,11 @@ func (decoder *TransactionDecoderBase) GetRawTransactionFeeRate() (feeRate strin
 	return "", "", fmt.Errorf("not implement")
 }
 
+//CreateSummaryRawTransaction 创建汇总交易
+func (decoder *TransactionDecoderBase) CreateSummaryRawTransaction(wrapper WalletDAI, sumRawTx *SummaryRawTransaction) ([]*RawTransaction, error) {
+	return nil, fmt.Errorf("CreateSummaryRawTransaction not implement")
+}
+
 //RawTransaction 原始交易单
 //
 // Workflow：
@@ -95,10 +102,10 @@ type RawTransaction struct {
 
 	/* 以下字段作为备注，实际生成Transaction时填充相关字段 */
 
-	Fees        string                     `json:"fees"`       //手续费
-	TxAmount    string                     `json:"txAmount"`   //交易单实际对账户发生的数量变化
-	TxFrom      []string                   `json:"txFrom"`     //格式："地址":"数量"，备注订单使用
-	TxTo        []string                   `json:"txTo"`       //格式："地址":"数量"，备注订单使用
+	Fees     string   `json:"fees"`     //手续费
+	TxAmount string   `json:"txAmount"` //交易单实际对账户发生的数量变化
+	TxFrom   []string `json:"txFrom"`   //格式："地址":"数量"，备注订单使用
+	TxTo     []string `json:"txTo"`     //格式："地址":"数量"，备注订单使用
 }
 
 //KeySignature 签名信息
@@ -133,6 +140,16 @@ type Transaction struct {
 	ConfirmTime int64    `json:"confirmTime"` //@required
 	Status      string   `json:"status"`      //链上状态
 	Reason      string   `json:"reason"`      //失败原因
+}
+
+//SummaryRawTransaction 汇总交易
+type SummaryRawTransaction struct {
+	Coin            Coin           `json:"coin"`            //@required 区块链类型标识
+	FeeRate         string         `json:"feeRate"`         //自定义费率
+	SummaryAddress  string         `json:"summaryAddress"`  //@required 目的地址:转账数量
+	MinTransfer     string         `json:"minTransfer"`     //最低转账额，默认0
+	RetainedBalance string         `json:"retainedBalance"` //账户的地址保留余额，默认0
+	Account         *AssetsAccount `json:"account"`         //@required 创建交易单的账户
 }
 
 //GenTransactionWxID 生成交易单的WxID，格式为 base64(sha1(tx_{txID}_{symbol}_contractID}))

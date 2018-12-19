@@ -83,6 +83,10 @@ const (
 	FinishMethod = "internal_finish"
 )
 
+var (
+	Debug = true
+)
+
 //节点主配置 作为json解析工具
 type MainConfig struct {
 	Address     string
@@ -367,8 +371,8 @@ func (node *OWTPNode) Run() error {
 		select {
 		case peer := <-node.Join:
 			//客户端加入
-			log.Info("Node Join:", peer.PID())
-			log.Info("Node IP:", peer.RemoteAddr().String())
+			log.Debug("Node Join:", peer.PID())
+			log.Debug("Node IP:", peer.RemoteAddr().String())
 			node.AddOnlinePeer(peer)
 			node.peerstore.SavePeer(peer) //HTTP可能会无限增加
 			//加入后打开数据流通道
@@ -383,7 +387,7 @@ func (node *OWTPNode) Run() error {
 
 		case peer := <-node.Leave:
 			//客户端离开
-			log.Info("Node Leave:", peer.PID())
+			log.Debug("Node Leave:", peer.PID())
 			node.serveMux.ResetRequestQueue(peer.PID())
 			node.RemoveOfflinePeer(peer.PID())
 
@@ -399,7 +403,7 @@ func (node *OWTPNode) Run() error {
 			//	p.broadcastMessage(m)
 			//	break
 		}
-		log.Info("Total Nodes:", len(node.onlinePeers))
+		log.Debug("Total Nodes:", len(node.onlinePeers))
 	}
 
 	return nil
@@ -445,6 +449,30 @@ func (node *OWTPNode) Close() {
 	node.Stop <- struct{}{}
 
 	//node.client.Close()
+}
+
+//CallSync 同步请求
+func  (node *OWTPNode) CallSync(
+	pid string,
+	method string,
+	params interface{},
+	) (*Response, error) {
+
+	var (
+		err      error
+		respChan = make(chan Response, 1)
+	)
+
+	err = node.Call(pid, method, params, true, func(resp Response) {
+		respChan <- resp
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	response := <- respChan
+	return &response, nil
 }
 
 //Call 向对方节点进行调用
@@ -735,7 +763,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 
 		//授权检查，只检查请求过来的签名
 		if !peer.Auth().VerifySignature(packet) {
-			log.Critical("auth failed: ", packet)
+			log.Errorf("auth failed: %+v", packet)
 			packet.Req = WSResponse
 			packet.Data = responseError("verify signature failed, unauthorized", ErrUnauthorized)
 			peer.Send(*packet) //发送验证失败结果

@@ -15,7 +15,12 @@
 
 package owtp
 
-import "testing"
+import (
+	"encoding/hex"
+	"github.com/blocktree/OpenWallet/log"
+	"github.com/mr-tron/base58/base58"
+	"testing"
+)
 
 func TestRandomPrivateKey(t *testing.T) {
 	key := RandomPrivateKey()
@@ -50,4 +55,14 @@ func TestCertificate(t *testing.T) {
 		return
 	}
 	t.Logf("nodeID: %v", cert.ID())
+}
+
+func TestBase58(t *testing.T) {
+	encode := "6f1yErtapWhSGwQmXQUeM7dTnaGgQb2m8hv13hXYsPW6q5EvkZXWdPa3HjYo4yYV6YocGZerwth6qyNdAaT9MrV7B2wJZeugTn5CrvbuWC4cqQkKXWWhXa76LNfK8fDcDjhJvKMeGEce2R2j2fadQHXyH5QbSieWUuhxMUUi8dRY7wP"
+	pub, _ := base58.Decode(encode)
+	log.Info("pub decode:", hex.EncodeToString(pub))
+
+	pubbs, _ := hex.DecodeString("038EA1AF7C58F2FC1BF1BF7C04075513D9B6FFF4517D84F53B2D04E179D1054810F4C27C24AB9A54F962E2892A067B4E83BEF7C53A145C2EDC6BFB83852EDD77")
+
+	log.Info("pub encode:", base58.Encode(pubbs))
 }

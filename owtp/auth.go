@@ -331,8 +331,12 @@ func (auth *OWTPAuth) VerifySignature(data *DataPacket) bool {
 		//log.Debug("VerifySignature packet.Signature: ", data.Signature)
 		dataString := data.Data.(string)
 		plainText := fmt.Sprintf("%d%s%d%d%s", data.Req, data.Method, data.Nonce, data.Timestamp, dataString)
+		//log.Debug("VerifySignature plainText: ", plainText)
 		hash := owcrypt.Hash([]byte(plainText), 0, owcrypt.HASh_ALG_DOUBLE_SHA256)
+		//log.Debug("VerifySignature hash: ", hex.EncodeToString(hash))
 		nodeID := owcrypt.Hash(auth.remotePublicKey, 0, owcrypt.HASH_ALG_SHA256)
+		//log.Debug("VerifySignature remotePublicKey: ", hex.EncodeToString(auth.remotePublicKey))
+		//log.Debug("VerifySignature nodeID: ", hex.EncodeToString(nodeID))
 		signature, err := base58.Decode(data.Signature)
 		if err != nil {
 			return false

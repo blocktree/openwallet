@@ -16,7 +16,7 @@ import (
 var (
 	httpHost       *OWTPNode
 	httpClient     *OWTPNode
-	httpURL        = "127.0.0.1:8422"
+	httpURL        = "0.0.0.0:8422"
 	httpHostPrv    = "FSomdQBZYzgu9YYuuSr3qXd8sP1sgQyk4rhLFo6gyi32"
 	httpHostNodeID = "54dZTdotBmE9geGJmJcj7Qzm6fzNrEUJ2NcDwZYp2QEp"
 	globalSessions *SessionManager
@@ -68,7 +68,7 @@ func TestHTTPClientCall(t *testing.T) {
 	config := make(map[string]string)
 	config["address"] = httpURL
 	config["connectType"] = HTTP
-	config["enableSignature"] = "1"
+	//config["enableSignature"] = "1"
 	httpClient := RandomOWTPNode()
 	//_, pub := httpClient.Certificate().KeyPair()
 	//log.Info("pub:", pub)
