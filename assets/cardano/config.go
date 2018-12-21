@@ -150,8 +150,6 @@ cycleSeconds = ""
 minFees = ""
 #wallet data path
 walletDataPath = ""
-#certs dir
-certsDir = ""
 `
 	return &c
 }
