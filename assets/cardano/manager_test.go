@@ -27,16 +27,16 @@ var wm *WalletManager
 func init() {
 	wm = NewWalletManager()
 	wm.InitConfigFlow()
-	wm.Config.ServerAPI = "https://47.106.34.230:10026/api/v1/"
-	wm.WalletClient = NewClient(wm.Config.ServerAPI, true, "./certs")
+	wm.Config.ServerAPI = "http://47.106.34.230:10026/api/v1/"
+	wm.WalletClient = NewClient(wm.Config.ServerAPI, true)
 }
 
 func TestGetWalletInfo(t *testing.T) {
-	//ret := wm.WalletClient.callGetWalletAPI("Ae2tdPwUPEZ7R5jNgL8SKRtG8QFTi2QuQrsScydp3GJAPStvivfjTXPTSKX")
-	//t.Log(string(ret))
+	ret := wm.WalletClient.callGetWalletAPI("Ae2tdPwUPEZEL7DHjYaZBH4T4fXkrvpryAeGbjmqLy62pPXg6aLapS9xJom")
+	t.Log(string(ret))
 
-	//ret = wm.WalletClient.callGetWalletAPI()
-	//t.Log(string(ret))
+	ret = wm.WalletClient.callGetWalletAPI()
+	t.Log(string(ret))
 
 	list, err := wm.GetWalletInfo()
 	if err != nil {
@@ -63,14 +63,14 @@ func TestGetAccountInfo(t *testing.T) {
 		wid string
 		aid string
 	}{
-		//{
-		//	wid: "Ae2tdPwUPEZ7R5jNgL8SKRtG8QFTi2QuQrsScydp3GJAPStvivfjTXPTSKX",
-		//	aid: "4257117526",
-		//},
 		{
-			wid: "Ae2tdPwUPEZ2mvUueYDm8JCy7nSV6VybMkwf3umv3hFkB3y1Gvze9NUkDLT",
-			aid: "123",
+			wid: "Ae2tdPwUPEZEL7DHjYaZBH4T4fXkrvpryAeGbjmqLy62pPXg6aLapS9xJom",
+			aid: "3669395481",
 		},
+		//{
+		//	wid: "Ae2tdPwUPEZ2mvUueYDm8JCy7nSV6VybMkwf3umv3hFkB3y1Gvze9NUkDLT",
+		//	aid: "123",
+		//},
 	}
 
 	for i, test := range tests {
@@ -99,7 +99,7 @@ func TestCreateAccount(t *testing.T) {
 		//	password: common.NewString("1234qwer").SHA256(),
 		//},
 		{
-			wid:      "Ae2tdPwUPEZ2mvUueYDm8JCy7nSV6VybMkwf3umv3hFkB3y1Gvze9NUkDLT",
+			wid:      "Ae2tdPwUPEZEL7DHjYaZBH4T4fXkrvpryAeGbjmqLy62pPXg6aLapS9xJom",
 			name:     "test2",
 			password: common.NewString("1234qwer").SHA256(),
 		},
@@ -137,8 +137,8 @@ func TestCreateBatchAddress(t *testing.T) {
 		//	count: 10,
 		//},
 		{
-			wid: "Ae2tdPwUPEZ2mvUueYDm8JCy7nSV6VybMkwf3umv3hFkB3y1Gvze9NUkDLT",
-			aid: 2335833927,
+			wid: "Ae2tdPwUPEZEL7DHjYaZBH4T4fXkrvpryAeGbjmqLy62pPXg6aLapS9xJom",
+			aid: 3669395481,
 			count: 10,
 		},
 	}
@@ -165,8 +165,8 @@ func TestGetAddressInfo(t *testing.T) {
 		aid string
 	}{
 		{
-			wid: "Ae2tdPwUPEZ7R5jNgL8SKRtG8QFTi2QuQrsScydp3GJAPStvivfjTXPTSKX",
-			aid: "4257117526",
+			wid: "Ae2tdPwUPEZEL7DHjYaZBH4T4fXkrvpryAeGbjmqLy62pPXg6aLapS9xJom",
+			aid: "3669395481",
 		},
 
 	}

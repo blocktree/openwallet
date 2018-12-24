@@ -559,11 +559,6 @@ func (wm *WalletManager) LoadConfig() error {
 		return errors.New("walletDataPath is for backup wallet, so set it")
 	}
 
-	wm.Config.CertsDir = c.String("certsDir")
-	if wm.Config.CertsDir == "" {
-		return  errors.New("certs not set")
-	}
-
 	cyclesec := c.String("cycleSeconds")
 	if cyclesec == "" {
 		return errors.New(fmt.Sprintf(" cycleSeconds is not set, sample: 1m , 30s, 3m20s etc... Please set it in './conf/%s.ini' \n", Symbol))
@@ -571,7 +566,7 @@ func (wm *WalletManager) LoadConfig() error {
 
 	wm.Config.CycleSeconds, _ = time.ParseDuration(cyclesec)
 
-	wm.WalletClient = NewClient(wm.Config.ServerAPI, false, wm.Config.CertsDir)
+	wm.WalletClient = NewClient(wm.Config.ServerAPI, false)
 
 	return nil
 }

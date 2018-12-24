@@ -16,11 +16,9 @@
 package cardano
 
 import (
-	"crypto/tls"
 	"fmt"
 	"github.com/imroc/req"
 	"log"
-	"net/http"
 	"strings"
 	"crypto/x509"
 	"io/ioutil"
@@ -33,14 +31,14 @@ type Client struct {
 	Header      req.Header
 }
 
-func NewClient(url string, debug bool, certsDir string) *Client {
+func NewClient(url string, debug bool) *Client {
 	c := Client{
 		BaseURL:     url,
 		Debug:       debug,
 	}
 
 	api := req.New()
-
+/*
 	//tls
 	pair, e := tls.LoadX509KeyPair(certsDir + "/client.crt", certsDir + "/client.key")
 	if e != nil {
@@ -51,7 +49,7 @@ func NewClient(url string, debug bool, certsDir string) *Client {
 		RootCAs:      loadCA(certsDir + "/ca.crt"),
 		Certificates: []tls.Certificate{pair},
 	}
-
+*/
 	c.Client = api
 
 	return &c
@@ -319,23 +317,22 @@ func (c *Client) callCreateNewAddressAPI(wid string, aid int64, passphrase strin
 	/*
 		success 返回结果
 	{
-		"data": {
-			"used": false,
-			"changeAddress": true,
-			"id": "YQdiVKZwx4SzRjJNqf6TNvRa8PYARGWRhPYHuJzfxAy5yydanhUhuuhE3j9LTuV5FBytAfN"
-		},
-		"status": "success",
-		"meta": {
+	  "data": {
+		"used": true,
+		"changeAddress": false,
+		"id": "2reD6PLk2vQ44znyXUjiNZ6GBu4U4ibssQMv1f1B4sMhZecZ5yE2ZPtSZmFBqdA7QA88h337S9s4t6qBNeTYRsGsKPTP8xdxkFpXsJs4J9qPRX3zi1rCrvsuF2sF6s9TSKokGvigySsm73jRuusBaCyvYY4tiGdoY5X9XRihqR56PpgA2Ty5XCrb3gVhZyfxiJtn5ZpS1baxQMGrcJ8dFn76Ko8HXqo9C62EqdCiWcFEmkUPq15Kj5oUS9eZryU5izRCjp9EWmubNp3YgEgRJjFx6wr8aZxxFyphaUYueuRGzcjGDv8vaATXfTmLVtWrusjwc45QscHvPv6yk1",
+		"ownership": "ambiguousOwnership"
+	  },
+	  "status": "success",
+	  "meta": {
 		"pagination": {
-			"totalPages": 0,
-			"page": 1,
-			"perPage": 10,
-			"totalEntries": 0
-			}
+		  "totalPages": 0,
+		  "page": 1,
+		  "perPage": 10,
+		  "totalEntries": 0
 		}
+	  }
 	}
-
-
 	*/
 
 	return r.Bytes()
