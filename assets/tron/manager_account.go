@@ -22,9 +22,8 @@ import (
 
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/go-owcdrivers/addressEncoder"
-	"github.com/tidwall/gjson"
-
 	"github.com/imroc/req"
+	"github.com/tidwall/gjson"
 )
 
 func convertAddrToHex(address string) string {

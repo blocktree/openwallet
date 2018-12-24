@@ -15,6 +15,10 @@
 
 package tron
 
+import (
+	owcrypt "github.com/blocktree/go-owcrypt"
+)
+
 //AddressDecoderStruct for Interface AddressDecoder
 type AddressDecoderStruct struct {
 	wm *WalletManager //钱包管理者
@@ -34,8 +38,9 @@ func (decoder *AddressDecoderStruct) PrivateKeyToWIF(priv []byte, isTestnet bool
 
 //PublicKeyToAddress 公钥转地址
 func (decoder *AddressDecoderStruct) PublicKeyToAddress(pub []byte, isTestnet bool) (string, error) {
-
-	address, err := decoder.wm.CreateAddressRef(pub, false) // isPrivate == false
+	pubkey := owcrypt.PointDecompress(pub, owcrypt.ECC_CURVE_SECP256K1)
+	hash := owcrypt.Hash(pubkey[1:], 0, owcrypt.HASH_ALG_KECCAK256)
+	address, err := decoder.wm.CreateAddressRef(hash[12:], false) // isPrivate == false
 	if err != nil {
 		return "", err
 	}

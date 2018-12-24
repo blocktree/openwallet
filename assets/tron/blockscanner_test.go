@@ -20,7 +20,8 @@ import "testing"
 func TestSetRescanBlockHeight(t *testing.T) {
 	scanner := NewTronBlockScanner(tw)
 
-	if err := scanner.SetRescanBlockHeight(3644100); err != nil {
+	err := scanner.SetRescanBlockHeight(5114310)
+	if err != nil {
 		t.Errorf("SetRescanBlockHeight failed: %+v", err)
 	}
 }
@@ -28,4 +29,44 @@ func TestSetRescanBlockHeight(t *testing.T) {
 func TestScanBlockTask(t *testing.T) {
 	scanner := NewTronBlockScanner(tw)
 	scanner.ScanBlockTask()
+}
+
+func TestGetUnscanRecords(t *testing.T) {
+	list, err := tw.GetUnscanRecords()
+	if err != nil {
+		t.Errorf("GetUnscanRecords failed unexpected error: %v\n", err)
+		return
+	}
+
+	for _, r := range list {
+		t.Logf("GetUnscanRecords unscan: %v", r)
+	}
+}
+
+func TestTronBlockScanner_RescanFailedRecord(t *testing.T) {
+	bs := NewTronBlockScanner(tw)
+	bs.RescanFailedRecord()
+}
+
+func TestTronBlockScanner_scanning(t *testing.T) {
+
+	//accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
+	//address := "miphUAzHHeM1VXGSFnw6owopsQW3jAQZAk"
+
+	//wallet, err := tw.GetWalletInfo(accountID)
+	//if err != nil {
+	//	t.Errorf("ONTBlockScanner_scanning failed unexpected error: %v\n", err)
+	//	return
+	//}
+
+	bs := NewTronBlockScanner(tw)
+
+	//bs.DropRechargeRecords(accountID)
+
+	bs.SetRescanBlockHeight(5192190)
+	//tw.SaveLocalNewBlock(1355030, "00000000000000125b86abb80b1f94af13a5d9b07340076092eda92dade27686")
+
+	//bs.AddAddress(address, accountID)
+
+	bs.ScanBlockTask()
 }

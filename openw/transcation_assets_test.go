@@ -387,11 +387,11 @@ func TestTransfer_OMNI(t *testing.T) {
 
 func TestTransfer_TRON(t *testing.T) {
 	tm := testInitWalletManager()
-	walletID := "W33vxQiNcgjJgMvowsNerXao6LZjwR61zp"
-	accountID := "GEGdASep1uA7RBarNNZuJjgnE8T3DyJGTRGz4JfNE4Me"
-	to := "TWVRXXN5tsggjUCDmqbJ4KxPdJKQiynaG6" // t2
+	walletID := "WA1JL7Rwq6hVN7ZKzPy2Cr3A39Hcsm48Zi"
+	accountID := "FQzAd6n3PepDgtcDVvbJKgkfSfc3wnkmRUiAaAaG6q2k"
+	to := "TNQkiUv4qtDRKWDrKS628FTbDwxLMiqbAz" // t2
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1", "", nil)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1.6", "", nil)
 	if err != nil {
 		return
 	}
@@ -538,7 +538,7 @@ func TestTransfer_ONT2(t *testing.T) {
 
 	//  ONT transaction
 	contract := openwallet.SmartContract{
-		Symbol:     "ONT",
+		Symbol:  "ONT",
 		Address: ontologyTransaction.ONGContractAddress,
 	}
 
@@ -569,8 +569,6 @@ func TestTransfer_ONT2(t *testing.T) {
 
 }
 
-
-
 func TestTransfer_ONG2(t *testing.T) {
 	tm := testONTInitWalletManager()
 
@@ -580,8 +578,8 @@ func TestTransfer_ONG2(t *testing.T) {
 
 	//  ONT transaction
 	contract := openwallet.SmartContract{
-		Symbol:     "ONT",
-		Token: "ONG",
+		Symbol:  "ONT",
+		Token:   "ONG",
 		Address: ontologyTransaction.ONGContractAddress,
 	}
 

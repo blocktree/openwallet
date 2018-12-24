@@ -36,6 +36,7 @@ func TestGetAccountNet(t *testing.T) {
 func TestGetAccount(t *testing.T) {
 
 	var addr string
+
 	addr = OWNERADDRESS
 
 	if r, err := tw.GetAccount(addr); err != nil {

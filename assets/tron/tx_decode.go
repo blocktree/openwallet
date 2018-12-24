@@ -16,13 +16,17 @@
 package tron
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
-	"strconv"
-
-	// "sort"
-
+	"math/big"
+	"sort"
+	"strconv" // "sort"
 	// "github.com/blocktree/OpenWallet/log"
+	"strings"
+	"time"
+
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	// "github.com/blocktree/OpenWallet/assets/qtum/btcLikeTxDriver"
 	// "github.com/blocktree/OpenWallet/log"
@@ -35,6 +39,31 @@ type TransactionDecoder struct {
 	wm *WalletManager //钱包管理者
 }
 
+func CheckRawTransaction(rawTx *openwallet.RawTransaction) error {
+	//账户模型原始账单只有一个To
+	if len(rawTx.To) != 1 {
+		return fmt.Errorf("noly one to address can be set!")
+	}
+	return nil
+}
+
+func InsertSignatureIntoRawTransaction(txHex string, signature string) (string, error) {
+	txBytes, err := hex.DecodeString(txHex)
+	if err != nil {
+		log.Errorf("invalid transaction hex data,err=", err)
+		return "", fmt.Errorf("invalid transaction hex data!")
+	}
+	signatureBytes, err := hex.DecodeString(signature)
+	if err != nil {
+		log.Errorf("invalid transaction signature hex data,err=", err)
+		return "", fmt.Errorf("invalid signature hex data!")
+	}
+	mergeTxBytes := append(txBytes, signatureBytes...)
+	mergeTxHex := hex.EncodeToString(mergeTxBytes)
+	return mergeTxHex, nil
+
+}
+
 //NewTransactionDecoder 交易单解析器
 func NewTransactionDecoder(wm *WalletManager) *TransactionDecoder {
 	decoder := TransactionDecoder{}
@@ -45,101 +74,219 @@ func NewTransactionDecoder(wm *WalletManager) *TransactionDecoder {
 //CreateRawTransaction 创建交易单
 func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
-	// 检测 wrapper 参数是否满足构建交易单需求
-
-	// ------------------------ 检测 rawTx 参数是否满足构建交易单需求 -------------------------------------
-	if err := decoder.wm.LoadConfig(); err != nil {
-		// decoder.wm.Log.Std.Error(string(err))
-		return err
-	}
-
-	if decoder.wm.Config.IsTestNet == true {
-		return errors.New("Testnet not support")
-	}
 	if rawTx.Coin.Symbol != "TRON" {
 		return errors.New("CreateRawTransaction: Symbol is not <Tron>")
 	}
 
-	var toAddress string
-	var amount float64
 	if len(rawTx.To) == 0 {
-		return errors.New("CreateRawTransaction: Receiver addresses is empty")
+		return fmt.Errorf("CreateRawTransaction: Receiver addresses is empty")
 	}
-	for addr, v := range rawTx.To {
-		toAddress = addr
-		// amount = int64(numb)
-		if fv, err := strconv.ParseFloat(v, 64); err != nil {
-			return err
-		} else {
-			amount = fv
-		}
-
-	}
-
-	var ownerAddress string
 	if rawTx.Account.AccountID == "" {
-		return errors.New("CreateRawTransaction: AccountID is empty")
+		return fmt.Errorf("CreateRawTransaction: AccountID is empty")
 	}
-	if addressList, err := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID); err != nil {
+	addressList, err := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID)
+	if err != nil {
+		log.Errorf("get address list failed,err=", err)
 		return err
-	} else {
-		if len(addressList) == 0 {
-			return fmt.Errorf("[%s] account: %s has not addresses", decoder.wm.Symbol(), rawTx.Account.AccountID)
+	}
+	if len(addressList) == 0 {
+		return fmt.Errorf("[%s] account: %s has not addresses", decoder.wm.Symbol(), rawTx.Account.AccountID)
+	}
+	addressesBalanceList := make([]AddrBalance, 0, len(addressList))
+	for i, addr := range addressList {
+		balance, err := decoder.wm.Getbalance(addr.Address)
+		if err != nil {
+			log.Errorf("get balance failed,err=", err)
+			return err
+		}
+		balance.Index = i
+		addressesBalanceList = append(addressesBalanceList, *balance)
+	}
+	sort.Slice(addressesBalanceList, func(i int, j int) bool {
+		return addressesBalanceList[i].TronBalance.Cmp(addressesBalanceList[j].TronBalance) >= 0
+	})
+	var amountStr, toAddress string
+	for k, v := range rawTx.To {
+		toAddress = k
+		amountStr = v
+		break
+	}
+	amountFloat, err := strconv.ParseFloat(amountStr, 64)
+	if err != nil {
+		log.Errorf("conver amount from string  to float failed,err=", err)
+		return err
+	}
+	signatureMap := make(map[string][]*openwallet.KeySignature)
+	keySignList := make([]*openwallet.KeySignature, 0, 1)
+	amountInt64 := int64(amountFloat * 1000000)
+	amount := big.NewInt(amountInt64)
+	count := big.NewInt(0)
+	countList := []uint64{}
+	for i, _ := range addressesBalanceList {
+		if addressesBalanceList[i].TronBalance.Cmp(amount) < 0 {
+			count.Add(count, addressesBalanceList[i].TronBalance)
+			if count.Cmp(amount) >= 0 {
+				countList = append(countList, addressesBalanceList[i].TronBalance.Sub(addressesBalanceList[i].TronBalance, count.Sub(count, amount)).Uint64())
+				return fmt.Errorf("The Tron of account is enough,"+
+					"but cannot be sent in just one transaction!\n"+
+					"the amount can be sent in "+string(len(countList))+"times with amounts:\n"+strings.Replace(strings.Trim(fmt.Sprint(countList), "[]"), " ", ",", -1), err)
+			} else {
+				countList = append(countList, addressesBalanceList[i].TronBalance.Uint64())
+			}
+			continue
+		} else {
+			ownerAddress := &openwallet.Address{
+				AccountID:   addressList[addressesBalanceList[i].Index].AccountID,
+				Address:     addressList[addressesBalanceList[i].Index].Address,
+				PublicKey:   addressList[addressesBalanceList[i].Index].PublicKey,
+				Alias:       addressList[addressesBalanceList[i].Index].Alias,
+				Tag:         addressList[addressesBalanceList[i].Index].Tag,
+				Index:       addressList[addressesBalanceList[i].Index].Index,
+				HDPath:      addressList[addressesBalanceList[i].Index].HDPath,
+				WatchOnly:   addressList[addressesBalanceList[i].Index].WatchOnly,
+				Symbol:      addressList[addressesBalanceList[i].Index].Symbol,
+				Balance:     addressList[addressesBalanceList[i].Index].Balance,
+				IsMemo:      addressList[addressesBalanceList[i].Index].IsMemo,
+				Memo:        addressList[addressesBalanceList[i].Index].Memo,
+				CreatedTime: addressList[addressesBalanceList[i].Index].CreatedTime,
+			}
+			keySignList = append(keySignList, &openwallet.KeySignature{
+				Address: ownerAddress,
+			})
+			break
 		}
 
-		ownerAddress = addressList[0].Address
-
-		// // Check balance
-		// if act, err := decoder.wm.GetAccount(ownerAddress); err != nil {
-		// 	log.Println(err)
-		// 	return err
-		// } else {
-		// 	if act.Balance == "" {
-		// 		return errors.New("Balance not enough")
-		// 	}
-
-		// 	if balance, err := strconv.ParseFloat(act.Balance, 64); err != nil {
-		// 		return err
-		// 	} else {
-		// 		if balance < amount*1000000 {
-		// 			return errors.New("Balance not enough")
-		// 		}
-		// 	}
-		// }
-
+	}
+	//fmt.Println("from address:=", keySignList[0].Address.Address)
+	if len(keySignList) != 1 {
+		return fmt.Errorf("NO enough Tron to send")
 	}
 
-	// --------------------------- 查转出地址和余额 --------------------------------------
-
-	if len(rawTx.To) == 0 {
-		return errors.New("Receiver addresses is empty")
-	}
-
-	rawHex, err := decoder.wm.CreateTransactionRef(toAddress, ownerAddress, amount)
+	//创建空交易单
+	rawHex, err := decoder.wm.CreateTransactionRef(toAddress, keySignList[0].Address.Address, amountFloat)
 	if err != nil {
 		return err
 	}
 
+	txHashBytes, err := getTxHash1(rawHex)
+	if err != nil {
+		log.Errorf("get Tx hash failed,err=", err)
+		return err
+	}
+	txHash := hex.EncodeToString(txHashBytes)
+	keySignList[0].Nonce = ""
+	keySignList[0].Message = txHash
+	signatureMap[rawTx.Account.AccountID] = keySignList
+	//rawTx.Signatures = make(map[string][]*openwallet.KeySignature, 0)
 	rawTx.Fees = "0"
 	rawTx.FeeRate = "0"
 	rawTx.RawHex = rawHex
-	rawTx.Signatures[rawTx.Account.AccountID] = nil //500
+	rawTx.Signatures = signatureMap
 	rawTx.IsBuilt = true
-
 	return nil
 }
 
 //SignRawTransaction 签名交易单
 func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
+
+	key, err := wrapper.HDKey()
+	if err != nil {
+		log.Errorf("wrapper HDkey error,err=", err)
+		return err
+	}
+	keySignatures := rawTx.Signatures[rawTx.Account.AccountID]
+	//fmt.Println("keySignatures:=", keySignatures)
+	if keySignatures != nil {
+		for _, keySignature := range keySignatures {
+			childKey, err := key.DerivedKeyWithPath(keySignature.Address.HDPath, 0xECC00000)
+			if err != nil {
+				log.Errorf("derived key with path failed,err=", err)
+				return err
+			}
+			priKeyBytes, err := childKey.GetPrivateKeyBytes()
+			if err != nil {
+				log.Errorf("get privatekey bytes failed,err=", err)
+				return err
+			}
+			txHashBytes, err := getTxHash1(rawTx.RawHex)
+			if err != nil {
+				log.Errorf("get Tx hash failed,err=", err)
+				return err
+			}
+			txHash := hex.EncodeToString(txHashBytes)
+			priKey := hex.EncodeToString(priKeyBytes)
+			signature, err := decoder.wm.SignTransactionRef(txHash, priKey)
+			if err != nil {
+				log.Errorf("sign Tx failed,err=", err)
+				return err
+			}
+			keySignature.Signature = signature
+		}
+	}
+	log.Info("Tx hash sign success!")
+	//rawTx.Signatures[rawTx.Account.AccountID] = keySignatures
+
 	return nil
 }
 
 //VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
 func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
+	//检测交易单基本字段
+	err := CheckRawTransaction(rawTx)
+	if err != nil {
+		log.Errorf("verify Tx base field failed,err=", err)
+		return err
+	}
+	if len(rawTx.Signatures) != 1 {
+		return fmt.Errorf("the length of signature error")
+	}
+	sig, exist := rawTx.Signatures[rawTx.Account.AccountID]
+	if !exist {
+		return fmt.Errorf("wallet signature not found")
+	}
+	mergeTxHex, err := InsertSignatureIntoRawTransaction(rawTx.RawHex, sig[0].Signature)
+	if err != nil {
+		log.Errorf("merge empty transaction and signature failed,err=", err)
+		return err
+	}
+	verifyRet := decoder.wm.ValidSignedTransactionRef(mergeTxHex)
+	if verifyRet != nil {
+		log.Error("Tx signature verify failed, err=", verifyRet)
+		return fmt.Errorf("Tx signature verify failed, err=")
+	} else {
+		rawTx.IsCompleted = true
+		rawTx.RawHex = mergeTxHex
+	}
 	return nil
 }
 
 //SubmitRawTransaction 广播交易单
-func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
-	return nil
+func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) (*openwallet.Transaction, error) {
+	if len(rawTx.RawHex) == 0 {
+		return nil, fmt.Errorf("transaction hex is empty")
+	}
+	if !rawTx.IsCompleted {
+		return nil, fmt.Errorf("transaction is not completed validation")
+	}
+	txid, err := decoder.wm.BroadcastTransaction(rawTx.RawHex)
+	if err != nil {
+		log.Errorf("submit transaction failed,err=", err)
+		return nil, err
+	}
+	rawTx.TxID = txid
+	rawTx.IsSubmit = true
+	decimals := decoder.wm.Decimal()
+	tx := openwallet.Transaction{
+		From:       rawTx.TxFrom,
+		To:         rawTx.TxTo,
+		Amount:     rawTx.TxAmount,
+		Coin:       rawTx.Coin,
+		TxID:       rawTx.TxID,
+		Decimal:    decimals,
+		AccountID:  rawTx.Account.AccountID,
+		Fees:       rawTx.Fees,
+		SubmitTime: time.Now().Unix(),
+	}
+	tx.WxID = openwallet.GenTransactionWxID(&tx)
+	return &tx, nil
 }

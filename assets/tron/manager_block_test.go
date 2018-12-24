@@ -53,13 +53,14 @@ func TestGetBlockByID(t *testing.T) {
 
 		printBlock(r)
 	}
-
-	blockID = "0000000000341190edc6eb2c61e2efd0b6c45177962b43cd13c0cd32da62cc0a" // Error ID
-	if r, err := tw.GetBlockByID(blockID); err != nil {
-		t.Logf("GetBlockByID return: \n\t%+v\n", r)
-	} else {
-		t.Errorf("GetBlockByID failed: %v\n", err)
-	}
+	/*
+		 blockID = "0000000000341190edc6eb2c61e2efd0b6c45177962b43cd13c0cd32da62cc0a" // Error ID
+		 if r, err := tw.GetBlockByID(blockID); err != nil {
+			 t.Logf("GetBlockByID return: \n\t%+v\n", r)
+		 } else {
+			 t.Errorf("GetBlockByID failed: %v\n", err)
+		 }
+	*/
 }
 
 func TestGetBlockByLimitNext(t *testing.T) {
