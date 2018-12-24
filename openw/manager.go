@@ -244,20 +244,16 @@ func (wm *WalletManager) initSupportAssetsAdapter() error {
 		for _, address := range addrs {
 			key := wm.encodeSourceKey(appID, address.AccountID)
 			wm.AddAddressForBlockScan(address.Address, key)
-
-			//log.Debug("import address:", address, "key:", key, "to block scanner")
 		}
 
 	}
 
 	for _, symbol := range wm.cfg.SupportAssets {
-		//fmt.Println("\t\t\t symbol = ", symbol)
 		assetsMgr, err := GetAssetsAdapter(symbol)
 		if err != nil {
 			log.Error(symbol, "is not support")
 			continue
 		}
-
 		//读取配置
 		absFile := filepath.Join(configFilePath, symbol+".ini")
 		//log.Debug("absFile:", absFile)
