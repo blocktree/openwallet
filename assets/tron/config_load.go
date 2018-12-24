@@ -81,6 +81,7 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 	} else {
 		wm.Config.WalletDataPath = c.String("mainNetDataPath")
 	}
+
 	wm.WalletClient = NewClient(wm.Config.ServerAPI, "", false)
 	return nil
 }
