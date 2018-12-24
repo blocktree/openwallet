@@ -20,91 +20,78 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/big"
+	"strconv"
 	"time"
 
 	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/blocktree/go-owcrypt"
-	"github.com/shopspring/decimal"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
+	"github.com/imroc/req"
+	"github.com/shopspring/decimal"
 	"github.com/tronprotocol/grpc-gateway/core"
 )
+
+type AddrBalance struct {
+	Address     string
+	TronBalance *big.Int
+	Index       int
+}
+
+func getTxHash1(txHex string) ([]byte, error) {
+	tx := &core.Transaction{}
+	/*
+		 if txRawBts, err := hex.DecodeString(tx.GetRawData()); err != nil {
+			 return nil, err
+		 } else {
+			 if err := proto.Unmarshal(txRawBts, tx); err != nil {
+				 return signedTxRaw, err
+			 }
+		 }
+	*/
+	txByte, err := hex.DecodeString(txHex)
+	if err != nil {
+		return nil, fmt.Errorf("get Tx hex failed,unexpected error: %v", err)
+	}
+	if err := proto.Unmarshal(txByte, tx); err != nil {
+		return nil, fmt.Errorf("unmarshal RawData failed, unexpected error: %v", err)
+	}
+	txRaw, err := proto.Marshal(tx.GetRawData())
+	if err != nil {
+		return nil, fmt.Errorf("marshal RawData failed,unexpected error:%v", err)
+	}
+	txHash := owcrypt.Hash(txRaw, 0, owcrypt.HASH_ALG_SHA256)
+	return txHash, nil
+}
 
 func getTxHash(tx *core.Transaction) (txHash []byte, err error) {
 
 	txRaw, err := proto.Marshal(tx.GetRawData())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("marshal RawData failed, unexpected error: %v", err)
 	}
 	txHash = owcrypt.Hash(txRaw, 0, owcrypt.HASH_ALG_SHA256)
-	return txHash, err
+	return txHash, nil
 }
 
-// CreateTransactionRef Done!
-// Function: Create a transaction
-//
-// Java Reference:
-// public static Transaction setReference(Transaction transaction, Block newestBlock) {
-// 	long blockHeight = newestBlock.getBlockHeader().getRawData().getNumber();
-// 	byte[] blockHash = getBlockHash(newestBlock).getBytes();
-// 	byte[] refBlockNum = ByteArray.fromLong(blockHeight);
-// 	Transaction.raw rawData = transaction.getRawData().toBuilder()
-// 	    .setRefBlockHash(ByteString.copyFrom(ByteArray.subArray(blockHash, 8, 16)))
-// 	    .setRefBlockBytes(ByteString.copyFrom(ByteArray.subArray(refBlockNum, 6, 8)))
-// 	    .build();
-// 	return transaction.toBuilder().setRawData(rawData).build();
-// }
-//
-// public static Transaction createTransaction(byte[] from, byte[] to, long amount) {
-// 	Transaction.Builder transactionBuilder = Transaction.newBuilder();
-// 	Block newestBlock = WalletClient.getBlock(-1);
-//
-// 	Transaction.Contract.Builder contractBuilder = Transaction.Contract.newBuilder();
-// 	Contract.TransferContract.Builder transferContractBuilder = Contract.TransferContract.newBuilder();
-//
-// 	transferContractBuilder.setAmount(amount);
-// 	ByteString bsTo = ByteString.copyFrom(to);
-// 	ByteString bsOwner = ByteString.copyFrom(from);
-// 	transferContractBuilder.setToAddress(bsTo);
-// 	transferContractBuilder.setOwnerAddress(bsOwner);
-//
-// 	try {
-// 	  Any any = Any.pack(transferContractBuilder.build());
-// 	  contractBuilder.setParameter(any);
-// 	} catch (Exception e) {
-// 	  return null;
-// 	}
-// 	contractBuilder.setType(Transaction.Contract.ContractType.TransferContract);
-//
-// 	transactionBuilder.getRawDataBuilder().addContract(contractBuilder)
-// 	    .setTimestamp(System.currentTimeMillis())//timestamp should be in millisecond format
-// 	    .setExpiration(newestBlock.getBlockHeader().getRawData().getTimestamp() + 10 * 60 * 60 * 1000);//exchange can set Expiration by needs
-// 	Transaction transaction = transactionBuilder.build();
-// 	Transaction refTransaction = setReference(transaction, newestBlock);
-// 	return refTransaction;
-// }
 func (wm *WalletManager) CreateTransactionRef(toAddress, ownerAddress string, amount float64) (txRawHex string, err error) {
 
 	// addressEncoder.AddressDecode return 20 bytes of the center of Address
 	toAddressBytes, err := addressEncoder.AddressDecode(toAddress, addressEncoder.TRON_mainnetAddress)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("address decode failed,unexpected error: %v", err)
 	}
 	toAddressBytes = append([]byte{0x41}, toAddressBytes...)
 
 	ownerAddressBytes, err := addressEncoder.AddressDecode(ownerAddress, addressEncoder.TRON_mainnetAddress)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("address decode failed,unexpected error:%v", err)
 	}
 	ownerAddressBytes = append([]byte{0x41}, ownerAddressBytes...)
 
-	// Check amount
-	// if amount * 1000000
-	// 500
-
-	// --------------------- Generate TX Contract ------------------------
-
+	// Check amount: amount * 1000000
+	// ******** Generate TX Contract ********
 	tc := &core.TransferContract{
 		OwnerAddress: ownerAddressBytes,
 		ToAddress:    toAddressBytes,
@@ -113,7 +100,7 @@ func (wm *WalletManager) CreateTransactionRef(toAddress, ownerAddress string, am
 
 	tcRaw, err := proto.Marshal(tc)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("marshal tc failed,unexpected error:%v", err)
 	}
 
 	txContact := &core.Transaction_Contract{
@@ -123,30 +110,25 @@ func (wm *WalletManager) CreateTransactionRef(toAddress, ownerAddress string, am
 		ContractName: nil,
 	}
 
-	// ----------------------- Get Reference Block ----------------------
+	// ******** Get Reference Block ********
 	block, err := wm.GetNowBlock()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("get current block failed,unexpected err:%v", err)
 	}
 	blockID, err := hex.DecodeString(block.GetBlockHashID())
 	if err != nil {
-		return txRawHex, err
+		return txRawHex, fmt.Errorf("conver BlockHashID from hex to byte failed,unexpected err:%v", err)
 	}
 	refBlockBytes, refBlockHash := blockID[6:8], blockID[8:16]
 
-	// -------------------- Set timestamp --------------------
+	// ********Set timestamp ********
 	/*
-		RFC 3339 date strings
-		Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-
-		    long millis = System.currentTimeMillis();
-
-		    Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-			  .setNanos((int) ((millis % 1000) * 1000000)).build();
+	 According to RFC-3339 date strings
+	 Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000).setNanos((int) ((millis % 1000) * 1000000)).build();
 	*/
 	timestamp := time.Now().UnixNano() / 1000000 // <int64
 
-	// -------------------- Create Traction --------------------
+	// ******** Create Traction ********
 	txRaw := &core.TransactionRaw{
 		RefBlockBytes: refBlockBytes,
 		RefBlockHash:  refBlockHash,
@@ -160,9 +142,9 @@ func (wm *WalletManager) CreateTransactionRef(toAddress, ownerAddress string, am
 		// Ret:       nil,
 	}
 
-	// -------------------- TX Encoding --------------------
+	// ******** TX Encoding ********
 	if x, err := proto.Marshal(tx); err != nil {
-		return "", err
+		return "", fmt.Errorf("marshal tx failed,unexpected error:%v", err)
 	} else {
 		txRawHex = hex.EncodeToString(x)
 	}
@@ -170,132 +152,80 @@ func (wm *WalletManager) CreateTransactionRef(toAddress, ownerAddress string, am
 	return txRawHex, nil
 }
 
-// SignTransactionRef Done!
-// public static Transaction sign(Transaction transaction, ECKey myKey) {
-// 	Transaction.Builder transactionBuilderSigned = transaction.toBuilder();
-//
-// 	byte[] hash = Sha256Hash.hash(transaction.getRawData().toByteArray());
-//
-// 	List<Contract> listContract = transaction.getRawData().getContractList();
-//
-// 	for (int i = 0; i < listContract.size(); i++) {
-// 	  ECDSASignature signature = myKey.sign(hash);
-// 	  ByteString bsSign = ByteString.copyFrom(signature.toByteArray());
-// 	  transactionBuilderSigned.addSignature(bsSign);  //Each contract may be signed with a different private key in the future.
-// 	}
-//
-// 	transaction = transactionBuilderSigned.build();
-//
-// 	return transaction;
-// }
-func (wm *WalletManager) SignTransactionRef(txRawhex string, privateKey string) (signedTxRaw string, err error) {
+func (wm *WalletManager) SignTransactionRef(hash string, privateKey string) (signedTxRaw string, err error) {
 
 	tx := &core.Transaction{}
-	if txRawBts, err := hex.DecodeString(txRawhex); err != nil {
-		return signedTxRaw, err
-	} else {
-		if err := proto.Unmarshal(txRawBts, tx); err != nil {
-			return signedTxRaw, err
-		}
-	}
-	// tx.GetRawData().GetRefBlockBytes()
+	/*
+		 if txRawBts, err := hex.DecodeString(txRawhex); err != nil {
+			 return signedTxRaw, err
+		 } else {
+			 if err := proto.Unmarshal(txRawBts, tx); err != nil {
+				 return signedTxRaw, err
+			 }
+		 }
+		 // tx.GetRawData().GetRefBlockBytes()
+		 txHash, err := getTxHash(tx)
+		 fmt.Println("txHash:=", hex.EncodeToString(txHash))
+		 if err != nil {
+			 return signedTxRaw, err
+		 }
+		 fmt.Println("Tx Hash = ", hex.EncodeToString(txHash))
+	*/
+	txHash, err := hex.DecodeString(hash)
 
-	txHash, err := getTxHash(tx)
 	if err != nil {
-		return signedTxRaw, err
+		return "", fmt.Errorf("conver hash from string to byte failed,unexpected error:%v", err)
 	}
-	fmt.Println("Tx Hash = ", hex.EncodeToString(txHash))
-
 	pk, err := hex.DecodeString(privateKey)
 	if err != nil {
-		return signedTxRaw, err
+		return "", fmt.Errorf("conver privatekey from string to byte failed,unexpected error:%v", err)
 	}
+	/*
+		 for i := range tx.GetRawData().GetContract() {
 
-	for i := range tx.GetRawData().GetContract() {
+			 // sign, ret := owcrypt.Signature(privateKey, nil, 0, txHash, uint16(len(txHash)), owcrypt.ECC_CURVE_SECP256K1)
 
-		// sign, ret := owcrypt.Signature(privateKey, nil, 0, txHash, uint16(len(txHash)), owcrypt.ECC_CURVE_SECP256K1)
-		sign, ret := owcrypt.Tron_signature(pk, txHash)
-		if ret != owcrypt.SUCCESS {
-			err := fmt.Errorf("Signature[%d] faild", i)
-			log.Println(err)
-			return signedTxRaw, err
-		}
-		tx.Signature = append(tx.Signature, sign)
+			 sign, ret := owcrypt.Tron_signature(pk, txHash)
+			 if ret != owcrypt.SUCCESS {
+				 err := fmt.Errorf("Signature[%d] faild", i)
+				 log.Println(err)
+				 return signedTxRaw, err
+			 }
+			 tx.Signature = append(tx.Signature, sign)
+		 }*/
+	sign, ret := owcrypt.Tron_signature(pk, txHash)
+	if ret != owcrypt.SUCCESS {
+		return "", fmt.Errorf("sign txHash failed,unexpected error:%d", ret)
 	}
-
-	if x, err := proto.Marshal(tx); err != nil {
-		return signedTxRaw, err
+	tx.Signature = append(tx.Signature, sign)
+	x, err := proto.Marshal(tx)
+	if err != nil {
+		return "", fmt.Errorf("marshal tx failed,unexpected error:%v", err)
 	} else {
 		signedTxRaw = hex.EncodeToString(x)
 	}
-
 	return signedTxRaw, nil
-
 }
 
-// ValidSignedTransactionRef Done!
-//   /*
-//    * 1. check hash
-//    * 2. check double spent
-//    * 3. check sign
-//    * 4. check balance
-//    */
-//  public static boolean validTransaction(Transaction signedTransaction) {
-// 	assert (signedTransaction.getSignatureCount() == signedTransaction.getRawData().getContractCount());
-//
-// 	List<Transaction.Contract> listContract = signedTransaction.getRawData().getContractList();
-//
-// 	byte[] hash = Sha256Hash.hash(signedTransaction.getRawData().toByteArray());
-//
-// 	int count = signedTransaction.getSignatureCount();
-// 	if (count == 0) {
-// 	  return false;
-// 	}
-//
-// 	for (int i = 0; i < count; ++i) {
-// 	  try {
-// 	    Transaction.Contract contract = listContract.get(i);
-//
-// 	    byte[] owner = getOwner(contract);
-// 	    byte[] address = ECKey.signatureToAddress(hash, getBase64FromByteString(signedTransaction.getSignature(i)));
-// 	    if (!Arrays.equals(owner, address)) {
-// 		return false;
-// 	    }
-//
-// 	  } catch (SignatureException e) {
-// 	    e.printStackTrace();
-// 	    return false;
-// 	  }
-// 	}
-// 	return true;
-//  }
 func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
 
 	tx := &core.Transaction{}
 	txBytes, err := hex.DecodeString(txHex)
 	if err != nil {
-		return err
+		return fmt.Errorf("conver txhex from string to byte failed,unexpected error:%v", err)
 	}
 	if err := proto.Unmarshal(txBytes, tx); err != nil {
-		return err
+		return fmt.Errorf("unmarshal txBytes failed,unexpected error:%v", err)
 	}
-
-	if len(tx.GetSignature()) != len(tx.GetRawData().GetContract()) {
-		err := errors.New("ValidSignedTransactionRef faild: no signature found")
-		log.Println(err)
-		return err
-	}
-
 	listContracts := tx.RawData.GetContract()
 	countSignature := len(tx.Signature)
-
-	txHash, err := getTxHash(tx)
+	txHash, err := getTxHash1(txHex)
 	if err != nil {
-		return err
+		return fmt.Errorf("get txHex hash failed,unexpected error:%v", err)
 	}
 
 	if countSignature == 0 {
-		return errors.New("No signature found")
+		return fmt.Errorf("not found signature")
 	}
 
 	for i := 0; i < countSignature; i++ {
@@ -303,39 +233,131 @@ func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
 
 		// Get the instance of TransferContract to get Owner Address for validate signature
 		tc := &core.TransferContract{}
-		if err := proto.Unmarshal(contract.Parameter.GetValue(), tc); err != nil {
-			return err
+		err := proto.Unmarshal(contract.Parameter.GetValue(), tc)
+		if err != nil {
+			return fmt.Errorf("unmarshal contract value failed,unexpected error:%v", err)
 		}
-
 		ownerAddressHex := hex.EncodeToString(tc.GetOwnerAddress())
-
-		// pkBytes, ret := owcrypt.RecoverPubkey(tx.Signature[i], txHash, owcrypt.ECC_CURVE_SECP256K1|owcrypt.HASH_OUTSIDE_FLAG)
 		pkBytes, ret := owcrypt.RecoverPubkey(tx.Signature[i], txHash, owcrypt.ECC_CURVE_SECP256K1)
+
 		if ret != owcrypt.SUCCESS {
 			err := errors.New("ValidSignedTransactionRef faild: owcryt.RecoverPubkey return err")
 			log.Println(err)
 			return err
 		}
-
-		pkgenAddressBytes, err := createAddressByPkRef(pkBytes)
-		if err != nil {
-			log.Println(err)
-			return err
+		if owcrypt.SUCCESS != owcrypt.Verify(pkBytes, nil, 0, txHash, 32, tx.Signature[i][0:len(tx.Signature[i])-1], owcrypt.ECC_CURVE_SECP256K1) {
+			return fmt.Errorf("ValidSignedTransactionRef faild:owcrypt.Verify return err")
 		}
-		pkgenAddressHex := hex.EncodeToString(pkgenAddressBytes[:len(pkgenAddressBytes)-4])
-
-		// Check whether the address is equal between signature generating and contract owner pointed
+		pkHash := owcrypt.Hash(pkBytes, 0, owcrypt.HASH_ALG_KECCAK256)[12:32]
+		pkgenAddress := append([]byte{0x41}, pkHash...)
+		pkgenAddressHex := hex.EncodeToString(pkgenAddress)
 		if pkgenAddressHex != ownerAddressHex {
-			return errors.New("Validate failed, signed address is not the owner address")
+			return fmt.Errorf("Validate failed, signed address is not the owner address")
 		}
 	}
-
 	return nil
+}
+
+func (wm *WalletManager) BroadcastTransaction(raw string) (string, error) {
+	tx := &core.Transaction{}
+	if txBytes, err := hex.DecodeString(raw); err != nil {
+		return "", fmt.Errorf("conver raw from string to byte erroe")
+	} else {
+		if err := proto.Unmarshal(txBytes, tx); err != nil {
+			return "", fmt.Errorf("unmarshal txBytes failed,unexpected error:%v", err)
+		}
+	}
+	/* Generate Params */
+	var (
+		signature []string
+		txID      string
+		contracts []map[string]interface{}
+		raw_data  map[string]interface{}
+	)
+	for _, x := range tx.GetSignature() {
+		signature = append(signature, hex.EncodeToString(x)) // base64
+	}
+	if txHash, err := getTxHash1(raw); err != nil {
+		return "", fmt.Errorf("get raw hash failed,unexpected error:%v", err)
+	} else {
+		txID = hex.EncodeToString(txHash)
+	}
+	rawData := tx.GetRawData()
+	contracts = []map[string]interface{}{}
+	for _, c := range rawData.GetContract() {
+		any := c.GetParameter().GetValue()
+		tc := &core.TransferContract{}
+		if err := proto.Unmarshal(any, tc); err != nil {
+			return "", fmt.Errorf("unmarshal contract value failed,unexpected error:%v", err)
+		}
+		contract := map[string]interface{}{
+			"type": c.GetType().String(),
+			"parameter": map[string]interface{}{
+				"type_url": c.GetParameter().GetTypeUrl(),
+				"value": map[string]interface{}{
+					"amount":        tc.Amount,
+					"owner_address": hex.EncodeToString(tc.GetOwnerAddress()),
+					"to_address":    hex.EncodeToString(tc.GetToAddress()),
+				},
+			},
+		}
+		contracts = append(contracts, contract)
+	}
+	raw_data = map[string]interface{}{
+		"ref_block_bytes": hex.EncodeToString(rawData.GetRefBlockBytes()),
+		"ref_block_hash":  hex.EncodeToString(rawData.GetRefBlockHash()),
+		"expiration":      rawData.GetExpiration(),
+		"timestamp":       rawData.GetTimestamp(),
+		"contract":        contracts,
+	}
+	params := req.Param{
+		"signature": signature,
+		"txID":      txID,
+		"raw_data":  raw_data,
+	}
+	// Call api to broadcast transaction
+	r, err := wm.WalletClient.Call("/wallet/broadcasttransaction", params)
+	if err != nil {
+		return "", fmt.Errorf("broadcast transaction error")
+	} else {
+		if r.Get("result").Bool() != true {
+			var err error
+			if r.Get("message").String() != "" {
+				msg, _ := hex.DecodeString(r.Get("message").String())
+				err = fmt.Errorf("BroadcastTransaction error message: %+v", string(msg))
+			} else {
+				err = fmt.Errorf("BroadcastTransaction return error: %+v", r)
+			}
+			return "", err
+		}
+	}
+	txid := r.Get("txid").String()
+	return txid, nil
 }
 
 //SendTransaction 发送交易
 func (wm *WalletManager) SendTransaction(walletID, to string, amount decimal.Decimal, password string, feesInSender bool) ([]string, error) {
+
 	return nil, nil
+}
+
+func (wm *WalletManager) Getbalance(address string) (*AddrBalance, error) {
+	account, err := wm.GetAccount(address)
+	if err != nil {
+		return nil, err
+	}
+	var balance int64
+	if account.Balance == "" {
+		balance = 0
+	} else {
+		balance, err = strconv.ParseInt(account.Balance, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+	}
+	ret := &AddrBalance{TronBalance: big.NewInt(balance)}
+	ret.Address = address
+	return ret, nil
 }
 
 // ------------------------------------------------------------------------------------------------------

@@ -159,7 +159,7 @@ func (wm *WalletManager) GetTransactionSign(transaction, privateKey string) (raw
 // 		}’
 // Parameters：Signed Transaction contract data
 // Return value：broadcast success or failure
-func (wm *WalletManager) BroadcastTransaction(raw string) error {
+func (wm *WalletManager) BroadcastTransaction1(raw string) error {
 
 	tx := &core.Transaction{}
 	if txBytes, err := hex.DecodeString(raw); err != nil {

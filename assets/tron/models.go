@@ -19,40 +19,41 @@ import (
 	"fmt"
 
 	"github.com/blocktree/OpenWallet/crypto"
+	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/bytom/common"
 	"github.com/tidwall/gjson"
 )
 
 type Block struct {
 	/*
-		{
-			"blockID":"000000000035e1c0f60afaa8387fd17fd9b84fe4381265ff084d739f814558ea",
-			"block_header":{
-				"raw_data":{"number":3531200,
-						"txTrieRoot":"9d98f6cbbde8302774ab87c003831333e132c89e00009cb1f7da35e1e59ae8ca",
-						"witness_address":"41d1dbde8b8f71b48655bec4f6bb532a0142b88bc0",
-						"parentHash":"000000000035e1bfb3b6f244e5316ce408aa8cea4c348eabe2545247f5a4600c",
-						"version":3,
-						"timestamp":1540545240000},
-				"witness_signature":"6ceedcacd8d0111b48eb4131484de3d13f27a2f4bd8156279d03d4208690158e20a641b77d900e026ee33adc328f9ec674f6483ea7b1ca5a27fa24d7fb23964100"
-			},
-			"transactions":[
-				{"ret":[{"contractRet":"SUCCESS"}],
-				 "signature":["40aa520f01cebf12948615b9c5a5df5fe7d57e1a7f662d53907b4aa14f647a3a47be2a097fdb58159d0bee7eb1ff0a15ac738f24643fe5114cab8ec0d52cc04d01"],
-				 "txID":"ac005b0a195a130914821a6c28db1eec44b4ec3a2358388ceb6c87b677866f1f",
-				 "raw_data":{
-					 "contract":[
-						{"parameter":{"value":{"amount":1,"asset_name":"48756f6269546f6b656e","owner_address":"416b201fb7b9f2b97bbdaf5e0920191229767c30ee","to_address":"412451d09536fca47760ea6513372bbbbef8583105"},
-								  "type_url":"type.googleapis.com/protocol.TransferAssetContract"},
-						 "type":"TransferAssetContract"}
-					 ],
-					 "ref_block_bytes":"e1be",
-					 "ref_block_hash":"8dbf5f0cf4c324f2",
-					 "expiration":1540545294000,
-					 "timestamp":1540545235358}
-				},
-				...]
-		}
+		 {
+			 "blockID":"000000000035e1c0f60afaa8387fd17fd9b84fe4381265ff084d739f814558ea",
+			 "block_header":{
+				 "raw_data":{"number":3531200,
+						 "txTrieRoot":"9d98f6cbbde8302774ab87c003831333e132c89e00009cb1f7da35e1e59ae8ca",
+						 "witness_address":"41d1dbde8b8f71b48655bec4f6bb532a0142b88bc0",
+						 "parentHash":"000000000035e1bfb3b6f244e5316ce408aa8cea4c348eabe2545247f5a4600c",
+						 "version":3,
+						 "timestamp":1540545240000},
+				 "witness_signature":"6ceedcacd8d0111b48eb4131484de3d13f27a2f4bd8156279d03d4208690158e20a641b77d900e026ee33adc328f9ec674f6483ea7b1ca5a27fa24d7fb23964100"
+			 },
+			 "transactions":[
+				 {"ret":[{"contractRet":"SUCCESS"}],
+				  "signature":["40aa520f01cebf12948615b9c5a5df5fe7d57e1a7f662d53907b4aa14f647a3a47be2a097fdb58159d0bee7eb1ff0a15ac738f24643fe5114cab8ec0d52cc04d01"],
+				  "txID":"ac005b0a195a130914821a6c28db1eec44b4ec3a2358388ceb6c87b677866f1f",
+				  "raw_data":{
+					  "contract":[
+						 {"parameter":{"value":{"amount":1,"asset_name":"48756f6269546f6b656e","owner_address":"416b201fb7b9f2b97bbdaf5e0920191229767c30ee","to_address":"412451d09536fca47760ea6513372bbbbef8583105"},
+								   "type_url":"type.googleapis.com/protocol.TransferAssetContract"},
+						  "type":"TransferAssetContract"}
+					  ],
+					  "ref_block_bytes":"e1be",
+					  "ref_block_hash":"8dbf5f0cf4c324f2",
+					  "expiration":1540545294000,
+					  "timestamp":1540545235358}
+				 },
+				 ...]
+		 }
 	*/
 	Hash              string // 这里采用 BlockID
 	tx                []*Transaction
@@ -61,6 +62,7 @@ type Block struct {
 	Version           uint64
 	Time              uint64
 	Fork              bool
+	txHash            []string
 	// Merkleroot        string
 	//Confirmations     uint64
 }
@@ -68,7 +70,6 @@ type Block struct {
 func NewBlock(json *gjson.Result) *Block {
 
 	header := gjson.Get(json.Raw, "block_header").Get("raw_data")
-
 	// 解析json
 	b := &Block{}
 	b.Hash = gjson.Get(json.Raw, "blockID").String()
@@ -83,7 +84,6 @@ func NewBlock(json *gjson.Result) *Block {
 		txs = append(txs, tx)
 	}
 	b.tx = txs
-
 	return b
 }
 
@@ -101,21 +101,21 @@ func (block *Block) GetTransactions() []*Transaction {
 
 type Transaction struct {
 	/*
-		{
-			 "txID":"ac005b0a195a130914821a6c28db1eec44b4ec3a2358388ceb6c87b677866f1f",
-			 "ret":[{"contractRet":"SUCCESS"}],
-			 "signature":["40aa520f01cebf12948615b9c5a5df5fe7d57e1a7f662d53907b4aa14f647a3a47be2a097fdb58159d0bee7eb1ff0a15ac738f24643fe5114cab8ec0d52cc04d01"],
-			 "raw_data":{
-				 "contract":[
-					{"parameter":{"value":{"amount":1,"asset_name":"48756f6269546f6b656e","owner_address":"416b201fb7b9f2b97bbdaf5e0920191229767c30ee","to_address":"412451d09536fca47760ea6513372bbbbef8583105"},
-							  "type_url":"type.googleapis.com/protocol.TransferAssetContract"},
-					 "type":"TransferAssetContract"}
-				 ],
-				 "ref_block_bytes":"e1be",
-				 "ref_block_hash":"8dbf5f0cf4c324f2",
-				 "expiration":1540545294000,
-				 "timestamp":1540545235358}
-		},
+		 {
+			  "txID":"ac005b0a195a130914821a6c28db1eec44b4ec3a2358388ceb6c87b677866f1f",
+			  "ret":[{"contractRet":"SUCCESS"}],
+			  "signature":["40aa520f01cebf12948615b9c5a5df5fe7d57e1a7f662d53907b4aa14f647a3a47be2a097fdb58159d0bee7eb1ff0a15ac738f24643fe5114cab8ec0d52cc04d01"],
+			  "raw_data":{
+				  "contract":[
+					 {"parameter":{"value":{"amount":1,"asset_name":"48756f6269546f6b656e","owner_address":"416b201fb7b9f2b97bbdaf5e0920191229767c30ee","to_address":"412451d09536fca47760ea6513372bbbbef8583105"},
+							   "type_url":"type.googleapis.com/protocol.TransferAssetContract"},
+					  "type":"TransferAssetContract"}
+				  ],
+				  "ref_block_bytes":"e1be",
+				  "ref_block_hash":"8dbf5f0cf4c324f2",
+				  "expiration":1540545294000,
+				  "timestamp":1540545235358}
+		 },
 	*/
 	TxID        string
 	ContractRet []map[string]string // 交易合约执行状态
@@ -178,5 +178,19 @@ func NewUnscanRecord(height uint64, txID, reason string) *UnscanRecord {
 	obj.TxID = txID
 	obj.Reason = reason
 	obj.ID = common.Bytes2Hex(crypto.SHA256([]byte(fmt.Sprintf("%d_%s", height, txID))))
+	return &obj
+}
+
+//BlockHeader 区块链头
+func (b *Block) Blockheader() *openwallet.BlockHeader {
+	obj := openwallet.BlockHeader{}
+	//解析josn
+	obj.Merkleroot = ""
+	obj.Hash = b.Hash
+	obj.Previousblockhash = b.Previousblockhash
+	obj.Height = b.Height
+	obj.Version = uint64(b.Version)
+	obj.Time = b.Time
+	obj.Symbol = Symbol
 	return &obj
 }

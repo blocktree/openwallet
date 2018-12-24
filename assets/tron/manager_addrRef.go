@@ -24,32 +24,36 @@ import (
 	"time"
 
 	"github.com/asdine/storm/q"
-
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/blocktree/go-owcrypt"
 	"github.com/bndr/gotabulate"
 	"github.com/shengdoushi/base58"
 )
 
-func createAddressByPkRef(pubKey []byte) (addrBytes []byte, err error) {
-	// First: calculate sha3-256 of PublicKey, get Hash as pkHash
-	pkHash := owcrypt.Hash(pubKey, 0, owcrypt.HASH_ALG_KECCAK256)[12:32]
-	// Second: expend 0x41 as prefix of pkHash to mark Tron
-	address := append([]byte{0x41}, pkHash...)
-	// Third: double sha256 to generate Checksum
-	sha256_0_1 := owcrypt.Hash(address, 0, owcrypt.HASh_ALG_DOUBLE_SHA256)
-	// Fourth: Append checksum to pkHash from sha256_0_1 with the last 4
-	addrBytes = append(address, sha256_0_1[0:4]...)
+func createAddressByPkRef(pubKey []byte) (addr string, err error) {
 
-	return addrBytes, nil
+	/*
+	 // First: calculate sha3-256 of PublicKey, get Hash as pkHash
+	 pkHash := owcrypt.Hash(pubKey, 0, owcrypt.HASH_ALG_KECCAK256)[12:32]
+	 // Second: expend 0x41 as prefix of pkHash to mark Tron
+	 address := append([]byte{0x41}, pkHash...)
+	 // Third: double sha256 to generate Checksum
+	 sha256_0_1 := owcrypt.Hash(address, 0, owcrypt.HASh_ALG_DOUBLE_SHA256)
+	 // Fourth: Append checksum to pkHash from sha256_0_1 with the last 4
+	 addrBytes = append(address, sha256_0_1[0:4]...)
+	*/
+	cfg := addressEncoder.TRON_mainnetAddress
+	addr = addressEncoder.AddressEncode(pubKey, cfg)
+	return addr, nil
 }
 
 // CreateAddressRef Done!
 // Function: Create address from a specified private key string
-func (wm *WalletManager) CreateAddressRef(key []byte, isPrivate bool) (addrBase58 string, err error) {
+func (wm *WalletManager) CreateAddressRef(key []byte, isPrivate bool) (addr string, err error) {
 
 	var pubKey []byte
 
@@ -64,15 +68,11 @@ func (wm *WalletManager) CreateAddressRef(key []byte, isPrivate bool) (addrBase5
 	} else {
 		pubKey = key
 	}
-
-	address, err := createAddressByPkRef(pubKey)
+	addr, err = createAddressByPkRef(pubKey)
 	if err != nil {
 		return "", err
 	}
-	// Last: encoding with Base58(alphabet use BitcoinAlphabet)
-	addrBase58 = base58.Encode(address, base58.BitcoinAlphabet)
-
-	return addrBase58, nil
+	return addr, nil
 }
 
 // ValidateAddressRef Done!

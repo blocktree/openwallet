@@ -45,6 +45,7 @@ type WalletManager struct {
 
 // NewWalletManager create instance
 func NewWalletManager() *WalletManager {
+
 	wm := WalletManager{}
 	wm.Config = NewConfig()
 	wm.Storage = hdkeystore.NewHDKeystore(wm.Config.keyDir, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
@@ -53,6 +54,7 @@ func NewWalletManager() *WalletManager {
 	wm.AddrDecoder = NewAddressDecoder(&wm)
 	wm.TxDecoder = NewTransactionDecoder(&wm)
 	wm.Log = log.NewOWLogger(wm.Symbol())
+	wm.WalletClient = NewClient("http://192.168.27.124:18090", "", true)
 	return &wm
 }
 
