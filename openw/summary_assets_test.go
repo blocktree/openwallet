@@ -1,0 +1,84 @@
+/*
+ * Copyright 2018 The OpenWallet Authors
+ * This file is part of the OpenWallet library.
+ *
+ * The OpenWallet library is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The OpenWallet library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ */
+
+package openw
+
+import (
+	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/OpenWallet/openwallet"
+	"testing"
+)
+
+func testCreateSummaryTransactionStep(
+	tm *WalletManager,
+	walletID, accountID, summaryAddress, minTransfer, retainedBalance, feeRate string,
+	start, limit int,
+	contract *openwallet.SmartContract) ([]*openwallet.RawTransaction, error) {
+
+	//err := tm.RefreshAssetsAccountBalance(testApp, accountID)
+	//if err != nil {
+	//	log.Error("RefreshAssetsAccountBalance failed, unexpected error:", err)
+	//	return nil, err
+	//}
+
+	rawTxArray, err := tm.CreateSummaryTransaction(testApp, walletID, accountID, summaryAddress, minTransfer,
+		retainedBalance, feeRate, start, limit, contract)
+
+	if err != nil {
+		log.Error("CreateSummaryTransaction failed, unexpected error:", err)
+		return nil, err
+	}
+
+	return rawTxArray, nil
+}
+
+
+
+func TestSummary_LTC(t *testing.T) {
+	tm := testInitWalletManager()
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "EbUsW3YaHQ61eNt3f4hDXJAFh9LGmLZWH1VTTSnQmhnL"
+	summaryAddress := "mkXhHAd6o3RnEXtrQJi952AKaH3B9WYSe4"
+
+	testGetAssetsAccountBalance(tm, walletID, accountID)
+
+	rawTxArray, err := testCreateSummaryTransactionStep(tm, walletID, accountID,
+		summaryAddress, "0.1", "0", "0.001",
+		0, 100, nil)
+	if err != nil {
+		return
+	}
+
+	//执行汇总交易
+	for _, rawTx := range rawTxArray  {
+		log.Infof("rawTx: %+v", rawTx)
+
+		_, err = testSignTransactionStep(tm, rawTx)
+		if err != nil {
+			return
+		}
+
+		_, err = testVerifyTransactionStep(tm, rawTx)
+		if err != nil {
+			return
+		}
+
+		_, err = testSubmitTransactionStep(tm, rawTx)
+		if err != nil {
+			return
+		}
+	}
+
+}

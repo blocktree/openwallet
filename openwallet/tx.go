@@ -144,12 +144,16 @@ type Transaction struct {
 
 //SummaryRawTransaction 汇总交易
 type SummaryRawTransaction struct {
-	Coin            Coin           `json:"coin"`            //@required 区块链类型标识
-	FeeRate         string         `json:"feeRate"`         //自定义费率
-	SummaryAddress  string         `json:"summaryAddress"`  //@required 目的地址:转账数量
-	MinTransfer     string         `json:"minTransfer"`     //最低转账额，默认0
-	RetainedBalance string         `json:"retainedBalance"` //账户的地址保留余额，默认0
-	Account         *AssetsAccount `json:"account"`         //@required 创建交易单的账户
+	Coin              Coin           `json:"coin"`              //@required 区块链类型标识
+	FeeRate           string         `json:"feeRate"`           //自定义费率
+	SummaryAddress    string         `json:"summaryAddress"`    //@required 目的地址:转账数量
+	MinTransfer       string         `json:"minTransfer"`       //最低转账额，默认0
+	RetainedBalance   string         `json:"retainedBalance"`   //账户的地址保留余额，默认0
+	Account           *AssetsAccount `json:"account"`           //@required 创建交易单的账户
+	AddressStartIndex int            `json:"addressStartIndex"` //汇总账户地址开始位置
+	AddressLimit      int            `json:"addressLimit"`      //汇总账户地址控制数量
+	Confirms          uint64         `json:"confirms"`          //汇总的未花交易大于确认数
+	//IgnoreAddresses   []string       `json:"ignoreAddresses"`   //要忽略的地址
 }
 
 //GenTransactionWxID 生成交易单的WxID，格式为 base64(sha1(tx_{txID}_{symbol}_contractID}))

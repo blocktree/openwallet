@@ -177,7 +177,7 @@ func TestTransfer_LTC(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "EbUsW3YaHQ61eNt3f4hDXJAFh9LGmLZWH1VTTSnQmhnL"
-	to := "mkSfFCHPAaHAyx9gBokXQMGWmyRtzpk4JK"
+	to := "mkXhHAd6o3RnEXtrQJi952AKaH3B9WYSe4"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
