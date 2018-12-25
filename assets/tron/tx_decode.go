@@ -74,8 +74,8 @@ func NewTransactionDecoder(wm *WalletManager) *TransactionDecoder {
 //CreateRawTransaction 创建交易单
 func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
-	if rawTx.Coin.Symbol != "TRON" {
-		return errors.New("CreateRawTransaction: Symbol is not <Tron>")
+	if rawTx.Coin.Symbol != Symbol {
+		return errors.New("CreateRawTransaction: Symbol is not <TRX>")
 	}
 
 	if len(rawTx.To) == 0 {
@@ -255,7 +255,7 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 		return fmt.Errorf("Tx signature verify failed, err=")
 	} else {
 		rawTx.IsCompleted = true
-		rawTx.RawHex = mergeTxHex
+		//rawTx.RawHex = mergeTxHex
 	}
 	return nil
 }
@@ -268,6 +268,19 @@ func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.Walle
 	if !rawTx.IsCompleted {
 		return nil, fmt.Errorf("transaction is not completed validation")
 	}
+
+	//********合并交易单********
+	sig, exist := rawTx.Signatures[rawTx.Account.AccountID]
+	if !exist {
+		return nil, fmt.Errorf("wallet signature not found")
+	}
+	mergeTxHex, err := InsertSignatureIntoRawTransaction(rawTx.RawHex, sig[0].Signature)
+	if err != nil {
+		log.Errorf("merge empty transaction and signature failed,err=", err)
+		return nil, err
+	}
+	rawTx.RawHex = mergeTxHex
+	//********广播交易单********
 	txid, err := decoder.wm.BroadcastTransaction(rawTx.RawHex)
 	if err != nil {
 		log.Errorf("submit transaction failed,err=", err)

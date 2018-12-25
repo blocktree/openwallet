@@ -261,7 +261,7 @@ testNetDataPath = "/data"
 			STOPCMD:  []string{"qtum-cli", "-datadir=/data", "-conf=/etc/qtum.conf", "stop"},
 			LOGFIELS: [2]string{"debug.log", "testnet3/debug.log"},
 		},
-		"tron": &FullnodeContainerConfig{ // Release0929
+		"trx": &FullnodeContainerConfig{ // Release0929
 			NAME:     "Tron Network",
 			PORT:     [][3]string{{"8090/tcp", "18090", "28090"}},
 			APIPORT:  []string{"8090/tcp"},
