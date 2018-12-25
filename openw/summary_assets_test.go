@@ -82,3 +82,50 @@ func TestSummary_LTC(t *testing.T) {
 	}
 
 }
+
+
+
+func TestSummary_Omni(t *testing.T) {
+	tm := testInitWalletManager()
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "2m27uVj2xx645dDCEcGD1whPQGcB4fZv16TzBoLGCyKB"
+	summaryAddress := "mp1JDsi7Dr2PkcWu1j4SUSTXJqXjFMaeVx"
+
+	contract := openwallet.SmartContract{
+		Address:  "2",
+		Symbol:   "BTC",
+		Name:     "Test Omni",
+		Token:    "Omni",
+		Decimals: 8,
+	}
+
+	testGetAssetsAccountBalance(tm, walletID, accountID)
+
+	testGetAssetsAccountTokenBalance(tm, walletID, accountID, contract)
+
+	rawTxArray, err := testCreateSummaryTransactionStep(tm, walletID, accountID,
+		summaryAddress, "0.1", "0", "",
+		0, 100, &contract)
+	if err != nil {
+		return
+	}
+
+	//执行汇总交易
+	for _, rawTx := range rawTxArray  {
+		_, err = testSignTransactionStep(tm, rawTx)
+		if err != nil {
+			return
+		}
+
+		_, err = testVerifyTransactionStep(tm, rawTx)
+		if err != nil {
+			return
+		}
+
+		//_, err = testSubmitTransactionStep(tm, rawTx)
+		//if err != nil {
+		//	return
+		//}
+	}
+
+}
