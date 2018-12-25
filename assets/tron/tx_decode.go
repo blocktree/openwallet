@@ -74,6 +74,10 @@ func NewTransactionDecoder(wm *WalletManager) *TransactionDecoder {
 //CreateRawTransaction 创建交易单
 func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
+	var (
+		txFrom = make([]string, 0)
+		txTo   = make([]string, 0)
+	)
 	if rawTx.Coin.Symbol != Symbol {
 		return errors.New("CreateRawTransaction: Symbol is not <TRX>")
 	}
@@ -111,6 +115,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		amountStr = v
 		break
 	}
+	txTo = []string{fmt.Sprintf("%s:%s", toAddress, amountStr)}
 	amountFloat, err := strconv.ParseFloat(amountStr, 64)
 	if err != nil {
 		log.Errorf("conver amount from string  to float failed,err=", err)
@@ -153,6 +158,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 			keySignList = append(keySignList, &openwallet.KeySignature{
 				Address: ownerAddress,
 			})
+			txFrom = []string{fmt.Sprintf("%s:%s", ownerAddress.Address, amountStr)}
 			break
 		}
 
@@ -183,6 +189,9 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	rawTx.RawHex = rawHex
 	rawTx.Signatures = signatureMap
 	rawTx.IsBuilt = true
+	rawTx.TxTo = txTo
+	rawTx.TxFrom = txFrom
+	rawTx.TxAmount = amountStr
 	return nil
 }
 
