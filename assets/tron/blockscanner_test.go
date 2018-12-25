@@ -63,7 +63,7 @@ func TestTronBlockScanner_scanning(t *testing.T) {
 
 	//bs.DropRechargeRecords(accountID)
 
-	bs.SetRescanBlockHeight(5192190)
+	bs.SetRescanBlockHeight(5224100)
 	//tw.SaveLocalNewBlock(1355030, "00000000000000125b86abb80b1f94af13a5d9b07340076092eda92dade27686")
 
 	//bs.AddAddress(address, accountID)
