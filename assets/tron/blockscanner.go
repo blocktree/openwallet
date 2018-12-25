@@ -119,7 +119,6 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 
 	//获取本地区块高度
 	currentHeight, currentHash = bs.GetLocalNewBlock()
-	//fmt.Println("currentHeight:=", currentHeight)
 	//如果本地没有记录，查询接口的高度
 	if currentHeight == 0 {
 		log.Std.Info("No records found in local, get now block as the local!")
@@ -154,8 +153,8 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 		}
 		maxHeightBlockHash := maxHeightBlock.Hash
 		maxHeight := maxHeightBlock.Height
-		log.Std.Info("Get now block: height=%v, hash=%v", maxHeight, maxHeightBlockHash)
-
+		//log.Std.Info("Get now block: height=%v, hash=%v", maxHeight, maxHeightBlockHash)
+		fmt.Printf("Get now block: height=%v, hash=%v", maxHeight, maxHeightBlockHash)
 		//是否已到最新高度
 		if currentHeight == maxHeight {
 			log.Std.Info("Break: block scanner has scanned full chain data. Current height %d", maxHeight)
@@ -178,7 +177,7 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 			continue
 		}
 		hash := block.GetBlockHashID()
-
+		fmt.Println("hash:", hash)
 		isFork := false
 
 		//判断hash是否上一区块的hash
@@ -228,7 +227,6 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 			txHash := make([]string, len(block.tx))
 			for i, _ := range block.tx {
 				txHash[i] = block.tx[i].TxID
-				//fmt.Println("txHash:=", txHash[i])
 			}
 			err = bs.BatchExtractTransaction(block.Height, block.Hash, txHash)
 			if err != nil {

@@ -67,7 +67,7 @@ func (wm *WalletManager) CurveType() uint32 {
 
 //FullName 币种全名
 func (wm *WalletManager) FullName() string {
-	return "TRON"
+	return "TRX"
 }
 
 //Symbol 币种标识

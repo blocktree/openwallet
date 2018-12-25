@@ -39,7 +39,7 @@ import (
 
 const (
 	// Symbol 币种
-	Symbol = "TRON"
+	Symbol = "TRX"
 	//MasterKey key for master
 	MasterKey = "Troncoin seed"
 	//CurveType to generate ChildKey by BIP32

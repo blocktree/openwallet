@@ -41,7 +41,7 @@ func testInitWalletManager() *WalletManager {
 		"LTC",
 		"ETH",
 		"NAS",
-		"TRON",
+		"TRX",
 		"BCH",
 		"ONT",
 	}
