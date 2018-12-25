@@ -73,14 +73,23 @@ func (a *AssetsAccount) GetOwners() []AccountOwner {
 	return nil
 }
 
-//computeKeyID 计算HDKey的KeyID
+//GetAccountID 计算AccountID
 func (a *AssetsAccount) GetAccountID() string {
 
 	if len(a.AccountID) > 0 {
 		return a.AccountID
 	}
 
-	pub, err := owkeychain.OWDecode(a.PublicKey)
+	a.AccountID = GenAccountID(a.PublicKey)
+
+	return a.AccountID
+}
+
+//GenAccountID 计算publicKey的AccountID
+//publickey为OW编码后
+func GenAccountID(publicKey string) string {
+
+	pub, err := owkeychain.OWDecode(publicKey)
 	if err != nil {
 		return ""
 	}
@@ -89,7 +98,7 @@ func (a *AssetsAccount) GetAccountID() string {
 	hash := crypto.Keccak256(pub.GetPublicKeyBytes())
 	hash = crypto.Keccak256(hash)
 
-	a.AccountID = owkeychain.Encode(hash, owkeychain.BitcoinAlphabet)
+	accountID := owkeychain.Encode(hash, owkeychain.BitcoinAlphabet)
 
-	return a.AccountID
+	return accountID
 }

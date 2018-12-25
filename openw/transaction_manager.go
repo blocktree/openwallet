@@ -289,91 +289,8 @@ func (wm *WalletManager) SubmitTransaction(appID, walletID, accountID string, ra
 
 	log.Debug("transaction has been submitted successfully")
 
-	//des := make([]string, 0)
-	//totalSent := decimal.New(0, 0)
-	//decimals := int32(0)
-	//for to, amount := range rawTx.To {
-	//	des = append(des, to)
-	//	amountDec, decErr := decimal.NewFromString(amount)
-	//	if decErr != nil {
-	//		continue
-	//	}
-	//	totalSent = totalSent.Add(amountDec)
-	//}
-	//
-	//feesDec, _ := decimal.NewFromString(rawTx.Fees)
-	//totalSent = totalSent.Add(feesDec)
-	//
-	//if rawTx.Coin.IsContract {
-	//	decimals = int32(rawTx.Coin.Contract.Decimals)
-	//} else {
-	//	decimals = int32(assetsMgr.Decimal())
-	//}
-
-	//tx := &openwallet.Transaction{
-	//	To:         des,
-	//	Amount:     totalSent.StringFixed(decimals),
-	//	Coin:       rawTx.Coin,
-	//	TxID:       rawTx.TxID,
-	//	Decimal:    decimals,
-	//	AccountID:  rawTx.Account.AccountID,
-	//	Fees:       rawTx.Fees,
-	//	SubmitTime: time.Now().Unix(),
-	//}
-	//
-	//tx.WxID = openwallet.GenTransactionWxID(tx)
-
-	//提取交易单
-	//scanner := assetsMgr.GetBlockScanner()
-	//if scanner == nil {
-	//	log.Std.Error("[%s] is not block scan", account.Symbol)
-	//	return tx, nil
-	//}
-	//
-	////GetSourceKeyByAddress 获取地址对应的数据源标识
-	//scanAddressFunc := func (address string) (string, bool) {
-	//	scanAddr, scanErr := wrapper.GetAddress(address)
-	//	if scanErr != nil || scanAddr == nil {
-	//		return "", false
-	//	}
-	//	return scanAddr.AccountID, true
-	//}
-	//
-	//extractData, err := scanner.ExtractTransactionData(rawTx.TxID, scanAddressFunc)
-	//if err != nil {
-	//	log.Error("ExtractTransactionData failed, unexpected error:", err)
-	//	return tx, nil
-	//}
-	//
-	//accountTxData, ok := extractData[accountID]
-	//if !ok {
-	//	return tx, nil
-	//}
-	//
-	//txWrapper := openwallet.NewTransactionWrapper(wrapper)
-	//for _, d := range accountTxData {
-	//	err = txWrapper.SaveBlockExtractData(accountID, d)
-	//	if err != nil {
-	//		log.Error("SaveBlockExtractData failed, unexpected error:", err)
-	//		return tx, err
-	//	}
-	//}
-
 	log.Info("Save new transaction data successfully")
 
-	//更新账户余额
-	//err = wm.RefreshAssetsAccountBalance(appID, accountID)
-	//if err != nil {
-	//	log.Error("RefreshAssetsAccountBalance error:", err)
-	//}
-
-	//perfectTx, err := wm.GetTransactionByWxID(appID, tx.WxID)
-	//if err != nil {
-	//	log.Error("GetTransactionByTxID failed, unexpected error:", err)
-	//	return tx, err
-	//}
-
-	//log.Error("perfectTx:", perfectTx)
 	return tx, nil
 	//return perfectTx, nil
 }
@@ -590,4 +507,70 @@ func (wm *WalletManager) GetEstimateFeeRate(coin openwallet.Coin) (feeRate strin
 
 	return txDecoder.GetRawTransactionFeeRate()
 
+}
+
+// CreateSummaryTransaction
+func (wm *WalletManager) CreateSummaryTransaction(
+	appID, walletID, accountID, summaryAddress, minTransfer, retainedBalance, feeRate string,
+	start, limit int,
+	contract *openwallet.SmartContract) ([]*openwallet.RawTransaction, error) {
+
+	var (
+		coin openwallet.Coin
+	)
+
+	wrapper, err := wm.newWalletWrapper(appID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := wrapper.GetAssetsAccountInfo(accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	assetsMgr, err := GetAssetsAdapter(account.Symbol)
+	if err != nil {
+		return nil, err
+	}
+
+	if contract != nil {
+		coin = openwallet.Coin{
+			Symbol:     account.Symbol,
+			ContractID: contract.ContractID,
+			IsContract: true,
+			Contract:   *contract,
+		}
+	} else {
+		coin = openwallet.Coin{
+			Symbol:     account.Symbol,
+			ContractID: "",
+			IsContract: false,
+		}
+	}
+
+	sumTx := openwallet.SummaryRawTransaction{
+		Coin:              coin,
+		Account:           account,
+		FeeRate:           feeRate,
+		SummaryAddress:    summaryAddress,
+		MinTransfer:       minTransfer,
+		RetainedBalance:   retainedBalance,
+		AddressStartIndex: start,
+		AddressLimit:      limit,
+	}
+
+	txdecoder := assetsMgr.GetTransactionDecoder()
+	if txdecoder == nil {
+		return nil, fmt.Errorf("[%s] is not support transaction. ", account.Symbol)
+	}
+
+	rawTxArray, err := txdecoder.CreateSummaryRawTransaction(wrapper, &sumTx)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Debug("transaction has been created successfully")
+
+	return rawTxArray, nil
 }

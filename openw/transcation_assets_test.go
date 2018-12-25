@@ -68,7 +68,7 @@ func testSignTransactionStep(tm *WalletManager, rawTx *openwallet.RawTransaction
 		return nil, err
 	}
 
-	log.Info("rawTx:", rawTx)
+	log.Infof("rawTx: %+v", rawTx)
 	return rawTx, nil
 }
 
@@ -82,7 +82,7 @@ func testVerifyTransactionStep(tm *WalletManager, rawTx *openwallet.RawTransacti
 		return nil, err
 	}
 
-	log.Info("rawTx:", rawTx)
+	log.Infof("rawTx: %+v", rawTx)
 	return rawTx, nil
 }
 
@@ -177,7 +177,7 @@ func TestTransfer_LTC(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "EbUsW3YaHQ61eNt3f4hDXJAFh9LGmLZWH1VTTSnQmhnL"
-	to := "mkSfFCHPAaHAyx9gBokXQMGWmyRtzpk4JK"
+	to := "mkXhHAd6o3RnEXtrQJi952AKaH3B9WYSe4"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
@@ -317,9 +317,9 @@ func TestTransfer_BTC(t *testing.T) {
 	//mxoCkSBmiLQ86N73kXNLHEUgcUBoKdFawH
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "2m27uVj2xx645dDCEcGD1whPQGcB4fZv16TzBoLGCyKB"
-	to := "mp1JDsi7Dr2PkcWu1j4SUSTXJqXjFMaeVx"
+	to := "n1ZurJRnQyoRwBrx6B7DMndjBWAxnRbxKJ"
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.2", "", nil)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.1", "", nil)
 	if err != nil {
 		return
 	}
@@ -349,7 +349,7 @@ func TestTransfer_OMNI(t *testing.T) {
 	//mxoCkSBmiLQ86N73kXNLHEUgcUBoKdFawH
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "2m27uVj2xx645dDCEcGD1whPQGcB4fZv16TzBoLGCyKB"
-	to := "mxoCkSBmiLQ86N73kXNLHEUgcUBoKdFawH"
+	to := "mkXhHAd6o3RnEXtrQJi952AKaH3B9WYSe4"
 
 	contract := openwallet.SmartContract{
 		Address:  "2",
@@ -363,7 +363,7 @@ func TestTransfer_OMNI(t *testing.T) {
 
 	testGetAssetsAccountTokenBalance(tm, walletID, accountID, contract)
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "9", "", &contract)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.1", "", &contract)
 	if err != nil {
 		return
 	}
