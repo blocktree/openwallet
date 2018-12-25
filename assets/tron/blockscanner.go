@@ -119,7 +119,7 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 
 	//获取本地区块高度
 	currentHeight, currentHash = bs.GetLocalNewBlock()
-	fmt.Println("currentHeight:=", currentHeight)
+	//fmt.Println("currentHeight:=", currentHeight)
 	//如果本地没有记录，查询接口的高度
 	if currentHeight == 0 {
 		log.Std.Info("No records found in local, get now block as the local!")
@@ -138,7 +138,7 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 		currentHash = block.GetBlockHashID()
 		currentHeight = block.GetHeight()
 	}
-	log.Std.Info("Local block height: %v", currentHeight)
+	//log.Std.Info("Local block height: %v", currentHeight)
 	//i := 0
 	for {
 		log.Std.Info("\n ------------------------------------ Foreach Start")
@@ -146,16 +146,15 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 		//time.Sleep(time.Second * (5 * time.Duration(i*i)))
 		//i++
 		//获取最大高度
-		block, err := bs.wm.GetNowBlock()
+		maxHeightBlock, err := bs.wm.GetNowBlock()
 		if err != nil {
 			//下一个高度找不到会报异常
 			log.Std.Info("block scanner can not get rpc-server block height; unexpected error: %v", err)
 			break
 		}
-		hash := block.Hash
-		maxHeight := block.Height
-		fmt.Println("maxHeight:=", maxHeight)
-		//log.Std.Info("Get now block: height=%v, hash=%v", maxHeight, hash)
+		maxHeightBlockHash := maxHeightBlock.Hash
+		maxHeight := maxHeightBlock.Height
+		log.Std.Info("Get now block: height=%v, hash=%v", maxHeight, maxHeightBlockHash)
 
 		//是否已到最新高度
 		if currentHeight == maxHeight {
@@ -168,7 +167,7 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 
 		log.Std.Info("Block scanner scanning next height: %d ...", currentHeight)
 
-		block, err = bs.wm.GetBlockByNum(currentHeight)
+		block, err := bs.wm.GetBlockByNum(currentHeight)
 		if err != nil {
 			log.Std.Info("block scanner can not get new block data; unexpected error: %v", err)
 
@@ -178,20 +177,17 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 			log.Std.Info("block height: %d extract failed.", currentHeight)
 			continue
 		}
-		currentHash = block.GetBlockHashID()
+		hash := block.GetBlockHashID()
 
 		isFork := false
 
 		//判断hash是否上一区块的hash
 		if currentHash != block.Previousblockhash {
-			// if true {
-			log.Std.Info("\n\t 分叉？")
 			log.Std.Info("\tblock has been fork on height: %d.", currentHeight)
 			log.Std.Info("\tblock height: %d local hash = %s ", currentHeight-1, currentHash)
-			// log.Std.Info("\tblock height: %d mainnet hash = %s ", currentHeight-1, block.Previousblockhash)
-
 			log.Std.Info("\tdelete recharge records on block height: %d.", currentHeight-1)
-
+			//查询本地分叉的区块
+			forkBlock, _ := bs.GetLocalBlock(currentHeight - 1)
 			//删除上一区块链的所有充值记录
 			//bs.DeleteRechargesByHeight(currentHeight - 1)
 			//删除上一区块链的未扫记录
@@ -200,7 +196,6 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 			if currentHeight <= 0 {
 				currentHeight = 1
 			}
-
 			localBlock, err := bs.GetLocalBlock(currentHeight)
 			if err != nil {
 				log.Std.Error("block scanner can not get local block; unexpected error: %v", err)
@@ -214,7 +209,6 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 					break
 				}
 			}
-
 			//重置当前区块的hash
 			currentHash = localBlock.Hash
 
@@ -224,12 +218,17 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 			bs.SaveLocalNewBlock(localBlock.Height, localBlock.Hash)
 
 			isFork = true
+			if forkBlock != nil {
+				//通知分叉区块给观测者，异步处理
+				go bs.newBlockNotify(forkBlock, isFork)
+			}
 
 		} else {
 
 			txHash := make([]string, len(block.tx))
 			for i, _ := range block.tx {
 				txHash[i] = block.tx[i].TxID
+				//fmt.Println("txHash:=", txHash[i])
 			}
 			err = bs.BatchExtractTransaction(block.Height, block.Hash, txHash)
 			if err != nil {
@@ -242,15 +241,10 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 			//保存本地新高度
 			bs.SaveLocalNewBlock(currentHeight, currentHash)
 			bs.SaveLocalBlock(block)
-
 			isFork = false
+			//通知新区块给观测者，异步处理
+			go bs.newBlockNotify(block, isFork)
 		}
-
-		//通知新区块给观测者，异步处理
-		go bs.newBlockNotify(block, isFork)
-		//---for debug---------
-		//break
-		//---------------------
 	}
 
 	//重扫前N个块，为保证记录找到
@@ -262,7 +256,6 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 	//扫描交易内存池
 	//bs.ScanTxMemPool()
 	//}
-
 	//重扫失败区块
 	bs.RescanFailedRecord()
 
