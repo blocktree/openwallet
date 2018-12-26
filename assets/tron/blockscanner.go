@@ -75,7 +75,7 @@ func NewTronBlockScanner(wm *WalletManager) *TronBlockScanner {
 
 	bs.extractingCH = make(chan struct{}, maxExtractingSize)
 	bs.wm = wm
-	// bs.IsScanMemPool = true
+	//bs.IsScanMemPool = true
 	bs.RescanLastBlockCount = 0
 
 	// bs.walletInScanning = make(map[string]*openwallet.Wallet)
@@ -154,7 +154,7 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 		maxHeightBlockHash := maxHeightBlock.Hash
 		maxHeight := maxHeightBlock.Height
 		//log.Std.Info("Get now block: height=%v, hash=%v", maxHeight, maxHeightBlockHash)
-		fmt.Printf("Get now block: height=%v, hash=%v", maxHeight, maxHeightBlockHash)
+		fmt.Printf("Get now block: height=%v, hash=%v\n", maxHeight, maxHeightBlockHash)
 		//是否已到最新高度
 		if currentHeight == maxHeight {
 			log.Std.Info("Break: block scanner has scanned full chain data. Current height %d", maxHeight)
@@ -223,7 +223,6 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 			}
 
 		} else {
-
 			txHash := make([]string, len(block.tx))
 			for i, _ := range block.tx {
 				txHash[i] = block.tx[i].TxID
@@ -232,10 +231,8 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 			if err != nil {
 				log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
 			}
-
 			//重置当前区块的hash
 			currentHash = hash
-
 			//保存本地新高度
 			bs.SaveLocalNewBlock(currentHeight, currentHash)
 			bs.SaveLocalBlock(block)
@@ -324,15 +321,12 @@ func (bs *TronBlockScanner) RescanFailedRecord() {
 		if _, exist := blockMap[r.BlockHeight]; !exist {
 			blockMap[r.BlockHeight] = make([]string, 0)
 		}
-
 		if len(r.TxID) > 0 {
 			arr := blockMap[r.BlockHeight]
 			arr = append(arr, r.TxID)
-
 			blockMap[r.BlockHeight] = arr
 		}
 	}
-
 	for height, txs := range blockMap {
 
 		var hash string
@@ -353,17 +347,16 @@ func (bs *TronBlockScanner) RescanFailedRecord() {
 				log.Std.Info("block scanner can not get new block data; unexpected error: %v", err)
 				continue
 			}
+			txs = make([]string, len(block.tx))
 			for i, _ := range block.tx {
 				txs[i] = block.tx[i].TxID
 			}
 		}
-
 		err = bs.BatchExtractTransaction(height, hash, txs)
 		if err != nil {
 			log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
 			continue
 		}
-
 		//删除未扫记录
 		bs.wm.DeleteUnscanRecord(height)
 	}
