@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/blocktree/go-owcdrivers/addressEncoder"
+	"github.com/blocktree/go-owcdrivers/signatureSet"
 	"github.com/blocktree/go-owcrypt"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -193,7 +194,7 @@ func (wm *WalletManager) SignTransactionRef(hash string, privateKey string) (sig
 			 }
 			 tx.Signature = append(tx.Signature, sign)
 		 }*/
-	sign, ret := owcrypt.Tron_signature(pk, txHash)
+	sign, ret := signatureSet.TronSignature(pk, txHash)
 	if ret != owcrypt.SUCCESS {
 		return "", fmt.Errorf("sign txHash failed,unexpected error:%d", ret)
 	}

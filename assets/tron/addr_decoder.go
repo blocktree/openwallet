@@ -16,7 +16,7 @@
 package tron
 
 import (
-	owcrypt "github.com/blocktree/go-owcrypt"
+	"github.com/blocktree/go-owcrypt"
 )
 
 //AddressDecoderStruct for Interface AddressDecoder
