@@ -36,16 +36,18 @@ type Listener interface {
 var upgrader = ws.Upgrader{}
 
 //owtp监听器
-type owtpListener struct {
+type wsListener struct {
 	net.Listener
-	handler  PeerHandler
-	closed   chan struct{}
-	incoming chan Peer
-	laddr    string
+	handler         PeerHandler
+	closed          chan struct{}
+	incoming        chan Peer
+	laddr           string
+	enableSignature bool
+	cert            Certificate
 }
 
 //serve 监听服务
-func (l *owtpListener) serve() error {
+func (l *wsListener) serve() error {
 
 	if l.Listener == nil {
 		return errors.New("listener is not setup.")
@@ -59,9 +61,11 @@ func (l *owtpListener) serve() error {
 }
 
 //ServeHTTP 实现HTTP服务监听
-func (l *owtpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (l *wsListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	//log.Debug("http url path:", r.URL.Path)
+	//创建一个上下文通知，监控节点是否已经关闭
+	ctx, cancel := context.WithCancel(context.Background())
+	httpCtx := r.Context()
 
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -69,36 +73,14 @@ func (l *owtpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//创建一个上下文通知，监控节点是否已经关闭
-	ctx, cancel := context.WithCancel(context.Background())
-
-	//var cnCh <-chan bool
-	//if cn, ok := w.(http.CloseNotifier); ok {
-	//	cnCh = cn.CloseNotify()
-	//}
-
-	httpCtx := r.Context()
-
-	auth, err := NewOWTPAuthWithHTTPHeader(r.Header)
+	peer, err := NewWSClientWithHeader(r.Header, l.cert, c, l.handler, l.enableSignature, cancel)
 	if err != nil {
-		log.Error("NewOWTPAuth unexpected error:", err)
-		http.Error(w, "Failed to upgrade websocket", 400)
-		return
-	}
-
-	//log.Debug("NewOWTPAuth successfully")
-
-	peer, err := NewClient(auth.RemotePID(), c, l.handler, auth, cancel)
-	if err != nil {
-		log.Error("NewClient unexpected error:", err)
+		log.Error("NewWSClientWithHeader unexpected error:", err)
 		http.Error(w, "authorization not passed", 401)
 		return
 	}
 	// Just to make sure.
 	//defer peer.Close()
-
-	log.Error("NewClient successfully")
-
 	select {
 	case l.incoming <- peer:
 	case <-l.closed:
@@ -117,7 +99,7 @@ func (l *owtpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	case <-l.closed:
 		//log.Debug("peer 2:", peer.PID(), "closed")
-		peer.Close()
+		peer.close()
 	//case <-cnCh:
 	case <-httpCtx.Done():
 		log.Error("http CloseNotify")
@@ -127,7 +109,7 @@ func (l *owtpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 //Accept 接收新节点链接，线程阻塞
-func (l *owtpListener) Accept() (Peer, error) {
+func (l *wsListener) Accept() (Peer, error) {
 	select {
 	case c, ok := <-l.incoming:
 		if !ok {
@@ -139,18 +121,20 @@ func (l *owtpListener) Accept() (Peer, error) {
 	}
 }
 
-//ListenAddr 创建OWTP协议通信监听
-func ListenAddr(addr string, handler PeerHandler) (*owtpListener, error) {
+//WSListenAddr 创建websocket通信监听
+func WSListenAddr(addr string, cert Certificate, enableSignature bool, handler PeerHandler) (*wsListener, error) {
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		return nil, err
 	}
-	listener := owtpListener{
-		Listener: l,
-		laddr:    addr,
-		handler:  handler,
-		incoming: make(chan Peer),
-		closed:   make(chan struct{}),
+	listener := wsListener{
+		Listener:        l,
+		laddr:           addr,
+		cert:            cert,
+		handler:         handler,
+		incoming:        make(chan Peer),
+		closed:          make(chan struct{}),
+		enableSignature: enableSignature,
 	}
 
 	go listener.serve()

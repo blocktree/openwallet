@@ -152,8 +152,8 @@ func NewOWTPNode(cert Certificate, readBufferSize, writeBufferSize int) *OWTPNod
 	node.peerstore = NewOWTPPeerstore()
 	node.ReadBufferSize = readBufferSize
 	node.WriteBufferSize = writeBufferSize
-	node.Join = make(chan Peer)
-	node.Leave = make(chan Peer)
+	node.Join = make(chan Peer, 1024)
+	node.Leave = make(chan Peer, 1024)
 	node.Stop = make(chan struct{})
 	node.onlinePeers = make(map[string]Peer)
 
@@ -167,8 +167,8 @@ func NewOWTPNode(cert Certificate, readBufferSize, writeBufferSize int) *OWTPNod
 }
 
 //Certificate 节点证书
-func (node *OWTPNode) Certificate() Certificate {
-	return node.cert
+func (node *OWTPNode) Certificate() *Certificate {
+	return &node.cert
 }
 
 //NodeID 节点的ID
@@ -192,12 +192,13 @@ func (node *OWTPNode) Listen(config map[string]string) error {
 	addr := config["address"]
 	connectType := config["connectType"]
 	enableSignature := common.NewString(config["enableSignature"]).Bool()
+	//log.Debug("enableSignature:", enableSignature)
 	if node.listening {
 		return fmt.Errorf("the node is listening, please close listener first")
 	}
 
 	if connectType == Websocket || connectType == MQ {
-		l, err := ListenAddr(addr, node)
+		l, err := WSListenAddr(addr, node.cert, enableSignature, node)
 		if err != nil {
 			return err
 		}
@@ -220,15 +221,15 @@ func (node *OWTPNode) Listen(config map[string]string) error {
 			return err
 		}
 		node.listener = l
-		go func(listener Listener) {
-			for {
-				peer, err := listener.Accept()
-				if err != nil {
-					return
-				}
-				node.Join <- peer
-			}
-		}(l)
+		//go func(listener Listener) {
+		//	for {
+		//		peer, err := listener.Accept()
+		//		if err != nil {
+		//			return
+		//		}
+		//		node.Join <- peer
+		//	}
+		//}(l)
 
 		node.listening = true
 	}
@@ -291,7 +292,7 @@ func (node *OWTPNode) connect(pid string, config map[string]string) (Peer, error
 			return nil, err
 		}
 		//设置授权规则
-		client.auth = auth
+		client._auth = auth
 		//设置配置
 		client.config = config
 		peer = client
@@ -310,7 +311,7 @@ func (node *OWTPNode) connect(pid string, config map[string]string) (Peer, error
 			return nil, err
 		}
 		//设置授权规则
-		client.auth = auth
+		client._auth = auth
 		//设置配置
 		client.config = config
 		peer = client
@@ -319,7 +320,7 @@ func (node *OWTPNode) connect(pid string, config map[string]string) (Peer, error
 	//HTTP类型
 	if connectType == HTTP {
 
-		url := "http://" + strings.TrimSuffix(addr, "/") + "/" + pid
+		url := connectType + "://" + strings.TrimSuffix(addr, "/") + "/" + pid
 
 		//建立链接，记录默认的客户端
 		client, err := HTTPDial(pid, url, node, auth.HTTPAuthHeader())
@@ -327,7 +328,7 @@ func (node *OWTPNode) connect(pid string, config map[string]string) (Peer, error
 			return nil, err
 		}
 		//设置授权规则
-		client.auth = auth
+		client._auth = auth
 		//设置配置
 		client.config = config
 
@@ -376,7 +377,7 @@ func (node *OWTPNode) Run() error {
 			node.AddOnlinePeer(peer)
 			node.peerstore.SavePeer(peer) //HTTP可能会无限增加
 			//加入后打开数据流通道
-			if err := peer.OpenPipe(); err != nil {
+			if err := peer.openPipe(); err != nil {
 				log.Error("peer:", peer.PID(), "open pipe failed")
 				continue
 			}
@@ -388,6 +389,7 @@ func (node *OWTPNode) Run() error {
 		case peer := <-node.Leave:
 			//客户端离开
 			log.Debug("Node Leave:", peer.PID())
+
 			node.serveMux.ResetRequestQueue(peer.PID())
 			node.RemoveOfflinePeer(peer.PID())
 
@@ -426,7 +428,7 @@ func (node *OWTPNode) ClosePeer(pid string) {
 	if peer == nil {
 		return
 	}
-	peer.Close()
+	peer.close()
 }
 
 //Close 关闭节点
@@ -441,22 +443,22 @@ func (node *OWTPNode) Close() {
 
 	//中断所有客户端连接
 	for _, peer := range node.OnlinePeers() {
-		peer.Close()
+		peer.close()
 		node.serveMux.ResetRequestQueue(peer.PID())
 	}
 
 	//通知停止运行
 	node.Stop <- struct{}{}
 
-	//node.client.Close()
+	//node.client.close()
 }
 
 //CallSync 同步请求
-func  (node *OWTPNode) CallSync(
+func (node *OWTPNode) CallSync(
 	pid string,
 	method string,
 	params interface{},
-	) (*Response, error) {
+) (*Response, error) {
 
 	var (
 		err      error
@@ -471,7 +473,7 @@ func  (node *OWTPNode) CallSync(
 		return nil, err
 	}
 
-	response := <- respChan
+	response := <-respChan
 	return &response, nil
 }
 
@@ -503,6 +505,7 @@ func (node *OWTPNode) Call(
 	//添加请求队列到Map，处理完成回调方法
 	nonce := uint64(node.nonceGen.Generate().Int64())
 	time := time.Now().Unix()
+
 	//封装数据包
 	packet := DataPacket{
 		Method:    method,
@@ -518,7 +521,7 @@ func (node *OWTPNode) Call(
 		return err
 	}
 
-	if !peer.Auth().GenerateSignature(&packet) {
+	if !peer.auth().GenerateSignature(&packet) {
 		return errors.New("OWTP: authorization failed")
 	}
 
@@ -526,7 +529,7 @@ func (node *OWTPNode) Call(
 	node.serveMux.AddRequest(peer.PID(), nonce, time, method, reqFunc, respChan, sync)
 
 	//向节点发送请求
-	err = peer.Send(packet)
+	err = peer.send(packet)
 	if err != nil {
 		//发送失败移除请求
 		node.serveMux.RemoveRequest(peer.PID(), nonce)
@@ -553,7 +556,7 @@ func (node *OWTPNode) encryptPacket(peer Peer, packet *DataPacket) error {
 	//log.Debug("encryptPacket")
 
 	//TODO:加密Data
-	if peer.Auth() != nil && peer.Auth().EnableKeyAgreement() && packet.Data != nil {
+	if peer.auth() != nil && peer.auth().EnableKeyAgreement() && packet.Data != nil {
 		//协商校验码
 		localChecksumStr, ok := node.Peerstore().Get(peer.PID(), "localChecksum").(string)
 		if ok {
@@ -569,7 +572,7 @@ func (node *OWTPNode) encryptPacket(peer Peer, packet *DataPacket) error {
 		if ok {
 			//加载到授权中
 			secretKey := base58.Decode(pKey)
-			chipText, chipErr := peer.Auth().EncryptData(enc, secretKey)
+			chipText, chipErr := peer.auth().EncryptData(enc, secretKey)
 			if chipErr != nil {
 				return fmt.Errorf("encrypt data failed")
 			}
@@ -611,7 +614,7 @@ func (node *OWTPNode) KeyAgreement(pid string, consultType string) error {
 func (node *OWTPNode) callKeyAgreement(peer Peer, consultType string) error {
 
 	//初始协商参数
-	params, err := peer.Auth().InitKeyAgreement(consultType)
+	params, err := peer.auth().InitKeyAgreement(consultType)
 	if err != nil {
 		return err
 	}
@@ -636,11 +639,11 @@ func (node *OWTPNode) callKeyAgreement(peer Peer, consultType string) error {
 				}
 
 				//计算密钥，并请求协商
-				result, finalErr := peer.Auth().ResponseKeyAgreement(inputs)
+				result, finalErr := peer.auth().ResponseKeyAgreement(inputs)
 				if finalErr != nil {
 					log.Errorf("ResponseKeyAgreement unexpected error:", err)
 					//协商失败，断开连接
-					peer.Close()
+					peer.close()
 					return
 				}
 
@@ -659,9 +662,9 @@ func (node *OWTPNode) callKeyAgreement(peer Peer, consultType string) error {
 //keyAgreement 协商密钥
 func (node *OWTPNode) keyAgreement(ctx *Context) {
 	//检查是否已经连接服务
-	peer := node.GetOnlinePeer(ctx.PID)
+	peer := ctx.Peer
 	if peer == nil {
-		responseError(fmt.Sprintf("peer: %s is not connected.", ctx.PID), ErrKeyAgreementFailed)
+		ctx.Resp = responseError(fmt.Sprintf("peer: %s is not connected.", ctx.PID), ErrKeyAgreementFailed)
 		return
 	}
 
@@ -677,9 +680,9 @@ func (node *OWTPNode) keyAgreement(ctx *Context) {
 	}
 
 	//请求协商
-	result, err := peer.Auth().RequestKeyAgreement(inputs)
+	result, err := peer.auth().RequestKeyAgreement(inputs)
 	if err != nil {
-		responseError(err.Error(), ErrKeyAgreementFailed)
+		ctx.Resp = responseError(err.Error(), ErrKeyAgreementFailed)
 		return
 	}
 
@@ -723,7 +726,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 	////重复攻击检查
 	//if !node.checkNonceReplay(packet) {
 	//	log.Error("nonce duplicate: ", packet)
-	//	peer.Send(*packet)
+	//	peer.send(*packet)
 	//	return
 	//}
 
@@ -734,7 +737,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 	)
 
 	//验证授权
-	if peer.Auth() != nil {
+	if peer.auth() != nil {
 
 		//协商校验码
 		localChecksumStr, ok := node.Peerstore().Get(peer.PID(), "localChecksum").(string)
@@ -744,11 +747,11 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 		}
 
 		//检查是否完成协商密码
-		if !peer.Auth().VerifyKeyAgreement(packet, localChecksum) {
+		if !peer.auth().VerifyKeyAgreement(packet, localChecksum) {
 			log.Critical("keyAgreement failed: ", packet)
 			packet.Req = WSResponse
 			packet.Data = responseError("key agreement failed", ErrKeyAgreementFailed)
-			peer.Send(*packet) //发送验证失败结果
+			peer.send(*packet) //发送验证失败结果
 			return
 		} else {
 			pKey, ok := node.Peerstore().Get(peer.PID(), "secretKey").(string)
@@ -762,11 +765,11 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 	if packet.Req == WSRequest {
 
 		//授权检查，只检查请求过来的签名
-		if !peer.Auth().VerifySignature(packet) {
+		if !peer.auth().VerifySignature(packet) {
 			log.Errorf("auth failed: %+v", packet)
 			packet.Req = WSResponse
 			packet.Data = responseError("verify signature failed, unauthorized", ErrUnauthorized)
-			peer.Send(*packet) //发送验证失败结果
+			peer.send(*packet) //发送验证失败结果
 			return
 		}
 
@@ -774,23 +777,32 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 		if !ok {
 			packet.Req = WSResponse
 			packet.Data = responseError("data parse failed", ErrBadRequest)
-			peer.Send(*packet)
+			peer.send(*packet)
 			return
 		}
 		//log.Debug("rawData:", rawData)
-		decryptData, cryptErr := peer.Auth().DecryptData([]byte(rawData), secretKey)
+		decryptData, cryptErr := peer.auth().DecryptData([]byte(rawData), secretKey)
 		//log.Debug("decryptData:", string(decryptData))
 
 		if cryptErr != nil {
 			log.Critical("OWTP: DecryptData failed, unexpected err:", cryptErr)
 			packet.Req = WSResponse
 			packet.Data = responseError("secret key is invalid", ErrSecretKeyInvalid)
-			peer.Send(*packet)
+			peer.send(*packet)
 			return
 		}
 
 		//创建上下面指针，处理请求参数
-		ctx := Context{PID: peer.PID(), Req: packet.Req, RemoteAddress: peer.RemoteAddr().String(), nonce: packet.Nonce, inputs: decryptData, Method: packet.Method, peerstore: node.Peerstore()}
+		ctx := Context{
+			PID:           peer.PID(),
+			Req:           packet.Req,
+			RemoteAddress: peer.RemoteAddr().String(),
+			nonce:         packet.Nonce,
+			inputs:        decryptData,
+			Method:        packet.Method,
+			peerstore:     node.Peerstore(),
+			Peer:          peer,
+		}
 
 		node.serveMux.ServeOWTP(peer.PID(), &ctx)
 
@@ -803,11 +815,11 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 			log.Critical("OWTP: encryptData failed, unexpected err:", cryptErr)
 			packet.Req = WSResponse
 			packet.Data = responseError("server encryptData failed", ErrInternalServerError)
-			peer.Send(*packet)
+			peer.send(*packet)
 			return
 		}
 
-		peer.Send(*packet)
+		peer.send(*packet)
 	} else if packet.Req == WSResponse {
 
 		rawData, ok := packet.Data.(string)
@@ -816,7 +828,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 			return
 		}
 		//log.Debug("rawData:", rawData)
-		decryptData, cryptErr := peer.Auth().DecryptData([]byte(rawData), secretKey)
+		decryptData, cryptErr := peer.auth().DecryptData([]byte(rawData), secretKey)
 		//log.Debug("decryptData:", string(decryptData))
 
 		if cryptErr != nil {
@@ -833,7 +845,16 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 			resp = responseError("Response decode error", ErrBadRequest)
 		}
 
-		ctx := Context{Req: packet.Req, RemoteAddress: peer.RemoteAddr().String(), nonce: packet.Nonce, inputs: nil, Method: packet.Method, Resp: resp, peerstore: node.Peerstore()}
+		ctx := Context{
+			Req:           packet.Req,
+			RemoteAddress: peer.RemoteAddr().String(),
+			nonce:         packet.Nonce,
+			inputs:        nil,
+			Method:        packet.Method,
+			Resp:          resp,
+			peerstore:     node.Peerstore(),
+			Peer:          peer,
+		}
 
 		node.serveMux.ServeOWTP(peer.PID(), &ctx)
 
@@ -926,7 +947,7 @@ func (node *OWTPNode) checkNonceReplayReason(data *DataPacket) (uint64, string) 
 	if err != nil {
 		return ErrReplayAttack, "client system cache error"
 	}
-	defer db.Close()
+	defer db.close()
 
 	var existPacket DataPacket
 	db.One("Nonce", data.Nonce, &existPacket)

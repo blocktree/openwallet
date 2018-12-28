@@ -34,7 +34,7 @@ func TestWalletManager_RescanBlockHeight(t *testing.T) {
 
 func TestWalletManager_GetNewBlockHeight(t *testing.T) {
 	tm := testInitWalletManager()
-	currentHeight, scannedHeight, err := tm.GetNewBlockHeight("ONT")
+	currentHeight, scannedHeight, err := tm.GetNewBlockHeight("ETH")
 	if err != nil {
 		log.Error("unexpected error:", err)
 		return

@@ -36,9 +36,9 @@ func TestMQDial(t *testing.T) {
 		t.Errorf("Dial failed unexpected error: %v", err)
 		return
 	}
-	defer client.Close()
+	defer client.close()
 
-	client.OpenPipe()
+	client.openPipe()
 }
 
 func TestMQEncodeDataPacket(t *testing.T) {

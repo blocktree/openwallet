@@ -68,31 +68,30 @@ func TestHTTPClientCall(t *testing.T) {
 	config := make(map[string]string)
 	config["address"] = httpURL
 	config["connectType"] = HTTP
-	//config["enableSignature"] = "1"
+	config["enableSignature"] = "1"
 	httpClient := RandomOWTPNode()
-	//_, pub := httpClient.Certificate().KeyPair()
-	//log.Info("pub:", pub)
+	_, pub := httpClient.Certificate().KeyPair()
+	log.Info("pub:", pub)
 	err := httpClient.Connect(httpHostNodeID, config)
 	if err != nil {
 		t.Errorf("Connect unexcepted error: %v", err)
 		return
 	}
-	//err = httpClient.KeyAgreement(httpHostNodeID, "aes")
-	//if err != nil {
-	//	t.Errorf("KeyAgreement unexcepted error: %v", err)
-	//	return
-	//}
+	err = httpClient.KeyAgreement(httpHostNodeID, "aes")
+	if err != nil {
+		t.Errorf("KeyAgreement unexcepted error: %v", err)
+		return
+	}
 
 	params := map[string]interface{}{
 		"name": "chance",
 		"age":  18,
 	}
 
-	err = httpClient.Call(httpHostNodeID, "getInfo", params, false, func(resp Response) {
+	err = httpClient.Call(httpHostNodeID, "getInfo", params, true, func(resp Response) {
 
 		result := resp.JsonData()
 		symbols := result.Get("symbols")
-
 		fmt.Printf("symbols: %v\n", symbols)
 	})
 
@@ -205,7 +204,7 @@ func TestConcurrentHTTPConnect(t *testing.T) {
 					return
 				}
 
-				time.Sleep(500)
+				//time.Sleep(500)
 			}
 		}()
 	}

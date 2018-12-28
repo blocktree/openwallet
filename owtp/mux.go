@@ -90,6 +90,8 @@ type Context struct {
 	peerstore Peerstore
 	//是否中断，Context.stop = true，将不再执行后面的绑定的业务
 	stop bool
+	//节点指针
+	Peer Peer
 }
 
 //NewContext

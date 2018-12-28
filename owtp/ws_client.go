@@ -20,7 +20,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/go-owcrypt"
 	"github.com/gorilla/websocket"
+	"github.com/mr-tron/base58/base58"
 	"github.com/tidwall/gjson"
 	"net"
 	"net/http"
@@ -36,12 +38,12 @@ const (
 	MaxMessageSize = 1 * 1024
 )
 
-//WebSocketClient 基于websocket的通信客户端
-type WebSocketClient struct {
-	auth            Authorization
+//WSClient 基于websocket的通信客户端
+type WSClient struct {
+	_auth           Authorization
 	ws              *websocket.Conn
 	handler         PeerHandler
-	send            chan []byte
+	_send           chan []byte
 	isHost          bool
 	ReadBufferSize  int
 	WriteBufferSize int
@@ -58,7 +60,7 @@ func Dial(
 	pid, url string,
 	handler PeerHandler,
 	header map[string]string,
-	ReadBufferSize, WriteBufferSize int) (*WebSocketClient, error) {
+	ReadBufferSize, WriteBufferSize int) (*WSClient, error) {
 
 	var (
 		httpHeader http.Header
@@ -94,7 +96,7 @@ func Dial(
 		return nil, err
 	}
 
-	client, err := NewClient(pid, ws, handler, nil, nil)
+	client, err := NewWSClient(pid, ws, handler, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -106,54 +108,143 @@ func Dial(
 	return client, nil
 }
 
-func NewClient(pid string, conn *websocket.Conn, hander PeerHandler, auth Authorization, done func()) (*WebSocketClient, error) {
+func NewWSClientWithHeader(header http.Header, cert Certificate, conn *websocket.Conn, handler PeerHandler, enableSignature bool, done func()) (*WSClient, error) {
 
-	if hander == nil {
-		return nil, errors.New("hander should not be nil! ")
+	/*
+		| 参数名称 | 类型   | 是否可空        | 描述                                                                              |
+		|----------|--------|----------------|---------------------------------------------------------------------------------|
+		| a        | string | 否              | 节点公钥，base58，http带入将开启签名                                                |
+		| n        | uint32 | (websocket必填) | 请求序号。为了保证请求对应响应按序执行，并防御重放攻击，序号可以为随机数，但不可重复。 |
+		| t        | uint32 | (websocket必填) | 时间戳。限制请求在特定时间范围内有效，如10分钟。                                     |
+		| s        | string | (websocket必填) | 组合[a+n+t]并sha256两次，使用钱包工具配置的本地私钥签名，最后base58编码         |
+	*/
+
+	var (
+		//enableSig       bool
+		//isConsult       bool
+		tmpPublicKey    []byte
+		remotePublicKey []byte
+		err             error
+		//nodeID          string
+	)
+
+	//log.Debug("http header:", header)
+
+	a := header.Get("a")
+
+	//HTTP的节点ID都采用随机生成，因为是短连接
+	_, tmpPublicKey = owcrypt.KeyAgreement_initiator_step1(owcrypt.ECC_CURVE_SM2_STANDARD)
+
+	if len(a) == 0 {
+		//没有授权公钥，不授权的HTTP访问，不建立协商密码，不进行签名授权
+		remotePublicKey = tmpPublicKey
+	} else {
+		//有授权公钥，必须授权的HTTP访问，不建立协商密码，进行签名授权
+		remotePublicKey, err = base58.Decode(a)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	client := &WebSocketClient{
-		pid:  pid,
-		ws:   conn,
-		send: make(chan []byte, MaxMessageSize),
-		auth: auth,
-		done: done,
+	//开启签名授权，验证header的签名是否合法
+	if enableSignature {
+		//校验header的签名
+		if !VerifyHeaderSignature(header, remotePublicKey) {
+			return nil, fmt.Errorf("the signature in http header is not invalid")
+		}
 	}
 
-	client.isConnect = true
-	client.SetHandler(hander)
+	auth := &OWTPAuth{
+		remotePublicKey: remotePublicKey,
+		enable:          enableSignature,
+		localPublicKey:  cert.PublicKeyBytes(),
+		localPrivateKey: cert.PrivateKeyBytes(),
+	}
+
+	client, err := NewWSClient(auth.RemotePID(), conn, handler, auth, done)
 
 	return client, nil
 }
 
-func (c *WebSocketClient) PID() string {
+func NewWSClient(pid string, conn *websocket.Conn, handler PeerHandler, auth Authorization, done func()) (*WSClient, error) {
+
+	if handler == nil {
+		return nil, errors.New("handler should not be nil! ")
+	}
+
+	client := &WSClient{
+		pid:   pid,
+		ws:    conn,
+		_send: make(chan []byte, MaxMessageSize),
+		_auth: auth,
+		done:  done,
+	}
+
+	client.isConnect = true
+	client.setHandler(handler)
+
+	return client, nil
+}
+
+//VerifyHeaderSignature 校验签名，若验证错误，可更新错误信息到DataPacket中
+func VerifyHeaderSignature(header http.Header, publicKey []byte) bool {
+
+	a := header.Get("a")
+	n := header.Get("n")
+	t := header.Get("t")
+	s := header.Get("s")
+
+	if len(a) == 0 || len(s) == 0 || len(t) == 0 || len(n) == 0 {
+		return false
+	}
+
+	plainText := fmt.Sprintf("%s%s%s", a, n, t)
+	//log.Debug("VerifySignature plainText: ", plainText)
+	hash := owcrypt.Hash([]byte(plainText), 0, owcrypt.HASh_ALG_DOUBLE_SHA256)
+	//log.Debug("VerifySignature hash: ", hex.EncodeToString(hash))
+	nodeID := owcrypt.Hash(publicKey, 0, owcrypt.HASH_ALG_SHA256)
+	//log.Debug("VerifySignature remotePublicKey: ", hex.EncodeToString(auth.remotePublicKey))
+	//log.Debug("VerifySignature nodeID: ", hex.EncodeToString(nodeID))
+	signature, err := base58.Decode(s)
+	if err != nil {
+		return false
+	}
+	ret := owcrypt.Verify(publicKey, nodeID, 32, hash, 32, signature, owcrypt.ECC_CURVE_SM2_STANDARD)
+	if ret != owcrypt.SUCCESS {
+		return false
+	}
+
+	return true
+}
+
+func (c *WSClient) PID() string {
 	return c.pid
 }
 
-func (c *WebSocketClient) Auth() Authorization {
+func (c *WSClient) auth() Authorization {
 
-	return c.auth
+	return c._auth
 }
 
-func (c *WebSocketClient) SetHandler(handler PeerHandler) error {
+func (c *WSClient) setHandler(handler PeerHandler) error {
 	c.handler = handler
 	return nil
 }
 
-func (c *WebSocketClient) IsHost() bool {
+func (c *WSClient) IsHost() bool {
 	return c.isHost
 }
 
-func (c *WebSocketClient) IsConnected() bool {
+func (c *WSClient) IsConnected() bool {
 	return c.isConnect
 }
 
-func (c *WebSocketClient) GetConfig() map[string]string {
+func (c *WSClient) GetConfig() map[string]string {
 	return c.config
 }
 
 //Close 关闭连接
-func (c *WebSocketClient) Close() error {
+func (c *WSClient) close() error {
 	var err error
 
 	//保证节点只关闭一次
@@ -179,7 +270,7 @@ func (c *WebSocketClient) Close() error {
 }
 
 //LocalAddr 本地节点地址
-func (c *WebSocketClient) LocalAddr() net.Addr {
+func (c *WSClient) LocalAddr() net.Addr {
 	if c.ws == nil {
 		return nil
 	}
@@ -187,7 +278,7 @@ func (c *WebSocketClient) LocalAddr() net.Addr {
 }
 
 //RemoteAddr 远程节点地址
-func (c *WebSocketClient) RemoteAddr() net.Addr {
+func (c *WSClient) RemoteAddr() net.Addr {
 	if c.ws == nil {
 		return nil
 	}
@@ -195,14 +286,8 @@ func (c *WebSocketClient) RemoteAddr() net.Addr {
 }
 
 //Send 发送消息
-func (c *WebSocketClient) Send(data DataPacket) error {
+func (c *WSClient) send(data DataPacket) error {
 
-	//添加授权
-	if c.auth != nil && c.auth.EnableAuth() {
-		if !c.auth.GenerateSignature(&data) {
-			return errors.New("OWTP: authorization failed")
-		}
-	}
 	//log.Emergency("Send DataPacket:", data)
 	respBytes, err := json.Marshal(data)
 	if err != nil {
@@ -217,12 +302,12 @@ func (c *WebSocketClient) Send(data DataPacket) error {
 	//}
 
 	//log.Printf("Send: %s\n", string(respBytes))
-	c.send <- respBytes
+	c._send <- respBytes
 	return nil
 }
 
 //OpenPipe 打开通道
-func (c *WebSocketClient) OpenPipe() error {
+func (c *WSClient) openPipe() error {
 
 	if !c.IsConnected() {
 		return fmt.Errorf("client is not connect")
@@ -238,17 +323,17 @@ func (c *WebSocketClient) OpenPipe() error {
 }
 
 // WritePump 发送消息通道
-func (c *WebSocketClient) writePump() {
+func (c *WSClient) writePump() {
 
 	ticker := time.NewTicker(PingPeriod) //发送心跳间隔事件要<等待时间
 	defer func() {
 		ticker.Stop()
-		c.Close()
+		c.close()
 		//log.Debug("writePump end")
 	}()
 	for {
 		select {
-		case message, ok := <-c.send:
+		case message, ok := <-c._send:
 			//发送消息
 			if !ok {
 				c.write(websocket.CloseMessage, []byte{})
@@ -273,13 +358,13 @@ func (c *WebSocketClient) writePump() {
 }
 
 // write 输出数据
-func (c *WebSocketClient) write(mt int, message []byte) error {
+func (c *WSClient) write(mt int, message []byte) error {
 	c.ws.SetWriteDeadline(time.Now().Add(WriteWait)) //设置发送的超时时间点
 	return c.ws.WriteMessage(mt, message)
 }
 
 // ReadPump 监听消息
-func (c *WebSocketClient) readPump() {
+func (c *WSClient) readPump() {
 
 	c.ws.SetReadDeadline(time.Now().Add(PongWait)) //设置客户端心跳响应的最后限期
 	c.ws.SetPongHandler(func(string) error {
@@ -287,7 +372,7 @@ func (c *WebSocketClient) readPump() {
 		return nil
 	})
 	defer func() {
-		c.Close()
+		c.close()
 		//log.Debug("readPump end")
 	}()
 
@@ -298,14 +383,6 @@ func (c *WebSocketClient) readPump() {
 			//close(c.send) //读取通道异常，关闭读通道
 			return
 		}
-
-		//if c.auth != nil && c.auth.EnableAuth() {
-		//	message, err = c.auth.DecryptData(message)
-		//	if err != nil {
-		//		log.Critical("OWTP: DecryptData failed")
-		//		continue
-		//	}
-		//}
 
 		if Debug {
 			log.Debug("Read: ", string(message))

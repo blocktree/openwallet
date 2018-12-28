@@ -31,11 +31,11 @@ var (
 )
 
 func init() {
-	Debug = false
+	Debug = true
 }
 
 func getInfo(ctx *Context) {
-
+	log.Info("param:", ctx.Params())
 	ctx.SetSession("username", "kiiik")
 
 	ctx.Resp = Response{

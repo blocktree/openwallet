@@ -23,7 +23,6 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/go-owcrypt"
 	"github.com/mr-tron/base58/base58"
-	"net/http"
 	"strconv"
 	"time"
 )
@@ -204,67 +203,6 @@ type OWTPAuth struct {
 	consultType string
 }
 
-func NewOWTPAuthWithHTTPHeader(header http.Header, def ...Certificate) (*OWTPAuth, error) {
-
-	/*
-			| 参数名称 | 类型   | 是否可空   | 描述                                                                              |
-		|----------|--------|------------|-----------------------------------------------------------------------------------|
-		| a        | string | 是         | 节点公钥，base58                                                                 |
-		| p        | string | 是         | 计算协商密码的临时公钥，base58                                                                 |
-		| n        | uint32 | 123        | 请求序号。为了保证请求对应响应按序执行，并防御重放攻击，序号可以为随机数，但不可重复。 |
-		| t        | uint32 | 1528520843 | 时间戳。限制请求在特定时间范围内有效，如10分钟。                                     |
-		| c        | string | 是         | 协商密码，生成的密钥类别，aes-128-ctr，aes-128-cbc，aes-256-ecb等，为空不进行协商      |
-		| s        | string | 是         | 组合[a+n+t]并sha256两次，使用钱包工具配置的本地私钥签名，最后base58编码             |
-	*/
-
-	var (
-		//enable bool
-		isConsult       bool
-		remotePublicKey []byte
-		err             error
-	)
-
-	//log.Debug("header:", header)
-
-	a := header.Get("a")
-	//p := header.Get("p")
-	c := header.Get("c")
-	//n := header.Get("n")
-	//t := header.Get("t")
-	//s := header.Get("s")
-
-	if len(c) > 0 {
-		isConsult = true
-	} else {
-		isConsult = false
-	}
-
-	if len(a) == 0 {
-
-		if len(def) > 0 {
-			remotePublicKey = def[0].publicKeyBytes
-		}
-	} else {
-		remotePublicKey, err = base58.Decode(a)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	auth := &OWTPAuth{
-		remotePublicKey: remotePublicKey,
-		consultType:     c,
-		isConsult:       isConsult,
-	}
-
-	err = auth.VerifyHeader()
-	if err != nil {
-		return nil, err
-	}
-
-	return auth, nil
-}
-
 func NewOWTPAuthWithCertificate(cert Certificate, enable bool) (*OWTPAuth, error) {
 
 	//var (
@@ -308,6 +246,7 @@ func (auth *OWTPAuth) LocalPID() string {
 //GenerateSignature 生成签名，并把签名加入到DataPacket中
 func (auth *OWTPAuth) GenerateSignature(data *DataPacket) bool {
 	if auth.EnableAuth() {
+		pub := base58.Encode(auth.localPublicKey)
 		//给数据包生成签名
 		dataString := common.NewString(data.Data)
 		plainText := fmt.Sprintf("%d%s%d%d%s", data.Req, data.Method, data.Nonce, data.Timestamp, dataString)
@@ -317,6 +256,7 @@ func (auth *OWTPAuth) GenerateSignature(data *DataPacket) bool {
 		if ret != owcrypt.SUCCESS {
 			return false
 		}
+		data.PublicKey = pub
 		data.Signature = base58.Encode(signature)
 		//log.Debug("GenerateSignature packet.Signature: ", data.Signature)
 	}
@@ -329,19 +269,24 @@ func (auth *OWTPAuth) VerifySignature(data *DataPacket) bool {
 	if auth.EnableAuth() {
 		//log.Debug("VerifySignature packet.Req: ", data.Req)
 		//log.Debug("VerifySignature packet.Signature: ", data.Signature)
+		publickey, err := base58.Decode(data.PublicKey)
+		if err != nil {
+			return false
+		}
+
 		dataString := data.Data.(string)
 		plainText := fmt.Sprintf("%d%s%d%d%s", data.Req, data.Method, data.Nonce, data.Timestamp, dataString)
 		//log.Debug("VerifySignature plainText: ", plainText)
 		hash := owcrypt.Hash([]byte(plainText), 0, owcrypt.HASh_ALG_DOUBLE_SHA256)
 		//log.Debug("VerifySignature hash: ", hex.EncodeToString(hash))
-		nodeID := owcrypt.Hash(auth.remotePublicKey, 0, owcrypt.HASH_ALG_SHA256)
+		nodeID := owcrypt.Hash(publickey, 0, owcrypt.HASH_ALG_SHA256)
 		//log.Debug("VerifySignature remotePublicKey: ", hex.EncodeToString(auth.remotePublicKey))
 		//log.Debug("VerifySignature nodeID: ", hex.EncodeToString(nodeID))
 		signature, err := base58.Decode(data.Signature)
 		if err != nil {
 			return false
 		}
-		ret := owcrypt.Verify(auth.remotePublicKey, nodeID, 32, hash, 32, signature, owcrypt.ECC_CURVE_SM2_STANDARD)
+		ret := owcrypt.Verify(publickey, nodeID, 32, hash, 32, signature, owcrypt.ECC_CURVE_SM2_STANDARD)
 		if ret != owcrypt.SUCCESS {
 			return false
 		}
@@ -356,7 +301,7 @@ func (auth *OWTPAuth) EnableAuth() bool {
 
 //EncryptData 加密数据
 func (auth *OWTPAuth) EncryptData(data []byte, key []byte) ([]byte, error) {
-	//TODO:使用协商密钥加密数据
+	//使用协商密钥加密数据
 	if auth.EnableKeyAgreement() && len(key) > 0 && len(data) > 0 {
 		encD, err := crypto.AESEncrypt(data, key)
 		if err != nil {
@@ -371,7 +316,7 @@ func (auth *OWTPAuth) EncryptData(data []byte, key []byte) ([]byte, error) {
 
 //DecryptData 解密数据
 func (auth *OWTPAuth) DecryptData(data []byte, key []byte) ([]byte, error) {
-	//TODO:使用协商密钥解密数据
+	//使用协商密钥解密数据
 	if auth.EnableKeyAgreement() && len(key) > 0 && len(data) > 0 {
 		encD, err := base58.Decode(string(data))
 		if err != nil {
@@ -387,12 +332,6 @@ func (auth *OWTPAuth) DecryptData(data []byte, key []byte) ([]byte, error) {
 	return data, nil
 }
 
-//VerifyHeader 验证授权头
-func (auth *OWTPAuth) VerifyHeader() error {
-	//TODO:检查HTTP头，是否进行授权
-	return nil
-}
-
 //AuthHeader 返回授权头
 func (auth *OWTPAuth) WSAuthHeader() map[string]string {
 
@@ -401,10 +340,8 @@ func (auth *OWTPAuth) WSAuthHeader() map[string]string {
 	}
 
 	a := base58.Encode(auth.localPublicKey)
-	//p := base58.Encode(auth.tmpPublicKey)
 	n := strconv.FormatInt(time.Now().Unix()+1, 10)
 	t := strconv.FormatInt(time.Now().Unix(), 10)
-	c := auth.consultType
 
 	//组合[a+p+n+t+c]并sha256两次，使用钱包工具配置的本地私钥签名，最后base58编码
 	msg := owcrypt.Hash([]byte(fmt.Sprintf("%s%s%s", a, n, t)), 0, owcrypt.HASh_ALG_DOUBLE_SHA256)
@@ -413,7 +350,7 @@ func (auth *OWTPAuth) WSAuthHeader() map[string]string {
 	nodeID := owcrypt.Hash(auth.localPublicKey, 0, owcrypt.HASH_ALG_SHA256)
 
 	//SM2签名
-	signature, ret := owcrypt.Signature(auth.localPrivateKey, nodeID, 4, msg, 32, owcrypt.ECC_CURVE_SM2_STANDARD)
+	signature, ret := owcrypt.Signature(auth.localPrivateKey, nodeID, 32, msg, 32, owcrypt.ECC_CURVE_SM2_STANDARD)
 	if ret != owcrypt.SUCCESS {
 		return nil
 	}
@@ -421,10 +358,8 @@ func (auth *OWTPAuth) WSAuthHeader() map[string]string {
 	s := base58.Encode(signature)
 	return map[string]string{
 		"a": a,
-		//"p": p,
 		"n": n,
 		"t": t,
-		"c": c,
 		"s": s,
 	}
 }
@@ -437,11 +372,9 @@ func (auth *OWTPAuth) HTTPAuthHeader() map[string]string {
 	}
 
 	a := base58.Encode(auth.localPublicKey)
-	c := auth.consultType
 
 	return map[string]string{
 		"a": a,
-		"c": c,
 	}
 }
 
@@ -615,14 +548,14 @@ func (auth *OWTPAuth) VerifyKeyAgreement(data *DataPacket, localChecksum []byte)
 //requestKeyAgreement 请求协商
 func (auth *OWTPAuth) requestKeyAgreement(pubkeyBytes, tmpPubkeyBytes []byte) ([]byte, []byte, []byte, []byte, error) {
 
-	IDinitiator := owcrypt.Hash(pubkeyBytes, 0, owcrypt.HASH_ALG_HASH160)
-	IDresponder := owcrypt.Hash(auth.localPublicKey, 0, owcrypt.HASH_ALG_HASH160)
+	IDinitiator := owcrypt.Hash(pubkeyBytes, 0, owcrypt.HASH_ALG_SHA256)
+	IDresponder := owcrypt.Hash(auth.localPublicKey, 0, owcrypt.HASH_ALG_SHA256)
 
 	key, tmpPubkeyResponder, S2, SB, ret := owcrypt.KeyAgreement_responder_step1(
 		IDinitiator,
-		20,
+		32,
 		IDresponder,
-		20,
+		32,
 		auth.localPrivateKey,
 		auth.localPublicKey,
 		pubkeyBytes,
@@ -640,14 +573,14 @@ func (auth *OWTPAuth) requestKeyAgreement(pubkeyBytes, tmpPubkeyBytes []byte) ([
 //responseKeyAgreement 响应协商
 func (auth *OWTPAuth) responseKeyAgreement(pubkeyResponder, tmpPubkeyResponder, sb []byte) ([]byte, []byte, error) {
 
-	IDinitiator := owcrypt.Hash(auth.localPublicKey, 0, owcrypt.HASH_ALG_HASH160)
-	IDresponder := owcrypt.Hash(pubkeyResponder, 0, owcrypt.HASH_ALG_HASH160)
+	IDinitiator := owcrypt.Hash(auth.localPublicKey, 0, owcrypt.HASH_ALG_SHA256)
+	IDresponder := owcrypt.Hash(pubkeyResponder, 0, owcrypt.HASH_ALG_SHA256)
 
 	retA, SA, ret := owcrypt.KeyAgreement_initiator_step2(
 		IDinitiator,
-		20,
+		32,
 		IDresponder,
-		20,
+		32,
 		auth.localPrivateKey,
 		auth.localPublicKey,
 		pubkeyResponder,
@@ -663,12 +596,6 @@ func (auth *OWTPAuth) responseKeyAgreement(pubkeyResponder, tmpPubkeyResponder, 
 	}
 
 	return retA, SA, nil
-}
-
-//verifySignature 钱包签名
-func (auth *OWTPAuth) verifySignature(packet DataPacket) (uint64, string) {
-	//TODO:处理验证签名
-	return StatusSuccess, ""
 }
 
 //RandomPrivateKey 生成随机私钥
