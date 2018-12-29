@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/HcashOrg/hcutil/base58"
-	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/bwmarrin/snowflake"
 	"math/rand"
@@ -62,12 +61,13 @@ const (
 
 	//60X: 自定义错误
 	ErrCustomError uint64 = 600
+)
 
+//连接方式
+const (
 	Websocket string = "ws"
-
-	MQ string = "mq"
-
-	HTTP string = "http"
+	MQ        string = "mq"
+	HTTP      string = "http"
 )
 
 //内置方法
@@ -88,9 +88,25 @@ var (
 )
 
 //节点主配置 作为json解析工具
-type MainConfig struct {
-	Address     string
-	ConnectType int
+type ConnectConfig struct {
+	Address         string `json:"address"`         //@required 连接IP地址
+	ConnectType     string `json:"connectType"`     //@required 连接方式
+	EnableSignature bool   `json:"enableSignature"` //是否开启owtp协议内签名，防重放
+	Account         string `json:"account"`         //mq账户名
+	Password        string `json:"password"`        //mq账户密码
+	Exchange        string `json:"exchange"`        //mq需要字段
+	WriteQueueName  string `json:"writeQueueName"`  //mq写入通道名
+	ReadQueueName   string `json:"readQueueName"`   //mq读取通道名
+	EnableSSL       bool   `json:"enableSSL"`       //是否开启链接SSL，https，wss
+	ReadBufferSize  int    `json:"readBufferSize"`  //socket读取缓存
+	WriteBufferSize int    `json:"writeBufferSize"` //socket写入缓存
+}
+
+//节点主配置 作为json解析工具
+type NodeConfig struct {
+	TimeoutSEC int         `json:"timeoutSEC"`
+	Cert       Certificate `json:"cert"`
+	Peerstore  Peerstore
 }
 
 //OWTPNode 实现OWTP协议的节点
@@ -102,7 +118,7 @@ type OWTPNode struct {
 	//默认路由
 	serveMux *ServeMux
 	//是否监听连接中
-	listening bool
+	//listening bool
 	//节点运行中
 	running bool
 	//读写锁
@@ -116,7 +132,9 @@ type OWTPNode struct {
 	//在线节点
 	onlinePeers map[string]Peer
 	//服务监听器
-	listener Listener
+	//listener Listener
+	//服务监听器
+	listeners map[string]Listener
 	//授权证书
 	cert Certificate
 	//Broadcast   chan BroadcastMessage
@@ -125,7 +143,7 @@ type OWTPNode struct {
 	Stop  chan struct{}
 
 	//通道的读写缓存大小
-	ReadBufferSize, WriteBufferSize int
+	//ReadBufferSize, WriteBufferSize int
 }
 
 //RandomOWTPNode 创建随机密钥节点
@@ -138,7 +156,56 @@ func RandomOWTPNode(consultType ...string) *OWTPNode {
 	if err != nil {
 		return nil
 	}
-	node := NewOWTPNode(cert, 0, 0)
+
+	config := NodeConfig{
+		Cert: cert,
+	}
+
+	node := NewNode(config)
+	return node
+}
+
+//NewNode 创建OWTP协议节点
+func NewNode(config NodeConfig) *OWTPNode {
+
+	node := &OWTPNode{}
+
+	if config.Cert.ID() == "" {
+		cert, err := NewCertificate(RandomPrivateKey(), "")
+		if err != nil {
+			return nil
+		}
+		node.cert = cert
+	} else {
+		node.cert = config.Cert
+	}
+
+	if config.Peerstore == nil {
+		node.peerstore = NewOWTPPeerstore()
+	} else {
+		node.peerstore = config.Peerstore
+	}
+
+	if config.TimeoutSEC == 0 {
+		node.serveMux = NewServeMux(60)
+	} else {
+		node.serveMux = NewServeMux(config.TimeoutSEC)
+	}
+
+	node.nonceGen, _ = snowflake.NewNode(1)
+
+	node.Join = make(chan Peer)
+	node.Leave = make(chan Peer)
+	node.Stop = make(chan struct{})
+	node.onlinePeers = make(map[string]Peer)
+	node.listeners = make(map[string]Listener)
+
+	//内部配置一个协商密码处理过程
+	node.serveMux.handleFuncInner(KeyAgreementMethod, node.keyAgreement)
+
+	//马上执行
+	go node.Run()
+
 	return node
 }
 
@@ -150,15 +217,16 @@ func NewOWTPNode(cert Certificate, readBufferSize, writeBufferSize int) *OWTPNod
 	node.serveMux = NewServeMux(120)
 	node.cert = cert
 	node.peerstore = NewOWTPPeerstore()
-	node.ReadBufferSize = readBufferSize
-	node.WriteBufferSize = writeBufferSize
-	node.Join = make(chan Peer, 1024)
-	node.Leave = make(chan Peer, 1024)
+	//node.ReadBufferSize = readBufferSize
+	//node.WriteBufferSize = writeBufferSize
+	node.Join = make(chan Peer)
+	node.Leave = make(chan Peer)
 	node.Stop = make(chan struct{})
 	node.onlinePeers = make(map[string]Peer)
+	node.listeners = make(map[string]Listener)
 
 	//内部配置一个协商密码处理过程
-	node.HandleFunc(KeyAgreementMethod, node.keyAgreement)
+	node.serveMux.handleFuncInner(KeyAgreementMethod, node.keyAgreement)
 
 	//马上执行
 	go node.Run()
@@ -187,22 +255,25 @@ func (node *OWTPNode) Peerstore() Peerstore {
 }
 
 //Listen 监听TCP地址
-func (node *OWTPNode) Listen(config map[string]string) error {
+func (node *OWTPNode) Listen(config ConnectConfig) error {
 
-	addr := config["address"]
-	connectType := config["connectType"]
-	enableSignature := common.NewString(config["enableSignature"]).Bool()
+	addr := config.Address
+	connectType := config.ConnectType
+	enableSignature := config.EnableSignature
 	//log.Debug("enableSignature:", enableSignature)
-	if node.listening {
-		return fmt.Errorf("the node is listening, please close listener first")
+	if _, exist := node.listeners[connectType]; exist {
+		return fmt.Errorf("the node [%s] is listening, please close listener first", connectType)
 	}
+	//if node.listening {
+	//	return fmt.Errorf("the node is listening, please close listener first")
+	//}
 
 	if connectType == Websocket || connectType == MQ {
 		l, err := WSListenAddr(addr, node.cert, enableSignature, node)
 		if err != nil {
 			return err
 		}
-		node.listener = l
+		node.listeners[connectType] = l
 
 		go func(listener Listener) {
 			for {
@@ -214,36 +285,27 @@ func (node *OWTPNode) Listen(config map[string]string) error {
 			}
 		}(l)
 
-		node.listening = true
+		//node.listening = true
 	} else if connectType == HTTP {
 		l, err := HttpListenAddr(addr, enableSignature, node)
 		if err != nil {
 			return err
 		}
-		node.listener = l
-		//go func(listener Listener) {
-		//	for {
-		//		peer, err := listener.Accept()
-		//		if err != nil {
-		//			return
-		//		}
-		//		node.Join <- peer
-		//	}
-		//}(l)
-
-		node.listening = true
+		node.listeners[connectType] = l
+		//node.listening = true
 	}
 
 	return nil
 }
 
 //listening 是否监听中
-func (node *OWTPNode) Listening() bool {
-	return node.listening
+func (node *OWTPNode) Listening(connectType string) bool {
+	_, exist := node.listeners[connectType]
+	return exist
 }
 
 //Connect 建立长连接
-func (node *OWTPNode) Connect(pid string, config map[string]string) error {
+func (node *OWTPNode) Connect(pid string, config ConnectConfig) error {
 
 	_, err := node.connect(pid, config)
 
@@ -251,19 +313,18 @@ func (node *OWTPNode) Connect(pid string, config map[string]string) error {
 }
 
 //connect 建立长连接，内部调用
-func (node *OWTPNode) connect(pid string, config map[string]string) (Peer, error) {
+func (node *OWTPNode) connect(pid string, config ConnectConfig) (Peer, error) {
 
 	var (
 		peer Peer
 	)
 
-	if config == nil {
-		return nil, fmt.Errorf("config  is nil")
-	}
-
-	addr := config["address"]
-	connectType := config["connectType"]
-	enableSignature := common.NewString(config["enableSignature"]).Bool()
+	addr := config.Address
+	connectType := config.ConnectType
+	enableSignature := config.EnableSignature
+	enableSSL := config.EnableSSL
+	readBufferSize := config.ReadBufferSize
+	writeBufferSize := config.WriteBufferSize
 
 	if len(addr) == 0 {
 		return nil, fmt.Errorf("address must contain by config")
@@ -284,10 +345,16 @@ func (node *OWTPNode) connect(pid string, config map[string]string) (Peer, error
 	//websocket类型
 	if connectType == Websocket {
 
-		url := "ws://" + strings.TrimSuffix(addr, "/") + "/" + pid
+		protocol := "ws://"
+
+		if enableSSL {
+			protocol = "wss://"
+		}
+
+		url := protocol + strings.TrimSuffix(addr, "/") + "/" + pid
 
 		//建立链接，记录默认的客户端
-		client, err := Dial(pid, url, node, auth.WSAuthHeader(), node.ReadBufferSize, node.WriteBufferSize)
+		client, err := Dial(pid, url, node, auth.WSAuthHeader(), readBufferSize, writeBufferSize)
 		if err != nil {
 			return nil, err
 		}
@@ -301,8 +368,8 @@ func (node *OWTPNode) connect(pid string, config map[string]string) (Peer, error
 	//MQ类型
 	if connectType == MQ {
 
-		mqAccount := config["account"]
-		mqPassword := config["password"]
+		mqAccount := config.Account
+		mqPassword := config.Password
 		url := "amqp://" + mqAccount + ":" + mqPassword + "@" + strings.TrimSuffix(addr, "/") + "/"
 
 		//建立链接，记录默认的客户端
@@ -320,7 +387,13 @@ func (node *OWTPNode) connect(pid string, config map[string]string) (Peer, error
 	//HTTP类型
 	if connectType == HTTP {
 
-		url := connectType + "://" + strings.TrimSuffix(addr, "/") + "/" + pid
+		protocol := "http://"
+
+		if enableSSL {
+			protocol = "https://"
+		}
+
+		url := protocol + strings.TrimSuffix(addr, "/") + "/" + pid
 
 		//建立链接，记录默认的客户端
 		client, err := HTTPDial(pid, url, node, auth.HTTPAuthHeader())
@@ -434,11 +507,8 @@ func (node *OWTPNode) ClosePeer(pid string) {
 //Close 关闭节点
 func (node *OWTPNode) Close() {
 
-	if node.listener != nil {
-		node.listener.Close()
-		node.mu.Lock()
-		node.listening = false
-		node.mu.Unlock()
+	for _, listener := range node.listeners {
+		listener.Close()
 	}
 
 	//中断所有客户端连接
@@ -526,7 +596,10 @@ func (node *OWTPNode) Call(
 	}
 
 	//添加请求到队列，异步或同步等待结果，应该在发送前就添加请求，如果发送失败，删除请求
-	node.serveMux.AddRequest(peer.PID(), nonce, time, method, reqFunc, respChan, sync)
+	err = node.serveMux.AddRequest(peer, nonce, time, method, reqFunc, respChan, sync)
+	if err != nil {
+		return err
+	}
 
 	//向节点发送请求
 	err = peer.send(packet)
@@ -555,7 +628,7 @@ func (node *OWTPNode) encryptPacket(peer Peer, packet *DataPacket) error {
 
 	//log.Debug("encryptPacket")
 
-	//TODO:加密Data
+	//加密Data
 	if peer.auth() != nil && peer.auth().EnableKeyAgreement() && packet.Data != nil {
 		//协商校验码
 		localChecksumStr, ok := node.Peerstore().Get(peer.PID(), "localChecksum").(string)
@@ -769,6 +842,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 			log.Errorf("auth failed: %+v", packet)
 			packet.Req = WSResponse
 			packet.Data = responseError("verify signature failed, unauthorized", ErrUnauthorized)
+			packet.Timestamp = time.Now().Unix()
 			peer.send(*packet) //发送验证失败结果
 			return
 		}
@@ -777,6 +851,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 		if !ok {
 			packet.Req = WSResponse
 			packet.Data = responseError("data parse failed", ErrBadRequest)
+			packet.Timestamp = time.Now().Unix()
 			peer.send(*packet)
 			return
 		}
@@ -788,6 +863,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 			log.Critical("OWTP: DecryptData failed, unexpected err:", cryptErr)
 			packet.Req = WSResponse
 			packet.Data = responseError("secret key is invalid", ErrSecretKeyInvalid)
+			packet.Timestamp = time.Now().Unix()
 			peer.send(*packet)
 			return
 		}
@@ -809,12 +885,13 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 		//处理完请求，推送响应结果给服务端
 		packet.Req = WSResponse
 		packet.Data = ctx.Resp
-
+		packet.Timestamp = time.Now().Unix()
 		cryptErr = node.encryptPacket(peer, packet)
 		if cryptErr != nil {
 			log.Critical("OWTP: encryptData failed, unexpected err:", cryptErr)
 			packet.Req = WSResponse
 			packet.Data = responseError("server encryptData failed", ErrInternalServerError)
+			packet.Timestamp = time.Now().Unix()
 			peer.send(*packet)
 			return
 		}

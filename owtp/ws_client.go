@@ -32,7 +32,7 @@ import (
 
 //局部常量
 const (
-	WriteWait      = 60 * time.Second //超时为6秒
+	WriteWait      = 60 * time.Second
 	PongWait       = 30 * time.Second
 	PingPeriod     = (PongWait * 9) / 10
 	MaxMessageSize = 1 * 1024
@@ -52,7 +52,7 @@ type WSClient struct {
 	mu              sync.RWMutex //读写锁
 	closeOnce       sync.Once
 	done            func()
-	config          map[string]string //节点配置
+	config          ConnectConfig //节点配置
 }
 
 // Dial connects a client to the given URL.
@@ -67,14 +67,9 @@ func Dial(
 	)
 
 	if handler == nil {
-		return nil, errors.New("hander should not be nil! ")
+		return nil, errors.New("handler should not be nil! ")
 	}
 
-	//处理连接授权
-	//authURL := url
-	//if auth != nil && auth.EnableAuth() {
-	//	authURL = auth.ConnectAuth(url)
-	//}
 	log.Debug("Connecting URL:", url)
 
 	dialer := websocket.Dialer{
@@ -147,12 +142,12 @@ func NewWSClientWithHeader(header http.Header, cert Certificate, conn *websocket
 	}
 
 	//开启签名授权，验证header的签名是否合法
-	if enableSignature {
-		//校验header的签名
-		if !VerifyHeaderSignature(header, remotePublicKey) {
-			return nil, fmt.Errorf("the signature in http header is not invalid")
-		}
-	}
+	//if enableSignature {
+	//	//校验header的签名
+	//	if !VerifyHeaderSignature(header, remotePublicKey) {
+	//		return nil, fmt.Errorf("the signature in http header is not invalid")
+	//	}
+	//}
 
 	auth := &OWTPAuth{
 		remotePublicKey: remotePublicKey,
@@ -178,6 +173,10 @@ func NewWSClient(pid string, conn *websocket.Conn, handler PeerHandler, auth Aut
 		_send: make(chan []byte, MaxMessageSize),
 		_auth: auth,
 		done:  done,
+		config: ConnectConfig{
+			ConnectType: Websocket,
+			Address:     conn.RemoteAddr().String(),
+		},
 	}
 
 	client.isConnect = true
@@ -239,7 +238,7 @@ func (c *WSClient) IsConnected() bool {
 	return c.isConnect
 }
 
-func (c *WSClient) GetConfig() map[string]string {
+func (c *WSClient) ConnectConfig() ConnectConfig {
 	return c.config
 }
 

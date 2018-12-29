@@ -66,12 +66,11 @@ func TestEncodeDataPacket(t *testing.T) {
 
 }
 
-
 var (
-	wsHost       *OWTPNode
-	wsURL        = ":8423"
-	wsHostPrv    = "FSomdQBZYzgu9YYuuSr3qXd8sP1sgQyk4rhLFo6gyi32"
-	wsHostNodeID = "54dZTdotBmE9geGJmJcj7Qzm6fzNrEUJ2NcDwZYp2QEp"
+	wsHost           *OWTPNode
+	wsURL            = ":8423"
+	wsHostPrv        = "FSomdQBZYzgu9YYuuSr3qXd8sP1sgQyk4rhLFo6gyi32"
+	wsHostNodeID     = "54dZTdotBmE9geGJmJcj7Qzm6fzNrEUJ2NcDwZYp2QEp"
 	wsGlobalSessions *SessionManager
 )
 
@@ -96,10 +95,10 @@ func TestWSHostRun(t *testing.T) {
 	wsHost = NewOWTPNode(cert, 0, 0)
 	wsHost.SetPeerstore(wsGlobalSessions)
 	fmt.Printf("nodeID = %s \n", wsHost.NodeID())
-	config := make(map[string]string)
-	config["address"] = wsURL
-	config["connectType"] = Websocket
-	config["enableSignature"] = "1"
+	config := ConnectConfig{}
+	config.Address = wsURL
+	config.ConnectType = Websocket
+	config.EnableSignature = true
 	wsHost.HandleFunc("getInfo", getInfo)
 	wsHost.HandlePrepareFunc(func(ctx *Context) {
 		log.Notice("remoteAddress:", ctx.RemoteAddress)
@@ -128,19 +127,26 @@ func TestWSHostRun(t *testing.T) {
 			return
 		}
 	})
+
+	wsHost.SetOpenHandler(func(n *OWTPNode, peer PeerInfo) {
+		log.Infof("peer[%s] connected", peer.ID)
+		log.Infof("peer[%+v] config", peer.Config)
+		n.ClosePeer(peer.ID)
+	})
+
 	wsHost.Listen(config)
 
 	<-endRunning
 }
 
-
 func TestWSClientCall(t *testing.T) {
 
-	config := make(map[string]string)
-	config["address"] = wsURL
-	config["connectType"] = Websocket
-	config["enableSignature"] = "1"
+	config := ConnectConfig{}
+	config.Address = wsURL
+	config.ConnectType = Websocket
+	config.EnableSignature = true
 	wsClient := RandomOWTPNode()
+	wsClient.SetPeerstore(wsGlobalSessions)
 	//_, pub := httpClient.Certificate().KeyPair()
 	//log.Info("pub:", pub)
 	wsClient.HandleFunc("getInfo", getInfo)
@@ -149,11 +155,12 @@ func TestWSClientCall(t *testing.T) {
 		t.Errorf("Connect unexcepted error: %v", err)
 		return
 	}
-	//err = httpClient.KeyAgreement(httpHostNodeID, "aes")
-	//if err != nil {
-	//	t.Errorf("KeyAgreement unexcepted error: %v", err)
-	//	return
-	//}
+
+	err = wsClient.KeyAgreement(httpHostNodeID, "aes")
+	if err != nil {
+		t.Errorf("KeyAgreement unexcepted error: %v", err)
+		return
+	}
 
 	params := map[string]interface{}{
 		"name": "chance",

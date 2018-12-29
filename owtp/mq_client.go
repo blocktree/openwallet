@@ -42,7 +42,7 @@ type MQClient struct {
 	mu              sync.RWMutex //读写锁
 	closeOnce       sync.Once
 	done            func()
-	config          map[string]string //节点配置
+	config          ConnectConfig //节点配置
 }
 
 // Dial connects a client to the given URL.
@@ -93,6 +93,9 @@ func NewMQClient(pid string, conn *amqp.Connection, channel *amqp.Channel, hande
 		_send:   make(chan []byte, MaxMessageSize),
 		_auth:   auth,
 		done:    done,
+		config: ConnectConfig{
+			ConnectType: MQ,
+		},
 	}
 
 	client.isConnect = true
@@ -123,7 +126,7 @@ func (c *MQClient) IsConnected() bool {
 	return c.isConnect
 }
 
-func (c *MQClient) GetConfig() map[string]string {
+func (c *MQClient) ConnectConfig() ConnectConfig {
 	return c.config
 }
 
@@ -167,7 +170,7 @@ func (c *MQClient) RemoteAddr() net.Addr {
 		return nil
 	}
 	addr := &MqAddr{
-		NetWork: c.config["address"],
+		NetWork: c.ConnectConfig().Address,
 	}
 	return addr
 }
@@ -175,26 +178,11 @@ func (c *MQClient) RemoteAddr() net.Addr {
 //Send 发送消息
 func (c *MQClient) send(data DataPacket) error {
 
-	////添加授权
-	//if c.auth != nil && c.auth.EnableAuth() {
-	//	if !c.auth.GenerateSignature(&data) {
-	//		return errors.New("OWTP: authorization failed")
-	//	}
-	//}
-	//log.Emergency("Send DataPacket:", data)
 	respBytes, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
 
-	//if c.auth != nil && c.auth.EnableAuth() {
-	//	respBytes, err = c.auth.EncryptData(respBytes)
-	//	if err != nil {
-	//		return errors.New("OWTP: EncryptData failed")
-	//	}
-	//}
-
-	//log.Printf("Send: %s\n", string(respBytes))
 	c._send <- respBytes
 	return nil
 }
@@ -246,8 +234,8 @@ func (c *MQClient) write(mt int, message []byte) error {
 	if c.channel == nil {
 		return new(amqp.Error)
 	}
-	exchange := c.config["exchange"]
-	queueName := c.config["queueName"]
+	exchange := c.ConnectConfig().Exchange
+	queueName := c.ConnectConfig().WriteQueueName
 	err := c.channel.Publish(exchange, queueName, false, false, amqp.Publishing{
 		ContentType: "text/plain",
 		Body:        []byte(message),
@@ -266,8 +254,8 @@ func (c *MQClient) readPump() {
 		return
 	}
 
-	queueName := c.config["receiveQueueName"]
-	exchange := c.config["exchange"]
+	queueName := c.ConnectConfig().ReadQueueName
+	exchange := c.ConnectConfig().Exchange
 	//首次启动声明创建通道
 	c.channel.QueueDeclare(queueName, true, false, false, false, nil)
 	c.channel.QueueBind(queueName, queueName, exchange, false, nil)

@@ -43,10 +43,10 @@ func TestHTTPHostRun(t *testing.T) {
 	httpHost = NewOWTPNode(cert, 0, 0)
 	httpHost.SetPeerstore(globalSessions)
 	fmt.Printf("nodeID = %s \n", httpHost.NodeID())
-	config := make(map[string]string)
-	config["address"] = httpURL
-	config["connectType"] = HTTP
-	config["enableSignature"] = "1"
+	config := ConnectConfig{}
+	config.Address = httpURL
+	config.ConnectType = HTTP
+	//config["enableSignature"] = "1"
 	httpHost.HandleFunc("getInfo", getInfo)
 	httpHost.HandlePrepareFunc(func(ctx *Context) {
 		log.Notice("remoteAddress:", ctx.RemoteAddress)
@@ -65,11 +65,12 @@ func TestHTTPHostRun(t *testing.T) {
 
 func TestHTTPClientCall(t *testing.T) {
 
-	config := make(map[string]string)
-	config["address"] = httpURL
-	config["connectType"] = HTTP
-	config["enableSignature"] = "1"
+	config := ConnectConfig{}
+	config.Address = httpURL
+	config.ConnectType = HTTP
+	//config["enableSignature"] = "1"
 	httpClient := RandomOWTPNode()
+	httpClient.SetPeerstore(globalSessions)
 	_, pub := httpClient.Certificate().KeyPair()
 	log.Info("pub:", pub)
 	err := httpClient.Connect(httpHostNodeID, config)
@@ -108,9 +109,9 @@ func TestHTTPKeyAgreement(t *testing.T) {
 		url = "127.0.0.1:8422"
 	)
 	host := RandomOWTPNode()
-	config := make(map[string]string)
-	config["address"] = url
-	config["connectType"] = HTTP
+	config := ConnectConfig{}
+	config.Address = url
+	config.ConnectType = HTTP
 	host.HandleFunc("getInfo", getInfo)
 	host.Listen(config)
 
@@ -164,10 +165,10 @@ func TestConcurrentHTTPConnect(t *testing.T) {
 
 	var wait sync.WaitGroup
 
-	config := make(map[string]string)
-	config["address"] = httpURL
-	config["connectType"] = HTTP
-
+	config := ConnectConfig{}
+	config.Address = httpURL
+	config.ConnectType = HTTP
+	//config["enableSignature"] = "1"
 	for i := 0; i < 100; i++ {
 		wait.Add(100)
 		go func() {
@@ -178,11 +179,11 @@ func TestConcurrentHTTPConnect(t *testing.T) {
 				t.Errorf("Connect unexcepted error: %v", err)
 				return
 			}
-			//err = httpClient.KeyAgreement(httpHostNodeID, "aes")
-			//if err != nil {
-			//	t.Errorf("KeyAgreement unexcepted error: %v", err)
-			//	return
-			//}
+			err = httpClient.KeyAgreement(httpHostNodeID, "aes")
+			if err != nil {
+				t.Errorf("KeyAgreement unexcepted error: %v", err)
+				return
+			}
 
 			params := map[string]interface{}{
 				"name": "chance",
@@ -218,8 +219,8 @@ func TestHTTPNormalCall(t *testing.T) {
 	b, _ := hex.DecodeString("1234abef")
 	a := base58.Encode(b)
 	authHeader := req.Header{
-		"Accept":        "application/json",
-		"a": a,
+		"Accept": "application/json",
+		"a":      a,
 	}
 
 	hash := owcrypt.Hash(b, 0, owcrypt.HASH_ALG_SHA256)

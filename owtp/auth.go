@@ -134,7 +134,7 @@ func NewRandomCertificate() Certificate {
 	return cert
 }
 
-func NewCertificate(privateKey string, consultType string) (Certificate, error) {
+func NewCertificate(privateKey string, consultType ...string) (Certificate, error) {
 
 	if len(privateKey) == 0 {
 		return Certificate{}, nil
@@ -267,12 +267,19 @@ func (auth *OWTPAuth) GenerateSignature(data *DataPacket) bool {
 func (auth *OWTPAuth) VerifySignature(data *DataPacket) bool {
 	//验证数据包签名是否合法
 	if auth.EnableAuth() {
-		//log.Debug("VerifySignature packet.Req: ", data.Req)
-		//log.Debug("VerifySignature packet.Signature: ", data.Signature)
-		publickey, err := base58.Decode(data.PublicKey)
-		if err != nil {
+		var publickey []byte
+		if len(data.PublicKey) > 0 {
+			publickey, _ = base58.Decode(data.PublicKey)
+		} else {
+			publickey = auth.remotePublicKey
+		}
+
+		if len(publickey) == 0 {
 			return false
 		}
+
+		//log.Debug("VerifySignature packet.Req: ", data.Req)
+		//log.Debug("VerifySignature packet.Signature: ", data.Signature)
 
 		dataString := data.Data.(string)
 		plainText := fmt.Sprintf("%d%s%d%d%s", data.Req, data.Method, data.Nonce, data.Timestamp, dataString)

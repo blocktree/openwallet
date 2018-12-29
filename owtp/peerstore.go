@@ -15,7 +15,10 @@
 
 package owtp
 
-import "sync"
+import (
+	"encoding/json"
+	"sync"
+)
 
 // Peerstore 节点存储器
 type Peerstore interface {
@@ -54,8 +57,6 @@ type owtpPeerstore struct {
 // NewPeerstore 创建支持OWTP协议的Peerstore
 func NewOWTPPeerstore() *owtpPeerstore {
 	store := owtpPeerstore{
-		//onlinePeers: make(map[string]Peer),
-		//peers:       make(map[string]Peer),
 		peerInfos: make(map[string]PeerAttribute),
 	}
 	return &store
@@ -64,63 +65,21 @@ func NewOWTPPeerstore() *owtpPeerstore {
 // SaveAddr 保存节点
 func (store *owtpPeerstore) SavePeer(peer Peer) {
 
-	config := peer.GetConfig()
-	////链接类型
-	//connectType := config["connectType"]
-	//
-	////HTTP类型，不做保存节点，因为都是短连接
-	//if connectType == HTTP {
-	//	if !peer.Auth().EnableKeyAgreement() {
-	//		return
-	//	}
-	//	if !peer.Auth().EnableAuth() {
-	//		return
-	//	}
-	//}
+	config := peer.ConnectConfig()
 
-	if config != nil && len(config) > 0 {
-		store.Put(peer.PID(), peer.PID(), config)
+	b, err := json.Marshal(config)
+	if err == nil {
+		store.Put(peer.PID(), peer.PID(), string(b))
 	}
-
-	//store.mu.Lock()
-	//defer store.mu.Unlock()
-	//
-	//if store.peers == nil {
-	//	store.peers = make(map[string]Peer)
-	//}
-	//store.peers[id] = peer
 }
-
-//GetAddr 获取节点
-//func (store *owtpPeerstore) GetPeer(id string) Peer {
-//	store.mu.RLock()
-//	defer store.mu.RUnlock()
-//	if store.peers == nil {
-//		return nil
-//	}
-//	return store.peers[id]
-//}
-
-//DeletePeer 删除节点的地址
-//func (store *owtpPeerstore) DeletePeer(id string) {
-//	store.mu.Lock()
-//	defer store.mu.Unlock()
-//	if store.peers == nil {
-//		return
-//	}
-//	delete(store.peers, id)
-//}
 
 //PeerInfo 节点信息
 func (store *owtpPeerstore) PeerInfo(id string) PeerInfo {
-	//if store.peers == nil {
-	//	return PeerInfo{}
-	//}
-	//peer := store.peers[id]
 
-	config, ok := store.Get(id, id).(map[string]string)
-	if !ok {
-		config = make(map[string]string)
+	var config ConnectConfig
+	b, ok := store.Get(id, id).(string)
+	if ok {
+		json.Unmarshal([]byte(b), &config)
 	}
 	return PeerInfo{
 		ID:     id,

@@ -49,6 +49,7 @@ type RequestQueue map[uint64]requestEntry
 type muxEntry struct {
 	h      HandlerFunc
 	method string
+	inner  bool
 }
 
 type requestEntry struct {
@@ -208,6 +209,19 @@ func NewServeMux(timeoutSEC int) *ServeMux {
 //@param method API方法名
 //@param handler 处理方法入口
 func (mux *ServeMux) HandleFunc(method string, handler HandlerFunc) {
+	mux.handleFunc(method, handler, false)
+}
+
+//handleFuncInner 设置内置方法
+func (mux *ServeMux) handleFuncInner(method string, handler HandlerFunc) {
+	mux.handleFunc(method, handler, true)
+}
+
+//HandleFunc 路由处理器绑定
+//@param method API方法名
+//@param handler 处理方法入口
+//@param handler 是否内置方法
+func (mux *ServeMux) handleFunc(method string, handler HandlerFunc, inner bool) {
 	mux.mu.Lock()
 	defer mux.mu.Unlock()
 
@@ -224,7 +238,7 @@ func (mux *ServeMux) HandleFunc(method string, handler HandlerFunc) {
 	if mux.m == nil {
 		mux.m = make(map[string]muxEntry)
 	}
-	mux.m[method] = muxEntry{h: handler, method: method}
+	mux.m[method] = muxEntry{h: handler, method: method, inner: inner}
 
 }
 
@@ -234,10 +248,16 @@ func (mux *ServeMux) HandleFunc(method string, handler HandlerFunc) {
 //@param reqFunc 异步请求的回调函数
 //@param respChan 同步请求的响应通道
 //@param sync 是否同步
-func (mux *ServeMux) AddRequest(pid string, nonce uint64, time int64, method string, reqFunc RequestFunc, respChan chan Response, sync bool) error {
+func (mux *ServeMux) AddRequest(peer Peer, nonce uint64, time int64, method string, reqFunc RequestFunc, respChan chan Response, sync bool) error {
 
 	mux.mu.Lock()
 	defer mux.mu.Unlock()
+
+	if !peer.IsConnected() {
+		return fmt.Errorf("peer has been closed")
+	}
+
+	pid := peer.PID()
 
 	if !mux.startRequestTimeoutCheck {
 		go mux.timeoutRequestHandle()
@@ -257,7 +277,6 @@ func (mux *ServeMux) AddRequest(pid string, nonce uint64, time int64, method str
 	requestQueue[nonce] = requestEntry{sync, method, reqFunc, respChan, time}
 
 	mux.peerRequest[pid] = requestQueue
-
 	return nil
 }
 
@@ -318,7 +337,11 @@ func (mux *ServeMux) ServeOWTP(pid string, ctx *Context) {
 			if ok {
 				//执行准备处理方法
 				if prepareFunc, exist := mux.m[PrepareMethod]; exist {
-					prepareFunc.h(ctx)
+					//内置方法不执行prepare
+					if !f.inner {
+						prepareFunc.h(ctx)
+					}
+
 				}
 
 				if !ctx.stop {
@@ -329,17 +352,16 @@ func (mux *ServeMux) ServeOWTP(pid string, ctx *Context) {
 				if !ctx.stop {
 					//执行结束处理方法
 					if finishFunc, exist := mux.m[FinishMethod]; exist {
-						finishFunc.h(ctx)
+						//内置方法不执行finish
+						if !f.inner {
+							finishFunc.h(ctx)
+						}
 					}
 				}
 
 				//添加已完成的请求
-				if mux.peerRequestCache != nil {
-					mux.peerRequestCache.Put(
-						fmt.Sprintf("%s_%d", pid, ctx.nonce),
-						ctx.Method,
-						mux.requestNonceLimit)
-				}
+				mux.completeRequest(ctx)
+
 
 			} else {
 				//找不到方法的处理
@@ -348,7 +370,7 @@ func (mux *ServeMux) ServeOWTP(pid string, ctx *Context) {
 		}
 	case WSResponse: //我方请求后，对方响应返回
 		mux.mu.Lock()
-		defer mux.mu.Unlock()
+
 		requestQueue := mux.peerRequest[pid]
 		if requestQueue == nil {
 			log.Error("peer:", pid, "requestQueue is nil.")
@@ -368,6 +390,8 @@ func (mux *ServeMux) ServeOWTP(pid string, ctx *Context) {
 			//ctx.Resp = responseError("reponse method is not equal request", ErrResponseMethodDiffer)
 			log.Error("reponse method is not equal request.")
 		}
+
+		mux.mu.Unlock()
 
 	default:
 		//未知类型的日志记录
@@ -394,6 +418,8 @@ func (mux *ServeMux) timeoutRequestHandle() {
 			mux.mu.Lock()
 			//定时器的回调，处理超时请求
 			for _, requestQueue := range mux.peerRequest {
+
+				//如果节点已经关闭马上取消请求
 
 				for n, r := range requestQueue {
 
@@ -430,8 +456,30 @@ func (mux *ServeMux) timeoutRequestHandle() {
 	}
 }
 
+//completeRequest
+func (mux *ServeMux) completeRequest(ctx *Context) {
+
+	//如果节点没有开启签名授权，不需要检查nonce重放，没有意义
+	if !ctx.Peer.auth().EnableAuth() {
+		return
+	}
+
+	//添加已完成的请求
+	if mux.peerRequestCache != nil {
+		mux.peerRequestCache.Put(
+			fmt.Sprintf("%s_%d", ctx.PID, ctx.nonce),
+			ctx.Method,
+			mux.requestNonceLimit)
+	}
+}
+
 //checkNonceReplay 检查nonce是否重放
 func (mux *ServeMux) checkNonceReplay(ctx *Context) bool {
+
+	//如果节点没有开启签名授权，不需要检查nonce重放，没有意义
+	if !ctx.Peer.auth().EnableAuth() {
+		return true
+	}
 
 	//检查
 	status, errMsg := mux.checkNonceReplayReason(ctx.PID, ctx.nonce)

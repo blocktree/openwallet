@@ -67,7 +67,7 @@ func NewDataPacket(json gjson.Result) *DataPacket {
 
 type PeerInfo struct {
 	ID     string
-	Config map[string]string
+	Config ConnectConfig
 }
 
 type PeerAttribute map[string]interface{}
@@ -75,12 +75,16 @@ type PeerAttribute map[string]interface{}
 // Peer 节点
 type Peer interface {
 
-	PID() string                          //节点ID
-	IsHost() bool                         //是否主机，我方主动连接的节点
-	IsConnected() bool                    //是否已经连接
-	LocalAddr() net.Addr  //本地节点地址
-	RemoteAddr() net.Addr //远程节点地址
-	GetConfig() map[string]string // 返回配置信息
+	/* 公开方法 */
+
+	PID() string                  //节点ID
+	IsHost() bool                 //是否主机，我方主动连接的节点
+	IsConnected() bool            //是否已经连接
+	LocalAddr() net.Addr          //本地节点地址
+	RemoteAddr() net.Addr         //远程节点地址
+	ConnectConfig() ConnectConfig // 返回配置信息
+
+	/* 内部方法 */
 
 	auth() Authorization
 	setHandler(handler PeerHandler) error //设置节点的服务者

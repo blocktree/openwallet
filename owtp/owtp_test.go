@@ -31,7 +31,7 @@ var (
 )
 
 func init() {
-	Debug = true
+	Debug = false
 }
 
 func getInfo(ctx *Context) {
@@ -109,8 +109,8 @@ func createHost() *OWTPNode {
 	//主机
 	host := NewOWTPNode(cert, 0, 0)
 
-	config := make(map[string]string)
-	config["address"] = ":9432"
+	config := ConnectConfig{}
+	config.Address = ":9432"
 
 	host.Listen(config)
 
@@ -134,14 +134,14 @@ func TestGenerateRangeNum(t *testing.T) {
 }
 
 func TestOtherMQConnectNode(t *testing.T) {
-	config := make(map[string]string)
-	config["address"] = mqURL
-	config["connectType"] = MQ
-	config["exchange"] = "DEFAULT_EXCHANGE"
-	config["queueName"] = "OW_RPC_GO"
-	config["receiveQueueName"] = "OW_RPC_JAVA"
-	config["account"] = "admin"
-	config["password"] = "admin"
+	config := ConnectConfig{}
+	config.Address = mqURL
+	config.ConnectType = MQ
+	config.Exchange = "DEFAULT_EXCHANGE"
+	config.WriteQueueName = "OW_RPC_GO"
+	config.ReadQueueName = "OW_RPC_JAVA"
+	config.Account = "admin"
+	config.Password = "admin"
 	nodeA := RandomOWTPNode()
 	nodeA.HandleFunc("getInfo", getInfo)
 	err := nodeA.Connect("dasda", config)
@@ -162,9 +162,9 @@ func TestMQConnectNode(t *testing.T) {
 
 	time.Sleep(5 * time.Second)
 
-	config := make(map[string]string)
-	config["address"] = hostURL
-	config["connectType"] = MQ
+	config := ConnectConfig{}
+	config.Address = hostURL
+	config.ConnectType = MQ
 
 	//客户端
 	nodeA := RandomOWTPNode()
@@ -234,32 +234,32 @@ func TestHttp(t *testing.T) {
 		endRunning = make(chan bool, 1)
 	)
 	transfer := RandomOWTPNode()
-	config := make(map[string]string)
-	config["address"] = "127.0.0.1:8422"
-	config["connectType"] = HTTP
+	config := ConnectConfig{}
+	config.Address = "127.0.0.1:8422"
+	config.ConnectType = HTTP
 	transfer.HandleFunc("getInfo", getInfo)
 	transfer.Listen(config)
 
 	//httpTestClient := NewHTTPT("http://"+config["address"], "", true)
 	//httpTestClient.Call("getInfo", nil)
-	<- endRunning
+	<-endRunning
 }
 
 func TestMQtNode(t *testing.T) {
 	transfer := RandomOWTPNode()
-	config := make(map[string]string)
-	config["address"] = ":94321"
-	config["connectType"] = MQ
+	config := ConnectConfig{}
+	config.Address = ":94321"
+	config.ConnectType = MQ
 	transfer.Listen(config)
 	transfer.HandleFunc("createWallet", transfer.subscribe)
-	transferConfig := make(map[string]string)
-	transferConfig["address"] = mqURL
-	transferConfig["connectType"] = MQ
-	transferConfig["exchange"] = "DEFAULT_EXCHANGE"
-	transferConfig["queueName"] = "OW_RPC_GO"
-	transferConfig["receiveQueueName"] = "OW_RPC_JAVA"
-	transferConfig["account"] = "admin"
-	transferConfig["password"] = "admin"
+	transferConfig := ConnectConfig{}
+	transferConfig.Address = mqURL
+	transferConfig.ConnectType = MQ
+	transferConfig.Exchange = "DEFAULT_EXCHANGE"
+	transferConfig.WriteQueueName = "OW_RPC_GO"
+	transferConfig.ReadQueueName = "OW_RPC_JAVA"
+	transferConfig.Account = "admin"
+	transferConfig.Password = "admin"
 
 	//中转连接主机
 	err := transfer.Connect("dasda", transferConfig)
@@ -283,17 +283,17 @@ func TestConnectNode(t *testing.T) {
 
 	//主机
 	host := NewOWTPNode(cert, 0, 0)
-	config := make(map[string]string)
-	config["address"] = ":9432"
-	config["connectType"] = Websocket
+	config := ConnectConfig{}
+	config.Address = ":9432"
+	config.ConnectType = Websocket
 	host.Listen(config)
 	host.HandleFunc("hello", host.hello)
 
 	//中转
 	transfer := RandomOWTPNode()
-	config1 := make(map[string]string)
-	config1["address"] = ":9431"
-	config1["connectType"] = Websocket
+	config1 := ConnectConfig{}
+	config1.Address = ":9431"
+	config1.ConnectType = Websocket
 	transfer.Listen(config1)
 	transfer.HandleFunc("hello", transfer.transferHello)
 
@@ -309,14 +309,14 @@ func TestConnectNode(t *testing.T) {
 	//transferConfig["address"] = mqURL
 	//transferConfig["connectType"] = MQ
 
-	transferConfig := make(map[string]string)
-	transferConfig["address"] = mqURL
-	transferConfig["connectType"] = MQ
-	transferConfig["exchange"] = "DEFAULT_EXCHANGE"
-	transferConfig["queueName"] = "DEFAULT_QUEUE"
-	transferConfig["receiveQueueName"] = "DEFAULT_QUEUE"
-	transferConfig["account"] = "admin"
-	transferConfig["password"] = "admin"
+	transferConfig := ConnectConfig{}
+	transferConfig.Address = mqURL
+	transferConfig.ConnectType = MQ
+	transferConfig.Exchange = "DEFAULT_EXCHANGE"
+	transferConfig.WriteQueueName = "DEFAULT_QUEUE"
+	transferConfig.ReadQueueName = "DEFAULT_QUEUE"
+	transferConfig.Account = "admin"
+	transferConfig.Password = "admin"
 
 	//中转连接主机
 	err = transfer.Connect("dasda", transferConfig)
@@ -325,9 +325,9 @@ func TestConnectNode(t *testing.T) {
 		return
 	}
 
-	config2 := make(map[string]string)
-	config2["address"] = transferURL
-	config2["connectType"] = Websocket
+	config2 := ConnectConfig{}
+	config2.Address = transferURL
+	config2.ConnectType = Websocket
 
 	//A连接中转
 	err = nodeA.Connect(transfer.NodeID(), config2)
@@ -384,9 +384,9 @@ func TestConcurrentConnect(t *testing.T) {
 
 	time.Sleep(5 * time.Second)
 
-	config := make(map[string]string)
-	config["address"] = hostURL
-	config["connectType"] = Websocket
+	config := ConnectConfig{}
+	config.Address = hostURL
+	config.ConnectType = Websocket
 
 	for i := 0; i < 100; i++ {
 		go func(h *OWTPNode) {
@@ -410,6 +410,3 @@ func TestConcurrentConnect(t *testing.T) {
 
 	host.Close()
 }
-
-
-

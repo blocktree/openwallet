@@ -34,7 +34,7 @@ import (
 type HTTPClient struct {
 	responseWriter  http.ResponseWriter
 	request         *http.Request
-	_auth            Authorization
+	_auth           Authorization
 	handler         PeerHandler
 	isHost          bool
 	ReadBufferSize  int
@@ -43,11 +43,10 @@ type HTTPClient struct {
 	isConnect       bool
 	mu              sync.RWMutex //读写锁
 	closeOnce       sync.Once
-	//done            func()
-	config     map[string]string //节点配置
-	httpClient *req.Req
-	baseURL    string
-	authHeader map[string]string
+	config          ConnectConfig //节点配置
+	httpClient      *req.Req
+	baseURL         string
+	authHeader      map[string]string
 }
 
 func HTTPDial(
@@ -163,9 +162,13 @@ func NewHTTPClient(pid string, responseWriter http.ResponseWriter, request *http
 
 	client := &HTTPClient{
 		pid:            pid,
-		_auth:           auth,
+		_auth:          auth,
 		responseWriter: responseWriter,
 		request:        request,
+		config: ConnectConfig{
+			ConnectType: HTTP,
+			Address:     request.RemoteAddr,
+		},
 	}
 
 	client.isConnect = true
@@ -196,7 +199,7 @@ func (c *HTTPClient) IsConnected() bool {
 	return c.isConnect
 }
 
-func (c *HTTPClient) GetConfig() map[string]string {
+func (c *HTTPClient) ConnectConfig() ConnectConfig {
 	return c.config
 }
 
