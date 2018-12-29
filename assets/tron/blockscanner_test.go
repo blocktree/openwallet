@@ -15,7 +15,9 @@
 
 package tron
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestSetRescanBlockHeight(t *testing.T) {
 	scanner := NewTronBlockScanner(tw)
@@ -63,10 +65,15 @@ func TestTronBlockScanner_scanning(t *testing.T) {
 
 	//bs.DropRechargeRecords(accountID)
 
-	bs.SetRescanBlockHeight(5224300)
+	bs.SetRescanBlockHeight(5260277)
 	//tw.SaveLocalNewBlock(1355030, "00000000000000125b86abb80b1f94af13a5d9b07340076092eda92dade27686")
 
 	//bs.AddAddress(address, accountID)
 
 	bs.ScanBlockTask()
+}
+
+func TestONTBlockScanner_RescanFailedRecord(t *testing.T) {
+	bs := NewTronBlockScanner(tw)
+	bs.RescanFailedRecord()
 }
