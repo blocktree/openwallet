@@ -21,20 +21,19 @@ import (
 	"fmt"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/gorilla/websocket"
+	"github.com/streadway/amqp"
 	"github.com/tidwall/gjson"
 	"net"
 	"sync"
-	"github.com/streadway/amqp"
 )
-
 
 //MQClient 基于mq的通信客户端
 type MQClient struct {
-	auth            Authorization
+	_auth           Authorization
 	conn            *amqp.Connection
 	channel         *amqp.Channel
 	handler         PeerHandler
-	send            chan []byte
+	_send           chan []byte
 	isHost          bool
 	ReadBufferSize  int
 	WriteBufferSize int
@@ -43,7 +42,7 @@ type MQClient struct {
 	mu              sync.RWMutex //读写锁
 	closeOnce       sync.Once
 	done            func()
-	config          map[string]string //节点配置
+	config          ConnectConfig //节点配置
 }
 
 // Dial connects a client to the given URL.
@@ -88,16 +87,19 @@ func NewMQClient(pid string, conn *amqp.Connection, channel *amqp.Channel, hande
 	}
 
 	client := &MQClient{
-		pid:  pid,
-		conn: conn,
-		channel:channel,
-		send: make(chan []byte, MaxMessageSize),
-		auth: auth,
-		done: done,
+		pid:     pid,
+		conn:    conn,
+		channel: channel,
+		_send:   make(chan []byte, MaxMessageSize),
+		_auth:   auth,
+		done:    done,
+		config: ConnectConfig{
+			ConnectType: MQ,
+		},
 	}
 
 	client.isConnect = true
-	client.SetHandler(hander)
+	client.setHandler(hander)
 
 	return client, nil
 }
@@ -106,12 +108,12 @@ func (c *MQClient) PID() string {
 	return c.pid
 }
 
-func (c *MQClient) Auth() Authorization {
+func (c *MQClient) auth() Authorization {
 
-	return c.auth
+	return c._auth
 }
 
-func (c *MQClient) SetHandler(handler PeerHandler) error {
+func (c *MQClient) setHandler(handler PeerHandler) error {
 	c.handler = handler
 	return nil
 }
@@ -124,13 +126,12 @@ func (c *MQClient) IsConnected() bool {
 	return c.isConnect
 }
 
-func (c *MQClient) GetConfig() map[string]string {
+func (c *MQClient) ConnectConfig() ConnectConfig {
 	return c.config
 }
 
-
 //Close 关闭连接
-func (c *MQClient) Close() error {
+func (c *MQClient) close() error {
 	var err error
 
 	//保证节点只关闭一次
@@ -169,40 +170,25 @@ func (c *MQClient) RemoteAddr() net.Addr {
 		return nil
 	}
 	addr := &MqAddr{
-		NetWork:c.config["address"],
+		NetWork: c.ConnectConfig().Address,
 	}
 	return addr
 }
 
 //Send 发送消息
-func (c *MQClient) Send(data DataPacket) error {
+func (c *MQClient) send(data DataPacket) error {
 
-	////添加授权
-	//if c.auth != nil && c.auth.EnableAuth() {
-	//	if !c.auth.GenerateSignature(&data) {
-	//		return errors.New("OWTP: authorization failed")
-	//	}
-	//}
-	//log.Emergency("Send DataPacket:", data)
 	respBytes, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
 
-	//if c.auth != nil && c.auth.EnableAuth() {
-	//	respBytes, err = c.auth.EncryptData(respBytes)
-	//	if err != nil {
-	//		return errors.New("OWTP: EncryptData failed")
-	//	}
-	//}
-
-	//log.Printf("Send: %s\n", string(respBytes))
-	c.send <- respBytes
+	c._send <- respBytes
 	return nil
 }
 
 //OpenPipe 打开通道
-func (c *MQClient) OpenPipe() error {
+func (c *MQClient) openPipe() error {
 
 	if !c.IsConnected() {
 		return fmt.Errorf("client is not connect")
@@ -221,12 +207,12 @@ func (c *MQClient) OpenPipe() error {
 func (c *MQClient) writePump() {
 
 	defer func() {
-		c.Close()
+		c.close()
 		//log.Debug("writePump end")
 	}()
 	for {
 		select {
-		case message, ok := <-c.send:
+		case message, ok := <-c._send:
 			//发送消息
 			if !ok {
 				c.write(websocket.CloseMessage, []byte{})
@@ -248,8 +234,8 @@ func (c *MQClient) write(mt int, message []byte) error {
 	if c.channel == nil {
 		return new(amqp.Error)
 	}
-	exchange := c.config["exchange"]
-	queueName := c.config["queueName"]
+	exchange := c.ConnectConfig().Exchange
+	queueName := c.ConnectConfig().WriteQueueName
 	err := c.channel.Publish(exchange, queueName, false, false, amqp.Publishing{
 		ContentType: "text/plain",
 		Body:        []byte(message),
@@ -260,7 +246,7 @@ func (c *MQClient) write(mt int, message []byte) error {
 // ReadPump 监听消息
 func (c *MQClient) readPump() {
 	defer func() {
-		c.Close()
+		c.close()
 		log.Error("mq readPump end")
 	}()
 
@@ -268,16 +254,16 @@ func (c *MQClient) readPump() {
 		return
 	}
 
-	queueName := c.config["receiveQueueName"]
-	exchange := c.config["exchange"]
+	queueName := c.ConnectConfig().ReadQueueName
+	exchange := c.ConnectConfig().Exchange
 	//首次启动声明创建通道
-	c.channel.QueueDeclare(queueName,true,false,false,false,nil)
-	c.channel.QueueBind(queueName,queueName,exchange,false,nil)
+	c.channel.QueueDeclare(queueName, true, false, false, false, nil)
+	c.channel.QueueBind(queueName, queueName, exchange, false, nil)
 
 	messages, err := c.channel.Consume(queueName, "", true, false, false, false, nil)
 
-	if err!=nil{
-		log.Error("readPump: ",err)
+	if err != nil {
+		log.Error("readPump: ", err)
 	}
 
 	forever := make(chan bool)
@@ -286,7 +272,7 @@ func (c *MQClient) readPump() {
 		//fmt.Println(*msgs)
 		for d := range messages {
 			packet := NewDataPacket(gjson.ParseBytes(d.Body))
-			fmt.Printf("packet：%s",string(d.Body))
+			fmt.Printf("packet：%s", string(d.Body))
 			//开一个goroutine处理消息
 			go c.handler.OnPeerNewDataPacketReceived(c, packet)
 		}
@@ -299,7 +285,6 @@ func (c *MQClient) readPump() {
 		<-c.channel.NotifyClose(errChan)
 		forever <- false
 	}()
-
 
 	<-forever
 

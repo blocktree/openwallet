@@ -16,7 +16,6 @@
 package owtp
 
 import (
-	"context"
 	"fmt"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/pkg/errors"
@@ -28,8 +27,6 @@ import (
 type httpListener struct {
 	net.Listener
 	handler         PeerHandler
-	closed          chan struct{}
-	incoming        chan Peer
 	laddr           string
 	peerstore       Peerstore //节点存储器
 	enableSignature bool
@@ -42,8 +39,6 @@ func (l *httpListener) serve() error {
 		return errors.New("listener is not setup.")
 	}
 
-	defer close(l.closed)
-	//http.ListenAndServe(l.laddr, l)
 	http.Serve(l.Listener, l)
 
 	return nil
@@ -52,78 +47,26 @@ func (l *httpListener) serve() error {
 //ServeHTTP 实现HTTP服务监听
 func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	//log.Debug("http url path:", r.URL.Path)
-
-	//创建一个上下文通知，监控节点是否已经关闭
-	ctx, cancel := context.WithCancel(context.Background())
-
-	//var cnCh <-chan bool
-	//if cn, ok := w.(http.CloseNotifier); ok {
-	//	cnCh = cn.CloseNotify()
-	//}
-
-	httpCtx := r.Context()
-
-	header := r.Header
-	if header == nil {
-		log.Error("header is nil")
-		http.Error(w, "Header is nil", 400)
-		return
-	}
-
-	var err error
-
-	peer, err := NewHTTPClientWithHeader(header, w, r, l.handler, l.enableSignature, cancel)
+	//建立节点
+	peer, err := NewHTTPClientWithHeader(w, r, l.handler, l.enableSignature)
 	if err != nil {
 		log.Error("NewClient unexpected error:", err)
-		http.Error(w, "authorization not passed", 401)
+		http.Error(w, "authorization not passed", 400)
 		return
 	}
 
-	// Just to make sure.
-	//defer peer.Close()
-
-	//log.Debug("NewClient successfully")
-
-	select {
-	case l.incoming <- peer:
-	case <-l.closed:
-		//peer.Close()
-		return
-	//case <-cnCh:
-	case <-httpCtx.Done():
-		log.Warn("http CloseNotify")
+	//HTTP是短连接，接收到数据，节点马上处理，无需像websocket那样管理连接
+	err = peer.HandleRequest()
+	if err != nil {
+		log.Error("HandleRequest unexpected error:", err)
+		http.Error(w, err.Error(), 400)
 		return
 	}
-
-	// wait until conn gets closed, otherwise the handler closes it early
-	select {
-	case <-ctx.Done(): //收到节点关闭的通知
-		//log.Debug("peer 1:", peer.PID(), "closed")
-		return
-	case <-l.closed:
-		//log.Debug("peer 2:", peer.PID(), "closed")
-		peer.Close()
-	//case <-cnCh:
-	case <-httpCtx.Done():
-		log.Warn("http CloseNotify")
-		peer.Close()
-		return
-	}
-
 }
 
 //Accept 接收新节点链接，线程阻塞
 func (l *httpListener) Accept() (Peer, error) {
-	select {
-	case c, ok := <-l.incoming:
-		if !ok {
-			return nil, fmt.Errorf("listener is closed")
-		}
-		return c, nil
-	case <-l.closed:
-		return nil, fmt.Errorf("listener is closed")
-	}
+	return nil, fmt.Errorf("http do not implement")
 }
 
 //ListenAddr 创建OWTP协议通信监听
@@ -136,8 +79,6 @@ func HttpListenAddr(addr string, enableSignature bool, handler PeerHandler) (*ht
 		Listener:        l,
 		laddr:           addr,
 		handler:         handler,
-		incoming:        make(chan Peer),
-		closed:          make(chan struct{}),
 		enableSignature: enableSignature,
 	}
 

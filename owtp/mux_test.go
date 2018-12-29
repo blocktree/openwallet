@@ -35,7 +35,11 @@ func TestRequestReplayAttack(t *testing.T) {
 
 	t.Logf("status = %d, msg = %s", status, msg)
 
-	err = mux.AddRequest("1", 1, time.Now().Unix(), "h", nil, nil, false)
+	peer := &HTTPClient{
+		pid: "1",
+	}
+
+	err = mux.AddRequest(peer, 1, time.Now().Unix(), "h", nil, nil, false)
 	if err != nil {
 		t.Errorf("RequestReplayAttack failed unexpected error: %v", err)
 		return

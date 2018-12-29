@@ -34,7 +34,7 @@ import (
 type HTTPClient struct {
 	responseWriter  http.ResponseWriter
 	request         *http.Request
-	auth            Authorization
+	_auth           Authorization
 	handler         PeerHandler
 	isHost          bool
 	ReadBufferSize  int
@@ -43,8 +43,7 @@ type HTTPClient struct {
 	isConnect       bool
 	mu              sync.RWMutex //读写锁
 	closeOnce       sync.Once
-	done            func()
-	config          map[string]string //节点配置
+	config          ConnectConfig //节点配置
 	httpClient      *req.Req
 	baseURL         string
 	authHeader      map[string]string
@@ -92,7 +91,7 @@ func HTTPDial(
 	return client, nil
 }
 
-func NewHTTPClientWithHeader(header http.Header, responseWriter http.ResponseWriter, request *http.Request, hander PeerHandler, enableSignature bool, done func()) (*HTTPClient, error) {
+func NewHTTPClientWithHeader(responseWriter http.ResponseWriter, request *http.Request, hander PeerHandler, enableSignature bool) (*HTTPClient, error) {
 
 	/*
 			| 参数名称 | 类型   | 是否可空   | 描述                                                                              |
@@ -106,15 +105,16 @@ func NewHTTPClientWithHeader(header http.Header, responseWriter http.ResponseWri
 	*/
 
 	var (
-		//enableSig       bool
-		//isConsult       bool
 		tmpPublicKey    []byte
 		remotePublicKey []byte
 		err             error
-		//nodeID          string
 	)
 
 	//log.Debug("http header:", header)
+	header := request.Header
+	if header == nil {
+		return nil, fmt.Errorf("HTTP Header is nil")
+	}
 
 	a := header.Get("a")
 
@@ -149,12 +149,12 @@ func NewHTTPClientWithHeader(header http.Header, responseWriter http.ResponseWri
 	//	return nil, err
 	//}
 
-	client, err := NewHTTPClient(auth.RemotePID(), responseWriter, request, hander, auth, done)
+	client, err := NewHTTPClient(auth.RemotePID(), responseWriter, request, hander, auth)
 
 	return client, nil
 }
 
-func NewHTTPClient(pid string, responseWriter http.ResponseWriter, request *http.Request, hander PeerHandler, auth Authorization, done func()) (*HTTPClient, error) {
+func NewHTTPClient(pid string, responseWriter http.ResponseWriter, request *http.Request, hander PeerHandler, auth Authorization) (*HTTPClient, error) {
 
 	if hander == nil {
 		return nil, errors.New("hander should not be nil! ")
@@ -162,14 +162,17 @@ func NewHTTPClient(pid string, responseWriter http.ResponseWriter, request *http
 
 	client := &HTTPClient{
 		pid:            pid,
-		auth:           auth,
-		done:           done,
+		_auth:          auth,
 		responseWriter: responseWriter,
 		request:        request,
+		config: ConnectConfig{
+			ConnectType: HTTP,
+			Address:     request.RemoteAddr,
+		},
 	}
 
 	client.isConnect = true
-	client.SetHandler(hander)
+	client.setHandler(hander)
 
 	return client, nil
 }
@@ -178,12 +181,12 @@ func (c *HTTPClient) PID() string {
 	return c.pid
 }
 
-func (c *HTTPClient) Auth() Authorization {
+func (c *HTTPClient) auth() Authorization {
 
-	return c.auth
+	return c._auth
 }
 
-func (c *HTTPClient) SetHandler(handler PeerHandler) error {
+func (c *HTTPClient) setHandler(handler PeerHandler) error {
 	c.handler = handler
 	return nil
 }
@@ -196,27 +199,20 @@ func (c *HTTPClient) IsConnected() bool {
 	return c.isConnect
 }
 
-func (c *HTTPClient) GetConfig() map[string]string {
+func (c *HTTPClient) ConnectConfig() ConnectConfig {
 	return c.config
 }
 
 //Close 关闭连接
-func (c *HTTPClient) Close() error {
+func (c *HTTPClient) close() error {
 	var err error
 	//保证节点只关闭一次
 	c.closeOnce.Do(func() {
 
 		if !c.isConnect {
-			//log.Debug("end close")
 			return
 		}
 
-		//调用关闭函数通知上级
-		if c.done != nil {
-			c.done()
-			// Be nice to GC
-			c.done = nil
-		}
 		c.isConnect = false
 		c.handler.OnPeerClose(c, "client close")
 	})
@@ -255,7 +251,7 @@ func (c *HTTPClient) RemoteAddr() net.Addr {
 }
 
 //Send 发送消息
-func (c *HTTPClient) Send(data DataPacket) error {
+func (c *HTTPClient) send(data DataPacket) error {
 
 	if c.isHost {
 		return c.sendHTTPRequest(data)
@@ -292,84 +288,50 @@ func (c *HTTPClient) sendHTTPRequest(data DataPacket) error {
 }
 
 //OpenPipe 打开通道
-func (c *HTTPClient) OpenPipe() error {
+func (c *HTTPClient) openPipe() error {
 
-	//对方节点时远程服务器，不需要打开读通道
-	if c.isHost {
-		return nil
-	}
-
-	if !c.IsConnected() {
-		return fmt.Errorf("client is not connect")
-	}
-
-	//发送通道
-	//go c.writePump()
-
-	//监听消息
-	go c.readPump()
+	//HTTP不需要打开长连接通道
 
 	return nil
 }
 
 // writeResponse 输出数据
 func (c *HTTPClient) writeResponse(data DataPacket) error {
-	//log.Debug("writeResponse")
 	respBytes, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
 
-	defer c.Close()
 	if c.responseWriter == nil {
 		return fmt.Errorf("responseWriter is nil")
 	}
 	w := c.responseWriter
-	w.Header().Set("Content-type","application/json")
-	_,err = w.Write(respBytes)
+	w.Header().Set("Content-type", "application/json")
+	_, err = w.Write(respBytes)
 	if err != nil {
 		return fmt.Errorf("responseWriter is close")
 	}
-	w.(http.Flusher).Flush()
+	//w.(http.Flusher).Flush()
 	return nil
 }
 
-// ReadPump 监听消息
-func (c *HTTPClient) readPump() {
+// readRequest 读取请求
+func (c *HTTPClient) HandleRequest() error {
 
-	defer func() {
-		c.Close()
-		//log.Debug("readPump end")
-	}()
-
-	s, _ := ioutil.ReadAll(c.request.Body)
-
-	w := c.responseWriter
-
-	result := string(s)
-
-	if len(result) == 0 {
-		w.Write([]byte("is not a Json"))
-		w.(http.Flusher).Flush()
-		log.Error("is not a Json ")
-		return
+	s, err := ioutil.ReadAll(c.request.Body)
+	if err != nil {
+		return err
 	}
 
-	//if Debug {
-
-		//log.Debug("readPump: ", string(s))
-	//}
+	if len(s) == 0 {
+		return fmt.Errorf("body is empty")
+	}
 
 	packet := NewDataPacket(gjson.ParseBytes(s))
 
-	if len(packet.Method) == 0 {
-
-		w.Write([]byte("method is null"))
-		w.(http.Flusher).Flush()
-		log.Error(" method is null ")
-		return
-	}
-
+	//转交给处理器处理数据包
 	c.handler.OnPeerNewDataPacketReceived(c, packet)
+
+	return nil
 
 }

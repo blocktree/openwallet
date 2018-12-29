@@ -16,6 +16,7 @@
 package owtp
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/blocktree/OpenWallet/session"
 	"time"
@@ -84,19 +85,21 @@ func (store *SessionManager) GetProvider() session.Provider {
 // SaveAddr 保存节点
 func (store *SessionManager) SavePeer(peer Peer) {
 
-	config := peer.GetConfig()
+	config := peer.ConnectConfig()
 
-	if config != nil && len(config) > 0 {
-		store.Put(peer.PID(), peer.PID(), config)
+	b, err := json.Marshal(config)
+	if err == nil {
+		store.Put(peer.PID(), peer.PID(), string(b))
 	}
 }
 
 //PeerInfo 节点信息
 func (store *SessionManager) PeerInfo(id string) PeerInfo {
 
-	config, ok := store.Get(id, id).(map[string]string)
-	if !ok {
-		config = make(map[string]string)
+	var config ConnectConfig
+	b, ok := store.Get(id, id).(string)
+	if ok {
+		json.Unmarshal([]byte(b), &config)
 	}
 	return PeerInfo{
 		ID:     id,
