@@ -89,17 +89,17 @@ var (
 
 //节点主配置 作为json解析工具
 type ConnectConfig struct {
-	Address         string `json:"address"`         //@required 连接IP地址
-	ConnectType     string `json:"connectType"`     //@required 连接方式
-	EnableSignature bool   `json:"enableSignature"` //是否开启owtp协议内签名，防重放
-	Account         string `json:"account"`         //mq账户名
-	Password        string `json:"password"`        //mq账户密码
-	Exchange        string `json:"exchange"`        //mq需要字段
-	WriteQueueName  string `json:"writeQueueName"`  //mq写入通道名
-	ReadQueueName   string `json:"readQueueName"`   //mq读取通道名
-	EnableSSL       bool   `json:"enableSSL"`       //是否开启链接SSL，https，wss
-	ReadBufferSize  int    `json:"readBufferSize"`  //socket读取缓存
-	WriteBufferSize int    `json:"writeBufferSize"` //socket写入缓存
+	Address            string `json:"address"`            //@required 连接IP地址
+	ConnectType        string `json:"connectType"`        //@required 连接方式
+	EnableSignature    bool   `json:"enableSignature"`    //是否开启owtp协议内签名，防重放
+	Account            string `json:"account"`            //mq账户名
+	Password           string `json:"password"`           //mq账户密码
+	Exchange           string `json:"exchange"`           //mq需要字段
+	WriteQueueName     string `json:"writeQueueName"`     //mq写入通道名
+	ReadQueueName      string `json:"readQueueName"`      //mq读取通道名
+	EnableSSL          bool   `json:"enableSSL"`          //是否开启链接SSL，https，wss
+	ReadBufferSize     int    `json:"readBufferSize"`     //socket读取缓存
+	WriteBufferSize    int    `json:"writeBufferSize"`    //socket写入缓存
 }
 
 //节点主配置 作为json解析工具
@@ -686,13 +686,17 @@ func (node *OWTPNode) KeyAgreement(pid string, consultType string) error {
 //callKeyAgreement 发起协商计算
 func (node *OWTPNode) callKeyAgreement(peer Peer, consultType string) error {
 
+	var (
+		err error
+	)
+
 	//初始协商参数
 	params, err := peer.auth().InitKeyAgreement(consultType)
 	if err != nil {
 		return err
 	}
 
-	err = node.Call(
+	callErr := node.Call(
 		peer.PID(),
 		KeyAgreementMethod,
 		params,
@@ -717,6 +721,7 @@ func (node *OWTPNode) callKeyAgreement(peer Peer, consultType string) error {
 					log.Errorf("ResponseKeyAgreement unexpected error:", err)
 					//协商失败，断开连接
 					peer.close()
+					err = finalErr
 					return
 				}
 
@@ -727,8 +732,16 @@ func (node *OWTPNode) callKeyAgreement(peer Peer, consultType string) error {
 				node.peerstore.Put(peer.PID(), "secretKey", secretKey)
 				node.peerstore.Put(peer.PID(), "localChecksum", localChecksum)
 				//log.Debug("secretKey:", secretKey)
+
+				err = nil
+			} else {
+				err = fmt.Errorf("keyAgreement failed, unexpected error: %s", resp.Msg)
 			}
 		})
+	if callErr != nil {
+		return callErr
+	}
+
 	return err
 }
 
