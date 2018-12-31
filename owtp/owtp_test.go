@@ -31,7 +31,7 @@ var (
 )
 
 func init() {
-	Debug = false
+	Debug = true
 }
 
 func getInfo(ctx *Context) {
@@ -109,11 +109,12 @@ func createHost() *OWTPNode {
 	//主机
 	host := NewOWTPNode(cert, 0, 0)
 
-	config := ConnectConfig{}
-	config.Address = ":9432"
+	config := ConnectConfig{
+		Address:     "127.0.0.1:9432",
+		ConnectType: Websocket,
+	}
 
 	host.Listen(config)
-
 	host.HandleFunc("hello", host.hello)
 
 	return host
@@ -409,4 +410,123 @@ func TestConcurrentConnect(t *testing.T) {
 	time.Sleep(30 * time.Second)
 
 	host.Close()
+}
+
+// 测试订阅服务
+func TestSubscribeConnectNode(t *testing.T) {
+
+	var (
+		subscribeNid string
+		connectTypes = []string{HTTP, Websocket}
+	)
+
+	for _, connectType := range connectTypes {
+
+		log.Infof("%s connectType test", connectType)
+
+		//服务端
+		hostConnectConfig := ConnectConfig{
+			Address:     "127.0.0.1:9432",
+			ConnectType: connectType,
+		}
+		host := RandomOWTPNode()
+		log.Infof("host NodeID: %s", host.NodeID())
+		//开启监听，用于处理服务
+		host.Listen(hostConnectConfig)
+		//处理订阅业务
+		host.HandleFunc("subscribe", func(ctx *Context) {
+			subscribeNid = ctx.Params().Get("nodeID").String()
+			addr := ctx.Params().Get("address").String()
+			connectType := ctx.Params().Get("connectType").String()
+			log.Infof("host connecting client: %s", addr)
+			errConnect := host.Connect(subscribeNid, ConnectConfig{
+				Address:     addr,
+				ConnectType: connectType,
+			})
+			if errConnect != nil {
+				t.Errorf("host connect client failed unexpected error: %v", errConnect)
+				return
+			}
+
+			ctx.Response(nil, StatusSuccess, "subscribe success")
+
+		})
+
+		//客户端
+		clientConnectConfig := ConnectConfig{
+			Address:     "127.0.0.1:9433",
+			ConnectType: connectType,
+		}
+		client := RandomOWTPNode()
+		log.Infof("client NodeID: %s", client.NodeID())
+		//开启监听，用于处理回调服务
+		client.Listen(clientConnectConfig)
+		//订阅数据处理
+		client.HandleFunc("handlesSubscription", func(ctx *Context) {
+			username := ctx.Params().Get("username").String()
+			log.Info("username:", username)
+			ctx.Response(nil, StatusSuccess, "handlesSubscription success")
+		})
+
+		//连接主机
+		log.Info("client connecting host")
+		err := client.Connect(host.NodeID(), hostConnectConfig)
+		if err != nil {
+			t.Errorf("client connect failed unexpected error: %v", err)
+			return
+		}
+
+		log.Info("client calling host [subscribe]")
+		//调用订阅方法
+		err = client.Call(
+			host.NodeID(),
+			"subscribe",
+			map[string]interface{}{
+				"nodeID":      "clientsub",
+				"address":     "127.0.0.1:9433",
+				"connectType": connectType,
+			},
+			true, func(resp Response) {
+				log.Info("resp:", resp)
+			})
+		if err != nil {
+			t.Errorf("client call subscribe failed unexpected error: %v", err)
+			return
+		}
+
+		//主动回调订阅数据
+		err = host.Call(subscribeNid,
+			"handlesSubscription",
+			map[string]interface{}{
+				"username": "john",
+			},
+			true, func(resp Response) {
+				log.Info("resp:", resp)
+			})
+		if err != nil {
+			t.Errorf("host call handlesSubscription failed unexpected error: %v", err)
+			return
+		}
+
+		//主动回调订阅数据
+		err = host.Call(subscribeNid,
+			"handlesSubscription",
+			map[string]interface{}{
+				"username": "rocky",
+			},
+			true, func(resp Response) {
+				log.Info("resp:", resp)
+			})
+		if err != nil {
+			t.Errorf("host call handlesSubscription failed unexpected error: %v", err)
+			return
+		}
+
+		log.Info("stop running")
+
+		//关闭连接
+		host.Close()
+		client.Close()
+
+	}
 }
