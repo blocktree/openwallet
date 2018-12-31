@@ -23,8 +23,6 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/go-owcrypt"
 	"github.com/mr-tron/base58/base58"
-	"strconv"
-	"time"
 )
 
 //Authorization 授权
@@ -340,36 +338,36 @@ func (auth *OWTPAuth) DecryptData(data []byte, key []byte) ([]byte, error) {
 }
 
 //AuthHeader 返回授权头
-func (auth *OWTPAuth) WSAuthHeader() map[string]string {
-
-	if len(auth.localPublicKey) == 0 {
-		return nil
-	}
-
-	a := base58.Encode(auth.localPublicKey)
-	n := strconv.FormatInt(time.Now().Unix()+1, 10)
-	t := strconv.FormatInt(time.Now().Unix(), 10)
-
-	//组合[a+p+n+t+c]并sha256两次，使用钱包工具配置的本地私钥签名，最后base58编码
-	msg := owcrypt.Hash([]byte(fmt.Sprintf("%s%s%s", a, n, t)), 0, owcrypt.HASh_ALG_DOUBLE_SHA256)
-
-	//计算公钥的ID值
-	nodeID := owcrypt.Hash(auth.localPublicKey, 0, owcrypt.HASH_ALG_SHA256)
-
-	//SM2签名
-	signature, ret := owcrypt.Signature(auth.localPrivateKey, nodeID, 32, msg, 32, owcrypt.ECC_CURVE_SM2_STANDARD)
-	if ret != owcrypt.SUCCESS {
-		return nil
-	}
-
-	s := base58.Encode(signature)
-	return map[string]string{
-		"a": a,
-		"n": n,
-		"t": t,
-		"s": s,
-	}
-}
+//func (auth *OWTPAuth) WSAuthHeader() map[string]string {
+//
+//	if len(auth.localPublicKey) == 0 {
+//		return nil
+//	}
+//
+//	a := base58.Encode(auth.localPublicKey)
+//	n := strconv.FormatInt(time.Now().Unix()+1, 10)
+//	t := strconv.FormatInt(time.Now().Unix(), 10)
+//
+//	//组合[a+p+n+t+c]并sha256两次，使用钱包工具配置的本地私钥签名，最后base58编码
+//	msg := owcrypt.Hash([]byte(fmt.Sprintf("%s%s%s", a, n, t)), 0, owcrypt.HASh_ALG_DOUBLE_SHA256)
+//
+//	//计算公钥的ID值
+//	nodeID := owcrypt.Hash(auth.localPublicKey, 0, owcrypt.HASH_ALG_SHA256)
+//
+//	//SM2签名
+//	signature, ret := owcrypt.Signature(auth.localPrivateKey, nodeID, 32, msg, 32, owcrypt.ECC_CURVE_SM2_STANDARD)
+//	if ret != owcrypt.SUCCESS {
+//		return nil
+//	}
+//
+//	s := base58.Encode(signature)
+//	return map[string]string{
+//		"a": a,
+//		"n": n,
+//		"t": t,
+//		"s": s,
+//	}
+//}
 
 //AuthHeader 返回授权头
 func (auth *OWTPAuth) HTTPAuthHeader() map[string]string {

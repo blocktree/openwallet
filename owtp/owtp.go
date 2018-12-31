@@ -354,7 +354,7 @@ func (node *OWTPNode) connect(pid string, config ConnectConfig) (Peer, error) {
 		url := protocol + strings.TrimSuffix(addr, "/") + "/" + pid
 
 		//建立链接，记录默认的客户端
-		client, err := Dial(pid, url, node, auth.WSAuthHeader(), readBufferSize, writeBufferSize)
+		client, err := Dial(pid, url, node, auth.HTTPAuthHeader(), readBufferSize, writeBufferSize)
 		if err != nil {
 			return nil, err
 		}

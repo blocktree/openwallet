@@ -127,10 +127,11 @@ func NewWSClientWithHeader(header http.Header, cert Certificate, conn *websocket
 
 	a := header.Get("a")
 
-	//HTTP的节点ID都采用随机生成，因为是短连接
-	_, tmpPublicKey = owcrypt.KeyAgreement_initiator_step1(owcrypt.ECC_CURVE_SM2_STANDARD)
-
 	if len(a) == 0 {
+
+		//HTTP的节点ID都采用随机生成，因为是短连接
+		_, tmpPublicKey = owcrypt.KeyAgreement_initiator_step1(owcrypt.ECC_CURVE_SM2_STANDARD)
+
 		//没有授权公钥，不授权的HTTP访问，不建立协商密码，不进行签名授权
 		remotePublicKey = tmpPublicKey
 	} else {
