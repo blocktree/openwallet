@@ -1060,3 +1060,405 @@ func (this *EthTransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 
 	return nil
 }
+
+
+//CreateSummaryRawTransaction 创建汇总交易，返回原始交易单数组
+//func (this *EthTransactionDecoder) CreateSummaryRawTransaction(wrapper openwallet.WalletDAI, sumRawTx *openwallet.SummaryRawTransaction) ([]*openwallet.RawTransaction, error) {
+//	if sumRawTx.Coin.IsContract {
+//		return this.CreateErc20TokenSummaryRawTransaction(wrapper, sumRawTx)
+//	} else {
+//		return this.CreateSimpleSummaryRawTransaction(wrapper, sumRawTx)
+//	}
+//}
+//
+////CreateSimpleSummaryRawTransaction 创建ETH汇总交易
+//func (this *EthTransactionDecoder) CreateSimpleSummaryRawTransaction(wrapper openwallet.WalletDAI, sumRawTx *openwallet.SummaryRawTransaction) ([]*openwallet.RawTransaction, error) {
+//
+//	var (
+//		accountTotalSent = decimal.Zero
+//		txFrom           = make([]string, 0)
+//		txTo             = make([]string, 0)
+//		accountID          = sumRawTx.Account.AccountID
+//		minTransfer, _     = decimal.NewFromString(sumRawTx.MinTransfer)
+//		retainedBalance, _ = decimal.NewFromString(sumRawTx.RetainedBalance)
+//		sumAddresses       = make([]string, 0)
+//	)
+//
+//	//获取wallet
+//	addresses, err := wrapper.GetAddressList(sumRawTx.AddressStartIndex, sumRawTx.AddressLimit, "AccountID", sumRawTx.Account.AccountID) //wrapper.GetWallet().GetAddressesByAccount(rawTx.Account.AccountID)
+//	if err != nil {
+//		return nil, err
+//	}
+//	if len(addresses) == 0 {
+//		return nil, fmt.Errorf("[%s] have not addresses", accountID)
+//	}
+//
+//	addrsBalanceList := make([]AddrBalance, 0, len(addresses))
+//	for i, addr := range addresses {
+//		balanceList, err := this.wm.Blockscanner.GetBalanceByAddress(addr.Address)
+//		if len(balanceList) == 0 {
+//			continue
+//		}
+//
+//		balance, err := ConvertEthStringToWei(balanceList[0].Balance) //ConvertToBigInt(addr.Balance, 16)
+//		if err != nil {
+//			log.Std.Error("convert address [%v] balance [%v] to big.int failed, err = %v ", addr.Address, addr.Balance, err)
+//			return nil, err
+//		}
+//
+//		addrsBalanceList = append(addrsBalanceList, AddrBalance{
+//			Address: addr.Address,
+//			Balance: balance,
+//			Index:   i,
+//		})
+//	}
+//
+//	sort.Slice(addrsBalanceList, func(i int, j int) bool {
+//		if addrsBalanceList[i].Balance.Cmp(addrsBalanceList[j].Balance) < 0 {
+//			return true
+//		}
+//		return false
+//	})
+//
+//	signatureMap := make(map[string][]*openwallet.KeySignature)
+//	keySignList := make([]*openwallet.KeySignature, 0, 1)
+//	var amountStr, to string
+//	for k, v := range rawTx.To {
+//		to = k
+//		amountStr = v
+//		break
+//	}
+//
+//	//计算账户的实际转账amount
+//	accountTotalSentAddresses, findErr := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID, "Address", to)
+//	if findErr != nil || len(accountTotalSentAddresses) == 0 {
+//		amountDec, _ := decimal.NewFromString(amountStr)
+//		accountTotalSent = accountTotalSent.Add(amountDec)
+//	}
+//
+//	txTo = []string{fmt.Sprintf("%s:%s", to, amountStr)}
+//
+//	amount, err := ConvertEthStringToWei(amountStr) //ConvertToBigInt(amountStr, 16)
+//	if err != nil {
+//		log.Std.Error("convert tx amount to big.int failed, err=%v", err)
+//		return err
+//	}
+//
+//	var fee *txFeeInfo
+//	totalFee := big.NewInt(0)
+//	//	var data string
+//	for i, _ := range addrsBalanceList {
+//		totalAmount := new(big.Int)
+//		if addrsBalanceList[i].Balance.Cmp(amount) > 0 {
+//			fee, err = this.wm.GetTransactionFeeEstimated(addrsBalanceList[i].Address, to, amount, "")
+//			if err != nil {
+//				log.Std.Error("GetTransactionFeeEstimated from[%v] -> to[%v] failed, err=%v", addrsBalanceList[i].Address, to, err)
+//				return err
+//			}
+//
+//			if rawTx.FeeRate != "" {
+//				fee.GasPrice, err = ConvertEthStringToWei(rawTx.FeeRate) //ConvertToBigInt(rawTx.FeeRate, 16)
+//				if err != nil {
+//					log.Std.Error("fee rate passed through error, err=%v", err)
+//					return err
+//				}
+//				fee.CalcFee()
+//			}
+//
+//			totalAmount.Add(amount, fee.Fee)
+//			if addrsBalanceList[i].Balance.Cmp(totalAmount) > 0 {
+//				//fromAddr = addrsBalanceList[i].address
+//				fromAddr := &openwallet.Address{
+//					AccountID:   addresses[addrsBalanceList[i].Index].AccountID,
+//					Address:     addresses[addrsBalanceList[i].Index].Address,
+//					PublicKey:   addresses[addrsBalanceList[i].Index].PublicKey,
+//					Alias:       addresses[addrsBalanceList[i].Index].Alias,
+//					Tag:         addresses[addrsBalanceList[i].Index].Tag,
+//					Index:       addresses[addrsBalanceList[i].Index].Index,
+//					HDPath:      addresses[addrsBalanceList[i].Index].HDPath,
+//					WatchOnly:   addresses[addrsBalanceList[i].Index].WatchOnly,
+//					Symbol:      addresses[addrsBalanceList[i].Index].Symbol,
+//					Balance:     addresses[addrsBalanceList[i].Index].Balance,
+//					IsMemo:      addresses[addrsBalanceList[i].Index].IsMemo,
+//					Memo:        addresses[addrsBalanceList[i].Index].Memo,
+//					CreatedTime: addresses[addrsBalanceList[i].Index].CreatedTime,
+//				}
+//
+//				keySignList = append(keySignList, &openwallet.KeySignature{
+//					Address: fromAddr,
+//				})
+//				totalFee.Add(totalFee, fee.Fee)
+//
+//				txFrom = []string{fmt.Sprintf("%s:%s", fromAddr.Address, amountStr)}
+//
+//				break
+//			}
+//		}
+//	}
+//
+//	totalFeeDecimal, err := ConverWeiStringToEthDecimal(totalFee.String())
+//	if err != nil {
+//		log.Errorf("convert total fee from wei string to eth decimal failed, err=%v", err)
+//		return err
+//	}
+//	rawTx.Fees = totalFeeDecimal.String()
+//
+//	if len(keySignList) != 1 {
+//		return errors.New("no enough balance address found in wallet. ")
+//	}
+//
+//	_, nonce, err := this.GetTransactionCount2(keySignList[0].Address.Address)
+//	if err != nil {
+//		log.Std.Error("GetTransactionCount2 failed, err=%v", err)
+//		return err
+//	}
+//	log.Debug("chainID:", this.wm.GetConfig().ChainID)
+//	signer := types.NewEIP155Signer(big.NewInt(int64(this.wm.GetConfig().ChainID)))
+//	tx := types.NewTransaction(nonce, ethcommon.HexToAddress(to),
+//		amount, fee.GasLimit.Uint64(), fee.GasPrice, []byte(""))
+//
+//	rawHex, err := rlp.EncodeToBytes(tx)
+//	if err != nil {
+//		log.Error("Transaction RLP encode failed, err:", err)
+//		return err
+//	}
+//
+//	rawTx.RawHex = hex.EncodeToString(rawHex)
+//
+//	txstr, _ := json.MarshalIndent(tx, "", " ")
+//	log.Debug("**txStr:", string(txstr))
+//	msg := signer.Hash(tx)
+//
+//	gasLimitStr, err := ConverWeiStringToEthDecimal(fee.GasLimit.String())
+//	if err != nil {
+//		log.Error("ConverWeiStringToEthDecimal failed, err=", err)
+//		return err
+//	}
+//
+//	extpara := EthTxExtPara{
+//		GasLimit: gasLimitStr.String(), //"0x" + fee.GasLimit.Text(16),
+//	}
+//	extparastr, _ := json.Marshal(extpara)
+//	rawTx.ExtParam = string(extparastr)
+//	keySignList[0].Nonce = "0x" + strconv.FormatUint(nonce, 16)
+//	keySignList[0].Message = hex.EncodeToString(msg[:])
+//	signatureMap[rawTx.Account.AccountID] = keySignList
+//	rawTx.Signatures = signatureMap
+//	gasprice, err := ConverWeiStringToEthDecimal(fee.GasPrice.String())
+//	if err != nil {
+//		log.Error("convert wei string to gas price failed, err=", err)
+//		return err
+//	}
+//
+//	accountTotalSent = accountTotalSent.Add(totalFeeDecimal)
+//
+//	rawTx.FeeRate = gasprice.String()
+//	rawTx.IsBuilt = true
+//	rawTx.TxAmount = "-" + accountTotalSent.StringFixed(this.wm.Decimal())
+//	rawTx.TxFrom = txFrom
+//	rawTx.TxTo = txTo
+//
+//	return nil
+//
+//	return nil, nil
+//}
+//
+////CreateErc20TokenSummaryRawTransaction 创建ERC20Token汇总交易
+//func (this *EthTransactionDecoder) CreateErc20TokenSummaryRawTransaction(wrapper openwallet.WalletDAI, sumRawTx *openwallet.SummaryRawTransaction) ([]*openwallet.RawTransaction, error) {
+//	return nil, nil
+//}
+//
+//
+//
+//func (this *EthTransactionDecoder) createSimpleRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction, balance AddrBalance, to string) error {
+//
+//	var (
+//		accountTotalSent = decimal.Zero
+//		txFrom           = make([]string, 0)
+//		txTo             = make([]string, 0)
+//	)
+//
+//	//check交易交易单基本字段
+//	err := VerifyRawTransaction(rawTx)
+//	if err != nil {
+//		log.Std.Error("Verify raw tx failed, err=%v", err)
+//		return err
+//	}
+//	//获取wallet
+//	addresses, err := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID) //wrapper.GetWallet().GetAddressesByAccount(rawTx.Account.AccountID)
+//	if err != nil {
+//		log.Error("get address list failed, err=", err)
+//		return err
+//	}
+//	if len(addresses) == 0 {
+//		log.Std.Error("no addresses found in wallet[%v]", rawTx.Account.AccountID)
+//		return errors.New("no addresses found in wallet.")
+//	}
+//
+//	addrsBalanceList := make([]AddrBalance, 0, len(addresses))
+//	for i, addr := range addresses {
+//		balanceList, err := this.wm.Blockscanner.GetBalanceByAddress(addr.Address)
+//		if len(balanceList) == 0 {
+//			continue
+//		}
+//
+//		balance, err := ConvertEthStringToWei(balanceList[0].Balance) //ConvertToBigInt(addr.Balance, 16)
+//		if err != nil {
+//			log.Std.Error("convert address [%v] balance [%v] to big.int failed, err = %v ", addr.Address, addr.Balance, err)
+//			return err
+//		}
+//
+//		addrsBalanceList = append(addrsBalanceList, AddrBalance{
+//			Address: addr.Address,
+//			Balance: balance,
+//			Index:   i,
+//		})
+//	}
+//
+//	sort.Slice(addrsBalanceList, func(i int, j int) bool {
+//		if addrsBalanceList[i].Balance.Cmp(addrsBalanceList[j].Balance) < 0 {
+//			return true
+//		}
+//		return false
+//	})
+//
+//	signatureMap := make(map[string][]*openwallet.KeySignature)
+//	keySignList := make([]*openwallet.KeySignature, 0, 1)
+//	var amountStr, to string
+//	for k, v := range rawTx.To {
+//		to = k
+//		amountStr = v
+//		break
+//	}
+//
+//	//计算账户的实际转账amount
+//	accountTotalSentAddresses, findErr := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID, "Address", to)
+//	if findErr != nil || len(accountTotalSentAddresses) == 0 {
+//		amountDec, _ := decimal.NewFromString(amountStr)
+//		accountTotalSent = accountTotalSent.Add(amountDec)
+//	}
+//
+//	txTo = []string{fmt.Sprintf("%s:%s", to, amountStr)}
+//
+//	amount, err := ConvertEthStringToWei(amountStr) //ConvertToBigInt(amountStr, 16)
+//	if err != nil {
+//		log.Std.Error("convert tx amount to big.int failed, err=%v", err)
+//		return err
+//	}
+//
+//	var fee *txFeeInfo
+//	totalFee := big.NewInt(0)
+//	//	var data string
+//	for i, _ := range addrsBalanceList {
+//		totalAmount := new(big.Int)
+//		if addrsBalanceList[i].Balance.Cmp(amount) > 0 {
+//			fee, err = this.wm.GetTransactionFeeEstimated(addrsBalanceList[i].Address, to, amount, "")
+//			if err != nil {
+//				log.Std.Error("GetTransactionFeeEstimated from[%v] -> to[%v] failed, err=%v", addrsBalanceList[i].Address, to, err)
+//				return err
+//			}
+//
+//			if rawTx.FeeRate != "" {
+//				fee.GasPrice, err = ConvertEthStringToWei(rawTx.FeeRate) //ConvertToBigInt(rawTx.FeeRate, 16)
+//				if err != nil {
+//					log.Std.Error("fee rate passed through error, err=%v", err)
+//					return err
+//				}
+//				fee.CalcFee()
+//			}
+//
+//			totalAmount.Add(amount, fee.Fee)
+//			if addrsBalanceList[i].Balance.Cmp(totalAmount) > 0 {
+//				//fromAddr = addrsBalanceList[i].address
+//				fromAddr := &openwallet.Address{
+//					AccountID:   addresses[addrsBalanceList[i].Index].AccountID,
+//					Address:     addresses[addrsBalanceList[i].Index].Address,
+//					PublicKey:   addresses[addrsBalanceList[i].Index].PublicKey,
+//					Alias:       addresses[addrsBalanceList[i].Index].Alias,
+//					Tag:         addresses[addrsBalanceList[i].Index].Tag,
+//					Index:       addresses[addrsBalanceList[i].Index].Index,
+//					HDPath:      addresses[addrsBalanceList[i].Index].HDPath,
+//					WatchOnly:   addresses[addrsBalanceList[i].Index].WatchOnly,
+//					Symbol:      addresses[addrsBalanceList[i].Index].Symbol,
+//					Balance:     addresses[addrsBalanceList[i].Index].Balance,
+//					IsMemo:      addresses[addrsBalanceList[i].Index].IsMemo,
+//					Memo:        addresses[addrsBalanceList[i].Index].Memo,
+//					CreatedTime: addresses[addrsBalanceList[i].Index].CreatedTime,
+//				}
+//
+//				keySignList = append(keySignList, &openwallet.KeySignature{
+//					Address: fromAddr,
+//				})
+//				totalFee.Add(totalFee, fee.Fee)
+//
+//				txFrom = []string{fmt.Sprintf("%s:%s", fromAddr.Address, amountStr)}
+//
+//				break
+//			}
+//		}
+//	}
+//
+//	totalFeeDecimal, err := ConverWeiStringToEthDecimal(totalFee.String())
+//	if err != nil {
+//		log.Errorf("convert total fee from wei string to eth decimal failed, err=%v", err)
+//		return err
+//	}
+//	rawTx.Fees = totalFeeDecimal.String()
+//
+//	if len(keySignList) != 1 {
+//		return errors.New("no enough balance address found in wallet. ")
+//	}
+//
+//	_, nonce, err := this.GetTransactionCount2(keySignList[0].Address.Address)
+//	if err != nil {
+//		log.Std.Error("GetTransactionCount2 failed, err=%v", err)
+//		return err
+//	}
+//	log.Debug("chainID:", this.wm.GetConfig().ChainID)
+//	signer := types.NewEIP155Signer(big.NewInt(int64(this.wm.GetConfig().ChainID)))
+//	tx := types.NewTransaction(nonce, ethcommon.HexToAddress(to),
+//		amount, fee.GasLimit.Uint64(), fee.GasPrice, []byte(""))
+//
+//	rawHex, err := rlp.EncodeToBytes(tx)
+//	if err != nil {
+//		log.Error("Transaction RLP encode failed, err:", err)
+//		return err
+//	}
+//
+//	rawTx.RawHex = hex.EncodeToString(rawHex)
+//
+//	txstr, _ := json.MarshalIndent(tx, "", " ")
+//	log.Debug("**txStr:", string(txstr))
+//	msg := signer.Hash(tx)
+//
+//	gasLimitStr, err := ConverWeiStringToEthDecimal(fee.GasLimit.String())
+//	if err != nil {
+//		log.Error("ConverWeiStringToEthDecimal failed, err=", err)
+//		return err
+//	}
+//
+//	extpara := EthTxExtPara{
+//		GasLimit: gasLimitStr.String(), //"0x" + fee.GasLimit.Text(16),
+//	}
+//	extparastr, _ := json.Marshal(extpara)
+//	rawTx.ExtParam = string(extparastr)
+//	keySignList[0].Nonce = "0x" + strconv.FormatUint(nonce, 16)
+//	keySignList[0].Message = hex.EncodeToString(msg[:])
+//	signatureMap[rawTx.Account.AccountID] = keySignList
+//	rawTx.Signatures = signatureMap
+//	gasprice, err := ConverWeiStringToEthDecimal(fee.GasPrice.String())
+//	if err != nil {
+//		log.Error("convert wei string to gas price failed, err=", err)
+//		return err
+//	}
+//
+//	accountTotalSent = accountTotalSent.Add(totalFeeDecimal)
+//
+//	rawTx.FeeRate = gasprice.String()
+//	rawTx.IsBuilt = true
+//	rawTx.TxAmount = "-" + accountTotalSent.StringFixed(this.wm.Decimal())
+//	rawTx.TxFrom = txFrom
+//	rawTx.TxTo = txTo
+//
+//	return nil
+//}
