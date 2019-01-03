@@ -31,7 +31,7 @@ var (
 )
 
 func init() {
-	Debug = true
+	Debug = false
 }
 
 func getInfo(ctx *Context) {
@@ -525,7 +525,7 @@ func TestSubscribeConnectNode(t *testing.T) {
 		log.Info("stop running")
 
 		//关闭连接
-		host.Close()
+		host.CloseListener(connectType)
 		client.Close()
 
 	}
