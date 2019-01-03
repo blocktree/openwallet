@@ -19,9 +19,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/imroc/req"
+	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
 )
 
@@ -77,4 +80,43 @@ func (c *Client) Call(path string, param interface{}) (*gjson.Result, error) {
 
 	res := gjson.ParseBytes(r.Bytes())
 	return &res, nil
+}
+
+//getBalanceByExplorer 获取地址余额
+func (wm *WalletManager) getBalanceByExplorer(address string) (*openwallet.Balance, error) {
+	account, err := wm.GetAccount(address)
+
+	//params := req.Param{"address": address}
+	//result, err := wm.WalletClient.Call("/wallet/getaccount", params)
+	// result, err := wm.WalletClient.Call(path, "Account")
+	if err != nil {
+		return nil, err
+	}
+	balance, err := strconv.ParseInt(account.Balance, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	floatBalance := (float64(balance) / 1000000)
+	stringBalance := strconv.FormatFloat(floatBalance, 'f', -1, 64)
+	obj := openwallet.Balance{}
+	obj.Address = address
+	obj.ConfirmBalance = stringBalance
+	obj.UnconfirmBalance = "0.0"
+	u, _ := decimal.NewFromString(obj.ConfirmBalance)
+	b, _ := decimal.NewFromString(obj.UnconfirmBalance)
+	obj.Balance = u.Add(b).StringFixed(6)
+	return &obj, nil
+}
+
+func newBalanceByExplorer(json *gjson.Result) *openwallet.Balance {
+
+	obj := openwallet.Balance{}
+	//解析json
+	obj.Address = gjson.Get(json.Raw, "addrStr").String()
+	obj.ConfirmBalance = gjson.Get(json.Raw, "balance").String()
+	obj.UnconfirmBalance = gjson.Get(json.Raw, "unconfirmedBalance").String()
+	u, _ := decimal.NewFromString(obj.ConfirmBalance)
+	b, _ := decimal.NewFromString(obj.UnconfirmBalance)
+	obj.Balance = u.Add(b).StringFixed(6)
+	return &obj
 }

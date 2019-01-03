@@ -646,6 +646,78 @@ func (bs *TronBlockScanner) extractRuntime(producer chan ExtractResult, worker c
 	 return db.Save(record)
  }
 */
+
+func (bs *TronBlockScanner) GetGlobalMaxBlockHeight() uint64 {
+
+	currentBlock, err := bs.wm.GetNowBlock()
+	if err != nil {
+		fmt.Println("get current block failed!")
+		return 0
+	}
+	blockHeight := currentBlock.Height
+	return blockHeight
+}
+
+//GetCurrentBlockHeader 获取当前区块高度
+func (bs *TronBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, error) {
+
+	var (
+		blockHeight uint64 = 0
+		hash        string
+	)
+
+	blockHeight, hash = bs.GetLocalNewBlock()
+
+	//如果本地没有记录，查询接口的高度
+	if blockHeight == 0 {
+		currentBlock, err := bs.wm.GetNowBlock()
+		if err != nil {
+
+			return nil, err
+		}
+		blockHeight = currentBlock.Height
+		//就上一个区块链为当前区块
+		blockHeight = blockHeight - 1
+
+		block, err := bs.wm.GetBlockByNum(blockHeight)
+		if err != nil {
+			return nil, err
+		}
+		hash = block.Hash
+	}
+
+	return &openwallet.BlockHeader{Height: blockHeight, Hash: hash}, nil
+}
+
+//GetScannedBlockHeight 获取已扫区块高度
+func (bs *TronBlockScanner) GetScannedBlockHeight() uint64 {
+	localHeight, _ := bs.GetLocalNewBlock()
+	return localHeight
+}
+
+//GetAssetsAccountBalanceByAddress 查询账户相关地址的交易记录
+func (bs *TronBlockScanner) GetBalanceByAddress(address ...string) ([]*openwallet.Balance, error) {
+
+	/*
+		if bs.wm.Config.RPCServerType != RPCServerExplorer {
+			return nil, nil
+		}
+	*/
+
+	addrsBalance := make([]*openwallet.Balance, 0)
+
+	for _, a := range address {
+		balance, err := bs.wm.getBalanceByExplorer(a)
+		if err != nil {
+			return nil, err
+		}
+
+		addrsBalance = append(addrsBalance, balance)
+	}
+
+	return addrsBalance, nil
+}
+
 //GetSourceKeyByAddress 获取地址对应的数据源标识
 func (bs *TronBlockScanner) GetSourceKeyByAddress(address string) (string, bool) {
 	bs.Mu.RLock()
