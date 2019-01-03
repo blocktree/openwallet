@@ -131,7 +131,7 @@ func TestWSHostRun(t *testing.T) {
 	wsHost.SetOpenHandler(func(n *OWTPNode, peer PeerInfo) {
 		log.Infof("peer[%s] connected", peer.ID)
 		log.Infof("peer[%+v] config", peer.Config)
-		n.ClosePeer(peer.ID)
+		//n.ClosePeer(peer.ID)
 	})
 
 	//断开连接
@@ -171,7 +171,7 @@ func TestWSClientCall(t *testing.T) {
 		"name": "chance",
 		"age":  18,
 	}
-
+	//err = wsClient.Connect(wsHostNodeID, config)
 	err = wsClient.Call(wsHostNodeID, "getInfo", params, true, func(resp Response) {
 
 		result := resp.JsonData()
