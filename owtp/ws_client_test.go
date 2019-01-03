@@ -134,6 +134,11 @@ func TestWSHostRun(t *testing.T) {
 		n.ClosePeer(peer.ID)
 	})
 
+	//断开连接
+	wsHost.SetCloseHandler(func(n *OWTPNode, peer PeerInfo) {
+		
+	})
+
 	wsHost.Listen(config)
 
 	<-endRunning

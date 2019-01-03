@@ -304,6 +304,16 @@ func (node *OWTPNode) Listening(connectType string) bool {
 	return exist
 }
 
+//CloseListener 关闭监听
+func (node *OWTPNode) CloseListener(connectType string) {
+	if l, exist := node.listeners[connectType]; exist {
+		l.Close()
+		node.mu.Lock()
+		delete(node.listeners, connectType)
+		node.mu.Unlock()
+	}
+}
+
 //Connect 建立长连接
 func (node *OWTPNode) Connect(pid string, config ConnectConfig) error {
 
