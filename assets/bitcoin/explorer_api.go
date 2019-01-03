@@ -19,13 +19,14 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/imroc/req"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
-	"net/http"
-	"strings"
 )
 
 // Explorer是由bitpay的insight-API提供区块数据查询接口
@@ -94,7 +95,6 @@ func (b *Explorer) isError(resp *req.Resp) error {
 	if resp == nil || resp.Response() == nil {
 		return errors.New("Response is empty! ")
 	}
-
 
 	if resp.Response().StatusCode != http.StatusOK {
 		return fmt.Errorf("%s", resp.String())
@@ -194,7 +194,6 @@ func (wm *WalletManager) listUnspentByExplorer(address ...string) ([]*Unspent, e
 	return utxos, nil
 
 }
-
 
 func newBlockByExplorer(json *gjson.Result) *Block {
 
@@ -440,7 +439,6 @@ func (wm *WalletManager) getMultiAddrTransactionsByExplorer(offset, limit int, a
 	return trxs, nil
 }
 
-
 //estimateFeeRateByExplorer 通过浏览器获取费率
 func (wm *WalletManager) estimateFeeRateByExplorer() (decimal.Decimal, error) {
 
@@ -461,7 +459,6 @@ func (wm *WalletManager) estimateFeeRateByExplorer() (decimal.Decimal, error) {
 
 	return feeRate, nil
 }
-
 
 //getTxOutByExplorer 获取交易单输出信息，用于追溯交易单输入源头
 func (wm *WalletManager) getTxOutByExplorer(txid string, vout uint64) (*Vout, error) {

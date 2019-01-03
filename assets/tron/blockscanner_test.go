@@ -16,6 +16,7 @@
 package tron
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -73,7 +74,33 @@ func TestTronBlockScanner_scanning(t *testing.T) {
 	bs.ScanBlockTask()
 }
 
-func TestONTBlockScanner_RescanFailedRecord(t *testing.T) {
+func TestTron_GetBalanceByAddress(t *testing.T) {
 	bs := NewTronBlockScanner(tw)
-	bs.RescanFailedRecord()
+	addr1 := "TLVtj8soinYhgwTnjVF7EpgbZRZ8Np5JNY"
+	addr2 := "TRUd6CnUusLRFSnXbQXFkxohxymtgfHJZw"
+	ret, err := bs.GetBalanceByAddress(addr1, addr2)
+	if err != nil {
+		fmt.Println("get balance error!!!")
+	} else {
+		fmt.Println("ret:", ret[0])
+		fmt.Println("ret:", ret[1])
+	}
+}
+
+func TestTron_GetScannedBlockHeight(t *testing.T) {
+	bs := NewTronBlockScanner(tw)
+	height := bs.GetScannedBlockHeight()
+	fmt.Println("height:", height)
+}
+
+func TestTron_GetCurrentBlockHeader(t *testing.T) {
+	bs := NewTronBlockScanner(tw)
+	header, _ := bs.GetCurrentBlockHeader()
+	fmt.Println("header:", header)
+}
+
+func TestTron_GetGlobalMaxBlockHeight(t *testing.T) {
+	bs := NewTronBlockScanner(tw)
+	maxBlockheight := bs.GetGlobalMaxBlockHeight()
+	fmt.Println("maxBlockHeight:", maxBlockheight)
 }

@@ -99,6 +99,8 @@ type WalletConfig struct {
 	CurveType uint32
 	//小数位长度
 	CoinDecimal decimal.Decimal
+	//后台数据源类型
+	RPCServerType int
 }
 
 //NewConfig Create config instance
