@@ -649,7 +649,7 @@ func (bs *TronBlockScanner) extractRuntime(producer chan ExtractResult, worker c
 
 func (bs *TronBlockScanner) GetGlobalMaxBlockHeight() uint64 {
 
-	currentBlock, err := bs.wm.GetNowBlock()
+	currentBlock, err := bs.wm.GetCurrentBlock()
 	if err != nil {
 		fmt.Println("get current block failed!")
 		return 0

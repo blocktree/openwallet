@@ -24,6 +24,18 @@ import (
 	"github.com/imroc/req"
 )
 
+func (wm *WalletManager) GetCurrentBlock() (block *Block, err error) {
+	r, err := wm.WalletClient.Call("/wallet/getnowblock", nil)
+	if err != nil {
+		return nil, err
+	}
+	block = NewBlock(r)
+	if block.GetBlockHashID() == "" || block.GetHeight() <= 0 {
+		return nil, errors.New("GetNowBlock failed: No found <block>")
+	}
+	return block, nil
+}
+
 // GetNowBlock Done!
 // Function：Query the latest block
 // 	demo: curl -X POST http://127.0.0.1:8090/wallet/getnowblock
