@@ -184,8 +184,9 @@ func (decoder *TransactionDecoder) CreateBTCRawTransaction(wrapper openwallet.Wa
 
 	//获取utxo，按小到大排序
 	sort.Sort(UnspentSort{unspents, func(a, b *Unspent) int {
-
-		if a.Amount > b.Amount {
+		a_amount, _ := decimal.NewFromString(a.Amount)
+		b_amount, _ := decimal.NewFromString(b.Amount)
+		if a_amount.GreaterThan(b_amount) {
 			return 1
 		} else {
 			return -1

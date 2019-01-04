@@ -1721,7 +1721,7 @@ func (this *WalletManager) GetNonceForAddress2(address string) (uint64, error) {
 		log.Error("ethGetTransactionCount failed, err=", err)
 		return 0, err
 	}
-
+	log.Debugf("txCount:%v", txCount)
 	if count == 0 || max < txCount {
 		return txCount, nil
 	}

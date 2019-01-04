@@ -73,35 +73,35 @@ func TestHTTPClientCall(t *testing.T) {
 	httpClient.SetPeerstore(globalSessions)
 	_, pub := httpClient.Certificate().KeyPair()
 	log.Info("pub:", pub)
-	//err := httpClient.Connect(httpHostNodeID, config)
-	//if err != nil {
-	//	t.Errorf("Connect unexcepted error: %v", err)
-	//	return
-	//}
-	//err = httpClient.KeyAgreement(httpHostNodeID, "aes")
-	//if err != nil {
-	//	t.Errorf("KeyAgreement unexcepted error: %v", err)
-	//	return
-	//}
+	err := httpClient.Connect(httpHostNodeID, config)
+	if err != nil {
+		t.Errorf("Connect unexcepted error: %v", err)
+		return
+	}
+	err = httpClient.KeyAgreement(httpHostNodeID, "aes")
+	if err != nil {
+		t.Errorf("KeyAgreement unexcepted error: %v", err)
+		return
+	}
 
 	params := map[string]interface{}{
 		"name": "chance",
 		"age":  18,
 	}
 	//err = httpClient.Connect(httpHostNodeID, config)
-	//err = httpClient.Call(httpHostNodeID, "getInfo", params, true, func(resp Response) {
-	//
-	//	result := resp.JsonData()
-	//	symbols := result.Get("symbols")
-	//	fmt.Printf("symbols: %v\n", symbols)
-	//})
-
-	err := httpClient.ConnectAndCall(httpHostNodeID, config, "getInfo", params, true, func(resp Response) {
+	err = httpClient.Call(httpHostNodeID, "getInfo", params, true, func(resp Response) {
 
 		result := resp.JsonData()
 		symbols := result.Get("symbols")
 		fmt.Printf("symbols: %v\n", symbols)
 	})
+
+	//err := httpClient.ConnectAndCall(httpHostNodeID, config, "getInfo", params, true, func(resp Response) {
+	//
+	//	result := resp.JsonData()
+	//	symbols := result.Get("symbols")
+	//	fmt.Printf("symbols: %v\n", symbols)
+	//})
 
 	if err != nil {
 		t.Errorf("unexcepted error: %v", err)
