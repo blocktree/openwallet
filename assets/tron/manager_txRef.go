@@ -318,6 +318,7 @@ func (wm *WalletManager) BroadcastTransaction(raw string) (string, error) {
 	}
 	// Call api to broadcast transaction
 	r, err := wm.WalletClient.Call("/wallet/broadcasttransaction", params)
+
 	if err != nil {
 		return "", fmt.Errorf("broadcast transaction error")
 	} else {
@@ -332,8 +333,7 @@ func (wm *WalletManager) BroadcastTransaction(raw string) (string, error) {
 			return "", err
 		}
 	}
-	txid := r.Get("txid").String()
-	return txid, nil
+	return txID, nil
 }
 
 //SendTransaction 发送交易
