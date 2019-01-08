@@ -17,15 +17,16 @@ package nebulasio
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
-	"path/filepath"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const (
@@ -42,7 +43,6 @@ const (
 	//RPCServerExplorer = 2 //RPC服务，insight-API
 )
 
-
 //NASBlockScanner nebulasio的区块链扫描器
 type NASBlockScanner struct {
 	*openwallet.BlockScannerBase
@@ -52,7 +52,7 @@ type NASBlockScanner struct {
 	wm                   *WalletManager //钱包管理者
 	IsScanMemPool        bool           //是否扫描交易池
 	RescanLastBlockCount uint64         //重扫上N个区块数量
-//	RPCServer            int
+	//	RPCServer            int
 }
 
 //ExtractResult 扫描完成的提取结果
@@ -173,7 +173,7 @@ func (bs *NASBlockScanner) ScanBlockTask() {
 			//删除上一区块链的未扫记录
 
 			//查询本地分叉的区块
-			forkBlock, _ := bs.wm.GetLocalBlock(currentHeight-1)
+			forkBlock, _ := bs.wm.GetLocalBlock(currentHeight - 1)
 
 			bs.wm.DeleteUnscanRecord(currentHeight - 1)
 			currentHeight = currentHeight - 2 //倒退2个区块重新扫描
@@ -237,7 +237,6 @@ func (bs *NASBlockScanner) ScanBlockTask() {
 			go bs.newBlockNotify(block, isFork)
 		}
 
-
 	}
 
 	//重扫前N个块，为保证记录找到
@@ -289,6 +288,7 @@ func (bs *NASBlockScanner) ScanBlock(height uint64) error {
 
 	return nil
 }
+
 /*
 //ScanTxMemPool 扫描交易内存池
 func (bs *BTCBlockScanner) ScanTxMemPool() {
@@ -501,17 +501,17 @@ func (bs *NASBlockScanner) extractRuntime(producer chan ExtractResult, worker ch
 }
 
 //判断地址是否为合约地址
-func CheckIsContract(Toaddr string) bool{
-	addr,_:=addressEncoder.Base58Decode(Toaddr, addressEncoder.NewBase58Alphabet("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"))
-	if addr[1] == Contract_prefix[1]{
+func CheckIsContract(Toaddr string) bool {
+	addr, _ := addressEncoder.Base58Decode(Toaddr, addressEncoder.NewBase58Alphabet("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"))
+	if addr[1] == Contract_prefix[1] {
 		return true
 	}
-//	fmt.Printf("addr=%x,addr(1)=%x,addr[1]=%v\n",addr,addr[0:2],addr[0:2])
+	//	fmt.Printf("addr=%x,addr(1)=%x,addr[1]=%v\n",addr,addr[0:2],addr[0:2])
 	return false
 }
 
 //extractTxOutput 提取交易单输入部分,只有一个TxOutPut
-func (bs *NASBlockScanner) extractTxOutput(tx *NasTransaction,txExtractData *openwallet.TxExtractData) {
+func (bs *NASBlockScanner) extractTxOutput(tx *NasTransaction, txExtractData *openwallet.TxExtractData) {
 
 	//主网to交易转账信息,只有一个TxOutPut
 	txOutput := &openwallet.TxOutPut{
@@ -531,12 +531,13 @@ func (bs *NASBlockScanner) extractTxOutput(tx *NasTransaction,txExtractData *ope
 	txOutput.Recharge.CreateAt = time.Now().Unix()
 	txExtractData.TxOutputs = append(txExtractData.TxOutputs, txOutput)
 }
+
 //extractTxInput 提取交易单输入部分,包含两个TxInput
-func (bs *NASBlockScanner) extractTxInput(tx *NasTransaction,txExtractData *openwallet.TxExtractData) {
+func (bs *NASBlockScanner) extractTxInput(tx *NasTransaction, txExtractData *openwallet.TxExtractData) {
 
 	//主网from交易转账信息，第一个TxInput
 	txInput := &openwallet.TxInput{
-		SourceTxID:  "",  //utxo模型上的上一个交易输入源
+		SourceTxID: "", //utxo模型上的上一个交易输入源
 	}
 	txInput.Recharge.Sid = openwallet.GenTxInputSID(tx.Hash, bs.wm.Symbol(), "", uint64(0))
 	txInput.Recharge.TxID = tx.Hash
@@ -554,7 +555,7 @@ func (bs *NASBlockScanner) extractTxInput(tx *NasTransaction,txExtractData *open
 
 	//主网from交易转账手续费信息，第二个TxInput
 	txInputfees := &openwallet.TxInput{
-		SourceTxID:  "",  //utxo模型上的上一个交易输入源
+		SourceTxID: "", //utxo模型上的上一个交易输入源
 	}
 	txInputfees.Recharge.Sid = openwallet.GenTxInputSID(tx.Hash, bs.wm.Symbol(), "", uint64(1))
 	txInputfees.Recharge.TxID = tx.Hash
@@ -571,11 +572,11 @@ func (bs *NASBlockScanner) extractTxInput(tx *NasTransaction,txExtractData *open
 	txExtractData.TxInputs = append(txExtractData.TxInputs, txInputfees)
 }
 
-func (bs *NASBlockScanner) InitNasExtractResult(tx *NasTransaction, result *ExtractResult,isFromAccount bool) {
+func (bs *NASBlockScanner) InitNasExtractResult(tx *NasTransaction, result *ExtractResult, isFromAccount bool) {
 	amount := tx.Value.Div(coinDecimal).StringFixed(bs.wm.Decimal())
 	txExtractData := &openwallet.TxExtractData{}
 	transx := &openwallet.Transaction{
-		Fees: decimal.RequireFromString(tx.Gas_used).Mul(decimal.RequireFromString(tx.Gas_price)).Div(coinDecimal).StringFixed(bs.wm.Decimal()) ,
+		Fees: decimal.RequireFromString(tx.Gas_used).Mul(decimal.RequireFromString(tx.Gas_price)).Div(coinDecimal).StringFixed(bs.wm.Decimal()),
 		Coin: openwallet.Coin{
 			Symbol:     bs.wm.Symbol(),
 			IsContract: false,
@@ -584,25 +585,26 @@ func (bs *NASBlockScanner) InitNasExtractResult(tx *NasTransaction, result *Extr
 		BlockHeight: tx.BlockHeight,
 		TxID:        tx.Hash,
 		Decimal:     18,
-		Amount:		 amount,
-		ConfirmTime:  int64(tx.BlockTime),
+		Amount:      amount,
+		ConfirmTime: int64(tx.BlockTime),
 	}
-	submitTime ,_ := strconv.ParseInt(tx.Timestamp,10,64)
+	submitTime, _ := strconv.ParseInt(tx.Timestamp, 10, 64)
 	transx.SubmitTime = submitTime
-	transx.From = append(transx.From, tx.From + ":" + amount)
-	transx.To = append(transx.To, tx.To + ":" + amount)
+	transx.From = append(transx.From, tx.From+":"+amount)
+	transx.To = append(transx.To, tx.To+":"+amount)
 	wxID := openwallet.GenTransactionWxID(transx)
 	transx.WxID = wxID
 	txExtractData.Transaction = transx
 
 	if isFromAccount {
-		bs.extractTxInput(tx,txExtractData)
+		bs.extractTxInput(tx, txExtractData)
 		result.extractData[tx.FromAccountId] = txExtractData
 	} else {
-		bs.extractTxOutput(tx,txExtractData)
+		bs.extractTxOutput(tx, txExtractData)
 		result.extractData[tx.ToAccountId] = txExtractData
 	}
 }
+
 /*func (bs *NASBlockScanner) InitNasExtractResult(tx *NasTransaction, result *ExtractResult,isFromAccount bool) {
 	txExtractData := &openwallet.TxExtractData{}
 	transx := &openwallet.Transaction{
@@ -684,43 +686,43 @@ func (bs *NASBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 	)
 	//bs.wm.Log.Std.Debug("block scanner scanning tx: %s ...", txid)
 
-	tx_nas, err := bs.wm.GetTransaction(txid,blockHeight)
+	tx_nas, err := bs.wm.GetTransaction(txid, blockHeight)
 	if err != nil {
 		bs.wm.Log.Std.Info("block scanner can not extract transaction data; unexpected error: %v", err)
 		//记录哪个区块哪个交易单没有完成扫描
 		success = false
 		//return nil, failedTx, nil
 	} else {
-			//bs.wm.Log.Std.Info("block scanner scanning tx: %+v", txid)
-			//订阅地址为交易单中的发送者
-			if _, ok := scanAddressFunc(tx_nas.From); ok {
-				bs.wm.Log.Std.Info("tx.from found in transaction [%v] .", tx_nas.Hash)
-				if accountId, exist := scanAddressFunc(tx_nas.From); exist {
-					tx_nas.FromAccountId = accountId
-					bs.InitNasExtractResult(tx_nas, &result, true)
-				} else {
-					bs.wm.Log.Std.Info("tx.from unexpected error.")
-				}
+		//bs.wm.Log.Std.Info("block scanner scanning tx: %+v", txid)
+		//订阅地址为交易单中的发送者
+		if _, ok := scanAddressFunc(tx_nas.From); ok {
+			bs.wm.Log.Std.Info("tx.from found in transaction [%v] .", tx_nas.Hash)
+			if accountId, exist := scanAddressFunc(tx_nas.From); exist {
+				tx_nas.FromAccountId = accountId
+				bs.InitNasExtractResult(tx_nas, &result, true)
 			} else {
-				//bs.wm.Log.Std.Info("tx.from[%v] not found in scanning address.", tx_nas.From)
+				bs.wm.Log.Std.Info("tx.from unexpected error.")
 			}
+		} else {
+			//bs.wm.Log.Std.Info("tx.from[%v] not found in scanning address.", tx_nas.From)
+		}
 
-			//订阅地址为交易单中的接收者
-			if _, ok2 := scanAddressFunc(tx_nas.To); ok2 {
-				bs.wm.Log.Std.Info("tx.to found in transaction [%v].", tx_nas.Hash)
-				if accountId, exist := scanAddressFunc(tx_nas.To); exist {
-					if _, exist = result.extractData[accountId]; !exist {
-						tx_nas.ToAccountId = accountId
-						bs.InitNasExtractResult(tx_nas, &result, false)
-					}
-
-				} else {
-					bs.wm.Log.Std.Info("tx.to unexpected error.")
+		//订阅地址为交易单中的接收者
+		if _, ok2 := scanAddressFunc(tx_nas.To); ok2 {
+			bs.wm.Log.Std.Info("tx.to found in transaction [%v].", tx_nas.Hash)
+			if accountId, exist := scanAddressFunc(tx_nas.To); exist {
+				if _, exist = result.extractData[accountId]; !exist {
+					tx_nas.ToAccountId = accountId
+					bs.InitNasExtractResult(tx_nas, &result, false)
 				}
 
-			} else if len(result.extractData) == 0 {
-				//bs.wm.Log.Std.Info("tx.to[%v] not found in scanning address.", tx_nas.To)
+			} else {
+				bs.wm.Log.Std.Info("tx.to unexpected error.")
 			}
+
+		} else if len(result.extractData) == 0 {
+			//bs.wm.Log.Std.Info("tx.to[%v] not found in scanning address.", tx_nas.To)
+		}
 		success = true
 	}
 
@@ -1111,7 +1113,6 @@ func (bs *NASBlockScanner) SaveUnscanRecord(record *UnscanRecord) error {
 //	}
 //}
 
-
 //GetLocalNewBlock 获取本地记录的区块高度和hash
 func (wm *WalletManager) GetLocalNewBlock() (uint64, string) {
 
@@ -1161,7 +1162,6 @@ func (wm *WalletManager) SaveLocalBlock(block *Block) {
 	db.Save(block)
 }
 
-
 //GetLocalBlock 获取本地区块数据
 func (wm *WalletManager) GetLocalBlock(height uint64) (*Block, error) {
 
@@ -1184,20 +1184,21 @@ func (wm *WalletManager) GetLocalBlock(height uint64) (*Block, error) {
 }
 
 //GetTransaction 获取交易单
-func (wm *WalletManager) GetTransaction(txid string,height uint64) (*NasTransaction, error) {
+func (wm *WalletManager) GetTransaction(txid string, height uint64) (*NasTransaction, error) {
 	Transaction_result, err := wm.WalletClient.CallGetTransactionReceipt(txid)
 	if err != nil {
 		return nil, err
 	}
 
-	height_string:=strconv.FormatUint(height,10)
-	block ,err := wm.GetBlockByHeight(height_string)
+	height_string := strconv.FormatUint(height, 10)
+	block, err := wm.GetBlockByHeight(height_string)
 	if err != nil {
 		return nil, err
 	}
 
-	return newNasTransaction(Transaction_result,block), nil
+	return newNasTransaction(Transaction_result, block), nil
 }
+
 /*
 //getTransactionByCore 获取交易单
 func (wm *WalletManager) getTransactionByCore(txid string) (*Transaction, error) {
@@ -1244,9 +1245,9 @@ func (wm *WalletManager) GetTxOut(txid string, vout uint64) (*gjson.Result, erro
 			"coinbase": false
 
 		}
-	*/
+*/
 
-	/*
+/*
 	return result, nil
 
 }
@@ -1307,28 +1308,29 @@ func (bs *NASBlockScanner) GetBalanceByAddress(address ...string) ([]*openwallet
 }
 
 //实现BlockScanNotificationObject interface下的方法
-type subscriber struct{
+type subscriber struct {
 }
+
 //BlockScanNotify 新区块扫描完成通知
-func (sub *subscriber) BlockScanNotify(header *openwallet.BlockHeader) error{
+func (sub *subscriber) BlockScanNotify(header *openwallet.BlockHeader) error {
 	//fmt.Printf("header:%+v\n", header)
 	return nil
 }
+
 //BlockExtractDataNotify 区块提取结果通知
-func (sub *subscriber)BlockExtractDataNotify(sourceKey string, data *openwallet.TxExtractData) error{
+func (sub *subscriber) BlockExtractDataNotify(sourceKey string, data *openwallet.TxExtractData) error {
 	fmt.Printf("account:%+v\n", sourceKey)
 
-	for _, TxInput := range data.TxInputs{
+	for _, TxInput := range data.TxInputs {
 		fmt.Printf("TxInput=%+v\n", TxInput)
 	}
-	for _, TxOutput := range data.TxOutputs{
+	for _, TxOutput := range data.TxOutputs {
 		fmt.Printf("TxOutput=%+v\n", TxOutput)
 	}
-//	fmt.Printf("data.TxOutputs=%+v\n", data.TxOutputs)
+	//	fmt.Printf("data.TxOutputs=%+v\n", data.TxOutputs)
 	fmt.Printf("data.Transaction=%+v\n", data.Transaction)
 	return nil
 }
-
 
 //GetBlockHeight 获取区块链高度
 func (wm *WalletManager) GetBlockHeight() (uint64, error) {
@@ -1338,21 +1340,21 @@ func (wm *WalletManager) GetBlockHeight() (uint64, error) {
 		return 0, err
 	}
 
-	height ,_  := strconv.ParseUint(result.String(),10,64)
+	height, _ := strconv.ParseUint(result.String(), 10, 64)
 	return height, nil
 }
 
 //GetBlockHashByHeight 根据区块高度获得区块hash
 func (wm *WalletManager) GetBlockHashByHeight(height uint64) (string, error) {
 
-	height_string:=strconv.FormatUint(height,10)
-	result, err := wm.WalletClient.CallgetBlockByHeightOrHash(height_string,byHeight)
-	if err != nil{
-		fmt.Printf("err=%v\n",err)
+	height_string := strconv.FormatUint(height, 10)
+	result, err := wm.WalletClient.CallgetBlockByHeightOrHash(height_string, byHeight)
+	if err != nil {
+		fmt.Printf("err=%v\n", err)
 		return "", err
 	}
 
-	hash := gjson.Get(result.String(),"hash")
+	hash := gjson.Get(result.String(), "hash")
 
 	return hash.String(), nil
 }
@@ -1360,7 +1362,7 @@ func (wm *WalletManager) GetBlockHashByHeight(height uint64) (string, error) {
 //GetBlockByHeight 根据区块高度获得区块信息
 func (wm *WalletManager) GetBlockByHeight(height string) (*Block, error) {
 
-	result, err := wm.WalletClient.CallgetBlockByHeightOrHash(height,byHeight)
+	result, err := wm.WalletClient.CallgetBlockByHeightOrHash(height, byHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -1372,7 +1374,7 @@ func (wm *WalletManager) GetBlockByHeight(height string) (*Block, error) {
 //GetBlockByHash 根据区块hash获得区块信息
 func (wm *WalletManager) GetBlockByHash(hash string) (*Block, error) {
 
-	result, err := wm.WalletClient.CallgetBlockByHeightOrHash(hash,byHash)
+	result, err := wm.WalletClient.CallgetBlockByHeightOrHash(hash, byHash)
 	if err != nil {
 		return nil, err
 	}
@@ -1380,4 +1382,3 @@ func (wm *WalletManager) GetBlockByHash(hash string) (*Block, error) {
 	//fmt.Printf("block_String=%v\n",result.String())
 	return NewBlock(result), nil
 }
-
