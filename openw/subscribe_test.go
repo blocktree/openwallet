@@ -424,6 +424,57 @@ func TestSubscribeAddress_BCH(t *testing.T) {
 
 func TestSubscribeAddress_TRON(t *testing.T) {
 
+	var (
+		endRunning = make(chan bool, 1)
+		symbol     = "TRX"
+		accountID  = "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
+		addrs      = map[string]string{
+			"TNQkiUv4qtDRKWDrKS628FTbDwxLMiqbAz":         accountID,
+		}
+	)
+
+	//GetSourceKeyByAddress 获取地址对应的数据源标识
+	scanAddressFunc := func(address string) (string, bool) {
+		key, ok := addrs[address]
+		if !ok {
+			return "", false
+		}
+		return key, true
+	}
+
+	assetsMgr, err := GetAssetsAdapter(symbol)
+	if err != nil {
+		log.Error(symbol, "is not support")
+		return
+	}
+
+	//读取配置
+	absFile := filepath.Join(configFilePath, symbol+".ini")
+
+	c, err := config.NewConfig("ini", absFile)
+	if err != nil {
+		return
+	}
+	assetsMgr.LoadAssetsConfig(c)
+
+	//log.Debug("already got scanner:", assetsMgr)
+	scanner := assetsMgr.GetBlockScanner()
+	scanner.SetRescanBlockHeight(	5618900)
+
+	if scanner == nil {
+		log.Error(symbol, "is not support block scan")
+		return
+	}
+
+	scanner.SetBlockScanAddressFunc(scanAddressFunc)
+
+	sub := subscriberSingle{}
+	scanner.AddObserver(&sub)
+
+	scanner.Run()
+
+	<-endRunning
+
 }
 
 func TestSubscribeAddress_ONT(t *testing.T) {

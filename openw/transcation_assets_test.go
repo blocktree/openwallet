@@ -391,7 +391,7 @@ func TestTransfer_TRON(t *testing.T) {
 	accountID := "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
 	to := "TNQkiUv4qtDRKWDrKS628FTbDwxLMiqbAz" // t2
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.1", "", nil)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.01", "", nil)
 	if err != nil {
 		return
 	}

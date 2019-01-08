@@ -28,6 +28,7 @@ import (
 
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/shopspring/decimal"
 	// "github.com/blocktree/OpenWallet/assets/qtum/btcLikeTxDriver"
 	// "github.com/blocktree/OpenWallet/log"
 	// "github.com/shopspring/decimal"
@@ -75,8 +76,9 @@ func NewTransactionDecoder(wm *WalletManager) *TransactionDecoder {
 func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	var (
-		txFrom = make([]string, 0)
-		txTo   = make([]string, 0)
+		accountTotalSent = decimal.Zero
+		txFrom           = make([]string, 0)
+		txTo             = make([]string, 0)
 	)
 	if rawTx.Coin.Symbol != Symbol {
 		return errors.New("CreateRawTransaction: Symbol is not <TRX>")
@@ -114,6 +116,12 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 		toAddress = k
 		amountStr = v
 		break
+	}
+	//计算账户的实际转账amount
+	accountTotalSentAddresses, findErr := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID, "Address", toAddress)
+	if findErr != nil || len(accountTotalSentAddresses) == 0 {
+		amountDec, _ := decimal.NewFromString(amountStr)
+		accountTotalSent = accountTotalSent.Add(amountDec)
 	}
 	txTo = []string{fmt.Sprintf("%s:%s", toAddress, amountStr)}
 	amountFloat, err := strconv.ParseFloat(amountStr, 64)
@@ -184,6 +192,9 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	keySignList[0].Message = txHash
 	signatureMap[rawTx.Account.AccountID] = keySignList
 	//rawTx.Signatures = make(map[string][]*openwallet.KeySignature, 0)
+
+	accountTotalSent = decimal.Zero.Sub(accountTotalSent)
+
 	rawTx.Fees = "0"
 	rawTx.FeeRate = "0"
 	rawTx.RawHex = rawHex
@@ -191,7 +202,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	rawTx.IsBuilt = true
 	rawTx.TxTo = txTo
 	rawTx.TxFrom = txFrom
-	rawTx.TxAmount = amountStr
+	rawTx.TxAmount = accountTotalSent.StringFixed(decoder.wm.Decimal())
 	return nil
 }
 
@@ -309,6 +320,7 @@ func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.Walle
 		Fees:       rawTx.Fees,
 		SubmitTime: time.Now().Unix(),
 	}
+
 	tx.WxID = openwallet.GenTransactionWxID(&tx)
 	return &tx, nil
 }
