@@ -127,8 +127,13 @@ type Transaction struct {
 	BlockHash   string
 	BlockHeight uint64
 	//Confirmations uint64
-	Blocktime  uint64
-	IsCoinBase bool
+	Blocktime     uint64
+	IsCoinBase    bool
+	FromAccountId string //transaction scanning 的时候对其进行赋值
+	ToAccountId   string //transaction scanning 的时候对其进行赋值
+	From          string
+	To            string
+	Amount        string
 	// Fees          string
 
 }
@@ -143,15 +148,12 @@ func NewTransaction(json *gjson.Result) *Transaction {
 		for k := range tmp {
 			value := tmp[k].String()
 			cr = append(cr, map[string]string{k: value})
-
 			if value != "SUCCESS" {
 				isSuccess = false
 			}
 		}
 	}
-
 	rawData := gjson.Get(json.Raw, "raw_data")
-
 	// 解析json
 	b := &Transaction{}
 	b.TxID = gjson.Get(json.Raw, "txID").String()
@@ -160,6 +162,9 @@ func NewTransaction(json *gjson.Result) *Transaction {
 	b.BlockHash = rawData.Get("ref_block_hash").String()
 	b.BlockHeight = rawData.Get("ref_block_bytes").Uint()
 	b.Blocktime = rawData.Get("timestamp").Uint()
+	b.From = rawData.Get("contract").Array()[0].Get("parameter").Get("value").Get("owner_address").String()
+	b.To = rawData.Get("contract").Array()[0].Get("parameter").Get("value").Get("to_address").String()
+	b.Amount = rawData.Get("contract").Array()[0].Get("parameter").Get("value").Get("amount").String()
 
 	return b
 }

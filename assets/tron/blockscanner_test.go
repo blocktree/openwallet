@@ -66,7 +66,7 @@ func TestTronBlockScanner_scanning(t *testing.T) {
 
 	//bs.DropRechargeRecords(accountID)
 
-	bs.SetRescanBlockHeight(5260277)
+	bs.SetRescanBlockHeight(5633831)
 	//tw.SaveLocalNewBlock(1355030, "00000000000000125b86abb80b1f94af13a5d9b07340076092eda92dade27686")
 
 	//bs.AddAddress(address, accountID)
@@ -103,4 +103,17 @@ func TestTron_GetGlobalMaxBlockHeight(t *testing.T) {
 	bs := NewTronBlockScanner(tw)
 	maxBlockheight := bs.GetGlobalMaxBlockHeight()
 	fmt.Println("maxBlockHeight:", maxBlockheight)
+}
+
+func TestTron_GetTransaction(t *testing.T) {
+	bs := NewTronBlockScanner(tw)
+	txID := "5b5c2a1fbe00acfce733def8b080811a5134f004e281e3e48fad2971fd52c3d6"
+	tx, err := bs.wm.GetTransaction(txID)
+	if err != nil {
+		fmt.Println("get transaction failed!!!")
+	} else {
+		fmt.Println("txFrom:=", tx.From)
+		fmt.Println("txTo:=", tx.To)
+		fmt.Println("Amount:=", tx.Amount)
+	}
 }

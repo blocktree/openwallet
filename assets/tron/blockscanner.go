@@ -21,6 +21,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/common"
@@ -29,6 +30,7 @@ import (
 	"github.com/graarh/golang-socketio"
 	"github.com/graarh/golang-socketio/transport"
 	"github.com/imroc/req"
+	"github.com/shopspring/decimal"
 )
 
 const (
@@ -116,7 +118,6 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 		currentHeight uint64
 		currentHash   string
 	)
-
 	//获取本地区块高度
 	currentHeight, currentHash = bs.GetLocalNewBlock()
 	//如果本地没有记录，查询接口的高度
@@ -138,7 +139,7 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 		currentHeight = block.GetHeight()
 	}
 	//log.Std.Info("Local block height: %v", currentHeight)
-	//i := 0
+	counter := 0
 	for {
 		log.Std.Info("\n ------------------------------------ Foreach Start")
 
@@ -230,7 +231,9 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 			err = bs.BatchExtractTransaction(block.Height, block.Hash, txHash)
 			if err != nil {
 				log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
+				fmt.Println("counter:=", counter)
 			}
+			counter++
 			//重置当前区块的hash
 			currentHash = hash
 			//保存本地新高度
@@ -330,11 +333,8 @@ func (bs *TronBlockScanner) RescanFailedRecord() {
 	for height, txs := range blockMap {
 
 		var hash string
-
 		log.Std.Info("block scanner rescanning height: %d ...", height)
-
 		if len(txs) == 0 {
-
 			block, err := bs.wm.GetBlockByNum(height)
 			if err != nil {
 				//下一个高度找不到会报异常
@@ -399,7 +399,8 @@ func (bs *TronBlockScanner) newBlockNotify(block *Block, isFork bool) {
 //提取交易单
 func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash string, txid string, scanAddressFunc openwallet.BlockScanAddressFunc) ExtractResult {
 	var (
-		result = ExtractResult{
+		success = true
+		result  = ExtractResult{
 			BlockHeight: blockHeight,
 			TxID:        txid,
 			extractData: make(map[string]*openwallet.TxExtractData),
@@ -408,21 +409,147 @@ func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash str
 	trx, err := bs.wm.GetTransaction(txid)
 	if err != nil {
 		log.Std.Info("block scanner can not extract transaction data,unexpected error:%v", err)
-		result.Success = false
+		success = false
 		return result
+	} else {
+		//bs.wm.Log.Std.Info("block scanner scanning tx: %+v", txid)
+		//订阅地址为交易单中的发送者
+		if _, ok1 := scanAddressFunc(trx.From); ok1 {
+			bs.wm.Log.Std.Info("tx.from found in transaction [%v] .", trx.TxID)
+			if accountId, exist := scanAddressFunc(trx.From); exist {
+				trx.FromAccountId = accountId
+				bs.InitNasExtractResult(trx, &result, true)
+			} else {
+				bs.wm.Log.Std.Info("tx.from unexpected error.")
+			}
+		} else {
+			//bs.wm.Log.Std.Info("tx.from[%v] not found in scanning address.", tx_nas.From)
+		}
+		//订阅地址为交易单中的接收者
+		if _, ok2 := scanAddressFunc(trx.To); ok2 {
+			bs.wm.Log.Std.Info("tx.to found in transaction [%v].", trx.TxID)
+			if accountId, exist := scanAddressFunc(trx.To); exist {
+				if _, exist = result.extractData[accountId]; !exist {
+					trx.ToAccountId = accountId
+					bs.InitNasExtractResult(trx, &result, false)
+				}
+
+			} else {
+				bs.wm.Log.Std.Info("tx.to unexpected error.")
+			}
+
+		} else if len(result.extractData) == 0 {
+			//bs.wm.Log.Std.Info("tx.to[%v] not found in scanning address.", tx_nas.To)
+		}
+		success = true
 	}
-	//优先使用传入高度
-	if blockHeight > 0 && trx.BlockHeight == 0 {
-		trx.BlockHeight = blockHeight
-		trx.BlockHash = blockHash
-	}
-	bs.extractTransaction(trx, &result, scanAddressFunc)
+	result.Success = success
+
 	return result
+
 }
 
-//ExtractTransactionData 提取交易单
-func (bs *TronBlockScanner) extractTransaction(trx *Transaction, result *ExtractResult, scanAddressFunc openwallet.BlockScanAddressFunc) {
+// //ExtractTransactionData 提取交易单
+// func (bs *TronBlockScanner) extractTransaction(trx *Transaction, result *ExtractResult, scanAddressFunc openwallet.BlockScanAddressFunc) {
 
+// }
+
+func (bs *TronBlockScanner) InitNasExtractResult(tx *Transaction, result *ExtractResult, isFromAccount bool) {
+	value := decimal.RequireFromString(tx.Amount)
+	amount := value.Div(coinDecimal).StringFixed(bs.wm.Decimal())
+	txExtractData := &openwallet.TxExtractData{}
+	transx := &openwallet.Transaction{
+		Fees: "0",
+		Coin: openwallet.Coin{
+			Symbol:     bs.wm.Symbol(),
+			IsContract: false,
+		},
+		BlockHash:   tx.BlockHash,
+		BlockHeight: tx.BlockHeight,
+		TxID:        tx.TxID,
+		Decimal:     6,
+		Amount:      amount,
+		//ConfirmTime: int64(tx.Blocktime),
+	}
+	transx.SubmitTime = int64(tx.Blocktime)
+	transx.From = append(transx.From, tx.From+":"+amount)
+	transx.To = append(transx.To, tx.To+":"+amount)
+	wxID := openwallet.GenTransactionWxID(transx)
+	transx.WxID = wxID
+	txExtractData.Transaction = transx
+
+	if isFromAccount {
+		bs.extractTxInput(tx, txExtractData)
+		result.extractData[tx.FromAccountId] = txExtractData
+	} else {
+		bs.extractTxOutput(tx, txExtractData)
+		result.extractData[tx.ToAccountId] = txExtractData
+	}
+}
+
+//extractTxInput 提取交易单输入部分,无需手续费，所以包含1个TxInput
+func (bs *TronBlockScanner) extractTxInput(tx *Transaction, txExtractData *openwallet.TxExtractData) {
+	value := decimal.RequireFromString(tx.Amount)
+	amount := value.Div(coinDecimal).StringFixed(bs.wm.Decimal())
+	//主网from交易转账信息，第一个TxInput
+	txInput := &openwallet.TxInput{
+		SourceTxID: "", //utxo模型上的上一个交易输入源
+	}
+	txInput.Recharge.Sid = openwallet.GenTxInputSID(tx.TxID, bs.wm.Symbol(), "", uint64(0))
+	txInput.Recharge.TxID = tx.TxID
+	txInput.Recharge.Address = tx.From
+	txInput.Recharge.Coin = openwallet.Coin{
+		Symbol:     bs.wm.Symbol(),
+		IsContract: false,
+	}
+	txInput.Recharge.Amount = amount /*tx.Value.Div(coinDecimal).String()*/
+	txInput.Recharge.BlockHash = tx.BlockHash
+	txInput.Recharge.BlockHeight = tx.BlockHeight
+	txInput.Recharge.Index = 0 //账户模型填0
+	txInput.Recharge.CreateAt = time.Now().Unix()
+	txExtractData.TxInputs = append(txExtractData.TxInputs, txInput)
+	/*
+		//主网from交易转账手续费信息，第二个TxInput
+		txInputfees := &openwallet.TxInput{
+			SourceTxID: "", //utxo模型上的上一个交易输入源
+		}
+		txInputfees.Recharge.Sid = openwallet.GenTxInputSID(tx.TxID, bs.wm.Symbol(), "", uint64(1))
+		txInputfees.Recharge.TxID = tx.TxID
+		txInputfees.Recharge.Address = tx.From
+		txInputfees.Recharge.Coin = openwallet.Coin{
+			Symbol:     bs.wm.Symbol(),
+			IsContract: false,
+		}
+		//txInputfees.Recharge.Amount = decimal.RequireFromString(tx.Gas_used).Div(coinDecimal).String()
+		txInputfees.Recharge.BlockHash = tx.BlockHash
+		txInputfees.Recharge.BlockHeight = tx.BlockHeight
+		txInputfees.Recharge.Index = 0 //账户模型填0
+		txInputfees.Recharge.CreateAt = time.Now().Unix()
+		txExtractData.TxInputs = append(txExtractData.TxInputs, txInputfees)
+	*/
+}
+
+//extractTxOutput 提取交易单输入部分,只有一个TxOutPut
+func (bs *TronBlockScanner) extractTxOutput(tx *Transaction, txExtractData *openwallet.TxExtractData) {
+	value := decimal.RequireFromString(tx.Amount)
+	amount := value.Div(coinDecimal).StringFixed(bs.wm.Decimal())
+	//主网to交易转账信息,只有一个TxOutPut
+	txOutput := &openwallet.TxOutPut{
+		ExtParam: "", //扩展参数，用于记录utxo的解锁字段，账户模型中为空
+	}
+	txOutput.Recharge.Sid = openwallet.GenTxOutPutSID(tx.TxID, bs.wm.Symbol(), "", uint64(0))
+	txOutput.Recharge.TxID = tx.TxID
+	txOutput.Recharge.Address = tx.To
+	txOutput.Recharge.Coin = openwallet.Coin{
+		Symbol:     bs.wm.Symbol(),
+		IsContract: false,
+	}
+	txOutput.Recharge.Amount = amount /*tx.Value.Div(coinDecimal).String()*/
+	txOutput.Recharge.BlockHash = tx.BlockHash
+	txOutput.Recharge.BlockHeight = tx.BlockHeight
+	txOutput.Recharge.Index = 0 //账户模型填0
+	txOutput.Recharge.CreateAt = time.Now().Unix()
+	txExtractData.TxOutputs = append(txExtractData.TxOutputs, txOutput)
 }
 
 //发送通知
@@ -572,7 +699,6 @@ func (bs *TronBlockScanner) BatchExtractTransaction(blockHeight uint64, blockHas
 			}(eblockHeight, txid, bs.extractingCH, eProducer)
 		}
 	}
-
 	/*	开启导出的线程	*/
 
 	//独立线程运行消费
