@@ -19,6 +19,12 @@ import (
 	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/shopspring/decimal"
+)
+
+var (
+	//coinDecimal decimal.Decimal = decimal.NewFromFloat(1000000)
+	coinDecimal decimal.Decimal = decimal.NewFromFloat(1000000)
 )
 
 func init() {
