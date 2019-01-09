@@ -66,7 +66,7 @@ func TestTronBlockScanner_scanning(t *testing.T) {
 
 	//bs.DropRechargeRecords(accountID)
 
-	bs.SetRescanBlockHeight(5633831)
+	bs.SetRescanBlockHeight(5650360)
 	//tw.SaveLocalNewBlock(1355030, "00000000000000125b86abb80b1f94af13a5d9b07340076092eda92dade27686")
 
 	//bs.AddAddress(address, accountID)
@@ -116,4 +116,31 @@ func TestTron_GetTransaction(t *testing.T) {
 		fmt.Println("txTo:=", tx.To)
 		fmt.Println("Amount:=", tx.Amount)
 	}
+}
+
+func TestTron_RescanFailedRecord(t *testing.T) {
+	bs := NewTronBlockScanner(tw)
+	bs.RescanFailedRecord()
+}
+
+func TestTron_GetUnscanRecords(t *testing.T) {
+	list, err := tw.GetUnscanRecords()
+	if err != nil {
+		t.Errorf("GetUnscanRecords failed unexpected error: %v\n", err)
+		return
+	}
+
+	for _, r := range list {
+		t.Logf("GetUnscanRecords unscan: %v", r)
+	}
+}
+
+func TestBTCBlockScanner_ScanBlock(t *testing.T) {
+
+	//accountID := "WDHupMjR3cR2wm97iDtKajxSPCYEEddoek"
+	//address := "msnYsBdBXQZqYYqNNJZsjShzwCx9fJVSin"
+
+	bs := tw.Blockscanner
+	//bs.AddAddress(address, accountID)
+	bs.ScanBlock(5628677)
 }

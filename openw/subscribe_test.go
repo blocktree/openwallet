@@ -423,7 +423,59 @@ func TestSubscribeAddress_BCH(t *testing.T) {
 }
 
 func TestSubscribeAddress_TRON(t *testing.T) {
+	var (
+		endRunning = make(chan bool, 1)
+		symbol     = "TRX"
+		accountID  = "6msrcfed9rA7njVNDtY1Ppo9XQdX5p3SFPc1zxWgd8ut"
+		addrs      = map[string]string{
+			"TLVtj8soinYhgwTnjVF7EpgbZRZ8Np5JNY": accountID,
+			//"TQTgTtkQAPg84mj1fC2D3RYGibiq24vfEc": accountID,
+			//"TQoqsULS3xfLHoZmh8BD9Q79hmAwcvnL6e": accountID,
+			//"TRUd6CnUusLRFSnXbQXFkxohxymtgfHJZw": accountID,
+		}
+	)
 
+	//GetSourceKeyByAddress 获取地址对应的数据源标识
+	scanAddressFunc := func(address string) (string, bool) {
+		key, ok := addrs[address]
+		if !ok {
+			return "", false
+		}
+		return key, true
+	}
+
+	assetsMgr, err := GetAssetsAdapter(symbol)
+	if err != nil {
+		log.Error(symbol, "is not support")
+		return
+	}
+
+	//读取配置
+	absFile := filepath.Join(configFilePath, symbol+".ini")
+
+	c, err := config.NewConfig("ini", absFile)
+	if err != nil {
+		return
+	}
+	assetsMgr.LoadAssetsConfig(c)
+
+	//log.Debug("already got scanner:", assetsMgr)
+	scanner := assetsMgr.GetBlockScanner()
+	scanner.SetRescanBlockHeight(5655458)
+
+	if scanner == nil {
+		log.Error(symbol, "is not support block scan")
+		return
+	}
+
+	scanner.SetBlockScanAddressFunc(scanAddressFunc)
+
+	sub := subscriberSingle{}
+	scanner.AddObserver(&sub)
+
+	scanner.Run()
+
+	<-endRunning
 }
 
 func TestSubscribeAddress_ONT(t *testing.T) {

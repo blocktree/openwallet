@@ -77,7 +77,7 @@ func NewTronBlockScanner(wm *WalletManager) *TronBlockScanner {
 
 	bs.extractingCH = make(chan struct{}, maxExtractingSize)
 	bs.wm = wm
-	//bs.IsScanMemPool = true
+	//bs.IsScanMemPool = false //Tron不扫内存池
 	bs.RescanLastBlockCount = 0
 
 	// bs.walletInScanning = make(map[string]*openwallet.Wallet)
@@ -139,7 +139,6 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 		currentHeight = block.GetHeight()
 	}
 	//log.Std.Info("Local block height: %v", currentHeight)
-	counter := 0
 	for {
 		log.Std.Info("\n ------------------------------------ Foreach Start")
 
@@ -231,9 +230,7 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 			err = bs.BatchExtractTransaction(block.Height, block.Hash, txHash)
 			if err != nil {
 				log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
-				fmt.Println("counter:=", counter)
 			}
-			counter++
 			//重置当前区块的hash
 			currentHash = hash
 			//保存本地新高度
@@ -396,8 +393,27 @@ func (bs *TronBlockScanner) newBlockNotify(block *Block, isFork bool) {
 	}
 }
 
+var (
+	accountID = "6msrcfed9rA7njVNDtY1Ppo9XQdX5p3SFPc1zxWgd8ut"
+	addrs     = map[string]string{
+		"TLVtj8soinYhgwTnjVF7EpgbZRZ8Np5JNY": accountID,
+		//"TQTgTtkQAPg84mj1fC2D3RYGibiq24vfEc": accountID,
+		//"TQoqsULS3xfLHoZmh8BD9Q79hmAwcvnL6e": accountID,
+		//"TRUd6CnUusLRFSnXbQXFkxohxymtgfHJZw": accountID,
+	}
+)
+
+func scanAddressFunc(address string) (string, bool) {
+
+	key, ok := addrs[address]
+	if !ok {
+		return "", false
+	}
+	return key, true
+}
+
 //提取交易单
-func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash string, txid string, scanAddressFunc openwallet.BlockScanAddressFunc) ExtractResult {
+func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash string, txid string, scanAddressFuncBak openwallet.BlockScanAddressFunc) ExtractResult {
 	var (
 		success = true
 		result  = ExtractResult{
@@ -414,6 +430,7 @@ func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash str
 	} else {
 		//bs.wm.Log.Std.Info("block scanner scanning tx: %+v", txid)
 		//订阅地址为交易单中的发送者
+
 		if _, ok1 := scanAddressFunc(trx.From); ok1 {
 			bs.wm.Log.Std.Info("tx.from found in transaction [%v] .", trx.TxID)
 			if accountId, exist := scanAddressFunc(trx.From); exist {
@@ -423,6 +440,7 @@ func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash str
 				bs.wm.Log.Std.Info("tx.from unexpected error.")
 			}
 		} else {
+			fmt.Println("test go to here-----1")
 			//bs.wm.Log.Std.Info("tx.from[%v] not found in scanning address.", tx_nas.From)
 		}
 		//订阅地址为交易单中的接收者
@@ -444,7 +462,7 @@ func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash str
 		success = true
 	}
 	result.Success = success
-
+	fmt.Println("extract tx=:", result)
 	return result
 
 }
@@ -661,7 +679,6 @@ func (bs *TronBlockScanner) BatchExtractTransaction(blockHeight uint64, blockHas
 		for gets := range result {
 
 			if gets.Success {
-
 				notifyErr := bs.newExtractDataNotify(height, gets.extractData)
 				//saveErr := bs.SaveRechargeToWalletDB(height, gets.Recharges)
 				if notifyErr != nil {
