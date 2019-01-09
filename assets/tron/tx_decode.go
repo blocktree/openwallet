@@ -192,6 +192,9 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	keySignList[0].Message = txHash
 	signatureMap[rawTx.Account.AccountID] = keySignList
 	//rawTx.Signatures = make(map[string][]*openwallet.KeySignature, 0)
+
+	accountTotalSent = decimal.Zero.Sub(accountTotalSent)
+
 	rawTx.Fees = "0"
 	rawTx.FeeRate = "0"
 	rawTx.RawHex = rawHex
@@ -199,7 +202,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	rawTx.IsBuilt = true
 	rawTx.TxTo = txTo
 	rawTx.TxFrom = txFrom
-	rawTx.TxAmount = "-" + accountTotalSent.StringFixed(decoder.wm.Decimal())
+	rawTx.TxAmount = accountTotalSent.StringFixed(decoder.wm.Decimal())
 	return nil
 }
 
