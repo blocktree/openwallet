@@ -427,9 +427,14 @@ func TestSubscribeAddress_TRON(t *testing.T) {
 	var (
 		endRunning = make(chan bool, 1)
 		symbol     = "TRX"
-		accountID  = "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
-		addrs      = map[string]string{
-			"TNQkiUv4qtDRKWDrKS628FTbDwxLMiqbAz":         accountID,
+		//accountID  = "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
+		accountID = "6msrcfed9rA7njVNDtY1Ppo9XQdX5p3SFPc1zxWgd8ut"
+		addrs     = map[string]string{
+			//"TNQkiUv4qtDRKWDrKS628FTbDwxLMiqbAz": accountID,
+			"TLVtj8soinYhgwTnjVF7EpgbZRZ8Np5JNY": accountID,
+			"TQTgTtkQAPg84mj1fC2D3RYGibiq24vfEc": accountID,
+			"TQoqsULS3xfLHoZmh8BD9Q79hmAwcvnL6e": accountID,
+			"TRUd6CnUusLRFSnXbQXFkxohxymtgfHJZw": accountID,
 		}
 	)
 

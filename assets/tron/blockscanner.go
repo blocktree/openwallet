@@ -425,9 +425,6 @@ func (bs *TronBlockScanner) newBlockNotify(block *Block, isFork bool) {
 
 //提取交易单
 func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash string, txid string, scanAddressFunc openwallet.BlockScanAddressFunc) ExtractResult {
-	//-----for debug---
-	txid = "5ef55cfd8c4d28ae53f4a499d9473041676694dae75c0571d2e8c039f888f359"
-	//------end-------
 	var (
 		success = true
 		result  = ExtractResult{
