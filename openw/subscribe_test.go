@@ -124,7 +124,7 @@ func TestSubscribeAddress_BTC(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	scanner.SetRescanBlockHeight(1445139)
+	scanner.SetRescanBlockHeight(1443252)
 
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")
@@ -423,15 +423,13 @@ func TestSubscribeAddress_BCH(t *testing.T) {
 }
 
 func TestSubscribeAddress_TRON(t *testing.T) {
+
 	var (
 		endRunning = make(chan bool, 1)
 		symbol     = "TRX"
-		accountID  = "6msrcfed9rA7njVNDtY1Ppo9XQdX5p3SFPc1zxWgd8ut"
+		accountID  = "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
 		addrs      = map[string]string{
-			"TLVtj8soinYhgwTnjVF7EpgbZRZ8Np5JNY": accountID,
-			//"TQTgTtkQAPg84mj1fC2D3RYGibiq24vfEc": accountID,
-			//"TQoqsULS3xfLHoZmh8BD9Q79hmAwcvnL6e": accountID,
-			//"TRUd6CnUusLRFSnXbQXFkxohxymtgfHJZw": accountID,
+			"TNQkiUv4qtDRKWDrKS628FTbDwxLMiqbAz":         accountID,
 		}
 	)
 
@@ -461,7 +459,7 @@ func TestSubscribeAddress_TRON(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	scanner.SetRescanBlockHeight(5655458)
+	scanner.SetRescanBlockHeight(5605745)
 
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")
@@ -476,6 +474,7 @@ func TestSubscribeAddress_TRON(t *testing.T) {
 	scanner.Run()
 
 	<-endRunning
+
 }
 
 func TestSubscribeAddress_ONT(t *testing.T) {

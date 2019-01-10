@@ -223,10 +223,14 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 			}
 
 		} else {
+
 			txHash := make([]string, len(block.tx))
 			for i, _ := range block.tx {
 				txHash[i] = block.tx[i].TxID
+				fmt.Println("txhash:=", txHash[i])
 			}
+
+			fmt.Println("block num:=", len(block.tx))
 			err = bs.BatchExtractTransaction(block.Height, block.Hash, txHash)
 			if err != nil {
 				log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
@@ -393,27 +397,37 @@ func (bs *TronBlockScanner) newBlockNotify(block *Block, isFork bool) {
 	}
 }
 
-var (
-	accountID = "6msrcfed9rA7njVNDtY1Ppo9XQdX5p3SFPc1zxWgd8ut"
-	addrs     = map[string]string{
-		"TLVtj8soinYhgwTnjVF7EpgbZRZ8Np5JNY": accountID,
-		//"TQTgTtkQAPg84mj1fC2D3RYGibiq24vfEc": accountID,
-		//"TQoqsULS3xfLHoZmh8BD9Q79hmAwcvnL6e": accountID,
-		//"TRUd6CnUusLRFSnXbQXFkxohxymtgfHJZw": accountID,
-	}
-)
+//---------------for debug-------------
+// var (
+// 	endRunning = make(chan bool, 1)
+// 	symbol     = "TRX"
+// 	//accountID  = "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
+// 	accountID = "6msrcfed9rA7njVNDtY1Ppo9XQdX5p3SFPc1zxWgd8ut"
+// 	addrs     = map[string]string{
+// 		// "TNQkiUv4qtDRKWDrKS628FTbDwxLMiqbAz": accountID,
+// 		"TLVtj8soinYhgwTnjVF7EpgbZRZ8Np5JNY": accountID,
+// 		"TQTgTtkQAPg84mj1fC2D3RYGibiq24vfEc": accountID,
+// 		"TQoqsULS3xfLHoZmh8BD9Q79hmAwcvnL6e": accountID,
+// 		"TRUd6CnUusLRFSnXbQXFkxohxymtgfHJZw": accountID,
+// 	}
+// )
 
-func scanAddressFunc(address string) (string, bool) {
+// func ScanAddressFunc(address string) (string, bool) {
+// 	fmt.Println("test......")
+// 	key, ok := addrs[address]
+// 	if !ok {
+// 		return "", false
+// 	}
+// 	return key, true
+// }
 
-	key, ok := addrs[address]
-	if !ok {
-		return "", false
-	}
-	return key, true
-}
+//------------------end------------------
 
 //提取交易单
-func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash string, txid string, scanAddressFuncBak openwallet.BlockScanAddressFunc) ExtractResult {
+func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash string, txid string, scanAddressFunc openwallet.BlockScanAddressFunc) ExtractResult {
+	//-----for debug---
+	txid = "5ef55cfd8c4d28ae53f4a499d9473041676694dae75c0571d2e8c039f888f359"
+	//------end-------
 	var (
 		success = true
 		result  = ExtractResult{
@@ -422,6 +436,7 @@ func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash str
 			extractData: make(map[string]*openwallet.TxExtractData),
 		}
 	)
+
 	trx, err := bs.wm.GetTransaction(txid)
 	if err != nil {
 		log.Std.Info("block scanner can not extract transaction data,unexpected error:%v", err)
@@ -430,8 +445,11 @@ func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash str
 	} else {
 		//bs.wm.Log.Std.Info("block scanner scanning tx: %+v", txid)
 		//订阅地址为交易单中的发送者
-
-		if _, ok1 := scanAddressFunc(trx.From); ok1 {
+		trx.From = "TLVtj8soinYhgwTnjVF7EpgbZRZ8Np5JNY"
+		_, ok1 := scanAddressFunc(trx.From)
+		fmt.Println("trx.From", trx.From)
+		fmt.Println("ok1:=", ok1)
+		if ok1 {
 			bs.wm.Log.Std.Info("tx.from found in transaction [%v] .", trx.TxID)
 			if accountId, exist := scanAddressFunc(trx.From); exist {
 				trx.FromAccountId = accountId
