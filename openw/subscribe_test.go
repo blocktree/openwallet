@@ -431,20 +431,21 @@ func TestSubscribeAddress_TRON(t *testing.T) {
 		accountID = "6msrcfed9rA7njVNDtY1Ppo9XQdX5p3SFPc1zxWgd8ut"
 		addrs     = map[string]string{
 			//"TNQkiUv4qtDRKWDrKS628FTbDwxLMiqbAz": accountID,
-			"TLVtj8soinYhgwTnjVF7EpgbZRZ8Np5JNY": accountID,
-			"TQTgTtkQAPg84mj1fC2D3RYGibiq24vfEc": accountID,
-			"TQoqsULS3xfLHoZmh8BD9Q79hmAwcvnL6e": accountID,
-			"TRUd6CnUusLRFSnXbQXFkxohxymtgfHJZw": accountID,
+			//"TLVtj8soinYhgwTnjVF7EpgbZRZ8Np5JNY": accountID,
+			//"TQTgTtkQAPg84mj1fC2D3RYGibiq24vfEc": accountID,
+			//"TQoqsULS3xfLHoZmh8BD9Q79hmAwcvnL6e": accountID,
+			//"TCSzuaL4t5kqix29gFo4h7cpW9WvgKANTA": accountID,
+			"TCSzuaL4t5kqix29gFo4h7cpW9WvgKANTA": accountID,
 		}
 	)
 
 	//GetSourceKeyByAddress 获取地址对应的数据源标识
 	scanAddressFunc := func(address string) (string, bool) {
 		key, ok := addrs[address]
-		if !ok {
-			return "", false
+		if ok {
+			return key, true
 		}
-		return key, true
+		return "", false
 	}
 
 	assetsMgr, err := GetAssetsAdapter(symbol)
@@ -464,7 +465,7 @@ func TestSubscribeAddress_TRON(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	scanner.SetRescanBlockHeight(5605745)
+	scanner.SetRescanBlockHeight(5605857)
 
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")

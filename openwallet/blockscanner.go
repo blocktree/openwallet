@@ -17,10 +17,11 @@ package openwallet
 
 import (
 	"fmt"
-	"github.com/blocktree/OpenWallet/log"
-	"github.com/blocktree/OpenWallet/timer"
 	"sync"
 	"time"
+
+	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/OpenWallet/timer"
 )
 
 // BlockScanAddressFunc 扫描地址是否存在算法

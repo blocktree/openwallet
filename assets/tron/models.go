@@ -16,10 +16,12 @@
 package tron
 
 import (
+	"encoding/hex"
 	"fmt"
 
 	"github.com/blocktree/OpenWallet/crypto"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/bytom/common"
 	"github.com/tidwall/gjson"
 )
@@ -162,10 +164,13 @@ func NewTransaction(json *gjson.Result) *Transaction {
 	b.BlockHash = rawData.Get("ref_block_hash").String()
 	b.BlockHeight = rawData.Get("ref_block_bytes").Uint()
 	b.Blocktime = rawData.Get("timestamp").Uint()
-	b.From = rawData.Get("contract").Array()[0].Get("parameter").Get("value").Get("owner_address").String()
+	FromByte, _ := hex.DecodeString(rawData.Get("contract").Array()[0].Get("parameter").Get("value").Get("owner_address").String())
+	b.From = addressEncoder.AddressEncode(FromByte[1:], addressEncoder.TRON_mainnetAddress)
+	//ToByte, _ := hex.DecodeString(rawData.Get("contract").Array()[0].Get("parameter").Get("value").Get("to_address").String())
+	//fmt.Println("ToByte:", ToByte)
+	//b.To = addressEncoder.AddressEncode(ToByte[1:], addressEncoder.TRON_mainnetAddress)
 	b.To = rawData.Get("contract").Array()[0].Get("parameter").Get("value").Get("to_address").String()
 	b.Amount = rawData.Get("contract").Array()[0].Get("parameter").Get("value").Get("amount").String()
-
 	return b
 }
 
