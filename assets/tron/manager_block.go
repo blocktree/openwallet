@@ -84,7 +84,6 @@ func (wm *WalletManager) GetBlockByNum(num uint64) (block *Block, error error) {
 	if err != nil {
 		return nil, err
 	}
-
 	block = NewBlock(r)
 	if block.GetBlockHashID() == "" || block.GetHeight() <= 0 {
 		return nil, errors.New("GetBlockByNum failed: No found <block>")
