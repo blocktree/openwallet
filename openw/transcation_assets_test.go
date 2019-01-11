@@ -387,8 +387,8 @@ func TestTransfer_OMNI(t *testing.T) {
 
 func TestTransfer_TRON(t *testing.T) {
 	tm := testInitWalletManager()
-	walletID := "WGefWvTgbswMnjW7pjd4sWbkQQpdp5cRnz"
-	accountID := "6msrcfed9rA7njVNDtY1Ppo9XQdX5p3SFPc1zxWgd8ut"
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
 	to := "TNQkiUv4qtDRKWDrKS628FTbDwxLMiqbAz" // t2
 
 	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.01", "", nil)

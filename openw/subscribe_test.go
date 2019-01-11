@@ -442,10 +442,10 @@ func TestSubscribeAddress_TRON(t *testing.T) {
 	//GetSourceKeyByAddress 获取地址对应的数据源标识
 	scanAddressFunc := func(address string) (string, bool) {
 		key, ok := addrs[address]
-		if ok {
-			return key, true
+		if !ok {
+			return "", false
 		}
-		return "", false
+		return key, true
 	}
 
 	assetsMgr, err := GetAssetsAdapter(symbol)
