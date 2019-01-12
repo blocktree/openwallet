@@ -129,13 +129,14 @@ type Transaction struct {
 	BlockHash   string
 	BlockHeight uint64
 	//Confirmations uint64
-	Blocktime     uint64
-	IsCoinBase    bool
-	FromAccountId string //transaction scanning 的时候对其进行赋值
-	ToAccountId   string //transaction scanning 的时候对其进行赋值
-	From          string
-	To            string
-	Amount        string
+	Blocktime        uint64
+	IsCoinBase       bool
+	FromAccountId    string //transaction scanning 的时候对其进行赋值
+	ToAccountId      string //transaction scanning 的时候对其进行赋值
+	From             string
+	To               string
+	Amount           string
+	Contract_address string
 	// Fees          string
 
 }
