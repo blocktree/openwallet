@@ -140,8 +140,6 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 	}
 	//log.Std.Info("Local block height: %v", currentHeight)
 	for {
-		log.Std.Info("\n ------------------------------------ Foreach Start")
-
 		//time.Sleep(time.Second * (5 * time.Duration(i*i)))
 		//i++
 		//获取最大高度
@@ -151,10 +149,10 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 			log.Std.Info("block scanner can not get rpc-server block height; unexpected error: %v", err)
 			break
 		}
-		maxHeightBlockHash := maxHeightBlock.Hash
+		//maxHeightBlockHash := maxHeightBlock.Hash
 		maxHeight := maxHeightBlock.Height
 		//log.Std.Info("Get now block: height=%v, hash=%v", maxHeight, maxHeightBlockHash)
-		fmt.Printf("Get now block: height=%v, hash=%v\n", maxHeight, maxHeightBlockHash)
+		//fmt.Printf("Get now block: height=%v, hash=%v\n", maxHeight, maxHeightBlockHash)
 		//是否已到最新高度
 		if currentHeight == maxHeight {
 			log.Std.Info("Break: block scanner has scanned full chain data. Current height %d", maxHeight)
@@ -164,7 +162,7 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 		//继续扫描下一个区块
 		currentHeight = currentHeight + 1
 
-		log.Std.Info("Block scanner scanning next height: %d ...", currentHeight)
+		//log.Std.Info("Block scanner scanning next height: %d ...", currentHeight)
 
 		block, err := bs.wm.GetBlockByNum(currentHeight)
 		if err != nil {
@@ -262,7 +260,6 @@ func (bs *TronBlockScanner) ScanBlock(height uint64) error {
 		log.Std.Info("block scanner can not get new block hash; unexpected error: %v", err)
 		return err
 	}
-
 	block, err = bs.wm.GetBlockByID(block.Hash)
 	if err != nil {
 		log.Std.Info("block scanner can not get new block data; unexpected error: %v", err)
@@ -419,7 +416,7 @@ func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash str
 				bs.wm.Log.Std.Info("tx.from unexpected error.")
 			}
 		} else {
-			bs.wm.Log.Std.Info("tx.from[%v] not found in scanning address.", trx.From)
+			//bs.wm.Log.Std.Info("tx.from[%v] not found in scanning address.", trx.From)
 		}
 		//订阅地址为交易单中的接收者
 		if _, ok2 := scanAddressFunc(trx.To); ok2 {
@@ -438,7 +435,6 @@ func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash str
 		success = true
 	}
 	result.Success = success
-	//fmt.Println("result:=", result.extractData[trx.FromAccountId].Transaction)
 	return result
 
 }
@@ -721,8 +717,14 @@ func (bs *TronBlockScanner) extractRuntime(producer chan ExtractResult, worker c
 	)
 
 	for {
+		var activeWorker chan<- ExtractResult
+		var activeValue ExtractResult
+		//当数据队列有数据时，释放顶部，传输给消费者
+		if len(values) > 0 {
+			activeWorker = worker
+			activeValue = values[0]
+		}
 		select {
-
 		//生成者不断生成数据，插入到数据队列尾部
 		case pa := <-producer:
 			values = append(values, pa)
@@ -730,18 +732,11 @@ func (bs *TronBlockScanner) extractRuntime(producer chan ExtractResult, worker c
 			//退出
 			//log.Std.Info("block scanner have been scanned!")
 			return
-		default:
-
-			//当数据队列有数据时，释放顶部，传输给消费者
-			if len(values) > 0 {
-				worker <- values[0]
-				values = values[1:]
-			}
+		case activeWorker <- activeValue:
+			values = values[1:]
 		}
 	}
-
 	//return
-
 }
 
 /*
