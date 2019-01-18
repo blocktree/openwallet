@@ -480,7 +480,7 @@ func (bs *TronBlockScanner) InitTronExtractResult(tx *Transaction, result *Extra
 	}
 }
 
-//extractTxInput 提取交易单输入部分,无需手续费，所以包含1个TxInput
+//extractTxInput 提取交易单输入部分,无需手续费，所以只包含1个TxInput
 func (bs *TronBlockScanner) extractTxInput(tx *Transaction, txExtractData *openwallet.TxExtractData) {
 	value := decimal.RequireFromString(tx.Amount)
 	amount := value.Div(coinDecimal).StringFixed(bs.wm.Decimal())
@@ -495,30 +495,32 @@ func (bs *TronBlockScanner) extractTxInput(tx *Transaction, txExtractData *openw
 		Symbol:     bs.wm.Symbol(),
 		IsContract: false,
 	}
-	txInput.Recharge.Amount = amount /*tx.Value.Div(coinDecimal).String()*/
+	txInput.Recharge.Amount = amount
 	txInput.Recharge.BlockHash = tx.BlockHash
 	txInput.Recharge.BlockHeight = tx.BlockHeight
 	txInput.Recharge.Index = 0 //账户模型填0
 	txInput.Recharge.CreateAt = time.Now().Unix()
 	txExtractData.TxInputs = append(txExtractData.TxInputs, txInput)
 
-	//主网from交易转账手续费信息，第二个TxInput
-	txInputfees := &openwallet.TxInput{
-		SourceTxID: "", //utxo模型上的上一个交易输入源
-	}
-	txInputfees.Recharge.Sid = openwallet.GenTxInputSID(tx.TxID, bs.wm.Symbol(), "", uint64(1))
-	txInputfees.Recharge.TxID = tx.TxID
-	txInputfees.Recharge.Address = tx.From
-	txInputfees.Recharge.Coin = openwallet.Coin{
-		Symbol:     bs.wm.Symbol(),
-		IsContract: false,
-	}
-	txInputfees.Recharge.Amount = "0" /*decimal.RequireFromString(tx.Gas_used).Div(coinDecimal).String()*/
-	txInputfees.Recharge.BlockHash = tx.BlockHash
-	txInputfees.Recharge.BlockHeight = tx.BlockHeight
-	txInputfees.Recharge.Index = 0 //账户模型填0
-	txInputfees.Recharge.CreateAt = time.Now().Unix()
-	txExtractData.TxInputs = append(txExtractData.TxInputs, txInputfees)
+	/*
+		//主网from交易转账手续费信息，第二个TxInput
+		txInputfees := &openwallet.TxInput{
+			SourceTxID: "", //utxo模型上的上一个交易输入源
+		}
+		txInputfees.Recharge.Sid = openwallet.GenTxInputSID(tx.TxID, bs.wm.Symbol(), "", uint64(1))
+		txInputfees.Recharge.TxID = tx.TxID
+		txInputfees.Recharge.Address = tx.From
+		txInputfees.Recharge.Coin = openwallet.Coin{
+			Symbol:     bs.wm.Symbol(),
+			IsContract: false,
+		}
+		txInputfees.Recharge.Amount = "0"
+		txInputfees.Recharge.BlockHash = tx.BlockHash
+		txInputfees.Recharge.BlockHeight = tx.BlockHeight
+		txInputfees.Recharge.Index = 0 //账户模型填0
+		txInputfees.Recharge.CreateAt = time.Now().Unix()
+		txExtractData.TxInputs = append(txExtractData.TxInputs, txInputfees)
+	*/
 }
 
 //extractTxOutput 提取交易单输入部分,只有一个TxOutPut
