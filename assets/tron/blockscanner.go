@@ -439,7 +439,8 @@ func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash str
 		success = true
 	case transferAssetContract: //other asset,TODO
 		success = false
-
+	default:
+		success = false
 	}
 	result.Success = success
 	return result
