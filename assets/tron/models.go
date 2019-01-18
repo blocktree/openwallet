@@ -137,6 +137,7 @@ type Transaction struct {
 	To               string
 	Amount           string
 	Contract_address string
+	Type             string
 	// Fees          string
 
 }
@@ -156,6 +157,7 @@ func NewTransaction(json *gjson.Result) *Transaction {
 			}
 		}
 	}
+
 	rawData := gjson.Get(json.Raw, "raw_data")
 	// 解析json
 	b := &Transaction{}
@@ -164,14 +166,17 @@ func NewTransaction(json *gjson.Result) *Transaction {
 	b.IsSuccess = isSuccess
 	b.BlockHash = rawData.Get("ref_block_hash").String()
 	b.BlockHeight = rawData.Get("ref_block_bytes").Uint()
+	b.Type = rawData.Get("contract").Array()[0].Get("type").String()
 	b.Blocktime = rawData.Get("timestamp").Uint()
 	FromByte, _ := hex.DecodeString(rawData.Get("contract").Array()[0].Get("parameter").Get("value").Get("owner_address").String())
 	b.From = addressEncoder.AddressEncode(FromByte[1:], addressEncoder.TRON_mainnetAddress)
-	//ToByte, _ := hex.DecodeString(rawData.Get("contract").Array()[0].Get("parameter").Get("value").Get("to_address").String())
-	//fmt.Println("ToByte:", ToByte)
-	//b.To = addressEncoder.AddressEncode(ToByte[1:], addressEncoder.TRON_mainnetAddress)
-	b.To = rawData.Get("contract").Array()[0].Get("parameter").Get("value").Get("to_address").String()
-	b.Amount = rawData.Get("contract").Array()[0].Get("parameter").Get("value").Get("amount").String()
+	if b.Type == "TransferContract" {
+		ToByte, _ := hex.DecodeString(rawData.Get("contract").Array()[0].Get("parameter").Get("value").Get("to_address").String())
+		b.To = addressEncoder.AddressEncode(ToByte[1:], addressEncoder.TRON_mainnetAddress)
+		b.Amount = rawData.Get("contract").Array()[0].Get("parameter").Get("value").Get("amount").String()
+	} else {
+		b.Amount = "0" //不需要任何操作，为了防止后面出错，将b.Amount设置为0
+	}
 	return b
 }
 
