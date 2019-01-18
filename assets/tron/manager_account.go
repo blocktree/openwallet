@@ -138,7 +138,6 @@ func (wm *WalletManager) GetAccount(address string) (account *openwallet.AssetsA
 	// if err := gjson.Unmarshal([]byte(r.Raw), account); err != nil {
 	// 	return nil, err
 	// }
-
 	account.Balance = r.Get("balance").String()
 	account.Symbol = wm.Config.Symbol
 	account.Required = 1
@@ -171,7 +170,6 @@ func (wm *WalletManager) CreateAccount(ownerAddress, accountAddress string) (txR
 	if r.Get("Error").String() != "" {
 		return nil, errors.New(r.Get("Error").String())
 	}
-
 	return r, nil
 }
 
@@ -201,6 +199,5 @@ func (wm *WalletManager) UpdateAccount(accountName, ownerAddress string) (tx *gj
 	if r.Get("raw_data").Map()["contract"].Array()[0].Map()["parameter"].Map()["value"].Map()["owner_address"].String() != convertAddrToHex(ownerAddress) {
 		return nil, errors.New("UpdateAccount: Update failed")
 	}
-
 	return r, nil
 }

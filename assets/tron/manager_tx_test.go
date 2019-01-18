@@ -30,7 +30,7 @@ func TestGetTotalTransaction(t *testing.T) {
 
 func TestGetTransactionByID(t *testing.T) {
 
-	var txID = "2924a364b7bfc2c1f62796377d83008eb9c310a0f07305030d0b7ac9127d1848"
+	var txID = "3fac47cf4c75099044290ee58098ec5a490510d3ade909ac20663cfee6a5c62d"
 
 	if r, err := tw.GetTransactionByID(txID); err != nil || r.IsSuccess != true {
 		t.Logf("TestGetTransactionByID return: \n\t%+v\n", r)

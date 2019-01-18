@@ -73,7 +73,7 @@ func NewTransactionDecoder(wm *WalletManager) *TransactionDecoder {
 }
 
 //CreateRawTransaction 创建交易单
-func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
+func (decoder *TransactionDecoder) CreateSimpleTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	var (
 		accountTotalSent = decimal.Zero
@@ -204,6 +204,14 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	rawTx.TxFrom = txFrom
 	rawTx.TxAmount = accountTotalSent.StringFixed(decoder.wm.Decimal())
 	return nil
+}
+
+func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
+	if !rawTx.Coin.IsContract {
+		return decoder.CreateSimpleTransaction(wrapper, rawTx)
+	}
+	return nil
+	//contract To Do
 }
 
 //SignRawTransaction 签名交易单
