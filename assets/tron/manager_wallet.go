@@ -17,7 +17,6 @@ package tron
 
 import (
 	"github.com/blocktree/OpenWallet/common"
-	"github.com/blocktree/OpenWallet/log"
 	"github.com/shopspring/decimal"
 )
 
@@ -63,7 +62,7 @@ func (wm *WalletManager) GetWalletBalance(accountID string) string {
 //SummaryWallets 执行汇总流程
 func (wm *WalletManager) SummaryWallets() {
 
-	log.Std.Info("[Summary Wallet Start]------%s", common.TimeFormat("2006-01-02 15:04:05"))
+	wm.Log.Info("[Summary Wallet Start]------%s", common.TimeFormat("2006-01-02 15:04:05"))
 
 	//读取参与汇总的钱包
 	for wid, wallet := range wm.WalletsInSum {
@@ -75,20 +74,20 @@ func (wm *WalletManager) SummaryWallets() {
 		//如果余额大于阀值，汇总的地址
 		if balance.GreaterThan(wm.Config.Threshold) {
 
-			log.Std.Info("Summary account[%s]balance = %v ", wallet.WalletID, balance)
-			log.Std.Info("Summary account[%s]Start Send Transaction", wallet.WalletID)
+			wm.Log.Info("Summary account[%s]balance = %v ", wallet.WalletID, balance)
+			wm.Log.Info("Summary account[%s]Start Send Transaction", wallet.WalletID)
 
 			txID, err := wm.SendTransaction(wallet.WalletID, wm.Config.SumAddress, balance, wallet.Password, false)
 			if err != nil {
-				log.Std.Info("Summary account[%s]unexpected error: %v", wallet.WalletID, err)
+				wm.Log.Info("Summary account[%s]unexpected error: %v", wallet.WalletID, err)
 				continue
 			} else {
-				log.Std.Info("Summary account[%s]successfully，Received Address[%s], TXID：%s", wallet.WalletID, wm.Config.SumAddress, txID)
+				wm.Log.Info("Summary account[%s]successfully，Received Address[%s], TXID：%s", wallet.WalletID, wm.Config.SumAddress, txID)
 			}
 		} else {
-			log.Std.Info("Wallet Account[%s]-[%s]Current Balance: %v，below threshold: %v", wallet.Alias, wallet.WalletID, balance, wm.Config.Threshold)
+			wm.Log.Info("Wallet Account[%s]-[%s]Current Balance: %v，below threshold: %v", wallet.Alias, wallet.WalletID, balance, wm.Config.Threshold)
 		}
 	}
 
-	log.Std.Info("[Summary Wallet end]------%s", common.TimeFormat("2006-01-02 15:04:05"))
+	wm.Log.Info("[Summary Wallet end]------%s", common.TimeFormat("2006-01-02 15:04:05"))
 }

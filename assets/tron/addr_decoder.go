@@ -42,12 +42,9 @@ func (decoder *AddressDecoderStruct) PublicKeyToAddress(pub []byte, isTestnet bo
 	hash := owcrypt.Hash(pubkey[1:], 0, owcrypt.HASH_ALG_KECCAK256)
 	address, err := decoder.wm.CreateAddressRef(hash[12:], false) // isPrivate == false
 	if err != nil {
+		decoder.wm.Log.Info("creat address failed;unexpected error:%v", err)
 		return "", err
 	}
-
-	// pkHash := owcrypt.Hash(pub, 0, owcrypt.HASH_ALG_HASH160)
-	// address := addressEncoder.AddressEncode(pkHash, cfg)
-
 	return address, nil
 }
 
