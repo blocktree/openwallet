@@ -18,16 +18,17 @@ package qtum
 import (
 	"errors"
 	"fmt"
+	"net/url"
+	"path/filepath"
+	"strings"
+	"time"
+
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/graarh/golang-socketio"
 	"github.com/graarh/golang-socketio/transport"
 	"github.com/shopspring/decimal"
-	"net/url"
-	"path/filepath"
-	"strings"
-	"time"
 )
 
 const (
@@ -425,7 +426,7 @@ func (bs *BTCBlockScanner) BatchExtractTransaction(blockHeight uint64, blockHash
 				//记录未扫区块
 				unscanRecord := NewUnscanRecord(height, "", "")
 				bs.SaveUnscanRecord(unscanRecord)
-				bs.wm.Log.Std.Info("block height: %d extract failed.", height)
+				//bs.wm.Log.Std.Info("block height: %d extract failed.", height)
 				failed++ //标记保存失败数
 			}
 			//累计完成的线程数

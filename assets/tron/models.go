@@ -175,7 +175,7 @@ func NewTransaction(json *gjson.Result) *Transaction {
 		b.To = addressEncoder.AddressEncode(ToByte[1:], addressEncoder.TRON_mainnetAddress)
 		b.Amount = rawData.Get("contract").Array()[0].Get("parameter").Get("value").Get("amount").String()
 	} else {
-		b.Amount = "0" //不需要任何操作，为了防止后面出错，将b.Amount设置为0
+		b.Amount = "0"
 	}
 	return b
 }
