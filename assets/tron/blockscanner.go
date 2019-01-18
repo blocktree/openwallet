@@ -44,6 +44,11 @@ const (
 	RPCServerExplorer = 1
 )
 
+var (
+	transferContract      = "TransferContract"
+	transferAssetContract = "TransferAssetContract"
+)
+
 //TronBlockScanner tron的区块链扫描器
 type TronBlockScanner struct {
 	*openwallet.BlockScannerBase
@@ -171,7 +176,7 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 			//记录未扫区块
 			unscanRecord := NewUnscanRecord(currentHeight, "", err.Error())
 			bs.SaveUnscanRecord(unscanRecord)
-			log.Std.Info("block height: %d extract failed.", currentHeight)
+			//log.Std.Info("block height: %d extract failed.", currentHeight)
 			continue
 		}
 		hash := block.GetBlockHashID()
@@ -227,7 +232,7 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 			}
 			err = bs.BatchExtractTransaction(block.Height, block.Hash, txHash)
 			if err != nil {
-				log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
+				//log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
 			}
 			//重置当前区块的hash
 			currentHash = hash
@@ -267,7 +272,7 @@ func (bs *TronBlockScanner) ScanBlock(height uint64) error {
 		//记录未扫区块
 		unscanRecord := NewUnscanRecord(height, "", err.Error())
 		bs.SaveUnscanRecord(unscanRecord)
-		log.Std.Info("block height: %d extract failed.", height)
+		//log.Std.Info("block height: %d extract failed.", height)
 		return err
 	}
 
@@ -400,7 +405,9 @@ func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash str
 		log.Std.Info("block scanner can not extract transaction data,unexpected error:%v", err)
 		success = false
 		return result
-	} else {
+	}
+	switch trx.Type {
+	case transferContract: //TRX
 		//bs.wm.Log.Std.Info("block scanner scanning tx: %+v", txid)
 		//订阅地址为交易单中的发送者
 		_, ok1 := scanAddressFunc(trx.From)
@@ -430,6 +437,9 @@ func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash str
 			//bs.wm.Log.Std.Info("tx.to[%v] not found in scanning address.", tx_nas.To)
 		}
 		success = true
+	case transferAssetContract: //other asset,TODO
+		success = false
+
 	}
 	result.Success = success
 	return result
@@ -651,7 +661,7 @@ func (bs *TronBlockScanner) BatchExtractTransaction(blockHeight uint64, blockHas
 				//记录未扫区块
 				unscanRecord := NewUnscanRecord(height, "", "")
 				bs.SaveUnscanRecord(unscanRecord)
-				log.Std.Info("block height: %d extract failed.", height)
+				//log.Std.Info("block height: %d extract failed.", height)
 				failed++ //标记保存失败数
 			}
 			//累计完成的线程数
