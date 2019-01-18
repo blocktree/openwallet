@@ -56,7 +56,7 @@ func (wm *WalletManager) GetWalletList() error {
 	list, err := wm.GetWallets()
 
 	if len(list) == 0 {
-		log.Std.Info("No any wallets have created.")
+		wm.Log.Info("No any wallets have created.")
 		return nil
 	}
 
@@ -321,7 +321,7 @@ func (wm *WalletManager) SummaryFollow() error {
 				//解锁钱包验证密码
 				_, err = w.HDKey(password)
 				if err != nil {
-					log.Errorf("The password to unlock wallet is incorrect! ")
+					wm.Log.Info("The password to unlock wallet is incorrect! ")
 					continue
 				}
 
@@ -370,6 +370,11 @@ func (wm *WalletManager) SummaryFollow() error {
 func (wm *WalletManager) ImportWatchOnlyAddress(address ...*openwallet.Address) error {
 
 	return nil
+}
+
+//GetAssetsLogger 获取资产账户日志工具
+func (wm *WalletManager) GetAssetsLogger() *log.OWLogger {
+	return wm.Log
 }
 
 //GetAddressWithBalance 获取地址对应的余额

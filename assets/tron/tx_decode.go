@@ -17,7 +17,6 @@ package tron
 
 import (
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"math/big"
 	"sort"
@@ -51,13 +50,13 @@ func CheckRawTransaction(rawTx *openwallet.RawTransaction) error {
 func InsertSignatureIntoRawTransaction(txHex string, signature string) (string, error) {
 	txBytes, err := hex.DecodeString(txHex)
 	if err != nil {
-		log.Errorf("invalid transaction hex data,err=", err)
-		return "", fmt.Errorf("invalid transaction hex data!")
+		log.Errorf("nvalid transaction hex data;unexpected err:%v", err)
+		return "", fmt.Errorf("invalid transaction hex data")
 	}
 	signatureBytes, err := hex.DecodeString(signature)
 	if err != nil {
-		log.Errorf("invalid transaction signature hex data,err=", err)
-		return "", fmt.Errorf("invalid signature hex data!")
+		log.Errorf("invalid transaction signature hex data;unexpected err:%v", err)
+		return "", fmt.Errorf("invalid signature hex data")
 	}
 	mergeTxBytes := append(txBytes, signatureBytes...)
 	mergeTxHex := hex.EncodeToString(mergeTxBytes)
@@ -81,7 +80,7 @@ func (decoder *TransactionDecoder) CreateSimpleTransaction(wrapper openwallet.Wa
 		txTo             = make([]string, 0)
 	)
 	if rawTx.Coin.Symbol != Symbol {
-		return errors.New("CreateRawTransaction: Symbol is not <TRX>")
+		return fmt.Errorf("CreateRawTransaction: Symbol is not <TRX>")
 	}
 
 	if len(rawTx.To) == 0 {
@@ -92,7 +91,7 @@ func (decoder *TransactionDecoder) CreateSimpleTransaction(wrapper openwallet.Wa
 	}
 	addressList, err := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID)
 	if err != nil {
-		log.Errorf("get address list failed,err=", err)
+		decoder.wm.Log.Info("get address list failed;unexpected error:%v", err)
 		return err
 	}
 	if len(addressList) == 0 {
@@ -102,7 +101,7 @@ func (decoder *TransactionDecoder) CreateSimpleTransaction(wrapper openwallet.Wa
 	for i, addr := range addressList {
 		balance, err := decoder.wm.Getbalance(addr.Address)
 		if err != nil {
-			log.Errorf("get balance failed,err=", err)
+			decoder.wm.Log.Info("get balance failed;unexpected error:%v", err)
 			return err
 		}
 		balance.Index = i
@@ -126,7 +125,7 @@ func (decoder *TransactionDecoder) CreateSimpleTransaction(wrapper openwallet.Wa
 	txTo = []string{fmt.Sprintf("%s:%s", toAddress, amountStr)}
 	amountFloat, err := strconv.ParseFloat(amountStr, 64)
 	if err != nil {
-		log.Errorf("conver amount from string  to float failed,err=", err)
+		decoder.wm.Log.Info("conver amount from string  to float failed;unexpected error:%v", err)
 		return err
 	}
 	signatureMap := make(map[string][]*openwallet.KeySignature)
@@ -184,7 +183,7 @@ func (decoder *TransactionDecoder) CreateSimpleTransaction(wrapper openwallet.Wa
 
 	txHashBytes, err := getTxHash1(rawHex)
 	if err != nil {
-		log.Errorf("get Tx hash failed,err=", err)
+		decoder.wm.Log.Info("get Tx hash failed;unexpected error:%v", err)
 		return err
 	}
 	txHash := hex.EncodeToString(txHashBytes)
@@ -209,8 +208,9 @@ func (decoder *TransactionDecoder) CreateSimpleTransaction(wrapper openwallet.Wa
 func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 	if !rawTx.Coin.IsContract {
 		return decoder.CreateSimpleTransaction(wrapper, rawTx)
+	} else {
+		return nil
 	}
-	return nil
 	//contract To Do
 }
 
@@ -219,7 +219,7 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletD
 
 	key, err := wrapper.HDKey()
 	if err != nil {
-		log.Errorf("wrapper HDkey error,err=", err)
+		decoder.wm.Log.Info("wrapper HDkey failed;unexpected error:%v", err)
 		return err
 	}
 	keySignatures := rawTx.Signatures[rawTx.Account.AccountID]
@@ -228,32 +228,31 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletD
 		for _, keySignature := range keySignatures {
 			childKey, err := key.DerivedKeyWithPath(keySignature.Address.HDPath, 0xECC00000)
 			if err != nil {
-				log.Errorf("derived key with path failed,err=", err)
+				decoder.wm.Log.Info("derived key with path failed;unexpected error:%v", err)
 				return err
 			}
 			priKeyBytes, err := childKey.GetPrivateKeyBytes()
 			if err != nil {
-				log.Errorf("get privatekey bytes failed,err=", err)
+				decoder.wm.Log.Info("get privatekey bytes failed;unexpected error:%v", err)
 				return err
 			}
 			txHashBytes, err := getTxHash1(rawTx.RawHex)
 			if err != nil {
-				log.Errorf("get Tx hash failed,err=", err)
+				decoder.wm.Log.Info("get Tx hash failed;unexpected error:%v", err)
 				return err
 			}
 			txHash := hex.EncodeToString(txHashBytes)
 			priKey := hex.EncodeToString(priKeyBytes)
 			signature, err := decoder.wm.SignTransactionRef(txHash, priKey)
 			if err != nil {
-				log.Errorf("sign Tx failed,err=", err)
+				decoder.wm.Log.Info("sign Tx failed;unexpected error:%v", err)
 				return err
 			}
 			keySignature.Signature = signature
 		}
 	}
-	log.Info("Tx hash sign success!")
+	decoder.wm.Log.Info("Tx hash sign success")
 	//rawTx.Signatures[rawTx.Account.AccountID] = keySignatures
-
 	return nil
 }
 
@@ -262,7 +261,7 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 	//检测交易单基本字段
 	err := CheckRawTransaction(rawTx)
 	if err != nil {
-		log.Errorf("verify Tx base field failed,err=", err)
+		decoder.wm.Log.Info("verify Tx base field failed;unexpected error:%v", err)
 		return err
 	}
 	if len(rawTx.Signatures) != 1 {
@@ -274,13 +273,13 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 	}
 	mergeTxHex, err := InsertSignatureIntoRawTransaction(rawTx.RawHex, sig[0].Signature)
 	if err != nil {
-		log.Errorf("merge empty transaction and signature failed,err=", err)
+		decoder.wm.Log.Info("merge empty transaction and signature failed;unexpected error:%v", err)
 		return err
 	}
 	verifyRet := decoder.wm.ValidSignedTransactionRef(mergeTxHex)
 	if verifyRet != nil {
-		log.Error("Tx signature verify failed, err=", verifyRet)
-		return fmt.Errorf("Tx signature verify failed, err=")
+		decoder.wm.Log.Info("Tx signature verify failed;unexpected error:%v", verifyRet)
+		return fmt.Errorf("Tx signature verify failed")
 	} else {
 		rawTx.IsCompleted = true
 		//rawTx.RawHex = mergeTxHex
@@ -304,14 +303,14 @@ func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.Walle
 	}
 	mergeTxHex, err := InsertSignatureIntoRawTransaction(rawTx.RawHex, sig[0].Signature)
 	if err != nil {
-		log.Errorf("merge empty transaction and signature failed,err=", err)
+		decoder.wm.Log.Info("merge empty transaction and signature failed;unexpected error:%v", err)
 		return nil, err
 	}
 	rawTx.RawHex = mergeTxHex
 	//********广播交易单********
 	txid, err := decoder.wm.BroadcastTransaction(rawTx.RawHex)
 	if err != nil {
-		log.Errorf("submit transaction failed,err=", err)
+		decoder.wm.Log.Info("submit transaction failed;unexpected erroe:%v", err)
 		return nil, err
 	}
 	rawTx.TxID = txid

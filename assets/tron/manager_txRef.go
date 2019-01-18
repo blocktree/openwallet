@@ -17,9 +17,7 @@ package tron
 
 import (
 	"encoding/hex"
-	"errors"
 	"fmt"
-	"log"
 	"math/big"
 	"strconv"
 	"time"
@@ -53,14 +51,14 @@ func getTxHash1(txHex string) ([]byte, error) {
 	*/
 	txByte, err := hex.DecodeString(txHex)
 	if err != nil {
-		return nil, fmt.Errorf("get Tx hex failed,unexpected error: %v", err)
+		return nil, fmt.Errorf("get Tx hex failed;unexpected error: %v", err)
 	}
 	if err := proto.Unmarshal(txByte, tx); err != nil {
-		return nil, fmt.Errorf("unmarshal RawData failed, unexpected error: %v", err)
+		return nil, fmt.Errorf("unmarshal RawData failed; unexpected error: %v", err)
 	}
 	txRaw, err := proto.Marshal(tx.GetRawData())
 	if err != nil {
-		return nil, fmt.Errorf("marshal RawData failed,unexpected error:%v", err)
+		return nil, fmt.Errorf("marshal RawData failed;unexpected error:%v", err)
 	}
 	txHash := owcrypt.Hash(txRaw, 0, owcrypt.HASH_ALG_SHA256)
 	return txHash, nil
@@ -70,7 +68,7 @@ func getTxHash(tx *core.Transaction) (txHash []byte, err error) {
 
 	txRaw, err := proto.Marshal(tx.GetRawData())
 	if err != nil {
-		return nil, fmt.Errorf("marshal RawData failed, unexpected error: %v", err)
+		return nil, fmt.Errorf("marshal RawData failed; unexpected error: %v", err)
 	}
 	txHash = owcrypt.Hash(txRaw, 0, owcrypt.HASH_ALG_SHA256)
 	return txHash, nil
@@ -81,13 +79,15 @@ func (wm *WalletManager) CreateTransactionRef(toAddress, ownerAddress string, am
 	// addressEncoder.AddressDecode return 20 bytes of the center of Address
 	toAddressBytes, err := addressEncoder.AddressDecode(toAddress, addressEncoder.TRON_mainnetAddress)
 	if err != nil {
-		return "", fmt.Errorf("address decode failed,unexpected error: %v", err)
+		wm.Log.Info("toAddress decode failed failed;unexpected error:%v", err)
+		return "", err
 	}
 	toAddressBytes = append([]byte{0x41}, toAddressBytes...)
 
 	ownerAddressBytes, err := addressEncoder.AddressDecode(ownerAddress, addressEncoder.TRON_mainnetAddress)
 	if err != nil {
-		return "", fmt.Errorf("address decode failed,unexpected error:%v", err)
+		wm.Log.Info("ownerAddress decode failed failed;unexpected error:%v", err)
+		return "", err
 	}
 	ownerAddressBytes = append([]byte{0x41}, ownerAddressBytes...)
 
@@ -101,7 +101,8 @@ func (wm *WalletManager) CreateTransactionRef(toAddress, ownerAddress string, am
 
 	tcRaw, err := proto.Marshal(tc)
 	if err != nil {
-		return "", fmt.Errorf("marshal tc failed,unexpected error:%v", err)
+		wm.Log.Info("marshal tc failed;unexpected error:%v", err)
+		return "", err
 	}
 
 	txContact := &core.Transaction_Contract{
@@ -114,11 +115,13 @@ func (wm *WalletManager) CreateTransactionRef(toAddress, ownerAddress string, am
 	// ******** Get Reference Block ********
 	block, err := wm.GetNowBlock()
 	if err != nil {
-		return "", fmt.Errorf("get current block failed,unexpected err:%v", err)
+		wm.Log.Info("get current block failed;unexpected error:%v", err)
+		return "", err
 	}
 	blockID, err := hex.DecodeString(block.GetBlockHashID())
 	if err != nil {
-		return txRawHex, fmt.Errorf("conver BlockHashID from hex to byte failed,unexpected err:%v", err)
+		wm.Log.Info("conver BlockHashID from hex to byte failed;unexpected error:%v", err)
+		return txRawHex, err
 	}
 	refBlockBytes, refBlockHash := blockID[6:8], blockID[8:16]
 
@@ -145,7 +148,8 @@ func (wm *WalletManager) CreateTransactionRef(toAddress, ownerAddress string, am
 
 	// ******** TX Encoding ********
 	if x, err := proto.Marshal(tx); err != nil {
-		return "", fmt.Errorf("marshal tx failed,unexpected error:%v", err)
+		wm.Log.Info("marshal tx failed;unexpected error:%v", err)
+		return "", err
 	} else {
 		txRawHex = hex.EncodeToString(x)
 	}
@@ -175,11 +179,13 @@ func (wm *WalletManager) SignTransactionRef(hash string, privateKey string) (sig
 	txHash, err := hex.DecodeString(hash)
 
 	if err != nil {
-		return "", fmt.Errorf("conver hash from string to byte failed,unexpected error:%v", err)
+		wm.Log.Info("conver hash from hex to byte failed;unexpected error:%v", err)
+		return "", err
 	}
 	pk, err := hex.DecodeString(privateKey)
 	if err != nil {
-		return "", fmt.Errorf("conver privatekey from string to byte failed,unexpected error:%v", err)
+		wm.Log.Info("conver privatekey from hex to byte failed;unexpected error:%v", err)
+		return "", err
 	}
 	/*
 		 for i := range tx.GetRawData().GetContract() {
@@ -196,12 +202,14 @@ func (wm *WalletManager) SignTransactionRef(hash string, privateKey string) (sig
 		 }*/
 	sign, ret := signatureSet.TronSignature(pk, txHash)
 	if ret != owcrypt.SUCCESS {
-		return "", fmt.Errorf("sign txHash failed,unexpected error:%d", ret)
+		wm.Log.Info("sign txHash failed;unexpected error:%v", ret)
+		return "", fmt.Errorf("sign txHash failed")
 	}
 	tx.Signature = append(tx.Signature, sign)
 	x, err := proto.Marshal(tx)
 	if err != nil {
-		return "", fmt.Errorf("marshal tx failed,unexpected error:%v", err)
+		wm.Log.Info("marshal tx failed;unexpected error:%v", err)
+		return "", err
 	} else {
 		signedTxRaw = hex.EncodeToString(x)
 	}
@@ -213,16 +221,19 @@ func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
 	tx := &core.Transaction{}
 	txBytes, err := hex.DecodeString(txHex)
 	if err != nil {
-		return fmt.Errorf("conver txhex from string to byte failed,unexpected error:%v", err)
+		wm.Log.Info("conver txhex from hex to byte failed;unexpected error:%v", err)
+		return err
 	}
 	if err := proto.Unmarshal(txBytes, tx); err != nil {
-		return fmt.Errorf("unmarshal txBytes failed,unexpected error:%v", err)
+		wm.Log.Info("unmarshal txBytes failed;unexpected error:%v", err)
+		return err
 	}
 	listContracts := tx.RawData.GetContract()
 	countSignature := len(tx.Signature)
 	txHash, err := getTxHash1(txHex)
 	if err != nil {
-		return fmt.Errorf("get txHex hash failed,unexpected error:%v", err)
+		wm.Log.Info("get txHex hash failed;unexpected error:%v", err)
+		return err
 	}
 
 	if countSignature == 0 {
@@ -236,24 +247,23 @@ func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
 		tc := &core.TransferContract{}
 		err := proto.Unmarshal(contract.Parameter.GetValue(), tc)
 		if err != nil {
-			return fmt.Errorf("unmarshal contract value failed,unexpected error:%v", err)
+			wm.Log.Info("unmarshal contract (value) failed;unexpected error:%v", err)
+			return err
 		}
 		ownerAddressHex := hex.EncodeToString(tc.GetOwnerAddress())
 		pkBytes, ret := owcrypt.RecoverPubkey(tx.Signature[i], txHash, owcrypt.ECC_CURVE_SECP256K1)
 
 		if ret != owcrypt.SUCCESS {
-			err := errors.New("ValidSignedTransactionRef faild: owcryt.RecoverPubkey return err")
-			log.Println(err)
-			return err
+			return fmt.Errorf("verify SignedTransactionRef faild: recover Pubkey error")
 		}
 		if owcrypt.SUCCESS != owcrypt.Verify(pkBytes, nil, 0, txHash, 32, tx.Signature[i][0:len(tx.Signature[i])-1], owcrypt.ECC_CURVE_SECP256K1) {
-			return fmt.Errorf("ValidSignedTransactionRef faild:owcrypt.Verify return err")
+			return fmt.Errorf("verify SignedTransactionRef failed:verify signature failed")
 		}
 		pkHash := owcrypt.Hash(pkBytes, 0, owcrypt.HASH_ALG_KECCAK256)[12:32]
 		pkgenAddress := append([]byte{0x41}, pkHash...)
 		pkgenAddressHex := hex.EncodeToString(pkgenAddress)
 		if pkgenAddressHex != ownerAddressHex {
-			return fmt.Errorf("Validate failed, signed address is not the owner address")
+			return fmt.Errorf("verify SignedTransactionRef failed: signed address is not the owner address")
 		}
 	}
 	return nil
@@ -262,10 +272,12 @@ func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
 func (wm *WalletManager) BroadcastTransaction(raw string) (string, error) {
 	tx := &core.Transaction{}
 	if txBytes, err := hex.DecodeString(raw); err != nil {
-		return "", fmt.Errorf("conver raw from string to byte erroe")
+		wm.Log.Info("conver raw from hex to byte failed;unexpected error:%v", err)
+		return "", err
 	} else {
 		if err := proto.Unmarshal(txBytes, tx); err != nil {
-			return "", fmt.Errorf("unmarshal txBytes failed,unexpected error:%v", err)
+			wm.Log.Info("unmarshal txBytes failed;unexpected error:%v", err)
+			return "", err
 		}
 	}
 	/* Generate Params */
@@ -279,7 +291,8 @@ func (wm *WalletManager) BroadcastTransaction(raw string) (string, error) {
 		signature = append(signature, hex.EncodeToString(x)) // base64
 	}
 	if txHash, err := getTxHash1(raw); err != nil {
-		return "", fmt.Errorf("get raw hash failed,unexpected error:%v", err)
+		wm.Log.Info("get raw hash failed;unexpected error:%v", err)
+		return "", err
 	} else {
 		txID = hex.EncodeToString(txHash)
 	}
@@ -289,7 +302,8 @@ func (wm *WalletManager) BroadcastTransaction(raw string) (string, error) {
 		any := c.GetParameter().GetValue()
 		tc := &core.TransferContract{}
 		if err := proto.Unmarshal(any, tc); err != nil {
-			return "", fmt.Errorf("unmarshal contract value failed,unexpected error:%v", err)
+			wm.Log.Info("unmarshal contract value failed;unexpected error:%v", err)
+			return "", err
 		}
 		contract := map[string]interface{}{
 			"type": c.GetType().String(),
@@ -320,7 +334,8 @@ func (wm *WalletManager) BroadcastTransaction(raw string) (string, error) {
 	r, err := wm.WalletClient.Call("/wallet/broadcasttransaction", params)
 
 	if err != nil {
-		return "", fmt.Errorf("broadcast transaction error")
+		wm.Log.Info("broadcast transaction failed;unexpected error:%v", err)
+		return "", err
 	} else {
 		if r.Get("result").Bool() != true {
 			var err error
@@ -361,6 +376,7 @@ func (wm *WalletManager) Getbalance(address string) (*AddrBalance, error) {
 	return ret, nil
 }
 
+/*
 // ------------------------------------------------------------------------------------------------------
 func debugPrintTx(txRawhex string) {
 
@@ -416,3 +432,4 @@ func debugPrintTx(txRawhex string) {
 
 	fmt.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Print Test ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ End")
 }
+*/

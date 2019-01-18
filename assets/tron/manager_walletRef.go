@@ -16,7 +16,6 @@
 package tron
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -32,6 +31,7 @@ func (wm *WalletManager) GetWallets() ([]*openwallet.Wallet, error) {
 
 	wallets, err := openwallet.GetWalletsByKeyDir(wm.Config.keyDir)
 	if err != nil {
+		wm.Log.Info("get wallet by KeyDir failed;unexpected error:%v", err)
 		return nil, err
 	}
 
@@ -48,6 +48,7 @@ func (wm *WalletManager) GetWalletInfo(walletID string) (*openwallet.Wallet, err
 
 	wallets, err := wm.GetWallets()
 	if err != nil {
+		wm.Log.Info("get wallet failed;unexpected error:%v", err)
 		return nil, err
 	}
 
@@ -59,7 +60,7 @@ func (wm *WalletManager) GetWalletInfo(walletID string) (*openwallet.Wallet, err
 
 	}
 
-	return nil, errors.New("The wallet that your given name is not exist")
+	return nil, fmt.Errorf("The wallet that your given name is not exist")
 }
 
 //CreateNewWallet 创建钱包
@@ -74,22 +75,25 @@ func (wm *WalletManager) CreateNewWallet(name, password string) (*openwallet.Wal
 	wallets, err = wm.GetWallets()
 	for _, w := range wallets {
 		if w.Alias == name {
-			return nil, "", errors.New("The wallet's alias is duplicated")
+			return nil, "", fmt.Errorf("The wallet's alias is duplicated")
 		}
 	}
 
 	seed, err := hdkeychain.GenerateSeed(32)
 	if err != nil {
+		wm.Log.Info("generate seed failed;unexpected error:%v", err)
 		return nil, "", err
 	}
 
 	extSeed, err := hdkeystore.GetExtendSeed(seed, wm.Config.MasterKey)
 	if err != nil {
+		wm.Log.Info("get extend seed failed;unexpected error:%v", err)
 		return nil, "", err
 	}
 
 	key, keyFile, err := hdkeystore.StoreHDKeyWithSeed(wm.Config.keyDir, name, password, extSeed, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
 	if err != nil {
+		wm.Log.Info("store HDKey with seed failed;unexpected error:%v", err)
 		return nil, "", err
 	}
 

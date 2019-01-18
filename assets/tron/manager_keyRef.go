@@ -18,7 +18,6 @@ package tron
 import (
 	"encoding/hex"
 	"fmt"
-	"log"
 )
 
 //GetPrivateKeyRef 找到地址索引对应的私钥，返回私钥hex格式字符串
@@ -27,31 +26,33 @@ func (wm *WalletManager) GetPrivateKeyRef(walletID, password string, index uint6
 	//读取钱包文件
 	w, err := wm.GetWalletInfo(walletID)
 	if err != nil {
-		log.Println(err)
+		wm.Log.Info("get wallet info failed;unexpected error:%v", err)
 		return "", err
 	}
 
 	//解密钱包文件并加载钱包KEY
 	k, err := w.HDKey(password)
 	if err != nil {
-		log.Println(err)
+		wm.Log.Info("load wallet key failed;unexpected error:%v", err)
 		return "", err
 	}
 
 	derivedPath := fmt.Sprintf("%s/%d", k.RootPath, index)
 	key, err := k.DerivedKeyWithPath(derivedPath, wm.Config.CurveType)
 	if err != nil {
-		log.Println(err)
+		wm.Log.Info("derive key with path failed;unexpected error:%v", err)
 		return "", err
 	}
 
 	childKey, err := key.GenPrivateChild(uint32(serializes))
 	if err != nil {
+		wm.Log.Info("generate private child key failed;unexpected error:%v", err)
 		return "", err
 	}
 
 	keyBytes, err := childKey.GetPrivateKeyBytes()
 	if err != nil {
+		wm.Log.Info("get private key failed;unexpected error:%v", err)
 		return "", err
 	}
 
