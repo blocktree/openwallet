@@ -15,13 +15,14 @@
 
 package tron
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestGetAccountNet(t *testing.T) {
 
 	var addr string
 	addr = OWNERADDRESS
-
 	if r, err := tw.GetAccountNet(addr); err != nil {
 		t.Errorf("GetAccountNet failed: %v\n", err)
 	} else {

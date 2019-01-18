@@ -44,6 +44,11 @@ const (
 	RPCServerExplorer = 1
 )
 
+var (
+	transferContract      = "TransferContract"
+	transferAssetContract = "TransferAssetContract"
+)
+
 //TronBlockScanner tron的区块链扫描器
 type TronBlockScanner struct {
 	*openwallet.BlockScannerBase
@@ -171,7 +176,7 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 			//记录未扫区块
 			unscanRecord := NewUnscanRecord(currentHeight, "", err.Error())
 			bs.SaveUnscanRecord(unscanRecord)
-			log.Std.Info("block height: %d extract failed.", currentHeight)
+			//log.Std.Info("block height: %d extract failed.", currentHeight)
 			continue
 		}
 		hash := block.GetBlockHashID()
@@ -227,7 +232,7 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 			}
 			err = bs.BatchExtractTransaction(block.Height, block.Hash, txHash)
 			if err != nil {
-				log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
+				//log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
 			}
 			//重置当前区块的hash
 			currentHash = hash
@@ -267,7 +272,7 @@ func (bs *TronBlockScanner) ScanBlock(height uint64) error {
 		//记录未扫区块
 		unscanRecord := NewUnscanRecord(height, "", err.Error())
 		bs.SaveUnscanRecord(unscanRecord)
-		log.Std.Info("block height: %d extract failed.", height)
+		//log.Std.Info("block height: %d extract failed.", height)
 		return err
 	}
 
@@ -370,11 +375,9 @@ func (wm *WalletManager) DeleteUnscanRecord(height uint64) error {
 	if err != nil {
 		return err
 	}
-
 	for _, r := range list {
 		db.DeleteStruct(r)
 	}
-
 	return nil
 }
 
@@ -397,13 +400,14 @@ func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash str
 			extractData: make(map[string]*openwallet.TxExtractData),
 		}
 	)
-	//txid = "2924a364b7bfc2c1f62796377d83008eb9c310a0f07305030d0b7ac9127d1848"
 	trx, err := bs.wm.GetTransaction(txid, blockHeight)
 	if err != nil {
 		log.Std.Info("block scanner can not extract transaction data,unexpected error:%v", err)
 		success = false
 		return result
-	} else {
+	}
+	switch trx.Type {
+	case transferContract: //TRX
 		//bs.wm.Log.Std.Info("block scanner scanning tx: %+v", txid)
 		//订阅地址为交易单中的发送者
 		_, ok1 := scanAddressFunc(trx.From)
@@ -433,16 +437,15 @@ func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash str
 			//bs.wm.Log.Std.Info("tx.to[%v] not found in scanning address.", tx_nas.To)
 		}
 		success = true
+	case transferAssetContract: //other asset,TODO
+		success = false
+	default:
+		success = false
 	}
 	result.Success = success
 	return result
 
 }
-
-// //ExtractTransactionData 提取交易单
-// func (bs *TronBlockScanner) extractTransaction(trx *Transaction, result *ExtractResult, scanAddressFunc openwallet.BlockScanAddressFunc) {
-
-// }
 
 func (bs *TronBlockScanner) InitTronExtractResult(tx *Transaction, result *ExtractResult, isFromAccount bool) {
 	value := decimal.RequireFromString(tx.Amount)
@@ -562,9 +565,6 @@ func (bs *TronBlockScanner) newExtractDataNotify(height uint64, extractData map[
 
 func (wm *WalletManager) GetTransaction(txid string, height uint64) (*Transaction, error) {
 	params := req.Param{"value": txid}
-	//params := []interface{}{txid}
-
-	//trans, err := wm.RPCClient.sendRpcRequest("0", "getrawtransaction", params)
 	r, err := wm.WalletClient.Call("/wallet/gettransactionbyid", params)
 	if err != nil {
 		return nil, err
@@ -598,7 +598,6 @@ func (wm *WalletManager) DeleteUnscanRecordNotFindTX() error {
 
 	//删除找不到交易单
 	reason := "[-5]No information available about transaction"
-
 	//获取本地区块高度
 	db, err := storm.Open(filepath.Join(wm.Config.dbPath, wm.Config.BlockchainFile))
 	if err != nil {
@@ -663,7 +662,7 @@ func (bs *TronBlockScanner) BatchExtractTransaction(blockHeight uint64, blockHas
 				//记录未扫区块
 				unscanRecord := NewUnscanRecord(height, "", "")
 				bs.SaveUnscanRecord(unscanRecord)
-				log.Std.Info("block height: %d extract failed.", height)
+				//log.Std.Info("block height: %d extract failed.", height)
 				failed++ //标记保存失败数
 			}
 			//累计完成的线程数
