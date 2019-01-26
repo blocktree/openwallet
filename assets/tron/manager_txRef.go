@@ -153,7 +153,6 @@ func (wm *WalletManager) CreateTransactionRef(toAddress, ownerAddress string, am
 	} else {
 		txRawHex = hex.EncodeToString(x)
 	}
-
 	return txRawHex, nil
 }
 
