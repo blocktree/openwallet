@@ -408,7 +408,8 @@ func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash str
 			//bs.wm.Log.Std.Info("tx.from[%v] not found in scanning address.", trx.From)
 		}
 		//订阅地址为交易单中的接收者
-		if _, ok2 := scanAddressFunc(trx.To); ok2 {
+		_, ok2 := scanAddressFunc(trx.To)
+		if ok2 {
 			bs.wm.Log.Std.Info("tx.to found in transaction [%v].", trx.TxID)
 			if accountId, exist := scanAddressFunc(trx.To); exist {
 				if _, exist = result.extractData[accountId]; !exist {
@@ -558,7 +559,10 @@ func (wm *WalletManager) GetTransaction(txid string, height uint64) (*Transactio
 	}
 	tx := NewTransaction(r)
 	tx.BlockHeight = height
-	block, _ := wm.GetBlockByNum(height)
+	block, err := wm.GetBlockByNum(height)
+	if err != nil {
+		return nil, err
+	}
 	tx.BlockHash = block.Hash
 	return tx, nil
 }

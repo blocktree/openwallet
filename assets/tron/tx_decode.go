@@ -289,13 +289,13 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 
 //SubmitRawTransaction 广播交易单
 func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) (*openwallet.Transaction, error) {
+
 	if len(rawTx.RawHex) == 0 {
 		return nil, fmt.Errorf("transaction hex is empty")
 	}
 	if !rawTx.IsCompleted {
 		return nil, fmt.Errorf("transaction is not completed validation")
 	}
-
 	//********合并交易单********
 	sig, exist := rawTx.Signatures[rawTx.Account.AccountID]
 	if !exist {
@@ -327,7 +327,6 @@ func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.Walle
 		Fees:       rawTx.Fees,
 		SubmitTime: time.Now().Unix(),
 	}
-
 	tx.WxID = openwallet.GenTransactionWxID(&tx)
 	return &tx, nil
 }
