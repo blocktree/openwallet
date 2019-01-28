@@ -158,6 +158,8 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 		//继续扫描下一个区块
 		currentHeight = currentHeight + 1
 
+		bs.wm.Log.Std.Info("block scanner scanning height: %d ...", currentHeight)
+
 		block, err := bs.wm.GetBlockByNum(currentHeight)
 		if err != nil {
 			bs.wm.Log.Std.Info("block scanner can not get new block data; unexpected error: %v", err)
@@ -397,7 +399,7 @@ func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash str
 		//订阅地址为交易单中的发送者
 		_, ok1 := scanAddressFunc(trx.From)
 		if ok1 {
-			bs.wm.Log.Std.Info("tx.from found in transaction [%v] .", trx.TxID)
+			//bs.wm.Log.Std.Info("tx.from found in transaction [%v] .", trx.TxID)
 			if accountId, exist := scanAddressFunc(trx.From); exist {
 				trx.FromAccountId = accountId
 				bs.InitTronExtractResult(trx, &result, true)

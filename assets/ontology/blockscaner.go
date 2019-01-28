@@ -474,6 +474,17 @@ func (bs *ONTBlockScanner) extractRuntime(producer chan ExtractResult, worker ch
 	)
 
 	for {
+
+		var activeWorker chan<- ExtractResult
+		var activeValue ExtractResult
+
+		//当数据队列有数据时，释放顶部，传输给消费者
+		if len(values) > 0 {
+			activeWorker = worker
+			activeValue = values[0]
+
+		}
+
 		select {
 
 		//生成者不断生成数据，插入到数据队列尾部
@@ -483,13 +494,9 @@ func (bs *ONTBlockScanner) extractRuntime(producer chan ExtractResult, worker ch
 			//退出
 			//log.Std.Info("block scanner have been scanned!")
 			return
-		default:
-
-			//当数据队列有数据时，释放顶部，传输给消费者
-			if len(values) > 0 {
-				worker <- values[0]
-				values = values[1:]
-			}
+		case activeWorker <- activeValue:
+			//wm.Log.Std.Info("Get %d", len(activeValue))
+			values = values[1:]
 		}
 	}
 

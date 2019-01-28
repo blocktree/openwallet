@@ -373,7 +373,7 @@ func (node *OWTPNode) connect(pid string, config ConnectConfig) (Peer, error) {
 			protocol = "wss://"
 		}
 
-		url := protocol + strings.TrimSuffix(addr, "/") + "/" + pid
+		url := protocol + strings.TrimSuffix(addr, "/") + "/"
 
 		//建立链接，记录默认的客户端
 		client, err := Dial(pid, url, node, auth.HTTPAuthHeader(), readBufferSize, writeBufferSize)
@@ -415,7 +415,7 @@ func (node *OWTPNode) connect(pid string, config ConnectConfig) (Peer, error) {
 			protocol = "https://"
 		}
 
-		url := protocol + strings.TrimSuffix(addr, "/") + "/" + pid
+		url := protocol + strings.TrimSuffix(addr, "/") + "/"
 
 		//建立链接，记录默认的客户端
 		client, err := HTTPDial(pid, url, node, auth.HTTPAuthHeader())
