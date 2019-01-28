@@ -307,6 +307,10 @@ func (bs *BTCBlockScanner) ScanTxMemPool() {
 		return
 	}
 
+	if txIDsInMemPool == nil || len(txIDsInMemPool) == 0 {
+		return
+	}
+
 	err = bs.BatchExtractTransaction(0, "", txIDsInMemPool)
 	if err != nil {
 		bs.wm.Log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
