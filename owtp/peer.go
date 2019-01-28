@@ -46,7 +46,7 @@ type DataPacket struct {
 	Data      interface{} `json:"d"`
 	Signature string      `json:"s"`
 	CheckCode string      `json:"z"`
-	Version   string      `json:"v"`
+	//Version   string      `json:"v"`
 	PublicKey string      `json:"a"`
 }
 
@@ -60,7 +60,7 @@ func NewDataPacket(json gjson.Result) *DataPacket {
 	dp.Data = json.Get("d").String()
 	dp.Signature = json.Get("s").String()
 	dp.CheckCode = json.Get("z").String()
-	dp.Version = json.Get("v").String()
+	//dp.Version = json.Get("v").String()
 	dp.PublicKey = json.Get("a").String()
 	return dp
 }
