@@ -15,7 +15,6 @@ import (
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/keystore"
 	"github.com/blocktree/OpenWallet/log"
-	"github.com/blocktree/OpenWallet/logger"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	ethKStore "github.com/ethereum/go-ethereum/accounts/keystore"
 )
@@ -72,14 +71,14 @@ func (this *WalletManager) CreateBatchAddress(name, password string, count uint6
 	//读取钱包
 	w, err := this.GetWalletInfo(this.GetConfig().KeyDir, this.GetConfig().DbPath, name)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get wallet info, err=%v\n", err))
+		this.Log.Errorf(fmt.Sprintf("get wallet info, err=%v\n", err))
 		return err
 	}
 
 	//验证钱包
 	keyroot, err := w.HDKey(password, this.StorageOld)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
+		this.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
 		return err
 	}
 
@@ -87,7 +86,7 @@ func (this *WalletManager) CreateBatchAddress(name, password string, count uint6
 
 	db, err := w.OpenDB(this.GetConfig().DbPath)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("open db, err=%v\n", err))
+		this.Log.Errorf(fmt.Sprintf("open db, err=%v\n", err))
 		return err
 	}
 	defer db.Close()
@@ -111,7 +110,7 @@ func (this *WalletManager) CreateBatchAddress(name, password string, count uint6
 		}
 		_, err = ethKeyStore.NewAccountForWalletBT(keyCombo, password)
 		if err != nil {
-			openwLogger.Log.Errorf("NewAccountForWalletBT failed, err = %v", err)
+			this.Log.Errorf("NewAccountForWalletBT failed, err = %v", err)
 			errcount++
 			continue
 		}
@@ -134,13 +133,13 @@ func (this *WalletManager) SendTransaction(wallet *Wallet, to string, amount *bi
 
 	err := this.UnlockWallet(wallet, password)
 	if err != nil {
-		openwLogger.Log.Errorf("unlock wallet [%v]. failed, err=%v", wallet.WalletID, err)
+		this.Log.Errorf("unlock wallet [%v]. failed, err=%v", wallet.WalletID, err)
 		return nil, err
 	}
 
 	addrs, err := this.GetAddressesByWallet(this.GetConfig().DbPath, wallet)
 	if err != nil {
-		openwLogger.Log.Errorf("failed to get addresses from db, err = %v", err)
+		this.Log.Errorf("failed to get addresses from db, err = %v", err)
 		return nil, err
 	}
 
@@ -157,7 +156,7 @@ func (this *WalletManager) SendTransaction(wallet *Wallet, to string, amount *bi
 		fmt.Println("amount remained:", amount.String())
 		//空账户直接跳过
 		//if addrs[i].balance.Cmp(big.NewInt(0)) == 0 {
-		//	openwLogger.Log.Infof("skip the address[%v] with 0 balance. ", addrs[i].Address)
+		//	this.Log.Infof("skip the address[%v] with 0 balance. ", addrs[i].Address)
 		//	continue
 		//}
 
@@ -166,7 +165,7 @@ func (this *WalletManager) SendTransaction(wallet *Wallet, to string, amount *bi
 			amountToSend = *amount
 			fee, err = this.GetSimpleTransactionFeeEstimated(addrs[i].Address, to, &amountToSend)
 			if err != nil {
-				openwLogger.Log.Errorf("%v", err)
+				this.Log.Errorf("%v", err)
 				continue
 			}
 
@@ -177,7 +176,7 @@ func (this *WalletManager) SendTransaction(wallet *Wallet, to string, amount *bi
 			//fmt.Println("amount to send ignore fee:", amountToSend.String())
 			if balanceLeft.Cmp(big.NewInt(0)) < 0 {
 				errinfo := fmt.Sprintf("[%v] is a dust address, will skip. ", addrs[i].Address)
-				openwLogger.Log.Errorf(errinfo)
+				this.Log.Errorf(errinfo)
 				continue
 			}
 
@@ -191,14 +190,14 @@ func (this *WalletManager) SendTransaction(wallet *Wallet, to string, amount *bi
 			amountToSend = *addrs[i].balance
 			fee, err = this.GetSimpleTransactionFeeEstimated(addrs[i].Address, to, &amountToSend)
 			if err != nil {
-				openwLogger.Log.Errorf("%v", err)
+				this.Log.Errorf("%v", err)
 				continue
 			}
 
 			//灰尘账户, 余额不足以发起一次transaction
 			if amountToSend.Cmp(fee.Fee) <= 0 {
 				errinfo := fmt.Sprintf("[%v] is a dust address, will skip. ", addrs[i].Address)
-				openwLogger.Log.Errorf(errinfo)
+				this.Log.Errorf(errinfo)
 				continue
 			}
 
@@ -209,7 +208,7 @@ func (this *WalletManager) SendTransaction(wallet *Wallet, to string, amount *bi
 
 		txid, err := this.SendTransactionToAddr(makeSimpleTransactionPara(addrs[i], to, &amountToSend, password, fee))
 		if err != nil {
-			openwLogger.Log.Errorf("SendTransactionToAddr failed, err=%v", err)
+			this.Log.Errorf("SendTransactionToAddr failed, err=%v", err)
 			if txid == "" {
 				continue //txIds = append(txIds, txid)
 			}
@@ -230,7 +229,7 @@ func (this *WalletManager) BackupWallet(newBackupDir string, wallet *Wallet, pas
 
 	err := this.UnlockWallet(wallet, password)
 	if err != nil {
-		openwLogger.Log.Errorf("unlock wallet failed, err=%v", err)
+		this.Log.Errorf("unlock wallet failed, err=%v", err)
 		return "", err
 	}
 
@@ -243,7 +242,7 @@ func (this *WalletManager) BackupWallet(newBackupDir string, wallet *Wallet, pas
 
 	addrs, err := this.GetAddressesByWallet(this.GetConfig().DbPath, wallet)
 	if err != nil {
-		openwLogger.Log.Errorf("get addresses by wallet failed, err = %v", err)
+		this.Log.Errorf("get addresses by wallet failed, err = %v", err)
 		return "", err
 	}
 
@@ -261,7 +260,7 @@ func (this *WalletManager) BackupWallet(newBackupDir string, wallet *Wallet, pas
 
 	rd, err := ioutil.ReadDir(this.GetConfig().EthereumKeyPath)
 	if err != nil {
-		openwLogger.Log.Errorf("open ethereum key path [%v] failed, err=%v", this.GetConfig().EthereumKeyPath, err)
+		this.Log.Errorf("open ethereum key path [%v] failed, err=%v", this.GetConfig().EthereumKeyPath, err)
 		return "", err
 	}
 
@@ -291,7 +290,7 @@ func (this *WalletManager) BackupWallet(newBackupDir string, wallet *Wallet, pas
 		cmd := "cp " + EthereumKeyPath + "/" + keyfile + " " + newBackupDir
 		_, err = exec_shell(cmd)
 		if err != nil {
-			openwLogger.Log.Errorf("backup key faile failed, err = ", err)
+			this.Log.Errorf("backup key faile failed, err = ", err)
 			return "", err
 		}
 	}*/
@@ -302,7 +301,7 @@ func (this *WalletManager) BackupWallet(newBackupDir string, wallet *Wallet, pas
 	for _, keyfile := range files {
 		err := file.Copy(this.GetConfig().EthereumKeyPath+"/"+keyfile, newBackupDir+"/")
 		if err != nil {
-			openwLogger.Log.Errorf("backup key faile failed, err = %v", err)
+			this.Log.Errorf("backup key faile failed, err = %v", err)
 			return "", err
 		}
 	}
@@ -323,14 +322,14 @@ func (this *WalletManager) RestoreWallet(keyFile string, password string) error 
 	finfo, err := os.Stat(keyFile)
 	if err != nil || !finfo.IsDir() {
 		errinfo := fmt.Sprintf("stat file[%v] failed, err = %v\n", keyFile, err)
-		openwLogger.Log.Errorf(errinfo)
+		this.Log.Errorf(errinfo)
 		return err
 	}
 	/*parts := strings.Split(keyFile, "\\") //filepath.SplitList(keyFile)
 	l := len(parts)
 	if l == 0 {
 		errinfo := fmt.Sprintf("wrong keyFile[%v] passed through...", keyFile)
-		openwLogger.Log.Errorf(errinfo)
+		this.Log.Errorf(errinfo)
 		return errors.New(errinfo)
 	}
 	*/
@@ -340,14 +339,14 @@ func (this *WalletManager) RestoreWallet(keyFile string, password string) error 
 	parts := strings.Split(dirName, "-")
 	if len(parts) != 3 {
 		errinfo := fmt.Sprintf("invalid directory name[%v] ", dirName)
-		openwLogger.Log.Errorf(errinfo)
+		this.Log.Errorf(errinfo)
 		return errors.New(errinfo)
 	}
 
 	_, err = time.ParseInLocation(TIME_POSTFIX, parts[2], time.Local)
 	if err != nil {
 		errinfo := fmt.Sprintf("check directory name[%v] time format failed ", dirName)
-		openwLogger.Log.Errorf(errinfo)
+		this.Log.Errorf(errinfo)
 		return errors.New(errinfo)
 	}
 
@@ -356,24 +355,24 @@ func (this *WalletManager) RestoreWallet(keyFile string, password string) error 
 	walletKeyBackupPath := keyFile + "/" + parts[0] + "-" + walletId
 	walletBackup, err := GetWalletKey(walletKeyBackupPath)
 	if err != nil {
-		openwLogger.Log.Errorf("parse the key file [%v] failed, err= %v.", walletKeyBackupPath, err)
+		this.Log.Errorf("parse the key file [%v] failed, err= %v.", walletKeyBackupPath, err)
 		return err
 	}
 	err = verifyBackupWallet(walletBackup, keyFile, password)
 	if err != nil {
-		openwLogger.Log.Errorf("verify the backup wallet [%v] password failed, err= %v.", walletKeyBackupPath, err)
+		this.Log.Errorf("verify the backup wallet [%v] password failed, err= %v.", walletKeyBackupPath, err)
 		return err
 	}
 
 	walletexist, err := this.GetWalletInfo(this.GetConfig().KeyDir, this.GetConfig().DbPath, walletId)
 	if err != nil && err.Error() != WALLET_NOT_EXIST_ERR {
 		errinfo := fmt.Sprintf("get wallet [%v] info failed, err = %v ", walletId, err)
-		openwLogger.Log.Errorf(errinfo)
+		this.Log.Errorf(errinfo)
 		return errors.New(errinfo)
 	} else if err == nil {
 		err = this.UnlockWallet(walletexist, password)
 		if err != nil {
-			openwLogger.Log.Errorf("unlock the existing wallet [%v] password failed, err= %v.", walletKeyBackupPath, err)
+			this.Log.Errorf("unlock the existing wallet [%v] password failed, err= %v.", walletKeyBackupPath, err)
 			return err
 		}
 
@@ -381,7 +380,7 @@ func (this *WalletManager) RestoreWallet(keyFile string, password string) error 
 		_, err := this.BackupWallet(newBackupDir, walletexist, password)
 		if err != nil {
 			errinfo := fmt.Sprintf("backup wallet[%v] before restore failed,err = %v ", walletexist.WalletID, err)
-			openwLogger.Log.Errorf(errinfo)
+			this.Log.Errorf(errinfo)
 			return errors.New(errinfo)
 		}
 	} else {
@@ -391,7 +390,7 @@ func (this *WalletManager) RestoreWallet(keyFile string, password string) error 
 	files, err := ioutil.ReadDir(keyFile)
 	if err != nil {
 		errinfo := fmt.Sprintf("open directory [%v] failed, err = %v ", keyFile, err)
-		openwLogger.Log.Errorf(errinfo)
+		this.Log.Errorf(errinfo)
 		return errors.New(errinfo)
 	}
 
@@ -445,7 +444,7 @@ func (this *WalletManager) RestoreWallet(keyFile string, password string) error 
 		err = file.Copy(src, dst)
 		if err != nil {
 			errinfo := fmt.Sprintf("copy file from [%v] to [%v] failed, err = %v", src, dst, err)
-			openwLogger.Log.Errorf(errinfo)
+			this.Log.Errorf(errinfo)
 			return errors.New(errinfo)
 		}
 	}
@@ -458,13 +457,13 @@ func (this *WalletManager) ERC20SendTransaction(wallet *Wallet, to string, amoun
 
 	err := this.UnlockWallet(wallet, password)
 	if err != nil {
-		openwLogger.Log.Errorf("unlock wallet [%v]. failed, err=%v", wallet.WalletID, err)
+		this.Log.Errorf("unlock wallet [%v]. failed, err=%v", wallet.WalletID, err)
 		return nil, err
 	}
 
 	addrs, err := this.ERC20GetAddressesByWallet(this.GetConfig().DbPath, wallet)
 	if err != nil {
-		openwLogger.Log.Errorf("failed to get addresses from db, err = %v", err)
+		this.Log.Errorf("failed to get addresses from db, err = %v", err)
 		return nil, err
 	}
 
@@ -480,7 +479,7 @@ func (this *WalletManager) ERC20SendTransaction(wallet *Wallet, to string, amoun
 		fmt.Println("amount remained:", amount.String())
 		//空的token账户直接跳过
 		//if addrs[i].tokenBalance.Cmp(big.NewInt(0)) == 0 {
-		//	openwLogger.Log.Infof("skip the address[%v] with 0 balance. ", addrs[i].Address)
+		//	this.Log.Infof("skip the address[%v] with 0 balance. ", addrs[i].Address)
 		//	continue
 		//}
 
@@ -493,23 +492,23 @@ func (this *WalletManager) ERC20SendTransaction(wallet *Wallet, to string, amoun
 
 		dataPara, err := makeERC20TokenTransData(wallet.erc20Token.Address, to, &amountToSend)
 		if err != nil {
-			openwLogger.Log.Errorf("make token transaction data failed, err=%v", err)
+			this.Log.Errorf("make token transaction data failed, err=%v", err)
 			return nil, err
 		}
 		fee, err = this.GetERC20TokenTransactionFeeEstimated(addrs[i].Address, wallet.erc20Token.Address, dataPara)
 		if err != nil {
-			openwLogger.Log.Errorf("get erc token transaction fee estimated failed, err = %v", err)
+			this.Log.Errorf("get erc token transaction fee estimated failed, err = %v", err)
 			continue
 		}
 
 		if addrs[i].balance.Cmp(fee.Fee) < 0 {
-			openwLogger.Log.Errorf("address[%v] cannot afford a token transfer with a fee [%v]", addrs[i].Address, fee.Fee)
+			this.Log.Errorf("address[%v] cannot afford a token transfer with a fee [%v]", addrs[i].Address, fee.Fee)
 			continue
 		}
 
 		txid, err := this.SendTransactionToAddr(makeERC20TokenTransactionPara(addrs[i], wallet.erc20Token.Address, dataPara, password, fee))
 		if err != nil {
-			openwLogger.Log.Errorf("SendTransactionToAddr failed, err=%v", err)
+			this.Log.Errorf("SendTransactionToAddr failed, err=%v", err)
 			if txid == "" {
 				continue //txIds = append(txIds, txid)
 			}

@@ -317,7 +317,7 @@ func TestTransfer_BTC(t *testing.T) {
 	//mxoCkSBmiLQ86N73kXNLHEUgcUBoKdFawH
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "2m27uVj2xx645dDCEcGD1whPQGcB4fZv16TzBoLGCyKB"
-	to := "n4LX1HnPnM4Xwy61abUFFpzqoXctHsmmeJ"
+	to := "mjAnfbhoQAzmbxvjrJPZjrGHvnA4KfNXuT"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 

@@ -29,7 +29,6 @@ import (
 
 	tool "github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/log"
-	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/bytom/common"
 	ethcommon "github.com/ethereum/go-ethereum/common"
@@ -113,7 +112,7 @@ func (this *EthBlock) Init() error {
 	var err error
 	this.blockHeight, err = strconv.ParseUint(removeOxFromHex(this.BlockNumber), 16, 64) //ConvertToBigInt(this.BlockNumber, 16) //
 	if err != nil {
-		openwLogger.Log.Errorf("init blockheight failed, err=%v", err)
+		log.Errorf("init blockheight failed, err=%v", err)
 		return err
 	}
 	return nil
@@ -196,12 +195,12 @@ func (this *Client) ethGetTransactionCount(addr string) (uint64, error) {
 	result, err := this.Call("eth_getTransactionCount", 1, params)
 	if err != nil {
 		//errInfo := fmt.Sprintf("get block[%v] failed, err = %v \n", blockNumStr,  err)
-		openwLogger.Log.Errorf("get transaction count failed, err = %v \n", err)
+		log.Errorf("get transaction count failed, err = %v \n", err)
 		return 0, err
 	}
 
 	if result.Type != gjson.String {
-		openwLogger.Log.Errorf("result type failed. ")
+		log.Errorf("result type failed. ")
 		return 0, errors.New("result type failed. ")
 	}
 
@@ -211,7 +210,7 @@ func (this *Client) ethGetTransactionCount(addr string) (uint64, error) {
 	nonceStr = removeOxFromHex(nonceStr)
 	nonce, err := strconv.ParseUint(nonceStr, 16, 64)
 	if err != nil {
-		openwLogger.Log.Errorf("parse nounce failed, err=%v", err)
+		log.Errorf("parse nounce failed, err=%v", err)
 		return 0, err
 	}
 	return nonce, nil
@@ -221,13 +220,13 @@ func (this *Client) ethGetTxPoolContent() (*TxpoolContent, error) {
 	result, err := this.Call("txpool_content", 1, nil)
 	if err != nil {
 		//errInfo := fmt.Sprintf("get block[%v] failed, err = %v \n", blockNumStr,  err)
-		openwLogger.Log.Errorf("get tx pool failed, err = %v \n", err)
+		log.Errorf("get tx pool failed, err = %v \n", err)
 		return nil, err
 	}
 
 	if result.Type != gjson.JSON {
 		errInfo := fmt.Sprintf("get tx pool content failed, result type is %v", result.Type)
-		openwLogger.Log.Errorf(errInfo)
+		log.Errorf(errInfo)
 		return nil, errors.New(errInfo)
 	}
 
@@ -235,7 +234,7 @@ func (this *Client) ethGetTxPoolContent() (*TxpoolContent, error) {
 
 	err = json.Unmarshal([]byte(result.Raw), &txpool)
 	if err != nil {
-		openwLogger.Log.Errorf("decode json [%v] failed, err=%v", []byte(result.Raw), err)
+		log.Errorf("decode json [%v] failed, err=%v", []byte(result.Raw), err)
 		return nil, err
 	}
 
@@ -281,25 +280,25 @@ func (this *Client) ethGetBlockSpecByHash(blockHash string, showTransactionSpec 
 	result, err := this.Call("eth_getBlockByHash", 1, params)
 	if err != nil {
 		//errInfo := fmt.Sprintf("get block[%v] failed, err = %v \n", blockNumStr,  err)
-		openwLogger.Log.Errorf("get block[%v] failed, err = %v \n", blockHash, err)
+		log.Errorf("get block[%v] failed, err = %v \n", blockHash, err)
 		return nil, err
 	}
 
 	if result.Type != gjson.JSON {
 		errInfo := fmt.Sprintf("get block[%v] result type failed, result type is %v", blockHash, result.Type)
-		openwLogger.Log.Errorf(errInfo)
+		log.Errorf(errInfo)
 		return nil, errors.New(errInfo)
 	}
 
 	err = json.Unmarshal([]byte(result.Raw), &ethBlock)
 	if err != nil {
-		openwLogger.Log.Errorf("decode json [%v] failed, err=%v", []byte(result.Raw), err)
+		log.Errorf("decode json [%v] failed, err=%v", []byte(result.Raw), err)
 		return nil, err
 	}
 
 	err = ethBlock.Init()
 	if err != nil {
-		openwLogger.Log.Errorf("init eth block failed, err=%v", err)
+		log.Errorf("init eth block failed, err=%v", err)
 		return nil, err
 	}
 	return &ethBlock, nil
@@ -327,7 +326,7 @@ func (this *Client) EthGetTransactionByHash(txid string) (*BlockTransaction, err
 
 	err = json.Unmarshal([]byte(result.Raw), &tx)
 	if err != nil {
-		openwLogger.Log.Errorf("decode json [%v] failed, err=%v", result.Raw, err)
+		log.Errorf("decode json [%v] failed, err=%v", result.Raw, err)
 		return nil, err
 	}
 
@@ -344,7 +343,7 @@ func (this *Client) ethGetBlockSpecByBlockNum2(blockNum string, showTransactionS
 	result, err := this.Call("eth_getBlockByNumber", 1, params)
 	if err != nil {
 		//errInfo := fmt.Sprintf("get block[%v] failed, err = %v \n", blockNumStr,  err)
-		openwLogger.Log.Errorf("get block[%v] failed, err = %v \n", blockNum, err)
+		log.Errorf("get block[%v] failed, err = %v \n", blockNum, err)
 		return nil, err
 	}
 
@@ -354,13 +353,13 @@ func (this *Client) ethGetBlockSpecByBlockNum2(blockNum string, showTransactionS
 		err = json.Unmarshal([]byte(result.Raw), &ethBlock.BlockHeader)
 	}
 	if err != nil {
-		openwLogger.Log.Errorf("decode json [%v] failed, err=%v", result.Raw, err)
+		log.Errorf("decode json [%v] failed, err=%v", result.Raw, err)
 		return nil, err
 	}
 
 	err = ethBlock.Init()
 	if err != nil {
-		openwLogger.Log.Errorf("init eth block failed, err=%v", err)
+		log.Errorf("init eth block failed, err=%v", err)
 		return nil, err
 	}
 	return &ethBlock, nil
@@ -375,7 +374,7 @@ func (this *Client) ethGetTxpoolStatus() (uint64, uint64, error) {
 	result, err := this.Call("txpool_status", 1, nil)
 	if err != nil {
 		//errInfo := fmt.Sprintf("get block[%v] failed, err = %v \n", blockNumStr,  err)
-		//openwLogger.Log.Errorf("get block[%v] failed, err = %v \n", err)
+		//log.Errorf("get block[%v] failed, err = %v \n", err)
 		return 0, 0, err
 	}
 
@@ -387,19 +386,19 @@ func (this *Client) ethGetTxpoolStatus() (uint64, uint64, error) {
 	txStatusResult := TxPoolStatus{}
 	err = json.Unmarshal([]byte(result.Raw), &txStatusResult)
 	if err != nil {
-		openwLogger.Log.Errorf("decode from json failed, err=%v", err)
+		log.Errorf("decode from json failed, err=%v", err)
 		return 0, 0, err
 	}
 
 	pendingNum, err := strconv.ParseUint(removeOxFromHex(txStatusResult.Pending), 16, 64)
 	if err != nil {
-		openwLogger.Log.Errorf("convert txstatus pending number to uint failed, err=%v", err)
+		log.Errorf("convert txstatus pending number to uint failed, err=%v", err)
 		return 0, 0, err
 	}
 
 	queuedNum, err := strconv.ParseUint(removeOxFromHex(txStatusResult.Queued), 16, 64)
 	if err != nil {
-		openwLogger.Log.Errorf("convert queued number to uint failed, err=%v", err)
+		log.Errorf("convert queued number to uint failed, err=%v", err)
 		return 0, 0, err
 	}
 
@@ -465,7 +464,7 @@ func (this *Client) ERC20GetAddressBalance2(address string, contractAddr string,
 	trans := make(map[string]interface{})
 	data, err := makeTransactionData(ETH_GET_TOKEN_BALANCE_METHOD, funcParams)
 	if err != nil {
-		openwLogger.Log.Errorf("make transaction data failed, err = %v", err)
+		log.Errorf("make transaction data failed, err = %v", err)
 		return nil, err
 	}
 
@@ -477,19 +476,19 @@ func (this *Client) ERC20GetAddressBalance2(address string, contractAddr string,
 	}
 	result, err := this.Call("eth_call", 1, params)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get addr[%v] erc20 balance failed, err=%v\n", address, err))
+		log.Errorf(fmt.Sprintf("get addr[%v] erc20 balance failed, err=%v\n", address, err))
 		return big.NewInt(0), err
 	}
 	if result.Type != gjson.String {
 		errInfo := fmt.Sprintf("get addr[%v] erc20 balance result type error, result type is %v\n", address, result.Type)
-		openwLogger.Log.Errorf(errInfo)
+		log.Errorf(errInfo)
 		return big.NewInt(0), errors.New(errInfo)
 	}
 
 	balance, err := ConvertToBigInt(result.String(), 16)
 	if err != nil {
 		errInfo := fmt.Sprintf("convert addr[%v] erc20 balance format to bigint failed, response is %v, and err = %v\n", address, result.String(), err)
-		openwLogger.Log.Errorf(errInfo)
+		log.Errorf(errInfo)
 		return big.NewInt(0), errors.New(errInfo)
 	}
 	return balance, nil
@@ -511,19 +510,19 @@ func (this *Client) GetAddrBalance2(address string, sign string) (*big.Int, erro
 	}
 	result, err := this.Call("eth_getBalance", 1, params)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get addr[%v] balance failed, err=%v\n", address, err))
+		log.Errorf(fmt.Sprintf("get addr[%v] balance failed, err=%v\n", address, err))
 		return big.NewInt(0), err
 	}
 	if result.Type != gjson.String {
 		errInfo := fmt.Sprintf("get addr[%v] balance result type error, result type is %v\n", address, result.Type)
-		openwLogger.Log.Errorf(errInfo)
+		log.Errorf(errInfo)
 		return big.NewInt(0), errors.New(errInfo)
 	}
 
 	balance, err := ConvertToBigInt(result.String(), 16)
 	if err != nil {
 		errInfo := fmt.Sprintf("convert addr[%v] balance format to bigint failed, response is %v, and err = %v\n", address, result.String(), err)
-		openwLogger.Log.Errorf(errInfo)
+		log.Errorf(errInfo)
 		return big.NewInt(0), errors.New(errInfo)
 	}
 	return balance, nil
@@ -561,7 +560,7 @@ func signEthTransaction(priKey []byte, toAddr string, amount *big.Int, nonce uin
 
 	tx, err = tx.WithSignature(signer, sig)
 	if err != nil {
-		openwLogger.Log.Errorf("tx with signature failed, err=%v ", err)
+		log.Errorf("tx with signature failed, err=%v ", err)
 		return "", err
 	}
 
@@ -570,7 +569,7 @@ func signEthTransaction(priKey []byte, toAddr string, amount *big.Int, nonce uin
 
 	rawTxPara, err := rlp.EncodeToBytes(tx)
 	if err != nil {
-		openwLogger.Log.Errorf("encode tx to rlp failed, err=%v ", err)
+		log.Errorf("encode tx to rlp failed, err=%v ", err)
 		return "", err
 	}
 
@@ -624,7 +623,7 @@ func makeERC20TokenTransData(contractAddr string, toAddr string, amount *big.Int
 	//fmt.Println("make token transfer data, amount:", amount.String())
 	data, err := makeTransactionData(ETH_TRANSFER_TOKEN_BALANCE_METHOD, funcParams)
 	if err != nil {
-		openwLogger.Log.Errorf("make transaction data failed, err = %v", err)
+		log.Errorf("make transaction data failed, err = %v", err)
 		return "", err
 	}
 	log.Debugf("data:%v", data)
@@ -668,7 +667,7 @@ func (this *Client) ethGetGasEstimated(paraMap map[string]interface{}) (*big.Int
 	var toAddr string
 
 	if temp, exist = paraMap["from"]; !exist {
-		openwLogger.Log.Errorf("from not found")
+		log.Errorf("from not found")
 		return big.NewInt(0), errors.New("from not found")
 	} else {
 		fromAddr = temp.(string)
@@ -676,7 +675,7 @@ func (this *Client) ethGetGasEstimated(paraMap map[string]interface{}) (*big.Int
 	}
 
 	if temp, exist = paraMap["to"]; !exist {
-		openwLogger.Log.Errorf("to not found")
+		log.Errorf("to not found")
 		return big.NewInt(0), errors.New("to not found")
 	} else {
 		toAddr = temp.(string)
@@ -699,20 +698,20 @@ func (this *Client) ethGetGasEstimated(paraMap map[string]interface{}) (*big.Int
 
 	result, err := this.Call("eth_estimateGas", 1, params)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get estimated gas limit from [%v] to [%v] faield, err = %v \n", fromAddr, toAddr, err))
+		log.Errorf(fmt.Sprintf("get estimated gas limit from [%v] to [%v] faield, err = %v \n", fromAddr, toAddr, err))
 		return big.NewInt(0), err
 	}
 
 	if result.Type != gjson.String {
 		errInfo := fmt.Sprintf("get estimated gas from [%v] to [%v] result type error, result type is %v\n", fromAddr, toAddr, result.Type)
-		openwLogger.Log.Errorf(errInfo)
+		log.Errorf(errInfo)
 		return big.NewInt(0), errors.New(errInfo)
 	}
 
 	gasLimit, err := ConvertToBigInt(result.String(), 16)
 	if err != nil {
 		errInfo := fmt.Sprintf("convert estimated gas[%v] format to bigint failed, err = %v\n", result.String(), err)
-		openwLogger.Log.Errorf(errInfo)
+		log.Errorf(errInfo)
 		return big.NewInt(0), errors.New(errInfo)
 	}
 	return gasLimit, nil
@@ -740,14 +739,14 @@ func (this *WalletManager) SendTransactionToAddr(param map[string]interface{}) (
 	var exist bool
 	var temp interface{}
 	if temp, exist = param["from"]; !exist {
-		openwLogger.Log.Errorf("from not found.")
+		log.Errorf("from not found.")
 		return "", errors.New("from not found.")
 	}
 
 	fromAddr := temp.(string)
 
 	if temp, exist = param["password"]; !exist {
-		openwLogger.Log.Errorf("password not found.")
+		log.Errorf("password not found.")
 		return "", errors.New("password not found.")
 	}
 
@@ -755,19 +754,19 @@ func (this *WalletManager) SendTransactionToAddr(param map[string]interface{}) (
 
 	err := this.WalletClient.UnlockAddr(fromAddr, password, 300)
 	if err != nil {
-		openwLogger.Log.Errorf("unlock addr failed, err = %v", err)
+		log.Errorf("unlock addr failed, err = %v", err)
 		return "", err
 	}
 
 	txId, err := this.WalletClient.ethSendTransaction(param)
 	if err != nil {
-		openwLogger.Log.Errorf("ethSendTransaction failed, err = %v", err)
+		log.Errorf("ethSendTransaction failed, err = %v", err)
 		return "", err
 	}
 
 	err = this.WalletClient.LockAddr(fromAddr)
 	if err != nil {
-		openwLogger.Log.Errorf("lock addr failed, err = %v", err)
+		log.Errorf("lock addr failed, err = %v", err)
 		return txId, err
 	}
 
@@ -785,12 +784,12 @@ func (this *Client) ethSendRawTransaction(signedTx string) (string, error) {
 
 	result, err := this.Call("eth_sendRawTransaction", 1, params)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("start raw transaction faield, err = %v \n", err))
+		log.Errorf(fmt.Sprintf("start raw transaction faield, err = %v \n", err))
 		return "", err
 	}
 
 	if result.Type != gjson.String {
-		openwLogger.Log.Errorf("eth_sendRawTransaction result type error")
+		log.Errorf("eth_sendRawTransaction result type error")
 		return "", errors.New("eth_sendRawTransaction result type error")
 	}
 	return result.String(), nil
@@ -805,7 +804,7 @@ func (this *Client) ethSendTransaction(paraMap map[string]interface{}) (string, 
 	var toAddr string
 
 	if temp, exist = paraMap["from"]; !exist {
-		openwLogger.Log.Errorf("from not found")
+		log.Errorf("from not found")
 		return "", errors.New("from not found")
 	} else {
 		fromAddr = temp.(string)
@@ -813,7 +812,7 @@ func (this *Client) ethSendTransaction(paraMap map[string]interface{}) (string, 
 	}
 
 	if temp, exist = paraMap["to"]; !exist {
-		openwLogger.Log.Errorf("to not found")
+		log.Errorf("to not found")
 		return "", errors.New("to not found")
 	} else {
 		toAddr = temp.(string)
@@ -846,12 +845,12 @@ func (this *Client) ethSendTransaction(paraMap map[string]interface{}) (string, 
 
 	result, err := this.Call("eth_sendTransaction", 1, params)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("start transaction from [%v] to [%v] faield, err = %v \n", fromAddr, toAddr, err))
+		log.Errorf(fmt.Sprintf("start transaction from [%v] to [%v] faield, err = %v \n", fromAddr, toAddr, err))
 		return "", err
 	}
 
 	if result.Type != gjson.String {
-		openwLogger.Log.Errorf("eth_sendTransaction result type error")
+		log.Errorf("eth_sendTransaction result type error")
 		return "", errors.New("eth_sendTransaction result type error")
 	}
 	return result.String(), nil
@@ -862,11 +861,11 @@ func (this *Client) ethGetAccounts() ([]string, error) {
 	accounts := make([]string, 0)
 	result, err := this.Call("eth_accounts", 1, param)
 	if err != nil {
-		openwLogger.Log.Errorf("get eth accounts faield, err = %v \n", err)
+		log.Errorf("get eth accounts faield, err = %v \n", err)
 		return nil, err
 	}
 
-	openwLogger.Log.Debugf("result type of eth_accounts is %v", result.Type)
+	log.Debugf("result type of eth_accounts is %v", result.Type)
 
 	accountList := result.Array()
 	for i, _ := range accountList {
@@ -880,18 +879,18 @@ func (this *Client) ethGetBlockNumber() (uint64, error) {
 	param := make([]interface{}, 0)
 	result, err := this.Call("eth_blockNumber", 1, param)
 	if err != nil {
-		openwLogger.Log.Errorf("get block number faield, err = %v \n", err)
+		log.Errorf("get block number faield, err = %v \n", err)
 		return 0, err
 	}
 
 	if result.Type != gjson.String {
-		openwLogger.Log.Errorf("result of block number type error")
+		log.Errorf("result of block number type error")
 		return 0, errors.New("result of block number type error")
 	}
 
 	blockNum, err := ConvertToUint64(result.String(), 16)
 	if err != nil {
-		openwLogger.Log.Errorf("parse block number to big.Int failed, err=%v", err)
+		log.Errorf("parse block number to big.Int failed, err=%v", err)
 		return 0, err
 	}
 

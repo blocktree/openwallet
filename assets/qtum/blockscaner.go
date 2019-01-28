@@ -337,6 +337,10 @@ func (bs *BTCBlockScanner) RescanFailedRecord() {
 
 	for height, txs := range blockMap {
 
+		if height == 0 {
+			continue
+		}
+
 		var hash string
 
 		bs.wm.Log.Std.Info("block scanner rescanning height: %d ...", height)
@@ -1111,9 +1115,10 @@ func (bs *BTCBlockScanner) SaveUnscanRecord(record *UnscanRecord) error {
 		return errors.New("the unscan record to save is nil")
 	}
 
-	//if record.BlockHeight == 0 {
-	//	return errors.New("unconfirmed transaction do not rescan")
-	//}
+	if record.BlockHeight == 0 {
+		bs.wm.Log.Warn("unconfirmed transaction do not rescan")
+		return nil
+	}
 
 	//获取本地区块高度
 	db, err := storm.Open(filepath.Join(bs.wm.config.dbPath, bs.wm.config.blockchainFile))
