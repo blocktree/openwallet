@@ -43,10 +43,9 @@ import (
 	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/blocktree/OpenWallet/keystore"
 	"github.com/blocktree/OpenWallet/log"
-	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/go-owcdrivers/owkeychain"
-	owcrypt "github.com/blocktree/go-owcrypt"
+	"github.com/blocktree/go-owcrypt"
 	ethKStore "github.com/ethereum/go-ethereum/accounts/keystore"
 )
 
@@ -201,12 +200,12 @@ func GetWalletKey(fileWitoutProfix string) (*Wallet, error) {
 	//dbfile := fileWitoutProfix + ".db"
 	finfo, err := os.Stat(keyfile)
 	if err != nil {
-		openwLogger.Log.Errorf("stat file [%v] failed, err = %v", keyfile, err)
+		log.Errorf("stat file [%v] failed, err = %v", keyfile, err)
 		return nil, err
 	}
 
 	/*if strings.Index(finfo.Name(), ".key") != (len(finfo.Name()) - 5) {
-		openwLogger.Log.Errorf("file name error")
+		this.Log.Errorf("file name error")
 		return nil, errors.New("verify key file name error")
 	}*/
 	var key struct {
@@ -218,7 +217,7 @@ func GetWalletKey(fileWitoutProfix string) (*Wallet, error) {
 	fd, err := os.Open(keyfile)
 	defer fd.Close()
 	if err != nil {
-		openwLogger.Log.Errorf("get wallet key, open db failed, err = %v", err)
+		log.Errorf("get wallet key, open db failed, err = %v", err)
 		return nil, err
 	}
 
@@ -228,7 +227,7 @@ func GetWalletKey(fileWitoutProfix string) (*Wallet, error) {
 	key.RootId = ""
 	err = json.NewDecoder(buf).Decode(&key)
 	if err != nil {
-		openwLogger.Log.Errorf("decode key file error, err = %v", err)
+		log.Errorf("decode key file error, err = %v", err)
 		return nil, err
 	}
 
@@ -310,12 +309,12 @@ func (this *WalletManager) SaveERC20TokenConfig(config *ERC20Token) error {
 	db, err := OpenDB(this.GetConfig().DbPath, ERC20TOKEN_DB)
 	defer db.Close()
 	if err != nil {
-		openwLogger.Log.Errorf("open db for path [%v] failed, err = %v", this.GetConfig().DbPath+"/"+ERC20TOKEN_DB, err)
+		this.Log.Errorf("open db for path [%v] failed, err = %v", this.GetConfig().DbPath+"/"+ERC20TOKEN_DB, err)
 		return err
 	}
 	err = db.Save(config)
 	if err != nil {
-		openwLogger.Log.Errorf("save db for path [%v] failed, err = %v", this.GetConfig().DbPath+"/"+ERC20TOKEN_DB, err)
+		this.Log.Errorf("save db for path [%v] failed, err = %v", this.GetConfig().DbPath+"/"+ERC20TOKEN_DB, err)
 		return err
 	}
 	return nil
@@ -325,13 +324,13 @@ func (this *WalletManager) GetERC20TokenList() ([]ERC20Token, error) {
 	db, err := OpenDB(this.GetConfig().DbPath, ERC20TOKEN_DB)
 	defer db.Close()
 	if err != nil {
-		openwLogger.Log.Errorf("open db for path [%v] failed, err = %v", this.GetConfig().DbPath+"/"+ERC20TOKEN_DB, err)
+		this.Log.Errorf("open db for path [%v] failed, err = %v", this.GetConfig().DbPath+"/"+ERC20TOKEN_DB, err)
 		return nil, err
 	}
 	tokens := make([]ERC20Token, 0)
 	err = db.All(&tokens)
 	if err != nil {
-		openwLogger.Log.Errorf("query token list in db failed, err= %v", err)
+		this.Log.Errorf("query token list in db failed, err= %v", err)
 		return nil, err
 	}
 	return tokens, nil
@@ -354,7 +353,7 @@ func (this *WalletManager) ERC20GetWalletList(erc20Token *ERC20Token) ([]*Wallet
 		*wallets[i].erc20Token = *erc20Token
 		tokenBanlance, err := this.ERC20GetWalletBalance(wallets[i])
 		if err != nil {
-			openwLogger.Log.Errorf(fmt.Sprintf("find wallet balance failed, err=%v\n", err))
+			this.Log.Errorf(fmt.Sprintf("find wallet balance failed, err=%v\n", err))
 			return nil, err
 		}
 
@@ -384,7 +383,7 @@ func (this *WalletManager) GetLocalWalletList(keyDir string, dbPath string, show
 			balance, err = this.GetWalletBalance(dbPath, wallets[i])
 			if err != nil {
 
-				openwLogger.Log.Errorf(fmt.Sprintf("find wallet balance failed, err=%v\n", err))
+				this.Log.Errorf(fmt.Sprintf("find wallet balance failed, err=%v\n", err))
 				return nil, err
 			}
 			wallets[i].balance = balance
@@ -423,7 +422,7 @@ func (this *WalletManager) BackupWallet2(newBackupDir string, wallet *Wallet,
 	password string) (string, error) {
 	err := this.UnlockWallet(wallet, password)
 	if err != nil {
-		openwLogger.Log.Errorf("unlock wallet failed, err=%v", err)
+		this.Log.Errorf("unlock wallet failed, err=%v", err)
 		return "", err
 	}
 
@@ -532,7 +531,7 @@ func verifyBackupWallet(wallet *Wallet, keyPath string, password string) error {
 	s := keystore.NewHDKeystore(keyPath, keystore.StandardScryptN, keystore.StandardScryptP)
 	_, err := wallet.HDKey(password, s)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey from path[%v], err=%v\n", keyPath, err))
+		log.Errorf(fmt.Sprintf("get HDkey from path[%v], err=%v\n", keyPath, err))
 		return err
 	}
 	return nil
@@ -541,7 +540,7 @@ func verifyBackupWallet(wallet *Wallet, keyPath string, password string) error {
 func (this *WalletManager) UnlockWallet(wallet *Wallet, password string) error {
 	_, err := wallet.HDKey2(password)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
+		this.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
 		return err
 	}
 	return nil
@@ -551,14 +550,14 @@ func (this *WalletManager) CreateAddressForTest(name, password string, count uin
 	//读取钱包
 	w, err := this.GetWalletInfo("", "", name)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get wallet info, err=%v\n", err))
+		this.Log.Errorf(fmt.Sprintf("get wallet info, err=%v\n", err))
 		return nil, nil, err
 	}
 
 	//验证钱包
 	keyroot, err := w.HDKey(password, this.StorageOld)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
+		this.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
 		return nil, nil, err
 	}
 
@@ -593,19 +592,19 @@ func (this *WalletManager) CreateBatchAddress2(name, password string, count uint
 	//读取钱包
 	w, err := this.GetWalletInfo(this.GetConfig().KeyDir, this.GetConfig().DbPath, name)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get wallet info, err=%v\n", err))
+		this.Log.Errorf(fmt.Sprintf("get wallet info, err=%v\n", err))
 		return "", err
 	}
 
 	_, err = w.HDKey2(password)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
+		this.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
 		return "", err
 	}
 
 	db, err := w.OpenDB(this.GetConfig().DbPath)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("open db, err=%v\n", err))
+		this.Log.Errorf(fmt.Sprintf("open db, err=%v\n", err))
 		return "", err
 	}
 	defer db.Close()
@@ -807,13 +806,13 @@ func (this *txFeeInfo) CalcFee() error {
 func (this *WalletManager) GetTransactionFeeEstimated(from string, to string, value *big.Int, data string) (*txFeeInfo, error) {
 	gasLimit, err := this.WalletClient.ethGetGasEstimated(makeGasEstimatePara(from, to, value, data))
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get gas limit failed, err = %v\n", err))
+		this.Log.Errorf(fmt.Sprintf("get gas limit failed, err = %v\n", err))
 		return nil, err
 	}
 
 	gasPrice, err := this.WalletClient.ethGetGasPrice()
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get gas price failed, err = %v\n", err))
+		this.Log.Errorf(fmt.Sprintf("get gas price failed, err = %v\n", err))
 		return nil, err
 	}
 
@@ -833,13 +832,13 @@ func (this *WalletManager) GetTransactionFeeEstimated(from string, to string, va
 func (this *WalletManager) GetERC20TokenTransactionFeeEstimated(from string, to string, data string) (*txFeeInfo, error) {
 	/*gasLimit, err := ethGetGasEstimated(makeERC20TokenTransGasEstimatePara(from, to, data))
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get gas limit failed, err = %v\n", err))
+		this.Log.Errorf(fmt.Sprintf("get gas limit failed, err = %v\n", err))
 		return nil, err
 	}
 
 	gasPrice, err := ethGetGasPrice()
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get gas price failed, err = %v\n", err))
+		this.Log.Errorf(fmt.Sprintf("get gas price failed, err = %v\n", err))
 		return nil, err
 	}
 
@@ -858,13 +857,13 @@ func (this *WalletManager) GetERC20TokenTransactionFeeEstimated(from string, to 
 func (this *WalletManager) GetSimpleTransactionFeeEstimated(from string, to string, amount *big.Int) (*txFeeInfo, error) {
 	/*gasLimit, err := ethGetGasEstimated(makeSimpleTransGasEstimatedPara(from, to, amount))
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get gas limit failed, err = %v\n", err))
+		this.Log.Errorf(fmt.Sprintf("get gas limit failed, err = %v\n", err))
 		return nil, err
 	}
 
 	gasPrice, err := ethGetGasPrice()
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get gas price failed, err = %v\n", err))
+		this.Log.Errorf(fmt.Sprintf("get gas price failed, err = %v\n", err))
 		return nil, err
 	}
 
@@ -885,13 +884,13 @@ func (this *WalletManager) ERC20SendTransaction2(wallet *Wallet, to string, amou
 	var txIds []string
 	masterKey, err := wallet.HDKey2(password)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
+		this.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
 		return nil, err
 	}
 
 	addrs, err := this.ERC20GetAddressesByWallet(this.GetConfig().DbPath, wallet)
 	if err != nil {
-		openwLogger.Log.Errorf("failed to get addresses from db, err = %v", err)
+		this.Log.Errorf("failed to get addresses from db, err = %v", err)
 		return nil, err
 	}
 
@@ -911,18 +910,18 @@ func (this *WalletManager) ERC20SendTransaction2(wallet *Wallet, to string, amou
 
 		dataPara, err := makeERC20TokenTransData(wallet.erc20Token.Address, to, &amountToSend)
 		if err != nil {
-			openwLogger.Log.Errorf("make token transaction data failed, err=%v", err)
+			this.Log.Errorf("make token transaction data failed, err=%v", err)
 			return nil, err
 		}
 
 		fee, err = this.GetERC20TokenTransactionFeeEstimated(addrs[i].Address, wallet.erc20Token.Address, dataPara)
 		if err != nil {
-			openwLogger.Log.Errorf("get erc token transaction fee estimated failed, err = %v", err)
+			this.Log.Errorf("get erc token transaction fee estimated failed, err = %v", err)
 			continue
 		}
 
 		if addrs[i].balance.Cmp(fee.Fee) < 0 {
-			openwLogger.Log.Errorf("address[%v] cannot afford a token transfer with a fee [%v]", addrs[i].Address, fee.Fee)
+			this.Log.Errorf("address[%v] cannot afford a token transfer with a fee [%v]", addrs[i].Address, fee.Fee)
 			continue
 		}
 
@@ -949,7 +948,7 @@ func (this *WalletManager) ERC20SendTransaction2(wallet *Wallet, to string, amou
 
 		txid, err := this.WalletClient.ethSendRawTransaction(raw)
 		if err != nil {
-			openwLogger.Log.Errorf("SendTransactionToAddr failed, err=%v", err)
+			this.Log.Errorf("SendTransactionToAddr failed, err=%v", err)
 			if txid == "" {
 				if this.GetConfig().LocalNonce {
 					txCount, err := this.WalletClient.ethGetTransactionCount(addrs[i].Address)
@@ -1009,7 +1008,7 @@ func (this *WalletManager) SimpleSendEthTokenTransaction(from string, to string,
 
 	masterKey, err := wallet.HDKey2(wpassword)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
+		this.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
 		return "", err
 	}
 
@@ -1021,13 +1020,13 @@ func (this *WalletManager) SimpleSendEthTokenTransaction(from string, to string,
 
 	dataPara, err := makeERC20TokenTransData(tokenContract, to, amount)
 	if err != nil {
-		openwLogger.Log.Errorf("make token transaction data failed, err=%v", err)
+		this.Log.Errorf("make token transaction data failed, err=%v", err)
 		return "", err
 	}
 
 	fee, err := this.GetERC20TokenTransactionFeeEstimated(addr.Address, tokenContract, dataPara)
 	if err != nil {
-		openwLogger.Log.Errorf("get erc token transaction fee estimated failed, err = %v", err)
+		this.Log.Errorf("get erc token transaction fee estimated failed, err = %v", err)
 		return "", err
 	}
 
@@ -1083,7 +1082,7 @@ func (this *WalletManager) SimpleSendEthTransaction(from string, to string, valu
 
 	masterKey, err := wallet.HDKey2(wpassword)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
+		this.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
 		return "", err
 	}
 
@@ -1095,7 +1094,7 @@ func (this *WalletManager) SimpleSendEthTransaction(from string, to string, valu
 
 	fee, err := this.GetSimpleTransactionFeeEstimated(addr.Address, to, amount)
 	if err != nil {
-		openwLogger.Log.Errorf("%v", err)
+		this.Log.Errorf("%v", err)
 		return "", err
 	}
 
@@ -1131,13 +1130,13 @@ func (this *WalletManager) SendTransaction2(wallet *Wallet, to string,
 
 	masterKey, err := wallet.HDKey2(password)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
+		this.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
 		return nil, err
 	}
 
 	addrs, err := this.GetAddressesByWallet(this.GetConfig().DbPath, wallet)
 	if err != nil {
-		openwLogger.Log.Errorf("failed to get addresses from db, err = %v", err)
+		this.Log.Errorf("failed to get addresses from db, err = %v", err)
 		return nil, err
 	}
 
@@ -1158,7 +1157,7 @@ func (this *WalletManager) SendTransaction2(wallet *Wallet, to string,
 			amountToSend = *amount
 			fee, err = this.GetSimpleTransactionFeeEstimated(addrs[i].Address, to, &amountToSend)
 			if err != nil {
-				openwLogger.Log.Errorf("%v", err)
+				this.Log.Errorf("%v", err)
 				continue
 			}
 
@@ -1169,7 +1168,7 @@ func (this *WalletManager) SendTransaction2(wallet *Wallet, to string,
 			//fmt.Println("amount to send ignore fee:", amountToSend.String())
 			if balanceLeft.Cmp(big.NewInt(0)) < 0 {
 				errinfo := fmt.Sprintf("[%v] is a dust address, will skip. ", addrs[i].Address)
-				openwLogger.Log.Errorf(errinfo)
+				this.Log.Errorf(errinfo)
 				continue
 			}
 
@@ -1183,14 +1182,14 @@ func (this *WalletManager) SendTransaction2(wallet *Wallet, to string,
 			amountToSend = *addrs[i].balance
 			fee, err = this.GetSimpleTransactionFeeEstimated(addrs[i].Address, to, &amountToSend)
 			if err != nil {
-				openwLogger.Log.Errorf("%v", err)
+				this.Log.Errorf("%v", err)
 				continue
 			}
 
 			//灰尘账户, 余额不足以发起一次transaction
 			if amountToSend.Cmp(fee.Fee) <= 0 {
 				errinfo := fmt.Sprintf("[%v] is a dust address, will skip. ", addrs[i].Address)
-				openwLogger.Log.Errorf(errinfo)
+				this.Log.Errorf(errinfo)
 				continue
 			}
 
@@ -1223,7 +1222,7 @@ func (this *WalletManager) SendTransaction2(wallet *Wallet, to string,
 		//txid, err := this.SendTransactionToAddr(makeSimpleTransactionPara(addrs[i], to, &amountToSend, password, fee))
 		txid, err := this.WalletClient.ethSendRawTransaction(raw)
 		if err != nil {
-			openwLogger.Log.Errorf("SendTransactionToAddr failed, err=%v", err)
+			this.Log.Errorf("SendTransactionToAddr failed, err=%v", err)
 			if txid == "" {
 				if this.GetConfig().LocalNonce {
 					txCount, err := this.WalletClient.ethGetTransactionCount(addrs[i].Address)
@@ -1294,7 +1293,7 @@ func ConvertToBigInt(value string, base int) (*big.Int, error) {
 	_, success = bigvalue.SetString(value, base)
 	if !success {
 		errInfo := fmt.Sprintf("convert value [%v] to bigint failed, check the value and base passed through\n", value)
-		openwLogger.Log.Errorf(errInfo)
+		log.Errorf(errInfo)
 		return big.NewInt(0), errors.New(errInfo)
 	}
 	return bigvalue, nil
@@ -1309,12 +1308,12 @@ func (this *Client) UnlockAddr(address string, password string, secs int) error 
 
 	result, err := this.Call("personal_unlockAccount", 1, params)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("unlock address [%v] faield, err = %v \n", address, err))
+		log.Errorf(fmt.Sprintf("unlock address [%v] faield, err = %v \n", address, err))
 		return err
 	}
 
 	if result.Type != gjson.True {
-		openwLogger.Log.Errorf(fmt.Sprintf("unlock address [%v] failed", address))
+		log.Errorf(fmt.Sprintf("unlock address [%v] failed", address))
 		return errors.New("unlock failed")
 	}
 
@@ -1329,13 +1328,13 @@ func (this *Client) LockAddr(address string) error {
 	result, err := this.Call("personal_lockAccount", 1, params)
 	if err != nil {
 		errInfo := fmt.Sprintf("lock address [%v] faield, err = %v \n", address, err)
-		openwLogger.Log.Errorf(errInfo)
+		log.Errorf(errInfo)
 		return err
 	}
 
 	if result.Type != gjson.True {
 		errInfo := fmt.Sprintf("lock address [%v] failed", address)
-		openwLogger.Log.Errorf(errInfo)
+		log.Errorf(errInfo)
 		return errors.New(errInfo)
 	}
 
@@ -1345,13 +1344,13 @@ func (this *Client) LockAddr(address string) error {
 /*func createRawTransaction(from string, to string, value *big.Int, data string) ([]byte, error) {
 	fee, err := GetTransactionFeeEstimated(from, to, value, data)
 	if err != nil {
-		openwLogger.Log.Errorf("GetTransactionFeeEstimated from[%v] -> to[%v] failed, err=%v", from, to, err)
+		this.Log.Errorf("GetTransactionFeeEstimated from[%v] -> to[%v] failed, err=%v", from, to, err)
 		return nil, err
 	}
 
 	nonce, err := GetNonceForAddress2(from)
 	if err != nil {
-		openwLogger.Log.Errorf("GetNonceForAddress from[%v] failed, err=%v", from, err)
+		this.Log.Errorf("GetNonceForAddress from[%v] failed, err=%v", from, err)
 		return nil, err
 	}
 
@@ -1371,19 +1370,19 @@ func (this *Client) ethGetGasPrice() (*big.Int, error) {
 	params := []interface{}{}
 	result, err := this.Call("eth_gasPrice", 1, params)
 	if err != nil {
-		openwLogger.Log.Errorf(fmt.Sprintf("get gas price failed, err = %v \n", err))
+		log.Errorf(fmt.Sprintf("get gas price failed, err = %v \n", err))
 		return big.NewInt(0), err
 	}
 
 	if result.Type != gjson.String {
-		openwLogger.Log.Errorf(fmt.Sprintf("get gas price failed, response is %v\n", err))
+		log.Errorf(fmt.Sprintf("get gas price failed, response is %v\n", err))
 		return big.NewInt(0), err
 	}
 
 	gasLimit, err := ConvertToBigInt(result.String(), 16)
 	if err != nil {
 		errInfo := fmt.Sprintf("convert estimated gas[%v] format to bigint failed, err = %v\n", result.String(), err)
-		openwLogger.Log.Errorf(errInfo)
+		log.Errorf(errInfo)
 		return big.NewInt(0), errors.New(errInfo)
 	}
 	return gasLimit, nil
@@ -1392,7 +1391,7 @@ func (this *Client) ethGetGasPrice() (*big.Int, error) {
 func (this *WalletManager) ERC20GetWalletBalance(wallet *Wallet) (*big.Int, error) {
 	addrs, err := this.ERC20GetAddressesByWallet(this.GetConfig().DbPath, wallet)
 	if err != nil {
-		openwLogger.Log.Errorf("get address by wallet failed, err = %v", err)
+		this.Log.Errorf("get address by wallet failed, err = %v", err)
 		return big.NewInt(0), nil
 	}
 
@@ -1409,7 +1408,7 @@ func (this *WalletManager) ERC20GetWalletBalance(wallet *Wallet) (*big.Int, erro
 func (this *WalletManager) GetWalletBalance(dbPath string, wallet *Wallet) (*big.Int, error) {
 	addrs, err := this.GetAddressesByWallet(dbPath, wallet)
 	if err != nil {
-		openwLogger.Log.Errorf("get address by wallet failed, err = %v", err)
+		this.Log.Errorf("get address by wallet failed, err = %v", err)
 		return big.NewInt(0), err
 	}
 
@@ -1420,7 +1419,7 @@ func (this *WalletManager) GetWalletBalance(dbPath string, wallet *Wallet) (*big
 			errinfo := fmt.Sprintf("get balance of addr[%v] failed, err=%v", addr.Address, err)
 			return balanceTotal, errors.New(errinfo)
 		}*/
-		openwLogger.Log.Debugf("addr[%v] : %v\n", addr.Address, addr.balance)
+		this.Log.Debugf("addr[%v] : %v\n", addr.Address, addr.balance)
 		balanceTotal = balanceTotal.Add(balanceTotal, addr.balance)
 	}
 
@@ -1494,7 +1493,7 @@ func (this *WalletManager) ERC20GetAddressesByWallet(dbPath string, wallet *Wall
 	/*for i, _ := range addrs {
 		tokenBalance, err := this.WalletClient.ERC20GetAddressBalance(addrs[i].Address, wallet.erc20Token.Address)
 		if err != nil {
-			openwLogger.Log.Errorf("get address[%v] erc20 token balance failed, err=%v", addrs[i].Address, err)
+			this.Log.Errorf("get address[%v] erc20 token balance failed, err=%v", addrs[i].Address, err)
 			return addrs, err
 		}
 
@@ -1582,7 +1581,7 @@ func (this *WalletManager) ERC20SummaryWallets() {
 	for _, wallet := range this.WalletInSumOld {
 		tokenBalance, err := this.ERC20GetWalletBalance(wallet)
 		if err != nil {
-			openwLogger.Log.Errorf(fmt.Sprintf("get wallet[%v] ERC20 token balance failed, err = %v", wallet.WalletID, err))
+			this.Log.Errorf(fmt.Sprintf("get wallet[%v] ERC20 token balance failed, err = %v", wallet.WalletID, err))
 			continue
 		}
 
@@ -1607,7 +1606,7 @@ func (this *WalletManager) SummaryWallets() {
 	for _, wallet := range this.WalletInSumOld {
 		balance, err := this.GetWalletBalance(this.GetConfig().DbPath, wallet)
 		if err != nil {
-			openwLogger.Log.Errorf(fmt.Sprintf("get wallet[%v] balance failed, err = %v", wallet.WalletID, err))
+			this.Log.Errorf(fmt.Sprintf("get wallet[%v] balance failed, err = %v", wallet.WalletID, err))
 			continue
 		}
 
@@ -1633,7 +1632,7 @@ func (this *WalletManager) RestoreWallet2(backupPath string, password string) er
 	finfo, err := os.Stat(backupPath)
 	if err != nil || !finfo.IsDir() {
 		errinfo := fmt.Sprintf("stat file[%v] failed, err = %v\n", backupPath, err)
-		openwLogger.Log.Errorf(errinfo)
+		this.Log.Errorf(errinfo)
 		return err
 	}
 
@@ -1642,14 +1641,14 @@ func (this *WalletManager) RestoreWallet2(backupPath string, password string) er
 	parts := strings.Split(backupDirName, "-")
 	if len(parts) != 3 {
 		errinfo := fmt.Sprintf("invalid directory name[%v] ", backupDirName)
-		openwLogger.Log.Errorf(errinfo)
+		this.Log.Errorf(errinfo)
 		return errors.New(errinfo)
 	}
 
 	_, err = time.ParseInLocation(TIME_POSTFIX, parts[2], time.Local)
 	if err != nil {
 		errinfo := fmt.Sprintf("check directory name[%v] time format failed ", backupDirName)
-		openwLogger.Log.Errorf(errinfo)
+		this.Log.Errorf(errinfo)
 		return errors.New(errinfo)
 	}
 
@@ -1705,7 +1704,7 @@ func (this *WalletManager) GetNonceForAddress2(address string) (uint64, error) {
 	address = appendOxToAddress(address)
 	txpool, err := this.WalletClient.ethGetTxPoolContent()
 	if err != nil {
-		openwLogger.Log.Errorf("ethGetTxPoolContent failed, err = %v", err)
+		this.Log.Errorf("ethGetTxPoolContent failed, err = %v", err)
 		return 0, err
 	}
 
@@ -1731,27 +1730,27 @@ func (this *WalletManager) GetNonceForAddress2(address string) (uint64, error) {
 func (this *WalletManager) GetNonceForAddress(address string) (uint64, error) {
 	txpool, err := this.WalletClient.ethGetTxPoolContent()
 	if err != nil {
-		openwLogger.Log.Errorf("ethGetTxPoolContent failed, err = %v", err)
+		this.Log.Errorf("ethGetTxPoolContent failed, err = %v", err)
 		return 0, err
 	}
 
 	txCount := txpool.GetPendingTxCountForAddr(address)
-	openwLogger.Log.Infof("address[%v] has %v tx in pending queue of txpool.", address, txCount)
+	this.Log.Infof("address[%v] has %v tx in pending queue of txpool.", address, txCount)
 	for txCount > 0 {
 		time.Sleep(time.Second * 1)
 		txpool, err = this.WalletClient.ethGetTxPoolContent()
 		if err != nil {
-			openwLogger.Log.Errorf("ethGetTxPoolContent failed, err = %v", err)
+			this.Log.Errorf("ethGetTxPoolContent failed, err = %v", err)
 			return 0, err
 		}
 
 		txCount = txpool.GetPendingTxCountForAddr(address)
-		openwLogger.Log.Infof("address[%v] has %v tx in pending queue of txpool.", address, txCount)
+		this.Log.Infof("address[%v] has %v tx in pending queue of txpool.", address, txCount)
 	}
 
 	nonce, err := this.WalletClient.ethGetTransactionCount(address)
 	if err != nil {
-		openwLogger.Log.Errorf("ethGetTransactionCount failed, err=%v", err)
+		this.Log.Errorf("ethGetTransactionCount failed, err=%v", err)
 		return 0, err
 	}
 	return nonce, nil

@@ -28,9 +28,8 @@ import (
 	"github.com/blocktree/OpenWallet/common/file"
 	"github.com/blocktree/OpenWallet/hdkeystore"
 	"github.com/blocktree/OpenWallet/log"
-	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/openwallet"
-	owcrypt "github.com/blocktree/go-owcrypt"
+	"github.com/blocktree/go-owcrypt"
 	"github.com/bytom/common"
 )
 
@@ -231,7 +230,7 @@ type BlockHeader struct {
 func (this *Wallet) SaveAddress(dbpath string, addr *Address) error {
 	db, err := this.OpenDB(dbpath)
 	if err != nil {
-		openwLogger.Log.Errorf("open db failed, err = %v", err)
+		log.Errorf("open db failed, err = %v", err)
 		return err
 	}
 	defer db.Close()
@@ -242,7 +241,7 @@ func (this *Wallet) SaveAddress(dbpath string, addr *Address) error {
 func (this *Wallet) ClearAllTransactions(dbPath string) {
 	db, err := this.OpenDB(dbPath)
 	if err != nil {
-		openwLogger.Log.Errorf("open db failed, err = %v", err)
+		log.Errorf("open db failed, err = %v", err)
 		return
 	}
 	defer db.Close()
@@ -250,14 +249,14 @@ func (this *Wallet) ClearAllTransactions(dbPath string) {
 	var txs []BlockTransaction
 	err = db.All(&txs)
 	if err != nil {
-		openwLogger.Log.Errorf("get transactions failed, err = %v", err)
+		log.Errorf("get transactions failed, err = %v", err)
 		return
 	}
 	for i, _ := range txs {
 		//fmt.Println("BlockHash:", txs[i].BlockHash, " BlockNumber:", txs[i].BlockNumber, "TransactionId:", txs[i].Hash)
 		err := db.DeleteStruct(&txs[i])
 		if err != nil {
-			openwLogger.Log.Errorf("delete tx in wallet failed, err=%v", err)
+			log.Errorf("delete tx in wallet failed, err=%v", err)
 			break
 		}
 	}
@@ -267,7 +266,7 @@ func (this *Wallet) ClearAllTransactions(dbPath string) {
 func (this *Wallet) RestoreFromDb(dbPath string) error {
 	db, err := this.OpenDB(dbPath)
 	if err != nil {
-		openwLogger.Log.Errorf("open db failed, err = %v", err)
+		log.Errorf("open db failed, err = %v", err)
 		return err
 	}
 	defer db.Close()
@@ -288,7 +287,7 @@ func (this *Wallet) RestoreFromDb(dbPath string) error {
 func (this *Wallet) DumpWalletDB(dbPath string) {
 	db, err := this.OpenDB(dbPath)
 	if err != nil {
-		openwLogger.Log.Errorf("open db failed, err = %v", err)
+		log.Errorf("open db failed, err = %v", err)
 		return
 	}
 	defer db.Close()
@@ -296,7 +295,7 @@ func (this *Wallet) DumpWalletDB(dbPath string) {
 	var addresses []Address
 	err = db.All(&addresses)
 	if err != nil {
-		openwLogger.Log.Errorf("get address failed, err=%v", err)
+		log.Errorf("get address failed, err=%v", err)
 		return
 	}
 
@@ -307,7 +306,7 @@ func (this *Wallet) DumpWalletDB(dbPath string) {
 	var txs []BlockTransaction
 	err = db.All(&txs)
 	if err != nil {
-		openwLogger.Log.Errorf("get transactions failed, err = %v", err)
+		log.Errorf("get transactions failed, err = %v", err)
 		return
 	}
 
@@ -320,7 +319,7 @@ func (this *Wallet) DumpWalletDB(dbPath string) {
 func (this *WalletManager) ClearBlockScanDb() {
 	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
-		openwLogger.Log.Errorf("open db failed, err = %v", err)
+		this.Log.Errorf("open db failed, err = %v", err)
 		return
 	}
 	defer db.Close()
@@ -330,28 +329,28 @@ func (this *WalletManager) ClearBlockScanDb() {
 
 	err = db.All(&unscanTransactions)
 	if err != nil {
-		openwLogger.Log.Errorf("get transactions failed, err = %v", err)
+		this.Log.Errorf("get transactions failed, err = %v", err)
 		return
 	}
 
 	for i, _ := range unscanTransactions {
 		err = db.DeleteStruct(&unscanTransactions[i])
 		if err != nil {
-			openwLogger.Log.Errorf("delete transaction failed, err=%v", err)
+			this.Log.Errorf("delete transaction failed, err=%v", err)
 			return
 		}
 	}
 
 	err = db.All(&blocks)
 	if err != nil {
-		openwLogger.Log.Errorf("get blocks failed failed, err = %v", err)
+		this.Log.Errorf("get blocks failed failed, err = %v", err)
 		return
 	}
 
 	for i, _ := range blocks {
 		err = db.DeleteStruct(&blocks[i])
 		if err != nil {
-			openwLogger.Log.Errorf("delete blocks failed, err=%v", err)
+			this.Log.Errorf("delete blocks failed, err=%v", err)
 			return
 		}
 	}
@@ -360,7 +359,7 @@ func (this *WalletManager) ClearBlockScanDb() {
 //func (this *WalletManager) DumpBlockScanDb() {
 //	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 //	if err != nil {
-//		openwLogger.Log.Errorf("open db failed, err = %v", err)
+//		this.Log.Errorf("open db failed, err = %v", err)
 //		return
 //	}
 //	defer db.Close()
@@ -370,7 +369,7 @@ func (this *WalletManager) ClearBlockScanDb() {
 //	var blockHeightStr string
 //	err = db.All(&unscanTransactions)
 //	if err != nil {
-//		openwLogger.Log.Errorf("get transactions failed, err = %v", err)
+//		this.Log.Errorf("get transactions failed, err = %v", err)
 //		return
 //	}
 //
@@ -380,7 +379,7 @@ func (this *WalletManager) ClearBlockScanDb() {
 //
 //	err = db.All(&blocks)
 //	if err != nil {
-//		openwLogger.Log.Errorf("get blocks failed failed, err = %v", err)
+//		this.Log.Errorf("get blocks failed failed, err = %v", err)
 //		return
 //	}
 //
@@ -390,7 +389,7 @@ func (this *WalletManager) ClearBlockScanDb() {
 //
 //	err = db.Get(BLOCK_CHAIN_BUCKET, "BlockNumber", &blockHeightStr)
 //	if err != nil {
-//		openwLogger.Log.Errorf("get block height from db failed, err=%v", err)
+//		this.Log.Errorf("get block height from db failed, err=%v", err)
 //		return
 //	}
 //
@@ -400,14 +399,14 @@ func (this *WalletManager) ClearBlockScanDb() {
 func (this *Wallet) SaveTransactions(dbPath string, txs []BlockTransaction) error {
 	db, err := this.OpenDB(dbPath)
 	if err != nil {
-		openwLogger.Log.Errorf("open db failed, err = %v", err)
+		log.Errorf("open db failed, err = %v", err)
 		return err
 	}
 	defer db.Close()
 
 	dbTx, err := db.Begin(true)
 	if err != nil {
-		openwLogger.Log.Errorf("start transaction for db failed, err=%v", err)
+		log.Errorf("start transaction for db failed, err=%v", err)
 		return err
 	}
 	defer dbTx.Rollback()
@@ -415,7 +414,7 @@ func (this *Wallet) SaveTransactions(dbPath string, txs []BlockTransaction) erro
 	for i, _ := range txs {
 		err = dbTx.Save(&txs[i])
 		if err != nil {
-			openwLogger.Log.Errorf("save transaction failed, err=%v", err)
+			log.Errorf("save transaction failed, err=%v", err)
 			return err
 		}
 	}
@@ -426,7 +425,7 @@ func (this *Wallet) SaveTransactions(dbPath string, txs []BlockTransaction) erro
 func (this *Wallet) DeleteTransactionByHeight(dbPath string, height uint64) error {
 	db, err := this.OpenDB(dbPath)
 	if err != nil {
-		openwLogger.Log.Errorf("open db for delete txs failed, err = %v", err)
+		log.Errorf("open db for delete txs failed, err = %v", err)
 		return err
 	}
 	defer db.Close()
@@ -435,16 +434,16 @@ func (this *Wallet) DeleteTransactionByHeight(dbPath string, height uint64) erro
 
 	err = db.Find("BlockNumber", "0x"+strconv.FormatUint(height, 16), &txs)
 	if err != nil && err != storm.ErrNotFound {
-		openwLogger.Log.Errorf("get transactions from block[%v] failed, err=%v", "0x"+strconv.FormatUint(height, 16), err)
+		log.Errorf("get transactions from block[%v] failed, err=%v", "0x"+strconv.FormatUint(height, 16), err)
 		return err
 	} else if err == storm.ErrNotFound {
-		openwLogger.Log.Infof("no transactions found in block[%v] ", "0x"+strconv.FormatUint(height, 16))
+		log.Infof("no transactions found in block[%v] ", "0x"+strconv.FormatUint(height, 16))
 		return nil
 	}
 
 	txdb, err := db.Begin(true)
 	if err != nil {
-		openwLogger.Log.Errorf("start dbtx for delete tx failed, err=%v", err)
+		log.Errorf("start dbtx for delete tx failed, err=%v", err)
 		return err
 	}
 	defer txdb.Rollback()
@@ -452,7 +451,7 @@ func (this *Wallet) DeleteTransactionByHeight(dbPath string, height uint64) erro
 	for i, _ := range txs {
 		err = txdb.DeleteStruct(&txs[i])
 		if err != nil {
-			openwLogger.Log.Errorf("delete tx[%v] failed, err=%v", txs[i].Hash, err)
+			log.Errorf("delete tx[%v] failed, err=%v", txs[i].Hash, err)
 			return err
 		}
 	}

@@ -30,7 +30,6 @@ import (
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/console"
 	"github.com/blocktree/OpenWallet/log"
-	"github.com/blocktree/OpenWallet/logger"
 	"github.com/blocktree/OpenWallet/timer"
 	"github.com/bndr/gotabulate"
 	"github.com/shopspring/decimal"
@@ -141,7 +140,7 @@ func ConverEthDecimalToWei(amount decimal.Decimal) (*big.Int, error) {
 func toHexBigIntForEtherTrans(value string, base int, unit int64) (*big.Int, error) {
 	amount, err := ConvertToBigInt(value, base)
 	if err != nil {
-		openwLogger.Log.Errorf("format transaction value failed, err = %v", err)
+		//this.Log.Errorf("format transaction value failed, err = %v", err)
 		return big.NewInt(0), err
 	}
 
@@ -197,7 +196,7 @@ func (this *WalletManager) CreateWalletFlow() error {
 	// 等待用户输入密码
 	password, err := console.InputPassword(true, 8)
 	if err != nil {
-		openwLogger.Log.Errorf("input password failed, err = %v", err)
+		this.Log.Errorf("input password failed, err = %v", err)
 		return err
 	}
 
@@ -334,13 +333,13 @@ func (this *WalletManager) CreateAddressFlow() error {
 	//输入密码
 	password, err := console.InputPassword(false, 8)
 	if err != nil {
-		openwLogger.Log.Errorf("input password failed, err = %v", err)
+		this.Log.Errorf("input password failed, err = %v", err)
 		return err
 	}
 
 	err = this.UnlockWallet(account, password)
 	if err != nil {
-		openwLogger.Log.Errorf("unlock wallet [%v] failed, err = %v", account.WalletID, err)
+		this.Log.Errorf("unlock wallet [%v] failed, err = %v", account.WalletID, err)
 		return err
 	}
 
@@ -373,12 +372,12 @@ func (this *WalletManager) ERC20TokenSummaryFollow() error {
 
 	ercTokens, err := this.GetERC20TokenList()
 	if err != nil {
-		openwLogger.Log.Errorf("find tokens failed, err = %v", err)
+		this.Log.Errorf("find tokens failed, err = %v", err)
 		return err
 	}
 
 	if len(ercTokens) == 0 {
-		openwLogger.Log.Errorf("no token available, config the tokens first.")
+		this.Log.Errorf("no token available, config the tokens first.")
 		return err
 	}
 
@@ -426,13 +425,13 @@ func (this *WalletManager) ERC20TokenSummaryFollow() error {
 
 				password, err := console.InputPassword(false, 8)
 				if err != nil {
-					openwLogger.Log.Errorf("input wallet password failed, err=%v", err)
+					this.Log.Errorf("input wallet password failed, err=%v", err)
 					return err
 				}
 
 				err = this.UnlockWallet(w, password)
 				if err != nil {
-					openwLogger.Log.Errorf("unlock wallet [%v] failed, err = %v", w.WalletID, err)
+					this.Log.Errorf("unlock wallet [%v] failed, err = %v", w.WalletID, err)
 					return err
 				}
 				w.Password = password
@@ -502,13 +501,13 @@ func (this *WalletManager) SummaryFollow() error {
 
 				password, err := console.InputPassword(false, 8)
 				if err != nil {
-					openwLogger.Log.Errorf("input wallet password failed, err=%v", err)
+					this.Log.Errorf("input wallet password failed, err=%v", err)
 					return err
 				}
 
 				err = this.UnlockWallet(w, password)
 				if err != nil {
-					openwLogger.Log.Errorf("unlock wallet [%v] failed, err = %v", w.WalletID, err)
+					this.Log.Errorf("unlock wallet [%v] failed, err = %v", w.WalletID, err)
 					return err
 				}
 				w.Password = password
@@ -568,12 +567,12 @@ func (this *WalletManager) ConfigERC20Token() error {
 
 	ercTokens, err := this.GetERC20TokenList()
 	if err != nil {
-		openwLogger.Log.Errorf("find tokens failed, err = %v", err)
+		this.Log.Errorf("find tokens failed, err = %v", err)
 		return err
 	}
 
 	if len(ercTokens) == 0 {
-		openwLogger.Log.Errorf("no token available, config the tokens first.")
+		this.Log.Errorf("no token available, config the tokens first.")
 	}
 
 	printTokenAvailable(ercTokens)
@@ -617,18 +616,18 @@ func (this *WalletManager) ConfigERC20Token() error {
 
 	err = this.SaveERC20TokenConfig(tokenConfig)
 	if err != nil {
-		openwLogger.Log.Errorf("save token config failed, err = %v", err)
+		this.Log.Errorf("save token config failed, err = %v", err)
 		return err
 	}
 
 	ercTokens, err = this.GetERC20TokenList()
 	if err != nil {
-		openwLogger.Log.Errorf("find tokens failed, err = %v", err)
+		this.Log.Errorf("find tokens failed, err = %v", err)
 		return err
 	}
 
 	if len(ercTokens) == 0 {
-		openwLogger.Log.Errorf("no token available, config the tokens first.")
+		this.Log.Errorf("no token available, config the tokens first.")
 		return err
 	}
 
@@ -646,12 +645,12 @@ func (this *WalletManager) ERC20TokenTransferFlow() error {
 
 	ercTokens, err := this.GetERC20TokenList()
 	if err != nil {
-		openwLogger.Log.Errorf("find tokens failed, err = %v", err)
+		this.Log.Errorf("find tokens failed, err = %v", err)
 		return err
 	}
 
 	if len(ercTokens) == 0 {
-		openwLogger.Log.Errorf("no token available, config the tokens first.")
+		this.Log.Errorf("no token available, config the tokens first.")
 		return err
 	}
 
@@ -693,7 +692,7 @@ func (this *WalletManager) ERC20TokenTransferFlow() error {
 	// 等待用户输入密码
 	password, err := console.InputPassword(false, 8)
 	if err != nil {
-		openwLogger.Log.Errorf("input password failed, err=%v", err)
+		this.Log.Errorf("input password failed, err=%v", err)
 		return err
 	}
 
@@ -710,7 +709,7 @@ func (this *WalletManager) ERC20TokenTransferFlow() error {
 
 	amount, err := ConvertToBigInt(value, 10)
 	if err != nil {
-		openwLogger.Log.Errorf("convert to big int failed, err = %v", err)
+		this.Log.Errorf("convert to big int failed, err = %v", err)
 		return err
 	}
 
@@ -766,7 +765,7 @@ func (this *WalletManager) TransferFlow() error {
 	// 等待用户输入密码
 	password, err := console.InputPassword(false, 8)
 	if err != nil {
-		openwLogger.Log.Errorf("input password failed, err=%v", err)
+		this.Log.Errorf("input password failed, err=%v", err)
 		return err
 	}
 
@@ -792,7 +791,7 @@ func (this *WalletManager) TransferFlow() error {
 
 	amountInt, err := ConvertEthStringToWei(amount) //toHexBigIntForEtherTrans(amount, 10, int64(unit))
 	if err != nil {
-		openwLogger.Log.Errorf("wrong amount inputed. ")
+		this.Log.Errorf("wrong amount inputed. ")
 		return err
 	}
 
@@ -829,7 +828,7 @@ func (this *WalletManager) BackupWalletFlow() error {
 
 	wallets, err := this.GetLocalWalletList(this.GetConfig().KeyDir, this.GetConfig().DbPath, true)
 	if err != nil {
-		//openwLogger.Log.Errorf("get wallet list failed, err = ", err)
+		//this.Log.Errorf("get wallet list failed, err = ", err)
 		return err
 	}
 
@@ -853,7 +852,7 @@ func (this *WalletManager) BackupWalletFlow() error {
 	// 等待用户输入密码
 	password, err := console.InputPassword(false, 8)
 	if err != nil {
-		openwLogger.Log.Errorf("input password failed, err = %v", err)
+		this.Log.Errorf("input password failed, err = %v", err)
 		return err
 	}
 
@@ -871,19 +870,19 @@ func (this *WalletManager) BackupWalletFlow() error {
 func (this *WalletManager) GetLocalBlockHeight() (uint64, error) {
 	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
-		openwLogger.Log.Errorf("open db for get local block height failed, err=%v", err)
+		this.Log.Errorf("open db for get local block height failed, err=%v", err)
 		return 0, err
 	}
 	defer db.Close()
 	var blockHeight uint64
 	err = db.Get(BLOCK_CHAIN_BUCKET, BLOCK_HEIGHT_KEY, &blockHeight)
 	if err != nil {
-		openwLogger.Log.Errorf("get block height from db failed, err=%v", err)
+		this.Log.Errorf("get block height from db failed, err=%v", err)
 		return 0, err
 	}
 	// blockHeight, err := ConvertToUint64(blockHeightStr, 16) //ConvertToBigInt(blockHeightStr, 16)
 	// if err != nil {
-	// 	openwLogger.Log.Errorf("convert block height string failed, err=%v", err)
+	// 	this.Log.Errorf("convert block height string failed, err=%v", err)
 	// 	return 0, err
 	// }
 	return blockHeight, nil
@@ -892,14 +891,14 @@ func (this *WalletManager) GetLocalBlockHeight() (uint64, error) {
 func (this *WalletManager) SaveLocalBlockScanned(blockHeight uint64, blockHash string) error {
 	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
-		openwLogger.Log.Errorf("open db for update local block height failed, err=%v", err)
+		this.Log.Errorf("open db for update local block height failed, err=%v", err)
 		return err
 	}
 	defer db.Close()
 
 	tx, err := db.Begin(true)
 	if err != nil {
-		openwLogger.Log.Errorf("start transaction for save block scanned failed, err=%v", err)
+		this.Log.Errorf("start transaction for save block scanned failed, err=%v", err)
 		return err
 	}
 	defer tx.Rollback()
@@ -907,13 +906,13 @@ func (this *WalletManager) SaveLocalBlockScanned(blockHeight uint64, blockHash s
 	//blockHeightStr := "0x" + strconv.FormatUint(blockHeight, 16) //blockHeight.Text(16)
 	err = tx.Set(BLOCK_CHAIN_BUCKET, BLOCK_HEIGHT_KEY, &blockHeight)
 	if err != nil {
-		openwLogger.Log.Errorf("update block height failed, err= %v", err)
+		this.Log.Errorf("update block height failed, err= %v", err)
 		return err
 	}
 
 	err = tx.Set(BLOCK_CHAIN_BUCKET, BLOCK_HASH_KEY, &blockHash)
 	if err != nil {
-		openwLogger.Log.Errorf("update block height failed, err= %v", err)
+		this.Log.Errorf("update block height failed, err= %v", err)
 		return err
 	}
 
@@ -924,7 +923,7 @@ func (this *WalletManager) SaveLocalBlockScanned(blockHeight uint64, blockHash s
 func (this *WalletManager) UpdateLocalBlockHeight(blockHeight uint64) error {
 	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
-		openwLogger.Log.Errorf("open db for update local block height failed, err=%v", err)
+		this.Log.Errorf("open db for update local block height failed, err=%v", err)
 		return err
 	}
 	defer db.Close()
@@ -932,7 +931,7 @@ func (this *WalletManager) UpdateLocalBlockHeight(blockHeight uint64) error {
 	//blockHeightStr := "0x" + strconv.FormatUint(blockHeight, 16) //blockHeight.Text(16)
 	err = db.Set(BLOCK_CHAIN_BUCKET, BLOCK_HEIGHT_KEY, &blockHeight)
 	if err != nil {
-		openwLogger.Log.Errorf("update block height failed, err= %v", err)
+		this.Log.Errorf("update block height failed, err= %v", err)
 		return err
 	}
 
@@ -942,7 +941,7 @@ func (this *WalletManager) UpdateLocalBlockHeight(blockHeight uint64) error {
 func (this *WalletManager) RecoverBlockHeader(height uint64) (*EthBlock, error) {
 	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
-		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
+		this.Log.Errorf("open db for save block failed, err=%v", err)
 		return nil, err
 	}
 	defer db.Close()
@@ -950,13 +949,13 @@ func (this *WalletManager) RecoverBlockHeader(height uint64) (*EthBlock, error) 
 
 	err = db.One("BlockNumber", "0x"+strconv.FormatUint(height, 16), &block.BlockHeader)
 	if err != nil {
-		openwLogger.Log.Errorf("get block failed, block number=%v, err=%v", "0x"+strconv.FormatUint(height, 16), err)
+		this.Log.Errorf("get block failed, block number=%v, err=%v", "0x"+strconv.FormatUint(height, 16), err)
 		return nil, err
 	}
 
 	block.blockHeight, err = ConvertToUint64(block.BlockNumber, 16) //ConvertToBigInt(block.BlockNumber, 16)
 	if err != nil {
-		openwLogger.Log.Errorf("conver block height to big int failed, err= %v", err)
+		this.Log.Errorf("conver block height to big int failed, err= %v", err)
 		return nil, err
 	}
 	return &block, nil
@@ -965,13 +964,13 @@ func (this *WalletManager) RecoverBlockHeader(height uint64) (*EthBlock, error) 
 func (this *WalletManager) SaveBlockHeader(block *EthBlock) error {
 	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
-		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
+		this.Log.Errorf("open db for save block failed, err=%v", err)
 		return err
 	}
 	defer db.Close()
 	err = db.Save(&block.BlockHeader)
 	if err != nil {
-		openwLogger.Log.Errorf("save block failed, err = %v", err)
+		this.Log.Errorf("save block failed, err = %v", err)
 		return err
 	}
 	return nil
@@ -980,33 +979,33 @@ func (this *WalletManager) SaveBlockHeader(block *EthBlock) error {
 func (this *WalletManager) SaveBlockHeader2(block *EthBlock) error {
 	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
-		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
+		this.Log.Errorf("open db for save block failed, err=%v", err)
 		return err
 	}
 	defer db.Close()
 	tx, err := db.Begin(true)
 	if err != nil {
-		openwLogger.Log.Errorf("start transaction for save block header failed, err=%v", err)
+		this.Log.Errorf("start transaction for save block header failed, err=%v", err)
 		return err
 	}
 	defer tx.Rollback()
 
 	err = tx.Save(&block.BlockHeader)
 	if err != nil {
-		openwLogger.Log.Errorf("save block failed, err = %v", err)
+		this.Log.Errorf("save block failed, err = %v", err)
 		return err
 	}
 
 	//blockHeightStr := "0x" + strconv.FormatUint(block.blockHeight, 16) //block.blockHeight.Text(16)
 	err = tx.Set(BLOCK_CHAIN_BUCKET, BLOCK_HEIGHT_KEY, &block.blockHeight)
 	if err != nil {
-		openwLogger.Log.Errorf("update block height failed, err= %v", err)
+		this.Log.Errorf("update block height failed, err= %v", err)
 		return err
 	}
 
 	err = tx.Set(BLOCK_CHAIN_BUCKET, BLOCK_HASH_KEY, &block.BlockHash)
 	if err != nil {
-		openwLogger.Log.Errorf("update block height failed, err= %v", err)
+		this.Log.Errorf("update block height failed, err= %v", err)
 		return err
 	}
 
@@ -1017,14 +1016,14 @@ func (this *WalletManager) SaveBlockHeader2(block *EthBlock) error {
 /*func (this *WalletManager) SaveTransaction(tx *BlockTransaction) error {
 	db, err := OpenDB(DbPath, BLOCK_CHAIN_DB)
 	if err != nil {
-		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
+		this.Log.Errorf("open db for save block failed, err=%v", err)
 		return err
 	}
 	defer db.Close()
 
 	err = db.Save(tx)
 	if err != nil {
-		openwLogger.Log.Errorf("save block transaction failed, err = %v", err)
+		this.Log.Errorf("save block transaction failed, err = %v", err)
 		return err
 	}
 	return nil
@@ -1036,7 +1035,7 @@ func (this *WalletManager) RecoverUnscannedTransactions(unscannedTxs []UnscanTra
 		var tx BlockTransaction
 		err := json.Unmarshal([]byte(unscannedTxs[i].TxSpec), &tx)
 		if err != nil {
-			openwLogger.Log.Errorf("decode json [%v] from unscanned transactions failed, err=%v", unscannedTxs[i].TxSpec, err)
+			this.Log.Errorf("decode json [%v] from unscanned transactions failed, err=%v", unscannedTxs[i].TxSpec, err)
 			return nil, err
 		}
 		allTxs = append(allTxs, tx)
@@ -1047,7 +1046,7 @@ func (this *WalletManager) RecoverUnscannedTransactions(unscannedTxs []UnscanTra
 func (this *WalletManager) GetAllUnscannedTransactions() ([]UnscanTransaction, error) {
 	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
-		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
+		this.Log.Errorf("open db for save block failed, err=%v", err)
 		return nil, err
 	}
 	defer db.Close()
@@ -1055,7 +1054,7 @@ func (this *WalletManager) GetAllUnscannedTransactions() ([]UnscanTransaction, e
 	var allRecords []UnscanTransaction
 	err = db.All(&allRecords)
 	if err != nil {
-		openwLogger.Log.Errorf("get all unscanned transactions failed, err = %v", err)
+		this.Log.Errorf("get all unscanned transactions failed, err = %v", err)
 		return nil, err
 	}
 
@@ -1065,7 +1064,7 @@ func (this *WalletManager) GetAllUnscannedTransactions() ([]UnscanTransaction, e
 func (this *WalletManager) DeleteUnscannedTransactions(list []UnscanTransaction) error {
 	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
-		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
+		this.Log.Errorf("open db for save block failed, err=%v", err)
 		return err
 	}
 	defer db.Close()
@@ -1096,7 +1095,7 @@ func (this *WalletManager) DeleteUnscannedTransactions(list []UnscanTransaction)
 func (this *WalletManager) DeleteUnscannedTransactionByHeight(height uint64) error {
 	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
-		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
+		this.Log.Errorf("open db for save block failed, err=%v", err)
 		return err
 	}
 	defer db.Close()
@@ -1105,17 +1104,17 @@ func (this *WalletManager) DeleteUnscannedTransactionByHeight(height uint64) err
 	heightStr := "0x" + strconv.FormatUint(height, 16)
 	err = db.Find("BlockNumber", heightStr, &list)
 	if err != nil && err != storm.ErrNotFound {
-		openwLogger.Log.Errorf("find unscanned tx failed, block height=%v, err=%v", heightStr, err)
+		this.Log.Errorf("find unscanned tx failed, block height=%v, err=%v", heightStr, err)
 		return err
 	} else if err == storm.ErrNotFound {
-		openwLogger.Log.Infof("no unscanned tx found in block [%v]", heightStr)
+		this.Log.Infof("no unscanned tx found in block [%v]", heightStr)
 		return nil
 	}
 
 	for _, r := range list {
 		err = db.DeleteStruct(&r)
 		if err != nil {
-			openwLogger.Log.Errorf("delete unscanned tx faled, block height=%v, err=%v", heightStr, err)
+			this.Log.Errorf("delete unscanned tx faled, block height=%v, err=%v", heightStr, err)
 			return err
 		}
 	}
@@ -1125,7 +1124,7 @@ func (this *WalletManager) DeleteUnscannedTransactionByHeight(height uint64) err
 func (this *WalletManager) SaveUnscannedTransaction(tx *BlockTransaction, reason string) error {
 	db, err := OpenDB(this.GetConfig().DbPath, this.GetConfig().BlockchainFile)
 	if err != nil {
-		openwLogger.Log.Errorf("open db for save block failed, err=%v", err)
+		this.Log.Errorf("open db for save block failed, err=%v", err)
 		return err
 	}
 	defer db.Close()
@@ -1141,7 +1140,7 @@ func (this *WalletManager) SaveUnscannedTransaction(tx *BlockTransaction, reason
 	}
 	err = db.Save(unscannedRecord)
 	if err != nil {
-		openwLogger.Log.Errorf("save unscanned record failed, err=%v", err)
+		this.Log.Errorf("save unscanned record failed, err=%v", err)
 		return err
 	}
 	return nil
@@ -1164,7 +1163,7 @@ func (this *WalletManager) RestoreWalletFlow() error {
 	// 等待用户输入密码
 	password, err := console.InputPassword(false, 8)
 	if err != nil {
-		openwLogger.Log.Errorf("input password failed, err = %v", err)
+		this.Log.Errorf("input password failed, err = %v", err)
 		return err
 	}
 
