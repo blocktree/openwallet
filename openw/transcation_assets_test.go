@@ -317,9 +317,11 @@ func TestTransfer_BTC(t *testing.T) {
 	//mxoCkSBmiLQ86N73kXNLHEUgcUBoKdFawH
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "2m27uVj2xx645dDCEcGD1whPQGcB4fZv16TzBoLGCyKB"
-	to := "n1ZurJRnQyoRwBrx6B7DMndjBWAxnRbxKJ"
+	to := "n4LX1HnPnM4Xwy61abUFFpzqoXctHsmmeJ"
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.1", "", nil)
+	testGetAssetsAccountBalance(tm, walletID, accountID)
+
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.06", "", nil)
 	if err != nil {
 		return
 	}
@@ -334,10 +336,10 @@ func TestTransfer_BTC(t *testing.T) {
 		return
 	}
 
-	//_, err = testSubmitTransactionStep(tm, rawTx)
-	//if err != nil {
-	//	return
-	//}
+	_, err = testSubmitTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
 
 }
 

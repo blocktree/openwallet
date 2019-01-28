@@ -124,7 +124,7 @@ func TestSubscribeAddress_BTC(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	scanner.SetRescanBlockHeight(1443252)
+	//scanner.SetRescanBlockHeight(1443252)
 
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")
@@ -237,7 +237,7 @@ func TestSubscribeAddress_QTUM(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	scanner.SetRescanBlockHeight(270679)
+	//scanner.SetRescanBlockHeight(270679)
 
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")
@@ -293,7 +293,7 @@ func TestSubscribeAddress_LTC(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	scanner.SetRescanBlockHeight(838844)
+	//scanner.SetRescanBlockHeight(838844)
 
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")
