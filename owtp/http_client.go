@@ -28,6 +28,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"time"
 )
 
 //HTTPClient 基于http的通信服务端
@@ -52,7 +53,8 @@ type HTTPClient struct {
 func HTTPDial(
 	pid, url string,
 	handler PeerHandler,
-	header map[string]string) (*HTTPClient, error) {
+	header map[string]string,
+	timeout time.Duration) (*HTTPClient, error) {
 
 	//var (
 	//	httpHeader http.Header
@@ -83,6 +85,8 @@ func HTTPDial(
 		authHeader: header,
 		handler:    handler,
 	}
+
+	client.httpClient.SetTimeout(timeout)
 
 	client.isConnect = true
 	client.isHost = true //我方主动连接

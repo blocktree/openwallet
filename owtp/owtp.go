@@ -89,17 +89,18 @@ var (
 
 //节点主配置 作为json解析工具
 type ConnectConfig struct {
-	Address         string `json:"address"`         //@required 连接IP地址
-	ConnectType     string `json:"connectType"`     //@required 连接方式
-	EnableSignature bool   `json:"enableSignature"` //是否开启owtp协议内签名，防重放
-	Account         string `json:"account"`         //mq账户名
-	Password        string `json:"password"`        //mq账户密码
-	Exchange        string `json:"exchange"`        //mq需要字段
-	WriteQueueName  string `json:"writeQueueName"`  //mq写入通道名
-	ReadQueueName   string `json:"readQueueName"`   //mq读取通道名
-	EnableSSL       bool   `json:"enableSSL"`       //是否开启链接SSL，https，wss
-	ReadBufferSize  int    `json:"readBufferSize"`  //socket读取缓存
-	WriteBufferSize int    `json:"writeBufferSize"` //socket写入缓存
+	Address         string        `json:"address"`         //@required 连接IP地址
+	ConnectType     string        `json:"connectType"`     //@required 连接方式
+	EnableSignature bool          `json:"enableSignature"` //是否开启owtp协议内签名，防重放
+	Account         string        `json:"account"`         //mq账户名
+	Password        string        `json:"password"`        //mq账户密码
+	Exchange        string        `json:"exchange"`        //mq需要字段
+	WriteQueueName  string        `json:"writeQueueName"`  //mq写入通道名
+	ReadQueueName   string        `json:"readQueueName"`   //mq读取通道名
+	EnableSSL       bool          `json:"enableSSL"`       //是否开启链接SSL，https，wss
+	ReadBufferSize  int           `json:"readBufferSize"`  //socket读取缓存
+	WriteBufferSize int           `json:"writeBufferSize"` //socket写入缓存
+	Timeout         time.Duration `json:"timeout"`         //超时时间
 }
 
 //节点主配置 作为json解析工具
@@ -335,6 +336,7 @@ func (node *OWTPNode) connect(pid string, config ConnectConfig) (Peer, error) {
 	enableSSL := config.EnableSSL
 	readBufferSize := config.ReadBufferSize
 	writeBufferSize := config.WriteBufferSize
+	timeout := config.Timeout
 
 	//检查是否已经连接服务
 	peer = node.GetOnlinePeer(pid)
@@ -418,7 +420,7 @@ func (node *OWTPNode) connect(pid string, config ConnectConfig) (Peer, error) {
 		url := protocol + strings.TrimSuffix(addr, "/") + "/"
 
 		//建立链接，记录默认的客户端
-		client, err := HTTPDial(pid, url, node, auth.HTTPAuthHeader())
+		client, err := HTTPDial(pid, url, node, auth.HTTPAuthHeader(), timeout)
 		if err != nil {
 			return nil, err
 		}
