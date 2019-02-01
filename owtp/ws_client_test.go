@@ -161,6 +161,17 @@ func TestWSClientCall(t *testing.T) {
 		return
 	}
 
+	wsClient.SetOpenHandler(func(n *OWTPNode, peer PeerInfo) {
+		log.Infof("client: peer[%s] connected", peer.ID)
+		log.Infof("client: peer[%+v] config", peer.Config)
+		//n.ClosePeer(peer.ID)
+	})
+
+	//断开连接
+	wsClient.SetCloseHandler(func(n *OWTPNode, peer PeerInfo) {
+		log.Infof("client: peer[%s] disconnected", peer.ID)
+	})
+
 	err = wsClient.KeyAgreement(httpHostNodeID, "aes")
 	if err != nil {
 		t.Errorf("KeyAgreement unexcepted error: %v", err)
@@ -183,4 +194,5 @@ func TestWSClientCall(t *testing.T) {
 		t.Errorf("unexcepted error: %v", err)
 		return
 	}
+
 }
