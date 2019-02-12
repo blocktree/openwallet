@@ -281,6 +281,14 @@ func (c *HTTPClient) sendHTTPRequest(data DataPacket) error {
 		return err
 	}
 
+	if r == nil || r.Response() == nil {
+		return fmt.Errorf("response is empty ")
+	}
+
+	if r.Response().StatusCode != http.StatusOK {
+		return fmt.Errorf("%s", r.Response().Status)
+	}
+
 	resp := gjson.ParseBytes(r.Bytes())
 
 	packet := NewDataPacket(resp)

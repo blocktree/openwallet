@@ -84,30 +84,29 @@ const (
 )
 
 var (
-	Debug = true
+	Debug = false
 )
 
 //节点主配置 作为json解析工具
 type ConnectConfig struct {
-	Address         string        `json:"address"`         //@required 连接IP地址
-	ConnectType     string        `json:"connectType"`     //@required 连接方式
-	EnableSignature bool          `json:"enableSignature"` //是否开启owtp协议内签名，防重放
-	Account         string        `json:"account"`         //mq账户名
-	Password        string        `json:"password"`        //mq账户密码
-	Exchange        string        `json:"exchange"`        //mq需要字段
-	WriteQueueName  string        `json:"writeQueueName"`  //mq写入通道名
-	ReadQueueName   string        `json:"readQueueName"`   //mq读取通道名
-	EnableSSL       bool          `json:"enableSSL"`       //是否开启链接SSL，https，wss
-	ReadBufferSize  int           `json:"readBufferSize"`  //socket读取缓存
-	WriteBufferSize int           `json:"writeBufferSize"` //socket写入缓存
-	Timeout         time.Duration `json:"timeout"`         //超时时间
+	Address         string `json:"address"`         //@required 连接IP地址
+	ConnectType     string `json:"connectType"`     //@required 连接方式
+	EnableSignature bool   `json:"enableSignature"` //是否开启owtp协议内签名，防重放
+	Account         string `json:"account"`         //mq账户名
+	Password        string `json:"password"`        //mq账户密码
+	Exchange        string `json:"exchange"`        //mq需要字段
+	WriteQueueName  string `json:"writeQueueName"`  //mq写入通道名
+	ReadQueueName   string `json:"readQueueName"`   //mq读取通道名
+	EnableSSL       bool   `json:"enableSSL"`       //是否开启链接SSL，https，wss
+	ReadBufferSize  int    `json:"readBufferSize"`  //socket读取缓存
+	WriteBufferSize int    `json:"writeBufferSize"` //socket写入缓存
 }
 
 //节点主配置 作为json解析工具
 type NodeConfig struct {
-	TimeoutSEC int         `json:"timeoutSEC"`
-	Cert       Certificate `json:"cert"`
-	Peerstore  Peerstore
+	TimeoutSEC int         `json:"timeoutSEC"` //超时时间
+	Cert       Certificate `json:"cert"`       //证书
+	Peerstore  Peerstore   //会话缓存
 }
 
 //OWTPNode 实现OWTP协议的节点
@@ -142,7 +141,8 @@ type OWTPNode struct {
 	Join  chan Peer
 	Leave chan Peer
 	Stop  chan struct{}
-
+	//请求超时（秒）
+	timeoutSEC int
 	//通道的读写缓存大小
 	//ReadBufferSize, WriteBufferSize int
 }
@@ -187,10 +187,11 @@ func NewNode(config NodeConfig) *OWTPNode {
 		node.peerstore = config.Peerstore
 	}
 
-	if config.TimeoutSEC == 0 {
-		node.serveMux = NewServeMux(60)
+	node.timeoutSEC = config.TimeoutSEC
+	if node.timeoutSEC == 0 {
+		node.serveMux = NewServeMux(DefaultTimoutSEC)
 	} else {
-		node.serveMux = NewServeMux(config.TimeoutSEC)
+		node.serveMux = NewServeMux(node.timeoutSEC)
 	}
 
 	node.nonceGen, _ = snowflake.NewNode(1)
@@ -336,7 +337,7 @@ func (node *OWTPNode) connect(pid string, config ConnectConfig) (Peer, error) {
 	enableSSL := config.EnableSSL
 	readBufferSize := config.ReadBufferSize
 	writeBufferSize := config.WriteBufferSize
-	timeout := config.Timeout
+	timeout := time.Duration(node.timeoutSEC) * time.Second
 
 	//检查是否已经连接服务
 	peer = node.GetOnlinePeer(pid)

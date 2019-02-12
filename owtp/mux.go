@@ -32,6 +32,10 @@ const (
 	WSResponse = 2 //响应标识
 )
 
+const (
+	DefaultTimoutSEC = 60
+)
+
 var (
 	//重放限制时长，数据包的时间戳超过后，这个间隔，可以重复nonce
 	replayLimit = 2 * time.Hour
@@ -402,9 +406,13 @@ func (mux *ServeMux) ServeOWTP(pid string, ctx *Context) {
 // timeoutRequestHandle 超时请求检查
 func (mux *ServeMux) timeoutRequestHandle() {
 	if mux.timeout == 0 {
-		mux.timeout = 120
+		mux.timeout = DefaultTimoutSEC * time.Second
 	}
-	ticker := time.NewTicker(10 * time.Second) //发送心跳间隔事件要<等待时间
+
+	period := (mux.timeout * 6) / 10
+	//log.Debug("mux.timeout:", mux.timeout)
+	//log.Debug("period:", period)
+	ticker := time.NewTicker(period) //检查超时过程要<超时时间
 	defer func() {
 		ticker.Stop()
 	}()

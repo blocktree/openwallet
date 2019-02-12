@@ -73,6 +73,7 @@ func TestHTTPClientCall(t *testing.T) {
 	//httpClient := RandomOWTPNode()
 	httpClient := NewNode(NodeConfig{
 		Cert: cert,
+		TimeoutSEC: 5,
 	})
 	httpClient.SetPeerstore(globalSessions)
 	prv, pub := httpClient.Certificate().KeyPair()
@@ -83,11 +84,11 @@ func TestHTTPClientCall(t *testing.T) {
 		t.Errorf("Connect unexcepted error: %v", err)
 		return
 	}
-	//err = httpClient.KeyAgreement(httpHostNodeID, "aes")
-	//if err != nil {
-	//	t.Errorf("KeyAgreement unexcepted error: %v", err)
-	//	return
-	//}
+	err = httpClient.KeyAgreement(httpHostNodeID, "aes")
+	if err != nil {
+		t.Errorf("KeyAgreement unexcepted error: %v", err)
+		return
+	}
 
 	params := map[string]interface{}{
 		"name": "chance",
