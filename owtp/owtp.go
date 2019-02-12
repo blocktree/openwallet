@@ -188,7 +188,7 @@ func NewNode(config NodeConfig) *OWTPNode {
 	}
 
 	if config.TimeoutSEC == 0 {
-		node.serveMux = NewServeMux(60)
+		node.serveMux = NewServeMux(DefaultTimoutSEC)
 	} else {
 		node.serveMux = NewServeMux(config.TimeoutSEC)
 	}
