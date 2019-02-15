@@ -48,4 +48,8 @@ type SmartContractDecoder interface {
 
 	//GetSmartContractInfo 获取智能合约信息
 	//GetSmartContractInfo(contractAddress string) (*SmartContract, error)
+
+	//TODO:创建多重签名合约
+
+	//TODO:通过交易单号查询部署的智能合约地址
 }

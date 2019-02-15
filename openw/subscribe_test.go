@@ -16,12 +16,12 @@
 package openw
 
 import (
-	"path/filepath"
-	"testing"
-
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
+	"path/filepath"
+	"testing"
+	"time"
 )
 
 type subscriber struct {
@@ -138,6 +138,26 @@ func TestSubscribeAddress_BTC(t *testing.T) {
 
 	scanner.Run()
 
+	time.Sleep(12 * time.Second)
+
+	log.Notice("scanner.Pause()")
+	scanner.Pause()
+
+	time.Sleep(12 * time.Second)
+
+	log.Notice("scanner.Restart()")
+	scanner.Restart()
+
+	time.Sleep(12 * time.Second)
+
+	log.Notice("scanner.Stop()")
+	scanner.Stop()
+
+	time.Sleep(12 * time.Second)
+
+	log.Notice("scanner.Run()")
+	scanner.Run()
+
 	<-endRunning
 }
 
@@ -180,7 +200,7 @@ func TestSubscribeAddress_ETH(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	scanner.SetRescanBlockHeight(6693400)
+	//scanner.SetRescanBlockHeight(7215560)
 
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")
@@ -348,7 +368,7 @@ func TestSubscribeAddress_NAS(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	scanner.SetRescanBlockHeight(1357044)
+	scanner.SetRescanBlockHeight(1516800)
 
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")

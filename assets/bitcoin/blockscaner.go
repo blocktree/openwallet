@@ -27,6 +27,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -49,6 +50,8 @@ type BTCBlockScanner struct {
 	IsScanMemPool        bool               //是否扫描交易池
 	RescanLastBlockCount uint64             //重扫上N个区块数量
 	socketIO             *gosocketio.Client //socketIO客户端
+	setupSocketIOOnce    sync.Once
+	stopSocketIO         chan struct{}
 }
 
 //ExtractResult 扫描完成的提取结果
@@ -77,6 +80,7 @@ func NewBTCBlockScanner(wm *WalletManager) *BTCBlockScanner {
 	bs.wm = wm
 	bs.IsScanMemPool = true
 	bs.RescanLastBlockCount = 0
+	bs.stopSocketIO = make(chan struct{})
 	//bs.RPCServer = RPCServerCore
 
 	//设置扫描任务
@@ -1520,7 +1524,9 @@ func (bs *BTCBlockScanner) Run() error {
 
 	//使用浏览器，开启socketIO监听内存池交易
 	if bs.wm.Config.RPCServerType == RPCServerExplorer {
-		bs.setupSocketIO()
+		if bs.socketIO == nil {
+			go bs.setupSocketIO()
+		}
 	}
 
 	bs.BlockScannerBase.Run()
@@ -1529,17 +1535,20 @@ func (bs *BTCBlockScanner) Run() error {
 }
 
 ////Stop 停止扫描
-//func (bs *BTCBlockScanner) Stop() error {
-//	if bs.wm.Config.RPCServerType == RPCServerExplorer {
-//		if bs.socketIO != nil {
-//			bs.socketIO.Close()
-//		}
-//		return nil
-//	} else {
-//		bs.BlockScannerBase.Stop()
-//	}
-//	return nil
-//}
+func (bs *BTCBlockScanner) Stop() error {
+
+	if bs.socketIO != nil {
+		bs.socketIO.Close()
+		bs.socketIO = nil
+	}
+
+	//通知停止线程
+	bs.stopSocketIO <- struct{}{}
+
+	bs.BlockScannerBase.Stop()
+	return nil
+}
+
 //
 ////Pause 暂停扫描
 //func (bs *BTCBlockScanner) Pause() error {
@@ -1563,39 +1572,32 @@ func (bs *BTCBlockScanner) Run() error {
 
 /******************* 使用insight socket.io 监听区块 *******************/
 
-//setupSocketIO 配置socketIO监听新区块
-func (bs *BTCBlockScanner) setupSocketIO() error {
-
-	bs.wm.Log.Info("block scanner use socketIO to listen new data")
+func (bs *BTCBlockScanner) connectSocketIO(disconnected chan struct{}) (*gosocketio.Client, error) {
 
 	var (
 		room = "inv"
 	)
 
-	if bs.socketIO == nil {
-
-		apiUrl, err := url.Parse(bs.wm.Config.ServerAPI)
-		if err != nil {
-			return err
-		}
-		domain := apiUrl.Hostname()
-		port := common.NewString(apiUrl.Port()).Int()
-		c, err := gosocketio.Dial(
-			gosocketio.GetUrl(domain, port, false),
-			transport.GetDefaultWebsocketTransport())
-		if err != nil {
-			return err
-		}
-
-		bs.socketIO = c
-
+	apiUrl, err := url.Parse(bs.wm.Config.ServerAPI)
+	if err != nil {
+		return nil, err
+	}
+	domain := apiUrl.Hostname()
+	port := common.NewString(apiUrl.Port()).Int()
+	bs.wm.Log.Info("block scanner socketIO connecting")
+	socketIO, err := gosocketio.Dial(
+		gosocketio.GetUrl(domain, port, false),
+		transport.GetDefaultWebsocketTransport())
+	if err != nil {
+		return nil, err
 	}
 
-	err := bs.socketIO.On("tx", func(h *gosocketio.Channel, args interface{}) {
+	err = socketIO.On("tx", func(h *gosocketio.Channel, args interface{}) {
 		//bs.wm.Log.Info("block scanner socketIO get new transaction received: ", args)
 		txMap, ok := args.(map[string]interface{})
 		if ok {
 			txid := txMap["txid"].(string)
+			//bs.wm.Log.Debugf("new tx: %s", txid)
 			errInner := bs.BatchExtractTransaction(0, "", []string{txid})
 			if errInner != nil {
 				bs.wm.Log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", errInner)
@@ -1604,7 +1606,8 @@ func (bs *BTCBlockScanner) setupSocketIO() error {
 
 	})
 	if err != nil {
-		return err
+		socketIO.Close()
+		return nil, err
 	}
 
 	/*
@@ -1630,19 +1633,76 @@ func (bs *BTCBlockScanner) setupSocketIO() error {
 		}
 	*/
 
-	err = bs.socketIO.On(gosocketio.OnDisconnection, func(h *gosocketio.Channel) {
+	err = socketIO.On(gosocketio.OnDisconnection, func(h *gosocketio.Channel) {
 		bs.wm.Log.Info("block scanner socketIO disconnected")
+		disconnected <- struct{}{}
 	})
 	if err != nil {
-		return err
+		socketIO.Close()
+		return nil, err
 	}
 
-	err = bs.socketIO.On(gosocketio.OnConnection, func(h *gosocketio.Channel) {
+	err = socketIO.On(gosocketio.OnConnection, func(h *gosocketio.Channel) {
 		bs.wm.Log.Info("block scanner socketIO connected")
 		h.Emit("subscribe", room)
 	})
 	if err != nil {
-		return err
+		socketIO.Close()
+		return nil, err
+	}
+	return socketIO, nil
+}
+
+//setupSocketIO 配置socketIO监听新区块
+func (bs *BTCBlockScanner) setupSocketIO() error {
+
+	bs.wm.Log.Info("block scanner use socketIO to listen new data")
+
+	var (
+		err error
+		//连接状态通道
+		reconnect = make(chan bool, 1)
+		//断开状态通道
+		disconnected = make(chan struct{}, 1)
+		//重连时的等待时间
+		reconnectWait = 5
+		socketIO      *gosocketio.Client
+	)
+
+	defer func() {
+		close(reconnect)
+		close(disconnected)
+	}()
+
+	//启动连接
+	reconnect <- true
+
+	//重连运行时
+	for {
+		select {
+		case <-reconnect:
+			//重新连接
+			socketIO, err = bs.connectSocketIO(disconnected)
+			bs.socketIO = socketIO
+			if err != nil {
+				bs.wm.Log.Errorf("Connect socketIO failed unexpected error: %v", err)
+				disconnected <- struct{}{}
+			}
+
+		case <-disconnected:
+
+			if bs.socketIO != nil {
+				bs.socketIO.Close()
+			}
+
+			//重新连接，前等待
+			bs.wm.Log.Info("Auto reconnect after", reconnectWait, "seconds...")
+			time.Sleep(time.Duration(reconnectWait) * time.Second)
+			reconnect <- true
+		case <- bs.stopSocketIO:
+			bs.wm.Log.Info("block scanner socketIO has been stopped")
+			return nil
+		}
 	}
 
 	return nil

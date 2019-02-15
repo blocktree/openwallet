@@ -899,8 +899,8 @@ func (this *Client) ethGetBlockNumber() (uint64, error) {
 
 func (c *Client) Call(method string, id int64, params []interface{}) (*gjson.Result, error) {
 	authHeader := req.Header{
-		"Accept": "application/json",
-		//		"Authorization": "Basic " + c.AccessToken,
+		"Accept":       "application/json",
+		"Content-Type": "application/json",
 	}
 	body := make(map[string]interface{}, 0)
 	body["jsonrpc"] = "2.0"

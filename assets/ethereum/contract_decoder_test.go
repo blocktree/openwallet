@@ -19,7 +19,7 @@ import "testing"
 
 func TestWalletManager_GetTokenBalanceByAddress(t *testing.T) {
 	tm := NewWalletManager()
-	baseAPI := "http://47.75.78.16:20001"
+	baseAPI := "http://47.106.255.174:10001"
 	client := &Client{BaseURL: baseAPI, Debug: true}
 	tm.WalletClient = client
 	tm.Config.ChainID = 1
