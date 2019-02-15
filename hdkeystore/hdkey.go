@@ -155,7 +155,7 @@ func (k *HDKey) DerivedKeyWithPath(path string, curveType uint32) (*owkeychain.E
 	return owkeychain.DerivedPrivateKeyWithPath(k.seed, path, curveType)
 }
 
-//func (k *HDKey) DerivedKeyWithPath2(path string, curveType uint32) (*hdkeychain.ExtendedKey, error) {
+//func (k *HDKey) DerivedKeyWithPath2(path string, curveType  uint32) (*hdkeychain.ExtendedKey, error) {
 //	return getDerivedKeyWithPath(k.seed, path)
 //}
 //
