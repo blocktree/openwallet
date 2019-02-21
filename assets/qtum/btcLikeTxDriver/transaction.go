@@ -3,6 +3,7 @@ package btcLikeTxDriver
 import (
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"strings"
 	"github.com/shopspring/decimal"
 )
@@ -176,6 +177,10 @@ func InsertSignatureIntoEmptyTransaction(txHex string, sigPub []SignaturePubkey,
 	emptyTrans, err := DecodeRawTransaction(txBytes)
 	if err != nil {
 		return "", err
+	}
+
+	if len(sigPub) == 0 || len(unlockData) == 0 {
+		return "", fmt.Errorf("the signature or the unlock data is empty")
 	}
 
 	if len(emptyTrans.Vins) != len(unlockData) {

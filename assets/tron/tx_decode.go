@@ -217,6 +217,11 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 //SignRawTransaction 签名交易单
 func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
+	if rawTx.Signatures == nil || len(rawTx.Signatures) == 0 {
+		//this.wm.Log.Std.Error("len of signatures error. ")
+		return fmt.Errorf("transaction signature is empty")
+	}
+
 	key, err := wrapper.HDKey()
 	if err != nil {
 		decoder.wm.Log.Info("wrapper HDkey failed;unexpected error:%v", err)
@@ -264,9 +269,12 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 		decoder.wm.Log.Info("verify Tx base field failed;unexpected error:%v", err)
 		return err
 	}
-	if len(rawTx.Signatures) != 1 {
-		return fmt.Errorf("the length of signature error")
+
+	if rawTx.Signatures == nil || len(rawTx.Signatures) == 0 {
+		//this.wm.Log.Std.Error("len of signatures error. ")
+		return fmt.Errorf("transaction signature is empty")
 	}
+
 	sig, exist := rawTx.Signatures[rawTx.Account.AccountID]
 	if !exist {
 		return fmt.Errorf("wallet signature not found")

@@ -274,9 +274,9 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletD
 		return err
 	}
 
-	if len(rawTx.Signatures) != 1 {
-		log.Error("raw tx signature error")
-		return errors.New("raw tx signature error")
+	if rawTx.Signatures == nil || len(rawTx.Signatures) == 0 {
+		//this.wm.Log.Std.Error("len of signatures error. ")
+		return fmt.Errorf("transaction signature is empty")
 	}
 
 	key, err := wrapper.HDKey()
@@ -334,9 +334,9 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 		return err
 	}
 
-	if len(rawTx.Signatures) != 1 {
-		openwLogger.Log.Errorf("len of signatures error. ")
-		return errors.New("len of signatures error. ")
+	if rawTx.Signatures == nil || len(rawTx.Signatures) == 0 {
+		//this.wm.Log.Std.Error("len of signatures error. ")
+		return fmt.Errorf("transaction signature is empty")
 	}
 
 	if _, exist := rawTx.Signatures[rawTx.Account.AccountID]; !exist {
