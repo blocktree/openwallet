@@ -17,6 +17,8 @@ package openw
 
 import (
 	"fmt"
+	"github.com/astaxie/beego/config"
+	"path/filepath"
 	"testing"
 
 	"github.com/blocktree/OpenWallet/log"
@@ -176,12 +178,12 @@ func TestTransfer_ERC20(t *testing.T) {
 func TestTransfer_LTC(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
-	accountID := "EbUsW3YaHQ61eNt3f4hDXJAFh9LGmLZWH1VTTSnQmhnL"
-	to := "mkXhHAd6o3RnEXtrQJi952AKaH3B9WYSe4"
+	accountID := "6Xvj7WPPaNSH72d1MZzKpMTkBnb3ZSr5zNfdzccgEWnV"
+	to := "LLevkg1aUiECvY6Uda1bvDbqa38zykjLyR"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.01", "0.001", nil)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.02", "", nil)
 	if err != nil {
 		return
 	}
@@ -201,6 +203,39 @@ func TestTransfer_LTC(t *testing.T) {
 		return
 	}
 
+	symbol := "LTC"
+	assetsMgr, err := GetAssetsAdapter(symbol)
+	if err != nil {
+		log.Error(symbol, "is not support")
+		return
+	}
+	//读取配置
+	absFile := filepath.Join(configFilePath, symbol+".ini")
+
+	c, err := config.NewConfig("ini", absFile)
+	if err != nil {
+		return
+	}
+	assetsMgr.LoadAssetsConfig(c)
+	bs := assetsMgr.GetBlockScanner()
+
+	addrs := []string{
+		//"mkSfFCHPAaHAyx9gBokXQMGWmyRtzpk4JK",
+		//"mgCzMJDyJoqa6XE3RSdNGvD5Bi5VTWudRq",
+		"LgpqyZW9vhyMSJf2knystSALTuhNEA8Jim",
+		"LLevkg1aUiECvY6Uda1bvDbqa38zykjLyR",
+	}
+
+	balances, err := bs.GetBalanceByAddress(addrs...)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+	for _, b := range balances {
+		log.Infof("balance[%s] = %s", b.Address, b.Balance)
+		log.Infof("UnconfirmBalance[%s] = %s", b.Address, b.UnconfirmBalance)
+		log.Infof("ConfirmBalance[%s] = %s", b.Address, b.ConfirmBalance)
+	}
 }
 
 func TestTransfer_QTUM(t *testing.T) {

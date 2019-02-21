@@ -20,6 +20,7 @@ import (
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/graarh/golang-socketio"
 	"github.com/graarh/golang-socketio/transport"
+	"github.com/shopspring/decimal"
 	"net/url"
 	"testing"
 )
@@ -164,4 +165,11 @@ func TestURLParse(t *testing.T) {
 	domain := apiUrl.Hostname()
 	port := common.NewString(apiUrl.Port()).Int()
 	t.Logf("%s : %d", domain, port)
+}
+
+func TestDecimalAdd(t *testing.T) {
+	unconfirmBalance, _ := decimal.NewFromString("-5.1")
+	confirmBalance, _ := decimal.NewFromString("5.1")
+	balance := confirmBalance.Add(unconfirmBalance)
+	log.Infof("balance = %s", balance.String())
 }

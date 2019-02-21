@@ -1460,18 +1460,21 @@ func (bs *BTCBlockScanner) GetBalanceByAddress(address ...string) ([]*openwallet
 		return nil, nil
 	}
 
-	addrsBalance := make([]*openwallet.Balance, 0)
+	//addrsBalance := make([]*openwallet.Balance, 0)
+	//
+	//for _, a := range address {
+	//	balance, err := bs.wm.getBalanceByExplorer(a)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	addrsBalance = append(addrsBalance, balance)
+	//}
+	//
+	//return addrsBalance, nil
 
-	for _, a := range address {
-		balance, err := bs.wm.getBalanceByExplorer(a)
-		if err != nil {
-			return nil, err
-		}
+	return bs.wm.getBalanceCalUnspentByExplorer(address...)
 
-		addrsBalance = append(addrsBalance, balance)
-	}
-
-	return addrsBalance, nil
 }
 
 //GetAssetsAccountTransactionsByAddress 查询账户相关地址的交易记录

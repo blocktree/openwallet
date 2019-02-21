@@ -16,6 +16,8 @@
 package openw
 
 import (
+	"github.com/astaxie/beego/config"
+	"path/filepath"
 	"testing"
 
 	"github.com/blocktree/OpenWallet/log"
@@ -297,7 +299,7 @@ func TestWalletManager_GetTransactionByWxID(t *testing.T) {
 func TestWalletManager_GetAssetsAccountBalance(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
-	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
+	accountID := "6Xvj7WPPaNSH72d1MZzKpMTkBnb3ZSr5zNfdzccgEWnV"
 
 	balance, err := tm.GetAssetsAccountBalance(testApp, walletID, accountID)
 	if err != nil {
@@ -360,4 +362,39 @@ func TestWalletManager_GetEstimateFeeRate(t *testing.T) {
 		return
 	}
 	log.Std.Info("feeRate: %s %s/%s", feeRate, coin.Symbol, unit)
+}
+
+func TestGetAddressBalance(t *testing.T) {
+	symbol := "LTC"
+	assetsMgr, err := GetAssetsAdapter(symbol)
+	if err != nil {
+		log.Error(symbol, "is not support")
+		return
+	}
+	//读取配置
+	absFile := filepath.Join(configFilePath, symbol+".ini")
+
+	c, err := config.NewConfig("ini", absFile)
+	if err != nil {
+		return
+	}
+	assetsMgr.LoadAssetsConfig(c)
+	bs := assetsMgr.GetBlockScanner()
+
+	addrs := []string{
+		"mkSfFCHPAaHAyx9gBokXQMGWmyRtzpk4JK",
+		"mgCzMJDyJoqa6XE3RSdNGvD5Bi5VTWudRq",
+		"n1ZurJRnQyoRwBrx6B7DMndjBWAxnRbxKJ",
+	}
+
+	balances, err := bs.GetBalanceByAddress(addrs...)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+	for _, b := range balances {
+		log.Infof("balance[%s] = %s", b.Address, b.Balance)
+		log.Infof("UnconfirmBalance[%s] = %s", b.Address, b.UnconfirmBalance)
+		log.Infof("ConfirmBalance[%s] = %s", b.Address, b.ConfirmBalance)
+	}
 }

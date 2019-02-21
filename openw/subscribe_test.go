@@ -279,11 +279,11 @@ func TestSubscribeAddress_LTC(t *testing.T) {
 	var (
 		endRunning = make(chan bool, 1)
 		symbol     = "LTC"
-		accountID  = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
+		//accountID  = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
 		addrs      = map[string]string{
-			"mkSfFCHPAaHAyx9gBokXQMGWmyRtzpk4JK": accountID, //主链转账
-			"my2S5LBREZ8YCcuAHZz1YChoZpGPZN28uw": accountID, //主链转账
-			"mzZYMMuTNEHTQ1zqpSGkgpZvv8g3ZYWoGX": accountID,
+			"mgCzMJDyJoqa6XE3RSdNGvD5Bi5VTWudRq": "A3Mxhqm65kTgS2ybHLenNrZzZNtLGVobDFYdpc1ge4eK", //主链转账
+			"mkdStRouBPVrDVpYmbE5VUJqhBgxJb3dSS": "3i26MQmtuWVVnw8GnRCVopG3pi8MaYU6RqWVV2E1hwJx", //主链转账
+			//"mzZYMMuTNEHTQ1zqpSGkgpZvv8g3ZYWoGX": accountID,
 		}
 	)
 
@@ -313,7 +313,7 @@ func TestSubscribeAddress_LTC(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	//scanner.SetRescanBlockHeight(838844)
+	scanner.SetRescanBlockHeight(973484)
 
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")

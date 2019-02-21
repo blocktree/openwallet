@@ -530,6 +530,11 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletD
 		privateKeys = make([][]byte, 0)
 	)
 
+	if rawTx.Signatures == nil || len(rawTx.Signatures) == 0 {
+		//this.wm.Log.Std.Error("len of signatures error. ")
+		return fmt.Errorf("transaction signature is empty")
+	}
+
 	key, err := wrapper.HDKey()
 	if err != nil {
 		return err
@@ -624,6 +629,11 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 		emptyTrans = rawTx.RawHex
 		sigPub     = make([]btcLikeTxDriver.SignaturePubkey, 0)
 	)
+
+	if rawTx.Signatures == nil || len(rawTx.Signatures) == 0 {
+		//this.wm.Log.Std.Error("len of signatures error. ")
+		return fmt.Errorf("transaction signature is empty")
+	}
 
 	//TODO:待支持多重签名
 

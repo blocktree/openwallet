@@ -474,9 +474,9 @@ func (this *EthTransactionDecoder) SignRawTransaction(wrapper openwallet.WalletD
 		return err
 	}
 
-	if len(rawTx.Signatures) != 1 {
-		this.wm.Log.Error("raw tx signature error")
-		return errors.New("raw tx signature error")
+	if rawTx.Signatures == nil || len(rawTx.Signatures) == 0 {
+		//this.wm.Log.Std.Error("len of signatures error. ")
+		return fmt.Errorf("transaction signature is empty")
 	}
 
 	key, err := wrapper.HDKey()
@@ -853,15 +853,16 @@ func (this *EthTransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 		return err
 	}
 
-	if len(rawTx.Signatures) != 1 {
-		this.wm.Log.Std.Error("len of signatures error. ")
-		return errors.New("len of signatures error. ")
+	if rawTx.Signatures == nil || len(rawTx.Signatures) == 0 {
+		//this.wm.Log.Std.Error("len of signatures error. ")
+		return fmt.Errorf("transaction signature is empty")
 	}
 
 	if _, exist := rawTx.Signatures[rawTx.Account.AccountID]; !exist {
 		this.wm.Log.Std.Error("wallet[%v] signature not found ", rawTx.Account.AccountID)
 		return errors.New("wallet signature not found ")
 	}
+
 	sig := rawTx.Signatures[rawTx.Account.AccountID][0].Signature
 	msg := rawTx.Signatures[rawTx.Account.AccountID][0].Message
 	pubkey := rawTx.Signatures[rawTx.Account.AccountID][0].Address.PublicKey
