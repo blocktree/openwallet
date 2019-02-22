@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/HcashOrg/hcutil/base58"
+	"github.com/mr-tron/base58/base58"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/bwmarrin/snowflake"
 	"math/rand"
@@ -686,7 +686,10 @@ func (node *OWTPNode) encryptPacket(peer Peer, packet *DataPacket) error {
 		pKey, ok := node.Peerstore().Get(peer.PID(), "secretKey").(string)
 		if ok {
 			//加载到授权中
-			secretKey := base58.Decode(pKey)
+			secretKey, decErr := base58.Decode(pKey)
+			if decErr != nil {
+				return decErr
+			}
 			chipText, chipErr := peer.auth().EncryptData(enc, secretKey)
 			if chipErr != nil {
 				return fmt.Errorf("encrypt data failed")
@@ -871,7 +874,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 		localChecksumStr, ok := node.Peerstore().Get(peer.PID(), "localChecksum").(string)
 		if ok {
 			//加载到授权中
-			localChecksum = base58.Decode(localChecksumStr)
+			localChecksum, _ = base58.Decode(localChecksumStr)
 		}
 
 		//检查是否完成协商密码
@@ -885,7 +888,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 			pKey, ok := node.Peerstore().Get(peer.PID(), "secretKey").(string)
 			if ok {
 				//加载到授权中
-				secretKey = base58.Decode(pKey)
+				secretKey, _ = base58.Decode(pKey)
 			}
 		}
 	}
