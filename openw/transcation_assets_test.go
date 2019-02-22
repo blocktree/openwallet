@@ -178,8 +178,8 @@ func TestTransfer_ERC20(t *testing.T) {
 func TestTransfer_LTC(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
-	accountID := "6Xvj7WPPaNSH72d1MZzKpMTkBnb3ZSr5zNfdzccgEWnV"
-	to := "LLevkg1aUiECvY6Uda1bvDbqa38zykjLyR"
+	accountID := "EbUsW3YaHQ61eNt3f4hDXJAFh9LGmLZWH1VTTSnQmhnL"
+	to := "mkXhHAd6o3RnEXtrQJi952AKaH3B9WYSe4"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
