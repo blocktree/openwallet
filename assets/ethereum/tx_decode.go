@@ -858,14 +858,20 @@ func (this *EthTransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 		return fmt.Errorf("transaction signature is empty")
 	}
 
-	if _, exist := rawTx.Signatures[rawTx.Account.AccountID]; !exist {
+	accountSig, exist := rawTx.Signatures[rawTx.Account.AccountID]
+	if !exist {
 		this.wm.Log.Std.Error("wallet[%v] signature not found ", rawTx.Account.AccountID)
 		return errors.New("wallet signature not found ")
 	}
 
-	sig := rawTx.Signatures[rawTx.Account.AccountID][0].Signature
-	msg := rawTx.Signatures[rawTx.Account.AccountID][0].Message
-	pubkey := rawTx.Signatures[rawTx.Account.AccountID][0].Address.PublicKey
+	if len(accountSig) == 0 {
+		//this.wm.Log.Std.Error("len of signatures error. ")
+		return fmt.Errorf("transaction signature is empty")
+	}
+
+	sig := accountSig[0].Signature
+	msg := accountSig[0].Message
+	pubkey := accountSig[0].Address.PublicKey
 	//curveType := rawTx.Signatures[rawTx.Account.AccountID][0].EccType
 
 	this.wm.Log.Debug("-- pubkey:", pubkey)

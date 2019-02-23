@@ -279,6 +279,12 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 	if !exist {
 		return fmt.Errorf("wallet signature not found")
 	}
+
+	if len(sig) == 0 {
+		//this.wm.Log.Std.Error("len of signatures error. ")
+		return fmt.Errorf("transaction signature is empty")
+	}
+
 	mergeTxHex, err := InsertSignatureIntoRawTransaction(rawTx.RawHex, sig[0].Signature)
 	if err != nil {
 		decoder.wm.Log.Info("merge empty transaction and signature failed;unexpected error:%v", err)

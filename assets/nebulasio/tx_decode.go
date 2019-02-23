@@ -339,14 +339,20 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 		return fmt.Errorf("transaction signature is empty")
 	}
 
-	if _, exist := rawTx.Signatures[rawTx.Account.AccountID]; !exist {
-		openwLogger.Log.Errorf("wallet[%v] signature not found ", rawTx.Account.AccountID)
+	accountSig, exist := rawTx.Signatures[rawTx.Account.AccountID]
+	if !exist {
+		decoder.wm.Log.Std.Error("wallet[%v] signature not found ", rawTx.Account.AccountID)
 		return errors.New("wallet signature not found ")
 	}
 
-	message := common.FromHex(rawTx.Signatures[rawTx.Account.AccountID][0].Message)     //TX.Hash
-	signature := common.FromHex(rawTx.Signatures[rawTx.Account.AccountID][0].Signature) //TX.Sign
-	publicKey := common.FromHex(rawTx.Signatures[rawTx.Account.AccountID][0].Address.PublicKey)
+	if len(accountSig) == 0 {
+		//this.wm.Log.Std.Error("len of signatures error. ")
+		return fmt.Errorf("transaction signature is empty")
+	}
+
+	message := common.FromHex(accountSig[0].Message)     //TX.Hash
+	signature := common.FromHex(accountSig[0].Signature) //TX.Sign
+	publicKey := common.FromHex(accountSig[0].Address.PublicKey)
 	//VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
 	verify_result := VerifyRawTransaction(publicKey, message, signature)
 	if verify_result == owcrypt.SUCCESS {
