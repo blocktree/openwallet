@@ -43,8 +43,6 @@ func NewAppWrapper(args ...interface{}) *AppWrapper {
 	return &appWrapper
 }
 
-
-
 // GetWalletInfo
 func (wrapper *AppWrapper) GetWalletInfo(walletID string) (*Wallet, error) {
 
