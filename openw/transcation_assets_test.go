@@ -17,10 +17,10 @@ package openw
 
 import (
 	"fmt"
-	"github.com/astaxie/beego/config"
 	"path/filepath"
 	"testing"
 
+	"github.com/astaxie/beego/config"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/go-owcdrivers/ontologyTransaction"
@@ -644,5 +644,35 @@ func TestTransfer_ONG2(t *testing.T) {
 	//if err != nil {
 	//	return
 	//}
+
+}
+
+func TestTransfer_VSYS(t *testing.T) {
+	tm := testVSYSInitWalletManager()
+
+	walletID := "WJmcRGkdbT4AoSD7YUHBEVXS7zUmBFgo2g"
+	accountID := "A7X5LL16KDafDdEp9ioyzW8K8R2Edu25YbKxMkKCrimB"
+	to := "ARQRs9711dATMXhwmAkves8TmWVhRAp9REP"
+
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1", "", nil)
+	fmt.Println(rawTx.RawHex)
+	if err != nil {
+		return
+	}
+
+	_, err = testSignTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testVerifyTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testSubmitTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
 
 }
