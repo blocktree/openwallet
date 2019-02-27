@@ -58,6 +58,9 @@ func AESDecrypt(ciphertext, key []byte) ([]byte, error) {
 func PKCS7UnPadding(plantText []byte, blockSize int) []byte {
 	length := len(plantText)
 	unpadding := int(plantText[length-1])
+	if length - unpadding < 0 {
+		return nil
+	}
 	return plantText[:(length - unpadding)]
 }
 

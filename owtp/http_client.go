@@ -314,6 +314,10 @@ func (c *HTTPClient) writeResponse(data DataPacket) error {
 		return err
 	}
 
+	if Debug {
+		log.Debug("Send: ", string(respBytes))
+	}
+
 	if c.responseWriter == nil {
 		return fmt.Errorf("responseWriter is nil")
 	}

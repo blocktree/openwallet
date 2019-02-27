@@ -556,7 +556,19 @@ func (auth *OWTPAuth) requestKeyAgreement(pubkeyBytes, tmpPubkeyBytes []byte) ([
 	IDinitiator := owcrypt.Hash(pubkeyBytes, 0, owcrypt.HASH_ALG_SHA256)
 	IDresponder := owcrypt.Hash(auth.localPublicKey, 0, owcrypt.HASH_ALG_SHA256)
 
-	key, tmpPubkeyResponder, S2, SB, ret := owcrypt.KeyAgreement_responder_step1(
+	//key, tmpPubkeyResponder, S2, SB, ret := owcrypt.KeyAgreement_responder_step1(
+	//	IDinitiator,
+	//	32,
+	//	IDresponder,
+	//	32,
+	//	auth.localPrivateKey,
+	//	auth.localPublicKey,
+	//	pubkeyBytes,
+	//	tmpPubkeyBytes,
+	//	32,
+	//	owcrypt.ECC_CURVE_SM2_STANDARD)
+
+	key, tmpPubkeyResponder, S2, SB, ret := owcrypt.KeyAgreement_responder_ElGamal_step1(
 		IDinitiator,
 		32,
 		IDresponder,
@@ -566,6 +578,7 @@ func (auth *OWTPAuth) requestKeyAgreement(pubkeyBytes, tmpPubkeyBytes []byte) ([
 		pubkeyBytes,
 		tmpPubkeyBytes,
 		32,
+		auth.localPrivateKey,
 		owcrypt.ECC_CURVE_SM2_STANDARD)
 
 	if ret != owcrypt.SUCCESS {

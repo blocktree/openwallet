@@ -27,7 +27,9 @@ import (
 	"github.com/blocktree/OpenWallet/assets/icon"
 	"github.com/blocktree/OpenWallet/assets/iota"
 	"github.com/blocktree/OpenWallet/assets/litecoin"
+	"github.com/blocktree/OpenWallet/assets/luxapla"
 	"github.com/blocktree/OpenWallet/assets/nebulasio"
+	"github.com/blocktree/OpenWallet/assets/obyte"
 	"github.com/blocktree/OpenWallet/assets/qtum"
 	"github.com/blocktree/OpenWallet/assets/sia"
 	"github.com/blocktree/OpenWallet/assets/stc2345"
@@ -109,4 +111,6 @@ func init() {
 	//assets.RegAssets(tron.Symbol, tron.NewWalletManager())
 	assets.RegAssets(nebulasio.Symbol, nebulasio.NewWalletManager())
 	assets.RegAssets(icon.Symbol, icon.NewWalletManager())
+	assets.RegAssets(obyte.Symbol, obyte.NewWalletManager())
+	assets.RegAssets(luxapla.Symbol, luxapla.NewWalletManager())
 }
