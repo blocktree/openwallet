@@ -698,6 +698,8 @@ func (node *OWTPNode) encryptPacket(peer Peer, packet *DataPacket) error {
 			//fmt.Printf("chipText hex(%d): %s\n", len(chipText), hex.EncodeToString(chipText))
 			packet.Data = string(chipText)
 		}
+	} else {
+		packet.CheckCode = ""
 	}
 	return nil
 }
@@ -957,9 +959,26 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 		peer.send(*packet)
 	} else if packet.Req == WSResponse {
 
+		//创建上下面指针，处理响应
+		var resp Response
+
+		ctx := Context{
+			Req:           packet.Req,
+			RemoteAddress: peer.RemoteAddr().String(),
+			nonce:         packet.Nonce,
+			inputs:        nil,
+			Method:        packet.Method,
+			//Resp:          resp,
+			peerstore:     node.Peerstore(),
+			Peer:          peer,
+		}
+
 		rawData, ok := packet.Data.(string)
 		if !ok {
-			log.Critical("data parse failed")
+			log.Critical("Data type error")
+			resp = responseError("Data type error", ErrBadRequest)
+			ctx.Resp = resp
+			node.serveMux.ServeOWTP(peer.PID(), &ctx)
 			return
 		}
 		//log.Debug("rawData:", rawData)
@@ -968,29 +987,24 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 
 		if cryptErr != nil {
 			log.Critical("OWTP: DecryptData failed")
+			resp = responseError("Decrypt data error", ErrKeyAgreementFailed)
+			ctx.Resp = resp
+			node.serveMux.ServeOWTP(peer.PID(), &ctx)
 			return
 		}
 
-		//创建上下面指针，处理响应
-		var resp Response
+
 		runErr := json.Unmarshal(decryptData, &resp)
 		//runErr := mapstructure.Decode(decryptData, &resp)
 		if runErr != nil {
 			log.Error("Response decode error: ", runErr)
 			resp = responseError("Response decode error", ErrBadRequest)
+			ctx.Resp = resp
+			node.serveMux.ServeOWTP(peer.PID(), &ctx)
+			return
 		}
 
-		ctx := Context{
-			Req:           packet.Req,
-			RemoteAddress: peer.RemoteAddr().String(),
-			nonce:         packet.Nonce,
-			inputs:        nil,
-			Method:        packet.Method,
-			Resp:          resp,
-			peerstore:     node.Peerstore(),
-			Peer:          peer,
-		}
-
+		ctx.Resp = resp
 		node.serveMux.ServeOWTP(peer.PID(), &ctx)
 
 	}

@@ -39,7 +39,7 @@ func getInfo(ctx *Context) {
 	ctx.SetSession("username", "kiiik")
 
 	ctx.Resp = Response{
-		Status: 0,
+		Status: StatusSuccess,
 		Msg:    "success",
 		Result: map[string]interface{}{
 			"symbols": []interface{}{
