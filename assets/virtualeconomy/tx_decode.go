@@ -362,3 +362,8 @@ func (decoder *TransactionDecoder) VerifyVSYSRawTransaction(wrapper openwallet.W
 
 	return nil
 }
+
+func (decoder *TransactionDecoder) GetRawTransactionFeeRate() (feeRate string, unit string, err error) {
+	rate := decoder.wm.Config.FeeCharge
+	return convertToAmount(rate), "TX", nil
+}
