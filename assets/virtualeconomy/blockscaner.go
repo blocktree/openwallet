@@ -1003,7 +1003,7 @@ func (bs *VSYSBlockScanner) GetBalanceByAddress(address ...string) ([]*openwalle
 		addrsBalance = append(addrsBalance, &openwallet.Balance{
 			Symbol:  bs.wm.Symbol(),
 			Address: addr,
-			Balance: balance.Balance.String(),
+			Balance: convertToAmount(uint64(balance.Balance.Int64())),
 		})
 	}
 

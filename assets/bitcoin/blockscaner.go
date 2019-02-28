@@ -18,17 +18,18 @@ package bitcoin
 import (
 	"errors"
 	"fmt"
+	"net/url"
+	"path/filepath"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/graarh/golang-socketio"
 	"github.com/graarh/golang-socketio/transport"
 	"github.com/shopspring/decimal"
-	"net/url"
-	"path/filepath"
-	"strings"
-	"sync"
-	"time"
 )
 
 const (
@@ -504,17 +505,6 @@ func (bs *BTCBlockScanner) extractRuntime(producer chan ExtractResult, worker ch
 	)
 
 	for {
-
-		var activeWorker chan<- ExtractResult
-		var activeValue ExtractResult
-
-		//当数据队列有数据时，释放顶部，传输给消费者
-		if len(values) > 0 {
-			activeWorker = worker
-			activeValue = values[0]
-
-		}
-
 		select {
 
 		//生成者不断生成数据，插入到数据队列尾部
@@ -524,13 +514,19 @@ func (bs *BTCBlockScanner) extractRuntime(producer chan ExtractResult, worker ch
 			//退出
 			//bs.wm.Log.Std.Info("block scanner have been scanned!")
 			return
-		case activeWorker <- activeValue:
-			//wm.Log.Std.Info("Get %d", len(activeValue))
-			values = values[1:]
+		default:
+
+			//当数据队列有数据时，释放顶部，传输给消费者
+			if len(values) > 0 {
+				worker <- values[0]
+				values = values[1:]
+
+			}
+
 		}
 	}
 
-	return
+	// return
 
 }
 
@@ -1702,7 +1698,7 @@ func (bs *BTCBlockScanner) setupSocketIO() error {
 			bs.wm.Log.Info("Auto reconnect after", reconnectWait, "seconds...")
 			time.Sleep(time.Duration(reconnectWait) * time.Second)
 			reconnect <- true
-		case <- bs.stopSocketIO:
+		case <-bs.stopSocketIO:
 			bs.wm.Log.Info("block scanner socketIO has been stopped")
 			return nil
 		}
