@@ -44,6 +44,7 @@ func testInitWalletManager() *WalletManager {
 		"TRX",
 		"BCH",
 		"ONT",
+		"VSYS",
 	}
 	return NewWalletManager(tc)
 	//tm.Init()
@@ -136,7 +137,7 @@ func TestWalletManager_CreateAssetsAccount(t *testing.T) {
 	tm := testInitWalletManager()
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
-	account := &openwallet.AssetsAccount{Alias: "MainnetLTC", WalletID: walletID, Required: 1, Symbol: "LTC", IsTrust: true}
+	account := &openwallet.AssetsAccount{Alias: "MainnetVSYS", WalletID: walletID, Required: 1, Symbol: "VSYS", IsTrust: true}
 	account, address, err := tm.CreateAssetsAccount(testApp, walletID, "12345678", account, nil)
 	if err != nil {
 		log.Error(err)

@@ -650,15 +650,18 @@ func TestTransfer_ONG2(t *testing.T) {
 func TestTransfer_VSYS(t *testing.T) {
 	tm := testVSYSInitWalletManager()
 
-	walletID := "WJmcRGkdbT4AoSD7YUHBEVXS7zUmBFgo2g"
-	accountID := "A7X5LL16KDafDdEp9ioyzW8K8R2Edu25YbKxMkKCrimB"
-	to := "ARQRs9711dATMXhwmAkves8TmWVhRAp9REP"
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "FUAKFujfVwdWJn79DFB4ZZQ6LRZS5cXfrGC9er2T5TSt"
+	to := "AREkgFxYhyCdtKD9JSSVhuGQomgGcacvQqM"
+
+	testGetAssetsAccountBalance(tm, walletID, accountID)
 
 	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1", "", nil)
-	fmt.Println(rawTx.RawHex)
 	if err != nil {
 		return
 	}
+
+	log.Infof("rawTX: %+v", rawTx)
 
 	_, err = testSignTransactionStep(tm, rawTx)
 	if err != nil {
