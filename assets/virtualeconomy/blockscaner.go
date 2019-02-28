@@ -553,6 +553,9 @@ func (bs *VSYSBlockScanner) extractTransaction(trx *Transaction, result *Extract
 	} else {
 
 		if success {
+			if trx.PublicKey == "" {
+				return
+			}
 			path := "addresses/publicKey/" + trx.PublicKey
 			resp, _ := bs.wm.Client.Call(path, nil, "GET")
 			from := resp.Get("address").String()
