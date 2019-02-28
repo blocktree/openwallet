@@ -159,7 +159,7 @@ func NewBlock(json *gjson.Result) *Block {
 	txs := gjson.Get(json.Raw, "transactions").Array()
 
 	for _, tx := range txs {
-		obj.Transactions = append(obj.Transactions, tx.Raw)
+		obj.Transactions = append(obj.Transactions, gjson.Get(tx.Raw, "id").String())
 	}
 
 	return obj
