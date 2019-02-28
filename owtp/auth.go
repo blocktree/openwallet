@@ -25,6 +25,23 @@ import (
 	"github.com/mr-tron/base58/base58"
 )
 
+//KeyAgreement 协商密码
+type KeyAgreement struct {
+	EncryptType            string //协商密码类型
+	PublicKeyInitiator     string //发送方：本地公钥
+	PrivateKeyInitiator    string //发送方：本地私钥
+	TmpPublicKeyInitiator  string //发送方：临时公钥
+	TmpPrivateKeyInitiator string //发送方：临时私钥
+	PublicKeyResponder     string //响应方：本地公钥
+	PrivateKeyResponder    string //响应方：本地私钥
+	TmpPublicKeyResponder  string //响应方：临时公钥
+	TmpPrivateKeyResponder string //响应方：临时私钥
+	S2                     string //响应方：本地验证码，RequestKeyAgreement生成
+	SB                     string //响应方：生成协商密码的必要验证码，RequestKeyAgreement生成
+	SA                     string //发送方：本地验证码，ResponseKeyAgreement生成
+	Key                    string //协商的密钥
+}
+
 //Authorization 授权
 type Authorization interface {
 
@@ -39,13 +56,13 @@ type Authorization interface {
 	//EnableKeyAgreement 开启密码协商
 	EnableKeyAgreement() bool
 	//InitKeyAgreement 发起协商
-	InitKeyAgreement(consultType string) (map[string]interface{}, error)
+	InitKeyAgreement(keyAgreement *KeyAgreement) error
 	//RequestKeyAgreement 请求协商，计算密钥
-	RequestKeyAgreement(params map[string]interface{}) (map[string]interface{}, error)
+	RequestKeyAgreement(keyAgreement *KeyAgreement) error
 	//ResponseKeyAgreement 响应协商，计算密钥
-	ResponseKeyAgreement(params map[string]interface{}) (map[string]interface{}, error)
+	ResponseKeyAgreement(keyAgreement *KeyAgreement) error
 	//VerifyKeyAgreement 验证协商结果
-	VerifyKeyAgreement(data *DataPacket, checkCode []byte) bool
+	VerifyKeyAgreement(keyAgreement *KeyAgreement) bool
 
 	//EncryptData 加密数据
 	EncryptData(data []byte, key []byte) ([]byte, error)
@@ -76,22 +93,22 @@ func (base *AuthorizationBase) EnableKeyAgreement() bool {
 }
 
 //InitKeyAgreement 发起协商
-func (base *AuthorizationBase) InitKeyAgreement(consultType string) (map[string]interface{}, error) {
-	return nil, fmt.Errorf("InitKeyAgreement is not implemented")
+func (base *AuthorizationBase) InitKeyAgreement(keyAgreement *KeyAgreement) error {
+	return fmt.Errorf("InitKeyAgreement is not implemented")
 }
 
 //RequestKeyAgreement 请求协商，计算密钥
-func (base *AuthorizationBase) RequestKeyAgreement(params map[string]interface{}) (map[string]interface{}, error) {
-	return nil, fmt.Errorf("RequestKeyAgreement is not implemented")
+func (base *AuthorizationBase) RequestKeyAgreement(keyAgreement *KeyAgreement) error {
+	return fmt.Errorf("RequestKeyAgreement is not implemented")
 }
 
 //ResponseKeyAgreement 响应协商，计算密钥
-func (base *AuthorizationBase) ResponseKeyAgreement(params map[string]interface{}) (map[string]interface{}, error) {
-	return nil, fmt.Errorf("ResponseKeyAgreement is not implemented")
+func (base *AuthorizationBase) ResponseKeyAgreement(keyAgreement *KeyAgreement) error {
+	return fmt.Errorf("ResponseKeyAgreement is not implemented")
 }
 
 //VerifyKeyAgreement 是否完成密码协商，验证协商结果
-func (base *AuthorizationBase) VerifyKeyAgreement(data *DataPacket, checkCode []byte) bool {
+func (base *AuthorizationBase) VerifyKeyAgreement(keyAgreement *KeyAgreement) bool {
 	return false
 }
 
@@ -181,24 +198,12 @@ type OWTPAuth struct {
 	localPublicKey []byte
 	//本地私钥用户签名数据包，生成协商密钥
 	localPrivateKey []byte
-	//本地协商校验值 base58编码
-	localChecksum []byte
 	//远程节点的公钥
 	remotePublicKey []byte
-	//远程节点协商校验值 base58编码
-	//remoteChecksum []byte
-	//用于协商密码的临时公钥
-	tmpPublicKey []byte
-	//用于协商密码的临时私钥
-	tmpPrivateKey []byte
-	//协商密钥
-	secretKey []byte
 	//是否开启
 	enable bool
 	//是否协商
 	isConsult bool
-	//协商类型
-	consultType string
 }
 
 func NewOWTPAuthWithCertificate(cert Certificate, enable bool) (*OWTPAuth, error) {
@@ -254,7 +259,7 @@ func (auth *OWTPAuth) GenerateSignature(data *DataPacket) bool {
 		if ret != owcrypt.SUCCESS {
 			return false
 		}
-		data.PublicKey = pub
+		data.SecretData.PublicKeyInitiator = pub
 		data.Signature = base58.Encode(signature)
 		//log.Debug("GenerateSignature packet.Signature: ", data.Signature)
 	}
@@ -266,8 +271,8 @@ func (auth *OWTPAuth) VerifySignature(data *DataPacket) bool {
 	//验证数据包签名是否合法
 	if auth.EnableAuth() {
 		var publickey []byte
-		if len(data.PublicKey) > 0 {
-			publickey, _ = base58.Decode(data.PublicKey)
+		if len(data.SecretData.PublicKeyInitiator) > 0 {
+			publickey, _ = base58.Decode(data.SecretData.PublicKeyInitiator)
 		} else {
 			publickey = auth.remotePublicKey
 		}
@@ -338,38 +343,6 @@ func (auth *OWTPAuth) DecryptData(data []byte, key []byte) ([]byte, error) {
 }
 
 //AuthHeader 返回授权头
-//func (auth *OWTPAuth) WSAuthHeader() map[string]string {
-//
-//	if len(auth.localPublicKey) == 0 {
-//		return nil
-//	}
-//
-//	a := base58.Encode(auth.localPublicKey)
-//	n := strconv.FormatInt(time.Now().Unix()+1, 10)
-//	t := strconv.FormatInt(time.Now().Unix(), 10)
-//
-//	//组合[a+p+n+t+c]并sha256两次，使用钱包工具配置的本地私钥签名，最后base58编码
-//	msg := owcrypt.Hash([]byte(fmt.Sprintf("%s%s%s", a, n, t)), 0, owcrypt.HASh_ALG_DOUBLE_SHA256)
-//
-//	//计算公钥的ID值
-//	nodeID := owcrypt.Hash(auth.localPublicKey, 0, owcrypt.HASH_ALG_SHA256)
-//
-//	//SM2签名
-//	signature, ret := owcrypt.Signature(auth.localPrivateKey, nodeID, 32, msg, 32, owcrypt.ECC_CURVE_SM2_STANDARD)
-//	if ret != owcrypt.SUCCESS {
-//		return nil
-//	}
-//
-//	s := base58.Encode(signature)
-//	return map[string]string{
-//		"a": a,
-//		"n": n,
-//		"t": t,
-//		"s": s,
-//	}
-//}
-
-//AuthHeader 返回授权头
 func (auth *OWTPAuth) HTTPAuthHeader() map[string]string {
 
 	if len(auth.localPublicKey) == 0 {
@@ -388,155 +361,51 @@ func (auth *OWTPAuth) EnableKeyAgreement() bool {
 	return auth.isConsult
 }
 
-//InitKeyAgreement 发起协商
-func (auth *OWTPAuth) InitKeyAgreement(consultType string) (map[string]interface{}, error) {
-	tmpPrikeyInitiator, tmpPubkeyInitiator := owcrypt.KeyAgreement_initiator_step1(owcrypt.ECC_CURVE_SM2_STANDARD)
-	auth.tmpPrivateKey = tmpPrikeyInitiator
-	auth.tmpPublicKey = tmpPubkeyInitiator
-	auth.consultType = consultType
-
-	result := map[string]interface{}{
-		"pubkey":      base58.Encode(auth.localPublicKey),
-		"tmpPubkey":   base58.Encode(tmpPubkeyInitiator),
-		"consultType": consultType,
+//RandomPrivateKey 生成随机私钥
+func RandomPrivateKey() string {
+	buf := make([]byte, 32)
+	_, err := rand.Read(buf)
+	if err != nil {
+		return ""
 	}
 
-	return result, nil
+	key := base58.Encode(buf)
+	return key
 }
 
-//RequestKeyAgreement 请求协商
-func (auth *OWTPAuth) RequestKeyAgreement(params map[string]interface{}) (map[string]interface{}, error) {
+func (auth *OWTPAuth) VerifyKeyAgreement(keyAgreement *KeyAgreement) bool {
 
-	pubkey, ok := params["pubkey"].(string)
-	if !ok {
-		return nil, fmt.Errorf("request key agreement failed")
+	//没有完成密码协商
+	if len(keyAgreement.SA) == 0 {
+		//请求协商密码参数存在
+		if len(keyAgreement.PublicKeyInitiator) > 0 &&
+			len(keyAgreement.TmpPublicKeyInitiator) > 0 {
+			auth.isConsult = false
+			return false
+		} else {
+			//没有请求协商密码参数
+			auth.isConsult = false
+			return true
+		}
 	}
 
-	pubkeyBytes, err := base58.Decode(pubkey)
-	if err != nil {
-		return nil, err
-	}
+	//auth.isConsult = true
 
-	tmpPubkey := params["tmpPubkey"].(string)
-	if !ok {
-		return nil, fmt.Errorf("request key agreement failed")
-	}
-
-	tmpPubkeyBytes, err := base58.Decode(tmpPubkey)
-	if err != nil {
-		return nil, err
-	}
-
-	localPubkey, ok := params["localPubkey"].([]byte)
-	if !ok {
-		return nil, fmt.Errorf("request key agreement failed")
-	}
-
-	localPrivkey := params["localPrivkey"].([]byte)
-	if !ok {
-		return nil, fmt.Errorf("request key agreement failed")
-	}
-
-	auth.localPublicKey = localPubkey
-	auth.localPrivateKey = localPrivkey
-
-	key, tmpPubkeyResponder, s2, sb, err := auth.requestKeyAgreement(pubkeyBytes, tmpPubkeyBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	auth.secretKey = key
-	auth.localChecksum = s2
-	auth.isConsult = true
-
-	result := map[string]interface{}{
-		"pubkeyOther":    base58.Encode(auth.localPublicKey),
-		"tmpPubkeyOther": base58.Encode(tmpPubkeyResponder),
-		"sb":             base58.Encode(sb),
-		"secretKey":      base58.Encode(key),
-		"localChecksum":  base58.Encode(s2),
-	}
-
-	return result, nil
-}
-
-//ResponseKeyAgreement 响应协商
-func (auth *OWTPAuth) ResponseKeyAgreement(params map[string]interface{}) (map[string]interface{}, error) {
-
-	remotePublicKey, ok := params["remotePublicKey"].(string)
-	if !ok {
-		return nil, fmt.Errorf("response key agreement failed")
-	}
-
-	remotePublicKeyBytes, err := base58.Decode(remotePublicKey)
-	if err != nil {
-		return nil, err
-	}
-
-	remoteTmpPublicKey := params["remoteTmpPublicKey"].(string)
-	if !ok {
-		return nil, fmt.Errorf("response key agreement failed")
-	}
-
-	remoteTmpPublicKeyBytes, err := base58.Decode(remoteTmpPublicKey)
-	if err != nil {
-		return nil, err
-	}
-
-	sb := params["sb"].(string)
-	if !ok {
-		return nil, fmt.Errorf("response key agreement failed")
-	}
-
-	sbBytes, err := base58.Decode(sb)
-	if err != nil {
-		return nil, err
-	}
-
-	key, sa, err := auth.responseKeyAgreement(remotePublicKeyBytes, remoteTmpPublicKeyBytes, sbBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	auth.secretKey = key
-	auth.localChecksum = sa
-	auth.isConsult = true
-
-	result := map[string]interface{}{
-		"secretKey":     base58.Encode(key),
-		"localChecksum": base58.Encode(sa),
-	}
-
-	return result, nil
-}
-
-//VerifyKeyAgreement 是否完成密码协商，验证协商结果
-func (auth *OWTPAuth) VerifyKeyAgreement(data *DataPacket, localChecksum []byte) bool {
-
-	//如果发起协商则不验证
-	if data.Method == KeyAgreementMethod {
-		auth.isConsult = false
-		return true
-	}
-
-	//没有密码协商
-	if len(data.CheckCode) == 0 {
-		auth.isConsult = false
-		return true
-	}
-
-	auth.isConsult = true
-
-	if len(localChecksum) == 0 {
+	if len(keyAgreement.S2) == 0 {
 		return false
 	}
 
-	checkCode, err := base58.Decode(data.CheckCode)
+	s2, err := base58.Decode(keyAgreement.S2)
 	if err != nil {
 		return false
 	}
 
-	ret := owcrypt.KeyAgreement_responder_step2(checkCode, localChecksum, owcrypt.ECC_CURVE_SM2_STANDARD)
+	sa, err := base58.Decode(keyAgreement.SA)
+	if err != nil {
+		return false
+	}
+
+	ret := owcrypt.KeyAgreement_responder_step2(sa, s2, owcrypt.ECC_CURVE_SM2_STANDARD)
 	if ret != owcrypt.SUCCESS {
 		return false
 	}
@@ -550,11 +419,128 @@ func (auth *OWTPAuth) VerifyKeyAgreement(data *DataPacket, localChecksum []byte)
 	return true
 }
 
-//requestKeyAgreement 请求协商
-func (auth *OWTPAuth) requestKeyAgreement(pubkeyBytes, tmpPubkeyBytes []byte) ([]byte, []byte, []byte, []byte, error) {
+//InitKeyAgreement 发起协商
+func (auth *OWTPAuth) InitKeyAgreement(keyAgreement *KeyAgreement) error {
+	tmpPrikeyInitiator, tmpPubkeyInitiator := owcrypt.KeyAgreement_initiator_step1(owcrypt.ECC_CURVE_SM2_STANDARD)
+	//auth.tmpPrivateKey = tmpPrikeyInitiator
+	//auth.tmpPublicKey = tmpPubkeyInitiator
+	//auth.consultType = keyAgreement.EncryptType
 
-	IDinitiator := owcrypt.Hash(pubkeyBytes, 0, owcrypt.HASH_ALG_SHA256)
-	IDresponder := owcrypt.Hash(auth.localPublicKey, 0, owcrypt.HASH_ALG_SHA256)
+	keyAgreement.TmpPrivateKeyInitiator = base58.Encode(tmpPrikeyInitiator)
+	keyAgreement.TmpPublicKeyInitiator = base58.Encode(tmpPubkeyInitiator)
+	keyAgreement.PublicKeyInitiator = base58.Encode(auth.localPublicKey)
+
+	auth.isConsult = true
+
+	return nil
+}
+
+//RequestKeyAgreement 请求协商
+func (auth *OWTPAuth) RequestKeyAgreement(keyAgreement *KeyAgreement) error {
+
+	pubkeyBytes, err := base58.Decode(keyAgreement.PublicKeyInitiator)
+	if err != nil {
+		return err
+	}
+
+	tmpPubkeyBytes, err := base58.Decode(keyAgreement.TmpPublicKeyInitiator)
+	if err != nil {
+		return err
+	}
+
+	localPubkey, err := base58.Decode(keyAgreement.PublicKeyResponder)
+	if err != nil {
+		return err
+	}
+
+	localPrivkey, err := base58.Decode(keyAgreement.PrivateKeyResponder)
+	if err != nil {
+		return err
+	}
+
+	auth.localPublicKey = localPubkey
+	auth.localPrivateKey = localPrivkey
+
+	key, tmpPubkeyResponder, s2, sb, err := auth.requestKeyAgreement(pubkeyBytes, tmpPubkeyBytes, localPubkey, localPrivkey)
+	if err != nil {
+		return err
+	}
+
+	//auth.secretKey = key
+	//auth.localChecksum = s2
+	auth.isConsult = true
+
+	keyAgreement.SB = base58.Encode(sb)
+	keyAgreement.Key = base58.Encode(key)
+	keyAgreement.S2 = base58.Encode(s2)
+	keyAgreement.TmpPublicKeyResponder = base58.Encode(tmpPubkeyResponder)
+
+	//result := map[string]interface{}{
+	//	"pubkeyOther":    base58.Encode(auth.localPublicKey),
+	//	"tmpPubkeyOther": base58.Encode(tmpPubkeyResponder),
+	//	"sb":             base58.Encode(sb),
+	//	"secretKey":      base58.Encode(key),
+	//	"localChecksum":  base58.Encode(s2),
+	//}
+
+	return nil
+}
+
+//ResponseKeyAgreement 响应协商
+func (auth *OWTPAuth) ResponseKeyAgreement(keyAgreement *KeyAgreement) error {
+
+	remotePublicKeyBytes, err := base58.Decode(keyAgreement.PublicKeyResponder)
+	if err != nil {
+		return err
+	}
+
+	remoteTmpPublicKeyBytes, err := base58.Decode(keyAgreement.TmpPublicKeyResponder)
+	if err != nil {
+		return err
+	}
+
+	sbBytes, err := base58.Decode(keyAgreement.SB)
+	if err != nil {
+		return err
+	}
+
+	tmpPublicKeyBytes, err := base58.Decode(keyAgreement.TmpPublicKeyInitiator)
+	if err != nil {
+		return err
+	}
+
+	tmpPrivateKeyBytes, err := base58.Decode(keyAgreement.TmpPrivateKeyInitiator)
+	if err != nil {
+		return err
+	}
+
+	key, sa, err := auth.responseKeyAgreement(remotePublicKeyBytes, remoteTmpPublicKeyBytes, sbBytes, tmpPublicKeyBytes, tmpPrivateKeyBytes)
+	if err != nil {
+		return err
+	}
+
+	//auth.secretKey = key
+	//auth.localChecksum = sa
+	auth.isConsult = true
+
+	//result := map[string]interface{}{
+	//	"secretKey":     base58.Encode(key),
+	//	"localChecksum": base58.Encode(sa),
+	//}
+
+	keyAgreement.Key = base58.Encode(key)
+	keyAgreement.SA = base58.Encode(sa)
+
+	return nil
+}
+
+//requestKeyAgreement 请求协商
+func (auth *OWTPAuth) requestKeyAgreement(
+	pubkeyInitiatorBytes, tmpPubkeyInitiatorBytes []byte,
+	pubkeyResponderBytes, privkeyResponderBytes []byte) ([]byte, []byte, []byte, []byte, error) {
+
+	IDinitiator := owcrypt.Hash(pubkeyInitiatorBytes, 0, owcrypt.HASH_ALG_SHA256)
+	IDresponder := owcrypt.Hash(pubkeyResponderBytes, 0, owcrypt.HASH_ALG_SHA256)
 
 	//key, tmpPubkeyResponder, S2, SB, ret := owcrypt.KeyAgreement_responder_step1(
 	//	IDinitiator,
@@ -573,23 +559,23 @@ func (auth *OWTPAuth) requestKeyAgreement(pubkeyBytes, tmpPubkeyBytes []byte) ([
 		32,
 		IDresponder,
 		32,
-		auth.localPrivateKey,
-		auth.localPublicKey,
-		pubkeyBytes,
-		tmpPubkeyBytes,
+		privkeyResponderBytes,
+		pubkeyResponderBytes,
+		pubkeyInitiatorBytes,
+		tmpPubkeyInitiatorBytes,
 		32,
-		auth.localPrivateKey,
+		privkeyResponderBytes,
 		owcrypt.ECC_CURVE_SM2_STANDARD)
 
 	if ret != owcrypt.SUCCESS {
-		return nil, nil, nil, nil, fmt.Errorf("KeyAgreement_responder_step1 failed")
+		return nil, nil, nil, nil, fmt.Errorf("KeyAgreement_responder_ElGamal_step1 failed")
 	}
 
 	return key, tmpPubkeyResponder, S2, SB, nil
 }
 
 //responseKeyAgreement 响应协商
-func (auth *OWTPAuth) responseKeyAgreement(pubkeyResponder, tmpPubkeyResponder, sb []byte) ([]byte, []byte, error) {
+func (auth *OWTPAuth) responseKeyAgreement(pubkeyResponder, tmpPubkeyResponder, sb, tmpPublicKey, tmpPrivateKey []byte) ([]byte, []byte, error) {
 
 	IDinitiator := owcrypt.Hash(auth.localPublicKey, 0, owcrypt.HASH_ALG_SHA256)
 	IDresponder := owcrypt.Hash(pubkeyResponder, 0, owcrypt.HASH_ALG_SHA256)
@@ -602,28 +588,16 @@ func (auth *OWTPAuth) responseKeyAgreement(pubkeyResponder, tmpPubkeyResponder, 
 		auth.localPrivateKey,
 		auth.localPublicKey,
 		pubkeyResponder,
-		auth.tmpPrivateKey,
-		auth.tmpPublicKey,
+		tmpPrivateKey,
+		tmpPublicKey,
 		tmpPubkeyResponder,
 		sb,
 		32,
 		owcrypt.ECC_CURVE_SM2_STANDARD)
 
 	if ret != owcrypt.SUCCESS {
-		return nil, nil, fmt.Errorf("KeyAgreement_responder_step1 failed")
+		return nil, nil, fmt.Errorf("KeyAgreement_initiator_step2 failed")
 	}
 
 	return retA, SA, nil
-}
-
-//RandomPrivateKey 生成随机私钥
-func RandomPrivateKey() string {
-	buf := make([]byte, 32)
-	_, err := rand.Read(buf)
-	if err != nil {
-		return ""
-	}
-
-	key := base58.Encode(buf)
-	return key
 }

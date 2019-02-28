@@ -116,6 +116,18 @@ func (store *SessionManager) Get(id string, key string) interface{} {
 	return session.Get(key)
 }
 
+// GetString
+func (store *SessionManager) GetString(id string, key string) string {
+	val := store.Get(id, key)
+	if val != nil {
+		if str, ok := val.(string); ok {
+			return str
+		}
+	}
+
+	return ""
+}
+
 // Put 设置节点属性
 func (store *SessionManager) Put(id string, key string, val interface{}) error {
 	session, err := store.GetSessionStore(id)
