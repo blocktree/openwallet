@@ -553,12 +553,12 @@ func (bs *VSYSBlockScanner) extractTransaction(trx *Transaction, result *Extract
 	} else {
 
 		if success {
-			if trx.PublicKey == "" {
-				return
+			from := ""
+			if trx.PublicKey != "" {
+				path := "addresses/publicKey/" + trx.PublicKey
+				resp, _ := bs.wm.Client.Call(path, nil, "GET")
+				from = resp.Get("address").String()
 			}
-			path := "addresses/publicKey/" + trx.PublicKey
-			resp, _ := bs.wm.Client.Call(path, nil, "GET")
-			from := resp.Get("address").String()
 
 			for _, extractData := range result.extractData {
 				tx := &openwallet.Transaction{
