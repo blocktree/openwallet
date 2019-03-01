@@ -118,3 +118,18 @@ func Test_convert(t *testing.T) {
 
 	fmt.Println(time.Now().UnixNano())
 }
+
+func Test_getTransactionByAddresses(t *testing.T) {
+	addrs := "ARAA8AnUYa4kWwWkiZTTyztG5C6S9MFTx11"
+
+	c := NewClient("http://localhost:9922/", false)
+	result, err := c.getMultiAddrTransactions(0, -1, addrs)
+
+	if err != nil {
+		t.Error("get transactions failed!")
+	} else {
+		for _, tx := range result {
+			fmt.Println(tx.TxID)
+		}
+	}
+}

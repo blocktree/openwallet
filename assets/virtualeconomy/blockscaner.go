@@ -933,6 +933,7 @@ func (wm *WalletManager) GetTxIDsInMemPool() ([]string, error) {
 func (wm *WalletManager) GetTransaction(txid string) (*Transaction, error) {
 
 	path := "transactions/info/" + txid
+	fmt.Println("txid:   ", path)
 	trans, err := wm.Client.Call(path, nil, "GET")
 
 	if err != nil {
@@ -1013,50 +1014,72 @@ func (bs *VSYSBlockScanner) GetBalanceByAddress(address ...string) ([]*openwalle
 	return addrsBalance, nil
 }
 
+func (c *Client) getMultiAddrTransactions(offset, limit int, addresses ...string) ([]*Transaction, error) {
+	var (
+		trxs      = make([]*Transaction, 0)
+		respLimit = "/limit/10000"
+	)
+
+	for _, addr := range addresses {
+		path := "transactions/address/" + addr + respLimit
+
+		resp, err := c.Call(path, nil, "GET")
+		if err != nil {
+			return nil, err
+		}
+		txArray := resp.Array()[0].Array()
+
+		for _, txDetail := range txArray {
+			trxs = append(trxs, NewTransaction(&txDetail))
+		}
+	}
+
+	return trxs, nil
+}
+
 //GetAssetsAccountTransactionsByAddress 查询账户相关地址的交易记录
 func (bs *VSYSBlockScanner) GetTransactionsByAddress(offset, limit int, coin openwallet.Coin, address ...string) ([]*openwallet.TxExtractData, error) {
 
-	// var (
-	// 	array = make([]*openwallet.TxExtractData, 0)
-	// )
+	var (
+		array = make([]*openwallet.TxExtractData, 0)
+	)
 
-	// trxs, err := bs.wm.getMultiAddrTransactionsByExplorer(offset, limit, address...)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	trxs, err := bs.wm.Client.getMultiAddrTransactions(offset, limit, address...)
+	if err != nil {
+		return nil, err
+	}
 
-	// key := "account"
+	key := "account"
 
-	// //提取账户相关的交易单
-	// var scanAddressFunc openwallet.BlockScanAddressFunc = func(findAddr string) (string, bool) {
-	// 	for _, a := range address {
-	// 		if findAddr == a {
-	// 			return key, true
-	// 		}
-	// 	}
-	// 	return "", false
-	// }
+	//提取账户相关的交易单
+	var scanAddressFunc openwallet.BlockScanAddressFunc = func(findAddr string) (string, bool) {
+		for _, a := range address {
+			if findAddr == a {
+				return key, true
+			}
+		}
+		return "", false
+	}
 
-	// //要检查一下tx.BlockHeight是否有值
+	//要检查一下tx.BlockHeight是否有值
 
-	// for _, tx := range trxs {
+	for _, tx := range trxs {
 
-	// 	result := ExtractResult{
-	// 		BlockHeight: tx.BlockHeight,
-	// 		TxID:        tx.TxID,
-	// 		extractData: make(map[string]*openwallet.TxExtractData),
-	// 	}
+		result := ExtractResult{
+			BlockHeight: tx.BlockHeight,
+			TxID:        tx.TxID,
+			extractData: make(map[string]*openwallet.TxExtractData),
+		}
 
-	// 	bs.extractTransaction(tx, &result, scanAddressFunc)
-	// 	data := result.extractData
-	// 	txExtract := data[key]
-	// 	if txExtract != nil {
-	// 		array = append(array, txExtract)
-	// 	}
-	// }
+		bs.extractTransaction(tx, &result, scanAddressFunc)
+		data := result.extractData
+		txExtract := data[key]
+		if txExtract != nil {
+			array = append(array, txExtract)
+		}
+	}
 
-	// return array, nil
-	return nil, nil
+	return array, nil
 }
 
 //Run 运行
