@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/common"
@@ -546,7 +547,7 @@ func (bs *VSYSBlockScanner) extractTransaction(trx *Transaction, result *Extract
 	var (
 		success = true
 	)
-
+	createAt := time.Now().Unix()
 	if trx == nil {
 		//记录哪个区块哪个交易单没有完成扫描
 		success = false
@@ -558,6 +559,51 @@ func (bs *VSYSBlockScanner) extractTransaction(trx *Transaction, result *Extract
 				path := "addresses/publicKey/" + trx.PublicKey
 				resp, _ := bs.wm.Client.Call(path, nil, "GET")
 				from = resp.Get("address").String()
+				sourceKey, ok := scanAddressFunc(from)
+				if ok {
+					input := openwallet.TxInput{}
+					input.TxID = trx.TxID
+					input.Address = from
+					input.Coin = openwallet.Coin{
+						Symbol:     bs.wm.Symbol(),
+						IsContract: false,
+					}
+					input.Index = 0
+					input.Sid = openwallet.GenTxInputSID(trx.TxID, bs.wm.Symbol(), "", uint64(0))
+					input.CreateAt = createAt
+					input.BlockHeight = trx.BlockHeight
+					input.BlockHash = trx.BlockHash
+
+					ed := result.extractData[sourceKey]
+					if ed == nil {
+						ed = openwallet.NewBlockExtractData()
+						result.extractData[sourceKey] = ed
+					}
+
+					ed.TxInputs = append(ed.TxInputs, &input)
+				}
+			}
+			sourceKey, ok := scanAddressFunc(trx.Recipient)
+			if ok {
+				output := openwallet.TxOutPut{}
+				output.TxID = trx.TxID
+				output.Address = trx.Recipient
+				output.Coin = openwallet.Coin{
+					Symbol:     bs.wm.Symbol(),
+					IsContract: false,
+				}
+				output.Index = 0
+				output.Sid = openwallet.GenTxOutPutSID(trx.TxID, bs.wm.Symbol(), "", 0)
+				output.CreateAt = createAt
+				output.BlockHeight = trx.BlockHeight
+				output.BlockHash = trx.BlockHash
+				ed := result.extractData[sourceKey]
+				if ed == nil {
+					ed = openwallet.NewBlockExtractData()
+					result.extractData[sourceKey] = ed
+				}
+
+				ed.TxOutputs = append(ed.TxOutputs, &output)
 			}
 
 			for _, extractData := range result.extractData {
@@ -579,8 +625,6 @@ func (bs *VSYSBlockScanner) extractTransaction(trx *Transaction, result *Extract
 				wxID := openwallet.GenTransactionWxID(tx)
 				tx.WxID = wxID
 				extractData.Transaction = tx
-
-				//bs.wm.Log.Debug("Transaction:", extractData.Transaction)
 			}
 
 		}
@@ -933,6 +977,7 @@ func (wm *WalletManager) GetTxIDsInMemPool() ([]string, error) {
 func (wm *WalletManager) GetTransaction(txid string) (*Transaction, error) {
 
 	path := "transactions/info/" + txid
+	fmt.Println("txid:   ", path)
 	trans, err := wm.Client.Call(path, nil, "GET")
 
 	if err != nil {
@@ -1013,50 +1058,72 @@ func (bs *VSYSBlockScanner) GetBalanceByAddress(address ...string) ([]*openwalle
 	return addrsBalance, nil
 }
 
+func (c *Client) getMultiAddrTransactions(offset, limit int, addresses ...string) ([]*Transaction, error) {
+	var (
+		trxs      = make([]*Transaction, 0)
+		respLimit = "/limit/10000"
+	)
+
+	for _, addr := range addresses {
+		path := "transactions/address/" + addr + respLimit
+
+		resp, err := c.Call(path, nil, "GET")
+		if err != nil {
+			return nil, err
+		}
+		txArray := resp.Array()[0].Array()
+
+		for _, txDetail := range txArray {
+			trxs = append(trxs, NewTransaction(&txDetail))
+		}
+	}
+
+	return trxs, nil
+}
+
 //GetAssetsAccountTransactionsByAddress 查询账户相关地址的交易记录
 func (bs *VSYSBlockScanner) GetTransactionsByAddress(offset, limit int, coin openwallet.Coin, address ...string) ([]*openwallet.TxExtractData, error) {
 
-	// var (
-	// 	array = make([]*openwallet.TxExtractData, 0)
-	// )
+	var (
+		array = make([]*openwallet.TxExtractData, 0)
+	)
 
-	// trxs, err := bs.wm.getMultiAddrTransactionsByExplorer(offset, limit, address...)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	trxs, err := bs.wm.Client.getMultiAddrTransactions(offset, limit, address...)
+	if err != nil {
+		return nil, err
+	}
 
-	// key := "account"
+	key := "account"
 
-	// //提取账户相关的交易单
-	// var scanAddressFunc openwallet.BlockScanAddressFunc = func(findAddr string) (string, bool) {
-	// 	for _, a := range address {
-	// 		if findAddr == a {
-	// 			return key, true
-	// 		}
-	// 	}
-	// 	return "", false
-	// }
+	//提取账户相关的交易单
+	var scanAddressFunc openwallet.BlockScanAddressFunc = func(findAddr string) (string, bool) {
+		for _, a := range address {
+			if findAddr == a {
+				return key, true
+			}
+		}
+		return "", false
+	}
 
-	// //要检查一下tx.BlockHeight是否有值
+	//要检查一下tx.BlockHeight是否有值
 
-	// for _, tx := range trxs {
+	for _, tx := range trxs {
 
-	// 	result := ExtractResult{
-	// 		BlockHeight: tx.BlockHeight,
-	// 		TxID:        tx.TxID,
-	// 		extractData: make(map[string]*openwallet.TxExtractData),
-	// 	}
+		result := ExtractResult{
+			BlockHeight: tx.BlockHeight,
+			TxID:        tx.TxID,
+			extractData: make(map[string]*openwallet.TxExtractData),
+		}
 
-	// 	bs.extractTransaction(tx, &result, scanAddressFunc)
-	// 	data := result.extractData
-	// 	txExtract := data[key]
-	// 	if txExtract != nil {
-	// 		array = append(array, txExtract)
-	// 	}
-	// }
+		bs.extractTransaction(tx, &result, scanAddressFunc)
+		data := result.extractData
+		txExtract := data[key]
+		if txExtract != nil {
+			array = append(array, txExtract)
+		}
+	}
 
-	// return array, nil
-	return nil, nil
+	return array, nil
 }
 
 //Run 运行
