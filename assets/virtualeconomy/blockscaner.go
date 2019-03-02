@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/common"
@@ -546,7 +547,7 @@ func (bs *VSYSBlockScanner) extractTransaction(trx *Transaction, result *Extract
 	var (
 		success = true
 	)
-
+	createAt := time.Now().Unix()
 	if trx == nil {
 		//记录哪个区块哪个交易单没有完成扫描
 		success = false
@@ -558,6 +559,51 @@ func (bs *VSYSBlockScanner) extractTransaction(trx *Transaction, result *Extract
 				path := "addresses/publicKey/" + trx.PublicKey
 				resp, _ := bs.wm.Client.Call(path, nil, "GET")
 				from = resp.Get("address").String()
+				sourceKey, ok := scanAddressFunc(from)
+				if ok {
+					input := openwallet.TxInput{}
+					input.TxID = trx.TxID
+					input.Address = from
+					input.Coin = openwallet.Coin{
+						Symbol:     bs.wm.Symbol(),
+						IsContract: false,
+					}
+					input.Index = 0
+					input.Sid = openwallet.GenTxInputSID(trx.TxID, bs.wm.Symbol(), "", uint64(0))
+					input.CreateAt = createAt
+					input.BlockHeight = trx.BlockHeight
+					input.BlockHash = trx.BlockHash
+
+					ed := result.extractData[sourceKey]
+					if ed == nil {
+						ed = openwallet.NewBlockExtractData()
+						result.extractData[sourceKey] = ed
+					}
+
+					ed.TxInputs = append(ed.TxInputs, &input)
+				}
+			}
+			sourceKey, ok := scanAddressFunc(trx.Recipient)
+			if ok {
+				output := openwallet.TxOutPut{}
+				output.TxID = trx.TxID
+				output.Address = trx.Recipient
+				output.Coin = openwallet.Coin{
+					Symbol:     bs.wm.Symbol(),
+					IsContract: false,
+				}
+				output.Index = 0
+				output.Sid = openwallet.GenTxOutPutSID(trx.TxID, bs.wm.Symbol(), "", 0)
+				output.CreateAt = createAt
+				output.BlockHeight = trx.BlockHeight
+				output.BlockHash = trx.BlockHash
+				ed := result.extractData[sourceKey]
+				if ed == nil {
+					ed = openwallet.NewBlockExtractData()
+					result.extractData[sourceKey] = ed
+				}
+
+				ed.TxOutputs = append(ed.TxOutputs, &output)
 			}
 
 			for _, extractData := range result.extractData {
@@ -579,8 +625,6 @@ func (bs *VSYSBlockScanner) extractTransaction(trx *Transaction, result *Extract
 				wxID := openwallet.GenTransactionWxID(tx)
 				tx.WxID = wxID
 				extractData.Transaction = tx
-
-				//bs.wm.Log.Debug("Transaction:", extractData.Transaction)
 			}
 
 		}
