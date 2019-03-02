@@ -127,7 +127,7 @@ func NewTransaction(json *gjson.Result) *Transaction {
 	obj.TxID = json.Get("id").String()
 	obj.Recipient = json.Get("recipient").String()
 	obj.TimeStamp = json.Get("timestamp").Uint()
-	obj.Amount = json.Get("timestamp").Uint()
+	obj.Amount = json.Get("amount").Uint()
 	obj.BlockHeight = json.Get("height").Uint()
 	obj.FeeCharged = json.Get("feeCharged").Uint()
 	if json.Get("status").String() == "Success" {
