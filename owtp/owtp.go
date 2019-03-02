@@ -1033,12 +1033,12 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 
 		if cryptErr != nil {
 			log.Critical("OWTP: DecryptData failed, unexpected err:", cryptErr)
-			packet.Req = WSResponse
-			packet.Data = responseError("secret key is invalid", ErrSecretKeyInvalid)
-			packet.Timestamp = time.Now().Unix()
-			packet.SecretData = SecretData{}
-			peer.send(*packet)
-			return
+			//packet.Req = WSResponse
+			//packet.Data = responseError("secret key is invalid", ErrSecretKeyInvalid)
+			//packet.Timestamp = time.Now().Unix()
+			//packet.SecretData = SecretData{}
+			//peer.send(*packet)
+			//return
 		}
 
 		//创建上下面指针，处理请求参数

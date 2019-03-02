@@ -16,6 +16,7 @@
 package openwallet
 
 import (
+	"encoding/hex"
 	"github.com/blocktree/OpenWallet/crypto"
 	"github.com/blocktree/go-owcdrivers/owkeychain"
 	"github.com/btcsuite/btcutil/hdkeychain"
@@ -94,11 +95,24 @@ func GenAccountID(publicKey string) string {
 		return ""
 	}
 
+	return genAccountID(pub.GetPublicKeyBytes())
+}
+
+//GenAccountIDByHex 计算publicKey的AccountID
+//publickey为HEX传
+func GenAccountIDByHex(publicKeyHex string) string {
+
+	pub, err := hex.DecodeString(publicKeyHex)
+	if err != nil {
+		return ""
+	}
+	return genAccountID(pub)
+}
+
+func genAccountID(pub []byte) string {
 	//seed Keccak256 两次得到keyID
-	hash := crypto.Keccak256(pub.GetPublicKeyBytes())
+	hash := crypto.Keccak256(pub)
 	hash = crypto.Keccak256(hash)
-
 	accountID := owkeychain.Encode(hash, owkeychain.BitcoinAlphabet)
-
 	return accountID
 }

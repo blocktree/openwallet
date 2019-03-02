@@ -568,7 +568,7 @@ func TestSubscribeAddress_VSYS(t *testing.T) {
 		accountID  = "FUAKFujfVwdWJn79DFB4ZZQ6LRZS5cXfrGC9er2T5TSt"
 		addrs      = map[string]string{
 			"ARAA8AnUYa4kWwWkiZTTyztG5C6S9MFTx11": accountID,
-			//"AQ9FxqKbXnZTqf22zy2NFcXhi13fipg48S": accountID,
+			"AREkgFxYhyCdtKD9JSSVhuGQomgGcacvQqM": accountID,
 		}
 	)
 
