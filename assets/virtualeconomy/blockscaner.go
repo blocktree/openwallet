@@ -31,6 +31,7 @@ import (
 	"github.com/graarh/golang-socketio"
 	"github.com/graarh/golang-socketio/transport"
 	"github.com/shopspring/decimal"
+	"github.com/tidwall/gjson"
 )
 
 const (
@@ -74,7 +75,7 @@ func NewVSYSBlockScanner(wm *WalletManager) *VSYSBlockScanner {
 
 	bs.extractingCH = make(chan struct{}, maxExtractingSize)
 	bs.wm = wm
-	bs.IsScanMemPool = false
+	bs.IsScanMemPool = true
 	bs.RescanLastBlockCount = 0
 
 	//设置扫描任务
@@ -435,7 +436,7 @@ func (bs *VSYSBlockScanner) BatchExtractTransaction(blockHeight uint64, blockHas
 			go func(mBlockHeight uint64, mTxid string, end chan struct{}, mProducer chan<- ExtractResult) {
 
 				//导出提出的交易
-				mProducer <- bs.ExtractTransaction(mBlockHeight, eBlockHash, mTxid, bs.GetSourceKeyByAddress)
+				mProducer <- bs.ExtractTransaction(mBlockHeight, eBlockHash, mTxid, bs.ScanAddressFunc)
 				//释放
 				<-end
 
@@ -564,6 +565,7 @@ func (bs *VSYSBlockScanner) extractTransaction(trx *Transaction, result *Extract
 					input := openwallet.TxInput{}
 					input.TxID = trx.TxID
 					input.Address = from
+					input.Amount = convertToAmount(trx.Amount)
 					input.Coin = openwallet.Coin{
 						Symbol:     bs.wm.Symbol(),
 						IsContract: false,
@@ -581,6 +583,8 @@ func (bs *VSYSBlockScanner) extractTransaction(trx *Transaction, result *Extract
 					}
 
 					ed.TxInputs = append(ed.TxInputs, &input)
+					input.Amount = convertToAmount(trx.FeeCharged)
+					ed.TxInputs = append(ed.TxInputs, &input)
 				}
 			}
 			sourceKey, ok := scanAddressFunc(trx.Recipient)
@@ -588,6 +592,7 @@ func (bs *VSYSBlockScanner) extractTransaction(trx *Transaction, result *Extract
 				output := openwallet.TxOutPut{}
 				output.TxID = trx.TxID
 				output.Address = trx.Recipient
+				output.Amount = convertToAmount(trx.Amount)
 				output.Coin = openwallet.Coin{
 					Symbol:     bs.wm.Symbol(),
 					IsContract: false,
@@ -968,8 +973,16 @@ func (wm *WalletManager) GetBlock(hash string) (*Block, error) {
 
 //GetTxIDsInMemPool 获取待处理的交易池中的交易单IDs
 func (wm *WalletManager) GetTxIDsInMemPool() ([]string, error) {
-
-	return nil, nil
+	txids := make([]string, 0)
+	path := "transactions/unconfirmed"
+	trans, err := wm.Client.Call(path, nil, "GET")
+	if err != nil {
+		return nil, err
+	}
+	for _, tran := range trans.Array() {
+		txids = append(txids, gjson.Get(tran.Raw, "id").String())
+	}
+	return txids, nil
 
 }
 
@@ -977,7 +990,6 @@ func (wm *WalletManager) GetTxIDsInMemPool() ([]string, error) {
 func (wm *WalletManager) GetTransaction(txid string) (*Transaction, error) {
 
 	path := "transactions/info/" + txid
-	fmt.Println("txid:   ", path)
 	trans, err := wm.Client.Call(path, nil, "GET")
 
 	if err != nil {
