@@ -37,6 +37,7 @@ func TestMem(t *testing.T) {
 		t.Fatal("set error,", err)
 	}
 	defer sess.SessionRelease(w)
+
 	err = sess.Set("username", "astaxie")
 	if err != nil {
 		t.Fatal("set error,", err)
@@ -44,6 +45,51 @@ func TestMem(t *testing.T) {
 	if username := sess.Get("username"); username != "astaxie" {
 		t.Fatal("get username error")
 	}
+	if cookiestr := w.Header().Get("Set-Cookie"); cookiestr == "" {
+		t.Fatal("setcookie error")
+	} else {
+		parts := strings.Split(strings.TrimSpace(cookiestr), ";")
+		for k, v := range parts {
+			nameval := strings.Split(v, "=")
+			if k == 0 && nameval[0] != "gosessionid" {
+				t.Fatal("error")
+			}
+		}
+	}
+}
+
+type Student struct {
+	Name string
+	Age int
+}
+
+func TestFile(t *testing.T) {
+	config := `{"cookieName":"gosessionid","gclifetime":10, "enableSetCookie":true}`
+	conf := new(ManagerConfig)
+	if err := json.Unmarshal([]byte(config), conf); err != nil {
+		t.Fatal("json decode error", err)
+	}
+	globalSessions, _ := NewManager("file", conf)
+	go globalSessions.GC()
+	r, _ := http.NewRequest("GET", "/", nil)
+	w := httptest.NewRecorder()
+	sess, err := globalSessions.SessionStart(w, r)
+	if err != nil {
+		t.Fatal("set error,", err)
+	}
+	defer sess.SessionRelease(w)
+
+	s := &Student{Name:"jame", Age:18}
+	err = sess.Set("student", s)
+	if err != nil {
+		t.Fatal("set error,", err)
+	}
+
+	value := sess.Get("student")
+	if student, ok := value.(*Student); ok {
+		t.Logf("student: %+v", student)
+	}
+
 	if cookiestr := w.Header().Get("Set-Cookie"); cookiestr == "" {
 		t.Fatal("setcookie error")
 	} else {

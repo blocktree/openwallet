@@ -37,6 +37,9 @@ type Peerstore interface {
 	// Get 获取节点属性
 	Get(id string, key string) interface{}
 
+	// GetString
+	GetString(id string, key string) string
+
 	// Put 设置节点属性
 	Put(id string, key string, val interface{}) error
 
@@ -99,6 +102,18 @@ func (store *owtpPeerstore) Get(id string, key string) interface{} {
 		return nil
 	}
 	return peerAttribute[key]
+}
+
+// GetString
+func (store *owtpPeerstore) GetString(id string, key string) string {
+	val := store.Get(id, key)
+	if val != nil {
+		if str, ok := val.(string); ok {
+			return str
+		}
+	}
+
+	return ""
 }
 
 // Put 设置节点属性

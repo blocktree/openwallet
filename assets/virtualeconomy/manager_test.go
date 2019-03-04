@@ -23,5 +23,5 @@ func init() {
 	tw = NewWalletManager()
 	tw.Config.RpcUser = ""
 	tw.Config.RpcPassword = ""
-	tw.Client = NewClient("http://localhost:9922", true)
+	tw.Client = NewClient("http://47.106.102.2:10026/", true)
 }

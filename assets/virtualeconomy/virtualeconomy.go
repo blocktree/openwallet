@@ -624,9 +624,9 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 	}
 
 	if wm.Config.IsTestNet {
-		wm.Client = NewClient(wm.Config.TestnetNodeAPI, true)
+		wm.Client = NewClient(wm.Config.TestnetNodeAPI, false)
 	} else {
-		wm.Client = NewClient(wm.Config.MainnetNodeAPI, true)
+		wm.Client = NewClient(wm.Config.MainnetNodeAPI, false)
 	}
 
 	feeScale, _ := c.Int("feeScale")

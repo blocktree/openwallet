@@ -24,7 +24,7 @@ var (
 
 func testSetupGlobalSession() {
 	globalSessions, _ = NewSessionManager("memory", &session.ManagerConfig{
-		Gclifetime: 5,
+		Gclifetime: 3600,
 	})
 	go globalSessions.GC()
 }
@@ -104,7 +104,6 @@ func TestHTTPClientCall(t *testing.T) {
 	//httpClient := RandomOWTPNode()
 	httpClient := NewNode(NodeConfig{
 		Cert: cert,
-		TimeoutSEC: 5,
 	})
 	httpClient.SetPeerstore(globalSessions)
 	prv, pub := httpClient.Certificate().KeyPair()

@@ -20,9 +20,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/mr-tron/base58/base58"
 	"github.com/blocktree/OpenWallet/log"
 	"github.com/bwmarrin/snowflake"
+	"github.com/mr-tron/base58/base58"
 	"math/rand"
 	"strings"
 	"sync"
@@ -81,6 +81,9 @@ const (
 
 	//结束时执行的方法
 	FinishMethod = "internal_finish"
+
+	//内置缓存主健关键字
+	keyAgreementCipher = "internal_key_keyAgreementCipher"
 )
 
 var (
@@ -627,10 +630,30 @@ func (node *OWTPNode) Call(
 		Data:      params,
 	}
 
-	//加密数据
-	err = node.encryptPacket(peer, &packet)
-	if err != nil {
-		return err
+	//如果开启了协商密码，添加协商密码参数
+	if peer.auth().EnableKeyAgreement() {
+		value := node.Peerstore().Get(peer.PID(), keyAgreementCipher)
+		if value == nil {
+			return fmt.Errorf("keyAgreement is enabled, but cipher is empty")
+		}
+
+		ka, ok := value.(*KeyAgreement)
+		if !ok {
+			return fmt.Errorf("keyAgreement is enabled, type error")
+		}
+
+		//加密数据
+		err = node.encryptPacket(peer, &packet, ka.Key)
+		if err != nil {
+			return err
+		}
+
+		packet.SecretData = SecretData{
+			PublicKeyInitiator:    ka.PublicKeyInitiator,
+			TmpPublicKeyInitiator: ka.TmpPublicKeyInitiator,
+			EncryptType:           ka.EncryptType,
+			SA:                    ka.SA,
+		}
 	}
 
 	if !peer.auth().GenerateSignature(&packet) {
@@ -660,47 +683,33 @@ func (node *OWTPNode) Call(
 	return nil
 }
 
-//encryptPacket
-func (node *OWTPNode) encryptPacket(peer Peer, packet *DataPacket) error {
+//encryptPacket 加密数据包
+func (node *OWTPNode) encryptPacket(peer Peer, packet *DataPacket, key string) error {
 
-	//协商密码的数据包跳过
-	if packet.Method == KeyAgreementMethod {
+	//没有密钥不加密
+	if len(key) == 0 {
 		return nil
 	}
 
-	//log.Debug("encryptPacket")
-
-	//加密Data
-	if peer.auth() != nil && peer.auth().EnableKeyAgreement() && packet.Data != nil {
-		//协商校验码
-		localChecksumStr, ok := node.Peerstore().Get(peer.PID(), "localChecksum").(string)
-		if ok {
-			packet.CheckCode = localChecksumStr
-		}
-
-		enc, encErr := json.Marshal(packet.Data)
-		if encErr != nil {
-			return fmt.Errorf("json.Marshal data failed")
-		}
-		//fmt.Printf("plainText hex(%d): %s\n", len(enc), hex.EncodeToString(enc))
-		pKey, ok := node.Peerstore().Get(peer.PID(), "secretKey").(string)
-		if ok {
-			//加载到授权中
-			secretKey, decErr := base58.Decode(pKey)
-			if decErr != nil {
-				return decErr
-			}
-			chipText, chipErr := peer.auth().EncryptData(enc, secretKey)
-			if chipErr != nil {
-				return fmt.Errorf("encrypt data failed")
-			}
-
-			//fmt.Printf("chipText hex(%d): %s\n", len(chipText), hex.EncodeToString(chipText))
-			packet.Data = string(chipText)
-		}
-	} else {
-		packet.CheckCode = ""
+	enc, encErr := json.Marshal(packet.Data)
+	if encErr != nil {
+		return fmt.Errorf("json.Marshal data failed")
 	}
+
+	//fmt.Printf("plainText hex(%d): %s\n", len(enc), hex.EncodeToString(enc))
+	//加载到授权中
+	secretKey, decErr := base58.Decode(key)
+	if decErr != nil {
+		return decErr
+	}
+	chipText, chipErr := peer.auth().EncryptData(enc, secretKey)
+	if chipErr != nil {
+		return fmt.Errorf("encrypt data failed")
+	}
+
+	//fmt.Printf("chipText hex(%d): %s\n", len(chipText), hex.EncodeToString(chipText))
+	packet.Data = string(chipText)
+
 	return nil
 }
 
@@ -737,48 +746,26 @@ func (node *OWTPNode) callKeyAgreement(peer Peer, consultType string) error {
 		err error
 	)
 
+	ka := &KeyAgreement{
+		EncryptType: consultType,
+	}
+
 	//初始协商参数
-	params, err := peer.auth().InitKeyAgreement(consultType)
+	err = peer.auth().InitKeyAgreement(ka)
 	if err != nil {
 		return err
 	}
 
+	//保存请求协商密码的参数
+	node.peerstore.Put(peer.PID(), keyAgreementCipher, ka)
+
 	callErr := node.Call(
 		peer.PID(),
 		KeyAgreementMethod,
-		params,
+		nil,
 		true,
 		func(resp Response) {
 			if resp.Status == StatusSuccess {
-
-				//响应方协商结果
-				pubkeyOther := resp.JsonData().Get("pubkeyOther").String()
-				tmpPubkeyOther := resp.JsonData().Get("tmpPubkeyOther").String()
-				sb := resp.JsonData().Get("sb").String()
-
-				inputs := map[string]interface{}{
-					"remotePublicKey":    pubkeyOther,
-					"remoteTmpPublicKey": tmpPubkeyOther,
-					"sb":                 sb,
-				}
-
-				//计算密钥，并请求协商
-				result, finalErr := peer.auth().ResponseKeyAgreement(inputs)
-				if finalErr != nil {
-					log.Errorf("ResponseKeyAgreement unexpected error:", err)
-					//协商失败，断开连接
-					peer.close()
-					err = finalErr
-					return
-				}
-
-				secretKey := result["secretKey"]
-				localChecksum := result["localChecksum"]
-
-				//保存协商密码
-				node.peerstore.Put(peer.PID(), "secretKey", secretKey)
-				node.peerstore.Put(peer.PID(), "localChecksum", localChecksum)
-				//log.Debug("secretKey:", secretKey)
 
 				err = nil
 			} else {
@@ -794,45 +781,183 @@ func (node *OWTPNode) callKeyAgreement(peer Peer, consultType string) error {
 
 //keyAgreement 协商密钥
 func (node *OWTPNode) keyAgreement(ctx *Context) {
+
+	ctx.Response(nil, StatusSuccess, "success")
+
+}
+
+//wrapDataPacketForResponse 封装响应的数据包
+func (node *OWTPNode) wrapDataPacketForResponse(peer Peer, ctx *Context) *DataPacket {
+
+	packet := &DataPacket{}
+
+	packet.Method = ctx.Method
+	packet.Nonce = ctx.nonce
+
+	//处理完请求，推送响应结果给服务端
+	packet.Req = WSResponse
+	packet.Data = ctx.Resp
+	packet.Timestamp = time.Now().Unix()
+
+	//如果开启了协商密码，添加协商密码参数
+	if peer.auth().EnableKeyAgreement() {
+
+		value := node.Peerstore().Get(peer.PID(), keyAgreementCipher)
+		if value == nil {
+			packet.Data = responseError("keyAgreement is enabled, but cipher is empty", ErrKeyAgreementFailed)
+			return packet
+		}
+
+		ka, ok := value.(*KeyAgreement)
+		if !ok {
+			packet.Data = responseError("keyAgreement is enabled, type error", ErrKeyAgreementFailed)
+			return packet
+		}
+
+		//加密数据
+		cryptErr := node.encryptPacket(peer, packet, ka.Key)
+		if cryptErr != nil {
+			log.Critical("OWTP: encryptData failed, unexpected err:", cryptErr)
+			packet.Data = responseError("server encryptData failed", ErrInternalServerError)
+			return packet
+		}
+
+		packet.SecretData = SecretData{
+			PublicKeyResponder:    ka.PublicKeyResponder,
+			TmpPublicKeyResponder: ka.TmpPublicKeyResponder,
+			SB:                    ka.SB,
+		}
+	}
+
+	return packet
+}
+
+//handleKeyAgreementForRequest 处理请求的协商密码，获得密钥
+func (node *OWTPNode) handleKeyAgreementForRequest(peer Peer, packet *DataPacket) ([]byte, error) {
+	var (
+		//协商密码
+		secretKey []byte
+		ka        *KeyAgreement
+	)
+
 	//检查是否已经连接服务
-	peer := ctx.Peer
 	if peer == nil {
-		ctx.Resp = responseError(fmt.Sprintf("peer: %s is not connected.", ctx.PID), ErrKeyAgreementFailed)
-		return
+		return nil, fmt.Errorf("peer: %s is not connected. ", peer.PID())
 	}
 
-	pubkey := ctx.Params().Get("pubkey").String()
-	tmpPubkey := ctx.Params().Get("tmpPubkey").String()
-	//sb := ctx.Params().Get("sb").String()
+	//验证授权
+	if peer.auth() != nil {
 
-	inputs := map[string]interface{}{
-		"pubkey":       pubkey,
-		"tmpPubkey":    tmpPubkey,
-		"localPubkey":  node.cert.PublicKeyBytes(),
-		"localPrivkey": node.cert.PrivateKeyBytes(),
+		//获取缓存中的协商密码组
+		value := node.Peerstore().Get(peer.PID(), keyAgreementCipher)
+		if value == nil {
+			//不存在，重新构建协商密码组
+			ka = &KeyAgreement{}
+
+		} else {
+			//协商密码存在
+			k, ok := value.(*KeyAgreement)
+			if !ok {
+				return nil, fmt.Errorf("keyAgreement chipher is not saved")
+			}
+			ka = k
+
+		}
+
+		//发起方的请求协商密码的参数
+		ka.SA = packet.SecretData.SA
+		ka.PublicKeyInitiator = packet.SecretData.PublicKeyInitiator
+		ka.TmpPublicKeyInitiator = packet.SecretData.TmpPublicKeyInitiator
+
+		//验证协商密码
+		if !peer.auth().VerifyKeyAgreement(ka) {
+
+			//协商不通过，需要重新协商
+			log.Warning("keyAgreement is regenerating")
+
+			//传入响应公私钥
+			ka.PublicKeyResponder = base58.Encode(node.cert.PublicKeyBytes())
+			ka.PrivateKeyResponder = base58.Encode(node.cert.PrivateKeyBytes())
+
+			//请求协商
+			err := peer.auth().RequestKeyAgreement(ka)
+			if err != nil {
+				return nil, err
+			}
+
+			//TODO:应该用一个临时密钥进行加密保存到缓存中
+			node.peerstore.Put(peer.PID(), keyAgreementCipher, ka)
+
+			//数据包配置响应方的协商密码参数
+			packet.SecretData.PublicKeyResponder = ka.PublicKeyResponder
+			packet.SecretData.TmpPublicKeyResponder = ka.TmpPublicKeyResponder
+			packet.SecretData.SB = ka.SB
+
+		}
+
+		//加载到授权中
+		secretKey, _ = base58.Decode(ka.Key)
+		ka = nil
+
 	}
 
-	//请求协商
-	result, err := peer.auth().RequestKeyAgreement(inputs)
-	if err != nil {
-		ctx.Resp = responseError(err.Error(), ErrKeyAgreementFailed)
-		return
+	return secretKey, nil
+}
+
+//handleKeyAgreementForResponse 处理协商密码的响应方结果
+func (node *OWTPNode) handleKeyAgreementForResponse(peer Peer, packet *DataPacket) ([]byte, error) {
+	var (
+		//协商密码
+		secretKey []byte
+	)
+
+	//验证授权
+	if peer.auth() != nil {
+
+		//已开启协商密码
+		if peer.auth().EnableKeyAgreement() {
+
+			//获取协商密码组
+			value := node.Peerstore().Get(peer.PID(), keyAgreementCipher)
+			if value == nil {
+				return nil, fmt.Errorf("keyAgreement is not inited")
+			}
+
+			ka, ok := value.(*KeyAgreement)
+			if !ok {
+				return nil, fmt.Errorf("keyAgreement chipher is not saved")
+			}
+
+			//本地还没完成生成协商密码
+			if len(ka.SA) == 0 || len(ka.Key) == 0 {
+
+				//加载响应方的协商密码参数
+				ka.PublicKeyResponder = packet.SecretData.PublicKeyResponder
+				ka.TmpPublicKeyResponder = packet.SecretData.TmpPublicKeyResponder
+				ka.SB = packet.SecretData.SB
+
+				//计算协商密码
+				err := peer.auth().ResponseKeyAgreement(ka)
+				if err != nil {
+					log.Errorf("ResponseKeyAgreement unexpected error: %v", err.Error())
+					//协商失败，断开连接
+					peer.close()
+					return nil, err
+				}
+
+				//保存协商密码
+				node.Peerstore().Put(peer.PID(), keyAgreementCipher, ka)
+
+			}
+			//协商密码
+			secretKey, _ = base58.Decode(ka.Key)
+
+			ka = nil
+
+		}
 	}
 
-	secretKey := result["secretKey"]
-	localChecksum := result["localChecksum"]
-
-	//保存协商密码
-	node.peerstore.Put(peer.PID(), "secretKey", secretKey)
-	node.peerstore.Put(peer.PID(), "localChecksum", localChecksum)
-
-	//log.Debug("secretKey:", secretKey)
-
-	//删除密码避免外传
-	delete(result, "secretKey")
-	delete(result, "localChecksum")
-
-	ctx.Response(result, StatusSuccess, "success")
+	return secretKey, nil
 }
 
 func (node *OWTPNode) GetValueForPeer(peer Peer, key string) interface{} {
@@ -865,37 +990,22 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 
 	var (
 		//协商密码
-		secretKey     []byte
-		localChecksum []byte
+		secretKey []byte
+		err       error
 	)
 
-	//验证授权
-	if peer.auth() != nil {
+	if packet.Req == WSRequest {
 
-		//协商校验码
-		localChecksumStr, ok := node.Peerstore().Get(peer.PID(), "localChecksum").(string)
-		if ok {
-			//加载到授权中
-			localChecksum, _ = base58.Decode(localChecksumStr)
-		}
-
-		//检查是否完成协商密码
-		if !peer.auth().VerifyKeyAgreement(packet, localChecksum) {
+		//处理请求的协商密码，获得密钥
+		secretKey, err = node.handleKeyAgreementForRequest(peer, packet)
+		if err != nil {
 			log.Critical("keyAgreement failed: ", packet)
 			packet.Req = WSResponse
-			packet.Data = responseError("key agreement failed", ErrKeyAgreementFailed)
+			packet.Data = responseError(err.Error(), ErrKeyAgreementFailed)
+			packet.SecretData = SecretData{}
 			peer.send(*packet) //发送验证失败结果
 			return
-		} else {
-			pKey, ok := node.Peerstore().Get(peer.PID(), "secretKey").(string)
-			if ok {
-				//加载到授权中
-				secretKey, _ = base58.Decode(pKey)
-			}
 		}
-	}
-
-	if packet.Req == WSRequest {
 
 		//授权检查，只检查请求过来的签名
 		if !peer.auth().VerifySignature(packet) {
@@ -903,6 +1013,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 			packet.Req = WSResponse
 			packet.Data = responseError("verify signature failed, unauthorized", ErrUnauthorized)
 			packet.Timestamp = time.Now().Unix()
+			packet.SecretData = SecretData{}
 			peer.send(*packet) //发送验证失败结果
 			return
 		}
@@ -912,6 +1023,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 			packet.Req = WSResponse
 			packet.Data = responseError("data parse failed", ErrBadRequest)
 			packet.Timestamp = time.Now().Unix()
+			packet.SecretData = SecretData{}
 			peer.send(*packet)
 			return
 		}
@@ -921,11 +1033,12 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 
 		if cryptErr != nil {
 			log.Critical("OWTP: DecryptData failed, unexpected err:", cryptErr)
-			packet.Req = WSResponse
-			packet.Data = responseError("secret key is invalid", ErrSecretKeyInvalid)
-			packet.Timestamp = time.Now().Unix()
-			peer.send(*packet)
-			return
+			//packet.Req = WSResponse
+			//packet.Data = responseError("secret key is invalid", ErrSecretKeyInvalid)
+			//packet.Timestamp = time.Now().Unix()
+			//packet.SecretData = SecretData{}
+			//peer.send(*packet)
+			//return
 		}
 
 		//创建上下面指针，处理请求参数
@@ -942,21 +1055,9 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 
 		node.serveMux.ServeOWTP(peer.PID(), &ctx)
 
-		//处理完请求，推送响应结果给服务端
-		packet.Req = WSResponse
-		packet.Data = ctx.Resp
-		packet.Timestamp = time.Now().Unix()
-		cryptErr = node.encryptPacket(peer, packet)
-		if cryptErr != nil {
-			log.Critical("OWTP: encryptData failed, unexpected err:", cryptErr)
-			packet.Req = WSResponse
-			packet.Data = responseError("server encryptData failed", ErrInternalServerError)
-			packet.Timestamp = time.Now().Unix()
-			peer.send(*packet)
-			return
-		}
+		retPacket := node.wrapDataPacketForResponse(peer, &ctx)
 
-		peer.send(*packet)
+		peer.send(*retPacket)
 	} else if packet.Req == WSResponse {
 
 		//创建上下面指针，处理响应
@@ -969,8 +1070,18 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 			inputs:        nil,
 			Method:        packet.Method,
 			//Resp:          resp,
-			peerstore:     node.Peerstore(),
-			Peer:          peer,
+			peerstore: node.Peerstore(),
+			Peer:      peer,
+		}
+
+		//处理协商密码的响应方结果
+		secretKey, err = node.handleKeyAgreementForResponse(peer, packet)
+		if err != nil {
+			log.Critical("keyAgreement failed: ", packet)
+			resp = responseError(err.Error(), ErrKeyAgreementFailed)
+			ctx.Resp = resp
+			node.serveMux.ServeOWTP(peer.PID(), &ctx)
+			return
 		}
 
 		rawData, ok := packet.Data.(string)
@@ -992,7 +1103,6 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 			node.serveMux.ServeOWTP(peer.PID(), &ctx)
 			return
 		}
-
 
 		runErr := json.Unmarshal(decryptData, &resp)
 		//runErr := mapstructure.Decode(decryptData, &resp)
