@@ -584,21 +584,10 @@ func (bs *VSYSBlockScanner) extractTransaction(trx *Transaction, result *Extract
 
 					ed.TxInputs = append(ed.TxInputs, &input)
 
-					feeCharge := openwallet.TxInput{}
-					feeCharge.TxID = trx.TxID
-					feeCharge.Address = from
+					tmp := *&input
+					feeCharge := &tmp
 					feeCharge.Amount = convertToAmount(trx.FeeCharged)
-					feeCharge.Coin = openwallet.Coin{
-						Symbol:     bs.wm.Symbol(),
-						IsContract: false,
-					}
-					feeCharge.Index = 0
-					feeCharge.Sid = openwallet.GenTxInputSID(trx.TxID, bs.wm.Symbol(), "", uint64(0))
-					feeCharge.CreateAt = createAt
-					feeCharge.BlockHeight = trx.BlockHeight
-					feeCharge.BlockHash = trx.BlockHash
-
-					ed.TxInputs = append(ed.TxInputs, &feeCharge)
+					ed.TxInputs = append(ed.TxInputs, feeCharge)
 				}
 			}
 			sourceKey, ok := scanAddressFunc(trx.Recipient)
