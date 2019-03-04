@@ -616,8 +616,8 @@ func (bs *VSYSBlockScanner) extractTransaction(trx *Transaction, result *Extract
 
 			for _, extractData := range result.extractData {
 				tx := &openwallet.Transaction{
-					From:   []string{from},
-					To:     []string{trx.Recipient},
+					From:   []string{convertToAmount(trx.Amount), convertToAmount(trx.FeeCharged)},
+					To:     []string{convertToAmount(trx.Amount)},
 					Amount: convertToAmount(trx.Amount),
 					Fees:   convertToAmount(trx.FeeCharged),
 					Coin: openwallet.Coin{
