@@ -583,8 +583,11 @@ func (bs *VSYSBlockScanner) extractTransaction(trx *Transaction, result *Extract
 					}
 
 					ed.TxInputs = append(ed.TxInputs, &input)
-					input.Amount = convertToAmount(trx.FeeCharged)
-					ed.TxInputs = append(ed.TxInputs, &input)
+
+					tmp := *&input
+					feeCharge := &tmp
+					feeCharge.Amount = convertToAmount(trx.FeeCharged)
+					ed.TxInputs = append(ed.TxInputs, feeCharge)
 				}
 			}
 			sourceKey, ok := scanAddressFunc(trx.Recipient)
