@@ -140,6 +140,22 @@ type Transaction struct {
 	ConfirmTime int64    `json:"confirmTime"` //@required
 	Status      string   `json:"status"`      //链上状态
 	Reason      string   `json:"reason"`      //失败原因
+	ExtParam    string   `json:"extParam"`    //扩展参数，用于调用智能合约，json结构
+
+	/*
+		ExtParam 根据不同区块链协议，保存智能合约交易回执。
+		例如：ETH 智能合约交易回执
+		{
+			"gasPrice": "0.000002",  						//自定义费率
+			"gasLimit": "50000000",  						//自定义燃料上限
+			"gasUsed": "32234",  							//实际使用燃料数
+			"senderAddress": "0x1234567abcdeffdcba4321", 	//支付交易单的地址
+			"contractAddress": "0xdeffdcba43211234567abc", 	//合约地址
+			"amount": "0.001", 								//转入合约主币数量
+			"callData": "deffdcba43211234567abc", 			//调用方法的ABI编码
+			"nonce": 1,  									//地址账户交易序号
+		}
+	*/
 }
 
 //SummaryRawTransaction 汇总交易

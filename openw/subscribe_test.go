@@ -368,7 +368,7 @@ func TestSubscribeAddress_NAS(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	scanner.SetRescanBlockHeight(1516800)
+	scanner.SetRescanBlockHeight(1958382)
 
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")
