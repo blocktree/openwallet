@@ -221,7 +221,7 @@ func TestSummary_NAS(t *testing.T) {
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
 	rawTxArray, err := testCreateSummaryTransactionStep(tm, walletID, accountID,
-		summaryAddress, "", "", "",
+		summaryAddress, "0.0001", "0.0001", "",
 		0, 100, nil)
 	if err != nil {
 		log.Errorf("CreateSummaryTransaction failed, unexpected error: %v", err)

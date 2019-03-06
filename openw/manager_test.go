@@ -43,7 +43,7 @@ func testInitWalletManager() *WalletManager {
 		"NAS",
 		"TRX",
 		"BCH",
-		"ONT",
+		//"ONT",
 		"VSYS",
 	}
 	return NewWalletManager(tc)
