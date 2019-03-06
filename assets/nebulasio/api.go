@@ -114,11 +114,11 @@ func ConverWeiStringToNasDecimal(amount string) (decimal.Decimal, error) {
 //ConvertNasStringToWei 字符串NAS转Wei
 func ConvertNasStringToWei(amount string) (*big.Int, error) {
 	//log.Debug("amount:", amount)
-	vDecimal, err := decimal.NewFromString(amount)
-	if err != nil {
-		log.Error("convert from string to decimal failed, err=", err)
-		return nil, err
-	}
+	vDecimal, _ := decimal.NewFromString(amount)
+	//if err != nil {
+	//	log.Error("convert from string to decimal failed, err=", err)
+	//	return nil, err
+	//}
 
 	vDecimal = vDecimal.Mul(coinDecimal)
 	rst := new(big.Int)
