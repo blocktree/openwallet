@@ -635,7 +635,7 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 	feeCharge, _ := c.Int("feeCharge")
 	wm.Config.FeeCharge = uint64(feeCharge)
 
-	wm.Config.SumAddress = c.String("sunAddress")
+	wm.Config.SumAddress = c.String("sumAddress")
 
 	return nil
 }
