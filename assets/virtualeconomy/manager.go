@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 
 	"github.com/blocktree/OpenWallet/hdkeystore"
+	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 )
 
@@ -34,6 +35,7 @@ type WalletManager struct {
 	Blockscanner    *VSYSBlockScanner             //区块扫描器
 	Decoder         openwallet.AddressDecoder     //地址编码器
 	TxDecoder       openwallet.TransactionDecoder //交易单编码器
+	Log             *log.OWLogger                 //日志工具
 	ContractDecoder *ContractDecoder              //智能合约解析器
 }
 
@@ -48,6 +50,7 @@ func NewWalletManager() *WalletManager {
 	wm.Blockscanner = NewVSYSBlockScanner(&wm)
 	wm.Decoder = NewAddressDecoder(&wm)
 	wm.TxDecoder = NewTransactionDecoder(&wm)
+	wm.Log = log.NewOWLogger(wm.Symbol())
 	wm.ContractDecoder = NewContractDecoder(&wm)
 
 	//	wm.RPCClient = NewRpcClient("http://localhost:20336/")
