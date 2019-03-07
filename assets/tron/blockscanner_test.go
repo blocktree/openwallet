@@ -18,6 +18,8 @@ package tron
 import (
 	"fmt"
 	"github.com/blocktree/OpenWallet/log"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"testing"
 )
 
@@ -108,7 +110,7 @@ func TestTron_GetGlobalMaxBlockHeight(t *testing.T) {
 
 func TestTron_GetTransaction(t *testing.T) {
 	bs := NewTronBlockScanner(tw)
-	txID := "c72c5de14c572af5e1ec5e7ea3a761f6b662f889ada90a8efb9d0bb57114fbc9"
+	txID := "86b5a123b5cc50047532f1a55ed627f29012bba41e6590b0545f903289e7099a"
 	height := uint64(5628100)
 	tx, err := bs.wm.GetTransaction(txID, height)
 	if err != nil {
@@ -132,7 +134,10 @@ func TestTron_GetTRXTransaction(t *testing.T) {
 	}
 }
 
-
+func TestDemo(t *testing.T) {
+	name := proto.MessageName(&timestamp.Timestamp{})
+	log.Infof("Message name of timestamp: %s", name)
+}
 
 func TestTron_RescanFailedRecord(t *testing.T) {
 	bs := NewTronBlockScanner(tw)

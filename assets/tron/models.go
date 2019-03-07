@@ -19,11 +19,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/blocktree/OpenWallet/assets/tron/grpc-gateway/core"
-
 	"github.com/blocktree/OpenWallet/crypto"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/bytom/common"
+	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
 )
 
@@ -212,4 +212,37 @@ func (b *Block) Blockheader() *openwallet.BlockHeader {
 	obj.Time = b.Time
 	obj.Symbol = Symbol
 	return &obj
+}
+
+type AccountNet struct {
+	FreeNetUsed    int64
+	FreeNetLimit   int64
+	NetUsed        int64
+	NetLimit       int64
+	AssetNetUsed   map[string]int64
+	AssetNetLimit  map[string]int64
+	TotalNetLimit  int64
+	TotalNetWeight int64
+}
+
+func NewAccountNet(json *gjson.Result) *AccountNet {
+	obj := &AccountNet{}
+	obj.FreeNetUsed = json.Get("freeNetUsed").Int()
+	obj.FreeNetLimit = json.Get("freeNetLimit").Int()
+	obj.NetUsed = json.Get("NetUsed").Int()
+	obj.TotalNetLimit = json.Get("TotalNetLimit").Int()
+	obj.TotalNetWeight = json.Get("TotalNetWeight").Int()
+	return obj
+}
+
+type txFeeInfo struct {
+	GasUsed int64
+	GasPrice decimal.Decimal
+	Fee      decimal.Decimal
+}
+
+func (f *txFeeInfo) CalcFee() error {
+	fee := f.GasPrice.Mul(decimal.New(f.GasUsed, 0))
+	f.Fee = fee
+	return nil
 }

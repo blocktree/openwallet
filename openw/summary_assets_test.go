@@ -44,8 +44,6 @@ func testCreateSummaryTransactionStep(
 	return rawTxArray, nil
 }
 
-
-
 func TestSummary_LTC(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
@@ -62,7 +60,7 @@ func TestSummary_LTC(t *testing.T) {
 	}
 
 	//执行汇总交易
-	for _, rawTx := range rawTxArray  {
+	for _, rawTx := range rawTxArray {
 		log.Infof("rawTx: %+v", rawTx)
 
 		_, err = testSignTransactionStep(tm, rawTx)
@@ -109,7 +107,7 @@ func TestSummary_Omni(t *testing.T) {
 	}
 
 	//执行汇总交易
-	for _, rawTx := range rawTxArray  {
+	for _, rawTx := range rawTxArray {
 		_, err = testSignTransactionStep(tm, rawTx)
 		if err != nil {
 			return
@@ -128,7 +126,6 @@ func TestSummary_Omni(t *testing.T) {
 
 }
 
-
 func TestSummary_ETH(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
@@ -146,7 +143,7 @@ func TestSummary_ETH(t *testing.T) {
 	}
 
 	//执行汇总交易
-	for _, rawTx := range rawTxArray  {
+	for _, rawTx := range rawTxArray {
 		_, err = testSignTransactionStep(tm, rawTx)
 		if err != nil {
 			return
@@ -192,7 +189,7 @@ func TestSummary_ERC20(t *testing.T) {
 	}
 
 	//执行汇总交易
-	for _, rawTx := range rawTxArray  {
+	for _, rawTx := range rawTxArray {
 		_, err = testSignTransactionStep(tm, rawTx)
 		if err != nil {
 			return
@@ -211,7 +208,6 @@ func TestSummary_ERC20(t *testing.T) {
 
 }
 
-
 func TestSummary_NAS(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
@@ -229,7 +225,43 @@ func TestSummary_NAS(t *testing.T) {
 	}
 
 	//执行汇总交易
-	for _, rawTx := range rawTxArray  {
+	for _, rawTx := range rawTxArray {
+		_, err = testSignTransactionStep(tm, rawTx)
+		if err != nil {
+			return
+		}
+
+		_, err = testVerifyTransactionStep(tm, rawTx)
+		if err != nil {
+			return
+		}
+
+		_, err = testSubmitTransactionStep(tm, rawTx)
+		if err != nil {
+			return
+		}
+	}
+
+}
+
+func TestSummary_TRX(t *testing.T) {
+	tm := testInitWalletManager()
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "8pLC7mRGWy968bRr3sQtYxAZjxJqC4QKH3H9VaKouArd"
+	summaryAddress := "TJLypjev8iLdQR3X63rSMeZK8GKwkeSH1Y"
+
+	testGetAssetsAccountBalance(tm, walletID, accountID)
+
+	rawTxArray, err := testCreateSummaryTransactionStep(tm, walletID, accountID,
+		summaryAddress, "", "", "",
+		0, 100, nil)
+	if err != nil {
+		log.Errorf("CreateSummaryTransaction failed, unexpected error: %v", err)
+		return
+	}
+
+	//执行汇总交易
+	for _, rawTx := range rawTxArray {
 		_, err = testSignTransactionStep(tm, rawTx)
 		if err != nil {
 			return

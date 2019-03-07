@@ -45,7 +45,7 @@ func convertAddrToHex(address string) string {
 // 	Bandwidth information for the account.
 // 	If a field doesn’t appear, then the corresponding value is 0.
 // 	{“freeNetUsed”: 557,”freeNetLimit”: 5000,”NetUsed”: 353,”NetLimit”: 5239157853,”TotalNetLimit”: 43200000000,”TotalNetWeight”: 41228}
-func (wm *WalletManager) GetAccountNet(address string) (blockchain *openwallet.Blockchain, err error) {
+func (wm *WalletManager) GetAccountNet(address string) (accountNet *AccountNet, err error) {
 
 	address = convertAddrToHex(address)
 
@@ -54,28 +54,8 @@ func (wm *WalletManager) GetAccountNet(address string) (blockchain *openwallet.B
 	if err != nil {
 		return nil, err
 	}
-	blockchain = &openwallet.Blockchain{}
-	// // type AccountNetMessage struct {
-	// // 	FreeNetUsed          int64            `protobuf:"varint,1,opt,name=freeNetUsed,proto3" json:"freeNetUsed,omitempty"`
-	// // 	FreeNetLimit         int64            `protobuf:"varint,2,opt,name=freeNetLimit,proto3" json:"freeNetLimit,omitempty"`
-	// // 	NetUsed              int64            `protobuf:"varint,3,opt,name=NetUsed,proto3" json:"NetUsed,omitempty"`
-	// // 	NetLimit             int64            `protobuf:"varint,4,opt,name=NetLimit,proto3" json:"NetLimit,omitempty"`
-	// // 	AssetNetUsed         map[string]int64 `protobuf:"bytes,5,rep,name=assetNetUsed,proto3" json:"assetNetUsed,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
-	// // 	AssetNetLimit        map[string]int64 `protobuf:"bytes,6,rep,name=assetNetLimit,proto3" json:"assetNetLimit,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
-	// // 	TotalNetLimit        int64            `protobuf:"varint,7,opt,name=TotalNetLimit,proto3" json:"TotalNetLimit,omitempty"`
-	// // 	TotalNetWeight       int64            `protobuf:"varint,8,opt,name=TotalNetWeight,proto3" json:"TotalNetWeight,omitempty"`
-	// // 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
-	// // 	XXX_unrecognized     []byte           `json:"-"`
-	// // 	XXX_sizecache        int32            `json:"-"`
-	// // }
-	// account = &api.AccountNetMessage{}
-	// if err := gjson.Unmarshal([]byte(r.Raw), account); err != nil {
-	// 	return nil, err
-	// }
-	TotalNetWeight := r.Get("totalnetweight").Uint()
-	blockchain.Blocks = uint64(TotalNetWeight)
-
-	return blockchain, nil
+	accountNet = NewAccountNet(r)
+	return accountNet, nil
 }
 
 // GetAccount Done!

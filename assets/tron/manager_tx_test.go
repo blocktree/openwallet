@@ -40,16 +40,16 @@ func TestGetTransactionByID(t *testing.T) {
 	}
 }
 
-func TestCreateTransaction(t *testing.T) {
-
-	if r, err := tw.CreateTransaction(TOADDRESS, OWNERADDRESS, AMOUNT); err != nil {
-		t.Errorf("TestCreateTransaction failed: %v\n", err)
-	} else {
-		//t.Logf("TestCreateTransaction return: \n\t%+v\n", r)
-		fmt.Println("Tx:=", r)
-	}
-
-}
+//func TestCreateTransaction(t *testing.T) {
+//
+//	if r, err := tw.CreateTransaction(TOADDRESS, OWNERADDRESS, AMOUNT); err != nil {
+//		t.Errorf("TestCreateTransaction failed: %v\n", err)
+//	} else {
+//		//t.Logf("TestCreateTransaction return: \n\t%+v\n", r)
+//		fmt.Println("Tx:=", r)
+//	}
+//
+//}
 
 func TestGetTransactoinSign(t *testing.T) {
 

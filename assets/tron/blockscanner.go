@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/blocktree/OpenWallet/assets/tron/grpc-gateway/core"
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/ptypes"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -581,9 +582,14 @@ func (wm *WalletManager) GetTRXTransaction(txid, blockHash string, blockHeight u
 	tx.BlockHeight = blockHeight
 	tx.BlockHash = blockHash
 	var txCore core.Transaction
-
+	var tc core.TriggerSmartContract
+	//err = proto.Unmarshal([]byte(r.Raw), &txCore)
 	err = jsonpb.UnmarshalString(r.Raw, &txCore)
 	//err = json.Unmarshal([]byte(r.Raw), &txCore)
+	if err != nil {
+		return nil, err
+	}
+	err = ptypes.UnmarshalAny(txCore.RawData.Contract[0].Parameter, &tc)
 	if err != nil {
 		return nil, err
 	}
