@@ -17,6 +17,7 @@ package tron
 
 import (
 	"fmt"
+	"github.com/blocktree/OpenWallet/log"
 	"testing"
 )
 
@@ -107,7 +108,7 @@ func TestTron_GetGlobalMaxBlockHeight(t *testing.T) {
 
 func TestTron_GetTransaction(t *testing.T) {
 	bs := NewTronBlockScanner(tw)
-	txID := "d20f60fbefa923e3463ab133adf0f8291c03963e381402c1cadb1343f7fef793"
+	txID := "c72c5de14c572af5e1ec5e7ea3a761f6b662f889ada90a8efb9d0bb57114fbc9"
 	height := uint64(5628100)
 	tx, err := bs.wm.GetTransaction(txID, height)
 	if err != nil {
@@ -118,6 +119,20 @@ func TestTron_GetTransaction(t *testing.T) {
 		fmt.Println("Amount:=", tx.Amount)
 	}
 }
+
+func TestTron_GetTRXTransaction(t *testing.T) {
+	bs := NewTronBlockScanner(tw)
+	txID := "c72c5de14c572af5e1ec5e7ea3a761f6b662f889ada90a8efb9d0bb57114fbc9"
+	height := uint64(5628100)
+	tx, err := bs.wm.GetTRXTransaction(txID, "", height)
+	if err != nil {
+		log.Errorf(err.Error())
+	} else {
+		log.Infof("tx: %+v", tx)
+	}
+}
+
+
 
 func TestTron_RescanFailedRecord(t *testing.T) {
 	bs := NewTronBlockScanner(tw)

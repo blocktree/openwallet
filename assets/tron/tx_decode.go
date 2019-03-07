@@ -344,3 +344,118 @@ func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.Walle
 	tx.WxID = openwallet.GenTransactionWxID(&tx)
 	return &tx, nil
 }
+
+//CreateSummaryRawTransaction 创建汇总交易，返回原始交易单数组
+//func (decoder *TransactionDecoder) CreateSummaryRawTransaction(wrapper openwallet.WalletDAI, sumRawTx *openwallet.SummaryRawTransaction) ([]*openwallet.RawTransaction, error) {
+//	if sumRawTx.Coin.IsContract {
+//		return nil, fmt.Errorf("can not support token summary transaction")
+//	} else {
+//		return decoder.CreateSimpleSummaryRawTransaction(wrapper, sumRawTx)
+//	}
+//}
+
+
+//CreateSimpleSummaryRawTransaction 创建ETH汇总交易
+//func (decoder *TransactionDecoder) CreateSimpleSummaryRawTransaction(wrapper openwallet.WalletDAI, sumRawTx *openwallet.SummaryRawTransaction) ([]*openwallet.RawTransaction, error) {
+//
+//	var (
+//		rawTxArray         = make([]*openwallet.RawTransaction, 0)
+//		accountID          = sumRawTx.Account.AccountID
+//		minTransfer, _     = ConvertNasStringToWei(sumRawTx.MinTransfer)
+//		retainedBalance, _ = ConvertNasStringToWei(sumRawTx.RetainedBalance)
+//	)
+//
+//	if minTransfer.Cmp(retainedBalance) < 0 {
+//		return nil, fmt.Errorf("mini transfer amount must be greater than address retained balance")
+//	}
+//
+//	//获取wallet
+//	addresses, err := wrapper.GetAddressList(sumRawTx.AddressStartIndex, sumRawTx.AddressLimit,
+//		"AccountID", sumRawTx.Account.AccountID)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	if len(addresses) == 0 {
+//		return nil, fmt.Errorf("[%s] have not addresses", accountID)
+//	}
+//
+//	searchAddrs := make([]string, 0)
+//	for _, address := range addresses {
+//		searchAddrs = append(searchAddrs, address.Address)
+//	}
+//
+//	addrBalanceArray, err := decoder.wm.Blockscanner.GetBalanceByAddress(searchAddrs...)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	for _, addrBalance := range addrBalanceArray {
+//
+//		//检查余额是否超过最低转账
+//		addrBalance_BI, _ := ConvertNasStringToWei(addrBalance.Balance)
+//
+//		if addrBalance_BI.Cmp(minTransfer) < 0 {
+//			continue
+//		}
+//		//计算汇总数量 = 余额 - 保留余额
+//		sumAmount_BI := new(big.Int)
+//		sumAmount_BI.Sub(addrBalance_BI, retainedBalance)
+//
+//		//this.wm.Log.Debug("sumAmount:", sumAmount)
+//		//计算手续费
+//		fee, createErr := decoder.wm.Getestimatefee(addrBalance.Address, sumRawTx.SummaryAddress, sumAmount_BI)
+//		if createErr != nil {
+//			decoder.wm.Log.Std.Error("GetTransactionFeeEstimated from[%v] -> to[%v] failed, err=%v", addrBalance.Address, sumRawTx.SummaryAddress, createErr)
+//			return nil, createErr
+//		}
+//
+//		if sumRawTx.FeeRate != "" {
+//			fee.GasPrice, createErr = ConvertNasStringToWei(sumRawTx.FeeRate) //ConvertToBigInt(rawTx.FeeRate, 16)
+//			if createErr != nil {
+//				decoder.wm.Log.Std.Error("fee rate passed through error, err=%v", createErr)
+//				return nil, createErr
+//			}
+//			fee.CalcFee()
+//		}
+//
+//		//减去手续费
+//		sumAmount_BI.Sub(sumAmount_BI, fee.Fee)
+//		if sumAmount_BI.Cmp(big.NewInt(0)) <= 0 {
+//			continue
+//		}
+//
+//		sumAmount, _ := ConverWeiStringToNasDecimal(sumAmount_BI.String())
+//		fees, _ := ConverWeiStringToNasDecimal(fee.Fee.String())
+//
+//		decoder.wm.Log.Debugf("balance: %v", addrBalance.Balance)
+//		decoder.wm.Log.Debugf("fees: %v", fees)
+//		decoder.wm.Log.Debugf("sumAmount: %v", sumAmount)
+//
+//		//创建一笔交易单
+//		rawTx := &openwallet.RawTransaction{
+//			Coin:    sumRawTx.Coin,
+//			Account: sumRawTx.Account,
+//			To: map[string]string{
+//				sumRawTx.SummaryAddress: sumAmount.StringFixed(decoder.wm.Decimal()),
+//			},
+//			Required: 1,
+//		}
+//
+//		createErr = decoder.createRawTransaction(
+//			wrapper,
+//			rawTx,
+//			&AddrBalance{Address: addrBalance.Address, Balance: addrBalance_BI},
+//			fee,
+//			"")
+//		if createErr != nil {
+//			return nil, createErr
+//		}
+//
+//		//创建成功，添加到队列
+//		rawTxArray = append(rawTxArray, rawTx)
+//
+//	}
+//
+//	return rawTxArray, nil
+//}

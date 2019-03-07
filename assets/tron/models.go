@@ -18,6 +18,7 @@ package tron
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/blocktree/OpenWallet/assets/tron/grpc-gateway/core"
 
 	"github.com/blocktree/OpenWallet/crypto"
 	"github.com/blocktree/OpenWallet/openwallet"
@@ -139,6 +140,8 @@ type Transaction struct {
 	Contract_address string
 	Type             string
 	// Fees          string
+
+	Core *core.Transaction
 
 }
 

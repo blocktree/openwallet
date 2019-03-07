@@ -29,7 +29,7 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/imroc/req"
 	"github.com/shopspring/decimal"
-	"github.com/tronprotocol/grpc-gateway/core"
+	"github.com/blocktree/OpenWallet/assets/tron/grpc-gateway/core"
 )
 
 type AddrBalance struct {

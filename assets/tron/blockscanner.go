@@ -18,6 +18,8 @@ package tron
 import (
 	"errors"
 	"fmt"
+	"github.com/blocktree/OpenWallet/assets/tron/grpc-gateway/core"
+	"github.com/golang/protobuf/jsonpb"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -566,6 +568,26 @@ func (wm *WalletManager) GetTransaction(txid string, height uint64) (*Transactio
 		return nil, err
 	}
 	tx.BlockHash = block.Hash
+	return tx, nil
+}
+
+func (wm *WalletManager) GetTRXTransaction(txid, blockHash string, blockHeight uint64) (*Transaction, error) {
+	params := req.Param{"value": txid}
+	r, err := wm.WalletClient.Call("/wallet/gettransactionbyid", params)
+	if err != nil {
+		return nil, err
+	}
+	tx := NewTransaction(r)
+	tx.BlockHeight = blockHeight
+	tx.BlockHash = blockHash
+	var txCore core.Transaction
+
+	err = jsonpb.UnmarshalString(r.Raw, &txCore)
+	//err = json.Unmarshal([]byte(r.Raw), &txCore)
+	if err != nil {
+		return nil, err
+	}
+	tx.Core = &txCore
 	return tx, nil
 }
 

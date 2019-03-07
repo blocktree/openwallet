@@ -17,46 +17,74 @@ limitations under the License.
 package util
 
 import (
-	"encoding/binary"
-	"fmt"
+	"reflect"
+	"sort"
 
-	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/util"
 )
 
-// EncodeOrderPreservingVarUint64 returns a byte-representation for a uint64 number such that
-// all zero-bits starting bytes are trimmed in order to reduce the length of the array
-// For preserving the order in a default bytes-comparison, first byte contains the number of remaining bytes.
-// The presence of first byte also allows to use the returned bytes as part of other larger byte array such as a
-// composite-key representation in db
-func EncodeOrderPreservingVarUint64(number uint64) []byte {
-	bytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(bytes, number)
-	startingIndex := 0
-	size := 0
-	for i, b := range bytes {
-		if b != 0x00 {
-			startingIndex = i
-			size = 8 - i
-			break
-		}
+// GetSortedKeys returns the keys of the map in a sorted order. This function assumes that the keys are string
+func GetSortedKeys(m interface{}) []string {
+	mapVal := reflect.ValueOf(m)
+	keyVals := mapVal.MapKeys()
+	keys := []string{}
+	for _, keyVal := range keyVals {
+		keys = append(keys, keyVal.String())
 	}
-	sizeBytes := proto.EncodeVarint(uint64(size))
-	if len(sizeBytes) > 1 {
-		panic(fmt.Errorf("[]sizeBytes should not be more than one byte because the max number it needs to hold is 8. size=%d", size))
-	}
-	encodedBytes := make([]byte, size+1)
-	encodedBytes[0] = sizeBytes[0]
-	copy(encodedBytes[1:], bytes[startingIndex:])
-	return encodedBytes
+	sort.Strings(keys)
+	return keys
 }
 
-// DecodeOrderPreservingVarUint64 decodes the number from the bytes obtained from method 'EncodeOrderPreservingVarUint64'.
-// Also, returns the number of bytes that are consumed in the process
-func DecodeOrderPreservingVarUint64(bytes []byte) (uint64, int) {
-	s, _ := proto.DecodeVarint(bytes)
-	size := int(s)
-	decodedBytes := make([]byte, 8)
-	copy(decodedBytes[8-size:], bytes[1:size+1])
-	numBytesConsumed := size + 1
-	return binary.BigEndian.Uint64(decodedBytes), numBytesConsumed
+// GetValuesBySortedKeys returns the values of the map (mapPtr) in the list (listPtr) in the sorted order of key of the map
+// This function assumes that the mapPtr is a pointer to a map and listPtr is is a pointer to a list. Further type of keys of the
+// map are assumed to be string and the types of the values of the maps and the list are same
+func GetValuesBySortedKeys(mapPtr interface{}, listPtr interface{}) {
+	mapVal := reflect.ValueOf(mapPtr).Elem()
+	keyVals := mapVal.MapKeys()
+	if len(keyVals) == 0 {
+		return
+	}
+	keys := make(keys, len(keyVals))
+	for i, k := range keyVals {
+		keys[i] = newKey(k)
+	}
+	sort.Sort(keys)
+	out := reflect.ValueOf(listPtr).Elem()
+	for _, k := range keys {
+		val := mapVal.MapIndex(k.Value)
+		out.Set(reflect.Append(out, val))
+	}
+}
+
+type key struct {
+	reflect.Value
+	str string
+}
+
+type keys []*key
+
+func newKey(v reflect.Value) *key {
+	return &key{v, v.String()}
+}
+
+func (keys keys) Len() int {
+	return len(keys)
+}
+
+func (keys keys) Swap(i, j int) {
+	keys[i], keys[j] = keys[j], keys[i]
+}
+
+func (keys keys) Less(i, j int) bool {
+	return keys[i].str < keys[j].str
+}
+
+// ComputeStringHash computes the hash of the given string
+func ComputeStringHash(input string) []byte {
+	return ComputeHash([]byte(input))
+}
+
+// ComputeHash computes the hash of the given bytes
+func ComputeHash(input []byte) []byte {
+	return util.ComputeSHA256(input)
 }

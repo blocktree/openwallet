@@ -1,77 +1,124 @@
 /*
-Copyright IBM Corp. 2016 All Rights Reserved.
+Copyright Greg Haskins <gregory.haskins@gmail.com> 2017, All Rights Reserved.
+Copyright IBM Corp. All Rights Reserved.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-		 http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+SPDX-License-Identifier: Apache-2.0
 */
 
 package config
 
 import (
-	"flag"
 	"fmt"
-	"runtime"
-	"strings"
+	"os"
+	"path/filepath"
 
-	"github.com/op/go-logging"
 	"github.com/spf13/viper"
 )
 
-// Config the config wrapper structure
-type Config struct {
+func dirExists(path string) bool {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return fi.IsDir()
 }
 
-var configLogger = logging.MustGetLogger("config")
-
-func init() {
-
-}
-
-// SetupTestLogging setup the logging during test execution
-func SetupTestLogging() {
-	level, err := logging.LogLevel(viper.GetString("logging.peer"))
-	if err == nil {
-		// No error, use the setting
-		logging.SetLevel(level, "main")
-		logging.SetLevel(level, "server")
-		logging.SetLevel(level, "peer")
+func AddConfigPath(v *viper.Viper, p string) {
+	if v != nil {
+		v.AddConfigPath(p)
 	} else {
-		configLogger.Warningf("Log level not recognized '%s', defaulting to %s: %s", viper.GetString("logging.peer"), logging.ERROR, err)
-		logging.SetLevel(logging.ERROR, "main")
-		logging.SetLevel(logging.ERROR, "server")
-		logging.SetLevel(logging.ERROR, "peer")
+		viper.AddConfigPath(p)
 	}
 }
 
-// SetupTestConfig setup the config during test execution
-func SetupTestConfig(pathToOpenchainYaml string) {
-	flag.Parse()
-
-	// Now set the configuration file
-	viper.SetEnvPrefix("HYPERLEDGER")
-	viper.AutomaticEnv()
-	replacer := strings.NewReplacer(".", "_")
-	viper.SetEnvKeyReplacer(replacer)
-	viper.SetConfigName("core")              // name of config file (without extension)
-	viper.AddConfigPath(pathToOpenchainYaml) // path to look for the config file in
-	err := viper.ReadInConfig()              // Find and read the config file
-	if err != nil {                          // Handle errors reading the config file
-		panic(fmt.Errorf("Fatal error config file: %s \n", err))
+//----------------------------------------------------------------------------------
+// TranslatePath()
+//----------------------------------------------------------------------------------
+// Translates a relative path into a fully qualified path relative to the config
+// file that specified it.  Absolute paths are passed unscathed.
+//----------------------------------------------------------------------------------
+func TranslatePath(base, p string) string {
+	if filepath.IsAbs(p) {
+		return p
 	}
 
-	SetupTestLogging()
+	return filepath.Join(base, p)
+}
 
-	// Set the number of maxprocs
-	var numProcsDesired = viper.GetInt("peer.gomaxprocs")
-	configLogger.Debugf("setting Number of procs to %d, was %d\n", numProcsDesired, runtime.GOMAXPROCS(2))
+//----------------------------------------------------------------------------------
+// TranslatePathInPlace()
+//----------------------------------------------------------------------------------
+// Translates a relative path into a fully qualified path in-place (updating the
+// pointer) relative to the config file that specified it.  Absolute paths are
+// passed unscathed.
+//----------------------------------------------------------------------------------
+func TranslatePathInPlace(base string, p *string) {
+	*p = TranslatePath(base, *p)
+}
 
+//----------------------------------------------------------------------------------
+// GetPath()
+//----------------------------------------------------------------------------------
+// GetPath allows configuration strings that specify a (config-file) relative path
+//
+// For example: Assume our config is located in /etc/hyperledger/fabric/core.yaml with
+// a key "msp.configPath" = "msp/config.yaml".
+//
+// This function will return:
+//      GetPath("msp.configPath") -> /etc/hyperledger/fabric/msp/config.yaml
+//
+//----------------------------------------------------------------------------------
+func GetPath(key string) string {
+	p := viper.GetString(key)
+	if p == "" {
+		return ""
+	}
+
+	return TranslatePath(filepath.Dir(viper.ConfigFileUsed()), p)
+}
+
+const OfficialPath = "/etc/hyperledger/fabric"
+
+//----------------------------------------------------------------------------------
+// InitViper()
+//----------------------------------------------------------------------------------
+// Performs basic initialization of our viper-based configuration layer.
+// Primary thrust is to establish the paths that should be consulted to find
+// the configuration we need.  If v == nil, we will initialize the global
+// Viper instance
+//----------------------------------------------------------------------------------
+func InitViper(v *viper.Viper, configName string) error {
+	var altPath = os.Getenv("FABRIC_CFG_PATH")
+	if altPath != "" {
+		// If the user has overridden the path with an envvar, its the only path
+		// we will consider
+
+		if !dirExists(altPath) {
+			return fmt.Errorf("FABRIC_CFG_PATH %s does not exist", altPath)
+		}
+
+		AddConfigPath(v, altPath)
+	} else {
+		// If we get here, we should use the default paths in priority order:
+		//
+		// *) CWD
+		// *) /etc/hyperledger/fabric
+
+		// CWD
+		AddConfigPath(v, "./")
+
+		// And finally, the official path
+		if dirExists(OfficialPath) {
+			AddConfigPath(v, OfficialPath)
+		}
+	}
+
+	// Now set the configuration file.
+	if v != nil {
+		v.SetConfigName(configName)
+	} else {
+		viper.SetConfigName(configName)
+	}
+
+	return nil
 }
