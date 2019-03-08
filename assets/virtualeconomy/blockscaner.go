@@ -115,6 +115,11 @@ func (bs *VSYSBlockScanner) ScanBlockTask() {
 
 	for {
 
+		if !bs.Scanning {
+			//区块扫描器已暂停，马上结束本次任务
+			return
+		}
+
 		//获取最大高度
 		maxHeight, err := bs.wm.GetBlockHeight()
 		if err != nil {

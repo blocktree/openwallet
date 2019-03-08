@@ -67,6 +67,7 @@ type EthEvent struct {
 type EthTransactionReceipt struct {
 	Logs    []EthEvent `json:"logs"`
 	GasUsed string     `json:"gasUsed"`
+	Status  string     `json:"status"`
 }
 
 type TransferEvent struct {
@@ -177,6 +178,7 @@ type BlockTransaction struct {
 	Timestamp        string `json:"timestamp"`
 	BlockHeight      uint64 //transaction scanning 的时候对其进行赋值
 	filterFunc       openwallet.BlockScanAddressFunc
+	Status           uint64
 }
 
 func (this *BlockTransaction) GetAmountEthString() (string, error) {
