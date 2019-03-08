@@ -122,6 +122,11 @@ func (bs *BTCBlockScanner) ScanBlockTask() {
 
 	for {
 
+		if !bs.Scanning {
+			//区块扫描器已暂停，马上结束本次任务
+			return
+		}
+
 		//获取最大高度
 		maxHeight, err := bs.wm.GetBlockHeight()
 		if err != nil {
@@ -1042,6 +1047,15 @@ func (bs *BTCBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, err
 	}
 
 	return &openwallet.BlockHeader{Height: blockHeight, Hash: hash}, nil
+}
+
+func (bs *BTCBlockScanner) GetGlobalMaxBlockHeight() uint64 {
+	maxHeight, err := bs.wm.GetBlockHeight()
+	if err != nil {
+		bs.wm.Log.Std.Info("get global max block height error;unexpected error:%v", err)
+		return 0
+	}
+	return maxHeight
 }
 
 //GetScannedBlockHeight 获取已扫区块高度

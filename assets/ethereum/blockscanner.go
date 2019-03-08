@@ -20,6 +20,7 @@ package ethereum
 //3. block height, block hash
 
 import (
+	"github.com/blocktree/OpenWallet/common"
 	"math/big"
 	"path/filepath"
 	"strings"
@@ -194,6 +195,12 @@ func (this *ETHBLockScanner) ScanBlockTask() {
 	curBlockHash := blockHeader.Hash
 	var previousHeight uint64 = 0
 	for {
+
+		if !this.Scanning {
+			//区块扫描器已暂停，马上结束本次任务
+			return
+		}
+
 		maxBlockHeight, err := this.wm.WalletClient.ethGetBlockNumber()
 		if err != nil {
 			this.wm.Log.Errorf("get max height of eth failed, err=%v", err)
@@ -524,6 +531,10 @@ func (this *ETHBLockScanner) UpdateTxByReceipt(tx *BlockTransaction) (*TransferE
 	}
 
 	tx.Gas = receipt.GasUsed
+	tx.Status, err = ConvertToUint64(receipt.Status, 16)
+	if err != nil {
+		return nil, err
+	}
 	// transEvent := receipt.ParseTransferEvent()
 	// if transEvent == nil {
 	// 	return nil, nil
@@ -609,6 +620,7 @@ func (this *ETHBLockScanner) MakeSimpleToExtractData(tx *BlockTransaction) (stri
 		},
 		SubmitTime:  nowUnix,
 		ConfirmTime: nowUnix,
+		Status:      common.NewString(tx.Status).String(),
 	}
 
 	txExtractData := &openwallet.TxExtractData{}
@@ -777,6 +789,7 @@ func (this *ETHBLockScanner) MakeTokenToExtractData(tx *BlockTransaction, tokenE
 		Coin:        coin,
 		SubmitTime:  nowUnix,
 		ConfirmTime: nowUnix,
+		Status:      common.NewString(tx.Status).String(),
 	}
 
 	tokenTransExtractData := &openwallet.TxExtractData{}
@@ -870,6 +883,7 @@ func (this *ETHBLockScanner) MakeSimpleTxFromExtractData(tx *BlockTransaction) (
 		},
 		SubmitTime:  nowUnix,
 		ConfirmTime: nowUnix,
+		Status:      common.NewString(tx.Status).String(),
 	}
 
 	txExtractData := &openwallet.TxExtractData{}
@@ -947,6 +961,7 @@ func (this *ETHBLockScanner) MakeTokenTxFromExtractData(tx *BlockTransaction, to
 		Coin:        coin,
 		SubmitTime:  nowUnix,
 		ConfirmTime: nowUnix,
+		Status:      common.NewString(tx.Status).String(),
 	}
 
 	tokenTransExtractData := &openwallet.TxExtractData{}
@@ -987,6 +1002,7 @@ func (this *ETHBLockScanner) MakeTokenTxFromExtractData(tx *BlockTransaction, to
 		Coin:        coin,
 		SubmitTime:  nowUnix,
 		ConfirmTime: nowUnix,
+		Status:      common.NewString(tx.Status).String(),
 	}
 
 	feeExtractData := &openwallet.TxExtractData{}
@@ -1154,4 +1170,14 @@ func (this *ETHBLockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, e
 	}
 
 	return &openwallet.BlockHeader{Height: blockHeight, Hash: hash}, nil
+}
+
+func (this *ETHBLockScanner) GetGlobalMaxBlockHeight() uint64 {
+
+	maxBlockHeight, err := this.wm.WalletClient.ethGetBlockNumber()
+	if err != nil {
+		this.wm.Log.Errorf("get max height of eth failed, err=%v", err)
+		return 0
+	}
+	return maxBlockHeight
 }

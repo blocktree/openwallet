@@ -141,6 +141,7 @@ type Contract struct {
 	Amount          int64
 	ContractAddress string
 	SourceKey       string
+	ContractRet     string
 }
 
 func NewContract(json gjson.Result, isTestnet bool) *Contract {
@@ -227,12 +228,15 @@ func NewTransaction(json *gjson.Result, blockHash string, blockHeight uint64, bl
 
 	b.Contract = make([]*Contract, 0)
 	if contracts := rawData.Get("contract"); contracts.IsArray() {
-		for _, c := range contracts.Array() {
+		for i, c := range contracts.Array() {
 			contract := NewContract(c, isTestnet)
 			contract.TxID = b.TxID
 			contract.BlockHash = blockHash
 			contract.BlockHeight = blockHeight
 			contract.BlockTime = blocktime
+			if len(b.Ret) > i {
+				contract.ContractRet = b.Ret[i].ContractRet
+			}
 			b.Contract = append(b.Contract, contract)
 		}
 	}

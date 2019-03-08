@@ -131,6 +131,12 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 		currentHeight = block.GetHeight()
 	}
 	for {
+
+		if !bs.Scanning {
+			//区块扫描器已暂停，马上结束本次任务
+			return
+		}
+
 		//获取最大高度
 		maxHeightBlock, err := bs.wm.GetNowBlock()
 		if err != nil {
@@ -379,16 +385,23 @@ func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash str
 			//bs.wm.Log.Std.Info("block scanner scanning tx: %+v", txid)
 			//订阅地址为交易单中的发送者
 			accountId, ok1 := scanAddressFunc(contractTRX.From)
-			if ok1 {
-				contractTRX.SourceKey = accountId
-				bs.InitTronExtractResult(contractTRX, &result, true)
-			}
-
 			//订阅地址为交易单中的接收者
 			accountId2, ok2 := scanAddressFunc(contractTRX.To)
-			if ok2 {
-				contractTRX.SourceKey = accountId2
-				bs.InitTronExtractResult(contractTRX, &result, false)
+
+			//相同账户
+			if accountId == accountId2 && len(accountId) > 0 && len(accountId2) > 0 {
+				contractTRX.SourceKey = accountId
+				bs.InitTronExtractResult(contractTRX, &result, 0)
+			} else {
+				if ok1 {
+					contractTRX.SourceKey = accountId
+					bs.InitTronExtractResult(contractTRX, &result, 1)
+				}
+
+				if ok2 {
+					contractTRX.SourceKey = accountId2
+					bs.InitTronExtractResult(contractTRX, &result, 2)
+				}
 			}
 
 			success = true
@@ -405,7 +418,8 @@ func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash str
 
 }
 
-func (bs *TronBlockScanner) InitTronExtractResult(tx *Contract, result *ExtractResult, isFromAccount bool) {
+//InitTronExtractResult operate = 0: 输入输出提取，1: 输入提取，2：输出提取
+func (bs *TronBlockScanner) InitTronExtractResult(tx *Contract, result *ExtractResult, operate int64) {
 
 	txExtractDataArray := result.extractData[tx.SourceKey]
 	if txExtractDataArray == nil {
@@ -414,6 +428,13 @@ func (bs *TronBlockScanner) InitTronExtractResult(tx *Contract, result *ExtractR
 
 	amount := common.IntToDecimals(tx.Amount, bs.wm.Decimal())
 	txExtractData := &openwallet.TxExtractData{}
+
+	status := "1"
+	reason := ""
+	if tx.ContractRet != SUCCESS {
+		status = "0"
+		reason = tx.ContractRet
+	}
 
 	transx := &openwallet.Transaction{
 		Fees: "0",
@@ -429,17 +450,23 @@ func (bs *TronBlockScanner) InitTronExtractResult(tx *Contract, result *ExtractR
 		ConfirmTime: tx.BlockTime,
 		From:        []string{tx.From + ":" + amount.String()},
 		To:          []string{tx.To + ":" + amount.String()},
+		Status:      status,
+		Reason:      reason,
 	}
 
 	wxID := openwallet.GenTransactionWxID(transx)
 	transx.WxID = wxID
 
 	txExtractData.Transaction = transx
-	if isFromAccount {
+	if operate == 0 {
 		bs.extractTxInput(tx, txExtractData)
-	} else {
+		bs.extractTxOutput(tx, txExtractData)
+	} else if operate == 1 {
+		bs.extractTxInput(tx, txExtractData)
+	} else if operate == 2 {
 		bs.extractTxOutput(tx, txExtractData)
 	}
+
 	txExtractDataArray = append(txExtractDataArray, txExtractData)
 	result.extractData[tx.SourceKey] = txExtractDataArray
 }

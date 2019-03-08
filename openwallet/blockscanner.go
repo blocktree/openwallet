@@ -235,12 +235,14 @@ func (bs *BlockScannerBase) Stop() error {
 //Pause 暂停扫描
 func (bs *BlockScannerBase) Pause() error {
 	bs.scanTask.Pause()
+	bs.Scanning = false
 	return nil
 }
 
 //Restart 继续扫描
 func (bs *BlockScannerBase) Restart() error {
 	bs.scanTask.Restart()
+	bs.Scanning = true
 	return nil
 }
 
