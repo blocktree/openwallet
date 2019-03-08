@@ -112,13 +112,11 @@ func TestTron_GetTransaction(t *testing.T) {
 	bs := NewTronBlockScanner(tw)
 	txID := "86b5a123b5cc50047532f1a55ed627f29012bba41e6590b0545f903289e7099a"
 	height := uint64(5628100)
-	tx, err := bs.wm.GetTransaction(txID, height)
+	tx, err := bs.wm.GetTransaction(txID, "", height, 0)
 	if err != nil {
 		fmt.Println("get transaction failed!!!")
 	} else {
-		fmt.Println("txFrom:=", tx.From)
-		fmt.Println("txTo:=", tx.To)
-		fmt.Println("Amount:=", tx.Amount)
+		fmt.Println("txFrom:=", tx)
 	}
 }
 

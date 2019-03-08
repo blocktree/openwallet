@@ -450,13 +450,8 @@ func TestSubscribeAddress_TRON(t *testing.T) {
 		//accountID  = "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
 		accountID = "6msrcfed9rA7njVNDtY1Ppo9XQdX5p3SFPc1zxWgd8ut"
 		addrs     = map[string]string{
-			//"TNQkiUv4qtDRKWDrKS628FTbDwxLMiqbAz": accountID,
-			//"TLVtj8soinYhgwTnjVF7EpgbZRZ8Np5JNY": accountID,
-			//"TQTgTtkQAPg84mj1fC2D3RYGibiq24vfEc": accountID,
-			//"TQoqsULS3xfLHoZmh8BD9Q79hmAwcvnL6e": accountID,
-			//"TCSzuaL4t5kqix29gFo4h7cpW9WvgKANTA": accountID,
-			"TCSzuaL4t5kqix29gFo4h7cpW9WvgKANTA": accountID,
-			"TWKjKdAhRRrsNj4ECerPEmtzt7AgBejgvn": accountID,
+			"TT44ohw23WGNv1jQCAUN3etUWND1KXN2Eq": accountID,
+			"TJLypjev8iLdQR3X63rSMeZK8GKwkeSH1Y": accountID,
 		}
 	)
 
@@ -486,7 +481,7 @@ func TestSubscribeAddress_TRON(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	scanner.SetRescanBlockHeight(6092571)
+	scanner.SetRescanBlockHeight(7284969)
 
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")

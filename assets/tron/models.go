@@ -62,14 +62,14 @@ type Block struct {
 	Previousblockhash string
 	Height            uint64 `storm:"id"`
 	Version           uint64
-	Time              uint64
+	Time              int64
 	Fork              bool
 	txHash            []string
 	// Merkleroot        string
 	//Confirmations     uint64
 }
 
-func NewBlock(json *gjson.Result) *Block {
+func NewBlock(json *gjson.Result, isTestnet bool) *Block {
 
 	header := gjson.Get(json.Raw, "block_header").Get("raw_data")
 	// 解析json
@@ -78,11 +78,11 @@ func NewBlock(json *gjson.Result) *Block {
 	b.Previousblockhash = header.Get("parentHash").String()
 	b.Height = header.Get("number").Uint()
 	b.Version = header.Get("version").Uint()
-	b.Time = header.Get("timestamp").Uint()
+	b.Time = header.Get("timestamp").Int()
 
-	txs := []*Transaction{}
+	txs := make([]*Transaction, 0)
 	for _, x := range gjson.Get(json.Raw, "transactions").Array() {
-		tx := NewTransaction(&x)
+		tx := NewTransaction(&x, b.Hash, b.Height, b.Time, isTestnet)
 		txs = append(txs, tx)
 	}
 	b.tx = txs
@@ -101,8 +101,15 @@ func (block *Block) GetTransactions() []*Transaction {
 	return block.tx
 }
 
+//状态
 const (
 	SUCCESS = "SUCCESS"
+)
+
+//交易单类型
+const (
+	TransferContract      = "TransferContract"
+	TransferAssetContract = "TransferAssetContract"
 )
 
 type Result struct {
@@ -111,15 +118,52 @@ type Result struct {
 	ContractRet string
 }
 
+func NewResult(json gjson.Result) *Result {
+	// 解析json
+	b := &Result{}
+	b.Ret = gjson.Get(json.Raw, "ret").String()
+	b.Fee = gjson.Get(json.Raw, "fee").Int()
+	b.ContractRet = gjson.Get(json.Raw, "contractRet").String()
+	return b
+}
+
 type Contract struct {
-	Type         string
-	Parameter    gjson.Result
-	Provider     []byte
-	ContractName []byte
-	From             string
-	To               string
-	Amount           string
-	Contract_address string
+	TxID            string
+	BlockHash       string
+	BlockHeight     uint64
+	BlockTime       int64
+	Type            string
+	Parameter       gjson.Result
+	Provider        []byte
+	ContractName    []byte
+	From            string
+	To              string
+	Amount          int64
+	ContractAddress string
+	SourceKey       string
+}
+
+func NewContract(json gjson.Result, isTestnet bool) *Contract {
+
+	codeType := addressEncoder.TRON_mainnetAddress
+	if isTestnet {
+		codeType = addressEncoder.TRON_mainnetAddress
+	}
+
+	// 解析json
+	b := &Contract{}
+	b.Type = gjson.Get(json.Raw, "type").String()
+	b.Parameter = gjson.Get(json.Raw, "parameter")
+	FromByte, _ := hex.DecodeString(b.Parameter.Get("value").Get("owner_address").String())
+	b.From = addressEncoder.AddressEncode(FromByte[1:], codeType)
+	if b.Type == TransferContract {
+		ToByte, _ := hex.DecodeString(b.Parameter.Get("value").Get("to_address").String())
+		b.To = addressEncoder.AddressEncode(ToByte[1:], codeType)
+		b.Amount = b.Parameter.Get("value").Get("amount").Int()
+	} else {
+		b.Amount = 0
+	}
+	return b
 }
 
 type Transaction struct {
@@ -155,63 +199,44 @@ type Transaction struct {
 		}
 	*/
 	TxID        string
-	ContractRet []map[string]string // 交易合约执行状态
-	IsSuccess   bool
-	//Size          uint64
-	//Version       uint64
-	//LockTime      int64
-	//Hex           string
 	BlockHash   string
 	BlockHeight uint64
-	//Confirmations uint64
-	Blocktime        uint64
-	IsCoinBase       bool
-	FromAccountId    string //transaction scanning 的时候对其进行赋值
-	ToAccountId      string //transaction scanning 的时候对其进行赋值
-	From             string
-	To               string
-	Amount           string
-	Contract_address string
-	Type             string
-	Ret              Result
-	Contract         Contract
+	BlockTime   int64
+	IsCoinBase  bool
+	Ret         []*Result
+	Contract    []*Contract
 }
 
-func NewTransaction(json *gjson.Result) *Transaction {
-
-	// 交易合约执行状态
-	cr := []map[string]string{}
-	isSuccess := true
-	for _, ret := range gjson.Get(json.Raw, "ret").Array() {
-		tmp := ret.Map()
-		for k := range tmp {
-			value := tmp[k].String()
-			cr = append(cr, map[string]string{k: value})
-			if value != "SUCCESS" {
-				isSuccess = false
-			}
-		}
-	}
+func NewTransaction(json *gjson.Result, blockHash string, blockHeight uint64, blocktime int64, isTestnet bool) *Transaction {
 
 	rawData := gjson.Get(json.Raw, "raw_data")
 	// 解析json
 	b := &Transaction{}
 	b.TxID = gjson.Get(json.Raw, "txID").String()
-	b.ContractRet = cr
-	b.IsSuccess = isSuccess
-	b.BlockHash = rawData.Get("ref_block_hash").String()
-	b.BlockHeight = rawData.Get("ref_block_bytes").Uint()
-	b.Type = rawData.Get("contract").Array()[0].Get("type").String()
-	b.Blocktime = rawData.Get("timestamp").Uint()
-	FromByte, _ := hex.DecodeString(rawData.Get("contract").Array()[0].Get("parameter").Get("value").Get("owner_address").String())
-	b.From = addressEncoder.AddressEncode(FromByte[1:], addressEncoder.TRON_mainnetAddress)
-	if b.Type == "TransferContract" {
-		ToByte, _ := hex.DecodeString(rawData.Get("contract").Array()[0].Get("parameter").Get("value").Get("to_address").String())
-		b.To = addressEncoder.AddressEncode(ToByte[1:], addressEncoder.TRON_mainnetAddress)
-		b.Amount = rawData.Get("contract").Array()[0].Get("parameter").Get("value").Get("amount").String()
-	} else {
-		b.Amount = "0"
+	b.BlockHash = blockHash
+	b.BlockHeight = blockHeight
+	b.BlockTime = blocktime
+
+	b.Ret = make([]*Result, 0)
+	if rets := gjson.Get(json.Raw, "ret"); rets.IsArray() {
+		for _, r := range rets.Array() {
+			ret := NewResult(r)
+			b.Ret = append(b.Ret, ret)
+		}
 	}
+
+	b.Contract = make([]*Contract, 0)
+	if contracts := rawData.Get("contract"); contracts.IsArray() {
+		for _, c := range contracts.Array() {
+			contract := NewContract(c, isTestnet)
+			contract.TxID = b.TxID
+			contract.BlockHash = blockHash
+			contract.BlockHeight = blockHeight
+			contract.BlockTime = blocktime
+			b.Contract = append(b.Contract, contract)
+		}
+	}
+
 	return b
 }
 
@@ -241,7 +266,7 @@ func (b *Block) Blockheader() *openwallet.BlockHeader {
 	obj.Previousblockhash = b.Previousblockhash
 	obj.Height = b.Height
 	obj.Version = uint64(b.Version)
-	obj.Time = b.Time
+	obj.Time = uint64(b.Time)
 	obj.Symbol = Symbol
 	return &obj
 }

@@ -138,8 +138,8 @@ type Transaction struct {
 	Received    bool     `json:"received"`
 	SubmitTime  int64    `json:"submitTime"`  //@required
 	ConfirmTime int64    `json:"confirmTime"` //@required
-	Status      string   `json:"status"`      //链上状态
-	Reason      string   `json:"reason"`      //失败原因
+	Status      string   `json:"status"`      //链上状态，0：失败，1：成功
+	Reason      string   `json:"reason"`      //失败原因，失败状态码
 	ExtParam    string   `json:"extParam"`    //扩展参数，用于调用智能合约，json结构
 
 	/*
@@ -156,6 +156,36 @@ type Transaction struct {
 			"nonce": 1,  									//地址账户交易序号
 		}
 	*/
+}
+
+//SetExtParam
+func (tx *Transaction) SetExtParam(key string, value interface{}) error {
+	var ext map[string]interface{}
+
+	if len(tx.ExtParam) == 0 {
+		ext = make(map[string]interface{})
+	} else {
+		err := json.Unmarshal([]byte(tx.ExtParam), &ext)
+		if err != nil {
+			return err
+		}
+	}
+
+	ext[key] = value
+
+	json, err := json.Marshal(ext)
+	if err != nil {
+		return err
+	}
+	tx.ExtParam = string(json)
+
+	return nil
+}
+
+//GetExtParam
+func (tx *Transaction) GetExtParam() gjson.Result {
+	//如果param没有值，使用inputs初始化
+	return gjson.ParseBytes([]byte(tx.ExtParam))
 }
 
 //SummaryRawTransaction 汇总交易

@@ -48,17 +48,17 @@ func (wm *WalletManager) GetTotalTransaction() (num uint64, err error) {
 // 		{“value”: “d5ec749ecc2a615399d8a6c864ea4c74ff9f523c2be0e341ac9be5d47d7c2d62”}’
 // Parameters：Transaction ID.
 // Return value：Transaction information.
-func (wm *WalletManager) GetTransactionByID(txID string) (tx *Transaction, err error) {
-
-	params := req.Param{"value": txID}
-	r, err := wm.WalletClient.Call("/wallet/gettransactionbyid", params)
-	if err != nil {
-		return nil, err
-	}
-
-	tx = NewTransaction(r)
-	return tx, err
-}
+//func (wm *WalletManager) GetTransactionByID(txID string) (tx *Transaction, err error) {
+//
+//	params := req.Param{"value": txID}
+//	r, err := wm.WalletClient.Call("/wallet/gettransactionbyid", params)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	tx = NewTransaction(r)
+//	return tx, err
+//}
 
 // CreateTransaction Writing!
 // Function：Creates a transaction of transfer. If the recipient address does not exist, a corresponding account will be created on the blockchain.
