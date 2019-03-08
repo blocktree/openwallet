@@ -60,7 +60,7 @@ func NewWalletManager() *WalletManager {
 	wm.AddrDecoder = NewAddressDecoder(&wm)
 	wm.TxDecoder = NewTransactionDecoder(&wm)
 	wm.Log = log.NewOWLogger(wm.Symbol())
-	wm.WalletClient = NewClient("http://192.168.27.124:18090", "", true)
+	//wm.WalletClient = NewClient("http://192.168.27.124:18090", "", true)
 	return &wm
 }
 

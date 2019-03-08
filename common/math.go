@@ -15,36 +15,26 @@
 
 package common
 
-import "math/big"
+import (
+	"github.com/shopspring/decimal"
+	"math/big"
+)
 
-//WIP: 还没测试
-
-func FloatStringToBigInt(x string) *big.Int {
-	rst := new(big.Int)
-	if _, valid := rst.SetString(x, 10); !valid {
-		return nil
-	}
-	return rst
-}
-
-func FloatStringPointShift(x string, y int64) string {
-	rst := new(big.Int)
-	if _, valid := rst.SetString(x, 10); !valid {
-		return "0"
-	}
-	rst = rst.Exp(big.NewInt(10), big.NewInt(y), nil)
-	return rst.String()
-}
-
-func BigIntPointShift(x *big.Int, y int64) *big.Int {
-	x = x.Exp(big.NewInt(10), big.NewInt(y), nil)
-	return x
-}
-
-func FloatStringPointShiftToBigInt(x string, y int64) *big.Int {
-	bigInt := FloatStringToBigInt(x)
-	if bigInt != nil{
-		bigInt = BigIntPointShift(bigInt, y)
+func StringNumToBigIntWithExp(amount string, exp int32) *big.Int {
+	vDecimal, _ := decimal.NewFromString(amount)
+	vDecimal = vDecimal.Shift(exp)
+	bigInt, ok := new(big.Int).SetString(vDecimal.String(), 10)
+	if !ok {
+		return big.NewInt(0)
 	}
 	return bigInt
+}
+
+
+
+func BigIntToDecimals(amount *big.Int, decimals int32) decimal.Decimal {
+	if amount == nil {
+		return decimal.Zero
+	}
+	return decimal.NewFromBigInt(amount, 0).Shift(-decimals)
 }

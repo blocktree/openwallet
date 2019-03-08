@@ -20,12 +20,10 @@ package types
 
 import (
 	"bytes"
-	"crypto/ecdsa"
 	"crypto/sha256"
 	"fmt"
 	"io"
 
-	"github.com/ontio/ontology-crypto/ec"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/ontology/common"
 	"github.com/ontio/ontology/common/constants"
@@ -48,17 +46,6 @@ type Transaction struct {
 	Sigs       []*Sig
 
 	hash *common.Uint256
-}
-
-func MakeSigForBlockTree(sigData []byte, pubkey *ecdsa.PublicKey, m uint64) *Sig {
-	return &Sig{
-		PubKeys: []keypair.PublicKey{ec.PublicKey{
-			Algorithm: ec.ECAlgorithm(ec.ECDSA),
-			PublicKey: pubkey,
-		}},
-		M:       1,
-		SigData: [][]byte{sigData},
-	}
 }
 
 type Sig struct {

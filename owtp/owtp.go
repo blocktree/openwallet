@@ -560,12 +560,25 @@ func (node *OWTPNode) ConnectAndCall(
 	sync bool,
 	reqFunc RequestFunc) error {
 
-	peer, err := node.connect(pid, config) //重新连接
-	if err != nil {
-		return err
-	}
+		if sync {
+			peer, err := node.connect(pid, config) //重新连接
+			if err != nil {
+				return err
+			}
 
-	return node.Call(peer.PID(), method, params, sync, reqFunc)
+			return node.Call(peer.PID(), method, params, sync, reqFunc)
+		} else {
+			go func() {
+				peer, err := node.connect(pid, config) //重新连接
+				if err != nil {
+					return
+				}
+
+				node.Call(peer.PID(), method, params, sync, reqFunc)
+			}()
+
+			return nil
+		}
 }
 
 //CallSync 同步请求

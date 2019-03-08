@@ -69,7 +69,10 @@ func (c *Client) Call(path string, param interface{}) (*gjson.Result, error) {
 		log.Errorf("Failed: %+v >\n", err)
 		return nil, err
 	}
-	//log.Std.Info("%+v", r)
+
+	if c.Debug {
+		log.Std.Info("%+v", r)
+	}
 
 	if r.Response().StatusCode != http.StatusOK {
 		message := gjson.ParseBytes(r.Bytes()).String()

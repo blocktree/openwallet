@@ -18,11 +18,10 @@ package tron
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/blocktree/OpenWallet/common"
 	"math/big"
 	"sort"
-	"strconv" // "sort"
-	// "github.com/blocktree/OpenWallet/log"
-	"strings"
+
 	"time"
 
 	"github.com/blocktree/OpenWallet/log"
@@ -75,133 +74,96 @@ func NewTransactionDecoder(wm *WalletManager) *TransactionDecoder {
 func (decoder *TransactionDecoder) CreateSimpleTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	var (
-		accountTotalSent = decimal.Zero
-		txFrom           = make([]string, 0)
-		txTo             = make([]string, 0)
+		accountID       = rawTx.Account.AccountID
+		findAddrBalance *AddrBalance
+		rawHex          string
+		feeInfo         *txFeeInfo
 	)
-	if rawTx.Coin.Symbol != Symbol {
-		return fmt.Errorf("CreateRawTransaction: Symbol is not <TRX>")
-	}
 
-	if len(rawTx.To) == 0 {
-		return fmt.Errorf("CreateRawTransaction: Receiver addresses is empty")
-	}
-	if rawTx.Account.AccountID == "" {
-		return fmt.Errorf("CreateRawTransaction: AccountID is empty")
-	}
-	addressList, err := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID)
+	//获取wallet
+	addresses, err := wrapper.GetAddressList(0, -1, "AccountID", accountID) //wrapper.GetWallet().GetAddressesByAccount(rawTx.Account.AccountID)
 	if err != nil {
-		decoder.wm.Log.Info("get address list failed;unexpected error:%v", err)
 		return err
 	}
-	if len(addressList) == 0 {
-		return fmt.Errorf("[%s] account: %s has not addresses", decoder.wm.Symbol(), rawTx.Account.AccountID)
+
+	if len(addresses) == 0 {
+		return fmt.Errorf("[%s] have not addresses", accountID)
 	}
-	addressesBalanceList := make([]AddrBalance, 0, len(addressList))
-	for i, addr := range addressList {
-		balance, err := decoder.wm.Getbalance(addr.Address)
-		if err != nil {
-			decoder.wm.Log.Info("get balance failed;unexpected error:%v", err)
-			return err
-		}
-		balance.Index = i
-		addressesBalanceList = append(addressesBalanceList, *balance)
+
+	searchAddrs := make([]string, 0)
+	for _, address := range addresses {
+		searchAddrs = append(searchAddrs, address.Address)
 	}
-	sort.Slice(addressesBalanceList, func(i int, j int) bool {
-		return addressesBalanceList[i].TronBalance.Cmp(addressesBalanceList[j].TronBalance) >= 0
-	})
-	var amountStr, toAddress string
+
+	addrBalanceArray, err := decoder.wm.Blockscanner.GetBalanceByAddress(searchAddrs...)
+	if err != nil {
+		return err
+	}
+
+	var amountStr, to string
 	for k, v := range rawTx.To {
-		toAddress = k
+		to = k
 		amountStr = v
 		break
 	}
-	//计算账户的实际转账amount
-	accountTotalSentAddresses, findErr := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID, "Address", toAddress)
-	if findErr != nil || len(accountTotalSentAddresses) == 0 {
-		amountDec, _ := decimal.NewFromString(amountStr)
-		accountTotalSent = accountTotalSent.Add(amountDec)
-	}
-	txTo = []string{fmt.Sprintf("%s:%s", toAddress, amountStr)}
-	amountFloat, err := strconv.ParseFloat(amountStr, 64)
-	if err != nil {
-		decoder.wm.Log.Info("conver amount from string  to float failed;unexpected error:%v", err)
-		return err
-	}
-	signatureMap := make(map[string][]*openwallet.KeySignature)
-	keySignList := make([]*openwallet.KeySignature, 0, 1)
-	amountInt64 := int64(amountFloat * 1000000)
-	amount := big.NewInt(amountInt64)
-	count := big.NewInt(0)
-	countList := []uint64{}
-	for i, _ := range addressesBalanceList {
-		if addressesBalanceList[i].TronBalance.Cmp(amount) < 0 {
-			count.Add(count, addressesBalanceList[i].TronBalance)
-			if count.Cmp(amount) >= 0 {
-				countList = append(countList, addressesBalanceList[i].TronBalance.Sub(addressesBalanceList[i].TronBalance, count.Sub(count, amount)).Uint64())
-				return fmt.Errorf("The Tron of account is enough,"+
-					"but cannot be sent in just one transaction!\n"+
-					"the amount can be sent in "+string(len(countList))+"times with amounts:\n"+strings.Replace(strings.Trim(fmt.Sprint(countList), "[]"), " ", ",", -1), err)
-			} else {
-				countList = append(countList, addressesBalanceList[i].TronBalance.Uint64())
-			}
-			continue
+
+	//地址余额从大到小排序
+	sort.Slice(addrBalanceArray, func(i int, j int) bool {
+		a_amount, _ := decimal.NewFromString(addrBalanceArray[i].Balance)
+		b_amount, _ := decimal.NewFromString(addrBalanceArray[j].Balance)
+		if a_amount.LessThan(b_amount) {
+			return true
 		} else {
-			ownerAddress := &openwallet.Address{
-				AccountID:   addressList[addressesBalanceList[i].Index].AccountID,
-				Address:     addressList[addressesBalanceList[i].Index].Address,
-				PublicKey:   addressList[addressesBalanceList[i].Index].PublicKey,
-				Alias:       addressList[addressesBalanceList[i].Index].Alias,
-				Tag:         addressList[addressesBalanceList[i].Index].Tag,
-				Index:       addressList[addressesBalanceList[i].Index].Index,
-				HDPath:      addressList[addressesBalanceList[i].Index].HDPath,
-				WatchOnly:   addressList[addressesBalanceList[i].Index].WatchOnly,
-				Symbol:      addressList[addressesBalanceList[i].Index].Symbol,
-				Balance:     addressList[addressesBalanceList[i].Index].Balance,
-				IsMemo:      addressList[addressesBalanceList[i].Index].IsMemo,
-				Memo:        addressList[addressesBalanceList[i].Index].Memo,
-				CreatedTime: addressList[addressesBalanceList[i].Index].CreatedTime,
-			}
-			keySignList = append(keySignList, &openwallet.KeySignature{
-				Address: ownerAddress,
-			})
-			txFrom = []string{fmt.Sprintf("%s:%s", ownerAddress.Address, amountStr)}
-			break
+			return false
+		}
+	})
+
+	amountDec, _ := decimal.NewFromString(amountStr)
+
+	for _, addrBalance := range addrBalanceArray {
+
+		addrBalance_dec, _ := decimal.NewFromString(addrBalance.Balance)
+
+		//创建空交易单
+		rawHex, err = decoder.wm.CreateTransactionRef(to, addrBalance.Address, amountStr)
+		if err != nil {
+			return err
 		}
 
-	}
-	//fmt.Println("from address:=", keySignList[0].Address.Address)
-	if len(keySignList) != 1 {
-		return fmt.Errorf("NO enough Tron to send")
+		rawTx.RawHex = rawHex
+
+		//计算手续费
+		feeInfo, err = decoder.wm.GetTransactionFeeEstimated(addrBalance.Address, rawHex)
+		if err != nil {
+			decoder.wm.Log.Std.Error("GetTransactionFeeEstimated from[%v] -> to[%v] failed, err=%v", addrBalance.Address, to, err)
+			continue
+		}
+
+		//总消耗数量 = 转账数量 + 手续费
+		if addrBalance_dec.LessThan(amountDec.Add(feeInfo.Fee)) {
+			continue
+		}
+
+		//只要找到一个合适使用的地址余额就停止遍历
+		findAddrBalance = &AddrBalance{Address: addrBalance.Address, TronBalance: common.StringNumToBigIntWithExp(amountStr, Decimals)}
+		break
 	}
 
-	//创建空交易单
-	rawHex, err := decoder.wm.CreateTransactionRef(toAddress, keySignList[0].Address.Address, amountFloat)
+	if findAddrBalance == nil {
+		return fmt.Errorf("the balance: %s is not enough", amountStr)
+	}
+
+	//最后创建交易单
+	err = decoder.createRawTransaction(
+		wrapper,
+		rawTx,
+		findAddrBalance,
+		feeInfo,
+		"")
 	if err != nil {
 		return err
 	}
 
-	txHashBytes, err := getTxHash1(rawHex)
-	if err != nil {
-		decoder.wm.Log.Info("get Tx hash failed;unexpected error:%v", err)
-		return err
-	}
-	txHash := hex.EncodeToString(txHashBytes)
-	keySignList[0].Nonce = ""
-	keySignList[0].Message = txHash
-	signatureMap[rawTx.Account.AccountID] = keySignList
-	//rawTx.Signatures = make(map[string][]*openwallet.KeySignature, 0)
-
-	accountTotalSent = decimal.Zero.Sub(accountTotalSent)
-
-	rawTx.Fees = "0"
-	rawTx.FeeRate = "0"
-	rawTx.RawHex = rawHex
-	rawTx.Signatures = signatureMap
-	rawTx.IsBuilt = true
-	rawTx.TxTo = txTo
-	rawTx.TxFrom = txFrom
-	rawTx.TxAmount = accountTotalSent.StringFixed(decoder.wm.Decimal())
 	return nil
 }
 
@@ -343,4 +305,197 @@ func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.Walle
 	}
 	tx.WxID = openwallet.GenTransactionWxID(&tx)
 	return &tx, nil
+}
+
+//CreateSummaryRawTransaction 创建汇总交易，返回原始交易单数组
+func (decoder *TransactionDecoder) CreateSummaryRawTransaction(wrapper openwallet.WalletDAI, sumRawTx *openwallet.SummaryRawTransaction) ([]*openwallet.RawTransaction, error) {
+	if sumRawTx.Coin.IsContract {
+		return nil, fmt.Errorf("can not support token summary transaction")
+	} else {
+		return decoder.CreateSimpleSummaryRawTransaction(wrapper, sumRawTx)
+	}
+}
+
+//CreateSimpleSummaryRawTransaction 创建ETH汇总交易
+func (decoder *TransactionDecoder) CreateSimpleSummaryRawTransaction(wrapper openwallet.WalletDAI, sumRawTx *openwallet.SummaryRawTransaction) ([]*openwallet.RawTransaction, error) {
+
+	var (
+		rawTxArray      = make([]*openwallet.RawTransaction, 0)
+		accountID       = sumRawTx.Account.AccountID
+		minTransfer     = common.StringNumToBigIntWithExp(sumRawTx.MinTransfer, Decimals)
+		retainedBalance = common.StringNumToBigIntWithExp(sumRawTx.RetainedBalance, Decimals)
+	)
+
+	if minTransfer.Cmp(retainedBalance) < 0 {
+		return nil, fmt.Errorf("mini transfer amount must be greater than address retained balance")
+	}
+
+	//获取wallet
+	addresses, err := wrapper.GetAddressList(sumRawTx.AddressStartIndex, sumRawTx.AddressLimit,
+		"AccountID", sumRawTx.Account.AccountID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(addresses) == 0 {
+		return nil, fmt.Errorf("[%s] have not addresses", accountID)
+	}
+
+	searchAddrs := make([]string, 0)
+	for _, address := range addresses {
+		searchAddrs = append(searchAddrs, address.Address)
+	}
+
+	addrBalanceArray, err := decoder.wm.Blockscanner.GetBalanceByAddress(searchAddrs...)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, addrBalance := range addrBalanceArray {
+
+		//检查余额是否超过最低转账
+		addrBalance_BI := common.StringNumToBigIntWithExp(addrBalance.Balance, Decimals)
+
+		if addrBalance_BI.Cmp(minTransfer) < 0 {
+			continue
+		}
+		//计算汇总数量 = 余额 - 保留余额
+		sumAmount_BI := new(big.Int)
+		sumAmount_BI.Sub(addrBalance_BI, retainedBalance)
+
+		//创建空交易单
+		rawHex, createErr := decoder.wm.CreateTransactionRef(sumRawTx.SummaryAddress,
+			addrBalance.Address, common.BigIntToDecimals(sumAmount_BI, Decimals).String())
+		if createErr != nil {
+			return nil, createErr
+		}
+
+		//this.wm.Log.Debug("sumAmount:", sumAmount)
+		//计算手续费
+		fee, createErr := decoder.wm.GetTransactionFeeEstimated(addrBalance.Address, rawHex)
+		if createErr != nil {
+			decoder.wm.Log.Std.Error("GetTransactionFeeEstimated from[%v] -> to[%v] failed, err=%v", addrBalance.Address, sumRawTx.SummaryAddress, createErr)
+			return nil, createErr
+		}
+
+		sumAmount := common.BigIntToDecimals(sumAmount_BI, Decimals)
+
+		//减去手续费
+		sumAmount = sumAmount.Sub(fee.Fee)
+		if sumAmount.LessThanOrEqual(decimal.Zero) {
+			continue
+		}
+
+		decoder.wm.Log.Debugf("balance: %v", addrBalance.Balance)
+		decoder.wm.Log.Debugf("fees: %v", fee.Fee)
+		decoder.wm.Log.Debugf("sumAmount: %v", sumAmount)
+
+		//创建一笔交易单
+		rawTx := &openwallet.RawTransaction{
+			Coin:    sumRawTx.Coin,
+			Account: sumRawTx.Account,
+			To: map[string]string{
+				sumRawTx.SummaryAddress: sumAmount.StringFixed(decoder.wm.Decimal()),
+			},
+			Required: 1,
+			RawHex:   rawHex,
+		}
+
+		createErr = decoder.createRawTransaction(
+			wrapper,
+			rawTx,
+			&AddrBalance{Address: addrBalance.Address, TronBalance: addrBalance_BI},
+			fee,
+			"")
+		if createErr != nil {
+			return nil, createErr
+		}
+
+		//创建成功，添加到队列
+		rawTxArray = append(rawTxArray, rawTx)
+
+	}
+
+	return rawTxArray, nil
+}
+
+//createRawTransaction
+func (decoder *TransactionDecoder) createRawTransaction(
+	wrapper openwallet.WalletDAI,
+	rawTx *openwallet.RawTransaction,
+	addrBalance *AddrBalance,
+	feeInfo *txFeeInfo,
+	callData string) error {
+
+	var (
+		accountTotalSent = decimal.Zero
+		txFrom           = make([]string, 0)
+		txTo             = make([]string, 0)
+		keySignList      = make([]*openwallet.KeySignature, 0)
+		amountStr        string
+		destination      string
+		rawHex           string
+	)
+
+	//isContract := rawTx.Coin.IsContract
+	//contractAddress := rawTx.Coin.Contract.Address
+	//tokenCoin := rawTx.Coin.Contract.Token
+	//tokenDecimals := int(rawTx.Coin.Contract.Decimals)
+	//coinDecimals := this.wm.Decimal()
+
+	for k, v := range rawTx.To {
+		destination = k
+		amountStr = v
+		break
+	}
+
+	//计算账户的实际转账amount
+	accountTotalSentAddresses, findErr := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID, "Address", destination)
+	if findErr != nil || len(accountTotalSentAddresses) == 0 {
+		amountDec, _ := decimal.NewFromString(amountStr)
+		accountTotalSent = accountTotalSent.Add(amountDec)
+	}
+
+	txFrom = []string{fmt.Sprintf("%s:%s", addrBalance.Address, amountStr)}
+	txTo = []string{fmt.Sprintf("%s:%s", destination, amountStr)}
+
+	addr, err := wrapper.GetAddress(addrBalance.Address)
+	if err != nil {
+		return err
+	}
+
+	rawHex = rawTx.RawHex
+
+	txHashBytes, err := getTxHash1(rawHex)
+	if err != nil {
+		decoder.wm.Log.Info("get Tx hash failed;unexpected error:%v", err)
+		return err
+	}
+	txHash := hex.EncodeToString(txHashBytes)
+
+	if rawTx.Signatures == nil {
+		rawTx.Signatures = make(map[string][]*openwallet.KeySignature)
+	}
+
+	signature := openwallet.KeySignature{
+		EccType: decoder.wm.Config.CurveType,
+		Address: addr,
+		Message: txHash,
+	}
+	keySignList = append(keySignList, &signature)
+
+	feesDec, _ := decimal.NewFromString(rawTx.Fees)
+	accountTotalSent = accountTotalSent.Add(feesDec)
+	accountTotalSent = decimal.Zero.Sub(accountTotalSent)
+
+	//rawTx.RawHex = rawHex
+	rawTx.Signatures[rawTx.Account.AccountID] = keySignList
+	rawTx.FeeRate = feeInfo.GasPrice.String()
+	rawTx.Fees = feeInfo.Fee.String()
+	rawTx.IsBuilt = true
+	rawTx.TxAmount = accountTotalSent.StringFixed(decoder.wm.Decimal())
+	rawTx.TxFrom = txFrom
+	rawTx.TxTo = txTo
+
+	return nil
 }

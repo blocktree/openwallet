@@ -44,6 +44,10 @@ const (
 	MasterKey = "Troncoin seed"
 	//CurveType to generate ChildKey by BIP32
 	CurveType = owcrypt.ECC_CURVE_SECP256K1
+	Decimals = 6
+	SUN int64 = 1	//最小单位
+	TRX int64 = SUN * 1000000  //1 TRX = 1000000 * sun
+	GasPrice = SUN * 10
 )
 
 //WalletConfig configs for Wallet

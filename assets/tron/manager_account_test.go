@@ -16,29 +16,27 @@
 package tron
 
 import (
+	"github.com/blocktree/OpenWallet/log"
 	"testing"
 )
 
 func TestGetAccountNet(t *testing.T) {
 
 	var addr string
-	addr = OWNERADDRESS
-	if r, err := tw.GetAccountNet(addr); err != nil {
+	addr = "TJLypjev8iLdQR3X63rSMeZK8GKwkeSH1Y"
+	accountNet, err := tw.GetAccountNet(addr)
+	if err != nil {
 		t.Errorf("GetAccountNet failed: %v\n", err)
-	} else {
-		t.Logf("GetAccountNet return: \n\t%+v\n", r)
-
-		if r.Blocks < uint64(5850505050) {
-			t.Errorf("GetAccountNet failed: %v\n", "Data Invalid!")
-		}
+		return
 	}
+	log.Infof("accountNet: %+v", accountNet)
 }
 
 func TestGetAccount(t *testing.T) {
 
 	var addr string
 
-	addr = OWNERADDRESS
+	addr = "TJLypjev8iLdQR3X63rSMeZK8GKwkeSH1Y"
 
 	if r, err := tw.GetAccount(addr); err != nil {
 		t.Errorf("GetAccount failed: %v\n", err)

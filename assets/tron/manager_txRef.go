@@ -18,10 +18,12 @@ package tron
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/blocktree/OpenWallet/common"
 	"math/big"
 	"strconv"
 	"time"
 
+	"github.com/blocktree/OpenWallet/assets/tron/grpc-gateway/core"
 	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/blocktree/go-owcdrivers/signatureSet"
 	"github.com/blocktree/go-owcrypt"
@@ -29,7 +31,6 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/imroc/req"
 	"github.com/shopspring/decimal"
-	"github.com/tronprotocol/grpc-gateway/core"
 )
 
 type AddrBalance struct {
@@ -74,7 +75,7 @@ func getTxHash(tx *core.Transaction) (txHash []byte, err error) {
 	return txHash, nil
 }
 
-func (wm *WalletManager) CreateTransactionRef(toAddress, ownerAddress string, amount float64) (txRawHex string, err error) {
+func (wm *WalletManager) CreateTransactionRef(toAddress, ownerAddress string, amount string) (txRawHex string, err error) {
 
 	// addressEncoder.AddressDecode return 20 bytes of the center of Address
 	toAddressBytes, err := addressEncoder.AddressDecode(toAddress, addressEncoder.TRON_mainnetAddress)
@@ -91,12 +92,14 @@ func (wm *WalletManager) CreateTransactionRef(toAddress, ownerAddress string, am
 	}
 	ownerAddressBytes = append([]byte{0x41}, ownerAddressBytes...)
 
+	amountDec := common.StringNumToBigIntWithExp(amount, Decimals)
+
 	// Check amount: amount * 1000000
 	// ******** Generate TX Contract ********
 	tc := &core.TransferContract{
 		OwnerAddress: ownerAddressBytes,
 		ToAddress:    toAddressBytes,
-		Amount:       int64(amount * 1000000),
+		Amount:       amountDec.Int64(),
 	}
 
 	tcRaw, err := proto.Marshal(tc)
@@ -432,3 +435,34 @@ func debugPrintTx(txRawhex string) {
 	fmt.Println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Print Test ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ End")
 }
 */
+
+//GetTransactionFeeEstimated 预计手续费
+func (wm *WalletManager) GetTransactionFeeEstimated(from string, data string) (*txFeeInfo, error) {
+
+	//:计算矿工费
+	feeInfo := &txFeeInfo{
+		GasUsed:  0,
+		GasPrice: decimal.Zero,
+		Fee:      decimal.Zero,
+	}
+
+	//:检查地址账户可用带宽是否足够
+	/*
+	accountNet, err := wm.GetAccountNet(from)
+	if err != nil {
+		return nil, err
+	}
+	log.Debugf("length of data: %d", len(data)/2)
+	//先判断冻结的带宽是否可用
+	if accountNet.NetUsed >= accountNet.NetLimit {
+		//再判断免费的带宽是否可用
+		if accountNet.FreeNetUsed >= accountNet.FreeNetLimit {
+			//:矿工费 = 字节长度 * 10 SUN
+			feeInfo.Fee = decimal.New(GasPrice, 0).Shift(-Decimals)
+			feeInfo.GasUsed = int64(len(data) / 2)
+			feeInfo.CalcFee()
+		}
+	}
+	*/
+	return feeInfo, nil
+}

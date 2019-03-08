@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/tronprotocol/grpc-gateway/core"
+	"github.com/blocktree/OpenWallet/assets/tron/grpc-gateway/core"
 )
 
 var (

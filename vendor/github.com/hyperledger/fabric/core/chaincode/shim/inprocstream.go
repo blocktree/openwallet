@@ -17,8 +17,18 @@ limitations under the License.
 package shim
 
 import (
-	pb "github.com/hyperledger/fabric/protos"
+	"fmt"
+
+	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/pkg/errors"
 )
+
+//SendPanicFailure
+type SendPanicFailure string
+
+func (e SendPanicFailure) Error() string {
+	return fmt.Sprintf("send failure %s", string(e))
+}
 
 // PeerChaincodeStream interface for stream between Peer and chaincode instance.
 type inProcStream struct {
@@ -30,13 +40,26 @@ func newInProcStream(recv <-chan *pb.ChaincodeMessage, send chan<- *pb.Chaincode
 	return &inProcStream{recv, send}
 }
 
-func (s *inProcStream) Send(msg *pb.ChaincodeMessage) error {
+func (s *inProcStream) Send(msg *pb.ChaincodeMessage) (err error) {
+	err = nil
+
+	//send may happen on a closed channel when the system is
+	//shutting down. Just catch the exception and return error
+	defer func() {
+		if r := recover(); r != nil {
+			err = SendPanicFailure(fmt.Sprintf("%s", r))
+			return
+		}
+	}()
 	s.send <- msg
-	return nil
+	return
 }
 
 func (s *inProcStream) Recv() (*pb.ChaincodeMessage, error) {
-	msg := <-s.recv
+	msg, ok := <-s.recv
+	if !ok {
+		return nil, errors.New("channel is closed")
+	}
 	return msg, nil
 }
 

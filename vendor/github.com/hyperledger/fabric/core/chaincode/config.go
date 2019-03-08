@@ -1,74 +1,94 @@
 /*
-Copyright IBM Corp. 2016 All Rights Reserved.
+Copyright IBM Corp. All Rights Reserved.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-		 http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+SPDX-License-Identifier: Apache-2.0
 */
 
 package chaincode
 
 import (
-	"flag"
-	"fmt"
-	"runtime"
+	"strconv"
 	"strings"
+	"time"
 
-	"github.com/op/go-logging"
+	"github.com/hyperledger/fabric/common/flogging"
+	logging "github.com/op/go-logging"
 	"github.com/spf13/viper"
 )
 
-// Config the config wrapper structure
+const (
+	defaultExecutionTimeout = 30 * time.Second
+	minimumStartupTimeout   = 5 * time.Second
+)
+
 type Config struct {
+	TLSEnabled     bool
+	Keepalive      time.Duration
+	ExecuteTimeout time.Duration
+	StartupTimeout time.Duration
+	LogFormat      string
+	LogLevel       string
+	ShimLogLevel   string
 }
 
-func init() {
-
+func GlobalConfig() *Config {
+	c := &Config{}
+	c.load()
+	return c
 }
 
-// SetupTestLogging setup the logging during test execution
-func SetupTestLogging() {
-	level, err := logging.LogLevel(viper.GetString("logging.peer"))
-	if err == nil {
-		// No error, use the setting
-		logging.SetLevel(level, "main")
-		logging.SetLevel(level, "server")
-		logging.SetLevel(level, "peer")
-	} else {
-		chaincodeLogger.Warningf("Log level not recognized '%s', defaulting to %s: %s", viper.GetString("logging.peer"), logging.ERROR, err)
-		logging.SetLevel(logging.ERROR, "main")
-		logging.SetLevel(logging.ERROR, "server")
-		logging.SetLevel(logging.ERROR, "peer")
-	}
-}
-
-// SetupTestConfig setup the config during test execution
-func SetupTestConfig() {
-	flag.Parse()
-
-	// Now set the configuration file
+func (c *Config) load() {
 	viper.SetEnvPrefix("CORE")
 	viper.AutomaticEnv()
 	replacer := strings.NewReplacer(".", "_")
 	viper.SetEnvKeyReplacer(replacer)
-	viper.SetConfigName("chaincodetest") // name of config file (without extension)
-	viper.AddConfigPath("./")            // path to look for the config file in
-	err := viper.ReadInConfig()          // Find and read the config file
-	if err != nil {                      // Handle errors reading the config file
-		panic(fmt.Errorf("Fatal error config file: %s \n", err))
+
+	c.TLSEnabled = viper.GetBool("peer.tls.enabled")
+
+	c.Keepalive = toSeconds(viper.GetString("chaincode.keepalive"), 0)
+	c.ExecuteTimeout = viper.GetDuration("chaincode.executetimeout")
+	if c.ExecuteTimeout < time.Second {
+		c.ExecuteTimeout = defaultExecutionTimeout
+	}
+	c.StartupTimeout = viper.GetDuration("chaincode.startuptimeout")
+	if c.StartupTimeout < minimumStartupTimeout {
+		c.StartupTimeout = minimumStartupTimeout
 	}
 
-	SetupTestLogging()
+	c.LogFormat = viper.GetString("chaincode.logging.format")
+	c.LogLevel = getLogLevelFromViper("chaincode.logging.level")
+	c.ShimLogLevel = getLogLevelFromViper("chaincode.logging.shim")
+}
 
-	// Set the number of maxprocs
-	var numProcsDesired = viper.GetInt("peer.gomaxprocs")
-	chaincodeLogger.Debugf("setting Number of procs to %d, was %d\n", numProcsDesired, runtime.GOMAXPROCS(2))
+func toSeconds(s string, def int) time.Duration {
+	seconds, err := strconv.Atoi(s)
+	if err != nil {
+		return time.Duration(def) * time.Second
+	}
+
+	return time.Duration(seconds) * time.Second
+}
+
+// getLogLevelFromViper gets the chaincode container log levels from viper
+func getLogLevelFromViper(key string) string {
+	levelString := viper.GetString(key)
+	_, err := logging.LogLevel(levelString)
+	if err != nil {
+		chaincodeLogger.Warningf("%s has invalid log level %s. defaulting to %s", key, levelString, flogging.DefaultLevel())
+		levelString = flogging.DefaultLevel()
+	}
+
+	return levelString
+}
+
+// DevModeUserRunsChaincode enables chaincode execution in a development
+// environment
+const DevModeUserRunsChaincode string = "dev"
+
+// IsDevMode returns true if the peer was configured with development-mode
+// enabled.
+func IsDevMode() bool {
+	mode := viper.GetString("chaincode.mode")
+
+	return mode == DevModeUserRunsChaincode
 }

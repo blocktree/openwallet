@@ -166,7 +166,7 @@ var testNet2GenesisBlock = wire.MsgBlock{
 		Version:      4,
 		PrevBlock:    chainhash.Hash{},
 		MerkleRoot:   testNet2GenesisMerkleRoot,
-		Timestamp:    time.Unix(1522952251, 0), // 2018-04-05 TestNet1
+		Timestamp:    time.Unix(1522944000, 0), // 2018-04-05 TestNet1
 		Bits:         0x1e00ffff,
 		SBits:        20000000,
 		Nonce:        0x18aea41a,
