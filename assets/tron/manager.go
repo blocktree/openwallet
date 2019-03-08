@@ -83,7 +83,7 @@ func (wm *WalletManager) Symbol() string {
 
 //Decimal 小数位精度 *1000000
 func (wm *WalletManager) Decimal() int32 {
-	return 6
+	return Decimals
 }
 
 //GetAddressDecode 地址解析器

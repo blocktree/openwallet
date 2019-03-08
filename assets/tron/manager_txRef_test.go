@@ -19,10 +19,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"testing"
-	"time"
-
-	"github.com/golang/protobuf/proto"
-	"github.com/blocktree/OpenWallet/assets/tron/grpc-gateway/core"
 )
 
 var (
@@ -159,23 +155,23 @@ func TestSuiteTx(t *testing.T) {
 	}
 	println("------------------------------------------------------------------- Boradcast! \n")
 
-	tx := &core.Transaction{}
-	txRawBytes, _ := hex.DecodeString(txRaw)
-	proto.Unmarshal(txRawBytes, tx)
-	txIDBytes, _ := getTxHash(tx)
-	txID := hex.EncodeToString(txIDBytes)
+	//tx := &core.Transaction{}
+	//txRawBytes, _ := hex.DecodeString(txRaw)
+	//proto.Unmarshal(txRawBytes, tx)
+	//txIDBytes, _ := getTxHash(tx)
+	//_ := hex.EncodeToString(txIDBytes)
 
-	for i := 0; i < 1000; i++ {
-
-		tx, _ := tw.GetTransactionByID(txID)
-		fmt.Println("Is Success: ", tx.IsSuccess)
-		fmt.Println("")
-
-		if tx.IsSuccess {
-			return
-		}
-
-		time.Sleep(time.Second * 1)
-	}
+	//for i := 0; i < 1000; i++ {
+	//
+	//	tx, _ := tw.GetTransactionByID(txID)
+	//	fmt.Println("Is Success: ", tx.IsSuccess)
+	//	fmt.Println("")
+	//
+	//	if tx.IsSuccess {
+	//		return
+	//	}
+	//
+	//	time.Sleep(time.Second * 1)
+	//}
 
 }

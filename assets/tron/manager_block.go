@@ -29,7 +29,7 @@ func (wm *WalletManager) GetCurrentBlock() (block *Block, err error) {
 	if err != nil {
 		return nil, err
 	}
-	block = NewBlock(r)
+	block = NewBlock(r, wm.Config.IsTestNet)
 	if block.GetBlockHashID() == "" || block.GetHeight() <= 0 {
 		return nil, errors.New("GetNowBlock failed: No found <block>")
 	}
@@ -48,7 +48,7 @@ func (wm *WalletManager) GetNowBlock() (block *Block, err error) {
 		return nil, err
 	}
 
-	block = NewBlock(r)
+	block = NewBlock(r, wm.Config.IsTestNet)
 	if block.GetBlockHashID() == "" || block.GetHeight() <= 0 {
 		return nil, errors.New("GetNowBlock failed: No found <block>")
 	}
@@ -84,7 +84,7 @@ func (wm *WalletManager) GetBlockByNum(num uint64) (block *Block, error error) {
 	if err != nil {
 		return nil, err
 	}
-	block = NewBlock(r)
+	block = NewBlock(r, wm.Config.IsTestNet)
 	if block.GetBlockHashID() == "" || block.GetHeight() <= 0 {
 		return nil, errors.New("GetBlockByNum failed: No found <block>")
 	}
@@ -105,7 +105,7 @@ func (wm *WalletManager) GetBlockByID(blockID string) (block *Block, err error) 
 		return nil, err
 	}
 
-	block = NewBlock(r)
+	block = NewBlock(r, wm.Config.IsTestNet)
 	if block.GetBlockHashID() == "" || block.GetHeight() <= 0 {
 		return nil, errors.New("GetBlockByID failed: No found <block>")
 	}
@@ -135,7 +135,7 @@ func (wm *WalletManager) GetBlockByLimitNext(startNum, endNum uint64) (blocks []
 
 	blocks = []*Block{}
 	for _, raw := range r.Get("block").Array() {
-		b := NewBlock(&raw)
+		b := NewBlock(&raw, wm.Config.IsTestNet)
 		blocks = append(blocks, b)
 	}
 
@@ -165,7 +165,7 @@ func (wm *WalletManager) GetBlockByLatestNum(num uint64) (blocks []*Block, err e
 	// }
 	blocks = []*Block{}
 	for _, raw := range r.Get("block").Array() {
-		b := NewBlock(&raw)
+		b := NewBlock(&raw, wm.Config.IsTestNet)
 		blocks = append(blocks, b)
 	}
 
@@ -181,7 +181,7 @@ func printBlock(block *Block) {
 	fmt.Println("\nvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv")
 	fmt.Println("Transactions:")
 	for i, tx := range block.GetTransactions() {
-		fmt.Printf("\t tx%2d: IsSuccess=%v \t<BlockBytes=%v, BlockNum=%v, BlockHash=%+v, Contact=%v, Signature_len=%v>\n", i+1, tx.IsSuccess, "", tx.BlockHeight, tx.BlockHash, "", "")
+		fmt.Printf("\t tx%2d: IsSuccess=%v \t<BlockBytes=%v, BlockNum=%v, BlockHash=%+v, Contact=%v, Signature_len=%v>\n", i+1, true, "", tx.BlockHeight, tx.BlockHash, "", "")
 	}
 
 	fmt.Println("Block Header:")

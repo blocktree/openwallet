@@ -31,6 +31,9 @@ func StringNumToBigIntWithExp(amount string, exp int32) *big.Int {
 }
 
 
+func IntToDecimals(amount int64, decimals int32) decimal.Decimal {
+	return decimal.New(amount, 0).Shift(-decimals)
+}
 
 func BigIntToDecimals(amount *big.Int, decimals int32) decimal.Decimal {
 	if amount == nil {

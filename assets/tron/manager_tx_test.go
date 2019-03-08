@@ -30,14 +30,14 @@ func TestGetTotalTransaction(t *testing.T) {
 
 func TestGetTransactionByID(t *testing.T) {
 
-	var txID = "3fac47cf4c75099044290ee58098ec5a490510d3ade909ac20663cfee6a5c62d"
-
-	if r, err := tw.GetTransactionByID(txID); err != nil || r.IsSuccess != true {
-		t.Logf("TestGetTransactionByID return: \n\t%+v\n", r)
-		t.Errorf("TestGetTransactionByID failed: %v\n", err)
-	} else {
-		t.Logf("TestGetTransactionByID return: \n\t%+v\n", r)
-	}
+	//var txID = "3fac47cf4c75099044290ee58098ec5a490510d3ade909ac20663cfee6a5c62d"
+	//
+	//if r, err := tw.GetTransactionByID(txID); err != nil || r.IsSuccess != true {
+	//	t.Logf("TestGetTransactionByID return: \n\t%+v\n", r)
+	//	t.Errorf("TestGetTransactionByID failed: %v\n", err)
+	//} else {
+	//	t.Logf("TestGetTransactionByID return: \n\t%+v\n", r)
+	//}
 }
 
 //func TestCreateTransaction(t *testing.T) {
