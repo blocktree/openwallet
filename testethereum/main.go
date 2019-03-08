@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/blocktree/OpenWallet/testethereum/tech"
+
 	//"gopkg.in/urfave/cli.v1"
 
 	"os"
@@ -9,7 +11,6 @@ import (
 	"strings"
 
 	_ "github.com/blocktree/OpenWallet/testethereum/environment"
-	"github.com/blocktree/OpenWallet/testethereum/tech"
 )
 
 func GetCurrentDirectory() string {
@@ -49,7 +50,7 @@ func main() {
 	//tech.TestDiffer()
 	//tech.TestGetFuncAndFileName()
 	//tech.PrepareTestForBlockScan()
-	//tech.TestErc20GetEventLog()
+	tech.TestErc20GetEventLog()
 	//tech.TestDbInf()
 	//tech.TestBlockScan()
 	//tech.TestBlockScanWhenFork()
@@ -76,7 +77,7 @@ func main() {
 	//tech.TestWalletManager_SignTransaction()
 	//tech.TestWalletManager_VerifyTransaction()
 	//tech.TestWalletManager_SubmitTransaction()
-	tech.TestGetRawTransactionFeeRate()
+	//tech.TestGetRawTransactionFeeRate()
 
 	//tech.TestSlice2()
 	//tech.TestStringAndSlice()

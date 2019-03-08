@@ -122,17 +122,6 @@ func TestTron_GetTransaction(t *testing.T) {
 	}
 }
 
-func TestTron_GetTRXTransaction(t *testing.T) {
-	bs := NewTronBlockScanner(tw)
-	txID := "c72c5de14c572af5e1ec5e7ea3a761f6b662f889ada90a8efb9d0bb57114fbc9"
-	height := uint64(5628100)
-	tx, err := bs.wm.GetTRXTransaction(txID, "", height)
-	if err != nil {
-		log.Errorf(err.Error())
-	} else {
-		log.Infof("tx: %+v", tx)
-	}
-}
 
 func TestDemo(t *testing.T) {
 	name := proto.MessageName(&timestamp.Timestamp{})

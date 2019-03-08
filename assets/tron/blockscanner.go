@@ -18,9 +18,6 @@ package tron
 import (
 	"errors"
 	"fmt"
-	"github.com/blocktree/OpenWallet/assets/tron/grpc-gateway/core"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/ptypes"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -572,30 +569,30 @@ func (wm *WalletManager) GetTransaction(txid string, height uint64) (*Transactio
 	return tx, nil
 }
 
-func (wm *WalletManager) GetTRXTransaction(txid, blockHash string, blockHeight uint64) (*Transaction, error) {
-	params := req.Param{"value": txid}
-	r, err := wm.WalletClient.Call("/wallet/gettransactionbyid", params)
-	if err != nil {
-		return nil, err
-	}
-	tx := NewTransaction(r)
-	tx.BlockHeight = blockHeight
-	tx.BlockHash = blockHash
-	var txCore core.Transaction
-	var tc core.TriggerSmartContract
-	//err = proto.Unmarshal([]byte(r.Raw), &txCore)
-	err = jsonpb.UnmarshalString(r.Raw, &txCore)
-	//err = json.Unmarshal([]byte(r.Raw), &txCore)
-	if err != nil {
-		return nil, err
-	}
-	err = ptypes.UnmarshalAny(txCore.RawData.Contract[0].Parameter, &tc)
-	if err != nil {
-		return nil, err
-	}
-	tx.Core = &txCore
-	return tx, nil
-}
+//func (wm *WalletManager) GetTRXTransaction(txid, blockHash string, blockHeight uint64) (*Transaction, error) {
+//	params := req.Param{"value": txid}
+//	r, err := wm.WalletClient.Call("/wallet/gettransactionbyid", params)
+//	if err != nil {
+//		return nil, err
+//	}
+//	tx := NewTransaction(r)
+//	tx.BlockHeight = blockHeight
+//	tx.BlockHash = blockHash
+//	var txCore core.Transaction
+//	var tc core.TriggerSmartContract
+//	//err = proto.Unmarshal([]byte(r.Raw), &txCore)
+//	err = jsonpb.UnmarshalString(r.Raw, &txCore)
+//	//err = json.Unmarshal([]byte(r.Raw), &txCore)
+//	if err != nil {
+//		return nil, err
+//	}
+//	err = ptypes.UnmarshalAny(txCore.RawData.Contract[0].Parameter, &tc)
+//	if err != nil {
+//		return nil, err
+//	}
+//	tx.Core = &txCore
+//	return tx, nil
+//}
 
 //获取未扫记录
 func (wm *WalletManager) GetUnscanRecords() ([]*UnscanRecord, error) {

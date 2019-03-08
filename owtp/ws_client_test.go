@@ -196,3 +196,47 @@ func TestWSClientCall(t *testing.T) {
 	}
 
 }
+
+
+func TestWSClientConnectAndCall(t *testing.T) {
+
+	config := ConnectConfig{}
+	config.Address = wsURL
+	config.ConnectType = Websocket
+	config.EnableSignature = true
+	wsClient := RandomOWTPNode()
+	wsClient.SetPeerstore(wsGlobalSessions)
+	wsClient.HandleFunc("getInfo", getInfo)
+
+	wsClient.SetOpenHandler(func(n *OWTPNode, peer PeerInfo) {
+		log.Infof("client: peer[%s] connected", peer.ID)
+		log.Infof("client: peer[%+v] config", peer.Config)
+		//n.ClosePeer(peer.ID)
+	})
+
+	//断开连接
+	wsClient.SetCloseHandler(func(n *OWTPNode, peer PeerInfo) {
+		log.Infof("client: peer[%s] disconnected", peer.ID)
+	})
+
+	params := map[string]interface{}{
+		"name": "chance",
+		"age":  18,
+	}
+
+	for i := 0;i<100;i++ {
+		//err = wsClient.Connect(wsHostNodeID, config)
+		err := wsClient.ConnectAndCall(wsHostNodeID, config, "getInfo", params, false, func(resp Response) {
+
+			result := resp.JsonData()
+			symbols := result.Get("symbols")
+			fmt.Printf("symbols: %v\n", symbols)
+		})
+
+		if err != nil {
+			t.Errorf("unexcepted error: %v", err)
+			return
+		}
+		time.Sleep(1 * time.Second)
+	}
+}

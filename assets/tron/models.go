@@ -18,7 +18,6 @@ package tron
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/blocktree/OpenWallet/assets/tron/grpc-gateway/core"
 	"github.com/blocktree/OpenWallet/crypto"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/blocktree/go-owcdrivers/addressEncoder"
@@ -102,23 +101,58 @@ func (block *Block) GetTransactions() []*Transaction {
 	return block.tx
 }
 
+const (
+	SUCCESS = "SUCCESS"
+)
+
+type Result struct {
+	Ret         string
+	Fee         int64
+	ContractRet string
+}
+
+type Contract struct {
+	Type         string
+	Parameter    gjson.Result
+	Provider     []byte
+	ContractName []byte
+	From             string
+	To               string
+	Amount           string
+	Contract_address string
+}
+
 type Transaction struct {
 	/*
-		 {
-			  "txID":"ac005b0a195a130914821a6c28db1eec44b4ec3a2358388ceb6c87b677866f1f",
-			  "ret":[{"contractRet":"SUCCESS"}],
-			  "signature":["40aa520f01cebf12948615b9c5a5df5fe7d57e1a7f662d53907b4aa14f647a3a47be2a097fdb58159d0bee7eb1ff0a15ac738f24643fe5114cab8ec0d52cc04d01"],
-			  "raw_data":{
-				  "contract":[
-					 {"parameter":{"value":{"amount":1,"asset_name":"48756f6269546f6b656e","owner_address":"416b201fb7b9f2b97bbdaf5e0920191229767c30ee","to_address":"412451d09536fca47760ea6513372bbbbef8583105"},
-							   "type_url":"type.googleapis.com/protocol.TransferAssetContract"},
-					  "type":"TransferAssetContract"}
-				  ],
-				  "ref_block_bytes":"e1be",
-				  "ref_block_hash":"8dbf5f0cf4c324f2",
-				  "expiration":1540545294000,
-				  "timestamp":1540545235358}
-		 },
+		{
+		    "ret": [
+		        {
+		            "contractRet": "SUCCESS"
+		        }
+		    ],
+		    "signature": [
+		        "b6fbefec182a1db9759104e3d5709343f25acc1866c77deb050d9bf0f6a5c3342237fbbf076377ea26d1a09edd46e599534a8499998814da0e9187e07260382001"
+		    ],
+		    "txID": "86b5a123b5cc50047532f1a55ed627f29012bba41e6590b0545f903289e7099a",
+		    "raw_data": {
+		        "contract": [
+		            {
+		                "parameter": {
+		                    "value": {
+		                        "amount": 10000,
+		                        "owner_address": "415bdf283199369adb124f39dda845ae02c5d3eb5d",
+		                        "to_address": "41bb65606e20dbdd7f0cfe6a66ae2858a6534f2d45"
+		                    },
+		                    "type_url": "type.googleapis.com/protocol.TransferContract"
+		                },
+		                "type": "TransferContract"
+		            }
+		        ],
+		        "ref_block_bytes": "2298",
+		        "ref_block_hash": "26478922abba48a0",
+		        "expiration": 1551957595231
+		    }
+		}
 	*/
 	TxID        string
 	ContractRet []map[string]string // 交易合约执行状态
@@ -139,10 +173,8 @@ type Transaction struct {
 	Amount           string
 	Contract_address string
 	Type             string
-	// Fees          string
-
-	Core *core.Transaction
-
+	Ret              Result
+	Contract         Contract
 }
 
 func NewTransaction(json *gjson.Result) *Transaction {
@@ -236,7 +268,7 @@ func NewAccountNet(json *gjson.Result) *AccountNet {
 }
 
 type txFeeInfo struct {
-	GasUsed int64
+	GasUsed  int64
 	GasPrice decimal.Decimal
 	Fee      decimal.Decimal
 }
