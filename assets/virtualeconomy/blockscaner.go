@@ -26,7 +26,6 @@ import (
 
 	"github.com/asdine/storm"
 	"github.com/blocktree/OpenWallet/common"
-	"github.com/blocktree/OpenWallet/log"
 	"github.com/blocktree/OpenWallet/openwallet"
 	"github.com/graarh/golang-socketio"
 	"github.com/graarh/golang-socketio/transport"
@@ -107,7 +106,7 @@ func (bs *VSYSBlockScanner) ScanBlockTask() {
 	//获取本地区块高度
 	blockHeader, err := bs.GetCurrentBlockHeader()
 	if err != nil {
-		log.Std.Info("block scanner can not get new block height; unexpected error: %v", err)
+		bs.wm.Log.Std.Info("block scanner can not get new block height; unexpected error: %v", err)
 	}
 
 	currentHeight := blockHeader.Height
@@ -124,36 +123,36 @@ func (bs *VSYSBlockScanner) ScanBlockTask() {
 		maxHeight, err := bs.wm.GetBlockHeight()
 		if err != nil {
 			//下一个高度找不到会报异常
-			log.Std.Info("block scanner can not get rpc-server block height; unexpected error: %v", err)
+			bs.wm.Log.Std.Info("block scanner can not get rpc-server block height; unexpected error: %v", err)
 			break
 		}
 
 		//是否已到最新高度
 		if currentHeight == maxHeight {
-			log.Std.Info("block scanner has scanned full chain data. Current height: %d", maxHeight)
+			bs.wm.Log.Std.Info("block scanner has scanned full chain data. Current height: %d", maxHeight)
 			break
 		}
 
 		//继续扫描下一个区块
 		currentHeight = currentHeight + 1
 
-		log.Std.Info("block scanner scanning height: %d ...", currentHeight)
+		bs.wm.Log.Std.Info("block scanner scanning height: %d ...", currentHeight)
 
 		hash, err := bs.wm.GetBlockHash(currentHeight)
 		if err != nil {
 			//下一个高度找不到会报异常
-			log.Std.Info("block scanner can not get new block hash; unexpected error: %v", err)
+			bs.wm.Log.Std.Info("block scanner can not get new block hash; unexpected error: %v", err)
 			break
 		}
 
 		block, err := bs.wm.GetBlock(hash)
 		if err != nil {
-			log.Std.Info("block scanner can not get new block data; unexpected error: %v", err)
+			bs.wm.Log.Std.Info("block scanner can not get new block data; unexpected error: %v", err)
 
 			//记录未扫区块
 			unscanRecord := NewUnscanRecord(currentHeight, "", err.Error())
 			bs.SaveUnscanRecord(unscanRecord)
-			log.Std.Info("block height: %d extract failed.", currentHeight)
+			bs.wm.Log.Std.Info("block height: %d extract failed.", currentHeight)
 			continue
 		}
 
@@ -162,11 +161,11 @@ func (bs *VSYSBlockScanner) ScanBlockTask() {
 		//判断hash是否上一区块的hash
 		if currentHash != block.PrevBlockHash {
 
-			log.Std.Info("block has been fork on height: %d.", currentHeight)
-			log.Std.Info("block height: %d local hash = %s ", currentHeight-1, currentHash)
-			log.Std.Info("block height: %d mainnet hash = %s ", currentHeight-1, block.PrevBlockHash)
+			bs.wm.Log.Std.Info("block has been fork on height: %d.", currentHeight)
+			bs.wm.Log.Std.Info("block height: %d local hash = %s ", currentHeight-1, currentHash)
+			bs.wm.Log.Std.Info("block height: %d mainnet hash = %s ", currentHeight-1, block.PrevBlockHash)
 
-			log.Std.Info("delete recharge records on block height: %d.", currentHeight-1)
+			bs.wm.Log.Std.Info("delete recharge records on block height: %d.", currentHeight-1)
 
 			//删除上一区块链的所有充值记录
 			//bs.DeleteRechargesByHeight(currentHeight - 1)
@@ -179,20 +178,20 @@ func (bs *VSYSBlockScanner) ScanBlockTask() {
 
 			localBlock, err := bs.wm.GetLocalBlock(currentHeight)
 			if err != nil {
-				log.Std.Error("block scanner can not get local block; unexpected error: %v", err)
+				bs.wm.Log.Std.Error("block scanner can not get local block; unexpected error: %v", err)
 
 				//查找core钱包的RPC
-				log.Info("block scanner prev block height:", currentHeight)
+				bs.wm.Log.Info("block scanner prev block height:", currentHeight)
 
 				prevHash, err := bs.wm.GetBlockHash(currentHeight)
 				if err != nil {
-					log.Std.Error("block scanner can not get prev block; unexpected error: %v", err)
+					bs.wm.Log.Std.Error("block scanner can not get prev block; unexpected error: %v", err)
 					break
 				}
 
 				localBlock, err = bs.wm.GetBlock(prevHash)
 				if err != nil {
-					log.Std.Error("block scanner can not get prev block; unexpected error: %v", err)
+					bs.wm.Log.Std.Error("block scanner can not get prev block; unexpected error: %v", err)
 					break
 				}
 
@@ -201,7 +200,7 @@ func (bs *VSYSBlockScanner) ScanBlockTask() {
 			//重置当前区块的hash
 			currentHash = localBlock.Hash
 
-			log.Std.Info("rescan block on height: %d, hash: %s .", currentHeight, currentHash)
+			bs.wm.Log.Std.Info("rescan block on height: %d, hash: %s .", currentHeight, currentHash)
 
 			//重新记录一个新扫描起点
 			bs.wm.SaveLocalNewBlock(localBlock.Height, localBlock.Hash)
@@ -212,7 +211,7 @@ func (bs *VSYSBlockScanner) ScanBlockTask() {
 
 			err = bs.BatchExtractTransaction(block.Height, block.Hash, block.Transactions)
 			if err != nil {
-				log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
+				bs.wm.Log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
 			}
 
 			//重置当前区块的hash
@@ -250,18 +249,18 @@ func (bs *VSYSBlockScanner) ScanBlock(height uint64) error {
 	hash, err := bs.wm.GetBlockHash(height)
 	if err != nil {
 		//下一个高度找不到会报异常
-		log.Std.Info("block scanner can not get new block hash; unexpected error: %v", err)
+		bs.wm.Log.Std.Info("block scanner can not get new block hash; unexpected error: %v", err)
 		return err
 	}
 
 	block, err := bs.wm.GetBlock(hash)
 	if err != nil {
-		log.Std.Info("block scanner can not get new block data; unexpected error: %v", err)
+		bs.wm.Log.Std.Info("block scanner can not get new block data; unexpected error: %v", err)
 
 		//记录未扫区块
 		unscanRecord := NewUnscanRecord(height, "", err.Error())
 		bs.SaveUnscanRecord(unscanRecord)
-		log.Std.Info("block height: %d extract failed.", height)
+		bs.wm.Log.Std.Info("block height: %d extract failed.", height)
 		return err
 	}
 
@@ -272,11 +271,11 @@ func (bs *VSYSBlockScanner) ScanBlock(height uint64) error {
 
 func (bs *VSYSBlockScanner) scanBlock(block *Block) error {
 
-	log.Std.Info("block scanner scanning height: %d ...", block.Height)
+	bs.wm.Log.Std.Info("block scanner scanning height: %d ...", block.Height)
 
 	err := bs.BatchExtractTransaction(block.Height, block.Hash, block.Transactions)
 	if err != nil {
-		log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
+		bs.wm.Log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
 	}
 
 	//保存区块
@@ -291,18 +290,18 @@ func (bs *VSYSBlockScanner) scanBlock(block *Block) error {
 //ScanTxMemPool 扫描交易内存池
 func (bs *VSYSBlockScanner) ScanTxMemPool() {
 
-	log.Std.Info("block scanner scanning mempool ...")
+	bs.wm.Log.Std.Info("block scanner scanning mempool ...")
 
 	//提取未确认的交易单
 	txIDsInMemPool, err := bs.wm.GetTxIDsInMemPool()
 	if err != nil {
-		log.Std.Info("block scanner can not get mempool data; unexpected error: %v", err)
+		bs.wm.Log.Std.Info("block scanner can not get mempool data; unexpected error: %v", err)
 		return
 	}
 
 	err = bs.BatchExtractTransaction(0, "", txIDsInMemPool)
 	if err != nil {
-		log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
+		bs.wm.Log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
 	}
 
 }
@@ -316,7 +315,7 @@ func (bs *VSYSBlockScanner) RescanFailedRecord() {
 
 	list, err := bs.wm.GetUnscanRecords()
 	if err != nil {
-		log.Std.Info("block scanner can not get rescan data; unexpected error: %v", err)
+		bs.wm.Log.Std.Info("block scanner can not get rescan data; unexpected error: %v", err)
 	}
 
 	//组合成批处理
@@ -338,20 +337,20 @@ func (bs *VSYSBlockScanner) RescanFailedRecord() {
 
 		var hash string
 
-		log.Std.Info("block scanner rescanning height: %d ...", height)
+		bs.wm.Log.Std.Info("block scanner rescanning height: %d ...", height)
 
 		if len(txs) == 0 {
 
 			hash, err := bs.wm.GetBlockHash(height)
 			if err != nil {
 				//下一个高度找不到会报异常
-				log.Std.Info("block scanner can not get new block hash; unexpected error: %v", err)
+				bs.wm.Log.Std.Info("block scanner can not get new block hash; unexpected error: %v", err)
 				continue
 			}
 
 			block, err := bs.wm.GetBlock(hash)
 			if err != nil {
-				log.Std.Info("block scanner can not get new block data; unexpected error: %v", err)
+				bs.wm.Log.Std.Info("block scanner can not get new block data; unexpected error: %v", err)
 				continue
 			}
 
@@ -360,7 +359,7 @@ func (bs *VSYSBlockScanner) RescanFailedRecord() {
 
 		err = bs.BatchExtractTransaction(height, hash, txs)
 		if err != nil {
-			log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
+			bs.wm.Log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
 			continue
 		}
 
@@ -415,19 +414,19 @@ func (bs *VSYSBlockScanner) BatchExtractTransaction(blockHeight uint64, blockHas
 				//saveErr := bs.SaveRechargeToWalletDB(height, gets.Recharges)
 				if notifyErr != nil {
 					failed++ //标记保存失败数
-					log.Std.Info("newExtractDataNotify unexpected error: %v", notifyErr)
+					bs.wm.Log.Std.Info("newExtractDataNotify unexpected error: %v", notifyErr)
 				}
 			} else {
 				//记录未扫区块
 				unscanRecord := NewUnscanRecord(height, "", "")
 				bs.SaveUnscanRecord(unscanRecord)
-				log.Std.Info("block height: %d extract failed.", height)
+				bs.wm.Log.Std.Info("block height: %d extract failed.", height)
 				failed++ //标记保存失败数
 			}
 			//累计完成的线程数
 			done++
 			if done == shouldDone {
-				//log.Std.Info("done = %d, shouldDone = %d ", done, len(txs))
+				//bs.wm.Log.Std.Info("done = %d, shouldDone = %d ", done, len(txs))
 				close(quit) //关闭通道，等于给通道传入nil
 			}
 		}
@@ -490,7 +489,7 @@ func (bs *VSYSBlockScanner) extractRuntime(producer chan ExtractResult, worker c
 			values = append(values, pa)
 		case <-quit:
 			//退出
-			//log.Std.Info("block scanner have been scanned!")
+			//bs.wm.Log.Std.Info("block scanner have been scanned!")
 			return
 		case activeWorker <- activeValue:
 			values = values[1:]
@@ -511,11 +510,11 @@ func (bs *VSYSBlockScanner) ExtractTransaction(blockHeight uint64, blockHash str
 		}
 	)
 
-	//log.Std.Debug("block scanner scanning tx: %s ...", txid)
+	//bs.wm.Log.Std.Debug("block scanner scanning tx: %s ...", txid)
 	trx, err := bs.wm.GetTransaction(txid)
 
 	if err != nil {
-		log.Std.Info("block scanner can not extract transaction data; unexpected error: %v", err)
+		bs.wm.Log.Std.Info("block scanner can not extract transaction data; unexpected error: %v", err)
 		result.Success = false
 		return result
 	}
@@ -655,12 +654,12 @@ func (bs *VSYSBlockScanner) newExtractDataNotify(height uint64, extractData map[
 		for key, data := range extractData {
 			err := o.BlockExtractDataNotify(key, data)
 			if err != nil {
-				log.Error("BlockExtractDataNotify unexpected error:", err)
+				bs.wm.Log.Error("BlockExtractDataNotify unexpected error:", err)
 				//记录未扫区块
 				unscanRecord := NewUnscanRecord(height, "", "ExtractData Notify failed.")
 				err = bs.SaveUnscanRecord(unscanRecord)
 				if err != nil {
-					log.Std.Error("block height: %d, save unscan record failed. unexpected error: %v", height, err.Error())
+					bs.wm.Log.Std.Error("block height: %d, save unscan record failed. unexpected error: %v", height, err.Error())
 				}
 
 			}
@@ -725,11 +724,11 @@ func (wm *WalletManager) DeleteUnscanRecordNotFindTX() error {
 //				unscanRecord := NewUnscanRecord(height, r.TxID, "save to wallet failed.")
 //				err = bs.SaveUnscanRecord(unscanRecord)
 //				if err != nil {
-//					log.Std.Error("block height: %d, txID: %s save unscan record failed. unexpected error: %v", height, r.TxID, err.Error())
+//					bs.wm.Log.Std.Error("block height: %d, txID: %s save unscan record failed. unexpected error: %v", height, r.TxID, err.Error())
 //				}
 //
 //			} else {
-//				log.Info("block scanner save blockHeight:", height, "txid:", r.TxID, "address:", r.Address, "successfully.")
+//				bs.wm.Log.Info("block scanner save blockHeight:", height, "txid:", r.TxID, "address:", r.Address, "successfully.")
 //			}
 //		} else {
 //			return errors.New("address in wallet is not found")
@@ -1183,7 +1182,7 @@ func (bs *VSYSBlockScanner) Restart() error {
 //setupSocketIO 配置socketIO监听新区块
 func (bs *VSYSBlockScanner) setupSocketIO() error {
 
-	log.Info("block scanner use socketIO to listen new data")
+	bs.wm.Log.Info("block scanner use socketIO to listen new data")
 
 	var (
 		room = "inv"
@@ -1209,13 +1208,13 @@ func (bs *VSYSBlockScanner) setupSocketIO() error {
 	}
 
 	err := bs.socketIO.On("tx", func(h *gosocketio.Channel, args interface{}) {
-		//log.Info("block scanner socketIO get new transaction received: ", args)
+		//bs.wm.Log.Info("block scanner socketIO get new transaction received: ", args)
 		txMap, ok := args.(map[string]interface{})
 		if ok {
 			txid := txMap["txid"].(string)
 			errInner := bs.BatchExtractTransaction(0, "", []string{txid})
 			if errInner != nil {
-				log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", errInner)
+				bs.wm.Log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", errInner)
 			}
 		}
 
@@ -1226,18 +1225,18 @@ func (bs *VSYSBlockScanner) setupSocketIO() error {
 
 	/*
 		err = bs.socketIO.On("block", func(h *gosocketio.Channel, args interface{}) {
-			log.Info("block scanner socketIO get new block received: ", args)
+			bs.wm.Log.Info("block scanner socketIO get new block received: ", args)
 			hash, ok := args.(string)
 			if ok {
 
 				block, errInner := bs.wm.GetBlock(hash)
 				if errInner != nil {
-					log.Std.Info("block scanner can not get new block data; unexpected error: %v", errInner)
+					bs.wm.Log.Std.Info("block scanner can not get new block data; unexpected error: %v", errInner)
 				}
 
 				errInner = bs.scanBlock(block)
 				if errInner != nil {
-					log.Std.Info("block scanner can not block: %d; unexpected error: %v", block.Height, errInner)
+					bs.wm.Log.Std.Info("block scanner can not block: %d; unexpected error: %v", block.Height, errInner)
 				}
 			}
 
@@ -1248,14 +1247,14 @@ func (bs *VSYSBlockScanner) setupSocketIO() error {
 	*/
 
 	err = bs.socketIO.On(gosocketio.OnDisconnection, func(h *gosocketio.Channel) {
-		log.Info("block scanner socketIO disconnected")
+		bs.wm.Log.Info("block scanner socketIO disconnected")
 	})
 	if err != nil {
 		return err
 	}
 
 	err = bs.socketIO.On(gosocketio.OnConnection, func(h *gosocketio.Channel) {
-		log.Info("block scanner socketIO connected")
+		bs.wm.Log.Info("block scanner socketIO connected")
 		h.Emit("subscribe", room)
 	})
 	if err != nil {

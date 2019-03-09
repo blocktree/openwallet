@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/blocktree/OpenWallet/log"
 	"github.com/imroc/req"
 )
 
@@ -57,14 +56,14 @@ func (wm *WalletManager) GetNowBlock() (block *Block, err error) {
 	currstamp := time.Now().UnixNano() / (1000 * 1000) // Unit: ms
 	timestamp := int64(block.Time)
 	if timestamp < currstamp-(5*1000) {
-		log.Warningf(fmt.Sprintf("Get block timestamp: %d [%+v]", timestamp, time.Unix(timestamp/1000, 0)))
-		log.Warningf(fmt.Sprintf("Current d timestamp: %d [%+v]", currstamp, time.Unix(currstamp/1000, 0)))
-		log.Warningf("Diff seconds: %ds ", (currstamp-timestamp)/1000)
+		wm.Log.Warningf(fmt.Sprintf("Get block timestamp: %d [%+v]", timestamp, time.Unix(timestamp/1000, 0)))
+		wm.Log.Warningf(fmt.Sprintf("Current d timestamp: %d [%+v]", currstamp, time.Unix(currstamp/1000, 0)))
+		wm.Log.Warningf("Diff seconds: %ds ", (currstamp-timestamp)/1000)
 	}
 	if timestamp < currstamp-(5*60*1000) {
-		log.Error(fmt.Sprintf("Get block timestamp: %d [%+v]", timestamp, time.Unix(timestamp/1000, 0)))
-		// log.Error(fmt.Sprintf("Current d timestamp: %d [%+v]", currstamp, time.Unix(currstamp/1000, 0)))
-		log.Error(fmt.Sprintf("Now block height: %d", block.GetHeight()))
+		wm.Log.Error(fmt.Sprintf("Get block timestamp: %d [%+v]", timestamp, time.Unix(timestamp/1000, 0)))
+		// wm.Log.Error(fmt.Sprintf("Current d timestamp: %d [%+v]", currstamp, time.Unix(currstamp/1000, 0)))
+		wm.Log.Error(fmt.Sprintf("Now block height: %d", block.GetHeight()))
 		return nil, errors.New("GetNowBlock returns with unsynced")
 	}
 
