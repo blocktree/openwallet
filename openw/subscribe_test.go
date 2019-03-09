@@ -489,7 +489,7 @@ func TestSubscribeAddress_TRON(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	scanner.SetRescanBlockHeight(7284969)
+	//scanner.SetRescanBlockHeight(7284969)
 
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")
