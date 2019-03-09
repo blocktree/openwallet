@@ -279,3 +279,86 @@ func TestSummary_TRX(t *testing.T) {
 	}
 
 }
+
+
+func TestSummary_QTUM(t *testing.T) {
+	tm := testInitWalletManager()
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "HyKAYbaLKXXa1U8YNsseP78YHGqB4vzSzJkKp8x4A7CC"
+	summaryAddress := "Qf6t5Ww14ZWVbG3kpXKoTt4gXeKNVxM9QJ"
+
+	testGetAssetsAccountBalance(tm, walletID, accountID)
+
+	rawTxArray, err := testCreateSummaryTransactionStep(tm, walletID, accountID,
+		summaryAddress, "0.1", "", "0.01",
+		0, 100, nil)
+	if err != nil {
+		log.Errorf("CreateSummaryTransaction failed, unexpected error: %v", err)
+		return
+	}
+
+	//执行汇总交易
+	for _, rawTx := range rawTxArray {
+		_, err = testSignTransactionStep(tm, rawTx)
+		if err != nil {
+			return
+		}
+
+		_, err = testVerifyTransactionStep(tm, rawTx)
+		if err != nil {
+			return
+		}
+
+		_, err = testSubmitTransactionStep(tm, rawTx)
+		if err != nil {
+			return
+		}
+	}
+
+}
+
+func TestSummary_QRC20(t *testing.T) {
+	tm := testInitWalletManager()
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "2by6wzbzw7cnWkxiA31xMHpFmE99bqL3BnjkUJnJtEN6"
+	summaryAddress := "QY6uTWbterFaqX7aNuMHm8ui6afkxrRV7Q"
+
+	contract := openwallet.SmartContract{
+		Address:  "f2033ede578e17fa6231047265010445bca8cf1c",
+		Symbol:   "QTUM",
+		Name:     "QCASH",
+		Token:    "QC",
+		Decimals: 8,
+	}
+
+	testGetAssetsAccountBalance(tm, walletID, accountID)
+
+	testGetAssetsAccountTokenBalance(tm, walletID, accountID, contract)
+
+	rawTxArray, err := testCreateSummaryTransactionStep(tm, walletID, accountID,
+		summaryAddress, "", "", "0.01",
+		0, 100, &contract)
+	if err != nil {
+		log.Errorf("CreateSummaryTransaction failed, unexpected error: %v", err)
+		return
+	}
+
+	//执行汇总交易
+	for _, rawTx := range rawTxArray {
+		_, err = testSignTransactionStep(tm, rawTx)
+		if err != nil {
+			return
+		}
+
+		_, err = testVerifyTransactionStep(tm, rawTx)
+		if err != nil {
+			return
+		}
+
+		_, err = testSubmitTransactionStep(tm, rawTx)
+		if err != nil {
+			return
+		}
+	}
+
+}

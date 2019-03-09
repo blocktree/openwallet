@@ -1449,22 +1449,25 @@ func (wm *WalletManager) DeleteUnscanRecord(height uint64) error {
 //GetAssetsAccountBalanceByAddress 查询账户相关地址的交易记录
 func (bs *BTCBlockScanner) GetBalanceByAddress(address ...string) ([]*openwallet.Balance, error) {
 
-	if bs.wm.config.RPCServerType != RPCServerExplorer {
-		return nil, nil
-	}
+	//if bs.wm.config.RPCServerType != RPCServerExplorer {
+	//	return nil, nil
+	//}
+	//
+	//addrsBalance := make([]*openwallet.Balance, 0)
+	//
+	//for _, a := range address {
+	//	balance, err := bs.wm.getBalanceByExplorer(a)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	addrsBalance = append(addrsBalance, balance)
+	//}
+	//
+	//return addrsBalance, nil
 
-	addrsBalance := make([]*openwallet.Balance, 0)
 
-	for _, a := range address {
-		balance, err := bs.wm.getBalanceByExplorer(a)
-		if err != nil {
-			return nil, err
-		}
-
-		addrsBalance = append(addrsBalance, balance)
-	}
-
-	return addrsBalance, nil
+	return bs.wm.getBalanceCalUnspentByExplorer(address...)
 }
 
 //GetAssetsAccountTransactionsByAddress 查询账户相关地址的交易记录

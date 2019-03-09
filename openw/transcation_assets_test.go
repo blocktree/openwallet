@@ -240,14 +240,17 @@ func TestTransfer_LTC(t *testing.T) {
 
 func TestTransfer_QTUM(t *testing.T) {
 	tm := testInitWalletManager()
-	//Qf6t5Ww14ZWVbG3kpXKoTt4gXeKNVxM9QJ
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "2by6wzbzw7cnWkxiA31xMHpFmE99bqL3BnjkUJnJtEN6"
-	to := "QfY78pcvLTYrU8YLvCSpb2bKDXrW3Lk6g3"
+	to := "QY6uTWbterFaqX7aNuMHm8ui6afkxrRV7Q"
+
+	//mainnetQTUM
+	//accountID := "HyKAYbaLKXXa1U8YNsseP78YHGqB4vzSzJkKp8x4A7CC"
+	//to := "Qf6t5Ww14ZWVbG3kpXKoTt4gXeKNVxM9QJ"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.01", "", nil)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.15", "0.01", nil)
 	if err != nil {
 		return
 	}
@@ -273,7 +276,11 @@ func TestTransfer_QRC20(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "2by6wzbzw7cnWkxiA31xMHpFmE99bqL3BnjkUJnJtEN6"
-	to := "QfY78pcvLTYrU8YLvCSpb2bKDXrW3Lk6g3"
+	to := "QY6uTWbterFaqX7aNuMHm8ui6afkxrRV7Q"
+
+	//mainnetQTUM
+	//accountID := "HyKAYbaLKXXa1U8YNsseP78YHGqB4vzSzJkKp8x4A7CC"
+	//to := "QfY78pcvLTYrU8YLvCSpb2bKDXrW3Lk6g3"
 
 	contract := openwallet.SmartContract{
 		Address:  "f2033ede578e17fa6231047265010445bca8cf1c",
@@ -287,7 +294,7 @@ func TestTransfer_QRC20(t *testing.T) {
 
 	testGetAssetsAccountTokenBalance(tm, walletID, accountID, contract)
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.01", "", &contract)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.01", "0.01", &contract)
 	if err != nil {
 		return
 	}

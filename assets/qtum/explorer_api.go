@@ -517,6 +517,76 @@ func newBalanceByExplorer(json *gjson.Result) *openwallet.Balance {
 	return &obj
 }
 
+
+//getBalanceByExplorer 获取地址余额
+func (wm *WalletManager) getBalanceCalUnspentByExplorer(address ...string) ([]*openwallet.Balance, error) {
+
+	utxos, err := wm.listUnspentByExplorer(address...)
+	if err != nil {
+		return nil, err
+	}
+
+	addrBalanceMap := wm.calculateUnspentByExplorer(utxos)
+	addrBalanceArr := make([]*openwallet.Balance, 0)
+	for _, a := range address {
+
+		var obj *openwallet.Balance
+		if b, exist := addrBalanceMap[a]; exist {
+			obj = b
+		} else {
+			obj = &openwallet.Balance{
+				Symbol:           wm.Symbol(),
+				Address:          a,
+				Balance:          "0",
+				UnconfirmBalance: "0",
+				ConfirmBalance:   "0",
+			}
+		}
+
+		addrBalanceArr = append(addrBalanceArr, obj)
+	}
+
+	return addrBalanceArr, nil
+}
+
+//calculateUnspentByExplorer 通过未花计算余额
+func (wm *WalletManager) calculateUnspentByExplorer(utxos []*Unspent) map[string]*openwallet.Balance {
+
+	addrBalanceMap := make(map[string]*openwallet.Balance)
+
+	for _, utxo := range utxos {
+
+		obj, exist := addrBalanceMap[utxo.Address]
+		if !exist {
+			obj = &openwallet.Balance{}
+		}
+
+		tu, _ := decimal.NewFromString(obj.UnconfirmBalance)
+		tb, _ := decimal.NewFromString(obj.ConfirmBalance)
+
+		if utxo.Spendable {
+			if utxo.Confirmations > 0 {
+				b, _ := decimal.NewFromString(utxo.Amount)
+				tb = tb.Add(b)
+			} else {
+				u, _ := decimal.NewFromString(utxo.Amount)
+				tu = tu.Add(u)
+			}
+		}
+
+		obj.Symbol = wm.Symbol()
+		obj.Address = utxo.Address
+		obj.ConfirmBalance = tb.String()
+		obj.UnconfirmBalance = tu.String()
+		obj.Balance = tb.Add(tu).String()
+
+		addrBalanceMap[utxo.Address] = obj
+	}
+
+	return addrBalanceMap
+
+}
+
 //getMultiAddrTransactionsByExplorer 获取多个地址的交易单数组
 func (wm *WalletManager) getMultiAddrTransactionsByExplorer(offset, limit int, address ...string) ([]*Transaction, error) {
 
