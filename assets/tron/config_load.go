@@ -64,11 +64,11 @@ func (wm *WalletManager) LoadConfig() error {
 func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 
 	//读取配置
-	absFile := filepath.Join(wm.Config.configFilePath, wm.Config.configFileName)
-	c, err := config.NewConfig("ini", absFile)
-	if err != nil {
-		return errors.New("Config is not setup. Please run 'wmd Config -s <symbol>' ")
-	}
+	//absFile := filepath.Join(wm.Config.configFilePath, wm.Config.configFileName)
+	//c, err := config.NewConfig("ini", absFile)
+	//if err != nil {
+	//	return errors.New("Config is not setup. Please run 'wmd Config -s <symbol>' ")
+	//}
 	wm.Config.ServerAPI = c.String("serverAPI")
 	wm.Config.Threshold, _ = decimal.NewFromString(c.String("threshold"))
 	wm.Config.SumAddress = c.String("sumAddress")

@@ -44,7 +44,6 @@ func NewTransactionDecoder(wm *WalletManager) *TransactionDecoder {
 	return &decoder
 }
 
-
 //CreateRawTransaction 创建交易单
 func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 	if rawTx.Coin.IsContract {
@@ -225,7 +224,6 @@ func (decoder *TransactionDecoder) CreateSimpleRawTransaction(wrapper openwallet
 	return nil
 }
 
-
 //CreateSimpleSummaryRawTransaction 创建主币汇总交易
 func (decoder *TransactionDecoder) CreateSimpleSummaryRawTransaction(wrapper openwallet.WalletDAI, sumRawTx *openwallet.SummaryRawTransaction) ([]*openwallet.RawTransaction, error) {
 
@@ -379,7 +377,7 @@ func (decoder *TransactionDecoder) CreateSimpleSummaryRawTransaction(wrapper ope
 func (decoder *TransactionDecoder) CreateQRC20RawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	var (
-		outputAddrs     = make(map[string]string)
+		outputAddrs      = make(map[string]string)
 		tokenOutputAddrs = make(map[string]string)
 
 		toAddress string
@@ -654,7 +652,7 @@ func (decoder *TransactionDecoder) CreateQRC20SummaryRawTransaction(wrapper open
 		retainedBalance, _ = decimal.NewFromString(sumRawTx.RetainedBalance)
 		rawTxArray         = make([]*openwallet.RawTransaction, 0)
 		outputAddrs        map[string]string
-		tokenOutputAddrs    map[string]string
+		tokenOutputAddrs   map[string]string
 	)
 
 	if len(sumRawTx.Coin.Contract.Address) == 0 {
@@ -726,8 +724,12 @@ func (decoder *TransactionDecoder) CreateQRC20SummaryRawTransaction(wrapper open
 		//合计地址主币余额
 		addrBalance := decimal.Zero
 		for _, u := range unspents {
-			ua, _ := decimal.NewFromString(u.Amount)
-			addrBalance = addrBalance.Add(ua)
+
+			if u.Spendable {
+				ua, _ := decimal.NewFromString(u.Amount)
+				addrBalance = addrBalance.Add(ua)
+			}
+
 		}
 		//decoder.wm.Log.Debug("addrBalance:", addrBalance)
 		//计算手续费，构建交易单inputs，输出2个，1个为目标地址，1个为OP_CALL
@@ -802,15 +804,15 @@ func (decoder *TransactionDecoder) CreateRawTransaction__deprecated(wrapper open
 		usedUTXO []*Unspent
 		balance  = decimal.New(0, 0)
 		//totalSend  = amounts
-		totalSend    = decimal.New(0, 0)
-		actualFees   = decimal.New(0, 0)
-		feesRate     = decimal.New(0, 0)
-		accountID    = rawTx.Account.AccountID
-		destinations = make([]string, 0)
+		totalSend         = decimal.New(0, 0)
+		actualFees        = decimal.New(0, 0)
+		feesRate          = decimal.New(0, 0)
+		accountID         = rawTx.Account.AccountID
+		destinations      = make([]string, 0)
 		DEFAULT_GAS_LIMIT = "250000"
 		DEFAULT_GAS_PRICE = decimal.New(4, -7)
 
-		coinDecimal = int32(0)
+		coinDecimal      = int32(0)
 		accountTotalSent = decimal.Zero
 		txFrom           = make([]string, 0)
 		txTo             = make([]string, 0)
@@ -845,8 +847,6 @@ func (decoder *TransactionDecoder) CreateRawTransaction__deprecated(wrapper open
 	if err != nil {
 		return err
 	}
-
-
 
 	if len(rawTx.To) == 0 {
 		return errors.New("Receiver addresses is empty!")
@@ -904,18 +904,17 @@ func (decoder *TransactionDecoder) CreateRawTransaction__deprecated(wrapper open
 	if rawTx.Coin.IsContract {
 
 		var (
-			to             string
-		    amount         string
-		    txInTotal      uint64
-			deAmount       decimal.Decimal
-			sendAmount     decimal.Decimal
-			totalQtum      decimal.Decimal
-			unspent        decimal.Decimal
-			change         uint64
-			contractFees   decimal.Decimal
-			gasPrice       string
+			to           string
+			amount       string
+			txInTotal    uint64
+			deAmount     decimal.Decimal
+			sendAmount   decimal.Decimal
+			totalQtum    decimal.Decimal
+			unspent      decimal.Decimal
+			change       uint64
+			contractFees decimal.Decimal
+			gasPrice     string
 		)
-
 
 		trimContractAddr := strings.TrimPrefix(rawTx.Coin.Contract.Address, "0x")
 
@@ -928,7 +927,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction__deprecated(wrapper open
 			feesRate, _ = decimal.NewFromString(rawTx.FeeRate)
 		}
 
-		decoder.wm.Log.Debugf("feesRate:%v",feesRate)
+		decoder.wm.Log.Debugf("feesRate:%v", feesRate)
 
 		usedTokenUTXO := make([]*Unspent, 0)
 		unspent = decimal.New(0, 0)
@@ -977,15 +976,14 @@ func (decoder *TransactionDecoder) CreateRawTransaction__deprecated(wrapper open
 			//计算用于支付手续费的UTXO
 			for _, u := range unspents {
 
-				if u.Spendable && u.TxID != usedTokenUTXO[0].TxID{
+				if u.Spendable && u.TxID != usedTokenUTXO[0].TxID {
 
-					if totalQtum.GreaterThanOrEqual(computeTotalfee){
+					if totalQtum.GreaterThanOrEqual(computeTotalfee) {
 						break
 					}
 					ua, _ := decimal.NewFromString(u.Amount)
 					totalQtum = totalQtum.Add(ua)
 					usedUTXO = append(usedUTXO, u)
-
 
 				}
 			}
@@ -1007,7 +1005,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction__deprecated(wrapper open
 			//如果要手续费有发送支付，得计算加入手续费后，计算余额是否足够
 			//总共要发送的
 			computeTotalfee = contractFees
-			decoder.wm.Log.Debugf("computeTotalfee:%v, totalQtum:%v",computeTotalfee,totalQtum)
+			decoder.wm.Log.Debugf("computeTotalfee:%v, totalQtum:%v", computeTotalfee, totalQtum)
 			if computeTotalfee.GreaterThan(totalQtum) {
 				continue
 			}
@@ -1047,7 +1045,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction__deprecated(wrapper open
 
 		if txInTotal >= uint64(actualFees.IntPart()) {
 			change = txInTotal - uint64(actualFees.IntPart())
-		}else {
+		} else {
 			return fmt.Errorf("The fees(Qtum): %s is not enough! ", totalQtum.StringFixed(decoder.wm.Decimal()))
 		}
 
@@ -1062,7 +1060,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction__deprecated(wrapper open
 			txTo = []string{fmt.Sprintf("%s:%s", to, amount)}
 		}
 
-		if len(vouts)!= 1 {
+		if len(vouts) != 1 {
 			return errors.New("error: the number of change addresses must be equal to one. ")
 		}
 
@@ -1084,7 +1082,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction__deprecated(wrapper open
 			//decoder.wm.Log.Error("构建空交易单失败")
 		}
 
-	}else {
+	} else {
 
 		if len(rawTx.FeeRate) == 0 {
 			feesRate, err = decoder.wm.EstimateFeeRate()
@@ -1156,10 +1154,8 @@ func (decoder *TransactionDecoder) CreateRawTransaction__deprecated(wrapper open
 			return errors.New(errStr)
 		}
 
-
 		//取账户最后一个地址
 		changeAddress := usedUTXO[0].Address
-
 
 		decoder.wm.Log.Std.Notice("-----------------------------------------------")
 		decoder.wm.Log.Std.Notice("From Account: %s", accountID)
@@ -1266,10 +1262,10 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletD
 	//}
 
 	var (
-		txUnlocks  = make([]btcLikeTxDriver.TxUnlock, 0)
-		emptyTrans = rawTx.RawHex
-		transHash  = make([]string, 0)
-		sigPub     = make([]btcLikeTxDriver.SignaturePubkey, 0)
+		txUnlocks   = make([]btcLikeTxDriver.TxUnlock, 0)
+		emptyTrans  = rawTx.RawHex
+		transHash   = make([]string, 0)
+		sigPub      = make([]btcLikeTxDriver.SignaturePubkey, 0)
 		privateKeys = make([][]byte, 0)
 	)
 
@@ -1321,7 +1317,6 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletD
 			PrivateKey: keyBytes,
 		}
 		txUnlocks = append(txUnlocks, txUnlock)
-
 
 	}
 
@@ -1512,7 +1507,6 @@ func (decoder *TransactionDecoder) GetRawTransactionFeeRate() (feeRate string, u
 	return rate.StringFixed(decoder.wm.Decimal()), "K", nil
 }
 
-
 //createSimpleRawTransaction 创建原始交易单
 func (decoder *TransactionDecoder) createSimpleRawTransaction(
 	wrapper openwallet.WalletDAI,
@@ -1645,7 +1639,6 @@ func (decoder *TransactionDecoder) createSimpleRawTransaction(
 	return nil
 }
 
-
 //createQRC20RawTransaction 创建QRC20原始交易单
 func (decoder *TransactionDecoder) createQRC2ORawTransaction(
 	wrapper openwallet.WalletDAI,
@@ -1657,7 +1650,7 @@ func (decoder *TransactionDecoder) createQRC2ORawTransaction(
 
 	var (
 		err              error
-		to string
+		to               string
 		vins             = make([]btcLikeTxDriver.Vin, 0)
 		vouts            = make([]btcLikeTxDriver.Vout, 0)
 		txUnlocks        = make([]btcLikeTxDriver.TxUnlock, 0)
