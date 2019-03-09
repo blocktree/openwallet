@@ -647,8 +647,8 @@ func (wm *WalletManager) InitAssetsConfig() (config.Configer, error) {
 
 //GetAssetsLogger 获取资产账户日志工具
 func (wm *WalletManager) GetAssetsLogger() *log.OWLogger {
-	return nil
-	//return wm.Log
+	//return nil
+	return wm.Log
 }
 
 // GetSmartContractDecoder 获取智能合约解析器

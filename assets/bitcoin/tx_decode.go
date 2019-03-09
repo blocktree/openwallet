@@ -138,7 +138,7 @@ func (decoder *TransactionDecoder) CreateBTCRawTransaction(wrapper openwallet.Wa
 		feesRate         = decimal.New(0, 0)
 		accountID        = rawTx.Account.AccountID
 		destinations     = make([]string, 0)
-		accountTotalSent = decimal.Zero
+		//accountTotalSent = decimal.Zero
 	)
 
 	address, err := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID)
@@ -175,11 +175,11 @@ func (decoder *TransactionDecoder) CreateBTCRawTransaction(wrapper openwallet.Wa
 		totalSend = totalSend.Add(deamount)
 		destinations = append(destinations, addr)
 		//计算账户的实际转账amount
-		addresses, findErr := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID, "Address", addr)
-		if findErr != nil || len(addresses) == 0 {
-			amountDec, _ := decimal.NewFromString(amount)
-			accountTotalSent = accountTotalSent.Add(amountDec)
-		}
+		//addresses, findErr := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID, "Address", addr)
+		//if findErr != nil || len(addresses) == 0 {
+		//	amountDec, _ := decimal.NewFromString(amount)
+		//	accountTotalSent = accountTotalSent.Add(amountDec)
+		//}
 	}
 
 	//获取utxo，按小到大排序
@@ -497,7 +497,7 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 		feesRate          = decimal.New(0, 0)
 		accountID         = rawTx.Account.AccountID
 
-		accountTotalSent = decimal.Zero
+		//accountTotalSent = decimal.Zero
 		//txFrom           = make([]string, 0)
 		//txTo             = make([]string, 0)
 	)
@@ -541,10 +541,10 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 		toAmount, _ = decimal.NewFromString(amount)
 
 		//计算账户的实际转账amount
-		addresses, findErr := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID, "Address", to)
-		if findErr != nil || len(addresses) == 0 {
-			accountTotalSent = accountTotalSent.Add(toAmount)
-		}
+		//addresses, findErr := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID, "Address", to)
+		//if findErr != nil || len(addresses) == 0 {
+		//	accountTotalSent = accountTotalSent.Add(toAmount)
+		//}
 	}
 
 	/*
@@ -1136,7 +1136,7 @@ func (decoder *TransactionDecoder) createBTCRawTransaction(
 	//装配输入
 	for to, amount := range to {
 		deamount, _ := decimal.NewFromString(amount)
-		deamount = deamount.Mul(decoder.wm.Config.CoinDecimal)
+		deamount = deamount.Shift(decoder.wm.Decimal())
 		out := btcTransaction.Vout{to, uint64(deamount.IntPart())}
 		vouts = append(vouts, out)
 
