@@ -590,8 +590,13 @@ func (bs *NASBlockScanner) extractTxInput(tx *NasTransaction, txExtractData *ope
 }
 
 func (bs *NASBlockScanner) InitNasExtractResult(tx *NasTransaction, result *ExtractResult, isFromAccount bool) {
+
+	txExtractData := result.extractData[tx.SourceKey]
+	if txExtractData == nil {
+		txExtractData = &openwallet.TxExtractData{}
+	}
+
 	amount := tx.Value.Div(coinDecimal).StringFixed(bs.wm.Decimal())
-	txExtractData := &openwallet.TxExtractData{}
 	transx := &openwallet.Transaction{
 		Fees: decimal.RequireFromString(tx.Gas_used).Mul(decimal.RequireFromString(tx.Gas_price)).Div(coinDecimal).StringFixed(bs.wm.Decimal()),
 		Coin: openwallet.Coin{
@@ -605,6 +610,13 @@ func (bs *NASBlockScanner) InitNasExtractResult(tx *NasTransaction, result *Extr
 		Amount:      amount,
 		ConfirmTime: int64(tx.BlockTime),
 	}
+
+	if tx.Status == 1 {
+		transx.Status = "1"
+	} else {
+		transx.Status = "0"
+	}
+
 	submitTime, _ := strconv.ParseInt(tx.Timestamp, 10, 64)
 	transx.SubmitTime = submitTime
 	transx.From = append(transx.From, tx.From+":"+amount)
@@ -615,11 +627,10 @@ func (bs *NASBlockScanner) InitNasExtractResult(tx *NasTransaction, result *Extr
 
 	if isFromAccount {
 		bs.extractTxInput(tx, txExtractData)
-		result.extractData[tx.FromAccountId] = txExtractData
 	} else {
 		bs.extractTxOutput(tx, txExtractData)
-		result.extractData[tx.ToAccountId] = txExtractData
 	}
+	result.extractData[tx.SourceKey] = txExtractData
 }
 
 /*func (bs *NASBlockScanner) InitNasExtractResult(tx *NasTransaction, result *ExtractResult,isFromAccount bool) {
@@ -712,33 +723,15 @@ func (bs *NASBlockScanner) ExtractTransaction(blockHeight uint64, blockHash stri
 	} else {
 		//bs.wm.Log.Std.Info("block scanner scanning tx: %+v", txid)
 		//订阅地址为交易单中的发送者
-		if _, ok := scanAddressFunc(tx_nas.From); ok {
-			bs.wm.Log.Std.Info("tx.from found in transaction [%v] .", tx_nas.Hash)
-			if accountId, exist := scanAddressFunc(tx_nas.From); exist {
-				tx_nas.FromAccountId = accountId
-				bs.InitNasExtractResult(tx_nas, &result, true)
-			} else {
-				bs.wm.Log.Std.Info("tx.from unexpected error.")
-			}
-		} else {
-			//bs.wm.Log.Std.Info("tx.from[%v] not found in scanning address.", tx_nas.From)
+		if accountId, exist := scanAddressFunc(tx_nas.From); exist {
+			tx_nas.SourceKey = accountId
+			bs.InitNasExtractResult(tx_nas, &result, true)
 		}
 
 		//订阅地址为交易单中的接收者
-		if _, ok2 := scanAddressFunc(tx_nas.To); ok2 {
-			bs.wm.Log.Std.Info("tx.to found in transaction [%v].", tx_nas.Hash)
-			if accountId, exist := scanAddressFunc(tx_nas.To); exist {
-				if _, exist = result.extractData[accountId]; !exist {
-					tx_nas.ToAccountId = accountId
-					bs.InitNasExtractResult(tx_nas, &result, false)
-				}
-
-			} else {
-				bs.wm.Log.Std.Info("tx.to unexpected error.")
-			}
-
-		} else if len(result.extractData) == 0 {
-			//bs.wm.Log.Std.Info("tx.to[%v] not found in scanning address.", tx_nas.To)
+		if accountId, exist := scanAddressFunc(tx_nas.To); exist {
+			tx_nas.SourceKey = accountId
+			bs.InitNasExtractResult(tx_nas, &result, false)
 		}
 		success = true
 	}
