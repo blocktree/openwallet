@@ -345,8 +345,8 @@ func TestSubscribeAddress_NAS(t *testing.T) {
 		symbol     = "NAS"
 		accountID  = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
 		addrs      = map[string]string{
-			"n1cT1JhXUQFxDSyBYwcn3ZBmd93nin5yrfB": accountID, //主链转账
-			"n1J6e6RhZXuG1RpbcMYeeUShAo1e3QsJTXb": accountID, //主链转账
+			"n1UGtQTvBJtTNPSmkWFhN4W9gScsx8etXX7": accountID, //主链转账
+			"n1JjXv57Cztbfsyf6UwcwPxWNQm2ejd7vFu": "jksdljflsf", //主链转账
 		}
 	)
 
@@ -376,7 +376,7 @@ func TestSubscribeAddress_NAS(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	scanner.SetRescanBlockHeight(1958382)
+	scanner.SetRescanBlockHeight(1972169)
 
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")

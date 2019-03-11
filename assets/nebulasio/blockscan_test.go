@@ -53,7 +53,7 @@ func TestSaveLocalBlockHeight(t *testing.T) {
 }
 
 func TestGetTransaction(t *testing.T) {
-	raw, err := wm.GetTransaction("908cd40e34795ef8fb898eb322dbbaf8eb12ce72ba65b7cfa353d07b3c70f5e8",1222)
+	raw, err := wm.GetTransaction("36319dafe14641c59f0681f57e048561e34cbefe20ad3640c6d95f4a61cce87d",1222)
 	if err != nil {
 		t.Errorf("GetTransaction failed unexpected error: %v\n", err)
 		return
