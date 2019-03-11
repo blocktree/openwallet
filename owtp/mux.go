@@ -33,7 +33,7 @@ const (
 )
 
 const (
-	DefaultTimoutSEC = 20
+	DefaultTimoutSEC = 60
 )
 
 var (
