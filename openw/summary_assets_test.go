@@ -290,7 +290,7 @@ func TestSummary_QTUM(t *testing.T) {
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
 	rawTxArray, err := testCreateSummaryTransactionStep(tm, walletID, accountID,
-		summaryAddress, "0.1", "", "0.01",
+		summaryAddress, "", "", "0.01",
 		0, 100, nil)
 	if err != nil {
 		log.Errorf("CreateSummaryTransaction failed, unexpected error: %v", err)
@@ -320,8 +320,8 @@ func TestSummary_QTUM(t *testing.T) {
 func TestSummary_QRC20(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
-	accountID := "2by6wzbzw7cnWkxiA31xMHpFmE99bqL3BnjkUJnJtEN6"
-	summaryAddress := "QY6uTWbterFaqX7aNuMHm8ui6afkxrRV7Q"
+	accountID := "HyKAYbaLKXXa1U8YNsseP78YHGqB4vzSzJkKp8x4A7CC"
+	summaryAddress := "Qf6t5Ww14ZWVbG3kpXKoTt4gXeKNVxM9QJ"
 
 	contract := openwallet.SmartContract{
 		Address:  "f2033ede578e17fa6231047265010445bca8cf1c",

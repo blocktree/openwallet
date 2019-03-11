@@ -299,10 +299,16 @@ func (decoder *TransactionDecoder) CreateSimpleSummaryRawTransaction(wrapper ope
 
 		//尽可能筹够最大input数
 		if len(unspents)+len(sumUnspents) < decoder.wm.config.maxTxInputs {
-			sumUnspents = append(sumUnspents, unspents...)
-			if retainedBalance.GreaterThan(decimal.Zero) {
-				outputAddrs[addr] = retainedBalance.StringFixed(decoder.wm.Decimal())
+
+			for _, u := range unspents {
+				if u.Spendable {
+					sumUnspents = append(sumUnspents, u)
+					if retainedBalance.GreaterThan(decimal.Zero) {
+						outputAddrs[addr] = retainedBalance.StringFixed(decoder.wm.Decimal())
+					}
+				}
 			}
+
 			//decoder.wm.Log.Debugf("sumUnspents: %+v", sumUnspents)
 		}
 
@@ -319,10 +325,8 @@ func (decoder *TransactionDecoder) CreateSimpleSummaryRawTransaction(wrapper ope
 			//计算这笔交易单的汇总数量
 			for _, u := range sumUnspents {
 
-				if u.Spendable {
-					ua, _ := decimal.NewFromString(u.Amount)
-					totalInputAmount = totalInputAmount.Add(ua)
-				}
+				ua, _ := decimal.NewFromString(u.Amount)
+				totalInputAmount = totalInputAmount.Add(ua)
 			}
 
 			/*
@@ -629,7 +633,7 @@ func (decoder *TransactionDecoder) CreateQRC20RawTransaction(wrapper openwallet.
 
 	//changeAmount := balance.Sub(totalSend).Sub(actualFees)
 	if changeAmount.GreaterThan(decimal.Zero) {
-		outputAddrs[toAddress] = changeAmount.StringFixed(decoder.wm.Decimal())
+		outputAddrs[changeAddress] = changeAmount.StringFixed(decoder.wm.Decimal())
 	}
 
 	tokenOutputAddrs[toAddress] = toAmount.StringFixed(tokenDecimals)
@@ -651,6 +655,7 @@ func (decoder *TransactionDecoder) CreateQRC20SummaryRawTransaction(wrapper open
 		minTransfer, _     = decimal.NewFromString(sumRawTx.MinTransfer)
 		retainedBalance, _ = decimal.NewFromString(sumRawTx.RetainedBalance)
 		rawTxArray         = make([]*openwallet.RawTransaction, 0)
+		sumUnspents        []*Unspent
 		outputAddrs        map[string]string
 		tokenOutputAddrs   map[string]string
 	)
@@ -701,6 +706,8 @@ func (decoder *TransactionDecoder) CreateQRC20SummaryRawTransaction(wrapper open
 
 	for _, address := range address {
 
+		sumUnspents = make([]*Unspent, 0)
+
 		//清空临时变量
 		outputAddrs = make(map[string]string, 0)
 		tokenOutputAddrs = make(map[string]string, 0)
@@ -728,12 +735,13 @@ func (decoder *TransactionDecoder) CreateQRC20SummaryRawTransaction(wrapper open
 			if u.Spendable {
 				ua, _ := decimal.NewFromString(u.Amount)
 				addrBalance = addrBalance.Add(ua)
+				sumUnspents = append(sumUnspents, u)
 			}
 
 		}
 		//decoder.wm.Log.Debug("addrBalance:", addrBalance)
 		//计算手续费，构建交易单inputs，输出2个，1个为目标地址，1个为OP_CALL
-		fees, createErr := decoder.wm.EstimateFee(int64(len(unspents)), 2, feesRate)
+		fees, createErr := decoder.wm.EstimateFee(int64(len(sumUnspents)), 2, feesRate)
 		if createErr != nil {
 			return nil, createErr
 		}
@@ -774,7 +782,7 @@ func (decoder *TransactionDecoder) CreateQRC20SummaryRawTransaction(wrapper open
 			Required: 1,
 		}
 
-		createErr = decoder.createQRC2ORawTransaction(wrapper, rawTx, unspents, outputAddrs, tokenOutputAddrs)
+		createErr = decoder.createQRC2ORawTransaction(wrapper, rawTx, sumUnspents, outputAddrs, tokenOutputAddrs)
 		if createErr != nil {
 			return nil, createErr
 		}
@@ -1710,10 +1718,10 @@ func (decoder *TransactionDecoder) createQRC2ORawTransaction(
 	}
 
 	//装配输入
-	for to, amount := range coinTo {
+	for outAddr, amount := range coinTo {
 		deamount, _ := decimal.NewFromString(amount)
 		deamount = deamount.Mul(decimal.New(1, tokenDecimals))
-		out := btcLikeTxDriver.Vout{to, uint64(deamount.IntPart())}
+		out := btcLikeTxDriver.Vout{outAddr, uint64(deamount.IntPart())}
 		vouts = append(vouts, out)
 
 		//txTo = append(txTo, fmt.Sprintf("%s:%s", to, amount))
