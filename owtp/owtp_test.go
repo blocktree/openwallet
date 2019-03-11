@@ -31,7 +31,7 @@ var (
 )
 
 func init() {
-	Debug = true
+	Debug = false
 }
 
 func getInfo(ctx *Context) {

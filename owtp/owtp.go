@@ -219,7 +219,7 @@ func NewOWTPNode(cert Certificate, readBufferSize, writeBufferSize int) *OWTPNod
 
 	node := &OWTPNode{}
 	node.nonceGen, _ = snowflake.NewNode(1)
-	node.serveMux = NewServeMux(120)
+	node.serveMux = NewServeMux(DefaultTimoutSEC)
 	node.cert = cert
 	node.peerstore = NewOWTPPeerstore()
 	//node.ReadBufferSize = readBufferSize
@@ -344,9 +344,10 @@ func (node *OWTPNode) connect(pid string, config ConnectConfig) (Peer, error) {
 
 	//检查是否已经连接服务
 	peer = node.GetOnlinePeer(pid)
-	if peer != nil && peer.IsConnected() {
+	if peer != nil && peer.IsConnected() && peer.ConnectConfig().Address != "" {
 		//如果地址不一致，先关闭节点
 		if addr != peer.ConnectConfig().Address || connectType != peer.ConnectConfig().ConnectType {
+			//fmt.Printf("如果地址不一致，先关闭节点 ClosePeer, %s:%s \n",addr,peer.ConnectConfig().Address)
 			node.ClosePeer(pid)
 		} else {
 			//log.Debugf("peer[%s] has connected", peer.PID())
@@ -538,7 +539,7 @@ func (node *OWTPNode) Close() {
 	for _, listener := range node.listeners {
 		listener.Close()
 	}
-
+	//fmt.Printf("node close: %s\n", node.NodeID())
 	//中断所有客户端连接
 	for _, peer := range node.OnlinePeers() {
 		peer.close()
@@ -644,7 +645,7 @@ func (node *OWTPNode) Call(
 	}
 
 	//如果开启了协商密码，添加协商密码参数
-	if peer.auth().EnableKeyAgreement() {
+	if peer.auth() != nil && peer.auth().EnableKeyAgreement() {
 		value := node.Peerstore().Get(peer.PID(), keyAgreementCipher)
 		if value == nil {
 			return fmt.Errorf("keyAgreement is enabled, but cipher is empty")
@@ -669,7 +670,7 @@ func (node *OWTPNode) Call(
 		}
 	}
 
-	if !peer.auth().GenerateSignature(&packet) {
+	if peer.auth() != nil && !peer.auth().GenerateSignature(&packet) {
 		return errors.New("OWTP: authorization failed")
 	}
 

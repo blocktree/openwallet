@@ -287,7 +287,9 @@ func (mux *ServeMux) AddRequest(peer Peer, nonce uint64, time int64, method stri
 //RemoveRequest 移除请求
 func (mux *ServeMux) RemoveRequest(pid string, nonce uint64) error {
 
+	mux.mu.RLock()
 	requestQueue := mux.peerRequest[pid]
+	mux.mu.RUnlock()
 
 	if requestQueue == nil {
 		return nil

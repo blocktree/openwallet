@@ -16,15 +16,14 @@
 package qtum
 
 import (
-	"github.com/blocktree/go-owcdrivers/addressEncoder"
-	"fmt"
 	"encoding/hex"
-	"strconv"
-	"github.com/shopspring/decimal"
-	"github.com/blocktree/OpenWallet/openwallet"
-	"math/big"
-	"github.com/blocktree/OpenWallet/log"
+	"fmt"
 	"github.com/blocktree/OpenWallet/common"
+	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
+	"github.com/shopspring/decimal"
+	"math/big"
+	"strconv"
 	"strings"
 )
 
@@ -44,10 +43,10 @@ func (decoder *ContractDecoder) GetTokenBalanceByAddress(contract openwallet.Sma
 	var tokenBalanceList []*openwallet.TokenBalance
 
  	for i:=0; i<len(address); i++ {
-		unspent, err := decoder.wm.GetQRC20Balance(contract, address[i], decoder.wm.config.isTestNet)
-		if err != nil {
-			log.Errorf("get address[%v] QRC20 token balance failed, err=%v", address[i], err)
-		}
+		unspent, _ := decoder.wm.GetQRC20Balance(contract, address[i], decoder.wm.config.isTestNet)
+		//if err != nil {
+		//	log.Errorf("get address[%v] QRC20 token balance failed, err=%v", address[i], err)
+		//}
 
 		balanceConfirmed := unspent
 		//		log.Debugf("got balanceAll of [%v] :%v", address, balanceAll)
