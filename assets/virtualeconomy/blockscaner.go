@@ -107,6 +107,7 @@ func (bs *VSYSBlockScanner) ScanBlockTask() {
 	blockHeader, err := bs.GetCurrentBlockHeader()
 	if err != nil {
 		bs.wm.Log.Std.Info("block scanner can not get new block height; unexpected error: %v", err)
+		return
 	}
 
 	currentHeight := blockHeader.Height
@@ -769,6 +770,7 @@ func (bs *VSYSBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, er
 
 	currentBlock, err := bs.wm.GetBlock(hash)
 	if err != nil {
+		bs.wm.Log.Std.Info("failed at hash: %v, height : %d", hash, blockHeight)
 		return nil, err
 	}
 
