@@ -1619,6 +1619,24 @@
 			"revisionTime": "2017-11-12T03:14:02Z"
 		},
 		{
+			"checksumSHA1": "w5CzJWpgdNBz2xnMndwsoLKA1kg=",
+			"path": "github.com/godaddy-x/jorm/dialect",
+			"revision": "d932b7767a094a3330b762ff3355fcd86c30b2d5",
+			"revisionTime": "2019-01-05T08:36:18Z"
+		},
+		{
+			"checksumSHA1": "pulgxHbDHs3hMyH7udVOSUjW+O4=",
+			"path": "github.com/godaddy-x/jorm/sqlc",
+			"revision": "d932b7767a094a3330b762ff3355fcd86c30b2d5",
+			"revisionTime": "2019-01-05T08:36:18Z"
+		},
+		{
+			"checksumSHA1": "hpnNJQxTLPkqg2sTFCZCSHF2o3M=",
+			"path": "github.com/godaddy-x/jorm/util",
+			"revision": "d932b7767a094a3330b762ff3355fcd86c30b2d5",
+			"revisionTime": "2019-01-05T08:36:18Z"
+		},
+		{
 			"checksumSHA1": "rasgUuf7DVFShc3hKeh9wjWBWO0=",
 			"path": "github.com/gogo/protobuf/gogoproto",
 			"revision": "30cf7ac33676b5786e78c746683f0d4cd64fa75b",
@@ -1723,7 +1741,6 @@
 		},
 		{
 			"checksumSHA1": "KlQCb83HC090bojw4ofNDxn2nho=",
-			"origin": "github.com/blocktree/OpenWallet/vendor/github.com/golang/protobuf/ptypes/wrappers",
 			"path": "github.com/golang/protobuf/ptypes/wrappers",
 			"revision": ""
 		},
@@ -2184,6 +2201,12 @@
 			"path": "github.com/jackpal/go-nat-pmp",
 			"revision": "c60f6f62147048f80a0e092b483318af88b5d78b",
 			"revisionTime": "2018-05-08T23:20:20Z"
+		},
+		{
+			"checksumSHA1": "H+zZYQO4Y1qcFg9ctqxnpcHB9r8=",
+			"path": "github.com/json-iterator/go",
+			"revision": "6240e1e7983a85228f7fd9c3e1b6932d46ec58e2",
+			"revisionTime": "2017-10-10T00:57:02Z"
 		},
 		{
 			"checksumSHA1": "gKyBj05YkfuLFruAyPZ4KV9nFp8=",
