@@ -660,8 +660,8 @@ func TestTransfer_ONG2(t *testing.T) {
 func TestTransfer_VSYS(t *testing.T) {
 	tm := testVSYSInitWalletManager()
 
-	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
-	accountID := "FUAKFujfVwdWJn79DFB4ZZQ6LRZS5cXfrGC9er2T5TSt"
+	walletID := "W1kQam3wxvf3scixTzADT9APyhpuXba7Pq"
+	accountID := "6RQ4WGVodRFUTDuMuKM4dC8Jrm9zC8jjnn7ZChbE4nnY"
 	to := "AREkgFxYhyCdtKD9JSSVhuGQomgGcacvQqM"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)

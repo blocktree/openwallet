@@ -69,7 +69,7 @@ func TestVSYSWalletManager_GetWalletInfo(t *testing.T) {
 
 	tm := testVSYSInitWalletManager()
 
-	wallet, err := tm.GetWalletInfo(testApp, "WJmcRGkdbT4AoSD7YUHBEVXS7zUmBFgo2g")
+	wallet, err := tm.GetWalletInfo(testApp, "W1kQam3wxvf3scixTzADT9APyhpuXba7Pq")
 	if err != nil {
 		log.Error("unexpected error:", err)
 		return
@@ -98,7 +98,7 @@ func TestVSYSWalletManager_CreateAssetsAccount(t *testing.T) {
 
 	tm := testVSYSInitWalletManager()
 
-	walletID := "WJmcRGkdbT4AoSD7YUHBEVXS7zUmBFgo2g"
+	walletID := "W1kQam3wxvf3scixTzADT9APyhpuXba7Pq"
 	account := &openwallet.AssetsAccount{Alias: "HELLO KITTY", WalletID: walletID, Required: 1, Symbol: "VSYS", IsTrust: true}
 	account, address, err := tm.CreateAssetsAccount(testApp, walletID, "12345678", account, nil)
 	if err != nil {
