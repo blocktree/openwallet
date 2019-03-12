@@ -1619,24 +1619,6 @@
 			"revisionTime": "2017-11-12T03:14:02Z"
 		},
 		{
-			"checksumSHA1": "w5CzJWpgdNBz2xnMndwsoLKA1kg=",
-			"path": "github.com/godaddy-x/jorm/dialect",
-			"revision": "d932b7767a094a3330b762ff3355fcd86c30b2d5",
-			"revisionTime": "2019-01-05T08:36:18Z"
-		},
-		{
-			"checksumSHA1": "pulgxHbDHs3hMyH7udVOSUjW+O4=",
-			"path": "github.com/godaddy-x/jorm/sqlc",
-			"revision": "d932b7767a094a3330b762ff3355fcd86c30b2d5",
-			"revisionTime": "2019-01-05T08:36:18Z"
-		},
-		{
-			"checksumSHA1": "hpnNJQxTLPkqg2sTFCZCSHF2o3M=",
-			"path": "github.com/godaddy-x/jorm/util",
-			"revision": "d932b7767a094a3330b762ff3355fcd86c30b2d5",
-			"revisionTime": "2019-01-05T08:36:18Z"
-		},
-		{
 			"checksumSHA1": "rasgUuf7DVFShc3hKeh9wjWBWO0=",
 			"path": "github.com/gogo/protobuf/gogoproto",
 			"revision": "30cf7ac33676b5786e78c746683f0d4cd64fa75b",

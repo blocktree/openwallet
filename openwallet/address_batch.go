@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/go-owcdrivers/owkeychain"
-	"github.com/godaddy-x/jorm/util"
 )
 
 type AddressCreateResult struct {
@@ -153,7 +152,7 @@ func CreateAddressByAccountWithIndex(account *AssetsAccount, decoder AddressDeco
 
 	if len(account.HDPath) == 0 {
 		result.Success = false
-		result.Err = util.Error("hdPath is empty")
+		result.Err = fmt.Errorf("hdPath is empty")
 		return result
 	}
 	hdPath := fmt.Sprintf("%s/%d/%d", account.HDPath, addrIsChange, addrIndex)
@@ -192,7 +191,7 @@ func CreateAddressByAccountWithIndex(account *AssetsAccount, decoder AddressDeco
 	}
 	if len(address) == 0 {
 		result.Success = false
-		result.Err = util.Error("create address content error")
+		result.Err = fmt.Errorf("create address content error")
 		return result
 	}
 	newAddr := &Address{
@@ -203,7 +202,6 @@ func CreateAddressByAccountWithIndex(account *AssetsAccount, decoder AddressDeco
 		Balance:   "0",
 		WatchOnly: false,
 		PublicKey: publicKey,
-		CreatedTime: util.Time(),
 		Alias:     "",
 		Tag:       "",
 		HDPath:    hdPath,
