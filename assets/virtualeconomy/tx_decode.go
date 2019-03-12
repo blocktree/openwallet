@@ -215,6 +215,9 @@ func (decoder *TransactionDecoder) CreateVSYSRawTransaction(wrapper openwallet.W
 		return err
 	}
 
+	rawTx.TxFrom = []string{from}
+	rawTx.TxTo = []string{to}
+	rawTx.TxAmount = amountStr
 	rawTx.Fees = convertToAmount(fee)
 	rawTx.FeeRate = convertToAmount(feeScale)
 
