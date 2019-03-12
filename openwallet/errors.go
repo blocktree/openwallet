@@ -14,3 +14,22 @@
  */
 
 package openwallet
+
+import "fmt"
+
+const (
+	/* 交易类别 */
+	ErrInsufficientBalanceOfAccount = 2001 //账户余额不足
+	ErrInsufficientBalanceOfAddress = 2002 //地址余额不足
+	ErrInsufficientFees             = 2003 //手续费不足
+	ErrDustLimit                    = 2004 //限制粉尘攻击
+)
+
+type OWError struct {
+	Code int64
+	Err  string
+}
+
+func (err *OWError) Error() string {
+	return fmt.Sprintf("[%d]%s", err.Code, err.Err)
+}

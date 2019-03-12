@@ -110,9 +110,9 @@ func TestHTTPHostRun(t *testing.T) {
 
 func TestHTTPClientCall(t *testing.T) {
 
-	//config := ConnectConfig{}
-	//config.Address = httpURL
-	//config.ConnectType = HTTP
+	config := ConnectConfig{}
+	config.Address = httpURL
+	config.ConnectType = HTTP
 	//config["enableSignature"] = "1"
 	cert, _ := NewCertificate("E3cQTqKZfVVL6cQvyrSgbjmkVnnbkBuoqt7ed9wQLjgz", "aes")
 	//httpClient := RandomOWTPNode()
@@ -123,12 +123,12 @@ func TestHTTPClientCall(t *testing.T) {
 	prv, pub := httpClient.Certificate().KeyPair()
 	log.Info("pub:", pub)
 	log.Info("prv:", prv)
-	//err := httpClient.Connect(httpHostNodeID, config)
-	//if err != nil {
-	//	t.Errorf("Connect unexcepted error: %v", err)
-	//	return
-	//}
-	err := httpClient.KeyAgreement(httpHostNodeID, "aes")
+	err := httpClient.Connect(httpHostNodeID, config)
+	if err != nil {
+		t.Errorf("Connect unexcepted error: %v", err)
+		return
+	}
+	err = httpClient.KeyAgreement(httpHostNodeID, "aes")
 	if err != nil {
 		t.Errorf("KeyAgreement unexcepted error: %v", err)
 		return

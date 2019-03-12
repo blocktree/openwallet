@@ -434,12 +434,12 @@ func TestTransfer_TRON(t *testing.T) {
 	walletID := "W1eRr8nRrawkQ1Ayf1XKPCjmvKk8aLGExu"
 	accountID := "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
 	//accountID := "8pLC7mRGWy968bRr3sQtYxAZjxJqC4QKH3H9VaKouArd"
-	to := "TT44ohw23WGNv1jQCAUN3etUWND1KXN2Eq"
+	to := "TRLm2C4iSMYgny7s2abJYnVdgf64rwoPs2"
 	//to := "TJLypjev8iLdQR3X63rSMeZK8GKwkeSH1Y"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.01", "", nil)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1", "", nil)
 	if err != nil {
 		return
 	}
@@ -662,7 +662,7 @@ func TestTransfer_VSYS(t *testing.T) {
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "FUAKFujfVwdWJn79DFB4ZZQ6LRZS5cXfrGC9er2T5TSt"
-	to := "AREkgFxYhyCdtKD9JSSVhuGQomgGcacvQqM"
+	to := "AR6EwP1D3KTZsK1ACbhwEgBEYcLUy9SyA9N"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
@@ -683,9 +683,9 @@ func TestTransfer_VSYS(t *testing.T) {
 		return
 	}
 
-	_, err = testSubmitTransactionStep(tm, rawTx)
-	if err != nil {
-		return
-	}
+	//_, err = testSubmitTransactionStep(tm, rawTx)
+	//if err != nil {
+	//	return
+	//}
 
 }

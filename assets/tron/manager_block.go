@@ -55,11 +55,11 @@ func (wm *WalletManager) GetNowBlock() (block *Block, err error) {
 	// Check for TX
 	currstamp := time.Now().UnixNano() / (1000 * 1000) // Unit: ms
 	timestamp := int64(block.Time)
-	if timestamp < currstamp-(5*1000) {
-		wm.Log.Warningf(fmt.Sprintf("Get block timestamp: %d [%+v]", timestamp, time.Unix(timestamp/1000, 0)))
-		wm.Log.Warningf(fmt.Sprintf("Current d timestamp: %d [%+v]", currstamp, time.Unix(currstamp/1000, 0)))
-		wm.Log.Warningf("Diff seconds: %ds ", (currstamp-timestamp)/1000)
-	}
+	//if timestamp < currstamp-(5*1000) {
+	//	wm.Log.Warningf(fmt.Sprintf("Get block timestamp: %d [%+v]", timestamp, time.Unix(timestamp/1000, 0)))
+	//	wm.Log.Warningf(fmt.Sprintf("Current d timestamp: %d [%+v]", currstamp, time.Unix(currstamp/1000, 0)))
+	//	wm.Log.Warningf("Diff seconds: %ds ", (currstamp-timestamp)/1000)
+	//}
 	if timestamp < currstamp-(5*60*1000) {
 		wm.Log.Error(fmt.Sprintf("Get block timestamp: %d [%+v]", timestamp, time.Unix(timestamp/1000, 0)))
 		// wm.Log.Error(fmt.Sprintf("Current d timestamp: %d [%+v]", currstamp, time.Unix(currstamp/1000, 0)))
