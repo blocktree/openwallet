@@ -17,6 +17,7 @@ package owtp
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"github.com/blocktree/OpenWallet/common"
 	"github.com/blocktree/OpenWallet/crypto"
@@ -317,7 +318,7 @@ func (auth *OWTPAuth) EncryptData(data []byte, key []byte) ([]byte, error) {
 		if err != nil {
 			return data, err
 		}
-		encS := base58.Encode(encD)
+		encS := base64.StdEncoding.EncodeToString(encD)
 		return []byte(encS), nil
 	}
 
@@ -328,7 +329,7 @@ func (auth *OWTPAuth) EncryptData(data []byte, key []byte) ([]byte, error) {
 func (auth *OWTPAuth) DecryptData(data []byte, key []byte) ([]byte, error) {
 	//使用协商密钥解密数据
 	if auth.EnableKeyAgreement() && len(key) > 0 && len(data) > 0 {
-		encD, err := base58.Decode(string(data))
+		encD, err := base64.StdEncoding.DecodeString(string(data))
 		if err != nil {
 			return data, err
 		}

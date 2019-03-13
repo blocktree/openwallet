@@ -44,17 +44,7 @@ func testMakeHTTPCall(httpClient *OWTPNode) {
 		"age":  18,
 	}
 	//err = httpClient.Connect(httpHostNodeID, config)
-	err := httpClient.ConnectAndCall(httpHostNodeID, config,"getInfo", params, false, func(resp Response) {
-		if resp.Status == StatusSuccess {
-			result := resp.JsonData()
-			symbols := result.Get("symbols")
-			fmt.Printf("symbols: %v\n", symbols)
-		} else {
-			log.Error(resp)
-		}
-
-	})
-	//err := httpClient.Call(httpHostNodeID, "getInfo", params, true, func(resp Response) {
+	//err := httpClient.ConnectAndCall(httpHostNodeID, config,"getInfo", params, false, func(resp Response) {
 	//	if resp.Status == StatusSuccess {
 	//		result := resp.JsonData()
 	//		symbols := result.Get("symbols")
@@ -64,6 +54,16 @@ func testMakeHTTPCall(httpClient *OWTPNode) {
 	//	}
 	//
 	//})
+	err := httpClient.Call(httpHostNodeID, "getInfo", params, true, func(resp Response) {
+		if resp.Status == StatusSuccess {
+			result := resp.JsonData()
+			symbols := result.Get("symbols")
+			fmt.Printf("symbols: %v\n", symbols)
+		} else {
+			log.Error(resp)
+		}
+
+	})
 
 	//err := httpClient.ConnectAndCall(httpHostNodeID, config, "getInfo", params, true, func(resp Response) {
 	//
