@@ -1,13 +1,13 @@
 /*
- * Copyright 2018 The OpenWallet Authors
- * This file is part of the OpenWallet library.
+ * Copyright 2018 The openwallet Authors
+ * This file is part of the openwallet library.
  *
- * The OpenWallet library is free software: you can redistribute it and/or modify
+ * The openwallet library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * The OpenWallet library is distributed in the hope that it will be useful,
+ * The openwallet library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
@@ -27,9 +27,9 @@ import (
 
 	"time"
 
-	tool "github.com/blocktree/OpenWallet/common"
-	"github.com/blocktree/OpenWallet/log"
-	"github.com/blocktree/OpenWallet/openwallet"
+	tool "github.com/blocktree/openwallet/common"
+	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/openwallet"
 	"github.com/bytom/common"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"

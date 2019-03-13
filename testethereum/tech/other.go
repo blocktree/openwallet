@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/openwallet/log"
 )
 
 //big.Int不能复制

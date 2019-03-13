@@ -3,8 +3,8 @@ package owtp
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/blocktree/OpenWallet/log"
-	"github.com/blocktree/OpenWallet/session"
+	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/session"
 	"github.com/blocktree/go-owcrypt"
 	"github.com/imroc/req"
 	"github.com/mr-tron/base58/base58"

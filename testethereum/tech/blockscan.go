@@ -5,9 +5,9 @@ import (
 	"strconv"
 
 	"github.com/asdine/storm"
-	"github.com/blocktree/OpenWallet/assets/ethereum"
-	"github.com/blocktree/OpenWallet/log"
-	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/openwallet/assets/ethereum"
+	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/openwallet"
 )
 
 type subscriber struct {

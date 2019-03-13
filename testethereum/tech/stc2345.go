@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/blocktree/OpenWallet/assets"
-	"github.com/blocktree/OpenWallet/assets/ethereum"
-	"github.com/blocktree/OpenWallet/assets/stc2345"
-	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/openwallet/assets"
+	"github.com/blocktree/openwallet/assets/ethereum"
+	"github.com/blocktree/openwallet/assets/stc2345"
+	"github.com/blocktree/openwallet/log"
 )
 
 func DumpWalletDB(dbPath string, dbfile string) {

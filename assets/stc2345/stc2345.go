@@ -3,8 +3,8 @@ package stc2345
 import (
 	"fmt"
 
-	"github.com/blocktree/OpenWallet/assets/ethereum"
-	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/openwallet/assets/ethereum"
+	"github.com/blocktree/openwallet/openwallet"
 	owcrypt "github.com/blocktree/go-owcrypt"
 )
 

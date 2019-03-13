@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"strconv"
-	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/openwallet/log"
 )
 
 type TxContract struct {

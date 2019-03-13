@@ -130,7 +130,7 @@ func TestWriteFile(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	file := "/myspace/workplace/go-workspace/projects/src/github.com/blocktree/OpenWallet/cmd/wmd/wmd-linux-amd64"
+	file := "/myspace/workplace/go-workspace/projects/src/github.com/blocktree/openwallet/cmd/wmd/wmd-linux-amd64"
 	flag := Delete(file)
 	if !flag {
 		t.Log("DeleteFile failed!")

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/blocktree/OpenWallet/testethereum/tech"
+	"github.com/blocktree/openwallet/testethereum/tech"
 
 	//"gopkg.in/urfave/cli.v1"
 
@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	_ "github.com/blocktree/OpenWallet/testethereum/environment"
+	_ "github.com/blocktree/openwallet/testethereum/environment"
 )
 
 func GetCurrentDirectory() string {

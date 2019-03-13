@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/openwallet/openwallet"
 	"github.com/blocktree/go-owcdrivers/ontologyTransaction"
 )
 

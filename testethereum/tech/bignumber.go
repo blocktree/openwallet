@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/blocktree/OpenWallet/assets/ethereum"
+	"github.com/blocktree/openwallet/assets/ethereum"
 	"github.com/shopspring/decimal"
 )
 

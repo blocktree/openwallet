@@ -1,13 +1,13 @@
 /*
- * Copyright 2018 The OpenWallet Authors
- * This file is part of the OpenWallet library.
+ * Copyright 2018 The openwallet Authors
+ * This file is part of the openwallet library.
  *
- * The OpenWallet library is free software: you can redistribute it and/or modify
+ * The openwallet library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * The OpenWallet library is distributed in the hope that it will be useful,
+ * The openwallet library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
@@ -25,10 +25,10 @@ import (
 
 	"github.com/asdine/storm"
 	"github.com/astaxie/beego/config"
-	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/blocktree/OpenWallet/log"
-	"github.com/blocktree/OpenWallet/openwallet"
-	"github.com/blocktree/OpenWallet/timer"
+	"github.com/blocktree/openwallet/common/file"
+	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/openwallet"
+	"github.com/blocktree/openwallet/timer"
 	"github.com/coreos/bbolt"
 )
 
@@ -80,7 +80,7 @@ func (wm *WalletManager) Init() {
 		return
 	}
 
-	log.Info("OpenWallet Manager is initializing ...")
+	log.Info("openwallet Manager is initializing ...")
 
 	//新建文件目录
 	file.MkdirAll(wm.cfg.DBPath)
@@ -101,7 +101,7 @@ func (wm *WalletManager) Init() {
 	//wm.importAddressTask = task
 	//wm.importAddressTask.Start()
 
-	log.Info("OpenWallet Manager has been initialized!")
+	log.Info("openwallet Manager has been initialized!")
 }
 
 //AddObserver 添加观测者

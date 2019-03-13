@@ -1,12 +1,12 @@
 /*
- * Copyright 2018 The OpenWallet Authors
- * This file is part of the OpenWallet library.
- * * The OpenWallet library is free software: you can redistribute it and/or modify
+ * Copyright 2018 The openwallet Authors
+ * This file is part of the openwallet library.
+ * * The openwallet library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * The OpenWallet library is distributed in the hope that it will be useful,
+ * The openwallet library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
@@ -26,7 +26,7 @@ import (
 	"docker.io/go-docker/api/types/container"
 	"docker.io/go-docker/api/types/mount"
 	"docker.io/go-docker/api/types/network"
-	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/openwallet/log"
 	"github.com/docker/go-connections/nat"
 )
 
@@ -163,7 +163,7 @@ func (wn *WalletnodeManager) CheckAdnCreateContainer(symbol string) error {
 		// // map[string]struct{}, List of volumes (mounts) used for the container
 		// Volumes: map[string]struct{}{
 		// 	// "type":        "volume",
-		// 	//"Name":        "OpenWallet Fullnode Data",
+		// 	//"Name":        "openwallet Fullnode Data",
 		// 	// "Source": "/tmp",
 		// 	// "Destination": "/tmp",
 		// 	// "Driver":      "local",
