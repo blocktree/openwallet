@@ -30,7 +30,7 @@ var (
 )
 
 func testInitWalletManager() *WalletManager {
-
+	log.SetLogFuncCall(true)
 	tc := NewConfig()
 
 	tc.IsTestnet = true

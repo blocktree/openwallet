@@ -32,107 +32,105 @@ func NewOWLogger(prefix string) *OWLogger {
 }
 
 // SetPrefix 设置前缀
-func (logger *OWLogger)SetPrefix(prefix string) {
+func (logger *OWLogger) SetPrefix(prefix string) {
 	logger.Std.SetPrefix(prefix)
 }
 
 // SetLevel 设置打印级别
-func (logger *OWLogger)SetLevel(l int) {
+func (logger *OWLogger) SetLevel(l int) {
 	logger.Std.SetLevel(l)
 }
 
 // SetLogFuncCall set the CallDepth, default is 3
-func (logger *OWLogger)SetLogFuncCall(b bool) {
+func (logger *OWLogger) SetLogFuncCall(b bool) {
 	logger.Std.EnableFuncCallDepth(b)
-	logger.Std.SetLogFuncCallDepth(3)
+	logger.Std.SetLogFuncCallDepth(4)
 }
 
 // SetLogger sets a new logger.
-func (logger *OWLogger)SetLogger(adaptername string, config string) error {
+func (logger *OWLogger) SetLogger(adaptername string, config string) error {
 	return logger.Std.SetLogger(adaptername, config)
 }
 
 // Emergency logs a message at emergency level.
-func (logger *OWLogger)Emergency(v ...interface{}) {
+func (logger *OWLogger) Emergency(v ...interface{}) {
 	logger.Std.Emergency(generateFmtStr(len(v)), v...)
 }
 
 // Alert logs a message at alert level.
-func (logger *OWLogger)Alert(v ...interface{}) {
+func (logger *OWLogger) Alert(v ...interface{}) {
 	logger.Std.Alert(generateFmtStr(len(v)), v...)
 }
 
 // Critical logs a message at critical level.
-func (logger *OWLogger)Critical(v ...interface{}) {
-	SetLogFuncCall(true)
+func (logger *OWLogger) Critical(v ...interface{}) {
+
 	logger.Std.Critical(generateFmtStr(len(v)), v...)
 }
 
 // format & Error logs a message at error level.
-func (logger *OWLogger)Errorf(format string, v ...interface{}) {
-	SetLogFuncCall(true)
+func (logger *OWLogger) Errorf(format string, v ...interface{}) {
+
 	logger.Std.Error(format, v...)
 }
 
 // Error logs a message at error level.
-func (logger *OWLogger)Error(v ...interface{}) {
-	SetLogFuncCall(true)
+func (logger *OWLogger) Error(v ...interface{}) {
 	logger.Std.Error(generateFmtStr(len(v)), v...)
 }
 
 // format & Warning logs a message at warning level.
-func (logger *OWLogger)Warningf(format string, v ...interface{}) {
+func (logger *OWLogger) Warningf(format string, v ...interface{}) {
 	logger.Std.Warning(format, v...)
 }
 
 // Warning logs a message at warning level.
-func (logger *OWLogger)Warning(v ...interface{}) {
+func (logger *OWLogger) Warning(v ...interface{}) {
 	logger.Std.Warning(generateFmtStr(len(v)), v...)
 }
 
 // Warn compatibility alias for Warning()
-func (logger *OWLogger)Warn(v ...interface{}) {
+func (logger *OWLogger) Warn(v ...interface{}) {
 	logger.Std.Warn(generateFmtStr(len(v)), v...)
 }
 
 // Notice logs a message at notice level.
-func (logger *OWLogger)Notice(v ...interface{}) {
+func (logger *OWLogger) Notice(v ...interface{}) {
 	logger.Std.Notice(generateFmtStr(len(v)), v...)
 }
 
 // Informational logs a message at info level.
-func (logger *OWLogger)Informational(v ...interface{}) {
+func (logger *OWLogger) Informational(v ...interface{}) {
 	logger.Std.Informational(generateFmtStr(len(v)), v...)
 }
 
-func (logger *OWLogger)Infof(format string, v ...interface{}) {
+func (logger *OWLogger) Infof(format string, v ...interface{}) {
 	logger.Std.Info(format, v...)
 }
 
 // Info compatibility alias for Warning()
-func (logger *OWLogger)Info(v ...interface{}) {
+func (logger *OWLogger) Info(v ...interface{}) {
 	logger.Std.Info(generateFmtStr(len(v)), v...)
 }
 
 // Format & debug logs a message at debug level.
-func (logger *OWLogger)Debugf(format string, v ...interface{}) {
-	SetLogFuncCall(true)
+func (logger *OWLogger) Debugf(format string, v ...interface{}) {
+
 	logger.Std.Debug(format, v...)
 }
 
 // Debug logs a message at debug level.
-func (logger *OWLogger)Debug(v ...interface{}) {
-	SetLogFuncCall(true)
+func (logger *OWLogger) Debug(v ...interface{}) {
+
 	logger.Std.Debug(generateFmtStr(len(v)), v...)
 }
 
 // Trace logs a message at trace level.
 // compatibility alias for Warning()
-func (logger *OWLogger)Trace(v ...interface{}) {
+func (logger *OWLogger) Trace(v ...interface{}) {
 	logger.Std.Trace(generateFmtStr(len(v)), v...)
 }
 
-func (logger *OWLogger)generateFmtStr(n int) string {
+func (logger *OWLogger) generateFmtStr(n int) string {
 	return strings.Repeat("%v ", n)
 }
-
