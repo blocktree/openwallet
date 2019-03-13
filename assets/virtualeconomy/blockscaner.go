@@ -300,6 +300,11 @@ func (bs *VSYSBlockScanner) ScanTxMemPool() {
 		return
 	}
 
+	if len(txIDsInMemPool) == 0 {
+		bs.wm.Log.Std.Info("no transactions in mempool ...")
+		return
+	}
+
 	err = bs.BatchExtractTransaction(0, "", txIDsInMemPool)
 	if err != nil {
 		bs.wm.Log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
@@ -338,32 +343,33 @@ func (bs *VSYSBlockScanner) RescanFailedRecord() {
 
 		var hash string
 
-		bs.wm.Log.Std.Info("block scanner rescanning height: %d ...", height)
+		if height != 0 {
+			bs.wm.Log.Std.Info("block scanner rescanning height: %d ...", height)
 
-		if len(txs) == 0 {
+			if len(txs) == 0 {
 
-			hash, err := bs.wm.GetBlockHash(height)
-			if err != nil {
-				//下一个高度找不到会报异常
-				bs.wm.Log.Std.Info("block scanner can not get new block hash; unexpected error: %v", err)
-				continue
+				hash, err := bs.wm.GetBlockHash(height)
+				if err != nil {
+					//下一个高度找不到会报异常
+					bs.wm.Log.Std.Info("block scanner can not get new block hash; unexpected error: %v", err)
+					continue
+				}
+
+				block, err := bs.wm.GetBlock(hash)
+				if err != nil {
+					bs.wm.Log.Std.Info("block scanner can not get new block data; unexpected error: %v", err)
+					continue
+				}
+
+				txs = block.Transactions
 			}
 
-			block, err := bs.wm.GetBlock(hash)
+			err = bs.BatchExtractTransaction(height, hash, txs)
 			if err != nil {
-				bs.wm.Log.Std.Info("block scanner can not get new block data; unexpected error: %v", err)
+				bs.wm.Log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
 				continue
 			}
-
-			txs = block.Transactions
 		}
-
-		err = bs.BatchExtractTransaction(height, hash, txs)
-		if err != nil {
-			bs.wm.Log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
-			continue
-		}
-
 		//删除未扫记录
 		bs.wm.DeleteUnscanRecord(height)
 	}
@@ -764,7 +770,6 @@ func (bs *VSYSBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, er
 
 	currentBlock, err := bs.wm.Client.getBlockByHeight(blockHeight)
 	if err != nil {
-		bs.wm.Log.Std.Info("failed at height : %d", blockHeight)
 		return nil, err
 	}
 
