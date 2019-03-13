@@ -218,6 +218,17 @@ func (c *Client) getBlock(hash string) (*Block, error) {
 	return NewBlock(resp), nil
 }
 
+func (c *Client) getBlockByHeight(height uint64) (*Block, error) {
+	path := fmt.Sprintf("blocks/at/%d", height)
+
+	resp, err := c.Call(path, nil, "GET")
+
+	if err != nil {
+		return nil, err
+	}
+	return NewBlock(resp), nil
+}
+
 func (c *Client) sendTransaction(jsonStr string) (string, error) {
 	path := "vsys/broadcast/payment"
 
