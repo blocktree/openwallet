@@ -1,13 +1,13 @@
 /*
- * Copyright 2018 The OpenWallet Authors
- * This file is part of the OpenWallet library.
+ * Copyright 2018 The openwallet Authors
+ * This file is part of the openwallet library.
  *
- * The OpenWallet library is free software: you can redistribute it and/or modify
+ * The openwallet library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * The OpenWallet library is distributed in the hope that it will be useful,
+ * The openwallet library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
@@ -16,25 +16,25 @@
 package wmd
 
 import (
-	"github.com/blocktree/OpenWallet/assets"
-	"github.com/blocktree/OpenWallet/assets/bitcoin"
-	"github.com/blocktree/OpenWallet/assets/bitcoincash"
-	"github.com/blocktree/OpenWallet/assets/bytom"
-	"github.com/blocktree/OpenWallet/assets/cardano"
-	"github.com/blocktree/OpenWallet/assets/decred"
-	"github.com/blocktree/OpenWallet/assets/ethereum"
-	"github.com/blocktree/OpenWallet/assets/hypercash"
-	"github.com/blocktree/OpenWallet/assets/icon"
-	"github.com/blocktree/OpenWallet/assets/iota"
-	"github.com/blocktree/OpenWallet/assets/litecoin"
-	"github.com/blocktree/OpenWallet/assets/luxapla"
-	"github.com/blocktree/OpenWallet/assets/nebulasio"
-	"github.com/blocktree/OpenWallet/assets/obyte"
-	"github.com/blocktree/OpenWallet/assets/qtum"
-	"github.com/blocktree/OpenWallet/assets/sia"
-	"github.com/blocktree/OpenWallet/assets/stc2345"
-	"github.com/blocktree/OpenWallet/assets/tezos"
-	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/openwallet/assets"
+	"github.com/blocktree/openwallet/assets/bitcoin"
+	"github.com/blocktree/openwallet/assets/bitcoincash"
+	"github.com/blocktree/openwallet/assets/bytom"
+	"github.com/blocktree/openwallet/assets/cardano"
+	"github.com/blocktree/openwallet/assets/decred"
+	"github.com/blocktree/openwallet/assets/ethereum"
+	"github.com/blocktree/openwallet/assets/hypercash"
+	"github.com/blocktree/openwallet/assets/icon"
+	"github.com/blocktree/openwallet/assets/iota"
+	"github.com/blocktree/openwallet/assets/litecoin"
+	"github.com/blocktree/openwallet/assets/luxapla"
+	"github.com/blocktree/openwallet/assets/nebulasio"
+	"github.com/blocktree/openwallet/assets/obyte"
+	"github.com/blocktree/openwallet/assets/qtum"
+	"github.com/blocktree/openwallet/assets/sia"
+	"github.com/blocktree/openwallet/assets/stc2345"
+	"github.com/blocktree/openwallet/assets/tezos"
+	"github.com/blocktree/openwallet/log"
 )
 
 //WalletManagerInterface 钱包管理器

@@ -1,13 +1,13 @@
 /*
- * Copyright 2018 The OpenWallet Authors
- * This file is part of the OpenWallet library.
+ * Copyright 2018 The openwallet Authors
+ * This file is part of the openwallet library.
  *
- * The OpenWallet library is free software: you can redistribute it and/or modify
+ * The openwallet library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * The OpenWallet library is distributed in the hope that it will be useful,
+ * The openwallet library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
@@ -16,7 +16,7 @@
 package qtum
 
 import (
-	"github.com/blocktree/OpenWallet/keystore"
+	"github.com/blocktree/openwallet/keystore"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 	"github.com/codeskyblue/go-sh"
@@ -584,8 +584,8 @@ func TestBackupWallet(t *testing.T) {
 }
 
 func TestRestoreWallet(t *testing.T) {
-	keyFile := "D:/Go_WorkSpace/src/github.com/blocktree/OpenWallet/cmd/data/qtum/backup/aaaa-WFQHSQbJmsKMkjScRhP18EnY1dysusfCaP-20180910150312/aaaa-WFQHSQbJmsKMkjScRhP18EnY1dysusfCaP.key"
-	dbFile := "D:/Go_WorkSpace/src/github.com/blocktree/OpenWallet/cmd/data/qtum/backup/aaaa-WFQHSQbJmsKMkjScRhP18EnY1dysusfCaP-20180910150312/aaaa-WFQHSQbJmsKMkjScRhP18EnY1dysusfCaP.db"
+	keyFile := "D:/Go_WorkSpace/src/github.com/blocktree/openwallet/cmd/data/qtum/backup/aaaa-WFQHSQbJmsKMkjScRhP18EnY1dysusfCaP-20180910150312/aaaa-WFQHSQbJmsKMkjScRhP18EnY1dysusfCaP.key"
+	dbFile := "D:/Go_WorkSpace/src/github.com/blocktree/openwallet/cmd/data/qtum/backup/aaaa-WFQHSQbJmsKMkjScRhP18EnY1dysusfCaP-20180910150312/aaaa-WFQHSQbJmsKMkjScRhP18EnY1dysusfCaP.db"
 	datFile := "/data/qtum/qtum-0.15.3/bin/tmp-wallet-1536562992.dat"
 	tw.loadConfig()
 	err := tw.RestoreWallet(keyFile, dbFile, datFile, "1234qwer")

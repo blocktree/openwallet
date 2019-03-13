@@ -7,7 +7,7 @@ import (
 	context "context"
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
-	core "github.com/blocktree/OpenWallet/assets/tron/grpc-gateway/core"
+	core "github.com/blocktree/openwallet/assets/tron/grpc-gateway/core"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	math "math"

@@ -9,8 +9,8 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/blocktree/OpenWallet/assets/ethereum"
-	"github.com/blocktree/OpenWallet/log"
+	"github.com/blocktree/openwallet/assets/ethereum"
+	"github.com/blocktree/openwallet/log"
 	"github.com/blocktree/go-owcrypt"
 	"github.com/bytom/common"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -204,7 +204,7 @@ func TestDbInf() error {
 func TestBlockScanWhenFork() error {
 	//ethereum.OpenDB(ethereum.)
 
-	db, err := ethereum.OpenDB("/Users/peter/workspace/bitcoin/wallet/src/github.com/blocktree/OpenWallet/test/data/eth/db", "blockchain.db")
+	db, err := ethereum.OpenDB("/Users/peter/workspace/bitcoin/wallet/src/github.com/blocktree/openwallet/test/data/eth/db", "blockchain.db")
 	if err != nil {
 		fmt.Println("open eth block scan db failed, err=", err)
 		return err
@@ -281,7 +281,7 @@ func TestBlockScan() error {
 
 	//manager := &ethereum.WalletManager{}
 	//scanner := ethereum.NewETHBlockScannerOld(manager)
-	wallets, err := manager.GetLocalWalletList("/Users/peter/workspace/bitcoin/wallet/src/github.com/blocktree/OpenWallet/test/data/eth/db", "blockchain.db", true)
+	wallets, err := manager.GetLocalWalletList("/Users/peter/workspace/bitcoin/wallet/src/github.com/blocktree/openwallet/test/data/eth/db", "blockchain.db", true)
 	if err != nil {
 		fmt.Println("get Wallet list failed, err=", err)
 		return err
@@ -299,13 +299,13 @@ func TestBlockScan() error {
 		return err
 	}
 
-	w.ClearAllTransactions("/Users/peter/workspace/bitcoin/wallet/src/github.com/blocktree/OpenWallet/test/data/eth/db")
+	w.ClearAllTransactions("/Users/peter/workspace/bitcoin/wallet/src/github.com/blocktree/openwallet/test/data/eth/db")
 
 	manager.ClearBlockScanDb()
 	scanner.SetLocalBlock(beginBlockNum)
 	scanner.ScanBlock()
 	fmt.Println("after scan block, show db following:")
-	w.DumpWalletDB("/Users/peter/workspace/bitcoin/wallet/src/github.com/blocktree/OpenWallet/test/data/eth/db")
+	w.DumpWalletDB("/Users/peter/workspace/bitcoin/wallet/src/github.com/blocktree/openwallet/test/data/eth/db")
 	DumpBlockScanDb()
 	return nil
 }

@@ -1,6 +1,6 @@
 package tech
 
-import "github.com/blocktree/OpenWallet/manager"
+import "github.com/blocktree/openwallet/manager"
 
 var (
 	tm      = openw.NewWalletManager(NewEthTestConfig())

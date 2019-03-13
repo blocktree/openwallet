@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	tool "github.com/blocktree/OpenWallet/common"
-	"github.com/blocktree/OpenWallet/common/file"
-	"github.com/blocktree/OpenWallet/keystore"
-	"github.com/blocktree/OpenWallet/log"
+	tool "github.com/blocktree/openwallet/common"
+	"github.com/blocktree/openwallet/common/file"
+	"github.com/blocktree/openwallet/keystore"
+	"github.com/blocktree/openwallet/log"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	ethKStore "github.com/ethereum/go-ethereum/accounts/keystore"
 )

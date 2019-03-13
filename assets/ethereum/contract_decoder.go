@@ -5,8 +5,8 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/blocktree/OpenWallet/log"
-	"github.com/blocktree/OpenWallet/openwallet"
+	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/openwallet"
 )
 
 type EthContractDecoder struct {

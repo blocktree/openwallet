@@ -16,7 +16,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/grpc-ecosystem/grpc-gateway/utilities"
-	"github.com/blocktree/OpenWallet/assets/tron/grpc-gateway/core"
+	"github.com/blocktree/openwallet/assets/tron/grpc-gateway/core"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"

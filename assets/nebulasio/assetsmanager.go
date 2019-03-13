@@ -1,8 +1,8 @@
 package nebulasio
 
 import (
-	_ "github.com/blocktree/OpenWallet/log"
-	"github.com/blocktree/OpenWallet/openwallet"
+	_ "github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/openwallet"
 )
 
 //ImportWatchOnlyAddress 导入观测地址

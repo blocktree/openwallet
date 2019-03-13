@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/asdine/storm"
-	"github.com/blocktree/OpenWallet/hdkeystore"
+	"github.com/blocktree/openwallet/hdkeystore"
 	"github.com/btcsuite/btcutil/hdkeychain"
 )
 
