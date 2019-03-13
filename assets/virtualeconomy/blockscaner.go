@@ -745,11 +745,10 @@ func (bs *VSYSBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, er
 
 	var (
 		blockHeight uint64 = 0
-		hash        string
 		err         error
 	)
 
-	blockHeight, hash = bs.wm.GetLocalNewBlock()
+	blockHeight, _ = bs.wm.GetLocalNewBlock()
 
 	//如果本地没有记录，查询接口的高度
 	if blockHeight == 0 {
@@ -761,16 +760,11 @@ func (bs *VSYSBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, er
 
 		//就上一个区块链为当前区块
 		blockHeight = blockHeight - 1
-
-		hash, err = bs.wm.GetBlockHash(blockHeight)
-		if err != nil {
-			return nil, err
-		}
 	}
 
-	currentBlock, err := bs.wm.GetBlock(hash)
+	currentBlock, err := bs.wm.Client.getBlockByHeight(blockHeight)
 	if err != nil {
-		bs.wm.Log.Std.Info("failed at hash: %v, height : %d", hash, blockHeight)
+		bs.wm.Log.Std.Info("failed at height : %d", blockHeight)
 		return nil, err
 	}
 
