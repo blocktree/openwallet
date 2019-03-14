@@ -47,7 +47,7 @@ func TestGetBlockHeight(t *testing.T) {
 }
 
 func TestGetLocalNewBlock(t *testing.T) {
-	height, hash := tw.GetLocalNewBlock()
+	height, hash, _ := tw.GetLocalNewBlock()
 	t.Logf("GetLocalBlockHeight height = %d \n", height)
 	t.Logf("GetLocalBlockHeight hash = %v \n", hash)
 }
