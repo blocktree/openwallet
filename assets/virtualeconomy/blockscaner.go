@@ -194,7 +194,7 @@ func (bs *VSYSBlockScanner) ScanBlockTask() {
 
 		} else {
 
-			err = bs.BatchExtractTransaction(localBlock.Height, localBlock.Hash, localBlock.Transactions)
+			err = bs.BatchExtractTransaction(localBlock.Height, localBlock.Hash, localBlock.Transactions, false)
 			if err != nil {
 				bs.wm.Log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
 			}
@@ -251,7 +251,7 @@ func (bs *VSYSBlockScanner) scanBlock(block *Block) error {
 
 	bs.wm.Log.Std.Info("block scanner scanning height: %d ...", block.Height)
 
-	err := bs.BatchExtractTransaction(block.Height, block.Hash, block.Transactions)
+	err := bs.BatchExtractTransaction(block.Height, block.Hash, block.Transactions, false)
 	if err != nil {
 		bs.wm.Log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
 	}
@@ -282,7 +282,7 @@ func (bs *VSYSBlockScanner) ScanTxMemPool() {
 		return
 	}
 
-	err = bs.BatchExtractTransaction(0, "", txIDsInMemPool)
+	err = bs.BatchExtractTransaction(0, "", txIDsInMemPool, true)
 	if err != nil {
 		bs.wm.Log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
 	}
@@ -334,7 +334,7 @@ func (bs *VSYSBlockScanner) RescanFailedRecord() {
 				txs = block.Transactions
 			}
 
-			err = bs.BatchExtractTransaction(height, hash, txs)
+			err = bs.BatchExtractTransaction(height, hash, txs, false)
 			if err != nil {
 				bs.wm.Log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
 				continue
@@ -359,7 +359,7 @@ func (bs *VSYSBlockScanner) newBlockNotify(block *Block, isFork bool) {
 
 //BatchExtractTransaction 批量提取交易单
 //bitcoin 1M的区块链可以容纳3000笔交易，批量多线程处理，速度更快
-func (bs *VSYSBlockScanner) BatchExtractTransaction(blockHeight uint64, blockHash string, txs []string) error {
+func (bs *VSYSBlockScanner) BatchExtractTransaction(blockHeight uint64, blockHash string, txs []string, memPool bool) error {
 
 	var (
 		quit       = make(chan struct{})
@@ -417,7 +417,7 @@ func (bs *VSYSBlockScanner) BatchExtractTransaction(blockHeight uint64, blockHas
 			go func(mBlockHeight uint64, mTxid string, end chan struct{}, mProducer chan<- ExtractResult) {
 
 				//导出提出的交易
-				mProducer <- bs.ExtractTransaction(mBlockHeight, eBlockHash, mTxid, bs.ScanAddressFunc)
+				mProducer <- bs.ExtractTransaction(mBlockHeight, eBlockHash, mTxid, bs.ScanAddressFunc, memPool)
 				//释放
 				<-end
 
@@ -477,7 +477,7 @@ func (bs *VSYSBlockScanner) extractRuntime(producer chan ExtractResult, worker c
 }
 
 //ExtractTransaction 提取交易单
-func (bs *VSYSBlockScanner) ExtractTransaction(blockHeight uint64, blockHash string, txid string, scanAddressFunc openwallet.BlockScanAddressFunc) ExtractResult {
+func (bs *VSYSBlockScanner) ExtractTransaction(blockHeight uint64, blockHash string, txid string, scanAddressFunc openwallet.BlockScanAddressFunc, memPool bool) ExtractResult {
 
 	var (
 		result = ExtractResult{
@@ -488,12 +488,26 @@ func (bs *VSYSBlockScanner) ExtractTransaction(blockHeight uint64, blockHash str
 	)
 
 	//bs.wm.Log.Std.Debug("block scanner scanning tx: %s ...", txid)
-	trx, err := bs.wm.GetTransaction(txid)
+	var trx *Transaction
+	var err error
+	if memPool {
+		trx, err = bs.wm.GetTransactionInMemPool(txid)
+		if err != nil {
+			trx, err = bs.wm.GetTransaction(txid)
+			if err != nil {
+				bs.wm.Log.Std.Info("block scanner can not extract transaction data in mempool and block chain; unexpected error: %v", err)
+				result.Success = false
+				return result
+			}
+		}
+	} else {
+		trx, err = bs.wm.GetTransaction(txid)
 
-	if err != nil {
-		bs.wm.Log.Std.Info("block scanner can not extract transaction data; unexpected error: %v", err)
-		result.Success = false
-		return result
+		if err != nil {
+			bs.wm.Log.Std.Info("block scanner can not extract transaction data; unexpected error: %v", err)
+			result.Success = false
+			return result
+		}
 	}
 
 	//优先使用传入的高度
@@ -761,7 +775,7 @@ func (bs *VSYSBlockScanner) GetScannedBlockHeight() uint64 {
 }
 
 func (bs *VSYSBlockScanner) ExtractTransactionData(txid string, scanAddressFunc openwallet.BlockScanAddressFunc) (map[string][]*openwallet.TxExtractData, error) {
-	result := bs.ExtractTransaction(0, "", txid, scanAddressFunc)
+	result := bs.ExtractTransaction(0, "", txid, scanAddressFunc, false)
 	if !result.Success {
 		return nil, fmt.Errorf("extract transaction failed")
 	}
@@ -978,6 +992,17 @@ func (wm *WalletManager) GetTxIDsInMemPool() ([]string, error) {
 	}
 	return txids, nil
 
+}
+
+func (wm *WalletManager) GetTransactionInMemPool(txid string) (*Transaction, error) {
+	path := "transactions/unconfirmed/info/" + txid
+	trans, err := wm.Client.Call(path, nil, "GET")
+
+	if err != nil {
+		return nil, err
+	}
+
+	return NewTransaction(trans), nil
 }
 
 //GetTransaction 获取交易单
@@ -1199,7 +1224,7 @@ func (bs *VSYSBlockScanner) setupSocketIO() error {
 		txMap, ok := args.(map[string]interface{})
 		if ok {
 			txid := txMap["txid"].(string)
-			errInner := bs.BatchExtractTransaction(0, "", []string{txid})
+			errInner := bs.BatchExtractTransaction(0, "", []string{txid}, false)
 			if errInner != nil {
 				bs.wm.Log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", errInner)
 			}
