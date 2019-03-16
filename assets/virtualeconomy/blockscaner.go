@@ -158,7 +158,7 @@ func (bs *VSYSBlockScanner) ScanBlockTask() {
 
 			//删除上一区块链的所有充值记录
 			//bs.DeleteRechargesByHeight(currentHeight - 1)
-
+			forkBlock, _ := bs.wm.GetLocalBlock(previousHeight)
 			//删除上一区块链的未扫记录
 			bs.wm.DeleteUnscanRecord(previousHeight)
 			currentHeight = previousHeight - 1 //倒退2个区块重新扫描
@@ -192,6 +192,11 @@ func (bs *VSYSBlockScanner) ScanBlockTask() {
 
 			isFork = true
 
+			if forkBlock != nil {
+				//通知分叉区块给观测者，异步处理
+				bs.newBlockNotify(forkBlock, isFork)
+			}
+
 		} else {
 
 			err = bs.BatchExtractTransaction(localBlock.Height, localBlock.Hash, localBlock.Transactions, false)
@@ -210,7 +215,7 @@ func (bs *VSYSBlockScanner) ScanBlockTask() {
 		}
 
 		//通知新区块给观测者，异步处理
-		go bs.newBlockNotify(localBlock, isFork)
+		bs.newBlockNotify(localBlock, isFork)
 	}
 
 	//重扫前N个块，为保证记录找到
@@ -260,7 +265,7 @@ func (bs *VSYSBlockScanner) scanBlock(block *Block) error {
 	//bs.wm.SaveLocalBlock(block)
 
 	//通知新区块给观测者，异步处理
-	go bs.newBlockNotify(block, false)
+	bs.newBlockNotify(block, false)
 
 	return nil
 }
@@ -350,11 +355,9 @@ func (bs *VSYSBlockScanner) RescanFailedRecord() {
 
 //newBlockNotify 获得新区块后，通知给观测者
 func (bs *VSYSBlockScanner) newBlockNotify(block *Block, isFork bool) {
-	for o, _ := range bs.Observers {
-		header := block.BlockHeader()
-		header.Fork = isFork
-		o.BlockScanNotify(block.BlockHeader())
-	}
+	header := block.BlockHeader()
+	header.Fork = isFork
+	bs.NewBlockNotify(header)
 }
 
 //BatchExtractTransaction 批量提取交易单
