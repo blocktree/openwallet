@@ -71,6 +71,19 @@ func (wm *WalletManager) GetNewAddress() (*Address, error) {
 	return address, nil
 }
 
+//GetChangeAddress
+func (wm *WalletManager) GetChangeAddress() (*Address, error) {
+
+	result, err := wm.WalletClient.Call("getchangeaddress", struct{}{})
+	if err != nil {
+		return nil, err
+	}
+
+	address := NewAddress(*result)
+
+	return address, nil
+}
+
 //GetBalance
 func (wm *WalletManager) GetBalance() (*Balance, error) {
 
@@ -107,6 +120,12 @@ func (wm *WalletManager) CreateBatchAddress(count uint64) (string, []*Address, e
 		done              = 0 //完成标记
 		shouldDone        = 0 //需要完成的总数
 	)
+
+	//生成默认的找零地址
+	_, err := wm.GetChangeAddress()
+	if err != nil {
+		return "", nil, err
+	}
 
 	timestamp := time.Now()
 	//建立文件名，时间格式2006-01-02 15:04:05
@@ -270,10 +289,17 @@ func (wm *WalletManager) BackupWallet() (string, error) {
 	newBackupDir := filepath.Join(wm.Config.backupDir, common.TimeFormat("20060102150405"))
 	file.MkdirAll(newBackupDir)
 	//keys.json
-	//conf.json
+
 	keyFile := filepath.Join(dataPath, "keys.json")
 	//备份助记词文件
 	err := file.Copy(keyFile, newBackupDir)
+	if err != nil {
+		return "", err
+	}
+
+	confFile := filepath.Join(dataPath, "conf.json")
+	//conf.json
+	err = file.Copy(confFile, newBackupDir)
 	if err != nil {
 		return "", err
 	}
@@ -289,7 +315,7 @@ func (wm *WalletManager) BackupWallet() (string, error) {
 }
 
 //RestoreWallet 恢复钱包
-func (wm *WalletManager) RestoreWallet(keyFile string) error {
+func (wm *WalletManager) RestoreWallet(keyFile string, confFile string) error {
 
 	//备份钱包，配置有密钥路径，采用配置文件的，没有采用默认的路径备份私钥。
 	//默认备份路径 /root/.config/lux-headless/key.json
@@ -299,6 +325,14 @@ func (wm *WalletManager) RestoreWallet(keyFile string) error {
 	if err != nil {
 		return err
 	}
+
+	//恢复conf.json到钱包数据目录
+	err = file.Copy(confFile, wm.Config.WalletDataPath)
+	if err != nil {
+		return err
+	}
+
+	log.Warningf("Please import [my_addresses] table data of your backup sqlite db into path: %s/luxalpa.sqlite", wm.Config.WalletDataPath)
 
 	return nil
 }

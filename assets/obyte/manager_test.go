@@ -25,7 +25,7 @@ func testNewWalletManager() *WalletManager {
 
 	tw := NewWalletManager()
 
-	tw.Config.ServerAPI = "http://47.106.102.2:10014"
+	tw.Config.ServerAPI = "http://47.106.102.2:10015"
 	tw.WalletClient = NewClient(tw.Config.ServerAPI, "", true)
 
 	return tw
@@ -51,7 +51,15 @@ func TestWalletManager_GetNewAddress(t *testing.T) {
 	}
 }
 
-
+func TestWalletManager_GetChangeAddress(t *testing.T) {
+	tw := testNewWalletManager()
+	b, err := tw.GetChangeAddress()
+	if err != nil {
+		t.Errorf("GetChangeAddress failed unexpected error: %v\n", err)
+	} else {
+		log.Infof("GetChangeAddress: %+v", b)
+	}
+}
 
 func TestWalletManager_GetBalance(t *testing.T) {
 	tw := testNewWalletManager()

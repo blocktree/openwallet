@@ -268,6 +268,11 @@ func (wm *WalletManager) initSupportAssetsAdapter() error {
 			continue
 		}
 
+		assetsLogger := assetsMgr.GetAssetsLogger()
+		if assetsLogger != nil {
+			assetsLogger.SetLogFuncCall(true)
+		}
+
 		scanner := assetsMgr.GetBlockScanner()
 
 		if scanner == nil {

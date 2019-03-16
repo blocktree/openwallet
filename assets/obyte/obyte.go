@@ -240,8 +240,9 @@ func (wm *WalletManager) GetWalletList() error {
 func (wm *WalletManager) RestoreWalletFlow() error {
 
 	var (
-		err     error
-		keyFile string
+		err      error
+		keyFile  string
+		confFile string
 	)
 
 	//先加载是否有配置文件
@@ -256,7 +257,13 @@ func (wm *WalletManager) RestoreWalletFlow() error {
 		return err
 	}
 
-	err = wm.RestoreWallet(keyFile)
+	//输入恢复文件路径
+	confFile, err = console.InputText("Enter backup conf file path: ", true)
+	if err != nil {
+		return err
+	}
+
+	err = wm.RestoreWallet(keyFile, confFile)
 	if err != nil {
 		return err
 	}

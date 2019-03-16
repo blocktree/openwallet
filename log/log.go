@@ -62,19 +62,16 @@ func Alert(v ...interface{}) {
 
 // Critical logs a message at critical level.
 func Critical(v ...interface{}) {
-	SetLogFuncCall(true)
 	Std.Critical(generateFmtStr(len(v)), v...)
 }
 
 // format & Error logs a message at error level.
 func Errorf(format string, v ...interface{}) {
-	SetLogFuncCall(true)
 	Std.Error(format, v...)
 }
 
 // Error logs a message at error level.
 func Error(v ...interface{}) {
-	SetLogFuncCall(true)
 	Std.Error(generateFmtStr(len(v)), v...)
 }
 
@@ -114,13 +111,11 @@ func Info(v ...interface{}) {
 
 // Format & debug logs a message at debug level.
 func Debugf(format string, v ...interface{}) {
-	SetLogFuncCall(true)
 	Std.Debug(format, v...)
 }
 
 // Debug logs a message at debug level.
 func Debug(v ...interface{}) {
-	SetLogFuncCall(true)
 	Std.Debug(generateFmtStr(len(v)), v...)
 }
 

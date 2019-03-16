@@ -18,13 +18,14 @@ package tron
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/blocktree/openwallet/assets/tron/grpc-gateway/core"
 	"github.com/blocktree/openwallet/common"
+	"github.com/golang/protobuf/proto"
 	"math/big"
 	"sort"
 
 	"time"
 
-	"github.com/blocktree/openwallet/log"
 	"github.com/blocktree/openwallet/openwallet"
 	"github.com/shopspring/decimal"
 	// "github.com/blocktree/openwallet/assets/qtum/btcLikeTxDriver"
@@ -47,18 +48,30 @@ func CheckRawTransaction(rawTx *openwallet.RawTransaction) error {
 }
 
 func InsertSignatureIntoRawTransaction(txHex string, signature string) (string, error) {
+
+	tx := &core.Transaction{}
 	txBytes, err := hex.DecodeString(txHex)
 	if err != nil {
-		log.Errorf("nvalid transaction hex data;unexpected err:%v", err)
-		return "", fmt.Errorf("invalid transaction hex data")
+		return "", err
 	}
+	if err := proto.Unmarshal(txBytes, tx); err != nil {
+		return "", err
+	}
+
 	signatureBytes, err := hex.DecodeString(signature)
 	if err != nil {
-		log.Errorf("invalid transaction signature hex data;unexpected err:%v", err)
+		//log.Errorf("invalid transaction signature hex data;unexpected err:%v", err)
 		return "", fmt.Errorf("invalid signature hex data")
 	}
-	mergeTxBytes := append(txBytes, signatureBytes...)
-	mergeTxHex := hex.EncodeToString(mergeTxBytes)
+
+	tx.Signature = append(tx.Signature, signatureBytes)
+	x, err := proto.Marshal(tx)
+	if err != nil {
+		//wm.Log.Info("marshal tx failed;unexpected error:%v", err)
+		return "", err
+	}
+
+	mergeTxHex := hex.EncodeToString(x)
 	return mergeTxHex, nil
 
 }
@@ -203,12 +216,13 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletD
 				decoder.wm.Log.Info("get privatekey bytes failed;unexpected error:%v", err)
 				return err
 			}
-			txHashBytes, err := getTxHash1(rawTx.RawHex)
-			if err != nil {
-				decoder.wm.Log.Info("get Tx hash failed;unexpected error:%v", err)
-				return err
-			}
-			txHash := hex.EncodeToString(txHashBytes)
+			//txHashBytes, err := getTxHash1(rawTx.RawHex)
+			//if err != nil {
+			//	decoder.wm.Log.Info("get Tx hash failed;unexpected error:%v", err)
+			//	return err
+			//}
+			//txHash := hex.EncodeToString(txHashBytes)
+			txHash := keySignature.Message
 			priKey := hex.EncodeToString(priKeyBytes)
 			signature, err := decoder.wm.SignTransactionRef(txHash, priKey)
 			if err != nil {
@@ -277,6 +291,11 @@ func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.Walle
 	if !exist {
 		return nil, fmt.Errorf("wallet signature not found")
 	}
+
+	if len(sig) == 0 {
+		return nil, fmt.Errorf("transaction signature is empty")
+	}
+
 	mergeTxHex, err := InsertSignatureIntoRawTransaction(rawTx.RawHex, sig[0].Signature)
 	if err != nil {
 		decoder.wm.Log.Info("merge empty transaction and signature failed;unexpected error:%v", err)
