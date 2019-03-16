@@ -23,10 +23,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/blocktree/openwallet/assets/tron/grpc-gateway/core"
 	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/blocktree/go-owcdrivers/signatureSet"
 	"github.com/blocktree/go-owcrypt"
+	"github.com/blocktree/openwallet/assets/tron/grpc-gateway/core"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/imroc/req"
@@ -161,23 +161,6 @@ func (wm *WalletManager) CreateTransactionRef(toAddress, ownerAddress string, am
 
 func (wm *WalletManager) SignTransactionRef(hash string, privateKey string) (signedTxRaw string, err error) {
 
-	tx := &core.Transaction{}
-	/*
-		 if txRawBts, err := hex.DecodeString(txRawhex); err != nil {
-			 return signedTxRaw, err
-		 } else {
-			 if err := proto.Unmarshal(txRawBts, tx); err != nil {
-				 return signedTxRaw, err
-			 }
-		 }
-		 // tx.GetRawData().GetRefBlockBytes()
-		 txHash, err := getTxHash(tx)
-		 fmt.Println("txHash:=", hex.EncodeToString(txHash))
-		 if err != nil {
-			 return signedTxRaw, err
-		 }
-		 fmt.Println("Tx Hash = ", hex.EncodeToString(txHash))
-	*/
 	txHash, err := hex.DecodeString(hash)
 
 	if err != nil {
@@ -189,33 +172,13 @@ func (wm *WalletManager) SignTransactionRef(hash string, privateKey string) (sig
 		wm.Log.Info("conver privatekey from hex to byte failed;unexpected error:%v", err)
 		return "", err
 	}
-	/*
-		 for i := range tx.GetRawData().GetContract() {
-
-			 // sign, ret := owcrypt.Signature(privateKey, nil, 0, txHash, uint16(len(txHash)), owcrypt.ECC_CURVE_SECP256K1)
-
-			 sign, ret := owcrypt.Tron_signature(pk, txHash)
-			 if ret != owcrypt.SUCCESS {
-				 err := fmt.Errorf("Signature[%d] faild", i)
-				 log.Println(err)
-				 return signedTxRaw, err
-			 }
-			 tx.Signature = append(tx.Signature, sign)
-		 }*/
 	sign, ret := signatureSet.TronSignature(pk, txHash)
 	if ret != owcrypt.SUCCESS {
-		wm.Log.Info("sign txHash failed;unexpected error:%v", ret)
+		wm.Log.Infof("sign txHash failed;unexpected error:%v", ret)
 		return "", fmt.Errorf("sign txHash failed")
 	}
-	tx.Signature = append(tx.Signature, sign)
-	x, err := proto.Marshal(tx)
-	if err != nil {
-		wm.Log.Info("marshal tx failed;unexpected error:%v", err)
-		return "", err
-	} else {
-		signedTxRaw = hex.EncodeToString(x)
-	}
-	return signedTxRaw, nil
+
+	return hex.EncodeToString(sign), nil
 }
 
 func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
