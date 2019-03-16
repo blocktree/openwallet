@@ -221,7 +221,7 @@ func (bs *NASBlockScanner) ScanBlockTask() {
 			if forkBlock != nil {
 
 				//通知分叉区块给观测者，异步处理
-				go bs.newBlockNotify(forkBlock, isFork)
+				bs.newBlockNotify(forkBlock, isFork)
 			}
 
 		} else {
@@ -240,7 +240,7 @@ func (bs *NASBlockScanner) ScanBlockTask() {
 			isFork = false
 
 			//通知新区块给观测者，异步处理
-			go bs.newBlockNotify(block, isFork)
+			bs.newBlockNotify(block, isFork)
 		}
 
 	}
@@ -290,7 +290,7 @@ func (bs *NASBlockScanner) ScanBlock(height uint64) error {
 	//bs.wm.SaveLocalBlock(block)
 
 	//通知新区块给观测者，异步处理
-	go bs.newBlockNotify(block, false)
+	bs.newBlockNotify(block, false)
 
 	return nil
 }
@@ -385,11 +385,14 @@ func (bs *NASBlockScanner) RescanFailedRecord() {
 
 //newBlockNotify 获得新区块后，通知给观测者
 func (bs *NASBlockScanner) newBlockNotify(block *Block, isFork bool) {
-	for o, _ := range bs.Observers {
-		header := block.BlockHeader()
-		header.Fork = isFork
-		o.BlockScanNotify(block.BlockHeader())
-	}
+	header := block.BlockHeader()
+	header.Fork = isFork
+	bs.NewBlockNotify(header)
+	//for o, _ := range bs.Observers {
+	//	header := block.BlockHeader()
+	//	header.Fork = isFork
+	//	o.BlockScanNotify(block.BlockHeader())
+	//}
 }
 
 //BatchExtractTransaction 批量提取交易单

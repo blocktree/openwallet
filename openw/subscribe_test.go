@@ -124,7 +124,7 @@ func TestSubscribeAddress_BTC(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	scanner.SetRescanBlockHeight(565800)
+	scanner.SetRescanBlockHeight(1365800)
 
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")
@@ -219,13 +219,13 @@ func TestSubscribeAddress_ETH(t *testing.T) {
 
 	scanner.Run()
 
-	time.Sleep(10 * time.Second)
-	log.Notice("scanner.Pause()")
-	scanner.Pause()
-
-	time.Sleep(30 * time.Second)
-	log.Notice("scanner.Restart()")
-	scanner.Restart()
+	//time.Sleep(10 * time.Second)
+	//log.Notice("scanner.Pause()")
+	//scanner.Pause()
+	//
+	//time.Sleep(30 * time.Second)
+	//log.Notice("scanner.Restart()")
+	//scanner.Restart()
 
 	<-endRunning
 }
@@ -270,7 +270,7 @@ func TestSubscribeAddress_QTUM(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	//scanner.SetRescanBlockHeight(270679)
+	scanner.SetRescanBlockHeight(330000)
 
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")
@@ -282,6 +282,26 @@ func TestSubscribeAddress_QTUM(t *testing.T) {
 	sub := subscriberSingle{}
 	scanner.AddObserver(&sub)
 
+	scanner.Run()
+
+	time.Sleep(6 * time.Second)
+
+	log.Notice("scanner.Pause()")
+	scanner.Pause()
+
+	time.Sleep(6 * time.Second)
+
+	log.Notice("scanner.Restart()")
+	scanner.Restart()
+
+	time.Sleep(6 * time.Second)
+
+	log.Notice("scanner.Stop()")
+	scanner.Stop()
+
+	time.Sleep(6 * time.Second)
+
+	log.Notice("scanner.Run()")
 	scanner.Run()
 
 	<-endRunning
@@ -394,6 +414,52 @@ func TestSubscribeAddress_NAS(t *testing.T) {
 	scanner.AddObserver(&sub)
 
 	scanner.Run()
+
+	//time.Sleep(6 * time.Second)
+	//
+	//log.Notice("scanner.Pause()")
+	//scanner.Pause()
+	//
+	//time.Sleep(6 * time.Second)
+	//
+	//log.Notice("scanner.Restart()")
+	//scanner.Restart()
+	//
+	//time.Sleep(6 * time.Second)
+	//
+	//log.Notice("scanner.Stop()")
+	//scanner.Stop()
+	//
+	//time.Sleep(6 * time.Second)
+	//
+	//log.Notice("scanner.Run()")
+	//scanner.Run()
+	//
+	//time.Sleep(6 * time.Second)
+	//
+	//log.Notice("scanner.CloseBlockScanner()")
+	//scanner.CloseBlockScanner()
+	//
+	//time.Sleep(6 * time.Second)
+	//
+	//log.Notice("scanner.Run()")
+	//err = scanner.Run()
+	//if err != nil {
+	//	log.Errorf("err: %v", err)
+	//}
+	//
+	//time.Sleep(6 * time.Second)
+	//
+	//log.Notice("scanner.InitBlockScanner()")
+	//scanner.InitBlockScanner()
+	//
+	//time.Sleep(6 * time.Second)
+	//
+	//log.Notice("scanner.Run()")
+	//err = scanner.Run()
+	//if err != nil {
+	//	log.Errorf("err: %v\n", err)
+	//}
 
 	<-endRunning
 }

@@ -228,7 +228,7 @@ func (bs *ONTBlockScanner) ScanBlockTask() {
 		}
 
 		//通知新区块给观测者，异步处理
-		go bs.newBlockNotify(block, isFork)
+		bs.newBlockNotify(block, isFork)
 	}
 
 	//重扫前N个块，为保证记录找到
@@ -285,7 +285,7 @@ func (bs *ONTBlockScanner) scanBlock(block *Block) error {
 	//bs.wm.SaveLocalBlock(block)
 
 	//通知新区块给观测者，异步处理
-	go bs.newBlockNotify(block, false)
+	bs.newBlockNotify(block, false)
 
 	return nil
 }
@@ -376,11 +376,9 @@ func (bs *ONTBlockScanner) RescanFailedRecord() {
 
 //newBlockNotify 获得新区块后，通知给观测者
 func (bs *ONTBlockScanner) newBlockNotify(block *Block, isFork bool) {
-	for o, _ := range bs.Observers {
-		header := block.BlockHeader()
-		header.Fork = isFork
-		o.BlockScanNotify(block.BlockHeader())
-	}
+	header := block.BlockHeader()
+	header.Fork = isFork
+	bs.NewBlockNotify(header)
 }
 
 //BatchExtractTransaction 批量提取交易单
