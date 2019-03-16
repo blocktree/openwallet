@@ -112,12 +112,10 @@ func (this *ETHBLockScanner) SetRescanBlockHeight(height uint64) error {
 }
 
 func (this *ETHBLockScanner) newBlockNotify(block *EthBlock, isFork bool) {
-	for o, _ := range this.Observers {
-		header := block.CreateOpenWalletBlockHeader()
-		header.Fork = isFork
-		header.Symbol = this.wm.SymbolID
-		o.BlockScanNotify(header)
-	}
+	header := block.CreateOpenWalletBlockHeader()
+	header.Fork = isFork
+	header.Symbol = this.wm.SymbolID
+	this.NewBlockNotify(header)
 }
 
 func (this *ETHBLockScanner) ScanBlock(height uint64) error {
@@ -133,7 +131,7 @@ func (this *ETHBLockScanner) ScanBlock(height uint64) error {
 		return err
 	}
 
-	go this.newBlockNotify(curBlock, false)
+	this.newBlockNotify(curBlock, false)
 
 	return nil
 }
@@ -276,7 +274,7 @@ func (this *ETHBLockScanner) ScanBlockTask() {
 			if forkBlock != nil {
 
 				//通知分叉区块给观测者，异步处理
-				go this.newBlockNotify(forkBlock, isFork)
+				this.newBlockNotify(forkBlock, isFork)
 			}
 
 		} else {
@@ -293,7 +291,7 @@ func (this *ETHBLockScanner) ScanBlockTask() {
 
 			isFork = false
 
-			go this.newBlockNotify(curBlock, isFork)
+			this.newBlockNotify(curBlock, isFork)
 		}
 
 		curBlockHeight = curBlock.blockHeight

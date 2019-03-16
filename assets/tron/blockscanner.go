@@ -206,7 +206,7 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 			isFork = true
 			if forkBlock != nil {
 				//通知分叉区块给观测者，异步处理
-				go bs.newBlockNotify(forkBlock, isFork)
+				bs.newBlockNotify(forkBlock, isFork)
 			}
 
 		} else {
@@ -222,7 +222,7 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 			bs.SaveLocalBlock(block)
 			isFork = false
 			//通知新区块给观测者，异步处理
-			go bs.newBlockNotify(block, isFork)
+			bs.newBlockNotify(block, isFork)
 
 		}
 	}
@@ -273,7 +273,7 @@ func (bs *TronBlockScanner) scanBlock(block *Block) error {
 	//bs.wm.SaveLocalBlock(block)
 
 	//通知新区块给观测者，异步处理
-	go bs.newBlockNotify(block, false)
+	bs.newBlockNotify(block, false)
 
 	return nil
 }
@@ -359,11 +359,9 @@ func (wm *WalletManager) DeleteUnscanRecord(height uint64) error {
 
 //newBlockNotify 获得新区块后，通知给观测者
 func (bs *TronBlockScanner) newBlockNotify(block *Block, isFork bool) {
-	for o, _ := range bs.Observers {
-		header := block.Blockheader()
-		header.Fork = isFork
-		o.BlockScanNotify(block.Blockheader())
-	}
+	header := block.Blockheader()
+	header.Fork = isFork
+	bs.NewBlockNotify(header)
 }
 
 //提取交易单

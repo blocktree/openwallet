@@ -221,7 +221,7 @@ func (bs *BTCBlockScanner) ScanBlockTask() {
 			if forkBlock != nil {
 
 				//通知分叉区块给观测者，异步处理
-				go bs.newBlockNotify(forkBlock, isFork)
+				bs.newBlockNotify(forkBlock, isFork)
 			}
 
 		} else {
@@ -241,7 +241,7 @@ func (bs *BTCBlockScanner) ScanBlockTask() {
 			isFork = false
 
 			//通知新区块给观测者，异步处理
-			go bs.newBlockNotify(block, isFork)
+			bs.newBlockNotify(block, isFork)
 		}
 
 	}
@@ -300,7 +300,7 @@ func (bs *BTCBlockScanner) scanBlock(block *Block) error {
 	//bs.wm.SaveLocalBlock(block)
 
 	//通知新区块给观测者，异步处理
-	go bs.newBlockNotify(block, false)
+	bs.newBlockNotify(block, false)
 
 	return nil
 }
@@ -399,11 +399,9 @@ func (bs *BTCBlockScanner) RescanFailedRecord() {
 
 //newBlockNotify 获得新区块后，通知给观测者
 func (bs *BTCBlockScanner) newBlockNotify(block *Block, isFork bool) {
-	for o, _ := range bs.Observers {
-		header := block.BlockHeader(bs.wm.Symbol())
-		header.Fork = isFork
-		o.BlockScanNotify(header)
-	}
+	header := block.BlockHeader(bs.wm.Symbol())
+	header.Fork = isFork
+	bs.NewBlockNotify(header)
 }
 
 //BatchExtractTransaction 批量提取交易单

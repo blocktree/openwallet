@@ -17,6 +17,7 @@ package openwallet
 
 import (
 	"fmt"
+	"github.com/blocktree/openwallet/concurrent"
 	"sync"
 	"time"
 
@@ -58,9 +59,18 @@ type BlockScanner interface {
 	//Restart 继续扫描
 	Restart() error
 
+	//InitBlockScanner 初始化扫描器
+	InitBlockScanner() error
+
+	//CloseBlockScanner 关闭扫描器
+	CloseBlockScanner() error
+
 	//ScanBlock 扫描指定高度的区块
 	//@required
 	ScanBlock(height uint64) error
+
+	//NewBlockNotify 新区块通知
+	NewBlockNotify(header *BlockHeader) error
 
 	//GetCurrentBlockHeight 获取当前区块高度
 	//@required
@@ -132,16 +142,35 @@ type BlockScannerBase struct {
 	Scanning          bool                                 //是否扫描中
 	PeriodOfTask      time.Duration
 	ScanAddressFunc   BlockScanAddressFunc //区块扫描查询地址算法
+	blockProducer     chan interface{}
+	blockConsumer     chan interface{}
+	isClose           bool //是否已关闭
+	//closeOnce         sync.Once
 }
 
 //NewBTCBlockScanner 创建区块链扫描器
 func NewBlockScannerBase() *BlockScannerBase {
 	bs := BlockScannerBase{}
 	bs.AddressInScanning = make(map[string]string)
-	//bs.WalletInScanning = make(map[string]*WalletWrapper)
 	bs.Observers = make(map[BlockScanNotificationObject]bool)
 	bs.PeriodOfTask = periodOfTask
+
+	bs.InitBlockScanner()
 	return &bs
+}
+
+//InitBlockScanner
+func (bs *BlockScannerBase) InitBlockScanner() error {
+
+	bs.blockProducer = make(chan interface{})
+	bs.blockConsumer = make(chan interface{})
+
+	go bs.newBlockNotifyConsume()
+	go concurrent.ProducerToConsumerRuntime(bs.blockProducer, bs.blockConsumer)
+
+	bs.isClose = false
+
+	return nil
 }
 
 //SetBlockScanAddressFunc 设置区块扫描过程，查找地址过程方法
@@ -208,6 +237,10 @@ func (bs *BlockScannerBase) SetTask(task func()) {
 //Run 运行
 func (bs *BlockScannerBase) Run() error {
 
+	if bs.IsClose() {
+		return fmt.Errorf("block scanner has been closed")
+	}
+
 	if bs.ScanAddressFunc == nil {
 		return fmt.Errorf("BlockScanAddressFunc is not set up")
 	}
@@ -227,6 +260,11 @@ func (bs *BlockScannerBase) Run() error {
 
 //Stop 停止扫描
 func (bs *BlockScannerBase) Stop() error {
+
+	if bs.IsClose() {
+		return fmt.Errorf("block scanner has been closed")
+	}
+
 	bs.scanTask.Stop()
 	bs.Scanning = false
 	return nil
@@ -234,6 +272,11 @@ func (bs *BlockScannerBase) Stop() error {
 
 //Pause 暂停扫描
 func (bs *BlockScannerBase) Pause() error {
+
+	if bs.IsClose() {
+		return fmt.Errorf("block scanner has been closed")
+	}
+
 	bs.scanTask.Pause()
 	bs.Scanning = false
 	return nil
@@ -241,15 +284,20 @@ func (bs *BlockScannerBase) Pause() error {
 
 //Restart 继续扫描
 func (bs *BlockScannerBase) Restart() error {
+
+	if bs.IsClose() {
+		return fmt.Errorf("block scanner has been closed")
+	}
+
 	bs.scanTask.Restart()
 	bs.Scanning = true
 	return nil
 }
 
-//scanning 扫描
-//func (bs *BlockScannerBase) ScanTask() {
-//	//执行扫描任务
-//}
+//IsClose 是否已经关闭
+func (bs *BlockScannerBase) IsClose() bool {
+	return bs.isClose
+}
 
 //ScanBlock 扫描指定高度区块
 func (bs *BlockScannerBase) ScanBlock(height uint64) error {
@@ -291,4 +339,53 @@ func (bs *BlockScannerBase) GetBalanceByAddress(address ...string) ([]*Balance, 
 //返回的交易记录以资产账户为集合的结果，转账数量以基于账户来计算
 func (bs *BlockScannerBase) GetTransactionsByAddress(offset, limit int, coin Coin, address ...string) ([]*TxExtractData, error) {
 	return nil, fmt.Errorf("GetTransactionsByAddress is not implemented")
+}
+
+//NewBlockNotify 获得新区块后，发送到通知通道
+func (bs *BlockScannerBase) NewBlockNotify(block *BlockHeader) error {
+	bs.Mu.RLock()
+	defer bs.Mu.RUnlock()
+	if !bs.IsClose() {
+		bs.blockProducer <- block
+	}
+
+	return nil
+}
+
+//CloseBlockScanner 关闭扫描器
+func (bs *BlockScannerBase) CloseBlockScanner() error {
+
+	//保证只关闭一次
+	//bs.closeOnce.Do(func() {
+	bs.Stop()
+
+	bs.Mu.Lock()
+	defer bs.Mu.Unlock()
+	bs.isClose = true
+	close(bs.blockProducer)
+	close(bs.blockConsumer)
+	//})
+
+	return nil
+}
+
+//newBlockNotifyConsume
+func (bs *BlockScannerBase) newBlockNotifyConsume() {
+
+	for {
+		select {
+		case obj, exist := <-bs.blockConsumer:
+			if !exist {
+				//log.Warning("newBlockNotifyConsume closed")
+				return
+			}
+			header, ok := obj.(*BlockHeader)
+			if ok {
+				for o, _ := range bs.Observers {
+					o.BlockScanNotify(header)
+				}
+			}
+		}
+
+	}
 }
