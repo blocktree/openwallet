@@ -117,6 +117,12 @@ type KeySignature struct {
 	Message   string   `json:"msg"`     //被签消息
 }
 
+//交易单状态
+const (
+	TxStatusSuccess = "1" //成功
+	TxStatusFail    = "0" //失败
+)
+
 type Transaction struct {
 	//openwallet自定义的ID，在不同链可能存在重复的txid，
 	// 所以我们要生成一个全局不重复的

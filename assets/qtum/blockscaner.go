@@ -635,6 +635,7 @@ func (bs *BTCBlockScanner) extractTransaction(trx *Transaction, result *ExtractR
 					TxID:        trx.TxID,
 					Decimal:     8,
 					ConfirmTime: blocktime,
+					Status:      openwallet.TxStatusSuccess,
 				}
 				wxID := openwallet.GenTransactionWxID(tx)
 				tx.WxID = wxID
@@ -885,6 +886,7 @@ func (bs *BTCBlockScanner) extractTokenTransfer(trx *Transaction, result *Extrac
 						TxID:        tokenReceipt.TxHash,
 						Decimal:     0,
 						ConfirmTime: blocktime,
+						Status:      openwallet.TxStatusSuccess,
 					}
 					wxID := openwallet.GenTransactionWxID(tx)
 					tx.WxID = wxID
