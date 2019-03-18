@@ -117,7 +117,7 @@ type Transaction struct {
 	Amount      uint64
 	BlockHeight uint64
 	BlockHash   string
-	Status      bool
+	Status      string
 }
 
 func NewTransaction(json *gjson.Result) *Transaction {
@@ -130,11 +130,7 @@ func NewTransaction(json *gjson.Result) *Transaction {
 	obj.Amount = json.Get("amount").Uint()
 	obj.BlockHeight = json.Get("height").Uint()
 	obj.FeeCharged = json.Get("feeCharged").Uint()
-	if json.Get("status").String() == "Success" {
-		obj.Status = true
-	} else {
-		obj.Status = false
-	}
+	obj.Status = json.Get("status").String()
 
 	if obj.TxType == 2 {
 		obj.Fee = json.Get("fee").Uint()
