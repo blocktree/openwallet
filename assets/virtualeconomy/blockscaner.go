@@ -613,6 +613,14 @@ func (bs *VSYSBlockScanner) extractTransaction(trx *Transaction, result *Extract
 			}
 
 			for _, extractData := range result.extractData {
+				status := ""
+				reason := ""
+				if trx.Status == "Success" {
+					status = "1"
+				} else {
+					status = "0"
+					reason = trx.Status
+				}
 				tx := &openwallet.Transaction{
 					From:   []string{from + ":" + convertToAmount(trx.Amount)},
 					To:     []string{trx.Recipient + ":" + convertToAmount(trx.Amount)},
@@ -626,7 +634,8 @@ func (bs *VSYSBlockScanner) extractTransaction(trx *Transaction, result *Extract
 					BlockHeight: trx.BlockHeight,
 					TxID:        trx.TxID,
 					Decimal:     8,
-					Status:      trx.Status,
+					Status:      status,
+					Reason:      reason,
 					// ConfirmTime: blocktime,
 				}
 				wxID := openwallet.GenTransactionWxID(tx)
