@@ -294,7 +294,7 @@ func TestTransfer_QRC20(t *testing.T) {
 
 	testGetAssetsAccountTokenBalance(tm, walletID, accountID, contract)
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.15", "0.01", &contract)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1000", "0.01", &contract)
 	if err != nil {
 		return
 	}
