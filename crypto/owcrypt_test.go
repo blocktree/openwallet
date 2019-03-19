@@ -19,6 +19,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"testing"
+
 	"github.com/blocktree/go-owcrypt"
 )
 
@@ -281,7 +282,7 @@ func Test_getcurveorder(t *testing.T) {
 		return
 	}
 
-	ret = owcrypt.GetCurveOrder(owcrypt.ECC_CURVE_ED25519)
+	ret = owcrypt.GetCurveOrder(owcrypt.ECC_CURVE_ED25519_NORMAL)
 	sret = hex.EncodeToString(ret[:])
 	if sret == "1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed" {
 		fmt.Println("曲线ed25519的阶是：")

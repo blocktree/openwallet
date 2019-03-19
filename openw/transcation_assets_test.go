@@ -21,9 +21,9 @@ import (
 	"testing"
 
 	"github.com/astaxie/beego/config"
+	"github.com/blocktree/go-owcdrivers/ontologyTransaction"
 	"github.com/blocktree/openwallet/log"
 	"github.com/blocktree/openwallet/openwallet"
-	"github.com/blocktree/go-owcdrivers/ontologyTransaction"
 )
 
 func testGetAssetsAccountBalance(tm *WalletManager, walletID, accountID string) {
@@ -660,13 +660,13 @@ func TestTransfer_ONG2(t *testing.T) {
 func TestTransfer_VSYS(t *testing.T) {
 	tm := testVSYSInitWalletManager()
 
-	walletID := "W1kQam3wxvf3scixTzADT9APyhpuXba7Pq"
-	accountID := "6RQ4WGVodRFUTDuMuKM4dC8Jrm9zC8jjnn7ZChbE4nnY"
+	walletID := "W8325QfzEfWq4uevrVh67wMR5xLDMEjiD7"
+	accountID := "GqTrUZF2dFcmo4rAksY2U3SPZABbF4ZDGMgKU6iVAXuU"
 	to := "AREkgFxYhyCdtKD9JSSVhuGQomgGcacvQqM"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1", "", nil)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.9", "", nil)
 	if err != nil {
 		return
 	}

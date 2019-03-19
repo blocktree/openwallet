@@ -21,8 +21,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blocktree/openwallet/common/file"
 	"github.com/blocktree/go-owcrypt"
+	"github.com/blocktree/openwallet/common/file"
 	"github.com/shopspring/decimal"
 )
 
@@ -41,7 +41,7 @@ const (
 	//币种
 	Symbol    = "XTZ"
 	MasterKey = "Tezos seed"
-	CurveType = owcrypt.ECC_CURVE_ED25519
+	CurveType = owcrypt.ECC_CURVE_ED25519_NORMAL
 )
 
 type WalletConfig struct {
