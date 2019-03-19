@@ -16,57 +16,59 @@
 package tezos
 
 import (
-	"github.com/shopspring/decimal"
-	"time"
 	"encoding/hex"
-	"golang.org/x/crypto/blake2b"
-	"strconv"
-	"github.com/tidwall/gjson"
-	"path/filepath"
-	"github.com/astaxie/beego/config"
 	"errors"
-	"github.com/blocktree/openwallet/common"
-	"github.com/blocktree/openwallet/openwallet"
-	"github.com/bndr/gotabulate"
 	"fmt"
-	"github.com/blocktree/openwallet/common/file"
-	"github.com/blocktree/openwallet/hdkeystore"
-	"github.com/btcsuite/btcutil/hdkeychain"
-	"github.com/blocktree/openwallet/log"
+	"path/filepath"
+	"strconv"
+	"time"
+
+	"github.com/astaxie/beego/config"
 	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/blocktree/go-owcrypt"
+	"github.com/blocktree/openwallet/common"
+	"github.com/blocktree/openwallet/common/file"
+	"github.com/blocktree/openwallet/hdkeystore"
+	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/openwallet"
+	"github.com/bndr/gotabulate"
+	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/shopspring/decimal"
+	"github.com/tidwall/gjson"
+	"golang.org/x/crypto/blake2b"
 )
 
 const (
 	maxAddresNum = 10000000
 )
+
 var (
 	coinDecimal decimal.Decimal = decimal.NewFromFloat(1000000)
 )
 
 //地址，公钥，公钥哈希，私钥，签名前缀
 var prefix = map[string][]byte{
-	"tz1": {6, 161, 159},
-	"tz2": {6, 161, 161},
-	"edpk": {13, 15, 37, 217},
-	"edsk": {43, 246, 78, 7},
+	"tz1":   {6, 161, 159},
+	"tz2":   {6, 161, 161},
+	"edpk":  {13, 15, 37, 217},
+	"edsk":  {43, 246, 78, 7},
 	"edsk2": {13, 15, 58, 7},
 	"edsig": {9, 245, 205, 134, 18},
-	"nil": {},
+	"nil":   {},
 }
 
 //消息前缀
 var watermark = map[string][]byte{
-	"block": {1},
+	"block":       {1},
 	"endorsement": {2},
-	"generic": {3},
+	"generic":     {3},
 }
 
 type WalletManager struct {
-	Storage      *hdkeystore.HDKeystore         //秘钥存取
-	WalletClient *Client                        // 节点客户端
-	Config       *WalletConfig                  //钱包管理配置
-	WalletsInSum map[string]*openwallet.Wallet  //参与汇总的钱包
+	Storage      *hdkeystore.HDKeystore        //秘钥存取
+	WalletClient *Client                       // 节点客户端
+	Config       *WalletConfig                 //钱包管理配置
+	WalletsInSum map[string]*openwallet.Wallet //参与汇总的钱包
 	//Blockscanner *XTZBlockScanner             //区块扫描器
 	//Decoder      *openwallet.AddressDecoder     //地址编码器
 }
@@ -86,16 +88,16 @@ func NewWalletManager() *WalletManager {
 
 //签名交易
 func (wm *WalletManager) signTransaction(hash string, sk []byte, watermark []byte) (string, string, error) {
-	bhash,_ := hex.DecodeString(hash)
+	bhash, _ := hex.DecodeString(hash)
 	merbuf := append(watermark, bhash...)
-	ctx, err :=blake2b.New(32,nil)
+	ctx, err := blake2b.New(32, nil)
 	if err != nil {
 		return "", "", err
 	}
 	ctx.Write(merbuf[:])
 	bb := ctx.Sum(nil)
 
-	sig, _ := owcrypt.Signature(sk[:], nil, 0, bb[:], uint16(len(bb)), owcrypt.ECC_CURVE_ED25519_EXTEND)
+	sig, _ := owcrypt.Signature(sk[:], nil, 0, bb[:], uint16(len(bb)), owcrypt.ECC_CURVE_ED25519)
 	edsig := base58checkEncode(sig, prefix["edsig"])
 
 	sbyte := hash + hex.EncodeToString(sig[:])
@@ -117,27 +119,27 @@ func (wm *WalletManager) isReverlKey(pubkey string) bool {
 }
 
 //转账
-func (wm *WalletManager) Transfer(keys Key, dst string, fee, gas_limit, storage_limit, amount string) (string, string){
+func (wm *WalletManager) Transfer(keys Key, dst string, fee, gas_limit, storage_limit, amount string) (string, string) {
 	header := wm.WalletClient.CallGetHeader()
 	blk_hash := gjson.GetBytes(header, "hash").Str
 	chain_id := gjson.GetBytes(header, "chain_id").Str
 	protocol := gjson.GetBytes(header, "protocol").Str
 
 	counter := wm.WalletClient.CallGetCounter(keys.Address)
-	icounter,_ := strconv.Atoi(string(counter))
+	icounter, _ := strconv.Atoi(string(counter))
 	icounter = icounter + 1
 
 	isReverlKey := wm.isReverlKey(keys.Address)
 
 	var ops []interface{}
 	reverl := map[string]string{
-		"kind": "reveal",
-		"fee": fee,
-		"public_key": keys.PublicKey,
-		"source": keys.Address,
-		"gas_limit": gas_limit,
+		"kind":          "reveal",
+		"fee":           fee,
+		"public_key":    keys.PublicKey,
+		"source":        keys.Address,
+		"gas_limit":     gas_limit,
 		"storage_limit": storage_limit,
-		"counter": strconv.Itoa(icounter),
+		"counter":       strconv.Itoa(icounter),
 	}
 	if isReverlKey {
 		icounter = icounter + 1
@@ -145,14 +147,14 @@ func (wm *WalletManager) Transfer(keys Key, dst string, fee, gas_limit, storage_
 	}
 
 	transaction := map[string]string{
-		"kind" : "transaction",
-		"amount" : amount,
-		"destination" : dst,
-		"fee": fee,
-		"gas_limit": gas_limit,
+		"kind":          "transaction",
+		"amount":        amount,
+		"destination":   dst,
+		"fee":           fee,
+		"gas_limit":     gas_limit,
 		"storage_limit": storage_limit,
-		"counter": strconv.Itoa(icounter),
-		"source": keys.Address,
+		"counter":       strconv.Itoa(icounter),
+		"source":        keys.Address,
 	}
 
 	ops = append(ops, transaction)
@@ -223,7 +225,6 @@ func (wm *WalletManager) CreateNewWallet(name, password string) (*openwallet.Wal
 	return w, keyFile, nil
 }
 
-
 //GetWalletKeys 通过给定的文件路径加载keystore文件得到钱包列表
 func (wm *WalletManager) GetWallets() ([]*openwallet.Wallet, error) {
 	wallets, err := openwallet.GetWalletsByKeyDir(wm.Config.keyDir)
@@ -245,10 +246,10 @@ func (wm *WalletManager) AddWalletInSummary(wid string, wallet *openwallet.Walle
 //获取钱包余额
 func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.Decimal, []*openwallet.Address, error) {
 	var (
-		synCount      int = 10
-		quit              = make(chan struct{})
-		done              = 0 //完成标记
-		shouldDone        = 0 //需要完成的总数
+		synCount   int = 10
+		quit           = make(chan struct{})
+		done           = 0 //完成标记
+		shouldDone     = 0 //需要完成的总数
 	)
 
 	db, err := wallet.OpenDB()
@@ -262,7 +263,7 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 
 	var balance decimal.Decimal = decimal.NewFromFloat(0)
 	count := len(addrs)
-	if  count <= 0 {
+	if count <= 0 {
 		log.Std.Info("This wallet have 0 address!!!")
 		return decimal.NewFromFloat(0), nil, nil
 	} else {
@@ -283,7 +284,7 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 			//
 			balances := <-addrs
 
-			for _, b := range(balances) {
+			for _, b := range balances {
 				balance = balance.Add(decimal.RequireFromString(b.Balance))
 			}
 
@@ -293,7 +294,7 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 				close(quit) //关闭通道，等于给通道传入nil
 			}
 		}
-	} (worker)
+	}(worker)
 
 	/*	计算synCount个线程，内部运行的次数	*/
 	//每个线程内循环的数量，以synCount个线程并行处理
@@ -305,12 +306,12 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 			//开始
 			//log.Std.Info("Start get balance thread[%d]", i)
 			start := i * runCount
-			end := (i + 1) * runCount - 1
+			end := (i+1)*runCount - 1
 			as := addrs[start:end]
 
 			go func(producer chan []*openwallet.Address, addrs []*openwallet.Address, wm *WalletManager) {
 				var bs []*openwallet.Address
-				for _, a := range(addrs) {
+				for _, a := range addrs {
 					b := wm.WalletClient.CallGetbalance(a.Address)
 					a.Balance = string(b)
 					bs = append(bs, a)
@@ -326,12 +327,12 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 	if otherCount > 0 {
 		//
 		//log.Std.Info("Start get balance thread[REST]")
-		start := runCount*synCount
+		start := runCount * synCount
 		as := addrs[start:]
 
 		go func(producer chan []*openwallet.Address, addrs []*openwallet.Address, wm *WalletManager) {
 			var bs []*openwallet.Address
-			for _, a := range(addrs) {
+			for _, a := range addrs {
 				b := wm.WalletClient.CallGetbalance(a.Address)
 				a.Balance = string(b)
 				bs = append(bs, a)
@@ -376,7 +377,7 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 }
 
 //打印钱包列表
-func (wm *WalletManager) printWalletList(list []*openwallet.Wallet, getBalance bool) ([][]*openwallet.Address) {
+func (wm *WalletManager) printWalletList(list []*openwallet.Wallet, getBalance bool) [][]*openwallet.Address {
 	tableInfo := make([][]interface{}, 0)
 	var addrs [][]*openwallet.Address
 
@@ -403,9 +404,9 @@ func (wm *WalletManager) printWalletList(list []*openwallet.Wallet, getBalance b
 	t := gotabulate.Create(tableInfo)
 	// Set Headers
 	if getBalance {
-		t.SetHeaders([]string{"No.", "ID", "Name", "DBFile", "Balance",})
+		t.SetHeaders([]string{"No.", "ID", "Name", "DBFile", "Balance"})
 	} else {
-		t.SetHeaders([]string{"No.", "ID", "Name", "DBFile",})
+		t.SetHeaders([]string{"No.", "ID", "Name", "DBFile"})
 	}
 
 	//打印信息
@@ -430,13 +431,13 @@ func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index
 	address := addressEncoder.AddressEncode(pkHash, cfg)
 
 	addr := openwallet.Address{
-		Address:   address,
-		AccountID: key.KeyID,
-		HDPath:    derivedPath,
+		Address:     address,
+		AccountID:   key.KeyID,
+		HDPath:      derivedPath,
 		CreatedTime: time.Now().Unix(),
-		Symbol:    wm.Config.Symbol,
-		Index:     index,
-		WatchOnly: false,
+		Symbol:      wm.Config.Symbol,
+		Index:       index,
+		WatchOnly:   false,
 	}
 
 	return &addr, err
@@ -585,7 +586,7 @@ func (wm *WalletManager) CreateBatchAddress(walletId, password string, count uin
 	return filePath, outputAddress, nil
 }
 
-func (wm *WalletManager) summaryWallet(wallet *openwallet.Wallet, password string) error{
+func (wm *WalletManager) summaryWallet(wallet *openwallet.Wallet, password string) error {
 	db, err := wallet.OpenDB()
 	if err != nil {
 		return err
@@ -594,7 +595,6 @@ func (wm *WalletManager) summaryWallet(wallet *openwallet.Wallet, password strin
 
 	var addrs []*openwallet.Address
 	db.All(&addrs)
-
 
 	//加载钱包
 	key, err := wallet.HDKey(password)
@@ -623,7 +623,7 @@ func (wm *WalletManager) summaryWallet(wallet *openwallet.Wallet, password strin
 
 		if decimal_balance.GreaterThan(wm.Config.Threshold) {
 			txid, _ := wm.Transfer(*k, wm.Config.SumAddress, strconv.FormatInt(wm.Config.MinFee.IntPart(), 10), strconv.FormatInt(wm.Config.GasLimit.IntPart(), 10),
-				strconv.FormatInt(wm.Config.StorageLimit.IntPart(), 10),strconv.FormatInt(amount.IntPart(), 10))
+				strconv.FormatInt(wm.Config.StorageLimit.IntPart(), 10), strconv.FormatInt(amount.IntPart(), 10))
 
 			log.Std.Info("summary form address:%s, to address:%s, amount:%d, txid:%s\n", k.Address, wm.Config.SumAddress, amount.IntPart(), txid)
 		}
@@ -728,11 +728,10 @@ func (wm *WalletManager) LoadConfig() error {
 
 	wm.Config.CycleSeconds, _ = time.ParseDuration(cyclesec)
 
-	wm.WalletClient = NewClient(wm.Config.ServerAPI,false)
+	wm.WalletClient = NewClient(wm.Config.ServerAPI, false)
 
 	return nil
 }
-
 
 //RestoreWallet 恢复钱包
 func (wm *WalletManager) RestoreWallet(keyFile, dbFile, password string) error {
@@ -743,8 +742,8 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, password string) error {
 	//复制钱包数据库文件到data/btc/db/。
 
 	var (
-		err            error
-		key            *hdkeystore.HDKey
+		err error
+		key *hdkeystore.HDKey
 		//sleepTime      = 30 * time.Second
 	)
 
@@ -774,7 +773,7 @@ func (wm *WalletManager) RestoreWallet(keyFile, dbFile, password string) error {
 }
 
 //通过hdpath获取地址，公钥，私钥
-func (wm *WalletManager) getKeys(key *hdkeystore.HDKey, a *openwallet.Address) (*Key, error){
+func (wm *WalletManager) getKeys(key *hdkeystore.HDKey, a *openwallet.Address) (*Key, error) {
 	childKey, err := key.DerivedKeyWithPath(a.HDPath, wm.Config.CurveType)
 	if err != nil {
 		return nil, err
@@ -782,13 +781,13 @@ func (wm *WalletManager) getKeys(key *hdkeystore.HDKey, a *openwallet.Address) (
 
 	prikey, err := childKey.GetPrivateKeyBytes()
 	if err != nil {
-		return  nil, err
+		return nil, err
 	}
 
 	pubkey := childKey.GetPublicKeyBytes()
 	//转换成带前缀公钥，交易结构中需要填充此类型公钥
 	pk := base58checkEncode(pubkey, prefix["edpk"])
-	k := &Key{a.Address,pk,prikey}
+	k := &Key{a.Address, pk, prikey}
 
 	return k, nil
 }

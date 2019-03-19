@@ -21,8 +21,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blocktree/openwallet/common/file"
 	owcrypt "github.com/blocktree/go-owcrypt"
+	"github.com/blocktree/openwallet/common/file"
 	"github.com/shopspring/decimal"
 )
 
@@ -30,7 +30,7 @@ const (
 	//币种
 	Symbol    = "VSYS"
 	MasterKey = "Virtualeconomy seed"
-	CurveType = owcrypt.ECC_CURVE_ED25519_EXTEND
+	CurveType = owcrypt.ECC_CURVE_X25519
 )
 
 type WalletConfig struct {

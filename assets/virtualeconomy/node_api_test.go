@@ -61,7 +61,7 @@ func Test_getBlockHash(t *testing.T) {
 }
 
 func Test_getBalance(t *testing.T) {
-	c := NewClient("http://localhost:9922/", false)
+	c := NewClient("http://47.106.102.2:10026/", false)
 
 	address := "AREkgFxYhyCdtKD9JSSVhuGQomgGcacvQqM"
 	path := "addresses/balance/details/" + address

@@ -18,6 +18,7 @@ package virtualeconomy
 import (
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
 	"sort"
@@ -212,8 +213,8 @@ func (decoder *TransactionDecoder) CreateVSYSRawTransaction(wrapper openwallet.W
 	}
 
 	if from == "" {
-		log.Error("No enough VSYS to send!", err)
-		return err
+		log.Error("No enough VSYS to send!")
+		return errors.New("No enough VSYS to send!")
 	}
 
 	rawTx.TxFrom = []string{from}
@@ -259,7 +260,7 @@ func (decoder *TransactionDecoder) CreateVSYSRawTransaction(wrapper openwallet.W
 		return err
 	}
 	signature := openwallet.KeySignature{
-		EccType: owcrypt.ECC_CURVE_ED25519_REF10,
+		EccType: decoder.wm.Config.CurveType,
 		Nonce:   "",
 		Address: addr,
 		Message: emptyTrans,
