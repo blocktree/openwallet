@@ -24,10 +24,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blocktree/openwallet/log"
-	"github.com/blocktree/openwallet/openwallet"
 	"github.com/blocktree/go-owcdrivers/virtualeconomyTransaction"
 	owcrypt "github.com/blocktree/go-owcrypt"
+	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/openwallet"
 )
 
 type TransactionDecoder struct {
@@ -68,6 +68,7 @@ func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.Walle
 
 	txid, err := decoder.wm.SendRawTransaction(rawTx.RawHex)
 	if err != nil {
+		decoder.wm.Log.Std.Info("Tx to send: %v", rawTx.RawHex)
 		return nil, err
 	}
 
