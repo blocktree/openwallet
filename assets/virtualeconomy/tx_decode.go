@@ -259,7 +259,7 @@ func (decoder *TransactionDecoder) CreateVSYSRawTransaction(wrapper openwallet.W
 		return err
 	}
 	signature := openwallet.KeySignature{
-		EccType: decoder.wm.Config.CurveType,
+		EccType: owcrypt.ECC_CURVE_ED25519_REF10,
 		Nonce:   "",
 		Address: addr,
 		Message: emptyTrans,
