@@ -293,7 +293,6 @@ func (decoder *TransactionDecoder) SignVSYSRawTransaction(wrapper openwallet.Wal
 			if err != nil {
 				return err
 			}
-			log.Debug("privateKey:", hex.EncodeToString(keyBytes))
 
 			//签名交易
 			/////////交易单哈希签名
