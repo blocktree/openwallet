@@ -20,16 +20,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/tidwall/gjson"
 	"io/ioutil"
 	"strings"
 	"time"
 
 	"github.com/asdine/storm/q"
+	"github.com/blocktree/go-owcdrivers/owkeychain"
 	"github.com/blocktree/openwallet/common"
 	"github.com/blocktree/openwallet/hdkeystore"
 	"github.com/blocktree/openwallet/log"
-	"github.com/blocktree/go-owcdrivers/owkeychain"
+	"github.com/tidwall/gjson"
 )
 
 type WalletDBFile WrapperSourceFile
@@ -340,6 +340,7 @@ func (wrapper *WalletWrapper) CreateAddress(accountID string, count uint64, deco
 		newIndex := account.AddressIndex + 1
 
 		derivedPath := fmt.Sprintf("%s/%d/%d", account.HDPath, changeIndex, newIndex)
+		fmt.Println("vsys test child path:  ", derivedPath)
 		//log.Debug("account.OwnerKeys:", len(account.OwnerKeys))
 		//通过多个拥有者公钥生成地址
 		for _, pub := range account.OwnerKeys {
@@ -354,7 +355,9 @@ func (wrapper *WalletWrapper) CreateAddress(accountID string, count uint64, deco
 			}
 
 			start, err := pubkey.GenPublicChild(changeIndex)
+			fmt.Println("vsys test start public key:  ", start.GetPublicKeyBytes())
 			newKey, err := start.GenPublicChild(uint32(newIndex))
+			fmt.Println("vsys test newKey public key:  ", newKey.GetPublicKeyBytes())
 			newKeys = append(newKeys, newKey.GetPublicKeyBytes())
 
 		}

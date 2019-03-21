@@ -71,11 +71,13 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID, password string, a
 		// root/n' , 使用强化方案
 		account.HDPath = fmt.Sprintf("%s/%d'", wallet.RootPath, newAccIndex)
 
+		fmt.Println("vsys test hd path: ", account.HDPath)
+
 		childKey, err := key.DerivedKeyWithPath(account.HDPath, symbolInfo.CurveType())
 		if err != nil {
 			return nil, nil, err
 		}
-
+		fmt.Println("vsys test account public key: ", childKey.GetPublicKey().GetPublicKeyBytes())
 		account.PublicKey = childKey.GetPublicKey().OWEncode()
 		account.Index = uint64(newAccIndex)
 		account.AccountID = account.GetAccountID()
@@ -528,4 +530,3 @@ func (wm *WalletManager) ImportWatchOnlyAddress(appID, walletID, accountID strin
 //
 //	return
 //}
-
