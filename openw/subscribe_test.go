@@ -41,6 +41,7 @@ func (sub *subscriber) BlockScanNotify(header *openwallet.BlockHeader) error {
 func (sub *subscriber) BlockTxExtractDataNotify(account *openwallet.AssetsAccount, data *openwallet.TxExtractData) error {
 	log.Debug("account:", account)
 	log.Debug("data:", data)
+
 	return nil
 }
 
@@ -81,6 +82,7 @@ func (sub *subscriberSingle) BlockExtractDataNotify(sourceKey string, data *open
 	}
 
 	log.Std.Notice("data.Transaction: %+v", data.Transaction)
+
 	return nil
 }
 
@@ -368,10 +370,16 @@ func TestSubscribeAddress_NAS(t *testing.T) {
 	var (
 		endRunning = make(chan bool, 1)
 		symbol     = "NAS"
-		accountID  = "W4VUMN3wxQcwVEwsRvoyuhrJ95zhyc4zRW"
+		accountID  = "7VftKuNoDtwZ3mn3wDA4smTDMz4iqCg3fNna1fXicVDg"
 		addrs      = map[string]string{
-			"n1UGtQTvBJtTNPSmkWFhN4W9gScsx8etXX7": accountID, //主链转账
-			"n1JjXv57Cztbfsyf6UwcwPxWNQm2ejd7vFu": "jksdljflsf", //主链转账
+			"n1FYB93yKATg42MWrWDuNGYzKiVcRwH4NMX": accountID,
+			"n1GEpN9ZdaRzjBkVWbTagg4efWkmTtGeuYB": accountID,
+			"n1HU5Zxfch2K6J1MvskGDADajzb2NYZ1tZb": accountID,
+			"n1JjXv57Cztbfsyf6UwcwPxWNQm2ejd7vFu": accountID,
+			"n1U8RmQDZvidVeeSTeyRX4CgqYpADfUdddb": accountID,
+			"n1UKFCBCLrQZQ4eENPwRoSt74uJaP51cKN3": accountID,
+			"n1a4f5F1pzjFhg78rt2LpER8vfUYErWo9yo": accountID,
+			"n1cT1JhXUQFxDSyBYwcn3ZBmd93nin5yrfB": accountID,
 		}
 	)
 
@@ -401,7 +409,7 @@ func TestSubscribeAddress_NAS(t *testing.T) {
 
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
-	scanner.SetRescanBlockHeight(1972169)
+	//scanner.SetRescanBlockHeight(1972169)
 
 	if scanner == nil {
 		log.Error(symbol, "is not support block scan")
@@ -414,52 +422,6 @@ func TestSubscribeAddress_NAS(t *testing.T) {
 	scanner.AddObserver(&sub)
 
 	scanner.Run()
-
-	//time.Sleep(6 * time.Second)
-	//
-	//log.Notice("scanner.Pause()")
-	//scanner.Pause()
-	//
-	//time.Sleep(6 * time.Second)
-	//
-	//log.Notice("scanner.Restart()")
-	//scanner.Restart()
-	//
-	//time.Sleep(6 * time.Second)
-	//
-	//log.Notice("scanner.Stop()")
-	//scanner.Stop()
-	//
-	//time.Sleep(6 * time.Second)
-	//
-	//log.Notice("scanner.Run()")
-	//scanner.Run()
-	//
-	//time.Sleep(6 * time.Second)
-	//
-	//log.Notice("scanner.CloseBlockScanner()")
-	//scanner.CloseBlockScanner()
-	//
-	//time.Sleep(6 * time.Second)
-	//
-	//log.Notice("scanner.Run()")
-	//err = scanner.Run()
-	//if err != nil {
-	//	log.Errorf("err: %v", err)
-	//}
-	//
-	//time.Sleep(6 * time.Second)
-	//
-	//log.Notice("scanner.InitBlockScanner()")
-	//scanner.InitBlockScanner()
-	//
-	//time.Sleep(6 * time.Second)
-	//
-	//log.Notice("scanner.Run()")
-	//err = scanner.Run()
-	//if err != nil {
-	//	log.Errorf("err: %v\n", err)
-	//}
 
 	<-endRunning
 }

@@ -317,6 +317,7 @@ func TestTransfer_QRC20(t *testing.T) {
 }
 
 func TestTransfer_NAS(t *testing.T) {
+
 	tm := testInitWalletManager()
 	//walletID := "VzQTLspxvbXSmfRGcN6LJVB8otYhJwAGWc"
 	//accountID := "BjLtC1YN4sWQKzYHtNPdvx3D8yVfXmbyeCQTMHv4JUGG"
@@ -325,11 +326,11 @@ func TestTransfer_NAS(t *testing.T) {
 	//n1VkvsbgRJ6Tjro1mTUUaevPM3wv69z5njB
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "7VftKuNoDtwZ3mn3wDA4smTDMz4iqCg3fNna1fXicVDg"
-	to := "n1UGtQTvBJtTNPSmkWFhN4W9gScsx8etXX7"
+	to := "n1Mgfvwmrs1doocZfsxSdhnkKTtezPCyRDR"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.01", "", nil)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.20", "", nil)
 	if err != nil {
 		return
 	}
@@ -348,7 +349,6 @@ func TestTransfer_NAS(t *testing.T) {
 	if err != nil {
 		return
 	}
-
 }
 
 func TestTransfer_BTC(t *testing.T) {

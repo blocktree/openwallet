@@ -212,7 +212,7 @@ func TestSummary_NAS(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "7VftKuNoDtwZ3mn3wDA4smTDMz4iqCg3fNna1fXicVDg"
-	summaryAddress := "n1UGtQTvBJtTNPSmkWFhN4W9gScsx8etXX7"
+	summaryAddress := "n1FYB93yKATg42MWrWDuNGYzKiVcRwH4NMX"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
