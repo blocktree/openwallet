@@ -152,7 +152,6 @@ type miningJSON struct {
 // ECC_CURVE_SECP256R1
 // ECC_CURVE_ED25519
 func (k *HDKey) DerivedKeyWithPath(path string, curveType uint32) (*owkeychain.ExtendedKey, error) {
-	fmt.Println("vsys test seed: ", hex.EncodeToString(k.seed))
 	return owkeychain.DerivedPrivateKeyWithPath(k.seed, path, curveType)
 }
 
