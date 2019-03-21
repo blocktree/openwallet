@@ -75,7 +75,6 @@ func (wm *WalletManager) CreateAssetsAccount(appID, walletID, password string, a
 		if err != nil {
 			return nil, nil, err
 		}
-
 		account.PublicKey = childKey.GetPublicKey().OWEncode()
 		account.Index = uint64(newAccIndex)
 		account.AccountID = account.GetAccountID()
@@ -528,4 +527,3 @@ func (wm *WalletManager) ImportWatchOnlyAddress(appID, walletID, accountID strin
 //
 //	return
 //}
-

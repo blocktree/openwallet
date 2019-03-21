@@ -31,10 +31,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/blocktree/openwallet/crypto"
-	"github.com/blocktree/openwallet/crypto/sha3"
 	"github.com/blocktree/go-owcdrivers/owkeychain"
 	"github.com/blocktree/go-owcrypt"
+	"github.com/blocktree/openwallet/crypto"
+	"github.com/blocktree/openwallet/crypto/sha3"
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/scrypt"
 )

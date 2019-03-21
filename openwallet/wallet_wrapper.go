@@ -20,16 +20,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/tidwall/gjson"
 	"io/ioutil"
 	"strings"
 	"time"
 
 	"github.com/asdine/storm/q"
+	"github.com/blocktree/go-owcdrivers/owkeychain"
 	"github.com/blocktree/openwallet/common"
 	"github.com/blocktree/openwallet/hdkeystore"
 	"github.com/blocktree/openwallet/log"
-	"github.com/blocktree/go-owcdrivers/owkeychain"
+	"github.com/tidwall/gjson"
 )
 
 type WalletDBFile WrapperSourceFile

@@ -45,7 +45,6 @@ func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (s
 	if err != nil {
 		return "", errors.New("Invalid public key!")
 	}
-
 	cfg := addressEncoder.VSYS_mainnetAddress
 	if decoder.wm.Config.IsTestNet {
 		cfg = addressEncoder.VSYS_testnetAddress
@@ -54,7 +53,6 @@ func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (s
 	pkHash := owcrypt.Hash(owcrypt.Hash(xpub, 32, owcrypt.HASH_ALG_BLAKE2B), 32, owcrypt.HASH_ALG_KECCAK256)[:20]
 
 	address := addressEncoder.AddressEncode(pkHash, cfg)
-
 	return address, nil
 }
 
