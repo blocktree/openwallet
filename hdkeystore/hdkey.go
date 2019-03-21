@@ -31,10 +31,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/blocktree/openwallet/crypto"
-	"github.com/blocktree/openwallet/crypto/sha3"
 	"github.com/blocktree/go-owcdrivers/owkeychain"
 	"github.com/blocktree/go-owcrypt"
+	"github.com/blocktree/openwallet/crypto"
+	"github.com/blocktree/openwallet/crypto/sha3"
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/scrypt"
 )
@@ -152,6 +152,7 @@ type miningJSON struct {
 // ECC_CURVE_SECP256R1
 // ECC_CURVE_ED25519
 func (k *HDKey) DerivedKeyWithPath(path string, curveType uint32) (*owkeychain.ExtendedKey, error) {
+	fmt.Println("vsys test seed: ", hex.EncodeToString(k.seed))
 	return owkeychain.DerivedPrivateKeyWithPath(k.seed, path, curveType)
 }
 
