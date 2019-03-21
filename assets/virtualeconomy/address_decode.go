@@ -16,9 +16,7 @@
 package virtualeconomy
 
 import (
-	"encoding/hex"
 	"errors"
-	"fmt"
 
 	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	owcrypt "github.com/blocktree/go-owcrypt"
@@ -42,12 +40,11 @@ func (decoder *addressDecoder) PrivateKeyToWIF(priv []byte, isTestnet bool) (str
 
 //PublicKeyToAddress 公钥转地址
 func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (string, error) {
-	fmt.Println("vsys test ed25519 pub: ", hex.EncodeToString(pub))
+
 	xpub, err := owcrypt.CURVE25519_convert_Ed_to_X(pub)
 	if err != nil {
 		return "", errors.New("Invalid public key!")
 	}
-	fmt.Println("vsys test x25519 pub: ", hex.EncodeToString(xpub))
 	cfg := addressEncoder.VSYS_mainnetAddress
 	if decoder.wm.Config.IsTestNet {
 		cfg = addressEncoder.VSYS_testnetAddress
@@ -56,7 +53,6 @@ func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (s
 	pkHash := owcrypt.Hash(owcrypt.Hash(xpub, 32, owcrypt.HASH_ALG_BLAKE2B), 32, owcrypt.HASH_ALG_KECCAK256)[:20]
 
 	address := addressEncoder.AddressEncode(pkHash, cfg)
-	fmt.Println("vsys test address: ", address)
 	return address, nil
 }
 
