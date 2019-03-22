@@ -362,3 +362,40 @@ func TestSummary_QRC20(t *testing.T) {
 	}
 
 }
+
+
+func TestSummary_VSYS(t *testing.T) {
+	tm := testInitWalletManager()
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "FUAKFujfVwdWJn79DFB4ZZQ6LRZS5cXfrGC9er2T5TSt"
+	summaryAddress := "ARJdaB9Fo6Sk2nxBrQP2p4woWotPxjaebCv"
+
+	testGetAssetsAccountBalance(tm, walletID, accountID)
+
+	rawTxArray, err := testCreateSummaryTransactionStep(tm, walletID, accountID,
+		summaryAddress, "", "", "",
+		0, 100, nil)
+	if err != nil {
+		log.Errorf("CreateSummaryTransaction failed, unexpected error: %v", err)
+		return
+	}
+
+	//执行汇总交易
+	for _, rawTx := range rawTxArray {
+		_, err = testSignTransactionStep(tm, rawTx)
+		if err != nil {
+			return
+		}
+
+		_, err = testVerifyTransactionStep(tm, rawTx)
+		if err != nil {
+			return
+		}
+
+		//_, err = testSubmitTransactionStep(tm, rawTx)
+		//if err != nil {
+		//	return
+		//}
+	}
+
+}

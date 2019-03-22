@@ -17,10 +17,8 @@ package openw
 
 import (
 	"fmt"
-	"path/filepath"
 	"testing"
 
-	"github.com/astaxie/beego/config"
 	"github.com/blocktree/go-owcdrivers/ontologyTransaction"
 	"github.com/blocktree/openwallet/log"
 	"github.com/blocktree/openwallet/openwallet"
@@ -179,7 +177,7 @@ func TestTransfer_LTC(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "EbUsW3YaHQ61eNt3f4hDXJAFh9LGmLZWH1VTTSnQmhnL"
-	to := "mkXhHAd6o3RnEXtrQJi952AKaH3B9WYSe4"
+	to := "mjbRPPMbaN9Mi1gcYH6ApJ6SZsFzTf1nas"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
@@ -201,40 +199,6 @@ func TestTransfer_LTC(t *testing.T) {
 	_, err = testSubmitTransactionStep(tm, rawTx)
 	if err != nil {
 		return
-	}
-
-	symbol := "LTC"
-	assetsMgr, err := GetAssetsAdapter(symbol)
-	if err != nil {
-		log.Error(symbol, "is not support")
-		return
-	}
-	//读取配置
-	absFile := filepath.Join(configFilePath, symbol+".ini")
-
-	c, err := config.NewConfig("ini", absFile)
-	if err != nil {
-		return
-	}
-	assetsMgr.LoadAssetsConfig(c)
-	bs := assetsMgr.GetBlockScanner()
-
-	addrs := []string{
-		//"mkSfFCHPAaHAyx9gBokXQMGWmyRtzpk4JK",
-		//"mgCzMJDyJoqa6XE3RSdNGvD5Bi5VTWudRq",
-		"LgpqyZW9vhyMSJf2knystSALTuhNEA8Jim",
-		"LLevkg1aUiECvY6Uda1bvDbqa38zykjLyR",
-	}
-
-	balances, err := bs.GetBalanceByAddress(addrs...)
-	if err != nil {
-		log.Errorf(err.Error())
-		return
-	}
-	for _, b := range balances {
-		log.Infof("balance[%s] = %s", b.Address, b.Balance)
-		log.Infof("UnconfirmBalance[%s] = %s", b.Address, b.UnconfirmBalance)
-		log.Infof("ConfirmBalance[%s] = %s", b.Address, b.ConfirmBalance)
 	}
 }
 
@@ -661,12 +625,12 @@ func TestTransfer_VSYS(t *testing.T) {
 	tm := testVSYSInitWalletManager()
 
 	walletID := "W8325QfzEfWq4uevrVh67wMR5xLDMEjiD7"
-	accountID := "GqTrUZF2dFcmo4rAksY2U3SPZABbF4ZDGMgKU6iVAXuU"
-	to := "AREkgFxYhyCdtKD9JSSVhuGQomgGcacvQqM"
+	accountID := "FUAKFujfVwdWJn79DFB4ZZQ6LRZS5cXfrGC9er2T5TSt"
+	to := "ARGehumz77nGcfkQrPjK4WUyNevvU9NCNqQ"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.9", "", nil)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.6", "", nil)
 	if err != nil {
 		return
 	}

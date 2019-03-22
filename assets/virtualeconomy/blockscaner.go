@@ -130,7 +130,7 @@ func (bs *VSYSBlockScanner) ScanBlockTask() {
 		}
 
 		//是否已到最新高度
-		if currentHeight == maxHeight {
+		if currentHeight >= maxHeight {
 			bs.wm.Log.Std.Info("block scanner has scanned full chain data. Current height: %d", maxHeight)
 			break
 		}

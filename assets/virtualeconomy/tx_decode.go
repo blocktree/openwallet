@@ -465,5 +465,5 @@ func (decoder *TransactionDecoder) CreateSimpleSummaryRawTransaction(wrapper ope
 		rawTxArray = append(rawTxArray, rawTx)
 
 	}
-	return nil, nil
+	return rawTxArray, nil
 }
