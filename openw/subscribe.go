@@ -16,8 +16,8 @@
 package openw
 
 import (
-	"github.com/blocktree/openwallet/openwallet"
 	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/openwallet"
 )
 
 //blockScanNotify 区块扫描结果通知

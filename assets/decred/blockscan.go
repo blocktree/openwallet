@@ -248,7 +248,7 @@ func (bs *BTCBlockScanner) scanBlock() {
 		}
 
 		//是否已到最新高度
-		if currentHeight == maxHeight {
+		if currentHeight >= maxHeight {
 			log.Std.Info("block scanner has scanned full chain data. Current height: %d", maxHeight)
 			break
 		}
