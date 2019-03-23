@@ -16,7 +16,6 @@
 package virtualeconomy
 
 import (
-	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -95,56 +94,6 @@ func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.Walle
 	return &tx, nil
 }
 
-// func createEmptyTransaction(amount, fee, feeScale uint64, fromPub, to string) string {
-// 	var (
-// 		body = make(map[string]interface{}, 0)
-// 	)
-// 	body["timestamp"] = time.Now().UnixNano()
-// 	body["amount"] = amount
-// 	body["fee"] = fee
-// 	body["feeScale"] = feeScale
-// 	body["recipient"] = to
-// 	body["senderPublicKey"] = fromPub
-// 	body["attachment"] = ""
-// 	body["signature"] = ""
-
-// 	json, _ := json.Marshal(body)
-
-// 	return string(json)
-// }
-
-func getTransactionHashForSig(timestamp, amount, fee, feeScale uint64, to string) string {
-	var (
-		typeID             = byte(0x02)
-		timestampBytes     = make([]byte, 8)
-		amountBytes        = make([]byte, 8)
-		feeBytes           = make([]byte, 8)
-		feeScaleBytes      = make([]byte, 2)
-		attachmentLenBytes = []byte{0x00, 0x00}
-	)
-
-	binary.BigEndian.PutUint64(timestampBytes, timestamp)
-	binary.BigEndian.PutUint64(amountBytes, amount)
-	binary.BigEndian.PutUint64(feeBytes, fee)
-	binary.BigEndian.PutUint16(feeScaleBytes, uint16(feeScale))
-
-	txBytes := []byte{}
-	txBytes = append(txBytes, typeID)
-	txBytes = append(txBytes, timestampBytes...)
-	txBytes = append(txBytes, amountBytes...)
-	txBytes = append(txBytes, feeBytes...)
-	txBytes = append(txBytes, feeScaleBytes...)
-
-	toPubHash, _ := Decode(to, BitcoinAlphabet)
-
-	txBytes = append(txBytes, toPubHash...)
-	txBytes = append(txBytes, attachmentLenBytes...)
-
-	hash := owcrypt.Hash(txBytes, 32, owcrypt.HASH_ALG_BLAKE2B)
-	hash = owcrypt.Hash(hash, 32, owcrypt.HASH_ALG_KECCAK256)
-	return hex.EncodeToString(hash)
-}
-
 func (decoder *TransactionDecoder) CreateVSYSRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction) error {
 
 	addresses, err := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID)
@@ -221,7 +170,7 @@ func (decoder *TransactionDecoder) CreateVSYSRawTransaction(wrapper openwallet.W
 	rawTx.TxTo = []string{to}
 	rawTx.TxAmount = amountStr
 	rawTx.Fees = convertToAmount(fee)
-	rawTx.FeeRate = convertToAmount(feeScale)
+	rawTx.FeeRate = convertToAmount(fee)
 
 	publicKey, _ := hex.DecodeString(fromPubkey)
 	xpub, err := owcrypt.CURVE25519_convert_Ed_to_X(publicKey)
@@ -270,7 +219,7 @@ func (decoder *TransactionDecoder) CreateVSYSRawTransaction(wrapper openwallet.W
 
 	rawTx.Signatures[rawTx.Account.AccountID] = keySigs
 
-	rawTx.FeeRate = big.NewInt(int64(feeScale)).String()
+	rawTx.FeeRate = big.NewInt(int64(fee)).String()
 
 	rawTx.IsBuilt = true
 
@@ -470,15 +419,6 @@ func (decoder *TransactionDecoder) CreateSimpleSummaryRawTransaction(wrapper ope
 }
 
 func (decoder *TransactionDecoder) createRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction, addrBalance *openwallet.Balance) error {
-	addresses, err := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID)
-
-	if err != nil {
-		return err
-	}
-
-	if len(addresses) == 0 {
-		return fmt.Errorf("No addresses found in wallet [%s]", rawTx.Account.AccountID)
-	}
 
 	fee := decoder.wm.Config.FeeCharge
 	feeScale := decoder.wm.Config.FeeScale
@@ -503,7 +443,7 @@ func (decoder *TransactionDecoder) createRawTransaction(wrapper openwallet.Walle
 	rawTx.TxTo = []string{to}
 	rawTx.TxAmount = amountStr
 	rawTx.Fees = convertToAmount(fee)
-	rawTx.FeeRate = convertToAmount(feeScale)
+	rawTx.FeeRate = convertToAmount(fee)
 
 	publicKey, _ := hex.DecodeString(fromPubkey)
 	xpub, err := owcrypt.CURVE25519_convert_Ed_to_X(publicKey)
@@ -543,7 +483,7 @@ func (decoder *TransactionDecoder) createRawTransaction(wrapper openwallet.Walle
 
 	rawTx.Signatures[rawTx.Account.AccountID] = keySigs
 
-	rawTx.FeeRate = big.NewInt(int64(feeScale)).String()
+	rawTx.FeeRate = big.NewInt(int64(fee)).String()
 
 	rawTx.IsBuilt = true
 
