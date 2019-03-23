@@ -47,22 +47,22 @@ type TransactionDecoderBase struct {
 }
 
 //CreateRawTransaction 创建交易单
-func (decoder *TransactionDecoderBase) CreateRawTransaction(wrapper *WalletWrapper, rawTx *RawTransaction) error {
+func (decoder *TransactionDecoderBase) CreateRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error {
 	return fmt.Errorf("not implement")
 }
 
 //SignRawTransaction 签名交易单
-func (decoder *TransactionDecoderBase) SignRawTransaction(wrapper *WalletWrapper, rawTx *RawTransaction) error {
+func (decoder *TransactionDecoderBase) SignRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error {
 	return fmt.Errorf("not implement")
 }
 
 //SendRawTransaction 广播交易单
-func (decoder *TransactionDecoderBase) SubmitRawTransaction(wrapper *WalletWrapper, rawTx *RawTransaction) (*Transaction, error) {
+func (decoder *TransactionDecoderBase) SubmitRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) (*Transaction, error) {
 	return nil, fmt.Errorf("not implement")
 }
 
 //VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
-func (decoder *TransactionDecoderBase) VerifyRawTransaction(wrapper *WalletWrapper, rawTx *RawTransaction) error {
+func (decoder *TransactionDecoderBase) VerifyRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error {
 	return fmt.Errorf("not implement")
 }
 
