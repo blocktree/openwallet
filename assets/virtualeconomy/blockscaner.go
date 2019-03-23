@@ -636,7 +636,8 @@ func (bs *VSYSBlockScanner) extractTransaction(trx *Transaction, result *Extract
 					Decimal:     8,
 					Status:      status,
 					Reason:      reason,
-					// ConfirmTime: blocktime,
+					SubmitTime:  int64(trx.TimeStamp),
+					ConfirmTime: int64(trx.TimeStamp),
 				}
 				wxID := openwallet.GenTransactionWxID(tx)
 				tx.WxID = wxID
