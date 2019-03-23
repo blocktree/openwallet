@@ -632,6 +632,11 @@ func TestSubscribeAddress_VSYS(t *testing.T) {
 	}
 	assetsMgr.LoadAssetsConfig(c)
 
+	assetsLogger := assetsMgr.GetAssetsLogger()
+	if assetsLogger != nil {
+		assetsLogger.SetLogFuncCall(true)
+	}
+
 	//log.Debug("already got scanner:", assetsMgr)
 	scanner := assetsMgr.GetBlockScanner()
 	//scanner.SetRescanBlockHeight(1993837)

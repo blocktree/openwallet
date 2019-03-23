@@ -67,6 +67,8 @@ type WalletConfig struct {
 	CurveType uint32
 	//小数位长度
 	CoinDecimal decimal.Decimal
+	//链ID
+	ChainID uint64
 }
 
 func NewConfig(symbol string) *WalletConfig {

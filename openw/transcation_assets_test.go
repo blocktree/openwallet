@@ -626,7 +626,7 @@ func TestTransfer_VSYS(t *testing.T) {
 
 	walletID := "W8325QfzEfWq4uevrVh67wMR5xLDMEjiD7"
 	accountID := "FUAKFujfVwdWJn79DFB4ZZQ6LRZS5cXfrGC9er2T5TSt"
-	to := "ARGehumz77nGcfkQrPjK4WUyNevvU9NCNqQ"
+	to := "ARMot3RV2FHw9KugZiMMwKRw8HXDHQVYwuC"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
