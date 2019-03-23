@@ -60,7 +60,7 @@ func TestWalletManager_GetBlock(t *testing.T) {
 
 func TestWalletManager_GetTransaction(t *testing.T) {
 	wm := testNewWalletManager()
-	r, err := wm.Api.GetTransaction("14a3e68121809a814aea45735a9dc40d6590d8fba8311a79c287f64b5c6189e3")
+	r, err := wm.Api.GetTransaction("827eeaa08de99b29683b86a0306df863db607a093be37e0ad75e01819fd9af11")
 	if err != nil {
 		log.Errorf("unexpected error: %v", err)
 		return

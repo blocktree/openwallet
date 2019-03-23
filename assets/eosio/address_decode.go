@@ -17,7 +17,6 @@ package eosio
 
 import (
 	"github.com/blocktree/go-owcdrivers/addressEncoder"
-	"github.com/blocktree/go-owcrypt"
 )
 
 type addressDecoder struct {
@@ -38,8 +37,7 @@ func (decoder *addressDecoder) PrivateKeyToWIF(priv []byte, isTestnet bool) (str
 
 //PublicKeyToAddress 公钥转地址
 func (decoder *addressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (string, error) {
-	publickKey := owcrypt.PointDecompress(pub, decoder.wm.CurveType())
-	address := addressEncoder.AddressEncode(publickKey, addressEncoder.EOS_mainnetPublic)
+	address := addressEncoder.AddressEncode(pub, addressEncoder.EOS_mainnetPublic)
 	return address, nil
 }
 

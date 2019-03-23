@@ -17,10 +17,10 @@ package openw
 
 import (
 	"fmt"
-
 	"github.com/blocktree/openwallet/assets"
 	"github.com/blocktree/openwallet/assets/bitcoin"
 	"github.com/blocktree/openwallet/assets/bitcoincash"
+	"github.com/blocktree/openwallet/assets/eosio"
 	"github.com/blocktree/openwallet/assets/ethereum"
 	"github.com/blocktree/openwallet/assets/litecoin"
 	"github.com/blocktree/openwallet/assets/nebulasio"
@@ -55,6 +55,7 @@ func initAssetAdapter() {
 	assets.RegAssets(ontology.Symbol, ontology.NewWalletManager())
 	assets.RegAssets(tron.Symbol, tron.NewWalletManager())
 	assets.RegAssets(virtualeconomy.Symbol, virtualeconomy.NewWalletManager())
+	assets.RegAssets(eosio.Symbol, eosio.NewWalletManager())
 }
 
 // GetSymbolInfo 获取资产的币种信息

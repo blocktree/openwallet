@@ -143,6 +143,9 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	txFrom = []string{fmt.Sprintf("%s:%s", from, amountStr)}
 	txTo = []string{fmt.Sprintf("%s:%s", to, amountStr)}
 
+	if rawTx.Signatures == nil {
+		rawTx.Signatures = make(map[string][]*openwallet.KeySignature)
+	}
 
 	rawTx.RawHex = hex.EncodeToString(txdata)
 	rawTx.Signatures[rawTx.Account.AccountID] = keySignList
@@ -235,7 +238,7 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 			stx.Signatures = append(
 				stx.Signatures,
 				ecc.Signature{Curve: ecc.CurveK1, Content: signature},
-				)
+			)
 
 			decoder.wm.Log.Debug("Signature:", keySignature.Signature)
 			decoder.wm.Log.Debug("PublicKey:", keySignature.Address.PublicKey)
@@ -306,7 +309,7 @@ func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.Walle
 
 	tx.WxID = openwallet.GenTransactionWxID(tx)
 
-	return nil, fmt.Errorf("not implement")
+	return tx, nil
 }
 
 //GetRawTransactionFeeRate 获取交易单的费率

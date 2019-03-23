@@ -653,3 +653,42 @@ func TestTransfer_VSYS(t *testing.T) {
 	}
 
 }
+
+
+func TestTransfer_EOS(t *testing.T) {
+	tm := testInitWalletManager()
+
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "JaLb5u5EjMz44UkbzuKorAZHSTfT5hLSrp4yhafzhFi"
+	to := "bob"
+
+	//  EOS transaction
+	contract := openwallet.SmartContract{
+		Symbol:  "EOS",
+		Token:   "EOS",
+		Address: "eosio.token",
+	}
+
+	//testGetAssetsAccountBalance(tm, walletID, accountID)
+
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "10", "", &contract)
+	if err != nil {
+		return
+	}
+
+	_, err = testSignTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testVerifyTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testSubmitTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+}
