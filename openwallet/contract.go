@@ -84,3 +84,11 @@ type SmartContractDecoder interface {
 
 	//TODO:通过交易单号查询部署的智能合约地址
 }
+
+type SmartContractDecoderBase struct {
+
+}
+
+func (decoder *SmartContractDecoderBase) GetTokenBalanceByAddress(contract SmartContract, address ...string) ([]*TokenBalance, error) {
+	return nil, fmt.Errorf("GetTokenBalanceByAddress not implement")
+}

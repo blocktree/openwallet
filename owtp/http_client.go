@@ -19,8 +19,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/blocktree/openwallet/log"
 	"github.com/blocktree/go-owcrypt"
+	"github.com/blocktree/openwallet/log"
 	"github.com/imroc/req"
 	"github.com/mr-tron/base58/base58"
 	"github.com/tidwall/gjson"
@@ -339,12 +339,12 @@ func (c *HTTPClient) HandleRequest() error {
 		return err
 	}
 
-	if len(s) == 0 {
-		return fmt.Errorf("body is empty")
-	}
-
 	if Debug {
 		log.Debug("Read: ", string(s))
+	}
+
+	if len(s) == 0 {
+		return fmt.Errorf("body is empty")
 	}
 
 	packet := NewDataPacket(gjson.ParseBytes(s))
