@@ -454,9 +454,10 @@ func (decoder *TransactionDecoder) CreateSimpleSummaryRawTransaction(wrapper ope
 			Required: 1,
 		}
 
-		createErr := decoder.CreateRawTransaction(
+		createErr := decoder.createRawTransaction(
 			wrapper,
-			rawTx)
+			rawTx,
+			addrBalance)
 		if createErr != nil {
 			return nil, createErr
 		}
@@ -466,4 +467,85 @@ func (decoder *TransactionDecoder) CreateSimpleSummaryRawTransaction(wrapper ope
 
 	}
 	return rawTxArray, nil
+}
+
+func (decoder *TransactionDecoder) createRawTransaction(wrapper openwallet.WalletDAI, rawTx *openwallet.RawTransaction, addrBalance *openwallet.Balance) error {
+	addresses, err := wrapper.GetAddressList(0, -1, "AccountID", rawTx.Account.AccountID)
+
+	if err != nil {
+		return err
+	}
+
+	if len(addresses) == 0 {
+		return fmt.Errorf("No addresses found in wallet [%s]", rawTx.Account.AccountID)
+	}
+
+	fee := decoder.wm.Config.FeeCharge
+	feeScale := decoder.wm.Config.FeeScale
+
+	var amountStr, to string
+	for k, v := range rawTx.To {
+		to = k
+		amountStr = v
+		break
+	}
+
+	amount := big.NewInt(int64(convertFromAmount(amountStr)))
+	amount = amount.Add(amount, big.NewInt(int64(fee)))
+	from := addrBalance.Address
+	fromAddr, err := wrapper.GetAddress(from)
+	if err != nil {
+		return err
+	}
+	fromPubkey := fromAddr.PublicKey
+
+	rawTx.TxFrom = []string{from}
+	rawTx.TxTo = []string{to}
+	rawTx.TxAmount = amountStr
+	rawTx.Fees = convertToAmount(fee)
+	rawTx.FeeRate = convertToAmount(feeScale)
+
+	publicKey, _ := hex.DecodeString(fromPubkey)
+	xpub, err := owcrypt.CURVE25519_convert_Ed_to_X(publicKey)
+	if err != nil {
+		return err
+	}
+	fromPubkey = Encode(xpub, BitcoinAlphabet)
+
+	txStruct := virtualeconomyTransaction.TxStruct{
+		TxType:     virtualeconomyTransaction.TxTypeTransfer,
+		To:         to,
+		Amount:     convertFromAmount(amountStr),
+		Fee:        fee,
+		FeeScale:   uint16(feeScale),
+		Attachment: "",
+	}
+	emptyTrans, err := virtualeconomyTransaction.CreateEmptyTransaction(txStruct)
+	if err != nil {
+		return err
+	}
+	rawTx.RawHex = emptyTrans
+
+	if rawTx.Signatures == nil {
+		rawTx.Signatures = make(map[string][]*openwallet.KeySignature)
+	}
+
+	keySigs := make([]*openwallet.KeySignature, 0)
+
+	signature := openwallet.KeySignature{
+		EccType: decoder.wm.Config.CurveType,
+		Nonce:   "",
+		Address: fromAddr,
+		Message: emptyTrans,
+	}
+
+	keySigs = append(keySigs, &signature)
+
+	rawTx.Signatures[rawTx.Account.AccountID] = keySigs
+
+	rawTx.FeeRate = big.NewInt(int64(feeScale)).String()
+
+	rawTx.IsBuilt = true
+
+	return nil
 }
