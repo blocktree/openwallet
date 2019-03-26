@@ -344,7 +344,7 @@ func (wm *WalletManager) GetAssetsAccountBalance(appID, walletID, accountID stri
 			return nil, err
 		}
 
-	} else { //账户模型
+	} else if assetsMgr.BalanceModelType() == openwallet.BalanceModelTypeAccount { //账户模型
 		balances, err = scanner.GetBalanceByAddress(account.Alias)
 		if err != nil {
 			return nil, err
@@ -416,7 +416,7 @@ func (wm *WalletManager) GetAssetsAccountTokenBalance(appID, walletID, accountID
 		if err != nil {
 			return nil, err
 		}
-	} else {
+	} else if assetsMgr.BalanceModelType() == openwallet.BalanceModelTypeAccount {
 		balances, err = smartContractDecoder.GetTokenBalanceByAddress(contract, account.Alias)
 		if err != nil {
 			return nil, err
