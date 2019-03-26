@@ -324,21 +324,32 @@ func (wm *WalletManager) GetAssetsAccountBalance(appID, walletID, accountID stri
 		return nil, fmt.Errorf("[%s] not support block scan", account.Symbol)
 	}
 
-	addresses, err := wrapper.GetAddressList(0, -1, "AccountID", accountID)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, address := range addresses {
-		searchAddrs = append(searchAddrs, address.Address)
-		addressMap[address.Address] = address
-	}
-
 	accountBalanceDec := decimal.New(0, 0)
+	balances := make([]*openwallet.Balance, 0)
+	//地址模型
+	if assetsMgr.BalanceModelType() == openwallet.BalanceModelTypeAddress {
 
-	balances, err := scanner.GetBalanceByAddress(searchAddrs...)
-	if err != nil {
-		return nil, err
+		addresses, addrErr := wrapper.GetAddressList(0, -1, "AccountID", accountID)
+		if addrErr != nil {
+			return nil, addrErr
+		}
+
+		for _, address := range addresses {
+			searchAddrs = append(searchAddrs, address.Address)
+			addressMap[address.Address] = address
+		}
+
+		balances, err = scanner.GetBalanceByAddress(searchAddrs...)
+		if err != nil {
+			return nil, err
+		}
+
+	} else { //账户模型
+		balances, err = scanner.GetBalanceByAddress(account.Alias)
+		if err != nil {
+			return nil, err
+		}
+
 	}
 
 	for _, b := range balances {
@@ -386,21 +397,30 @@ func (wm *WalletManager) GetAssetsAccountTokenBalance(appID, walletID, accountID
 		return nil, fmt.Errorf("[%s] not support smart contract", account.Symbol)
 	}
 
-	addresses, err := wrapper.GetAddressList(0, -1, "AccountID", accountID)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, address := range addresses {
-		searchAddrs = append(searchAddrs, address.Address)
-		addressMap[address.Address] = address
-	}
-
 	accountBalanceDec := decimal.New(0, 0)
+	balances := make([]*openwallet.TokenBalance, 0)
+	//地址模型
+	if assetsMgr.BalanceModelType() == openwallet.BalanceModelTypeAddress {
 
-	balances, err := smartContractDecoder.GetTokenBalanceByAddress(contract, searchAddrs...)
-	if err != nil {
-		return nil, err
+		addresses, addrErr := wrapper.GetAddressList(0, -1, "AccountID", accountID)
+		if addrErr != nil {
+			return nil, addrErr
+		}
+
+		for _, address := range addresses {
+			searchAddrs = append(searchAddrs, address.Address)
+			addressMap[address.Address] = address
+		}
+
+		balances, err = smartContractDecoder.GetTokenBalanceByAddress(contract, searchAddrs...)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		balances, err = smartContractDecoder.GetTokenBalanceByAddress(contract, account.Alias)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	for _, b := range balances {

@@ -15,9 +15,10 @@
 
 package openwallet
 
+// 余额模型类别
 const (
-	AccountModelAddress = 0
-	AccountModelAccount = 1
+	BalanceModelTypeAddress = 0 //以地址记录余额
+	BalanceModelTypeAccount = 1 //以账户记录余额
 )
 
 type SymbolInfo interface {
@@ -31,8 +32,11 @@ type SymbolInfo interface {
 	//Symbol 币种标识
 	Symbol() string
 
-	//小数位精度
+	//Decimal 小数位精度
 	Decimal() int32
+
+	//BalanceModelType 余额模型类别
+	BalanceModelType() uint32
 }
 
 type SymbolInfoBase struct {
@@ -53,7 +57,12 @@ func (s *SymbolInfoBase) Symbol() string {
 	return ""
 }
 
-//小数位精度
+//Decimal 小数位精度
 func (s *SymbolInfoBase) Decimal() int32 {
 	return 0
+}
+
+//BalanceModelType 余额模型类别
+func (s *SymbolInfoBase) BalanceModelType() uint32 {
+	return BalanceModelTypeAddress
 }
