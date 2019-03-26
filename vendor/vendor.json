@@ -500,6 +500,12 @@
 			"revisionTime": "2017-03-15T14:24:10Z"
 		},
 		{
+			"checksumSHA1": "56J7Zbj/haU4YAzYq+PvTfFxk8Y=",
+			"path": "github.com/bradfitz/gomemcache/memcache",
+			"revision": "bc664df9673713a0ccf26e3b55a673ec7301088b",
+			"revisionTime": "2018-07-10T15:56:16Z"
+		},
+		{
 			"checksumSHA1": "tmTwnJZMpwYat5xtkhAJCGxEf3w=",
 			"path": "github.com/btcsuite/btcd/btcec",
 			"revision": "675abc5df3c5531bc741b56a765e35623459da6d",
@@ -905,6 +911,48 @@
 			"path": "github.com/emirpasic/gods/utils",
 			"revision": "bba54c718c4e39e4db35f73e0c660df44a4de4cd",
 			"revisionTime": "2018-06-18T11:24:50Z"
+		},
+		{
+			"checksumSHA1": "JuHxONsq783WIAitQchZmRQ7Nts=",
+			"path": "github.com/eoscanada/eos-go",
+			"revision": "14f65f874ea0c418e8d85ec7e15cd6ed0dbc6068",
+			"revisionTime": "2019-03-11T18:56:08Z"
+		},
+		{
+			"checksumSHA1": "0cS5oOgSkR3wu4TSqrt3F5Ptgs8=",
+			"path": "github.com/eoscanada/eos-go/btcsuite/btcd/btcec",
+			"revision": "14f65f874ea0c418e8d85ec7e15cd6ed0dbc6068",
+			"revisionTime": "2019-03-11T18:56:08Z"
+		},
+		{
+			"checksumSHA1": "9CdGdJ/+qjIwCfyoxoB3JxNtdyg=",
+			"path": "github.com/eoscanada/eos-go/btcsuite/btcutil",
+			"revision": "14f65f874ea0c418e8d85ec7e15cd6ed0dbc6068",
+			"revisionTime": "2019-03-11T18:56:08Z"
+		},
+		{
+			"checksumSHA1": "VkjW+vswsv7J0PX2UFqqg+/RVgs=",
+			"path": "github.com/eoscanada/eos-go/btcsuite/btcutil/base58",
+			"revision": "14f65f874ea0c418e8d85ec7e15cd6ed0dbc6068",
+			"revisionTime": "2019-03-11T18:56:08Z"
+		},
+		{
+			"checksumSHA1": "HExaY312KYapFrNdNw5lAKZNay0=",
+			"path": "github.com/eoscanada/eos-go/ecc",
+			"revision": "14f65f874ea0c418e8d85ec7e15cd6ed0dbc6068",
+			"revisionTime": "2019-03-11T18:56:08Z"
+		},
+		{
+			"checksumSHA1": "nHRY4Riz9MNnSnxIFm2K1G3zEes=",
+			"path": "github.com/eoscanada/eos-go/eoserr",
+			"revision": "14f65f874ea0c418e8d85ec7e15cd6ed0dbc6068",
+			"revisionTime": "2019-03-11T18:56:08Z"
+		},
+		{
+			"checksumSHA1": "n/7xl3TEdpCXXT0GtNAxva/ReoI=",
+			"path": "github.com/eoscanada/eos-go/token",
+			"revision": "14f65f874ea0c418e8d85ec7e15cd6ed0dbc6068",
+			"revisionTime": "2019-03-11T18:56:08Z"
 		},
 		{
 			"checksumSHA1": "GCGRyn8Jx3Fbroo3XtClEUfPbec=",
@@ -3056,6 +3104,12 @@
 			"revisionTime": "2017-10-02T07:59:45Z"
 		},
 		{
+			"checksumSHA1": "IeRoFAG92dA1jUX27nMz1qczlOw=",
+			"path": "github.com/tidwall/sjson",
+			"revision": "25fb082a20e29e83fb7b7ef5f5919166aad1f084",
+			"revisionTime": "2019-02-28T20:39:17Z"
+		},
+		{
 			"checksumSHA1": "dGdLMDgFp6R5VqX1VYpzQDSW9MM=",
 			"path": "github.com/tildeleb/hashland/keccakpg",
 			"revision": "07375b562deaa8d6891f9618a04e94a0b98e2ee7",
@@ -3168,6 +3222,54 @@
 			"path": "go.opencensus.io/trace/propagation",
 			"revision": "140879bf49cb17276aaf28b5f6a04e251ff98473",
 			"revisionTime": "2018-06-26T12:28:15Z"
+		},
+		{
+			"checksumSHA1": "qFs0grHlbWDk8I7+1+wWvHfmWxA=",
+			"path": "go.uber.org/atomic",
+			"revision": "5328d69c76a98d1d21c773653a5a78fa28d89921",
+			"revisionTime": "2019-02-26T01:13:05Z"
+		},
+		{
+			"checksumSHA1": "HephvKOmm5xmOrCzhKEtcw7lqE8=",
+			"path": "go.uber.org/multierr",
+			"revision": "ddea229ff1dff9e6fe8a6c0344ac73b09e81fce5",
+			"revisionTime": "2018-01-22T17:25:45Z"
+		},
+		{
+			"checksumSHA1": "bs4Qet93Z8f2eB8MVdM2hXXTyso=",
+			"path": "go.uber.org/zap",
+			"revision": "d2a364dac1d9b70c651d9f47381c5912361e5596",
+			"revisionTime": "2019-02-15T01:25:40Z"
+		},
+		{
+			"checksumSHA1": "eC/XVln77aRfE/VocbN0NWdlRdg=",
+			"path": "go.uber.org/zap/buffer",
+			"revision": "d2a364dac1d9b70c651d9f47381c5912361e5596",
+			"revisionTime": "2019-02-15T01:25:40Z"
+		},
+		{
+			"checksumSHA1": "MuxOAtZEsJitlWBzhmpm2vGiHok=",
+			"path": "go.uber.org/zap/internal/bufferpool",
+			"revision": "d2a364dac1d9b70c651d9f47381c5912361e5596",
+			"revisionTime": "2019-02-15T01:25:40Z"
+		},
+		{
+			"checksumSHA1": "uC0L9eCSAYcCWNC8udJk/t1vvIU=",
+			"path": "go.uber.org/zap/internal/color",
+			"revision": "d2a364dac1d9b70c651d9f47381c5912361e5596",
+			"revisionTime": "2019-02-15T01:25:40Z"
+		},
+		{
+			"checksumSHA1": "b80CJExrVpXu3SA1iCQ6uLqTn2c=",
+			"path": "go.uber.org/zap/internal/exit",
+			"revision": "d2a364dac1d9b70c651d9f47381c5912361e5596",
+			"revisionTime": "2019-02-15T01:25:40Z"
+		},
+		{
+			"checksumSHA1": "iH3qg/pvsxQ9XW5t8FTc6veuYhY=",
+			"path": "go.uber.org/zap/zapcore",
+			"revision": "d2a364dac1d9b70c651d9f47381c5912361e5596",
+			"revisionTime": "2019-02-15T01:25:40Z"
 		},
 		{
 			"checksumSHA1": "FwW3Vv4jW0Nv7V2SZC7x/Huj5M4=",
@@ -4238,5 +4340,5 @@
 			"revisionTime": "2018-07-31T13:18:48Z"
 		}
 	],
-	"rootPath": "github.com/blocktree/OpenWallet"
+	"rootPath": "github.com/blocktree/openwallet"
 }

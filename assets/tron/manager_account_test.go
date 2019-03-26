@@ -36,7 +36,7 @@ func TestGetAccount(t *testing.T) {
 
 	var addr string
 
-	addr = "TJLypjev8iLdQR3X63rSMeZK8GKwkeSH1Y"
+	addr = "TXphYHMUvT2ptHt8QtQb5i9T9DWUtfBWha"
 
 	if r, err := tw.GetAccount(addr); err != nil {
 		t.Errorf("GetAccount failed: %v\n", err)

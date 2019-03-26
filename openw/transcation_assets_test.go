@@ -398,12 +398,12 @@ func TestTransfer_TRON(t *testing.T) {
 	walletID := "W1eRr8nRrawkQ1Ayf1XKPCjmvKk8aLGExu"
 	accountID := "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
 	//accountID := "8pLC7mRGWy968bRr3sQtYxAZjxJqC4QKH3H9VaKouArd"
-	to := "TT44ohw23WGNv1jQCAUN3etUWND1KXN2Eq"
+	to := "TY6NWeKuASQkM5sXxbDJZKUxghDDHNwzon"
 	//to := "TJLypjev8iLdQR3X63rSMeZK8GKwkeSH1Y"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.01", "", nil)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "2", "", nil)
 	if err != nil {
 		return
 	}

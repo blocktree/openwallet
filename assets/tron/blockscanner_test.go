@@ -110,8 +110,8 @@ func TestTron_GetGlobalMaxBlockHeight(t *testing.T) {
 
 func TestTron_GetTransaction(t *testing.T) {
 	bs := NewTronBlockScanner(tw)
-	txID := "86b5a123b5cc50047532f1a55ed627f29012bba41e6590b0545f903289e7099a"
-	height := uint64(5628100)
+	txID := "a5614f60e7d3b9d8859abe89968d81007c321c5ad83cb9c7abaa736a20401a11"
+	height := uint64(7773685)
 	tx, err := bs.wm.GetTransaction(txID, "", height, 0)
 	if err != nil {
 		fmt.Println("get transaction failed!!!")

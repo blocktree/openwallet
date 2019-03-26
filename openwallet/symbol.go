@@ -15,6 +15,11 @@
 
 package openwallet
 
+const (
+	AccountModelAddress = 0
+	AccountModelAccount = 1
+)
+
 type SymbolInfo interface {
 
 	//CurveType 曲线类型
