@@ -18,13 +18,13 @@ package eosio
 import (
 	"github.com/blocktree/openwallet/log"
 	"github.com/blocktree/openwallet/openwallet"
-	"github.com/tidwall/gjson"
+	"github.com/eoscanada/eos-go"
 )
 
 type WalletManager struct {
 	openwallet.AssetsAdapterBase
 
-	WalletClient    *Client                         // 节点客户端
+	Api    *eos.API                         // 节点客户端
 	Config          *WalletConfig                   // 节点配置
 	Decoder         openwallet.AddressDecoder       //地址编码器
 	TxDecoder       openwallet.TransactionDecoder   //交易单编码器
@@ -43,25 +43,4 @@ func NewWalletManager() *WalletManager {
 	wm.Log = log.NewOWLogger(wm.Symbol())
 	wm.ContractDecoder = NewContractDecoder(&wm)
 	return &wm
-}
-
-func (wm *WalletManager) GetInfo() (*gjson.Result, error) {
-	result, err := wm.WalletClient.Call("chain/get_info", nil)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
-func (wm *WalletManager) GetAccount(name string) (*gjson.Result, error) {
-
-	param := map[string]interface{}{
-		"account_name": name,
-	}
-
-	result, err := wm.WalletClient.Call("chain/get_account", param)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
 }

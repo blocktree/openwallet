@@ -398,12 +398,12 @@ func TestTransfer_TRON(t *testing.T) {
 	walletID := "W1eRr8nRrawkQ1Ayf1XKPCjmvKk8aLGExu"
 	accountID := "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
 	//accountID := "8pLC7mRGWy968bRr3sQtYxAZjxJqC4QKH3H9VaKouArd"
-	to := "TT44ohw23WGNv1jQCAUN3etUWND1KXN2Eq"
+	to := "TY6NWeKuASQkM5sXxbDJZKUxghDDHNwzon"
 	//to := "TJLypjev8iLdQR3X63rSMeZK8GKwkeSH1Y"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.01", "", nil)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "2", "", nil)
 	if err != nil {
 		return
 	}
@@ -626,7 +626,7 @@ func TestTransfer_VSYS(t *testing.T) {
 
 	walletID := "W8325QfzEfWq4uevrVh67wMR5xLDMEjiD7"
 	accountID := "FUAKFujfVwdWJn79DFB4ZZQ6LRZS5cXfrGC9er2T5TSt"
-	to := "ARGehumz77nGcfkQrPjK4WUyNevvU9NCNqQ"
+	to := "ARMot3RV2FHw9KugZiMMwKRw8HXDHQVYwuC"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
@@ -636,6 +636,45 @@ func TestTransfer_VSYS(t *testing.T) {
 	}
 
 	log.Infof("rawTX: %+v", rawTx)
+
+	_, err = testSignTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testVerifyTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testSubmitTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+}
+
+
+func TestTransfer_EOS(t *testing.T) {
+	tm := testInitWalletManager()
+
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "JaLb5u5EjMz44UkbzuKorAZHSTfT5hLSrp4yhafzhFi"
+	to := "bob"
+
+	//  EOS transaction
+	contract := openwallet.SmartContract{
+		Symbol:  "EOS",
+		Token:   "EOS",
+		Address: "eosio.token",
+	}
+
+	//testGetAssetsAccountBalance(tm, walletID, accountID)
+
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "10", "", &contract)
+	if err != nil {
+		return
+	}
 
 	_, err = testSignTransactionStep(tm, rawTx)
 	if err != nil {

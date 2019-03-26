@@ -17,19 +17,20 @@ package eosio
 
 import (
 	"github.com/blocktree/openwallet/log"
+	"github.com/eoscanada/eos-go"
 	"testing"
 )
 
 func testNewWalletManager() *WalletManager {
 	wm := NewWalletManager()
-	wm.Config.ServerAPI = "http://127.0.01:8888/v1"
-	wm.WalletClient = NewClient(wm.Config.ServerAPI, true)
+	wm.Config.ServerAPI = "http://127.0.01:8888"
+	wm.Api = eos.New(wm.Config.ServerAPI)
 	return wm
 }
 
 func TestWalletManager_GetInfo(t *testing.T) {
 	wm := testNewWalletManager()
-	r, err := wm.GetInfo()
+	r, err := wm.Api.GetInfo()
 	if err != nil {
 		log.Errorf("unexpected error: %v", err)
 		return
@@ -39,7 +40,48 @@ func TestWalletManager_GetInfo(t *testing.T) {
 
 func TestWalletManager_GetAccount(t *testing.T) {
 	wm := testNewWalletManager()
-	r, err := wm.GetAccount("bob")
+	r, err := wm.Api.GetAccount("bob")
+	if err != nil {
+		log.Errorf("unexpected error: %v", err)
+		return
+	}
+	log.Infof("%+v", r)
+}
+
+func TestWalletManager_GetBlock(t *testing.T) {
+	wm := testNewWalletManager()
+	r, err := wm.Api.GetBlockByNum(10)
+	if err != nil {
+		log.Errorf("unexpected error: %v", err)
+		return
+	}
+	log.Infof("%+v", r)
+}
+
+func TestWalletManager_GetTransaction(t *testing.T) {
+	wm := testNewWalletManager()
+	r, err := wm.Api.GetTransaction("827eeaa08de99b29683b86a0306df863db607a093be37e0ad75e01819fd9af11")
+	if err != nil {
+		log.Errorf("unexpected error: %v", err)
+		return
+	}
+	log.Infof("%+v", r)
+}
+
+func TestWalletManager_GetABI(t *testing.T) {
+	wm := testNewWalletManager()
+	r, err := wm.Api.GetABI("eosio.token")
+	if err != nil {
+		log.Errorf("unexpected error: %v", err)
+		return
+	}
+	log.Infof("%+v", r)
+}
+
+
+func TestWalletManager_GetCurrencyBalance(t *testing.T) {
+	wm := testNewWalletManager()
+	r, err := wm.Api.GetCurrencyBalance("bob", "EOS", "eosio.token")
 	if err != nil {
 		log.Errorf("unexpected error: %v", err)
 		return

@@ -15,7 +15,9 @@
 
 package eosio
 
-import "github.com/blocktree/openwallet/openwallet"
+import (
+	"github.com/blocktree/openwallet/openwallet"
+)
 
 type ContractDecoder struct {
 	openwallet.SmartContractDecoderBase
@@ -28,3 +30,24 @@ func NewContractDecoder(wm *WalletManager) *ContractDecoder {
 	decoder.wm = wm
 	return &decoder
 }
+
+//func (decoder *ContractDecoder) GetTokenBalanceByAddress(contract openwallet.SmartContract, address ...string) ([]*openwallet.TokenBalance, error) {
+//
+//	codeAccount := contract.Address
+//	tokenCoin := contract.Token
+//	//tokenDecimals := rawTx.Coin.Contract.Decimals
+//
+//	//获取wallet
+//	account, err := wrapper.GetAssetsAccountInfo(accountID)
+//	if err != nil {
+//		return err
+//	}
+//
+//	accountAssets, err := decoder.wm.Api.GetCurrencyBalance(eos.AccountName(account.Alias), tokenCoin, eos.AccountName(codeAccount))
+//	if len(accountAssets) == 0 {
+//		return fmt.Errorf("eos account balance is not enough")
+//	}
+//
+//	accountBalance = accountAssets[0]
+//
+//}
