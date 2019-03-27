@@ -19,8 +19,10 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/blocktree/openwallet/common"
+	"github.com/blocktree/openwallet/openwallet"
 	"math/big"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/blocktree/go-owcdrivers/addressEncoder"
@@ -34,9 +36,10 @@ import (
 )
 
 type AddrBalance struct {
-	Address     string
-	TronBalance *big.Int
-	Index       int
+	Address      string
+	TronBalance  *big.Int
+	TokenBalance *big.Int
+	Index        int
 }
 
 func getTxHash1(txHex string) ([]byte, error) {
@@ -75,6 +78,7 @@ func getTxHash(tx *core.Transaction) (txHash []byte, err error) {
 	return txHash, nil
 }
 
+//Deprecated
 func (wm *WalletManager) CreateTransactionRef(toAddress, ownerAddress string, amount string) (txRawHex string, err error) {
 
 	// addressEncoder.AddressDecode return 20 bytes of the center of Address
@@ -159,6 +163,136 @@ func (wm *WalletManager) CreateTransactionRef(toAddress, ownerAddress string, am
 	return txRawHex, nil
 }
 
+func (wm *WalletManager) CreateTokenTransaction(toAddress, ownerAddress string, amount string, contract openwallet.SmartContract) (txRawHex string, err error) {
+
+	// addressEncoder.AddressDecode return 20 bytes of the center of Address
+	toAddrHex, toAddressBytes, err := DecodeAddress(toAddress, wm.Config.IsTestNet)
+	if err != nil {
+		wm.Log.Info("toAddress decode failed failed;unexpected error:%v", err)
+		return "", err
+	}
+
+	_, ownerAddressBytes, err := DecodeAddress(ownerAddress, wm.Config.IsTestNet)
+	if err != nil {
+		wm.Log.Info("ownerAddress decode failed failed;unexpected error:%v", err)
+		return "", err
+	}
+
+	if contract.Address == "" {
+		amountDec := common.StringNumToBigIntWithExp(amount, wm.Decimal())
+
+		tc := &core.TransferContract{
+			OwnerAddress: ownerAddressBytes,
+			ToAddress:    toAddressBytes,
+			Amount:       amountDec.Int64(),
+		}
+		return wm.createAssetsTransaction(tc, core.Transaction_Contract_TransferContract, "TransferContract")
+
+	} else if strings.EqualFold(contract.Protocol, TRC10) {
+		amountDec := common.StringNumToBigIntWithExp(amount, int32(contract.Decimals))
+		tc := &core.TransferAssetContract{
+			OwnerAddress: ownerAddressBytes,
+			ToAddress:    toAddressBytes,
+			Amount:       amountDec.Int64(),
+			AssetName:    []byte(contract.Address),
+		}
+
+		return wm.createAssetsTransaction(tc, core.Transaction_Contract_TransferAssetContract, "TransferAssetContract")
+	} else if strings.EqualFold(contract.Protocol, TRC20) {
+		amountDec := common.StringNumToBigIntWithExp(amount, int32(contract.Decimals))
+		_, contractAddressBytes, err := DecodeAddress(contract.Address, wm.Config.IsTestNet)
+		if err != nil {
+			return "", err
+		}
+
+		var funcParams []SolidityParam
+		funcParams = append(funcParams, SolidityParam{
+			ParamType:  SOLIDITY_TYPE_ADDRESS,
+			ParamValue: toAddrHex,
+		})
+
+		funcParams = append(funcParams, SolidityParam{
+			ParamType:  SOLIDITY_TYPE_UINT256,
+			ParamValue: amountDec,
+		})
+
+		//fmt.Println("make token transfer data, amount:", amount.String())
+		dataHex, err := makeTransactionParameter(TRC20_TRANSFER_METHOD_ID, funcParams)
+		if err != nil {
+			return "", err
+		}
+
+		data, err := hex.DecodeString(dataHex)
+		if err != nil {
+			return "", err
+		}
+
+		tc := &core.TriggerSmartContract{
+			OwnerAddress:    ownerAddressBytes,
+			ContractAddress: contractAddressBytes,
+			Data:            data,
+		}
+		return wm.createAssetsTransaction(tc, core.Transaction_Contract_TriggerSmartContract, "TriggerSmartContract")
+	}
+
+	return "", fmt.Errorf("%s is not supported", contract.Protocol)
+}
+
+func (wm *WalletManager) createAssetsTransaction(message proto.Message, contractType core.Transaction_Contract_ContractType, typeName string) (string, error) {
+
+	msgBytes, err := proto.Marshal(message)
+	if err != nil {
+		return "", err
+	}
+
+	txContact := &core.Transaction_Contract{
+		Type:         contractType,
+		Parameter:    &any.Any{Value: msgBytes, TypeUrl: "type.googleapis.com/protocol." + typeName},
+		Provider:     nil,
+		ContractName: nil,
+	}
+
+	// ******** Get Reference Block ********
+	block, err := wm.GetNowBlock()
+	if err != nil {
+		wm.Log.Info("get current block failed;unexpected error:%v", err)
+		return "", err
+	}
+	blockID, err := hex.DecodeString(block.GetBlockHashID())
+	if err != nil {
+		return "", err
+	}
+	refBlockBytes, refBlockHash := blockID[6:8], blockID[8:16]
+
+	// ********Set timestamp ********
+	/*
+	 According to RFC-3339 date strings
+	 Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000).setNanos((int) ((millis % 1000) * 1000000)).build();
+	*/
+	timestamp := time.Now().UnixNano() / 1000000 // <int64
+
+	// ******** Create Traction ********
+	txRaw := &core.TransactionRaw{
+		RefBlockBytes: refBlockBytes,
+		RefBlockHash:  refBlockHash,
+		Contract:      []*core.Transaction_Contract{txContact},
+		Expiration:    timestamp + 10*60*60*60,
+		//FeeLimit:      FeeLimit,
+	}
+	tx := &core.Transaction{
+		RawData: txRaw,
+	}
+
+	x, err := proto.Marshal(tx)
+	if err != nil {
+		wm.Log.Info("marshal tx failed;unexpected error:%v", err)
+		return "", err
+	}
+	txRawHex := hex.EncodeToString(x)
+	return txRawHex, nil
+
+}
+
 func (wm *WalletManager) SignTransactionRef(hash string, privateKey string) (signedTxRaw string, err error) {
 
 	txHash, err := hex.DecodeString(hash)
@@ -181,6 +315,99 @@ func (wm *WalletManager) SignTransactionRef(hash string, privateKey string) (sig
 	return hex.EncodeToString(sign), nil
 }
 
+func (wm *WalletManager) ValidSignedTokenTransaction(txHex string, contract openwallet.SmartContract) error {
+
+	tx := &core.Transaction{}
+	txBytes, err := hex.DecodeString(txHex)
+	if err != nil {
+		wm.Log.Info("conver txhex from hex to byte failed;unexpected error:%v", err)
+		return err
+	}
+	if err := proto.Unmarshal(txBytes, tx); err != nil {
+		wm.Log.Info("unmarshal txBytes failed;unexpected error:%v", err)
+		return err
+	}
+	listContracts := tx.RawData.GetContract()
+	countSignature := len(tx.Signature)
+	txHash, err := getTxHash1(txHex)
+	if err != nil {
+		wm.Log.Info("get txHex hash failed;unexpected error:%v", err)
+		return err
+	}
+
+	if countSignature == 0 {
+		return fmt.Errorf("not found signature")
+	}
+
+	contractType := core.Transaction_Contract_TransferContract
+	if contract.Address == "" {
+		contractType = core.Transaction_Contract_TransferContract
+	} else if strings.EqualFold(contract.Protocol, TRC10) {
+		contractType = core.Transaction_Contract_TransferAssetContract
+	} else if strings.EqualFold(contract.Protocol, TRC20) {
+		contractType = core.Transaction_Contract_TriggerSmartContract
+	}
+
+	for i, contract := range listContracts {
+
+		err = wm.validSignedTokenTransaction(txHash, tx.Signature[i], contract, contractType)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (wm *WalletManager) validSignedTokenTransaction(txHash []byte, signature []byte, contract *core.Transaction_Contract, contractType core.Transaction_Contract_ContractType) error {
+
+	codeType := addressEncoder.TRON_mainnetAddress
+	if wm.Config.IsTestNet {
+		codeType = addressEncoder.TRON_testnetAddress
+	}
+
+	var ownerAddressHex string
+	switch contractType {
+	case core.Transaction_Contract_TransferContract:
+		tc := &core.TransferContract{}
+		err := proto.Unmarshal(contract.Parameter.GetValue(), tc)
+		if err != nil {
+			return err
+		}
+		ownerAddressHex = hex.EncodeToString(tc.GetOwnerAddress())
+	case core.Transaction_Contract_TransferAssetContract:
+		tc := &core.TransferAssetContract{}
+		err := proto.Unmarshal(contract.Parameter.GetValue(), tc)
+		if err != nil {
+			return err
+		}
+		ownerAddressHex = hex.EncodeToString(tc.GetOwnerAddress())
+	case core.Transaction_Contract_TriggerSmartContract:
+		tc := &core.TriggerSmartContract{}
+		err := proto.Unmarshal(contract.Parameter.GetValue(), tc)
+		if err != nil {
+			return err
+		}
+		ownerAddressHex = hex.EncodeToString(tc.GetOwnerAddress())
+	}
+
+	pkBytes, ret := owcrypt.RecoverPubkey(signature, txHash, wm.CurveType())
+
+	if ret != owcrypt.SUCCESS {
+		return fmt.Errorf("verify SignedTransactionRef faild: recover Pubkey error")
+	}
+	if owcrypt.SUCCESS != owcrypt.Verify(pkBytes, nil, 0, txHash, 32, signature[0:len(signature)-1], wm.CurveType()) {
+		return fmt.Errorf("verify SignedTransactionRef failed:verify signature failed")
+	}
+	pkHash := owcrypt.Hash(pkBytes, 0, owcrypt.HASH_ALG_KECCAK256)[12:32]
+	pkgenAddress := append(codeType.Prefix(), pkHash...)
+	pkgenAddressHex := hex.EncodeToString(pkgenAddress)
+	if pkgenAddressHex != ownerAddressHex {
+		return fmt.Errorf("verify SignedTransactionRef failed: signed address is not the owner address")
+	}
+	return nil
+}
+
+//Deprecated
 func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
 
 	tx := &core.Transaction{}
@@ -216,12 +443,12 @@ func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
 			return err
 		}
 		ownerAddressHex := hex.EncodeToString(tc.GetOwnerAddress())
-		pkBytes, ret := owcrypt.RecoverPubkey(tx.Signature[i], txHash, owcrypt.ECC_CURVE_SECP256K1)
+		pkBytes, ret := owcrypt.RecoverPubkey(tx.Signature[i], txHash, wm.CurveType())
 
 		if ret != owcrypt.SUCCESS {
 			return fmt.Errorf("verify SignedTransactionRef faild: recover Pubkey error")
 		}
-		if owcrypt.SUCCESS != owcrypt.Verify(pkBytes, nil, 0, txHash, 32, tx.Signature[i][0:len(tx.Signature[i])-1], owcrypt.ECC_CURVE_SECP256K1) {
+		if owcrypt.SUCCESS != owcrypt.Verify(pkBytes, nil, 0, txHash, 32, tx.Signature[i][0:len(tx.Signature[i])-1], wm.CurveType()) {
 			return fmt.Errorf("verify SignedTransactionRef failed:verify signature failed")
 		}
 		pkHash := owcrypt.Hash(pkBytes, 0, owcrypt.HASH_ALG_KECCAK256)[12:32]
@@ -234,7 +461,7 @@ func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
 	return nil
 }
 
-func (wm *WalletManager) BroadcastTransaction(raw string) (string, error) {
+func (wm *WalletManager) BroadcastTransaction(raw string, contractType core.Transaction_Contract_ContractType) (string, error) {
 	tx := &core.Transaction{}
 	if txBytes, err := hex.DecodeString(raw); err != nil {
 		wm.Log.Info("conver raw from hex to byte failed;unexpected error:%v", err)
@@ -245,6 +472,7 @@ func (wm *WalletManager) BroadcastTransaction(raw string) (string, error) {
 			return "", err
 		}
 	}
+
 	/* Generate Params */
 	var (
 		signature []string
@@ -265,22 +493,67 @@ func (wm *WalletManager) BroadcastTransaction(raw string) (string, error) {
 	contracts = []map[string]interface{}{}
 	for _, c := range rawData.GetContract() {
 		any := c.GetParameter().GetValue()
-		tc := &core.TransferContract{}
-		if err := proto.Unmarshal(any, tc); err != nil {
-			wm.Log.Info("unmarshal contract value failed;unexpected error:%v", err)
-			return "", err
-		}
-		contract := map[string]interface{}{
-			"type": c.GetType().String(),
-			"parameter": map[string]interface{}{
-				"type_url": c.GetParameter().GetTypeUrl(),
-				"value": map[string]interface{}{
-					"amount":        tc.Amount,
-					"owner_address": hex.EncodeToString(tc.GetOwnerAddress()),
-					"to_address":    hex.EncodeToString(tc.GetToAddress()),
+		var contract map[string]interface{}
+		switch contractType {
+		case core.Transaction_Contract_TransferContract:
+			tc := &core.TransferContract{}
+			if err := proto.Unmarshal(any, tc); err != nil {
+				wm.Log.Info("unmarshal contract value failed;unexpected error:%v", err)
+				return "", err
+			}
+
+			contract = map[string]interface{}{
+				"type": c.GetType().String(),
+				"parameter": map[string]interface{}{
+					"type_url": c.GetParameter().GetTypeUrl(),
+					"value": map[string]interface{}{
+						"amount":        tc.Amount,
+						"owner_address": hex.EncodeToString(tc.GetOwnerAddress()),
+						"to_address":    hex.EncodeToString(tc.GetToAddress()),
+					},
 				},
-			},
+			}
+
+		case core.Transaction_Contract_TransferAssetContract:
+			tc := &core.TransferAssetContract{}
+			if err := proto.Unmarshal(any, tc); err != nil {
+				wm.Log.Info("unmarshal contract value failed;unexpected error:%v", err)
+				return "", err
+			}
+
+			contract = map[string]interface{}{
+				"type": c.GetType().String(),
+				"parameter": map[string]interface{}{
+					"type_url": c.GetParameter().GetTypeUrl(),
+					"value": map[string]interface{}{
+						"amount":        tc.Amount,
+						"owner_address": hex.EncodeToString(tc.GetOwnerAddress()),
+						"to_address":    hex.EncodeToString(tc.GetToAddress()),
+						"asset_name":    hex.EncodeToString(tc.AssetName),
+					},
+				},
+			}
+
+		case core.Transaction_Contract_TriggerSmartContract:
+			tc := &core.TriggerSmartContract{}
+			if err := proto.Unmarshal(any, tc); err != nil {
+				wm.Log.Info("unmarshal contract value failed;unexpected error:%v", err)
+				return "", err
+			}
+
+			contract = map[string]interface{}{
+				"type": c.GetType().String(),
+				"parameter": map[string]interface{}{
+					"type_url": c.GetParameter().GetTypeUrl(),
+					"value": map[string]interface{}{
+						"data":             hex.EncodeToString(tc.Data),
+						"owner_address":    hex.EncodeToString(tc.GetOwnerAddress()),
+						"contract_address": hex.EncodeToString(tc.GetContractAddress()),
+					},
+				},
+			}
 		}
+
 		contracts = append(contracts, contract)
 	}
 	raw_data = map[string]interface{}{
@@ -322,6 +595,7 @@ func (wm *WalletManager) SendTransaction(walletID, to string, amount decimal.Dec
 	return nil, nil
 }
 
+//deprecated
 func (wm *WalletManager) Getbalance(address string) (*AddrBalance, error) {
 	account, err := wm.GetAccount(address)
 	if err != nil {
@@ -411,21 +685,21 @@ func (wm *WalletManager) GetTransactionFeeEstimated(from string, data string) (*
 
 	//:检查地址账户可用带宽是否足够
 	/*
-	accountNet, err := wm.GetAccountNet(from)
-	if err != nil {
-		return nil, err
-	}
-	log.Debugf("length of data: %d", len(data)/2)
-	//先判断冻结的带宽是否可用
-	if accountNet.NetUsed >= accountNet.NetLimit {
-		//再判断免费的带宽是否可用
-		if accountNet.FreeNetUsed >= accountNet.FreeNetLimit {
-			//:矿工费 = 字节长度 * 10 SUN
-			feeInfo.Fee = decimal.New(GasPrice, 0).Shift(-Decimals)
-			feeInfo.GasUsed = int64(len(data) / 2)
-			feeInfo.CalcFee()
+		accountNet, err := wm.GetAccountNet(from)
+		if err != nil {
+			return nil, err
 		}
-	}
+		log.Debugf("length of data: %d", len(data)/2)
+		//先判断冻结的带宽是否可用
+		if accountNet.NetUsed >= accountNet.NetLimit {
+			//再判断免费的带宽是否可用
+			if accountNet.FreeNetUsed >= accountNet.FreeNetLimit {
+				//:矿工费 = 字节长度 * 10 SUN
+				feeInfo.Fee = decimal.New(GasPrice, 0).Shift(-Decimals)
+				feeInfo.GasUsed = int64(len(data) / 2)
+				feeInfo.CalcFee()
+			}
+		}
 	*/
 	return feeInfo, nil
 }

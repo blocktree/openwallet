@@ -58,6 +58,7 @@ func (wm *WalletManager) GetAccountNet(address string) (accountNet *AccountNet, 
 	return accountNet, nil
 }
 
+//deprecated
 // GetAccount Done!
 // Function：Query bandwidth information.
 // Parameters：
@@ -121,6 +122,25 @@ func (wm *WalletManager) GetAccount(address string) (account *openwallet.AssetsA
 	account.Balance = r.Get("balance").String()
 	account.Symbol = wm.Config.Symbol
 	account.Required = 1
+
+	return account, nil
+}
+
+
+// GetAccount Done!
+// Function：Query bandwidth information.
+// Parameters：
+// 	Account address，converted to a base64 string
+// Return value：
+func (wm *WalletManager) GetTRXAccount(address string) (account *Account, err error) {
+	address = convertAddrToHex(address)
+
+	params := req.Param{"address": address}
+	r, err := wm.WalletClient.Call("/wallet/getaccount", params)
+	if err != nil {
+		return nil, err
+	}
+	account = NewAccount(r)
 
 	return account, nil
 }

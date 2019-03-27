@@ -398,7 +398,7 @@ func TestTransfer_TRON(t *testing.T) {
 	walletID := "W1eRr8nRrawkQ1Ayf1XKPCjmvKk8aLGExu"
 	accountID := "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
 	//accountID := "8pLC7mRGWy968bRr3sQtYxAZjxJqC4QKH3H9VaKouArd"
-	to := "TY6NWeKuASQkM5sXxbDJZKUxghDDHNwzon"
+	to := "TPnF9RJhvCBCagCDVfCE8Z3w8YxFuiFqha"
 	//to := "TJLypjev8iLdQR3X63rSMeZK8GKwkeSH1Y"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
@@ -418,10 +418,10 @@ func TestTransfer_TRON(t *testing.T) {
 		return
 	}
 
-	_, err = testSubmitTransactionStep(tm, rawTx)
-	if err != nil {
-		return
-	}
+	//_, err = testSubmitTransactionStep(tm, rawTx)
+	//if err != nil {
+	//	return
+	//}
 
 }
 

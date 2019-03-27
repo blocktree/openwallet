@@ -806,7 +806,7 @@ func (bs *TronBlockScanner) GetBalanceByAddress(address ...string) ([]*openwalle
 	addrsBalance := make([]*openwallet.Balance, 0)
 
 	for _, a := range address {
-		balance, err := bs.wm.getBalanceByExplorer(a)
+		balance, err := bs.wm.getBalance(a)
 		if err != nil {
 			return nil, err
 		}

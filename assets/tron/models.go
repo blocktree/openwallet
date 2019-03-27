@@ -18,9 +18,9 @@ package tron
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/blocktree/openwallet/crypto"
 	"github.com/blocktree/openwallet/openwallet"
-	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/bytom/common"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
@@ -148,7 +148,7 @@ func NewContract(json gjson.Result, isTestnet bool) *Contract {
 
 	codeType := addressEncoder.TRON_mainnetAddress
 	if isTestnet {
-		codeType = addressEncoder.TRON_mainnetAddress
+		codeType = addressEncoder.TRON_testnetAddress
 	}
 
 	// 解析json
@@ -244,6 +244,47 @@ func NewTransaction(json *gjson.Result, blockHash string, blockHeight uint64, bl
 	return b
 }
 
+type TransactionExtention struct {
+	Transaction    gjson.Result `json:"transaction" `
+	Txid           string       `json:"txid"`
+	ConstantResult []string     `json:"constant_result"`
+	Result         *Return      `json:"result"`
+}
+
+type Return struct {
+	Result  bool   `json:"result"`
+	Code    int64  `json:"code"`
+	Message string `json:"message"`
+}
+
+func NewReturn(json *gjson.Result) *Return {
+	b := &Return{}
+	b.Result = json.Get("result").Bool()
+	b.Code = json.Get("code").Int()
+	msg, _ := hex.DecodeString(json.Get("message").String())
+	b.Message = string(msg)
+	return b
+}
+
+func NewTransactionExtention(json *gjson.Result) *TransactionExtention {
+
+	// 解析json
+	b := &TransactionExtention{}
+	b.Transaction = json.Get("transaction")
+	result := json.Get("result")
+	b.Result = NewReturn(&result)
+	b.Txid = json.Get("txid").String()
+
+	b.ConstantResult = make([]string, 0)
+	if constant_result := json.Get("constant_result"); constant_result.IsArray() {
+		for _, c := range constant_result.Array() {
+			b.ConstantResult = append(b.ConstantResult, c.String())
+		}
+	}
+
+	return b
+}
+
 //UnscanRecords 扫描失败的区块及交易
 type UnscanRecord struct {
 	ID          string `storm:"id"` // primary key
@@ -306,4 +347,81 @@ func (f *txFeeInfo) CalcFee() error {
 	fee := f.GasPrice.Mul(decimal.New(f.GasUsed, 0))
 	f.Fee = fee
 	return nil
+}
+
+type ContractInfo struct {
+	Bytecode                   string
+	Name                       string
+	ConsumeUserResourcePercent uint64
+	ContractAddress            string
+	ABI                        string
+}
+
+func NewContractInfo(json *gjson.Result) *ContractInfo {
+	obj := &ContractInfo{}
+	obj.Bytecode = json.Get("bytecode").String()
+	obj.Name = json.Get("name").String()
+	obj.ConsumeUserResourcePercent = json.Get("consume_user_resource_percent").Uint()
+	obj.ContractAddress = json.Get("contract_address").String()
+	obj.ABI = json.Get("abi.entrys").Raw
+	return obj
+}
+
+type Account struct {
+	AddressHex          string
+	Balance             int64
+	FreeNetUsage        int64
+	AssetV2             map[string]int64
+	FreeAssetNetUsageV2 map[string]int64
+
+	/*
+		{
+		    "address": "41efb6d8a02f4b639605d71ff8dc78c97329759d70",
+		    "balance": 1058035120983,
+		    "create_time": 1546868937000,
+		    "latest_opration_time": 1553592429000,
+		    "free_net_usage": 4763,
+		    "latest_consume_free_time": 1553590113000,
+		    "account_resource": {
+		        "latest_consume_time_for_energy": 1553590494000
+		    },
+		    "assetV2": [
+		        {
+		            "key": "1001064",
+		            "value": 10
+		        }
+		    ],
+		    "free_asset_net_usageV2": [
+		        {
+		            "key": "1001064",
+		            "value": 0
+		        }
+		    ]
+		}
+
+	*/
+}
+
+func NewAccount(json *gjson.Result) *Account {
+	obj := &Account{}
+	obj.AddressHex = json.Get("address").String()
+	obj.Balance = json.Get("balance").Int()
+	obj.FreeNetUsage = json.Get("free_net_usage").Int()
+
+	obj.AssetV2 = make(map[string]int64, 0)
+	assetV2 := json.Get("assetV2")
+	if assetV2.IsArray() {
+		for _, as := range assetV2.Array() {
+			obj.AssetV2[as.Get("key").String()] = as.Get("value").Int()
+		}
+	}
+
+	obj.FreeAssetNetUsageV2 = make(map[string]int64, 0)
+	freeAssetNetUsageV2 := json.Get("free_asset_net_usageV2")
+	if freeAssetNetUsageV2.IsArray() {
+		for _, as := range freeAssetNetUsageV2.Array() {
+			obj.FreeAssetNetUsageV2[as.Get("key").String()] = as.Get("value").Int()
+		}
+	}
+	return obj
 }

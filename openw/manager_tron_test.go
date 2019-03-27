@@ -114,3 +114,163 @@ func TestTronWalletManager_GetAddressList(t *testing.T) {
 
 	tm.CloseDB(testApp)
 }
+
+func TestWalletManager_GetTRC20TokenBalance(t *testing.T) {
+	tm := testInitWalletManager()
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
+
+	contract := openwallet.SmartContract{
+		Address:  "THvZvKPLHKLJhEFYKiyqj6j8G8nGgfg7ur",
+		Symbol:   "TRX",
+		Name:     "DICE",
+		Token:    "DICE",
+		Decimals: 0,
+		Protocol: "trc20",
+	}
+
+	balance, err := tm.GetAssetsAccountTokenBalance(testApp, walletID, accountID, contract)
+	if err != nil {
+		log.Error("GetAssetsAccountTokenBalance failed, unexpected error:", err)
+		return
+	}
+	log.Info("balance:", balance.Balance)
+}
+
+
+func TestWalletManager_GetTRC10TokenBalance(t *testing.T) {
+	tm := testInitWalletManager()
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
+
+	contract := openwallet.SmartContract{
+		Address:  "1002000",
+		Symbol:   "TRX",
+		Name:     "BitTorrent",
+		Token:    "BTT",
+		Decimals: 6,
+		Protocol: "trc10",
+	}
+
+	balance, err := tm.GetAssetsAccountTokenBalance(testApp, walletID, accountID, contract)
+	if err != nil {
+		log.Error("GetAssetsAccountTokenBalance failed, unexpected error:", err)
+		return
+	}
+	log.Info("balance:", balance.Balance)
+}
+
+
+func TestTransfer_TRC20(t *testing.T) {
+	tm := testInitWalletManager()
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
+	to := "TT44ohw23WGNv1jQCAUN3etUWND1KXN2Eq"
+
+	contract := openwallet.SmartContract{
+		Address:  "THvZvKPLHKLJhEFYKiyqj6j8G8nGgfg7ur",
+		Symbol:   "TRX",
+		Name:     "DICE",
+		Token:    "DICE",
+		Decimals: 6,
+		Protocol: "trc20",
+	}
+
+	testGetAssetsAccountBalance(tm, walletID, accountID)
+
+	testGetAssetsAccountTokenBalance(tm, walletID, accountID, contract)
+
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "2", "", &contract)
+	if err != nil {
+		return
+	}
+	//log.Infof("rawHex: %+v", rawTx.RawHex)
+	_, err = testSignTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testVerifyTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testSubmitTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+}
+
+
+func TestTransfer_TRC10(t *testing.T) {
+	tm := testInitWalletManager()
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
+	to := "TXV6A13E7RSKG2Q1SqQdnLZ9CbZiVGGRK8"
+
+	contract := openwallet.SmartContract{
+		Address:  "1002000",
+		Symbol:   "TRX",
+		Name:     "BitTorrent",
+		Token:    "BTT",
+		Decimals: 6,
+		Protocol: "trc10",
+	}
+
+	testGetAssetsAccountBalance(tm, walletID, accountID)
+
+	testGetAssetsAccountTokenBalance(tm, walletID, accountID, contract)
+
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "12", "", &contract)
+	if err != nil {
+		return
+	}
+	log.Infof("rawHex: %+v", rawTx.RawHex)
+	_, err = testSignTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testVerifyTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testSubmitTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+}
+
+
+func TestTransfer_TRX(t *testing.T) {
+	tm := testInitWalletManager()
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
+	to := "TRJJ9Mq4aMjdmKWpTDJAgbYNoY2P9Facg5"
+
+	testGetAssetsAccountBalance(tm, walletID, accountID)
+
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.01", "", nil)
+	if err != nil {
+		return
+	}
+	log.Infof("rawHex: %+v", rawTx.RawHex)
+	_, err = testSignTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testVerifyTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testSubmitTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+}
