@@ -17,6 +17,7 @@ package tron
 
 import (
 	"fmt"
+	"github.com/shopspring/decimal"
 	"path/filepath"
 	"strings"
 	"time"
@@ -119,12 +120,14 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 		block, err := bs.wm.GetNowBlock()
 		if err != nil {
 			bs.wm.Log.Std.Info("block scanner can not get current block;unexpected error:%v", err)
+			return
 		}
 
 		// 取上一个块作为初始
 		block, err = bs.wm.GetBlockByNum(block.Height - 1)
 		if err != nil {
 			bs.wm.Log.Std.Info("block scanner can not get block by height;unexpected error:%v", err)
+			return
 		}
 
 		currentHash = block.GetBlockHashID()
@@ -378,36 +381,29 @@ func (bs *TronBlockScanner) ExtractTransaction(blockHeight uint64, blockHash str
 	//提出交易单明细
 	for _, contractTRX := range trx.Contract {
 
-		switch contractTRX.Type {
-		case TransferContract: //TRX
-			//bs.wm.Log.Std.Info("block scanner scanning tx: %+v", txid)
-			//订阅地址为交易单中的发送者
-			accountId, ok1 := scanAddressFunc(contractTRX.From)
-			//订阅地址为交易单中的接收者
-			accountId2, ok2 := scanAddressFunc(contractTRX.To)
+		//bs.wm.Log.Std.Info("block scanner scanning tx: %+v", txid)
+		//订阅地址为交易单中的发送者
+		accountId, ok1 := scanAddressFunc(contractTRX.From)
+		//订阅地址为交易单中的接收者
+		accountId2, ok2 := scanAddressFunc(contractTRX.To)
 
-			//相同账户
-			if accountId == accountId2 && len(accountId) > 0 && len(accountId2) > 0 {
+		//相同账户
+		if accountId == accountId2 && len(accountId) > 0 && len(accountId2) > 0 {
+			contractTRX.SourceKey = accountId
+			bs.InitTronExtractResult(contractTRX, &result, 0)
+		} else {
+			if ok1 {
 				contractTRX.SourceKey = accountId
-				bs.InitTronExtractResult(contractTRX, &result, 0)
-			} else {
-				if ok1 {
-					contractTRX.SourceKey = accountId
-					bs.InitTronExtractResult(contractTRX, &result, 1)
-				}
-
-				if ok2 {
-					contractTRX.SourceKey = accountId2
-					bs.InitTronExtractResult(contractTRX, &result, 2)
-				}
+				bs.InitTronExtractResult(contractTRX, &result, 1)
 			}
 
-			success = true
-		case TransferAssetContract: //other asset,TODO
-			success = true
-		default:
-			success = true
+			if ok2 {
+				contractTRX.SourceKey = accountId2
+				bs.InitTronExtractResult(contractTRX, &result, 2)
+			}
 		}
+
+		success = true
 
 	}
 
@@ -424,7 +420,6 @@ func (bs *TronBlockScanner) InitTronExtractResult(tx *Contract, result *ExtractR
 		txExtractDataArray = make([]*openwallet.TxExtractData, 0)
 	}
 
-	amount := common.IntToDecimals(tx.Amount, bs.wm.Decimal())
 	txExtractData := &openwallet.TxExtractData{}
 
 	status := "1"
@@ -433,13 +428,29 @@ func (bs *TronBlockScanner) InitTronExtractResult(tx *Contract, result *ExtractR
 		status = "0"
 		reason = tx.ContractRet
 	}
+	amount := decimal.Zero
+	coin := openwallet.Coin{
+		Symbol:     bs.wm.Symbol(),
+		IsContract: false,
+	}
+	if len(tx.ContractAddress) > 0 {
+		contractId := openwallet.GenContractID(bs.wm.Symbol(), tx.ContractAddress)
+		coin.ContractID = contractId
+		coin.IsContract = true
+		coin.Contract = openwallet.SmartContract{
+			ContractID: contractId,
+			Address:    tx.ContractAddress,
+			Symbol:     bs.wm.Symbol(),
+			Protocol:   tx.Protocol,
+		}
+		amount = common.IntToDecimals(tx.Amount, 0)
+	} else {
+		amount = common.IntToDecimals(tx.Amount, bs.wm.Decimal())
+	}
 
 	transx := &openwallet.Transaction{
-		Fees: "0",
-		Coin: openwallet.Coin{
-			Symbol:     bs.wm.Symbol(),
-			IsContract: false,
-		},
+		Fees:        "0",
+		Coin:        coin,
 		BlockHash:   tx.BlockHash,
 		BlockHeight: tx.BlockHeight,
 		TxID:        tx.TxID,
@@ -471,16 +482,33 @@ func (bs *TronBlockScanner) InitTronExtractResult(tx *Contract, result *ExtractR
 
 //extractTxInput 提取交易单输入部分,无需手续费，所以只包含1个TxInput
 func (bs *TronBlockScanner) extractTxInput(tx *Contract, txExtractData *openwallet.TxExtractData) {
-	amount := common.IntToDecimals(tx.Amount, bs.wm.Decimal())
+
+	amount := decimal.Zero
+	coin := openwallet.Coin{
+		Symbol:     bs.wm.Symbol(),
+		IsContract: false,
+	}
+	if len(tx.ContractAddress) > 0 {
+		contractId := openwallet.GenContractID(bs.wm.Symbol(), tx.ContractAddress)
+		coin.ContractID = contractId
+		coin.IsContract = true
+		coin.Contract = openwallet.SmartContract{
+			ContractID: contractId,
+			Address:    tx.ContractAddress,
+			Symbol:     bs.wm.Symbol(),
+			Protocol:   tx.Protocol,
+		}
+		amount = common.IntToDecimals(tx.Amount, 0)
+	} else {
+		amount = common.IntToDecimals(tx.Amount, bs.wm.Decimal())
+	}
+
 	//主网from交易转账信息，第一个TxInput
 	txInput := &openwallet.TxInput{}
 	txInput.Recharge.Sid = openwallet.GenTxInputSID(tx.TxID, bs.wm.Symbol(), "", uint64(0))
 	txInput.Recharge.TxID = tx.TxID
 	txInput.Recharge.Address = tx.From
-	txInput.Recharge.Coin = openwallet.Coin{
-		Symbol:     bs.wm.Symbol(),
-		IsContract: false,
-	}
+	txInput.Recharge.Coin = coin
 	txInput.Recharge.Amount = amount.String()
 	txInput.Recharge.BlockHash = tx.BlockHash
 	txInput.Recharge.BlockHeight = tx.BlockHeight
@@ -491,16 +519,34 @@ func (bs *TronBlockScanner) extractTxInput(tx *Contract, txExtractData *openwall
 
 //extractTxOutput 提取交易单输入部分,只有一个TxOutPut
 func (bs *TronBlockScanner) extractTxOutput(tx *Contract, txExtractData *openwallet.TxExtractData) {
-	amount := common.IntToDecimals(tx.Amount, bs.wm.Decimal())
+
+	amount := decimal.Zero
+	coin := openwallet.Coin{
+		Symbol:     bs.wm.Symbol(),
+		IsContract: false,
+	}
+	if len(tx.ContractAddress) > 0 {
+		contractId := openwallet.GenContractID(bs.wm.Symbol(), tx.ContractAddress)
+		coin.ContractID = contractId
+		coin.IsContract = true
+		coin.Contract = openwallet.SmartContract{
+			ContractID: contractId,
+			Address:    tx.ContractAddress,
+			Symbol:     bs.wm.Symbol(),
+			Protocol:   tx.Protocol,
+		}
+
+		amount = common.IntToDecimals(tx.Amount, 0)
+	} else {
+		amount = common.IntToDecimals(tx.Amount, bs.wm.Decimal())
+	}
+
 	//主网to交易转账信息,只有一个TxOutPut
 	txOutput := &openwallet.TxOutPut{}
 	txOutput.Recharge.Sid = openwallet.GenTxOutPutSID(tx.TxID, bs.wm.Symbol(), "", uint64(0))
 	txOutput.Recharge.TxID = tx.TxID
 	txOutput.Recharge.Address = tx.To
-	txOutput.Recharge.Coin = openwallet.Coin{
-		Symbol:     bs.wm.Symbol(),
-		IsContract: false,
-	}
+	txOutput.Recharge.Coin = coin
 	txOutput.Recharge.Amount = amount.String()
 	txOutput.Recharge.BlockHash = tx.BlockHash
 	txOutput.Recharge.BlockHeight = tx.BlockHeight
@@ -806,7 +852,7 @@ func (bs *TronBlockScanner) GetBalanceByAddress(address ...string) ([]*openwalle
 	addrsBalance := make([]*openwallet.Balance, 0)
 
 	for _, a := range address {
-		balance, err := bs.wm.getBalanceByExplorer(a)
+		balance, err := bs.wm.getBalance(a)
 		if err != nil {
 			return nil, err
 		}

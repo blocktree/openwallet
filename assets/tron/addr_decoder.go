@@ -16,6 +16,8 @@
 package tron
 
 import (
+	"encoding/hex"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/blocktree/go-owcrypt"
 )
 
@@ -58,4 +60,37 @@ func (decoder *AddressDecoderStruct) WIFToPrivateKey(wif string, isTestnet bool)
 
 	return nil, nil
 
+}
+
+func DecodeAddress(addr string, isTestnet bool) (string, []byte, error) {
+	codeType := addressEncoder.TRON_mainnetAddress
+	if isTestnet {
+		codeType = addressEncoder.TRON_testnetAddress
+	}
+
+	toAddressBytes, err := addressEncoder.AddressDecode(addr, codeType)
+	if err != nil {
+		return "", nil, err
+	}
+	toAddressBytes = append(codeType.Prefix(), toAddressBytes...)
+	return hex.EncodeToString(toAddressBytes), toAddressBytes, nil
+}
+
+func EncodeAddress(hexStr string, isTestnet bool) (string, error) {
+
+	codeType := addressEncoder.TRON_mainnetAddress
+	if isTestnet {
+		codeType = addressEncoder.TRON_testnetAddress
+	}
+
+	b, err := hex.DecodeString(hexStr)
+	if err != nil {
+		return "", err
+	}
+	if len(b) > 20 {
+		b = b[1:]
+	}
+
+	addr := addressEncoder.AddressEncode(b, codeType)
+	return addr, nil
 }

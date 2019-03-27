@@ -16,6 +16,7 @@
 package common
 
 import (
+	"fmt"
 	"github.com/shopspring/decimal"
 	"math/big"
 )
@@ -40,4 +41,19 @@ func BigIntToDecimals(amount *big.Int, decimals int32) decimal.Decimal {
 		return decimal.Zero
 	}
 	return decimal.NewFromBigInt(amount, 0).Shift(-decimals)
+}
+
+func StringValueToBigInt(value string, base int) (*big.Int, error) {
+	bigvalue := new(big.Int)
+	var success bool
+
+	if value == "" {
+		value = "0"
+	}
+
+	_, success = bigvalue.SetString(value, base)
+	if !success {
+		return big.NewInt(0), fmt.Errorf("convert value [%v] to bigint failed, check the value and base passed through", value)
+	}
+	return bigvalue, nil
 }

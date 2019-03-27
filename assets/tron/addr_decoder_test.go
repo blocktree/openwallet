@@ -16,9 +16,15 @@
 package tron
 
 import (
+	"github.com/blocktree/openwallet/log"
 	"testing"
 )
 
-func TestPublicKeyToAddress(t *testing.T) {
-
+func TestEncodeAddress(t *testing.T) {
+	addr, err := EncodeAddress("412b30841b1705b302b6c431182670e53d32c7b084", false)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+		return
+	}
+	log.Infof("addr: %s", addr)
 }

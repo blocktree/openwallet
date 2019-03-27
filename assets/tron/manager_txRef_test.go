@@ -18,6 +18,7 @@ package tron
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/blocktree/openwallet/assets/tron/grpc-gateway/core"
 	"testing"
 )
 
@@ -102,7 +103,7 @@ func TestBroadcastTransaction(t *testing.T) {
 
 	var raw = "0a7e0a02a71f2208f4735d707a8537a240b0c2f088fb2c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a1541887661d2e0215851756b1e7933216064526badcd121541b6c1abf9fb31c9077dfb3c25469e6e943ffbfa7a18a08d061241cb5ba106fafe57e2e3e6fc801a297aa5cc78d5c0b5358f97ceb5d903ab1e487b213dbb66195c992de2c7d9da5b13ace9880bc32141f28430ab7893291f06056f01"
 
-	if txid, err := tw.BroadcastTransaction(raw); err != nil {
+	if txid, err := tw.BroadcastTransaction(raw, core.Transaction_Contract_TransferContract); err != nil {
 		t.Errorf("BroadcastTransaction failed: %v\n", err)
 	} else {
 		t.Logf("BroadcastTransaction return: \n\t%+v\n", "Success!")
@@ -146,7 +147,7 @@ func TestSuiteTx(t *testing.T) {
 	println("------------------------------------------------------------------- Valid Done! \n")
 
 	// txSignedRaw := "0a7e0a02b73b2208d971acfd3452661c40f0d68cfce12c5a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154199fee02e1ee01189bc41a68e9069b7919ef2ad82121541e11973395042ba3c0b52b4cdf4e15ea77818f27518c0843d1241166ae365792c1918de963cc4121e47417252da11d54783dbeb248f913240f27ea02b1b42f807c4ffb5d7ebecf687f5294400281021e6fefd0f38c50765f9c87200"
-	txid, err := tw.BroadcastTransaction(txSignedRaw)
+	txid, err := tw.BroadcastTransaction(txSignedRaw, core.Transaction_Contract_TransferContract)
 	if err != nil {
 		t.Errorf("ValidSignedTransactionRef: %v\n", err)
 	} else {

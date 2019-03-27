@@ -70,3 +70,16 @@ func TestUpdateAccount(t *testing.T) {
 		}
 	}
 }
+
+func TestGetTRXAccount(t *testing.T) {
+
+	var addr string
+
+	addr = "TXphYHMUvT2ptHt8QtQb5i9T9DWUtfBWha"
+
+	if r, err := tw.GetTRXAccount(addr); err != nil {
+		t.Errorf("GetAccount failed: %v\n", err)
+	} else {
+		t.Logf("GetAccount return: \n\t%+v\n", r)
+	}
+}
