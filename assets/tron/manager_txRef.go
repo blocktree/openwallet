@@ -186,7 +186,7 @@ func (wm *WalletManager) CreateTokenTransaction(toAddress, ownerAddress string, 
 			ToAddress:    toAddressBytes,
 			Amount:       amountDec.Int64(),
 		}
-		return wm.createAssetsTransaction(tc, core.Transaction_Contract_TransferContract, "TransferContract")
+		return wm.createAssetsTransaction(tc, core.Transaction_Contract_TransferContract, TransferContract)
 
 	} else if strings.EqualFold(contract.Protocol, TRC10) {
 		amountDec := common.StringNumToBigIntWithExp(amount, int32(contract.Decimals))
@@ -197,7 +197,7 @@ func (wm *WalletManager) CreateTokenTransaction(toAddress, ownerAddress string, 
 			AssetName:    []byte(contract.Address),
 		}
 
-		return wm.createAssetsTransaction(tc, core.Transaction_Contract_TransferAssetContract, "TransferAssetContract")
+		return wm.createAssetsTransaction(tc, core.Transaction_Contract_TransferAssetContract, TransferAssetContract)
 	} else if strings.EqualFold(contract.Protocol, TRC20) {
 		amountDec := common.StringNumToBigIntWithExp(amount, int32(contract.Decimals))
 		_, contractAddressBytes, err := DecodeAddress(contract.Address, wm.Config.IsTestNet)
@@ -232,7 +232,7 @@ func (wm *WalletManager) CreateTokenTransaction(toAddress, ownerAddress string, 
 			ContractAddress: contractAddressBytes,
 			Data:            data,
 		}
-		return wm.createAssetsTransaction(tc, core.Transaction_Contract_TriggerSmartContract, "TriggerSmartContract")
+		return wm.createAssetsTransaction(tc, core.Transaction_Contract_TriggerSmartContract, TriggerSmartContract)
 	}
 
 	return "", fmt.Errorf("%s is not supported", contract.Protocol)

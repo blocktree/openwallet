@@ -166,3 +166,13 @@ func TestEncodeName(t *testing.T) {
 	nameBytes, _ := hex.DecodeString("31303031343636")
 	fmt.Println(string(nameBytes))
 }
+
+func TestParseTransferEvent(t *testing.T) {
+	data := "a9059cbb0000000000000000000000415bdf283199369adb124f39dda845ae02c5d3eb5d0000000000000000000000000000000000000000000000000000000001312d00"
+	to, amount, err := ParseTransferEvent(data)
+	if err != nil {
+		t.Errorf("ParseTransferEvent failed: %v\n", err)
+		return
+	}
+	log.Infof("%s: %d",to, amount)
+}

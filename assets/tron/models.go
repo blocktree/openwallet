@@ -18,12 +18,12 @@ package tron
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/blocktree/openwallet/crypto"
 	"github.com/blocktree/openwallet/openwallet"
 	"github.com/bytom/common"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
+	"strconv"
 )
 
 type Block struct {
@@ -110,6 +110,7 @@ const (
 const (
 	TransferContract      = "TransferContract"
 	TransferAssetContract = "TransferAssetContract"
+	TriggerSmartContract  = "TriggerSmartContract"
 )
 
 type Result struct {
@@ -142,29 +143,99 @@ type Contract struct {
 	ContractAddress string
 	SourceKey       string
 	ContractRet     string
+	Protocol        string
 }
 
 func NewContract(json gjson.Result, isTestnet bool) *Contract {
 
-	codeType := addressEncoder.TRON_mainnetAddress
-	if isTestnet {
-		codeType = addressEncoder.TRON_testnetAddress
-	}
+	var err error
 
 	// 解析json
 	b := &Contract{}
 	b.Type = gjson.Get(json.Raw, "type").String()
 	b.Parameter = gjson.Get(json.Raw, "parameter")
-	FromByte, _ := hex.DecodeString(b.Parameter.Get("value").Get("owner_address").String())
-	b.From = addressEncoder.AddressEncode(FromByte[1:], codeType)
-	if b.Type == TransferContract {
-		ToByte, _ := hex.DecodeString(b.Parameter.Get("value").Get("to_address").String())
-		b.To = addressEncoder.AddressEncode(ToByte[1:], codeType)
-		b.Amount = b.Parameter.Get("value").Get("amount").Int()
-	} else {
-		b.Amount = 0
+	switch b.Type {
+	case TransferContract: //TRX
+
+		b.From, err = EncodeAddress(b.Parameter.Get("value.owner_address").String(), isTestnet)
+		if err != nil {
+			return &Contract{}
+		}
+		b.To, err = EncodeAddress(b.Parameter.Get("value.to_address").String(), isTestnet)
+		if err != nil {
+			return &Contract{}
+		}
+		b.Amount = b.Parameter.Get("value.amount").Int()
+		b.Protocol = ""
+	case TransferAssetContract: //TRC10
+
+		b.From, err = EncodeAddress(b.Parameter.Get("value.owner_address").String(), isTestnet)
+		if err != nil {
+			return &Contract{}
+		}
+		b.To, err = EncodeAddress(b.Parameter.Get("value.to_address").String(), isTestnet)
+		if err != nil {
+			return &Contract{}
+		}
+		b.Amount = b.Parameter.Get("value.amount").Int()
+		assetsByte, err := hex.DecodeString(b.Parameter.Get("value.asset_name").String())
+		if err != nil {
+			return &Contract{}
+		}
+		b.ContractAddress = string(assetsByte)
+		b.Protocol = TRC10
+	case TriggerSmartContract: //TRC20
+
+		b.From, err = EncodeAddress(b.Parameter.Get("value.owner_address").String(), isTestnet)
+		if err != nil {
+			return &Contract{}
+		}
+
+		b.ContractAddress, err = EncodeAddress(b.Parameter.Get("value.contract_address").String(), isTestnet)
+		if err != nil {
+			return &Contract{}
+		}
+
+		data := b.Parameter.Get("value.data").String()
+		to, amount, err := ParseTransferEvent(data)
+		if err != nil {
+			return &Contract{}
+		}
+		b.To, err = EncodeAddress(to, isTestnet)
+		if err != nil {
+			return &Contract{}
+		}
+
+		b.Amount = amount
+		b.Protocol = TRC20
 	}
+
 	return b
+}
+
+func ParseTransferEvent(data string) (string, int64, error) {
+
+	const (
+		TransferDataLength = 68 * 2
+	)
+
+	var (
+		to     string
+		amount int64
+	)
+
+	if len(data) != TransferDataLength {
+		return "", 0, fmt.Errorf("call data is not transfer")
+	}
+	if data[0:8] != TRC20_TRANSFER_METHOD_ID {
+		return "", 0, fmt.Errorf("call method is not transfer")
+	}
+	to = data[32:72]
+	amount, err := strconv.ParseInt(data[72:], 16, 64)
+	if err != nil {
+		return "", 0, err
+	}
+	return to, amount, nil
 }
 
 type Transaction struct {

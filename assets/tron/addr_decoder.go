@@ -62,8 +62,6 @@ func (decoder *AddressDecoderStruct) WIFToPrivateKey(wif string, isTestnet bool)
 
 }
 
-
-
 func DecodeAddress(addr string, isTestnet bool) (string, []byte, error) {
 	codeType := addressEncoder.TRON_mainnetAddress
 	if isTestnet {
@@ -89,6 +87,10 @@ func EncodeAddress(hexStr string, isTestnet bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	addr := addressEncoder.AddressEncode(b[1:], codeType)
+	if len(b) > 20 {
+		b = b[1:]
+	}
+
+	addr := addressEncoder.AddressEncode(b, codeType)
 	return addr, nil
 }
