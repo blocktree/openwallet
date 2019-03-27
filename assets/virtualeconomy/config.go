@@ -129,7 +129,7 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	//区块链数据文件
 	c.BlockchainFile = "blockchain.db"
 	//是否测试网络
-	c.IsTestNet = true
+	c.IsTestNet = false
 	// 核心钱包是否只做监听
 	c.CoreWalletWatchOnly = true
 	//最大的输入数量
