@@ -119,12 +119,14 @@ func (bs *TronBlockScanner) ScanBlockTask() {
 		block, err := bs.wm.GetNowBlock()
 		if err != nil {
 			bs.wm.Log.Std.Info("block scanner can not get current block;unexpected error:%v", err)
+			return
 		}
 
 		// 取上一个块作为初始
 		block, err = bs.wm.GetBlockByNum(block.Height - 1)
 		if err != nil {
 			bs.wm.Log.Std.Info("block scanner can not get block by height;unexpected error:%v", err)
+			return
 		}
 
 		currentHash = block.GetBlockHashID()
