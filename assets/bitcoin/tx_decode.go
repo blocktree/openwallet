@@ -974,7 +974,7 @@ func (decoder *TransactionDecoder) CreateBTCSummaryRawTransaction(wrapper openwa
 	}
 
 	if len(sumAddresses) == 0 {
-		return nil, fmt.Errorf("all address balance is less than mini transfer")
+		return nil, nil
 	}
 
 	//取得费率
