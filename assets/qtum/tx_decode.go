@@ -263,7 +263,7 @@ func (decoder *TransactionDecoder) CreateSimpleSummaryRawTransaction(wrapper ope
 	}
 
 	for _, addrBalance := range addrBalanceArray {
-		decoder.wm.Log.Debugf("addrBalance: %+v", addrBalance)
+		//decoder.wm.Log.Debugf("addrBalance: %+v", addrBalance)
 		//检查余额是否超过最低转账
 		addrBalance_dec, _ := decimal.NewFromString(addrBalance.Balance)
 		if addrBalance_dec.GreaterThanOrEqual(minTransfer) {
@@ -273,7 +273,7 @@ func (decoder *TransactionDecoder) CreateSimpleSummaryRawTransaction(wrapper ope
 	}
 
 	if len(sumAddresses) == 0 {
-		return nil, fmt.Errorf("all address balance is less than mini transfer")
+		return nil, nil
 	}
 
 	//取得费率
