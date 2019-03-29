@@ -20,11 +20,12 @@ package ethereum
 //3. block height, block hash
 
 import (
-	"github.com/blocktree/openwallet/common"
 	"math/big"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/blocktree/openwallet/common"
 
 	"github.com/asdine/storm"
 	"github.com/blocktree/openwallet/openwallet"
@@ -72,7 +73,7 @@ type SaveResult struct {
 	Success     bool
 }
 
-//NewBTCBlockScanner 创建区块链扫描器
+//NewETHBlockScanner 创建区块链扫描器
 func NewETHBlockScanner(wm *WalletManager) *ETHBLockScanner {
 	bs := ETHBLockScanner{
 		BlockScannerBase: openwallet.NewBlockScannerBase(),
@@ -1169,7 +1170,6 @@ func (this *ETHBLockScanner) GetScannedBlockHeader() (*openwallet.BlockHeader, e
 
 	return &openwallet.BlockHeader{Height: blockHeight, Hash: hash}, nil
 }
-
 
 //GetCurrentBlockHeader 获取当前区块高度
 func (this *ETHBLockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, error) {
