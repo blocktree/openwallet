@@ -111,7 +111,7 @@ func (bs *BTCBlockScanner) SetRescanBlockHeight(height uint64) error {
 func (bs *BTCBlockScanner) ScanBlockTask() {
 
 	//获取本地区块高度
-	blockHeader, err := bs.GetCurrentBlockHeader()
+	blockHeader, err := bs.GetScannedBlockHeader()
 	if err != nil {
 		bs.wm.Log.Std.Info("block scanner can not get new block height; unexpected error: %v", err)
 		return
@@ -1017,8 +1017,8 @@ func (wm *WalletManager) DeleteUnscanRecordNotFindTX() error {
 //	return nil
 //}
 
-//GetCurrentBlockHeader 获取当前区块高度
-func (bs *BTCBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, error) {
+//GetScannedBlockHeader 获取当前扫描的区块头
+func (bs *BTCBlockScanner) GetScannedBlockHeader() (*openwallet.BlockHeader, error) {
 
 	var (
 		blockHeight uint64 = 0
@@ -1043,6 +1043,30 @@ func (bs *BTCBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, err
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	return &openwallet.BlockHeader{Height: blockHeight, Hash: hash}, nil
+}
+
+
+//GetCurrentBlockHeader 获取当前区块高度
+func (bs *BTCBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, error) {
+
+	var (
+		blockHeight uint64 = 0
+		hash        string
+		err         error
+	)
+
+	blockHeight, err = bs.wm.GetBlockHeight()
+	if err != nil {
+
+		return nil, err
+	}
+
+	hash, err = bs.wm.GetBlockHash(blockHeight)
+	if err != nil {
+		return nil, err
 	}
 
 	return &openwallet.BlockHeader{Height: blockHeight, Hash: hash}, nil
