@@ -816,26 +816,14 @@ func (bs *TronBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, er
 		blockHeight uint64 = 0
 		hash        string
 	)
-	blockHeight, hash = bs.GetLocalNewBlock()
 
-	//如果本地没有记录，查询接口的高度
-	if blockHeight == 0 {
-		currentBlock, err := bs.wm.GetNowBlock()
-		if err != nil {
-			bs.wm.Log.Std.Info("get current block header error;unexpected error:%v", err)
-			return nil, err
-		}
-		blockHeight = currentBlock.Height
-		//就上一个区块链为当前区块
-		blockHeight = blockHeight - 1
-
-		block, err := bs.wm.GetBlockByNum(blockHeight)
-		if err != nil {
-			bs.wm.Log.Std.Info("get global max block height error;unexpected error:%v", err)
-			return nil, err
-		}
-		hash = block.Hash
+	currentBlock, err := bs.wm.GetNowBlock()
+	if err != nil {
+		bs.wm.Log.Std.Info("get current block header error;unexpected error:%v", err)
+		return nil, err
 	}
+	blockHeight = currentBlock.Height
+	hash = currentBlock.Hash
 
 	return &openwallet.BlockHeader{Height: blockHeight, Hash: hash}, nil
 }
