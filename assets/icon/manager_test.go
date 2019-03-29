@@ -16,6 +16,7 @@
 package icon
 
 import (
+	"github.com/blocktree/openwallet/log"
 	"testing"
 	"github.com/blocktree/openwallet/openwallet"
 	"time"
@@ -29,8 +30,13 @@ var wm *WalletManager
 func init() {
 	wm = NewWalletManager()
 	wm.InitConfigFlow()
-	wm.Config.ServerAPI = "https://ctz.solidwallet.io/api/v3"
+	wm.Config.ServerAPI = "https://test-ctz.solidwallet.io/api/v3"
+	//wm.Config.ServerAPI = "http://47.106.102.2:10025/api/v3"
+	wm.Config.minTransfer = decimal.Zero
+	wm.Config.fees, _ = decimal.NewFromString("0.001")
 	wm.WalletClient = NewClient(wm.Config.ServerAPI, false)
+
+	log.SetLogFuncCall(true)
 }
 
 func TestWalletManager_InitConfigFlow(t *testing.T) {
@@ -38,7 +44,7 @@ func TestWalletManager_InitConfigFlow(t *testing.T) {
 }
 
 func TestCreateNewWallet(t *testing.T) {
-	w, keyfile, err := wm.CreateNewWallet("11", "1234qwer")
+	w, keyfile, err := wm.CreateNewWallet("testnet", "1234qwer")
 	if err != nil {
 		t.Error("create new wallet fail")
 		return
@@ -82,7 +88,7 @@ func TestWalletConfig_PrintConfig(t *testing.T) {
 
 func TestWalletManager_CreateBatchAddress(t *testing.T) {
 	var addrs []*openwallet.Address
-	fpath, addrs, err := wm.CreateBatchAddress("WGBtjfnG5qVucwAtTdYaaQSG9LGBMxsXuW", "1234qwer", 5)
+	fpath, addrs, err := wm.CreateBatchAddress("WBxQYzRN2pz2ZhJPwFVRXntRvWLeofGwzd", "1234qwer", 950)
 	if err != nil {
 		t.Error(err.Error())
 		return
@@ -95,7 +101,7 @@ func TestWalletManager_CreateBatchAddress(t *testing.T) {
 }
 
 func TestGetAddreses(t *testing.T) {
-	w, err := wm.GetWalletByID("WGBtjfnG5qVucwAtTdYaaQSG9LGBMxsXuW")
+	w, err := wm.GetWalletByID("W4aYFedmc5m2PWAVUvitPLnzdFyXd7UGp5")
 	if err != nil {
 		t.Error("get wallet by id error")
 		return
@@ -119,7 +125,7 @@ func TestGetAddreses(t *testing.T) {
 
 func TestWalletManager_getBanlance(t *testing.T) {
 	//w, err := wm.GetWalletByID("WEY5DDuXbvHrBUa5UBKmVpwLCwP69bieeB")
-	w, err := wm.GetWalletByID("WGBtjfnG5qVucwAtTdYaaQSG9LGBMxsXuW")
+	w, err := wm.GetWalletByID("W4aYFedmc5m2PWAVUvitPLnzdFyXd7UGp5")
 	if err != nil {
 		t.Error("get wallet by id error")
 		return
@@ -151,6 +157,16 @@ func TestWalletManager_getWalletBalance(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestWalletManager_summaryWallet(t *testing.T) {
+
+	//查询所有钱包信息
+	wallet, err := wm.GetWalletByID("WBxQYzRN2pz2ZhJPwFVRXntRvWLeofGwzd")
+	if err != nil {
+		t.Logf("The node did not create any wallet!\n")
+	}
+	wm.summaryWallet(wallet, "1234qwer")
 }
 
 func TestWalletManager_TransferFlow(t *testing.T) {

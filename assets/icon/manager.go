@@ -24,13 +24,13 @@ import (
 	"time"
 
 	"github.com/astaxie/beego/config"
+	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/blocktree/openwallet/common"
 	"github.com/blocktree/openwallet/common/file"
 	"github.com/blocktree/openwallet/crypto/sha3"
 	"github.com/blocktree/openwallet/hdkeystore"
 	"github.com/blocktree/openwallet/log"
 	"github.com/blocktree/openwallet/openwallet"
-	"github.com/blocktree/go-owcdrivers/addressEncoder"
 	"github.com/bndr/gotabulate"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/shopspring/decimal"
@@ -230,10 +230,10 @@ func (wm *WalletManager) AddWalletInSummary(wid string, wallet *openwallet.Walle
 //获取钱包余额
 func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.Decimal, []*openwallet.Address, error) {
 	var (
-		synCount   int = 10
-		quit           = make(chan struct{})
-		done           = 0 //完成标记
-		shouldDone     = 0 //需要完成的总数
+		synCount   = 10
+		quit       = make(chan struct{})
+		done       = 0 //完成标记
+		shouldDone = 0 //需要完成的总数
 	)
 
 	db, err := wallet.OpenDB()
@@ -264,12 +264,13 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 
 	//统计余额
 	go func(addrs chan []*openwallet.Address) {
-		for {
+		for balances := range addrs {
 			//
-			balances := <-addrs
+			//balances := <-addrs
 
 			for _, b := range balances {
-				balance = balance.Add(decimal.RequireFromString(b.Balance))
+				addrB , _ := decimal.NewFromString(b.Balance)
+				balance = balance.Add(addrB)
 			}
 
 			//累计完成的线程数
@@ -356,8 +357,10 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 			values = append(values, pa)
 			//当激活消费者后，传输数据给消费者，并把顶部数据出队
 			outputAddress = append(outputAddress, pa...)
+			//log.Debug("produced")
 		case activeWorker <- activeValue:
 			values = values[1:]
+			//log.Debug("consumed")
 		case <-quit:
 			//退出
 			log.Std.Info("wallet %s get all addresses's balance finished", wallet.Alias)
@@ -577,14 +580,6 @@ func (wm *WalletManager) CreateBatchAddress(walletId, password string, count uin
 }
 
 func (wm *WalletManager) summaryWallet(wallet *openwallet.Wallet, password string) error {
-	db, err := wallet.OpenDB()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	var addrs []*openwallet.Address
-	db.All(&addrs)
 
 	//加载钱包
 	key, err := wallet.HDKey(password)
@@ -592,25 +587,23 @@ func (wm *WalletManager) summaryWallet(wallet *openwallet.Wallet, password strin
 		return err
 	}
 
-	for _, a := range addrs {
-		k, _ := wm.getKeys(key, a)
+	totalBalance, addrs, err := wm.getWalletBalance(wallet)
+	if err != nil {
+		return err
+	}
 
-		//get balance
-		b, err := wm.WalletClient.Call_icx_getBalance(a.Address)
-		if err != nil {
-			log.Error(err)
-			continue
-		}
-		decimal_balance := decimal.RequireFromString(b)
+	if totalBalance.GreaterThan(wm.Config.Threshold) {
+		for _, a := range addrs {
+			k, _ := wm.getKeys(key, a)
 
-		// 将该地址的余额减去矿工费后，全部转到汇总地址
-		//coin交易不带data的固定手续费是0.001 ICX
-		fee, _ := decimal.NewFromString("0.001")
-		amount := decimal_balance.Sub(fee)
-		if amount.GreaterThan(wm.Config.Threshold) {
-			txid, _ := wm.Transfer(k.PrivateKey, a.Address, wm.Config.SumAddress, amount.String(), wm.Config.StepLimit, 100)
+			decimal_balance, _ := decimal.NewFromString(a.Balance)
 
-			log.Std.Info("summary form address:%s, to address:%s, amount:%s, txid:%s\n", k.Address, wm.Config.SumAddress, amount.StringFixed(8), txid)
+			if decimal_balance.GreaterThanOrEqual(wm.Config.minTransfer) {
+				// 将该地址的余额减去矿工费后，全部转到汇总地址
+				amount := decimal_balance.Sub(wm.Config.fees)
+				txid, _ := wm.Transfer(k.PrivateKey, a.Address, wm.Config.SumAddress, amount.String(), wm.Config.StepLimit, 100)
+				log.Std.Info("summary form address:%s, to address:%s, amount:%s, txid:%s\n", k.Address, wm.Config.SumAddress, amount.StringFixed(8), txid)
+			}
 		}
 	}
 
@@ -619,14 +612,14 @@ func (wm *WalletManager) summaryWallet(wallet *openwallet.Wallet, password strin
 
 //汇总钱包
 func (wm *WalletManager) SummaryWallets() {
-	log.Std.Info("[Summary Wallet Start]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+	log.Std.Info("[Summary Wallet Start]------%s", common.TimeFormat("2006-01-02 15:04:05"))
 
 	//读取参与汇总的钱包
 	for _, wallet := range wm.WalletsInSum {
 		wm.summaryWallet(wallet, wallet.Password)
 	}
 
-	log.Std.Info("[Summary Wallet end]------%s\n", common.TimeFormat("2006-01-02 15:04:05"))
+	log.Std.Info("[Summary Wallet end]------%s", common.TimeFormat("2006-01-02 15:04:05"))
 }
 
 //exportAddressToFile 导出地址到文件中
@@ -696,13 +689,15 @@ func (wm *WalletManager) LoadConfig() error {
 	absFile := filepath.Join(wm.Config.configFilePath, wm.Config.configFileName)
 	c, err = config.NewConfig("ini", absFile)
 	if err != nil {
-		return errors.New("Config is not setup. Please run 'wmd Config -s <symbol>' ")
+		return errors.New("Config is not setup. Please run 'wmd wallet config -s <symbol>' ")
 	}
 
 	wm.Config.ServerAPI = c.String("apiUrl")
-	wm.Config.Threshold = decimal.RequireFromString(c.String("threshold"))
+	wm.Config.Threshold, _ = decimal.NewFromString(c.String("threshold"))
 	wm.Config.SumAddress = c.String("sumAddress")
 	wm.Config.StepLimit, _ = c.Int64("stepLimit")
+	wm.Config.minTransfer, _ = decimal.NewFromString(c.String("minTransfer"))
+	wm.Config.fees, _ = decimal.NewFromString(c.String("fees"))
 
 	cyclesec := c.String("cycleSeconds")
 	if cyclesec == "" {
@@ -710,7 +705,6 @@ func (wm *WalletManager) LoadConfig() error {
 	}
 
 	wm.Config.CycleSeconds, _ = time.ParseDuration(cyclesec)
-
 	wm.WalletClient = NewClient(wm.Config.ServerAPI, false)
 
 	return nil
