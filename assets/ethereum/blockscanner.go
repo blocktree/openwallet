@@ -183,7 +183,7 @@ func (this *ETHBLockScanner) RescanFailedTransactions() error {
 func (this *ETHBLockScanner) ScanBlockTask() {
 
 	//获取本地区块高度
-	blockHeader, err := this.GetCurrentBlockHeader()
+	blockHeader, err := this.GetScannedBlockHeader()
 	if err != nil {
 		this.wm.Log.Errorf("block scanner can not get new block height; unexpected error: %v", err)
 		return
@@ -1133,8 +1133,8 @@ func (this *WalletManager) GetLocalNewBlock() (uint64, string, error) {
 	return blockHeight, blockHash, nil
 }
 
-//GetCurrentBlockHeader 获取当前区块高度
-func (this *ETHBLockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, error) {
+//GetScannedBlockHeader 获取当前已扫区块高度
+func (this *ETHBLockScanner) GetScannedBlockHeader() (*openwallet.BlockHeader, error) {
 
 	var (
 		blockHeight uint64 = 0
@@ -1166,6 +1166,32 @@ func (this *ETHBLockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, e
 		}
 		hash = block.BlockHash
 	}
+
+	return &openwallet.BlockHeader{Height: blockHeight, Hash: hash}, nil
+}
+
+
+//GetCurrentBlockHeader 获取当前区块高度
+func (this *ETHBLockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, error) {
+
+	var (
+		blockHeight uint64 = 0
+		hash        string
+		err         error
+	)
+
+	blockHeight, err = this.wm.WalletClient.ethGetBlockNumber()
+	if err != nil {
+		this.wm.Log.Errorf("ethGetBlockNumber failed, err=%v", err)
+		return nil, err
+	}
+
+	block, err := this.wm.WalletClient.ethGetBlockSpecByBlockNum(blockHeight, false)
+	if err != nil {
+		this.wm.Log.Errorf("get block spec by block number failed, err=%v", err)
+		return nil, err
+	}
+	hash = block.BlockHash
 
 	return &openwallet.BlockHeader{Height: blockHeight, Hash: hash}, nil
 }
