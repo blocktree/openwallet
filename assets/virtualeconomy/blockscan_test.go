@@ -16,6 +16,7 @@
 package virtualeconomy
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -40,6 +41,11 @@ func TestGetBTCBlockHeight(t *testing.T) {
 // 	t.Logf("GetCurrentBlockHeight height = %d \n", header.Height)
 // 	t.Logf("GetCurrentBlockHeight hash = %v \n", header.Hash)
 // }
+
+func TestGetCurrentBlockHeight(t *testing.T) {
+	header, _ := tw.Blockscanner.GetCurrentBlockHeader()
+	fmt.Println(header)
+}
 
 func TestGetBlockHeight(t *testing.T) {
 	height, _ := tw.GetBlockHeight()
