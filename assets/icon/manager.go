@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/tidwall/gjson"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -434,6 +435,10 @@ func (wm *WalletManager) CreateNewPrivateKey(key *hdkeystore.HDKey, start, index
 	}
 
 	return &addr, err
+}
+
+func (wm *WalletManager) GetLastBlock() (*gjson.Result, error) {
+	return wm.WalletClient.Call("icx_getLastBlock", map[string]interface{}{})
 }
 
 //createAddressWork 创建地址过程

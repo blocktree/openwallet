@@ -30,8 +30,8 @@ var wm *WalletManager
 func init() {
 	wm = NewWalletManager()
 	wm.InitConfigFlow()
-	wm.Config.ServerAPI = "https://test-ctz.solidwallet.io/api/v3"
-	//wm.Config.ServerAPI = "http://47.106.102.2:10025/api/v3"
+	//wm.Config.ServerAPI = "https://test-ctz.solidwallet.io/api/v3"
+	wm.Config.ServerAPI = "http://47.106.102.2:10025/api/v3"
 	wm.Config.minTransfer = decimal.Zero
 	wm.Config.fees, _ = decimal.NewFromString("0.001")
 	wm.WalletClient = NewClient(wm.Config.ServerAPI, false)
@@ -315,4 +315,19 @@ func Test_Decimal(t *testing.T) {
 	b := decimal.New(10, 18)
 	c := a.Mul(b)
 	t.Log(c)
+}
+
+func TestGetAddressBalance(t *testing.T) {
+	addr := "hx1074d102d8a6a20583df08fd1bc1e060dbf2e191"
+	balance, _ := wm.WalletClient.Call_icx_getBalance(addr)
+	log.Infof("balance: %s", balance)
+}
+
+func TestWalletManager_GetLastBlock(t *testing.T) {
+	block, err := wm.GetLastBlock()
+	if err != nil {
+		t.Log(err)
+		return
+	}
+	log.Infof("block: %+v", block)
 }

@@ -310,7 +310,7 @@ func (wm *WalletManager) TransferFlow() error {
 	}
 
 	atculAmount, _ := decimal.NewFromString(amount)
-	log.Printf("amount:%d", atculAmount.IntPart())
+	//log.Printf("amount:%d", atculAmount.IntPart())
 
 	// 等待用户输入发送地址
 	receiver, err := console.InputText("Enter receiver address: ", true)
@@ -347,7 +347,7 @@ func (wm *WalletManager) TransferFlow() error {
 		//计算的时候要减去手续费，固定手续费是0.001 ICX
 		fee, _ := decimal.NewFromString("0.001")
 		amount := decimal.RequireFromString(a.Balance).Sub(fee)
-		log.Printf("addr: %s, balance: %s", a.Address, amount.String())
+		//log.Printf("addr: %s, balance: %s", a.Address, amount.String())
 		if amount.LessThanOrEqual(decimal.NewFromFloat(0)) {
 			continue
 		}
@@ -369,7 +369,7 @@ func (wm *WalletManager) TransferFlow() error {
 		for _, send := range sends {
 				txid, _ :=wm.Transfer(send.sednKeys.PrivateKey, send.sednKeys.Address, receiver, send.amount.String(), wm.Config.StepLimit, 100)
 
-				log.Printf("summary form address:%s, to address:%s, amount:%s, txid:%s\n", send.sednKeys.Address, wm.Config.SumAddress, send.amount.StringFixed(8), txid)
+				log.Printf("transfer from address:%s, to address:%s, amount:%s, txid:%s\n", send.sednKeys.Address, receiver, send.amount.String(), txid)
 		}
 	} else {
 		log.Printf("not enough balance\n")
