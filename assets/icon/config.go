@@ -21,8 +21,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blocktree/openwallet/common/file"
 	"github.com/blocktree/go-owcrypt"
+	"github.com/blocktree/openwallet/common/file"
 	"github.com/shopspring/decimal"
 )
 
@@ -56,18 +56,16 @@ type WalletConfig struct {
 	configFilePath string
 	//配置文件名
 	configFileName string
-	//是否测试网络
-	IsTestNet bool
 	//本地数据库文件路径
 	dbPath string
 	//备份路径
 	backupDir string
 	//钱包服务API
 	ServerAPI string
-	//钱包安装的路径
-	NodeInstallPath string
-	//钱包数据文件目录
-	WalletDataPath string
+	//地址最小转账额
+	minTransfer decimal.Decimal
+	//交易手续费
+	fees decimal.Decimal
 	//汇总阀值
 	Threshold decimal.Decimal
 	//汇总地址
@@ -99,8 +97,6 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	c.configFilePath = filepath.Join("conf")
 	//配置文件名
 	c.configFileName = c.Symbol + ".ini"
-	//是否测试网络
-	c.IsTestNet = true
 	//本地数据库文件路径
 	c.dbPath = filepath.Join("data", strings.ToLower(c.Symbol), "db")
 	//备份路径
@@ -109,34 +105,33 @@ func NewConfig(symbol string, masterKey string) *WalletConfig {
 	c.ServerAPI = ""
 	c.StepLimit = 100000
 	//钱包安装的路径
-	c.NodeInstallPath = ""
-	//钱包数据文件目录
-	c.WalletDataPath = ""
+	//地址最小转账额
+	c.minTransfer = decimal.Zero
+	//交易手续费
+	c.fees = decimal.Zero
 	//汇总阀值
 	c.Threshold = decimal.NewFromFloat(5)
 	//汇总地址
 	c.SumAddress = ""
 	//汇总执行间隔时间
-	c.CycleSeconds = time.Second * 10
+	c.CycleSeconds = time.Second * 30
 	//默认配置内容
 	c.DefaultConfig = `
-# start node command
-startNodeCMD = ""
-# stop node command
-stopNodeCMD = ""
-# node install path
-nodeInstallPath = ""
 # node api url
 apiUrl = ""
+# transaction fix fees
+fees = "0.001"
 # transaction max step limit, 
 stepLimit = 100000
+# the minimum amount could transfer of address
+minTransfer = "0"
 # the safe address that wallet send money to.
 sumAddress = ""
 # when wallet's balance is over this value, the wallet willl send money to [sumAddress]
 #unit is ICX
 threshold = ""
 # summary task timer cycle time, sample: 1h, 1h1m , 2m, 30s, 3m20s etc...
-cycleSeconds = ""
+cycleSeconds = "30s"
 `
 	return &c
 }

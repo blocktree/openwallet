@@ -174,7 +174,7 @@ func (wm *WalletManager) SummaryFollow() error {
 	}
 
 	//打印钱包
-	wm.printWalletList(wallets, true)
+	wm.printWalletList(wallets, false)
 
 	fmt.Printf("[Please select the wallet to summary, and enter the numbers split by ','." +
 		" For example: 0,1,2,3] \n")
@@ -339,6 +339,7 @@ func (wm *WalletManager) TransferFlow() error {
 
 	var sends []sendStruct
 	var resultSub decimal.Decimal = atculAmount
+
 	//新建发送地址列表以及验证余额是否足够
 	for _, a := range addr {
 		k, _ := wm.getKeys(key, a)
