@@ -16,14 +16,15 @@
 package eosio
 
 import (
-	"github.com/blocktree/openwallet/log"
-	"github.com/eoscanada/eos-go"
 	"testing"
+
+	"github.com/blocktree/openwallet/log"
+	eos "github.com/eoscanada/eos-go"
 )
 
 func testNewWalletManager() *WalletManager {
 	wm := NewWalletManager()
-	wm.Config.ServerAPI = "http://127.0.01:8888"
+	wm.Config.ServerAPI = "http://127.0.0.1:8888"
 	wm.Api = eos.New(wm.Config.ServerAPI)
 	return wm
 }
@@ -77,7 +78,6 @@ func TestWalletManager_GetABI(t *testing.T) {
 	}
 	log.Infof("%+v", r)
 }
-
 
 func TestWalletManager_GetCurrencyBalance(t *testing.T) {
 	wm := testNewWalletManager()
