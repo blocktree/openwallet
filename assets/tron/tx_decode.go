@@ -500,7 +500,7 @@ func (decoder *TransactionDecoder) CreateSimpleSummaryRawTransaction(wrapper ope
 		//检查余额是否超过最低转账
 		addrBalance_BI := common.StringNumToBigIntWithExp(addrBalance.Balance, Decimals)
 
-		if addrBalance_BI.Cmp(minTransfer) < 0 {
+		if addrBalance_BI.Cmp(minTransfer) < 0 || addrBalance_BI.Cmp(big.NewInt(0)) <= 0 {
 			continue
 		}
 		//计算汇总数量 = 余额 - 保留余额
@@ -608,7 +608,7 @@ func (decoder *TransactionDecoder) CreateTokenSummaryRawTransaction(wrapper open
 		//检查余额是否超过最低转账
 		addrBalance_BI := common.StringNumToBigIntWithExp(addrBalance.Balance.Balance, tokenDecimals)
 
-		if addrBalance_BI.Cmp(minTransfer) < 0 {
+		if addrBalance_BI.Cmp(minTransfer) < 0 || addrBalance_BI.Cmp(big.NewInt(0)) <= 0 {
 			continue
 		}
 		//计算汇总数量 = 余额 - 保留余额

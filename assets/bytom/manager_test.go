@@ -24,7 +24,7 @@ import (
 
 func init() {
 	//serverAPI = "http://192.168.2.224:10056"
-	serverAPI = "http://192.168.2.224:10031"
+	serverAPI = "http://47.106.34.230:10031"
 	client = &Client{
 		BaseURL:     serverAPI,
 		Debug:       false,
@@ -38,7 +38,7 @@ func TestCreateNewWallet(t *testing.T) {
 		tag      string
 	}{
 		{
-			alias:    "Get Get",
+			alias:    "ROCKY",
 			password: "12345678",
 			tag:      "normal",
 		},
@@ -72,7 +72,7 @@ func TestGetWalletInfo(t *testing.T) {
 		t.Errorf("GetWalletInfo failed unexpected error: %v", err)
 	} else {
 		for i, w := range wallets {
-			t.Logf("GetWalletInfo wallet[%d] = %v", i, w)
+			t.Logf("GetWalletInfo wallet[%d] = %+v", i, w)
 		}
 
 	}
@@ -86,8 +86,8 @@ func TestCreateNormalAccount(t *testing.T) {
 		tag    string
 	}{
 		{
-			pubkey: "3462b88883acc1e430dd5a6327dc8c4aca0d6d0ce087d43d98b84216e51e0885cc6e35ed92eefc244e587ae51a87fe082a0facea0e641038c80940d502520b50",
-			alias:  "john",
+			pubkey: "0faee8b20373d9d573ca774714192be03d267619d21daba55780d483b3928ee20d76f8c3fbe149d2010134bd1337b42086c16a641aca3b1bf114b7db999d4c7a",
+			alias:  "ROCKY",
 			tag:    "normal",
 		},
 		{
@@ -140,8 +140,8 @@ func TestCreateReceiverAddress(t *testing.T) {
 		tag          string
 	}{
 		{
-			accountAlias: "john",
-			accountID:    "0E6MHCTMG0A04",
+			accountAlias: "rocky",
+			accountID:    "0QLH2K5RG0A06",
 			tag:          "normal",
 		},
 		{
@@ -283,8 +283,8 @@ func TestSignMessage(t *testing.T) {
 		tag          string
 	}{
 		{
-			accountAlias: "bytom",
-			message:    "hello world",
+			accountAlias: "rocky",
+			message:    "this is a test message",
 			password:    "12345678",
 			tag:          "valid",
 		},
@@ -303,7 +303,7 @@ func TestSignMessage(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		addresses, _ := GetAddressInfo(test.accountAlias + "_" +testAccount, "")
+		addresses, _ := GetAddressInfo(test.accountAlias, "")
 		if len(addresses) > 0 {
 			signature, err := SignMessage(addresses[0].Address, test.message, test.password)
 			if err != nil {

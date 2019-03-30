@@ -170,7 +170,7 @@ func TestTransfer_TRC20(t *testing.T) {
 	contract := openwallet.SmartContract{
 		Address:  "THvZvKPLHKLJhEFYKiyqj6j8G8nGgfg7ur",
 		Symbol:   "TRX",
-		Name:     "DICE",
+		Name:     "TRONdice",
 		Token:    "DICE",
 		Decimals: 6,
 		Protocol: "trc20",
@@ -207,7 +207,7 @@ func TestTransfer_TRC10(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
-	to := "TXV6A13E7RSKG2Q1SqQdnLZ9CbZiVGGRK8"
+	to := "TRJJ9Mq4aMjdmKWpTDJAgbYNoY2P9Facg5"
 
 	contract := openwallet.SmartContract{
 		Address:  "1002000",

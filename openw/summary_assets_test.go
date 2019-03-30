@@ -247,8 +247,8 @@ func TestSummary_NAS(t *testing.T) {
 func TestSummary_TRX(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
-	accountID := "8pLC7mRGWy968bRr3sQtYxAZjxJqC4QKH3H9VaKouArd"
-	summaryAddress := "TJLypjev8iLdQR3X63rSMeZK8GKwkeSH1Y"
+	accountID := "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
+	summaryAddress := "TRJJ9Mq4aMjdmKWpTDJAgbYNoY2P9Facg5"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
@@ -272,10 +272,10 @@ func TestSummary_TRX(t *testing.T) {
 			return
 		}
 
-		//_, err = testSubmitTransactionStep(tm, rawTx)
-		//if err != nil {
-		//	return
-		//}
+		_, err = testSubmitTransactionStep(tm, rawTx)
+		if err != nil {
+			return
+		}
 	}
 
 }
@@ -403,8 +403,8 @@ func TestSummary_VSYS(t *testing.T) {
 func TestSummary_TRC20(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
-	accountID := "8pLC7mRGWy968bRr3sQtYxAZjxJqC4QKH3H9VaKouArd"
-	summaryAddress := "TJLypjev8iLdQR3X63rSMeZK8GKwkeSH1Y"
+	accountID := "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
+	summaryAddress := "TRJJ9Mq4aMjdmKWpTDJAgbYNoY2P9Facg5"
 
 	contract := openwallet.SmartContract{
 		Address:  "THvZvKPLHKLJhEFYKiyqj6j8G8nGgfg7ur",
@@ -451,8 +451,8 @@ func TestSummary_TRC20(t *testing.T) {
 func TestSummary_TRC10(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
-	accountID := "8pLC7mRGWy968bRr3sQtYxAZjxJqC4QKH3H9VaKouArd"
-	summaryAddress := "TJLypjev8iLdQR3X63rSMeZK8GKwkeSH1Y"
+	accountID := "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
+	summaryAddress := "TRJJ9Mq4aMjdmKWpTDJAgbYNoY2P9Facg5"
 
 	contract := openwallet.SmartContract{
 		Address:  "1002000",
