@@ -104,8 +104,8 @@ func (wm *WalletManager) CalculateTxHash(from, to, value string, stepLimit, nonc
 	tx_temp["from"] = from
 	tx_temp["nid"] = "0x1" //主网ID
 
-	hnonce := fmt.Sprintf("%x", nonce)
-	tx_temp["nonce"] = "0x" + hnonce
+	//hnonce := fmt.Sprintf("%x", nonce)
+	//tx_temp["nonce"] = "0x" + hnonce
 
 	hstepLimit := fmt.Sprintf("%x", stepLimit)
 	tx_temp["stepLimit"] = "0x" + hstepLimit
@@ -606,8 +606,10 @@ func (wm *WalletManager) summaryWallet(wallet *openwallet.Wallet, password strin
 			if decimal_balance.GreaterThanOrEqual(wm.Config.minTransfer) {
 				// 将该地址的余额减去矿工费后，全部转到汇总地址
 				amount := decimal_balance.Sub(wm.Config.fees)
-				txid, _ := wm.Transfer(k.PrivateKey, a.Address, wm.Config.SumAddress, amount.String(), wm.Config.StepLimit, 100)
-				log.Std.Info("summary form address:%s, to address:%s, amount:%s, txid:%s\n", k.Address, wm.Config.SumAddress, amount.StringFixed(8), txid)
+				if amount.GreaterThan(decimal.Zero) {
+					txid, _ := wm.Transfer(k.PrivateKey, a.Address, wm.Config.SumAddress, amount.String(), wm.Config.StepLimit, 100)
+					log.Std.Info("summary from address:%s, to address:%s, amount:%s, txid:%s", k.Address, wm.Config.SumAddress, amount.String(), txid)
+				}
 			}
 		}
 	}

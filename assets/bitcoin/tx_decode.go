@@ -741,7 +741,7 @@ func (decoder *TransactionDecoder) CreateOmniRawTransaction(wrapper openwallet.W
 
 	//changeAmount := balance.Sub(totalSend).Sub(actualFees)
 	if changeAmount.GreaterThan(decimal.Zero) {
-		outputAddrs[toAddress] = changeAmount.StringFixed(decoder.wm.Decimal())
+		outputAddrs[changeAddress] = changeAmount.StringFixed(decoder.wm.Decimal())
 	}
 
 	omniOutputAddrs[toAddress] = toAmount.StringFixed(tokenDecimals)
