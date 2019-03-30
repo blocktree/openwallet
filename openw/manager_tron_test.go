@@ -100,8 +100,8 @@ func TestTronWalletManager_CreateAddress(t *testing.T) {
 
 func TestTronWalletManager_GetAddressList(t *testing.T) {
 	tm := testInitWalletManager()
-	walletID := "W1eRr8nRrawkQ1Ayf1XKPCjmvKk8aLGExu"
-	accountID := "8XPSHP5cR16D4b1V225xig3sgNa45e8Y3P5AbeCzR5gr"
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
 	list, err := tm.GetAddressList(testApp, walletID, accountID, 0, -1, false)
 	if err != nil {
 		log.Error("unexpected error:", err)
@@ -165,7 +165,7 @@ func TestTransfer_TRC20(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "CfRjWjct569qp7oygSA2LrsAoTrfEB8wRk3sHGUj9Erm"
-	to := "TT44ohw23WGNv1jQCAUN3etUWND1KXN2Eq"
+	to := "TRJJ9Mq4aMjdmKWpTDJAgbYNoY2P9Facg5"
 
 	contract := openwallet.SmartContract{
 		Address:  "THvZvKPLHKLJhEFYKiyqj6j8G8nGgfg7ur",
@@ -180,7 +180,7 @@ func TestTransfer_TRC20(t *testing.T) {
 
 	testGetAssetsAccountTokenBalance(tm, walletID, accountID, contract)
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "2", "", &contract)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1", "", &contract)
 	if err != nil {
 		return
 	}
@@ -222,7 +222,7 @@ func TestTransfer_TRC10(t *testing.T) {
 
 	testGetAssetsAccountTokenBalance(tm, walletID, accountID, contract)
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "12", "", &contract)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "4", "", &contract)
 	if err != nil {
 		return
 	}
@@ -253,7 +253,7 @@ func TestTransfer_TRX(t *testing.T) {
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.01", "", nil)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1", "", nil)
 	if err != nil {
 		return
 	}
