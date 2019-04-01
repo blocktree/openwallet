@@ -704,7 +704,7 @@ func TestTransfer_TRUE(t *testing.T) {
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.001", "", nil)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1", "", nil)
 	if err != nil {
 		return
 	}
@@ -727,3 +727,51 @@ func TestTransfer_TRUE(t *testing.T) {
 	}
 
 }
+
+
+func TestTransfer_TRUE20(t *testing.T) {
+
+	tm := testInitWalletManager()
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	//accountID := "7r9im4dJWXYpSgE22SPuew92Hbng1iLbxBwhdQhpdSRm"
+	//to := "0x0c8aa7db30777ba0e424476d7f0df03fb48bfdf5"
+
+	accountID := "2J9jJajNorafoX9bEzJtEtuNJsJJk7YhSpczKYcnQBDD"
+	to := "0x614809ecb6e0cbaa23cbe3337e017f9ca159e1e8"
+
+	contract := openwallet.SmartContract{
+		Address:  "9d13E9506892E9dF391e5970cdf45829723E5357",
+		Symbol:   "TRUE",
+		Name:     "Test ERC20 Token",
+		Token:    "true20",
+		Decimals: 18,
+	}
+
+	testGetAssetsAccountBalance(tm, walletID, accountID)
+
+	testGetAssetsAccountTokenBalance(tm, walletID, accountID, contract)
+
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "10", "", &contract)
+	if err != nil {
+		return
+	}
+
+	log.Std.Info("rawTx: %+v", rawTx)
+
+	_, err = testSignTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testVerifyTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testSubmitTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+}
+
