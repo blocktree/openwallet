@@ -14,3 +14,12 @@
  */
 
 package eosio
+
+import (
+	response "github.com/eoscanada/eos-go"
+)
+
+// Block model
+type Block struct {
+	response.BlockResp
+}

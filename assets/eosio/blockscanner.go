@@ -20,13 +20,13 @@ import (
 )
 
 const (
-	blockchainBucket = "blockchain" //区块链数据集合
-	//periodOfTask      = 5 * time.Second //定时任务执行隔间
-	maxExtractingSize = 10 //并发的扫描线程数
+	blockchainBucket = "blockchain" // blockchain dataset
+	//periodOfTask      = 5 * time.Second // task interval
+	maxExtractingSize = 10 // thread count
 )
 
-//BTCBlockScanner bitcoin的区块链扫描器
-type BlockScanner struct {
+//EOSBlockScanner EOS block scanner
+type EOSBlockScanner struct {
 	*openwallet.BlockScannerBase
 
 	CurrentBlockHeight   uint64         //当前区块高度
@@ -36,7 +36,7 @@ type BlockScanner struct {
 	RescanLastBlockCount uint64         //重扫上N个区块数量
 }
 
-//ExtractResult 扫描完成的提取结果
+//ExtractResult extract result
 type ExtractResult struct {
 	extractData map[string]*openwallet.TxExtractData
 	TxID        string
@@ -44,16 +44,16 @@ type ExtractResult struct {
 	Success     bool
 }
 
-//SaveResult 保存结果
+//SaveResult result
 type SaveResult struct {
 	TxID        string
 	BlockHeight uint64
 	Success     bool
 }
 
-//NewBTCBlockScanner 创建区块链扫描器
-func NewBlockScanner(wm *WalletManager) *BlockScanner {
-	bs := BlockScanner{
+// NewEOSBlockScanner create a block scanner
+func NewEOSBlockScanner(wm *WalletManager) *EOSBlockScanner {
+	bs := EOSBlockScanner{
 		BlockScannerBase: openwallet.NewBlockScannerBase(),
 	}
 
@@ -62,8 +62,67 @@ func NewBlockScanner(wm *WalletManager) *BlockScanner {
 	bs.IsScanMemPool = true
 	bs.RescanLastBlockCount = 0
 
-	//设置扫描任务
-	//bs.SetTask(bs.ScanBlockTask)
+	// set task
+	bs.SetTask(bs.ScanBlockTask)
 
 	return &bs
+}
+
+// GetCurrentBlockHeader current local block header
+// func (bs *EOSBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, error) {
+// 	var (
+// 		blockHeight uint64 = 0
+// 		hash        string
+// 		err         error
+// 	)
+
+// 	blockHeight, hash = bs.GetLocalNewBlock()
+// }
+
+// ScanBlockTask scan block task
+func (bs *EOSBlockScanner) ScanBlockTask() {
+
+	var (
+		currentHeight uint32
+		currentHash   string
+	)
+
+	// get local block header
+	currentHeight, currentHash = bs.GetLocalNewBlock()
+	
+	if currentHeight == 0 {
+		bs.wm.Log.Std.Info("No records found in local, get current block as the local!")
+
+		// get head block
+		infoResp, err := bs.wm.Api.GetInfo()
+		if err != nil {
+			bs.wm.Log.Std.Info("block scanner can not get info;unexpected error:%v", err)
+			return
+		}
+
+		currentHash = infoResp.HeadBlockID.String()
+		currentHeight = infoResp.HeadBlockNum
+	}
+
+	for {
+		if !bs.Scanning {
+			// stop scan
+			return
+		}
+
+		infoResp, err := bs.wm.Api.GetInfo()
+		if err != nil {
+			bs.wm.Log.Errorf("get max height of eth failed, err=%v", err)
+			break
+		}
+
+		maxBlockHeight := infoResp.HeadBlockNum
+
+		bs.wm.Log.Info("current block height:", currentHeight, currentHash, " maxBlockHeight:", maxBlockHeight)
+		// if currentHeight == maxBlockHeight {
+		// 	bs.wm.Log.Infof("block scanner has done with scan. current height:%v", maxBlockHeight)
+		// 	break
+		// }
+
+	}
 }
