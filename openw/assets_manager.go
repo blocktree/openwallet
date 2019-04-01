@@ -27,6 +27,7 @@ import (
 	"github.com/blocktree/openwallet/assets/ontology"
 	"github.com/blocktree/openwallet/assets/qtum"
 	"github.com/blocktree/openwallet/assets/tron"
+	"github.com/blocktree/openwallet/assets/truechain"
 	"github.com/blocktree/openwallet/assets/virtualeconomy"
 	"github.com/blocktree/openwallet/log"
 	"github.com/blocktree/openwallet/openwallet"
@@ -56,6 +57,7 @@ func initAssetAdapter() {
 	assets.RegAssets(tron.Symbol, tron.NewWalletManager())
 	assets.RegAssets(virtualeconomy.Symbol, virtualeconomy.NewWalletManager())
 	assets.RegAssets(eosio.Symbol, eosio.NewWalletManager())
+	assets.RegAssets(truechain.Symbol, truechain.NewWalletManager())
 }
 
 // GetSymbolInfo 获取资产的币种信息
