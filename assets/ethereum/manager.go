@@ -94,7 +94,7 @@ type WalletManager struct {
 	ConfigPath      string
 	RootPath        string
 	DefaultConfig   string
-	SymbolID        string
+	//SymbolID        string
 
 	Log            *log.OWLogger                 //日志工具
 }
@@ -107,31 +107,32 @@ func (this *WalletManager) GetConfig() WalletConfig {
 
 func NewWalletManager() *WalletManager {
 	wm := WalletManager{}
-	wm.RootPath = "data"
-	wm.ConfigPath = "conf"
-	wm.SymbolID = Symbol
+	//wm.RootPath = "data"
+	//wm.ConfigPath = "conf"
+	//wm.SymbolID = Symbol
+	wm.Config = NewConfig(Symbol)
 	//wm.Config = &WalletConfig{}
-	wm.DefaultConfig = makeEthDefaultConfig(wm.ConfigPath)
+	//wm.DefaultConfig = makeEthDefaultConfig(wm.ConfigPath)
 
 	//参与汇总的钱包
-	wm.WalletsInSum = make(map[string]*openwallet.Wallet)
+	//wm.WalletsInSum = make(map[string]*openwallet.Wallet)
 	//区块扫描器
 	wm.Blockscanner = NewETHBlockScanner(&wm)
 	wm.Decoder = &AddressDecoder{}
 	wm.TxDecoder = NewTransactionDecoder(&wm)
 
-	wm.NewConfig(wm.RootPath, MasterKey)
+	//wm.NewConfig(wm.RootPath, MasterKey)
 
-	wm.StorageOld = keystore.NewHDKeystore(wm.Config.KeyDir, keystore.StandardScryptN, keystore.StandardScryptP)
-	storage := hdkeystore.NewHDKeystore(wm.Config.KeyDir, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
-	wm.Storage = storage
+	//wm.StorageOld = keystore.NewHDKeystore(wm.Config.KeyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	//storage := hdkeystore.NewHDKeystore(wm.Config.KeyDir, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
+	//wm.Storage = storage
 	client := &Client{BaseURL: wm.Config.ServerAPI, Debug: false}
 	wm.WalletClient = client
 	wm.ContractDecoder = &EthContractDecoder{
 		wm: &wm,
 	}
 
-	wm.WalletInSumOld = make(map[string]*Wallet)
+	//wm.WalletInSumOld = make(map[string]*Wallet)
 	wm.Log = log.NewOWLogger(wm.Symbol())
 
 	return &wm

@@ -147,6 +147,7 @@ func (decoder *TransactionDecoder) CreateBTCRawTransaction(wrapper openwallet.Wa
 	}
 
 	if len(address) == 0 {
+		//return openwallet.Errorf(openwallet.ErrAccountNotAddress, "[%s] have not addresses", accountID)
 		return fmt.Errorf("[%s] have not addresses", accountID)
 	}
 

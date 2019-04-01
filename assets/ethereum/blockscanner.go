@@ -114,7 +114,7 @@ func (this *ETHBLockScanner) SetRescanBlockHeight(height uint64) error {
 func (this *ETHBLockScanner) newBlockNotify(block *EthBlock, isFork bool) {
 	header := block.CreateOpenWalletBlockHeader()
 	header.Fork = isFork
-	header.Symbol = this.wm.SymbolID
+	header.Symbol = this.wm.Config.Symbol
 	this.NewBlockNotify(header)
 }
 

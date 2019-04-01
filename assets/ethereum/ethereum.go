@@ -367,7 +367,7 @@ func (this *WalletManager) ERC20TokenSummaryFollow() error {
 
 	//判断汇总地址是否存在
 	if len(this.GetConfig().SumAddress) == 0 {
-		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", this.SymbolID))
+		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", this.Config.Symbol))
 	}
 
 	ercTokens, err := this.GetERC20TokenList()
@@ -469,7 +469,7 @@ func (this *WalletManager) SummaryFollow() error {
 
 	//判断汇总地址是否存在
 	if len(this.GetConfig().SumAddress) == 0 {
-		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", this.SymbolID))
+		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", this.Config.Symbol))
 	}
 
 	wallets, err := this.GetLocalWalletList(this.GetConfig().KeyDir, this.GetConfig().DbPath, true)
@@ -545,7 +545,7 @@ func (this *WalletManager) GetWalletList() error {
 
 	//判断汇总地址是否存在
 	if len(this.GetConfig().SumAddress) == 0 {
-		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", this.SymbolID))
+		return errors.New(fmt.Sprintf("Summary address is not set. Please set it in './conf/%s.ini' \n", this.Config.Symbol))
 	}
 
 	wallets, err := this.GetLocalWalletList(this.GetConfig().KeyDir, this.GetConfig().DbPath, true)
