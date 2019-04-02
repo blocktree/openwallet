@@ -28,7 +28,6 @@ conf/
 data/
 assets/sia/data/sc/address/
 hdkeystore/keys/sogosdfo-VykdgSwVtbEWExc5AdNykKCDqgw8cBKLs2.key
-vendor/*/
 !/vendor/vendor.json
 mqnode/*
 

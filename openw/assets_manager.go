@@ -17,7 +17,7 @@ package openw
 
 import (
 	"fmt"
-	"github.com/blocktree/openwallet/assets"
+	"github.com/astaxie/beego/config"
 	"github.com/blocktree/openwallet/assets/bitcoin"
 	"github.com/blocktree/openwallet/assets/bitcoincash"
 	"github.com/blocktree/openwallet/assets/eosio"
@@ -31,6 +31,7 @@ import (
 	"github.com/blocktree/openwallet/assets/virtualeconomy"
 	"github.com/blocktree/openwallet/log"
 	"github.com/blocktree/openwallet/openwallet"
+	"strings"
 )
 
 //type AssetsManager interface {
@@ -47,22 +48,64 @@ import (
 func initAssetAdapter() {
 	//注册钱包管理工具
 	log.Notice("Wallet Manager Load Successfully.")
-	assets.RegAssets(ethereum.Symbol, ethereum.NewWalletManager())
-	assets.RegAssets(bitcoin.Symbol, bitcoin.NewWalletManager())
-	assets.RegAssets(litecoin.Symbol, litecoin.NewWalletManager())
-	assets.RegAssets(qtum.Symbol, qtum.NewWalletManager())
-	assets.RegAssets(nebulasio.Symbol, nebulasio.NewWalletManager())
-	assets.RegAssets(bitcoincash.Symbol, bitcoincash.NewWalletManager())
-	assets.RegAssets(ontology.Symbol, ontology.NewWalletManager())
-	assets.RegAssets(tron.Symbol, tron.NewWalletManager())
-	assets.RegAssets(virtualeconomy.Symbol, virtualeconomy.NewWalletManager())
-	assets.RegAssets(eosio.Symbol, eosio.NewWalletManager())
-	assets.RegAssets(truechain.Symbol, truechain.NewWalletManager())
+	RegAssets(ethereum.Symbol, ethereum.NewWalletManager())
+	RegAssets(bitcoin.Symbol, bitcoin.NewWalletManager())
+	RegAssets(litecoin.Symbol, litecoin.NewWalletManager())
+	RegAssets(qtum.Symbol, qtum.NewWalletManager())
+	RegAssets(nebulasio.Symbol, nebulasio.NewWalletManager())
+	RegAssets(bitcoincash.Symbol, bitcoincash.NewWalletManager())
+	RegAssets(ontology.Symbol, ontology.NewWalletManager())
+	RegAssets(tron.Symbol, tron.NewWalletManager())
+	RegAssets(virtualeconomy.Symbol, virtualeconomy.NewWalletManager())
+	RegAssets(eosio.Symbol, eosio.NewWalletManager())
+	RegAssets(truechain.Symbol, truechain.NewWalletManager())
+}
+
+
+//区块链适配器注册组
+var assetsAdapterManagers = make(map[string]interface{})
+
+// RegAssets 注册资产
+// @param name 资产别名
+// @param manager 资产适配器或管理器
+// @param config 加载配置
+// 资产适配器实现了openwallet.AssetsConfig，可以传入配置接口完成预加载配置
+// usage:
+// RegAssets(cardano.Symbol, &cardano.WalletManager{}, c)
+// RegAssets(bytom.Symbol, &bytom.WalletManager{}, c)
+func RegAssets(name string, manager interface{}, config ...config.Configer) {
+	name = strings.ToUpper(name)
+	if manager == nil {
+		panic("assets: Register adapter is nil")
+	}
+	if _, ok := assetsAdapterManagers[name]; ok {
+		log.Error("assets: Register called twice for adapter ", name)
+		return
+	}
+
+	assetsAdapterManagers[name] = manager
+
+	//如果有配置则加载所有配置
+	if ac, ok := manager.(openwallet.AssetsConfig); ok && config != nil {
+		for _, c := range config {
+			ac.LoadAssetsConfig(c)
+		}
+	}
+}
+
+// GetAssets 根据币种类型获取已注册的管理者
+func GetAssets(symbol string) interface{} {
+	symbol = strings.ToUpper(symbol)
+	manager, ok := assetsAdapterManagers[symbol]
+	if !ok {
+		return nil
+	}
+	return manager
 }
 
 // GetSymbolInfo 获取资产的币种信息
 func GetSymbolInfo(symbol string) (openwallet.SymbolInfo, error) {
-	adapter := assets.GetAssets(symbol)
+	adapter := GetAssets(symbol)
 	if adapter == nil {
 		return nil, fmt.Errorf("assets: %s is not support", symbol)
 	}
@@ -78,7 +121,7 @@ func GetSymbolInfo(symbol string) (openwallet.SymbolInfo, error) {
 // GetAssetsAdapter 获取资产控制器
 func GetAssetsAdapter(symbol string) (openwallet.AssetsAdapter, error) {
 
-	adapter := assets.GetAssets(symbol)
+	adapter := GetAssets(symbol)
 	if adapter == nil {
 		return nil, fmt.Errorf("assets: %s is not support", symbol)
 	}
