@@ -25,7 +25,6 @@ import (
 
 	ow "github.com/blocktree/openwallet/common"
 	"github.com/blocktree/openwallet/log"
-	"github.com/blocktree/openwallet/logger"
 	"github.com/blocktree/openwallet/openwallet"
 	"github.com/blocktree/go-owcrypt"
 	"github.com/bytom/common"
@@ -47,7 +46,7 @@ func NewTransactionDecoder(wm *WalletManager) *TransactionDecoder {
 func CheckRawTransaction(rawTx *openwallet.RawTransaction) error {
 	//账户模型原始账单只有一个To
 	if len(rawTx.To) != 1 {
-		openwLogger.Log.Errorf("noly one To address can be set.")
+		log.Errorf("noly one To address can be set.")
 		return errors.New("noly one to address can be set.")
 	}
 	return nil
@@ -317,7 +316,7 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletD
 	//check交易交易单基本字段
 	err := CheckRawTransaction(rawTx)
 	if err != nil {
-		openwLogger.Log.Errorf("Verify raw tx failed, err=%v", err)
+		log.Errorf("Verify raw tx failed, err=%v", err)
 		return err
 	}
 
@@ -333,7 +332,7 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletD
 	}
 
 	if _, exist := rawTx.Signatures[rawTx.Account.AccountID]; !exist {
-		openwLogger.Log.Errorf("wallet[%v] signature not found ", rawTx.Account.AccountID)
+		log.Errorf("wallet[%v] signature not found ", rawTx.Account.AccountID)
 		return errors.New("wallet signature not found ")
 	}
 
@@ -377,7 +376,7 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 	//check交易交易单基本字段
 	err := CheckRawTransaction(rawTx)
 	if err != nil {
-		openwLogger.Log.Errorf("Verify raw tx failed, err=%v", err)
+		log.Errorf("Verify raw tx failed, err=%v", err)
 		return err
 	}
 
@@ -418,22 +417,22 @@ func (decoder *TransactionDecoder) SubmitSimpleRawTransaction(wrapper openwallet
 	//check交易交易单基本字段
 	err := CheckRawTransaction(rawTx)
 	if err != nil {
-		openwLogger.Log.Errorf("Verify raw tx failed, err=%v", err)
+		log.Errorf("Verify raw tx failed, err=%v", err)
 		return nil, err
 	}
 	if len(rawTx.Signatures) != 1 {
-		openwLogger.Log.Errorf("len of signatures error. ")
+		log.Errorf("len of signatures error. ")
 		return nil, errors.New("len of signatures error. ")
 	}
 
 	accSignatures, exist := rawTx.Signatures[rawTx.Account.AccountID]
 	if !exist {
-		openwLogger.Log.Errorf("wallet[%v] signature not found ", rawTx.Account.AccountID)
+		log.Errorf("wallet[%v] signature not found ", rawTx.Account.AccountID)
 		return nil, errors.New("wallet signature not found ")
 	}
 
 	if len(accSignatures) == 0 {
-		openwLogger.Log.Errorf("wallet[%v] signature is empty ", rawTx.Account.AccountID)
+		log.Errorf("wallet[%v] signature is empty ", rawTx.Account.AccountID)
 		return nil, errors.New("wallet signature not found ")
 	}
 

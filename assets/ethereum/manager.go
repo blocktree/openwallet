@@ -17,7 +17,6 @@ package ethereum
 import (
 	"bufio"
 	"bytes"
-	"crypto/ecdsa"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -38,15 +37,13 @@ import (
 	"github.com/asdine/storm"
 	"github.com/tidwall/gjson"
 
+	"github.com/blocktree/go-owcdrivers/owkeychain"
+	"github.com/blocktree/go-owcrypt"
 	"github.com/blocktree/openwallet/common"
 	"github.com/blocktree/openwallet/common/file"
 	"github.com/blocktree/openwallet/hdkeystore"
-	"github.com/blocktree/openwallet/keystore"
 	"github.com/blocktree/openwallet/log"
 	"github.com/blocktree/openwallet/openwallet"
-	"github.com/blocktree/go-owcdrivers/owkeychain"
-	"github.com/blocktree/go-owcrypt"
-	ethKStore "github.com/ethereum/go-ethereum/accounts/keystore"
 )
 
 const (
@@ -90,7 +87,7 @@ type WalletManager struct {
 	locker          sync.Mutex //防止并发修改和读取配置, 可能用不上
 	WalletInSumOld  map[string]*Wallet
 	ContractDecoder openwallet.SmartContractDecoder //
-	StorageOld      *keystore.HDKeystore
+	//StorageOld      *keystore.HDKeystore
 	ConfigPath      string
 	RootPath        string
 	DefaultConfig   string
@@ -475,69 +472,6 @@ func (this *WalletManager) GetWalletInfo(keyDir string, dbPath string, walletID 
 	return nil, errors.New(WALLET_NOT_EXIST_ERR)
 }
 
-func CreateNewPrivateKey(parentKey *keystore.HDKey, timestamp, index uint64) (*ethKStore.Key, *Address, error) {
-
-	derivedPath := fmt.Sprintf("%s/%d/%d", parentKey.RootPath, timestamp, index)
-	//fmt.Printf("derivedPath = %s\n", derivedPath)
-	childKey, err := parentKey.DerivedKeyWithPath(derivedPath)
-
-	privateKey, err := childKey.ECPrivKey()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	key := ecdsa.PrivateKey(*privateKey)
-
-	/*cfg := chaincfg.MainNetParams
-	if isTestNet {
-		cfg = chaincfg.TestNet3Params
-	}
-
-	wif, err := btcutil.NewWIF(privateKey, &cfg, true)
-	if err != nil {
-		return "", nil, err
-	}
-
-	address, err := childKey.Address(&cfg)
-	if err != nil {
-		return "", nil, err
-	}*/
-
-	keyCombo := ethKStore.NewKeyFromECDSA(&key)
-
-	addr := Address{
-		Address: keyCombo.Address.String(), //address.String(),
-		Account: parentKey.RootId,
-		HDPath:  derivedPath,
-		//	Balance:   "0",
-		CreatedAt: time.Now(),
-	}
-
-	return keyCombo, &addr, err
-}
-
-func verifyBackupKey(keyFile string, password string) error {
-	keyjson, err := ioutil.ReadFile(keyFile)
-	if err != nil {
-		return err
-	}
-	_, err = hdkeystore.DecryptHDKey(keyjson, password)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func verifyBackupWallet(wallet *Wallet, keyPath string, password string) error {
-	s := keystore.NewHDKeystore(keyPath, keystore.StandardScryptN, keystore.StandardScryptP)
-	_, err := wallet.HDKey(password, s)
-	if err != nil {
-		log.Errorf(fmt.Sprintf("get HDkey from path[%v], err=%v\n", keyPath, err))
-		return err
-	}
-	return nil
-}
-
 func (this *WalletManager) UnlockWallet(wallet *Wallet, password string) error {
 	_, err := wallet.HDKey2(password)
 	if err != nil {
@@ -545,31 +479,6 @@ func (this *WalletManager) UnlockWallet(wallet *Wallet, password string) error {
 		return err
 	}
 	return nil
-}
-
-func (this *WalletManager) CreateAddressForTest(name, password string, count uint64) (*ethKStore.Key, *Address, error) {
-	//读取钱包
-	w, err := this.GetWalletInfo("", "", name)
-	if err != nil {
-		this.Log.Errorf(fmt.Sprintf("get wallet info, err=%v\n", err))
-		return nil, nil, err
-	}
-
-	//验证钱包
-	keyroot, err := w.HDKey(password, this.StorageOld)
-	if err != nil {
-		this.Log.Errorf(fmt.Sprintf("get HDkey, err=%v\n", err))
-		return nil, nil, err
-	}
-
-	timestamp := uint64(time.Now().Unix())
-
-	keyCombo, address, err := CreateNewPrivateKey(keyroot, timestamp, count)
-	if err != nil {
-		log.Error("Create new privKey failed unexpected error:", err)
-		return nil, nil, err
-	}
-	return keyCombo, address, nil
 }
 
 //exportAddressToFile 导出地址到文件中
@@ -1576,31 +1485,6 @@ func (this *WalletManager) GetAddressesByWallet(dbPath string, wallet *Wallet) (
 	return addrResults, nil
 }
 
-func (this *WalletManager) ERC20SummaryWallets() {
-	log.Info("[Summary Wallet Start]------", common.TimeFormat("2006-01-02 15:04:05"))
-	//读取参与汇总的钱包
-	for _, wallet := range this.WalletInSumOld {
-		tokenBalance, err := this.ERC20GetWalletBalance(wallet)
-		if err != nil {
-			this.Log.Errorf(fmt.Sprintf("get wallet[%v] ERC20 token balance failed, err = %v", wallet.WalletID, err))
-			continue
-		}
-
-		if tokenBalance.Cmp(this.GetConfig().Threshold) > 0 {
-			log.Debugf("Summary account[%s]balance = %v \n", wallet.WalletID, tokenBalance)
-			log.Debugf("Summary account[%s]Start Send Transaction\n", wallet.WalletID)
-
-			txId, err := this.ERC20SendTransaction(wallet, this.GetConfig().SumAddress, tokenBalance, wallet.Password, true)
-			if err != nil {
-				log.Debugf("Summary account[%s]unexpected error: %v\n", wallet.WalletID, err)
-				continue
-			} else {
-				log.Debugf("Summary account[%s]successfully，Received Address[%s], TXID：%s\n", wallet.WalletID, this.GetConfig().SumAddress, txId)
-			}
-		}
-	}
-}
-
 func (this *WalletManager) SummaryWallets() {
 	log.Debug(fmt.Sprintf("[Summary Wallet Start]------%v\n", common.TimeFormat("2006-01-02 15:04:05")))
 	//读取参与汇总的钱包
@@ -1626,79 +1510,6 @@ func (this *WalletManager) SummaryWallets() {
 	}
 
 	log.Debug(fmt.Sprintf("[Summary Wallet end]------%v\n", common.TimeFormat("2006-01-02 15:04:05")))
-}
-
-func (this *WalletManager) RestoreWallet2(backupPath string, password string) error {
-	//检查用户输入的备份路径是否存在
-	finfo, err := os.Stat(backupPath)
-	if err != nil || !finfo.IsDir() {
-		errinfo := fmt.Sprintf("stat file[%v] failed, err = %v\n", backupPath, err)
-		this.Log.Errorf(errinfo)
-		return err
-	}
-
-	//检查备份文件夹的命名是否规范, 形如:peter-WAKGjuuGL6ifMqdJhZ19TfQDTafH5hsvmw-20180810171606
-	backupDirName := finfo.Name()
-	parts := strings.Split(backupDirName, "-")
-	if len(parts) != 3 {
-		errinfo := fmt.Sprintf("invalid directory name[%v] ", backupDirName)
-		this.Log.Errorf(errinfo)
-		return errors.New(errinfo)
-	}
-
-	_, err = time.ParseInLocation(TIME_POSTFIX, parts[2], time.Local)
-	if err != nil {
-		errinfo := fmt.Sprintf("check directory name[%v] time format failed ", backupDirName)
-		this.Log.Errorf(errinfo)
-		return errors.New(errinfo)
-	}
-
-	//验证被恢复钱包的密码
-	walletId := parts[1]
-	alias := parts[0]
-	keyFileBackup := filepath.Join(backupPath, alias+"-"+walletId+".key")
-	dbFileBackup := filepath.Join(backupPath, alias+"-"+walletId+".db")
-	err = verifyBackupKey(keyFileBackup, password)
-	if err != nil {
-		log.Error("wrong password, restore process has been rejected.")
-		return err
-	}
-
-	//检查要被恢复的钱包是否已经存在于当前目录, 如果存在需要先备份这个钱包
-	keyFileRestore := filepath.Join(this.GetConfig().KeyDir, alias+"-"+walletId+".key")
-	finfo, err = os.Stat(keyFileRestore)
-	if err == nil {
-		//当前钱包已经存在, 备份钱包
-		walletExist := &Wallet{WalletID: walletId, Alias: alias}
-		err = walletExist.RestoreFromDb(this.GetConfig().DbPath)
-		if err != nil {
-			log.Error("restore existing wallet from db failed, err=", err)
-			return err
-		}
-		restorePath := filepath.Join(this.GetConfig().BackupDir, "restore")
-		_, err = this.BackupWallet2(restorePath, walletExist, password)
-		if err != nil {
-			log.Error("backup existing wallet before restore failed, err=", err)
-			return err
-		}
-	} else if err != nil && !os.IsNotExist(err) {
-		log.Error("unexpected error, err=", err)
-		return err
-	}
-
-	err = file.Copy(dbFileBackup, this.GetConfig().DbPath)
-	if err != nil {
-		log.Error("restore db file failed, err=", err)
-		return err
-	}
-
-	err = file.Copy(keyFileBackup, this.GetConfig().KeyDir)
-	if err != nil {
-		log.Error("restore db file failed, err=", err)
-		return err
-	}
-
-	return nil
 }
 
 func (this *WalletManager) GetNonceForAddress2(address string) (uint64, error) {

@@ -24,11 +24,9 @@ import (
 	//	"github.com/astaxie/beego/config"
 
 	"github.com/astaxie/beego/config"
+	"github.com/blocktree/go-owcrypt"
 	"github.com/blocktree/openwallet/common/file"
-	"github.com/blocktree/openwallet/hdkeystore"
-	"github.com/blocktree/openwallet/keystore"
 	"github.com/blocktree/openwallet/log"
-	owcrypt "github.com/blocktree/go-owcrypt"
 )
 
 const (
@@ -376,23 +374,23 @@ func (this *WalletConfig) LoadConfig(configFilePath string, configFileName strin
 //	return &c
 //}
 
-func (this *WalletManager) loadConfig() error {
-	if this.Config == nil {
-		this.Config = &WalletConfig{}
-	}
-	log.Debug("symbol:", this.Config.Symbol+".ini")
-	_, err := this.Config.LoadConfig(this.ConfigPath, this.Config.Symbol+".ini")
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	this.StorageOld = keystore.NewHDKeystore(this.Config.KeyDir, keystore.StandardScryptN, keystore.StandardScryptP)
-	storage := hdkeystore.NewHDKeystore(this.Config.KeyDir, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
-	this.Storage = storage
-	client := &Client{BaseURL: this.Config.ServerAPI, Debug: false}
-	this.WalletClient = client
-	return nil
-}
+//func (this *WalletManager) loadConfig() error {
+//	if this.Config == nil {
+//		this.Config = &WalletConfig{}
+//	}
+//	log.Debug("symbol:", this.Config.Symbol+".ini")
+//	_, err := this.Config.LoadConfig(this.ConfigPath, this.Config.Symbol+".ini")
+//	if err != nil {
+//		log.Error(err)
+//		return err
+//	}
+//	this.StorageOld = keystore.NewHDKeystore(this.Config.KeyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+//	storage := hdkeystore.NewHDKeystore(this.Config.KeyDir, hdkeystore.StandardScryptN, hdkeystore.StandardScryptP)
+//	this.Storage = storage
+//	client := &Client{BaseURL: this.Config.ServerAPI, Debug: false}
+//	this.WalletClient = client
+//	return nil
+//}
 
 /*func loadConfig_() error {
 	var c config.Configer

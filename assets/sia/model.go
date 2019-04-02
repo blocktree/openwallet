@@ -16,10 +16,9 @@
 package sia
 
 import (
-	"github.com/tidwall/gjson"
-	"github.com/blocktree/openwallet/keystore"
 	"github.com/asdine/storm"
 	"github.com/blocktree/openwallet/common/file"
+	"github.com/tidwall/gjson"
 	"path/filepath"
 )
 
@@ -66,13 +65,13 @@ func NewWallet(json gjson.Result) *Wallet {
 }
 
 //HDKey 获取钱包密钥，需要密码
-func (w *Wallet) HDKey(password string) (*keystore.HDKey, error) {
-	key, err := storage.GetKey(w.WalletID, w.KeyFile, password)
-	if err != nil {
-		return nil, err
-	}
-	return key, err
-}
+//func (w *Wallet) HDKey(password string) (*keystore.HDKey, error) {
+//	key, err := storage.GetKey(w.WalletID, w.KeyFile, password)
+//	if err != nil {
+//		return nil, err
+//	}
+//	return key, err
+//}
 
 //openDB 打开钱包数据库
 func (w *Wallet) OpenDB() (*storm.DB, error) {

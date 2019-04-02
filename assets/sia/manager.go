@@ -20,11 +20,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/NebulousLabs/entropy-mnemonics"
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/openwallet/common"
 	"github.com/blocktree/openwallet/common/file"
-	"github.com/blocktree/openwallet/keystore"
+	"github.com/bndr/gotabulate"
 	"github.com/codeskyblue/go-sh"
 	"github.com/imroc/req"
 	"github.com/shopspring/decimal"
@@ -35,7 +34,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-	"github.com/bndr/gotabulate"
 )
 
 var (
@@ -64,12 +62,12 @@ var (
 	// 节点客户端
 	client *Client
 	//秘钥存取
-	storage *keystore.HDKeystore
+	//storage *keystore.HDKeystore
 )
 
-func init() {
-	storage = keystore.NewHDKeystore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
-}
+//func init() {
+//	storage = keystore.NewHDKeystore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+//}
 
 //GetWalletInfo 获取钱包信息
 func GetWalletInfo() ([]*Wallet, error) {
@@ -283,26 +281,26 @@ func CreateNewWallet(password string, force bool) (string, error) {
 
 }
 
-func CreateNewWalletKey(alias, password string) (string, error) {
-
-	//检查钱包名是否存在
-	wallets, err := GetWalletKeys(keyDir)
-	for _, w := range wallets {
-		if w.Alias == alias {
-			return "", errors.New("The wallet's alias is duplicated! ")
-		}
-	}
-
-	fmt.Printf("Create new wallet keystore...\n")
-
-	_, keyFile, err := keystore.StoreHDKey(keyDir, alias, password, keystore.StandardScryptN, keystore.StandardScryptP)
-	if err != nil {
-		return "", err
-	}
-
-	return keyFile, nil
-
-}
+//func CreateNewWalletKey(alias, password string) (string, error) {
+//
+//	//检查钱包名是否存在
+//	wallets, err := GetWalletKeys(keyDir)
+//	for _, w := range wallets {
+//		if w.Alias == alias {
+//			return "", errors.New("The wallet's alias is duplicated! ")
+//		}
+//	}
+//
+//	fmt.Printf("Create new wallet keystore...\n")
+//
+//	_, keyFile, err := keystore.StoreHDKey(keyDir, alias, password, keystore.StandardScryptN, keystore.StandardScryptP)
+//	if err != nil {
+//		return "", err
+//	}
+//
+//	return keyFile, nil
+//
+//}
 
 //CreateAddress 创建钱包地址(慎用)
 func CreateAddress() (string, error) {
@@ -664,25 +662,25 @@ func skipKeyFile(fi os.FileInfo) bool {
 }
 
 //storeNewKey 把钱包的助记词以hdkeystore形式保存
-func storeNewKey(wallet *Wallet, words, auth string) (*keystore.HDKey, string, error) {
-
-	seed, err := mnemonics.FromString(words, mnemonics.English)
-	if err != nil {
-		return nil, "", err
-	}
-
-	key, err := keystore.NewHDKey(seed, wallet.Alias, "")
-	if err != nil {
-		return nil, "", err
-	}
-	wallet.WalletID = key.RootId
-	filePath := storage.JoinPath(wallet.FileName() + ".key")
-	storage.StoreKey(filePath, key, auth)
-
-	wallet.KeyFile = filePath
-
-	return key, filePath, err
-}
+//func storeNewKey(wallet *Wallet, words, auth string) (*keystore.HDKey, string, error) {
+//
+//	seed, err := mnemonics.FromString(words, mnemonics.English)
+//	if err != nil {
+//		return nil, "", err
+//	}
+//
+//	key, err := keystore.NewHDKey(seed, wallet.Alias, "")
+//	if err != nil {
+//		return nil, "", err
+//	}
+//	wallet.WalletID = key.RootId
+//	filePath := storage.JoinPath(wallet.FileName() + ".key")
+//	storage.StoreKey(filePath, key, auth)
+//
+//	wallet.KeyFile = filePath
+//
+//	return key, filePath, err
+//}
 
 //打印钱包列表
 func printWalletList(list []*Wallet) {

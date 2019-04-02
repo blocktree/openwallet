@@ -34,7 +34,7 @@ func testInitWalletManager() *WalletManager {
 	tc := NewConfig()
 
 	tc.IsTestnet = true
-	tc.EnableBlockScan = false
+	tc.EnableBlockScan = true
 	tc.SupportAssets = []string{
 		"BTC",
 		"QTUM",
@@ -45,7 +45,7 @@ func testInitWalletManager() *WalletManager {
 		"BCH",
 		//"ONT",
 		"VSYS",
-		"EOS",
+		//"EOS",
 		"TRUE",
 	}
 	return NewWalletManager(tc)
