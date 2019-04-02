@@ -14,7 +14,6 @@ func testONTInitWalletManager() *WalletManager {
 
 	tc := NewConfig()
 
-	tc.IsTestnet = true
 	tc.EnableBlockScan = true
 	tc.SupportAssets = []string{
 		"ONT",

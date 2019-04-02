@@ -30,10 +30,13 @@ var (
 )
 
 func testInitWalletManager() *WalletManager {
+	//加载资产适配器
+	initAssetAdapter()
+
 	log.SetLogFuncCall(true)
 	tc := NewConfig()
 
-	tc.IsTestnet = true
+	tc.ConfigDir = configFilePath
 	tc.EnableBlockScan = true
 	tc.SupportAssets = []string{
 		"BTC",
@@ -48,6 +51,7 @@ func testInitWalletManager() *WalletManager {
 		//"EOS",
 		"TRUE",
 	}
+
 	return NewWalletManager(tc)
 	//tm.Init()
 }

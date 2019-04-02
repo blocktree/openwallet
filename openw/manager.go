@@ -47,11 +47,6 @@ type NotificationObject interface {
 	BlockTxExtractDataNotify(account *openwallet.AssetsAccount, data *openwallet.TxExtractData) error
 }
 
-func init() {
-	//加载资产适配器
-	initAssetAdapter()
-}
-
 //WalletManager OpenWallet钱包管理器
 type WalletManager struct {
 	appDB             map[string]*openwallet.StormDB
@@ -255,7 +250,7 @@ func (wm *WalletManager) initSupportAssetsAdapter() error {
 			continue
 		}
 		//读取配置
-		absFile := filepath.Join(configFilePath, symbol+".ini")
+		absFile := filepath.Join(wm.cfg.ConfigDir, symbol+".ini")
 		//log.Debug("absFile:", absFile)
 		c, err := config.NewConfig("ini", absFile)
 		if err != nil {
