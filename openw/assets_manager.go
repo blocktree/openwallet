@@ -21,13 +21,11 @@ import (
 	"github.com/blocktree/openwallet/assets/bitcoin"
 	"github.com/blocktree/openwallet/assets/bitcoincash"
 	"github.com/blocktree/openwallet/assets/eosio"
-	"github.com/blocktree/openwallet/assets/ethereum"
 	"github.com/blocktree/openwallet/assets/litecoin"
 	"github.com/blocktree/openwallet/assets/nebulasio"
 	"github.com/blocktree/openwallet/assets/ontology"
 	"github.com/blocktree/openwallet/assets/qtum"
 	"github.com/blocktree/openwallet/assets/tron"
-	"github.com/blocktree/openwallet/assets/truechain"
 	"github.com/blocktree/openwallet/assets/virtualeconomy"
 	"github.com/blocktree/openwallet/log"
 	"github.com/blocktree/openwallet/openwallet"
@@ -48,17 +46,12 @@ import (
 func initAssetAdapter() {
 	//注册钱包管理工具
 	log.Notice("Wallet Manager Load Successfully.")
-	RegAssets(ethereum.Symbol, ethereum.NewWalletManager())
-	RegAssets(bitcoin.Symbol, bitcoin.NewWalletManager())
-	RegAssets(litecoin.Symbol, litecoin.NewWalletManager())
 	RegAssets(qtum.Symbol, qtum.NewWalletManager())
 	RegAssets(nebulasio.Symbol, nebulasio.NewWalletManager())
-	RegAssets(bitcoincash.Symbol, bitcoincash.NewWalletManager())
 	RegAssets(ontology.Symbol, ontology.NewWalletManager())
 	RegAssets(tron.Symbol, tron.NewWalletManager())
 	RegAssets(virtualeconomy.Symbol, virtualeconomy.NewWalletManager())
 	RegAssets(eosio.Symbol, eosio.NewWalletManager())
-	RegAssets(truechain.Symbol, truechain.NewWalletManager())
 }
 
 
