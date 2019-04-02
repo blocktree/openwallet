@@ -89,19 +89,25 @@ func (bs *EOSBlockScanner) ScanBlockTask() {
 
 	// get local block header
 	currentHeight, currentHash = bs.GetLocalNewBlock()
-	
+
 	if currentHeight == 0 {
 		bs.wm.Log.Std.Info("No records found in local, get current block as the local!")
 
 		// get head block
 		infoResp, err := bs.wm.Api.GetInfo()
 		if err != nil {
-			bs.wm.Log.Std.Info("block scanner can not get info;unexpected error:%v", err)
+			bs.wm.Log.Std.Info("block scanner can not get info; unexpected error:%v", err)
 			return
 		}
 
-		currentHash = infoResp.HeadBlockID.String()
-		currentHeight = infoResp.HeadBlockNum
+		block, err := bs.wm.Api.GetBlockByNum(infoResp.HeadBlockNum - 1)
+		if err != nil {
+			bs.wm.Log.Std.Info("block scanner can not get block by height; unexpected error:%v", err)
+			return
+		}
+
+		currentHash = block.ID.String()
+		currentHeight = block.BlockNum
 	}
 
 	for {
@@ -118,11 +124,75 @@ func (bs *EOSBlockScanner) ScanBlockTask() {
 
 		maxBlockHeight := infoResp.HeadBlockNum
 
-		bs.wm.Log.Info("current block height:", currentHeight, currentHash, " maxBlockHeight:", maxBlockHeight)
-		// if currentHeight == maxBlockHeight {
-		// 	bs.wm.Log.Infof("block scanner has done with scan. current height:%v", maxBlockHeight)
-		// 	break
-		// }
+		bs.wm.Log.Info("current block height:", currentHeight, " maxBlockHeight:", maxBlockHeight)
+		if currentHeight == maxBlockHeight {
+			bs.wm.Log.Std.Info("block scanner has scanned full chain data. Current height %d", maxBlockHeight)
+			break
+		}
 
+		// next block
+		currentHeight = currentHeight + 1
+
+		bs.wm.Log.Std.Info("block scanner scanning height: %d ...", currentHeight)
+		block, err := bs.wm.Api.GetBlockByNum(currentHeight)
+
+		if err != nil {
+			bs.wm.Log.Std.Info("block scanner can not get new block data by rpc; unexpected error: %v", err)
+			break
+		}
+		// hash := block.GetBlockHashID()
+		isFork := false
+
+		if currentHash != block.Previous.String() {
+			bs.wm.Log.Std.Info("block has been fork on height: %d.", currentHeight)
+			bs.wm.Log.Std.Info("block height: %d local hash = %s ", currentHeight-1, currentHash)
+			bs.wm.Log.Std.Info("block height: %d mainnet hash = %s ", currentHeight-1, block.Previous.String())
+			bs.wm.Log.Std.Info("delete recharge records on block height: %d.", currentHeight-1)
+
+			// get local fork bolck
+			forkBlock, _ := bs.GetLocalBlock(currentHeight - 1)
+			// delete last unscan block
+			bs.DeleteUnscanRecord(currentHeight - 1)
+			currentHeight = currentHeight - 2 // scan back to last 2 block
+			if currentHeight <= 0 {
+				currentHeight = 1
+			}
+			localBlock, err := bs.GetLocalBlock(currentHeight)
+			if err != nil {
+				bs.wm.Log.Std.Error("block scanner can not get local block; unexpected error: %v", err)
+				//get block from rpc
+				bs.wm.Log.Info("block scanner prev block height:", currentHeight)
+				curBlock, err := bs.wm.Api.GetBlockByNum(currentHeight)
+				if err != nil {
+					bs.wm.Log.Std.Error("block scanner can not get prev block by rpc; unexpected error: %v", err)
+					break
+				}
+				currentHash = curBlock.ID.String()
+			} else {
+				//重置当前区块的hash
+				_hash, _ := localBlock.BlockID()
+				currentHash = _hash.String()
+			}
+			bs.wm.Log.Std.Info("rescan block on height: %d, hash: %s .", currentHeight, currentHash)
+
+			//重新记录一个新扫描起点
+			bs.SaveLocalNewBlock(currentHeight, currentHash)
+
+			isFork = true
+			if forkBlock != nil {
+				//通知分叉区块给观测者，异步处理
+				bs.newBlockNotify(forkBlock, isFork)
+			}
+
+		} else {
+
+		}
 	}
+}
+
+//newBlockNotify 获得新区块后，通知给观测者
+func (bs *EOSBlockScanner) newBlockNotify(block *Block, isFork bool) {
+	header := block.OWHeader()
+	header.Fork = isFork
+	bs.NewBlockNotify(header)
 }

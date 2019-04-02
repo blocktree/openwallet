@@ -16,10 +16,34 @@
 package eosio
 
 import (
-	response "github.com/eoscanada/eos-go"
+	openwallet "github.com/blocktree/openwallet/openwallet"
+	eos "github.com/eoscanada/eos-go"
 )
 
 // Block model
-type Block struct {
-	response.BlockResp
+type Block eos.SignedBlock
+
+//UnscanRecord 扫描失败的区块及交易
+type UnscanRecord struct {
+	ID          string `storm:"id"` // primary key
+	BlockHeight uint64
+	TxID        string
+	Reason      string
+}
+
+// OWHeader 区块链头
+func (b *Block) OWHeader() *openwallet.BlockHeader {
+	obj := openwallet.BlockHeader{}
+
+	hash, _ := b.BlockID()
+	height := b.BlockNumber()
+
+	//解析josn
+	obj.Merkleroot = b.TransactionMRoot.String()
+	obj.Hash = hash.String()
+	obj.Previousblockhash = b.Previous.String()
+	obj.Height = uint64(height)
+	obj.Time = uint64(b.Timestamp.Unix())
+	obj.Symbol = Symbol
+	return &obj
 }
