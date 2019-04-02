@@ -23,7 +23,6 @@ import (
 	"github.com/blocktree/openwallet/common"
 	"github.com/blocktree/openwallet/common/file"
 	"github.com/blocktree/openwallet/console"
-	"github.com/blocktree/openwallet/logger"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
 	"github.com/tyler-smith/go-bip39"
@@ -496,7 +495,7 @@ func inputNumber() uint64 {
 		// 等待用户输入参数
 		line, err := console.Stdin.PromptInput("Enter the number of addresses you want: ")
 		if err != nil {
-			openwLogger.Log.Errorf("unexpected error: %v", err)
+			log.Printf("unexpected error: %v\n", err)
 			return 0
 		}
 		count = common.NewString(line).UInt64()
@@ -521,7 +520,7 @@ func inputWID() string {
 		// 等待用户输入参数
 		line, err := console.Stdin.PromptInput("Enter wallet ID: ")
 		if err != nil {
-			openwLogger.Log.Errorf("unexpected error: %v", err)
+			log.Printf("unexpected error: %v\n", err)
 			return ""
 		}
 		if len(line) == 0 {

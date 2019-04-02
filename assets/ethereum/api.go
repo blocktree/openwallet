@@ -30,11 +30,7 @@ import (
 	tool "github.com/blocktree/openwallet/common"
 	"github.com/blocktree/openwallet/log"
 	"github.com/blocktree/openwallet/openwallet"
-	"github.com/bytom/common"
-	ethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
-	"github.com/ethereum/go-ethereum/rlp"
+
 	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
 )
@@ -537,44 +533,6 @@ func appendOxToAddress(addr string) string {
 		return "0x" + addr
 	}
 	return addr
-}
-
-func signEthTransaction(priKey []byte, toAddr string, amount *big.Int, nonce uint64, data string, fee *txFeeInfo, chainId uint64) (string, error) {
-	var err error
-	signer := types.NewEIP155Signer(big.NewInt(int64(chainId)))
-	tx := types.NewTransaction(nonce, ethcommon.HexToAddress(toAddr),
-		amount, fee.GasLimit.Uint64(), fee.GasPrice, common.FromHex(data))
-
-	msg := signer.Hash(tx)
-	sig, err := secp256k1.Sign(msg[:], priKey)
-	if err != nil {
-		log.Error("secp256k1.Sign failed, err=", err)
-		return "", err
-	}
-	/*sig, ret := owcrypt.ETHsignature(priKey, msg[:])
-	if ret != owcrypt.SUCCESS {
-		errdesc := fmt.Sprintln("signature error, ret:", "0x"+strconv.FormatUint(uint64(ret), 16))
-		log.Error(errdesc)
-		return "", errors.New(errdesc)
-	}*/
-
-	tx, err = tx.WithSignature(signer, sig)
-	if err != nil {
-		log.Errorf("tx with signature failed, err=%v ", err)
-		return "", err
-	}
-
-	//jsonStr, _ := json.MarshalIndent(tx, "", " ")
-	//log.Info("tx after sign:", string(jsonStr))
-
-	rawTxPara, err := rlp.EncodeToBytes(tx)
-	if err != nil {
-		log.Errorf("encode tx to rlp failed, err=%v ", err)
-		return "", err
-	}
-
-	//log.Info("rawTxPara:", common.ToHex(rawTxPara))
-	return common.ToHex(rawTxPara), nil
 }
 
 func makeSimpleTransactionPara(fromAddr *Address, toAddr string, amount *big.Int, password string, fee *txFeeInfo) map[string]interface{} {
