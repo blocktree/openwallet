@@ -15,7 +15,9 @@
 
 package openwallet
 
-import "github.com/blocktree/openwallet/log"
+import (
+	"github.com/blocktree/openwallet/log"
+)
 
 //Coin 币种信息
 type Coin struct {
@@ -61,6 +63,11 @@ type AssetsAdapter interface {
 type AssetsAdapterBase struct {
 	SymbolInfoBase
 	AssetsConfigBase
+}
+
+//GetAddressDecode 地址解析器
+func (a *AssetsAdapterBase) InitAssetsAdapter() error {
+	return nil
 }
 
 //GetAddressDecode 地址解析器

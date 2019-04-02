@@ -29,9 +29,12 @@ var (
 	testApp = "b4b1962d415d4d30ec71b28769fda585"
 )
 
-func testInitWalletManager() *WalletManager {
+func init() {
 	//加载资产适配器
 	initAssetAdapter()
+}
+
+func testInitWalletManager() *WalletManager {
 
 	log.SetLogFuncCall(true)
 	tc := NewConfig()
