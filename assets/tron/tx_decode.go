@@ -23,8 +23,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"math/big"
 	"sort"
-	"strings"
-
 	"time"
 
 	"github.com/blocktree/openwallet/openwallet"
@@ -381,7 +379,7 @@ func (decoder *TransactionDecoder) VerifyRawTransaction(wrapper openwallet.Walle
 		decoder.wm.Log.Info("merge empty transaction and signature failed;unexpected error:%v", err)
 		return err
 	}
-	verifyRet := decoder.wm.ValidSignedTokenTransaction(mergeTxHex, rawTx.Coin.Contract)
+	verifyRet := decoder.wm.ValidSignedTokenTransaction(mergeTxHex)
 	if verifyRet != nil {
 		decoder.wm.Log.Info("Tx signature verify failed;unexpected error:%v", verifyRet)
 		return fmt.Errorf("Tx signature verify failed")
@@ -417,18 +415,9 @@ func (decoder *TransactionDecoder) SubmitRawTransaction(wrapper openwallet.Walle
 		return nil, err
 	}
 
-	contractType := core.Transaction_Contract_TransferContract
-	if rawTx.Coin.Contract.Address == "" {
-		contractType = core.Transaction_Contract_TransferContract
-	} else if strings.EqualFold(rawTx.Coin.Contract.Protocol, TRC10) {
-		contractType = core.Transaction_Contract_TransferAssetContract
-	} else if strings.EqualFold(rawTx.Coin.Contract.Protocol, TRC20) {
-		contractType = core.Transaction_Contract_TriggerSmartContract
-	}
-
 	rawTx.RawHex = mergeTxHex
 	//********广播交易单********
-	txid, err := decoder.wm.BroadcastTransaction(rawTx.RawHex, contractType)
+	txid, err := decoder.wm.BroadcastTransaction(rawTx.RawHex)
 	if err != nil {
 		decoder.wm.Log.Infof("submit transaction failed;unexpected error: %v", err)
 		return nil, err
@@ -500,7 +489,7 @@ func (decoder *TransactionDecoder) CreateSimpleSummaryRawTransaction(wrapper ope
 		//检查余额是否超过最低转账
 		addrBalance_BI := common.StringNumToBigIntWithExp(addrBalance.Balance, Decimals)
 
-		if addrBalance_BI.Cmp(minTransfer) < 0 {
+		if addrBalance_BI.Cmp(minTransfer) < 0 || addrBalance_BI.Cmp(big.NewInt(0)) <= 0 {
 			continue
 		}
 		//计算汇总数量 = 余额 - 保留余额
@@ -608,7 +597,7 @@ func (decoder *TransactionDecoder) CreateTokenSummaryRawTransaction(wrapper open
 		//检查余额是否超过最低转账
 		addrBalance_BI := common.StringNumToBigIntWithExp(addrBalance.Balance.Balance, tokenDecimals)
 
-		if addrBalance_BI.Cmp(minTransfer) < 0 {
+		if addrBalance_BI.Cmp(minTransfer) < 0 || addrBalance_BI.Cmp(big.NewInt(0)) <= 0 {
 			continue
 		}
 		//计算汇总数量 = 余额 - 保留余额

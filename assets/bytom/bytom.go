@@ -22,11 +22,10 @@ import (
 	"github.com/blocktree/openwallet/console"
 	"github.com/blocktree/openwallet/timer"
 	"github.com/shopspring/decimal"
-	"log"
-	"strings"
-	"github.com/blocktree/openwallet/logger"
 	"io/ioutil"
-    "os/exec"
+	"log"
+	"os/exec"
+	"strings"
 )
 
 const (
@@ -312,15 +311,15 @@ func (w *WalletManager) SummaryFollow() error {
 					return err
 				}
 
-				//找一个测试账户的地址，通过消息签名验证密码是否正确
-				addresses, _ := GetAddressInfo(w.Alias+"_"+testAccount, "")
-				if len(addresses) > 0 {
-					_, err := SignMessage(addresses[0].Address, "check password", password)
-					if err != nil {
-						openwLogger.Log.Errorf("The password to unlock wallet is incorrect! ")
-						continue
-					}
-				}
+				////找一个测试账户的地址，通过消息签名验证密码是否正确
+				//addresses, _ := GetAddressInfo(w.Alias+"_"+testAccount, "")
+				//if len(addresses) > 0 {
+				//	_, err := SignMessage(addresses[0].Address, "check password", password)
+				//	if err != nil {
+				//		openwLogger.Log.Errorf("The password to unlock wallet is incorrect! ")
+				//		continue
+				//	}
+				//}
 
 				w.Password = password
 

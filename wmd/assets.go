@@ -32,7 +32,6 @@ import (
 	"github.com/blocktree/openwallet/assets/obyte"
 	"github.com/blocktree/openwallet/assets/qtum"
 	"github.com/blocktree/openwallet/assets/sia"
-	"github.com/blocktree/openwallet/assets/stc2345"
 	"github.com/blocktree/openwallet/assets/tezos"
 	"github.com/blocktree/openwallet/log"
 )
@@ -100,7 +99,6 @@ func init() {
 	assets.RegAssets(bitcoincash.Symbol, &bitcoincash.WalletManager{})
 	assets.RegAssets(sia.Symbol, &sia.WalletManager{})
 	assets.RegAssets(ethereum.Symbol, ethereum.NewWalletManager())
-	assets.RegAssets(stc2345.Symbol, stc2345.NewWalletManager())
 	assets.RegAssets(bitcoin.Symbol, bitcoin.NewWalletManager())
 	assets.RegAssets(hypercash.Symbol, hypercash.NewWalletManager())
 	assets.RegAssets(iota.Symbol, &iota.WalletManager{})

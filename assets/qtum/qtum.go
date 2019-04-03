@@ -21,7 +21,6 @@ import (
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/openwallet/common"
 	"github.com/blocktree/openwallet/console"
-	"github.com/blocktree/openwallet/logger"
 	"time"
 
 	//"github.com/blocktree/openwallet/timer"
@@ -217,14 +216,14 @@ func (wm *WalletManager) SummaryFollow() error {
 				//解锁钱包验证密码
 				_, err = w.HDKey(password)
 				if err != nil {
-					openwLogger.Log.Errorf("The password to unlock wallet is incorrect! ")
+					log.Errorf("The password to unlock wallet is incorrect! ")
 					continue
 				}
 
 				//解锁钱包
 				err = wm.UnlockWallet(password, 1)
 				if err != nil {
-					openwLogger.Log.Errorf("The password to unlock wallet is incorrect! ")
+					log.Errorf("The password to unlock wallet is incorrect! ")
 					continue
 				}
 

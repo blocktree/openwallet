@@ -315,7 +315,7 @@ func (wm *WalletManager) SignTransactionRef(hash string, privateKey string) (sig
 	return hex.EncodeToString(sign), nil
 }
 
-func (wm *WalletManager) ValidSignedTokenTransaction(txHex string, contract openwallet.SmartContract) error {
+func (wm *WalletManager) ValidSignedTokenTransaction(txHex string) error {
 
 	tx := &core.Transaction{}
 	txBytes, err := hex.DecodeString(txHex)
@@ -339,18 +339,9 @@ func (wm *WalletManager) ValidSignedTokenTransaction(txHex string, contract open
 		return fmt.Errorf("not found signature")
 	}
 
-	contractType := core.Transaction_Contract_TransferContract
-	if contract.Address == "" {
-		contractType = core.Transaction_Contract_TransferContract
-	} else if strings.EqualFold(contract.Protocol, TRC10) {
-		contractType = core.Transaction_Contract_TransferAssetContract
-	} else if strings.EqualFold(contract.Protocol, TRC20) {
-		contractType = core.Transaction_Contract_TriggerSmartContract
-	}
-
 	for i, contract := range listContracts {
 
-		err = wm.validSignedTokenTransaction(txHash, tx.Signature[i], contract, contractType)
+		err = wm.validSignedTokenTransaction(txHash, tx.Signature[i], contract)
 		if err != nil {
 			return err
 		}
@@ -358,7 +349,7 @@ func (wm *WalletManager) ValidSignedTokenTransaction(txHex string, contract open
 	return nil
 }
 
-func (wm *WalletManager) validSignedTokenTransaction(txHash []byte, signature []byte, contract *core.Transaction_Contract, contractType core.Transaction_Contract_ContractType) error {
+func (wm *WalletManager) validSignedTokenTransaction(txHash []byte, signature []byte, contract *core.Transaction_Contract) error {
 
 	codeType := addressEncoder.TRON_mainnetAddress
 	if wm.Config.IsTestNet {
@@ -366,7 +357,7 @@ func (wm *WalletManager) validSignedTokenTransaction(txHash []byte, signature []
 	}
 
 	var ownerAddressHex string
-	switch contractType {
+	switch contract.Type {
 	case core.Transaction_Contract_TransferContract:
 		tc := &core.TransferContract{}
 		err := proto.Unmarshal(contract.Parameter.GetValue(), tc)
@@ -461,7 +452,7 @@ func (wm *WalletManager) ValidSignedTransactionRef(txHex string) error {
 	return nil
 }
 
-func (wm *WalletManager) BroadcastTransaction(raw string, contractType core.Transaction_Contract_ContractType) (string, error) {
+func (wm *WalletManager) BroadcastTransaction(raw string) (string, error) {
 	tx := &core.Transaction{}
 	if txBytes, err := hex.DecodeString(raw); err != nil {
 		wm.Log.Info("conver raw from hex to byte failed;unexpected error:%v", err)
@@ -494,7 +485,7 @@ func (wm *WalletManager) BroadcastTransaction(raw string, contractType core.Tran
 	for _, c := range rawData.GetContract() {
 		any := c.GetParameter().GetValue()
 		var contract map[string]interface{}
-		switch contractType {
+		switch c.Type {
 		case core.Transaction_Contract_TransferContract:
 			tc := &core.TransferContract{}
 			if err := proto.Unmarshal(any, tc); err != nil {

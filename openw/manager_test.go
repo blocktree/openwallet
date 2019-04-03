@@ -29,12 +29,18 @@ var (
 	testApp = "b4b1962d415d4d30ec71b28769fda585"
 )
 
+func init() {
+	//加载资产适配器
+	initAssetAdapter()
+}
+
 func testInitWalletManager() *WalletManager {
+
 	log.SetLogFuncCall(true)
 	tc := NewConfig()
 
-	tc.IsTestnet = true
-	tc.EnableBlockScan = false
+	tc.ConfigDir = configFilePath
+	tc.EnableBlockScan = true
 	tc.SupportAssets = []string{
 		"BTC",
 		"QTUM",
@@ -45,8 +51,10 @@ func testInitWalletManager() *WalletManager {
 		"BCH",
 		//"ONT",
 		"VSYS",
-		"EOS",
+		//"EOS",
+		"TRUE",
 	}
+
 	return NewWalletManager(tc)
 	//tm.Init()
 }
@@ -138,7 +146,7 @@ func TestWalletManager_CreateAssetsAccount(t *testing.T) {
 	tm := testInitWalletManager()
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
-	account := &openwallet.AssetsAccount{Alias: "mainneteosio", WalletID: walletID, Required: 1, Symbol: "EOS", IsTrust: true}
+	account := &openwallet.AssetsAccount{Alias: "mainnetTRUE—2", WalletID: walletID, Required: 1, Symbol: "TRUE", IsTrust: true}
 	account, address, err := tm.CreateAssetsAccount(testApp, walletID, "12345678", account, nil)
 	if err != nil {
 		log.Error(err)

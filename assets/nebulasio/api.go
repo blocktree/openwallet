@@ -18,7 +18,6 @@ package nebulasio
 import (
 	"fmt"
 	"github.com/blocktree/openwallet/log"
-	"github.com/blocktree/openwallet/logger"
 	"github.com/imroc/req"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
@@ -93,7 +92,7 @@ func ConvertToBigInt(value string) (*big.Int, error) {
 	_, success = bigvalue.SetString(value, 10)
 	if !success {
 		errInfo := fmt.Sprintf("convert value [%v] to bigint failed, check the value and base passed through\n", value)
-		openwLogger.Log.Errorf(errInfo)
+		log.Errorf(errInfo)
 		return big.NewInt(0), errors.New(errInfo)
 	}
 	return bigvalue, nil

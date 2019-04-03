@@ -105,11 +105,11 @@ func TestTransfer_ETH(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "59t47qyjHUMZ6PGAdjkJopE9ffAPUkdUhSinJqcWRYZ1"
-	to := "0x029C4B6c4C7294475D685a37d1C89F0c75ef8C5A"
+	to := "0xd35f9Ea14D063af9B3567064FAB567275b09f03D"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.01", "", nil)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.001", "", nil)
 	if err != nil {
 		return
 	}
@@ -177,11 +177,11 @@ func TestTransfer_LTC(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "EbUsW3YaHQ61eNt3f4hDXJAFh9LGmLZWH1VTTSnQmhnL"
-	to := "mjbRPPMbaN9Mi1gcYH6ApJ6SZsFzTf1nas"
+	to := "n4GFnRSN599W9T9tzzKWyCjkKWkn77CNa2"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.02", "", nil)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.5297", "", nil)
 	if err != nil {
 		return
 	}
@@ -323,11 +323,11 @@ func TestTransfer_BTC(t *testing.T) {
 	//mxoCkSBmiLQ86N73kXNLHEUgcUBoKdFawH
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "2m27uVj2xx645dDCEcGD1whPQGcB4fZv16TzBoLGCyKB"
-	to := "mn2UvXxpRqh9UeXtRLL8eA3DpaEiN8k2M3"
+	to := "mi9qsHKMqtrgnbxg7ifdPMk1LsFmen4xNn"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.06", "", nil)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1.3399", "", nil)
 	if err != nil {
 		return
 	}
@@ -654,7 +654,6 @@ func TestTransfer_VSYS(t *testing.T) {
 
 }
 
-
 func TestTransfer_EOS(t *testing.T) {
 	tm := testInitWalletManager()
 
@@ -692,3 +691,87 @@ func TestTransfer_EOS(t *testing.T) {
 	}
 
 }
+
+func TestTransfer_TRUE(t *testing.T) {
+
+	tm := testInitWalletManager()
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	accountID := "7r9im4dJWXYpSgE22SPuew92Hbng1iLbxBwhdQhpdSRm"
+	to := "0xeb8e335796f4a0d336bbc9622514877a73948826"
+
+	//accountID := "2J9jJajNorafoX9bEzJtEtuNJsJJk7YhSpczKYcnQBDD"
+	//to := "0x614809ecb6e0cbaa23cbe3337e017f9ca159e1e8"
+
+	testGetAssetsAccountBalance(tm, walletID, accountID)
+
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "1", "", nil)
+	if err != nil {
+		return
+	}
+
+	log.Std.Info("rawTx: %+v", rawTx)
+
+	_, err = testSignTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testVerifyTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testSubmitTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+}
+
+
+func TestTransfer_TRUE20(t *testing.T) {
+
+	tm := testInitWalletManager()
+	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
+	//accountID := "7r9im4dJWXYpSgE22SPuew92Hbng1iLbxBwhdQhpdSRm"
+	//to := "0x0c8aa7db30777ba0e424476d7f0df03fb48bfdf5"
+
+	accountID := "2J9jJajNorafoX9bEzJtEtuNJsJJk7YhSpczKYcnQBDD"
+	to := "0x614809ecb6e0cbaa23cbe3337e017f9ca159e1e8"
+
+	contract := openwallet.SmartContract{
+		Address:  "9d13E9506892E9dF391e5970cdf45829723E5357",
+		Symbol:   "TRUE",
+		Name:     "Test ERC20 Token",
+		Token:    "true20",
+		Decimals: 18,
+	}
+
+	testGetAssetsAccountBalance(tm, walletID, accountID)
+
+	testGetAssetsAccountTokenBalance(tm, walletID, accountID, contract)
+
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "10", "", &contract)
+	if err != nil {
+		return
+	}
+
+	log.Std.Info("rawTx: %+v", rawTx)
+
+	_, err = testSignTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testVerifyTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+	_, err = testSubmitTransactionStep(tm, rawTx)
+	if err != nil {
+		return
+	}
+
+}
+
