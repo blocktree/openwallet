@@ -40,7 +40,7 @@ func testInitWalletManager() *WalletManager {
 	tc := NewConfig()
 
 	tc.ConfigDir = configFilePath
-	tc.EnableBlockScan = true
+	tc.EnableBlockScan = false
 	tc.SupportAssets = []string{
 		"BTC",
 		"QTUM",
@@ -49,7 +49,7 @@ func testInitWalletManager() *WalletManager {
 		"NAS",
 		"TRX",
 		"BCH",
-		//"ONT",
+		"ONT",
 		"VSYS",
 		//"EOS",
 		"TRUE",

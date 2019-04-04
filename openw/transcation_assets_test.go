@@ -541,7 +541,7 @@ func TestTransfer_ONT(t *testing.T) {
 }
 
 func TestTransfer_ONT2(t *testing.T) {
-	tm := testONTInitWalletManager()
+	tm := testInitWalletManager()
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "B7kiHeCH1FkuqG9kwyWbqSU96oMBgU9DRJdLqH1jaguh"
@@ -573,15 +573,15 @@ func TestTransfer_ONT2(t *testing.T) {
 		return
 	}
 
-	_, err = testSubmitTransactionStep(tm, rawTx)
-	if err != nil {
-		return
-	}
+	//_, err = testSubmitTransactionStep(tm, rawTx)
+	//if err != nil {
+	//	return
+	//}
 
 }
 
 func TestTransfer_ONG2(t *testing.T) {
-	tm := testONTInitWalletManager()
+	tm := testInitWalletManager()
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "B7kiHeCH1FkuqG9kwyWbqSU96oMBgU9DRJdLqH1jaguh"
@@ -622,7 +622,7 @@ func TestTransfer_ONG2(t *testing.T) {
 }
 
 func TestTransfer_VSYS(t *testing.T) {
-	tm := testVSYSInitWalletManager()
+	tm := testInitWalletManager()
 
 	walletID := "W8325QfzEfWq4uevrVh67wMR5xLDMEjiD7"
 	accountID := "FUAKFujfVwdWJn79DFB4ZZQ6LRZS5cXfrGC9er2T5TSt"
@@ -647,10 +647,10 @@ func TestTransfer_VSYS(t *testing.T) {
 		return
 	}
 
-	_, err = testSubmitTransactionStep(tm, rawTx)
-	if err != nil {
-		return
-	}
+	//_, err = testSubmitTransactionStep(tm, rawTx)
+	//if err != nil {
+	//	return
+	//}
 
 }
 

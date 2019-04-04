@@ -368,7 +368,7 @@ func TestSummary_VSYS(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "FUAKFujfVwdWJn79DFB4ZZQ6LRZS5cXfrGC9er2T5TSt"
-	summaryAddress := "ARJdaB9Fo6Sk2nxBrQP2p4woWotPxjaebCv"
+	summaryAddress := "ARLmJMF6Z5gPkegtya7FRgv8BtLo7FSZmts"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
@@ -392,10 +392,10 @@ func TestSummary_VSYS(t *testing.T) {
 			return
 		}
 
-		//_, err = testSubmitTransactionStep(tm, rawTx)
-		//if err != nil {
-		//	return
-		//}
+		_, err = testSubmitTransactionStep(tm, rawTx)
+		if err != nil {
+			return
+		}
 	}
 
 }

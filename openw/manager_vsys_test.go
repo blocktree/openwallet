@@ -14,7 +14,7 @@ func testVSYSInitWalletManager() *WalletManager {
 
 	tc := NewConfig()
 
-	tc.EnableBlockScan = true
+	tc.EnableBlockScan = false
 	tc.SupportAssets = []string{
 		"VSYS",
 	}

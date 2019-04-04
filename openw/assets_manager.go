@@ -18,6 +18,7 @@ package openw
 import (
 	"fmt"
 	"github.com/astaxie/beego/config"
+	"github.com/blocktree/openwallet/assets/ontology"
 	"github.com/blocktree/openwallet/log"
 	"github.com/blocktree/openwallet/openwallet"
 	"strings"
@@ -39,7 +40,7 @@ func initAssetAdapter() {
 	log.Notice("Wallet Manager Load Successfully.")
 	//RegAssets(qtum.Symbol, qtum.NewWalletManager())
 	//RegAssets(nebulasio.Symbol, nebulasio.NewWalletManager())
-	//RegAssets(ontology.Symbol, ontology.NewWalletManager())
+	RegAssets(ontology.Symbol, ontology.NewWalletManager())
 	//RegAssets(virtualeconomy.Symbol, virtualeconomy.NewWalletManager())
 	//RegAssets(eosio.Symbol, eosio.NewWalletManager())
 }
