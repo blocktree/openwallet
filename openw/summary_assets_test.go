@@ -212,7 +212,7 @@ func TestSummary_NAS(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "7VftKuNoDtwZ3mn3wDA4smTDMz4iqCg3fNna1fXicVDg"
-	summaryAddress := "n1FYB93yKATg42MWrWDuNGYzKiVcRwH4NMX"
+	summaryAddress := "n1cNBzaDWjerP7VUFrhGgDNgJfheiZq5rXc"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
@@ -285,7 +285,7 @@ func TestSummary_QTUM(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "HyKAYbaLKXXa1U8YNsseP78YHGqB4vzSzJkKp8x4A7CC"
-	summaryAddress := "Qf6t5Ww14ZWVbG3kpXKoTt4gXeKNVxM9QJ"
+	summaryAddress := "QYV6cA236fyVKpM9fCFHBp8GCATW6sUF5a"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
@@ -320,8 +320,8 @@ func TestSummary_QTUM(t *testing.T) {
 func TestSummary_QRC20(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
-	accountID := "HyKAYbaLKXXa1U8YNsseP78YHGqB4vzSzJkKp8x4A7CC"
-	summaryAddress := "Qf6t5Ww14ZWVbG3kpXKoTt4gXeKNVxM9QJ"
+	accountID := "2by6wzbzw7cnWkxiA31xMHpFmE99bqL3BnjkUJnJtEN6"
+	summaryAddress := "QYV6cA236fyVKpM9fCFHBp8GCATW6sUF5a"
 
 	contract := openwallet.SmartContract{
 		Address:  "f2033ede578e17fa6231047265010445bca8cf1c",

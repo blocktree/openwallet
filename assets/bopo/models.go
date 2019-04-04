@@ -17,9 +17,10 @@ package bopo
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/blocktree/openwallet/crypto"
-	"github.com/bytom/common"
+	//"github.com/bytom/common"
 )
 
 //Wallet 钱包模型

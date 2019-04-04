@@ -206,7 +206,7 @@ func TestTransfer_QTUM(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "2by6wzbzw7cnWkxiA31xMHpFmE99bqL3BnjkUJnJtEN6"
-	to := "QckZE8Te4iD5Stu7f5WhTqM3r4YQJQjrom"
+	to := "QYV6cA236fyVKpM9fCFHBp8GCATW6sUF5a"
 
 	//mainnetQTUM
 	//accountID := "HyKAYbaLKXXa1U8YNsseP78YHGqB4vzSzJkKp8x4A7CC"
@@ -229,10 +229,10 @@ func TestTransfer_QTUM(t *testing.T) {
 		return
 	}
 
-	_, err = testSubmitTransactionStep(tm, rawTx)
-	if err != nil {
-		return
-	}
+	//_, err = testSubmitTransactionStep(tm, rawTx)
+	//if err != nil {
+	//	return
+	//}
 
 }
 
@@ -240,7 +240,7 @@ func TestTransfer_QRC20(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "2by6wzbzw7cnWkxiA31xMHpFmE99bqL3BnjkUJnJtEN6"
-	to := "QckZE8Te4iD5Stu7f5WhTqM3r4YQJQjrom"
+	to := "QYV6cA236fyVKpM9fCFHBp8GCATW6sUF5a"
 
 	//mainnetQTUM
 	//accountID := "HyKAYbaLKXXa1U8YNsseP78YHGqB4vzSzJkKp8x4A7CC"
@@ -273,10 +273,10 @@ func TestTransfer_QRC20(t *testing.T) {
 		return
 	}
 
-	_, err = testSubmitTransactionStep(tm, rawTx)
-	if err != nil {
-		return
-	}
+	//_, err = testSubmitTransactionStep(tm, rawTx)
+	//if err != nil {
+	//	return
+	//}
 
 }
 
@@ -290,7 +290,7 @@ func TestTransfer_NAS(t *testing.T) {
 	//n1VkvsbgRJ6Tjro1mTUUaevPM3wv69z5njB
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
 	accountID := "7VftKuNoDtwZ3mn3wDA4smTDMz4iqCg3fNna1fXicVDg"
-	to := "n1Mgfvwmrs1doocZfsxSdhnkKTtezPCyRDR"
+	to := "n1cNBzaDWjerP7VUFrhGgDNgJfheiZq5rXc"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
@@ -309,10 +309,10 @@ func TestTransfer_NAS(t *testing.T) {
 		return
 	}
 
-	_, err = testSubmitTransactionStep(tm, rawTx)
-	if err != nil {
-		return
-	}
+	//_, err = testSubmitTransactionStep(tm, rawTx)
+	//if err != nil {
+	//	return
+	//}
 }
 
 func TestTransfer_BTC(t *testing.T) {
