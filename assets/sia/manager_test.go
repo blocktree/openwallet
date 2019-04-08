@@ -16,9 +16,10 @@
 package sia
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"testing"
 	"log"
-	"github.com/bytom/common"
+	//"github.com/bytom/common"
 	"github.com/NebulousLabs/entropy-mnemonics"
 	"strings"
 )

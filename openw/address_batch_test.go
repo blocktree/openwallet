@@ -16,60 +16,54 @@
 package openw
 
 import (
-	"encoding/base64"
-	"encoding/json"
-	"github.com/blocktree/openwallet/assets/litecoin"
-	"github.com/blocktree/openwallet/crypto"
-	"github.com/blocktree/openwallet/log"
-	"github.com/blocktree/openwallet/openwallet"
 	"testing"
 )
 
 func TestBatchCreateAddressByAccount(t *testing.T) {
-	account := openwallet.AssetsAccount{
-		AccountID:      "Aa7Chh2MdaGDejHdCJZAaX7AwvGNmMEMry2kZZTq114a",
-		Symbol:         "LTC",
-		PublicKey:      "owpubeyoV6FsNaAN9wxUDsBAXyKr4EVt3ib6R1CRLpGJ7qUdGUgiwB6tLbUATvFYDm2JGTaB6i7PkeXBAxzo5RkNXmx64KE9vFN4qPtbK7ywZTd9unM2C1",
-		OwnerKeys: []string{"owpubeyoV6FsNaAN9wxUDsBAXyKr4EVt3ib6R1CRLpGJ7qUdGUgiwB6tLbUATvFYDm2JGTaB6i7PkeXBAxzo5RkNXmx64KE9vFN4qPtbK7ywZTd9unM2C1"},
-		HDPath:         "m/44'/88'/1'",
-		AddressIndex:   0,
-		Index:   1,
-	}
-	wm := litecoin.NewWalletManager()
-	decoder := wm.Decoder
-
-	addrArr, err := openwallet.BatchCreateAddressByAccount(&account, decoder, 5000, 20)
-	if err != nil {
-		t.Errorf("error: %v", err)
-		return
-	}
-	addrs := make([]string, 0)
-	for _, a := range addrArr {
-		//t.Logf("address[%d]: %s", a.Index, a.Address)
-		addrs = append(addrs, a.Address)
-	}
-	log.Infof("create address")
-	j, err := json.Marshal(addrs)
-	if err != nil {
-		t.Errorf("json.Marshal: %v", err)
-		return
-	}
-	log.Infof("json.Marshal")
-	enc, err := crypto.AESEncrypt(j, crypto.SHA256([]byte("1234")))
-	if err != nil {
-		t.Errorf("crypto.AESEncrypt: %v", err)
-		return
-	}
-	log.Infof("AESEncrypt")
-	encB58 := base64.StdEncoding.EncodeToString(enc)
-	log.Infof("base58.Encode: %s", encB58)
-	decB58, _ := base64.StdEncoding.DecodeString(encB58)
-	log.Infof("base58.Decode")
-	dec, err := crypto.AESDecrypt(decB58, crypto.SHA256([]byte("1234")))
-	if err != nil {
-		t.Errorf("crypto.AESEncrypt: %v", err)
-		return
-	}
-	log.Infof("AESDecrypt")
-	log.Infof("dec: %s", string(dec))
+	//account := openwallet.AssetsAccount{
+	//	AccountID:      "Aa7Chh2MdaGDejHdCJZAaX7AwvGNmMEMry2kZZTq114a",
+	//	Symbol:         "LTC",
+	//	PublicKey:      "owpubeyoV6FsNaAN9wxUDsBAXyKr4EVt3ib6R1CRLpGJ7qUdGUgiwB6tLbUATvFYDm2JGTaB6i7PkeXBAxzo5RkNXmx64KE9vFN4qPtbK7ywZTd9unM2C1",
+	//	OwnerKeys: []string{"owpubeyoV6FsNaAN9wxUDsBAXyKr4EVt3ib6R1CRLpGJ7qUdGUgiwB6tLbUATvFYDm2JGTaB6i7PkeXBAxzo5RkNXmx64KE9vFN4qPtbK7ywZTd9unM2C1"},
+	//	HDPath:         "m/44'/88'/1'",
+	//	AddressIndex:   0,
+	//	Index:   1,
+	//}
+	//wm := litecoin.NewWalletManager()
+	//decoder := wm.Decoder
+	//
+	//addrArr, err := openwallet.BatchCreateAddressByAccount(&account, decoder, 5000, 20)
+	//if err != nil {
+	//	t.Errorf("error: %v", err)
+	//	return
+	//}
+	//addrs := make([]string, 0)
+	//for _, a := range addrArr {
+	//	//t.Logf("address[%d]: %s", a.Index, a.Address)
+	//	addrs = append(addrs, a.Address)
+	//}
+	//log.Infof("create address")
+	//j, err := json.Marshal(addrs)
+	//if err != nil {
+	//	t.Errorf("json.Marshal: %v", err)
+	//	return
+	//}
+	//log.Infof("json.Marshal")
+	//enc, err := crypto.AESEncrypt(j, crypto.SHA256([]byte("1234")))
+	//if err != nil {
+	//	t.Errorf("crypto.AESEncrypt: %v", err)
+	//	return
+	//}
+	//log.Infof("AESEncrypt")
+	//encB58 := base64.StdEncoding.EncodeToString(enc)
+	//log.Infof("base58.Encode: %s", encB58)
+	//decB58, _ := base64.StdEncoding.DecodeString(encB58)
+	//log.Infof("base58.Decode")
+	//dec, err := crypto.AESDecrypt(decB58, crypto.SHA256([]byte("1234")))
+	//if err != nil {
+	//	t.Errorf("crypto.AESEncrypt: %v", err)
+	//	return
+	//}
+	//log.Infof("AESDecrypt")
+	//log.Infof("dec: %s", string(dec))
 }
