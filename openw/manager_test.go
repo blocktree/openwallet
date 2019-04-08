@@ -42,17 +42,17 @@ func testInitWalletManager() *WalletManager {
 	tc.ConfigDir = configFilePath
 	tc.EnableBlockScan = false
 	tc.SupportAssets = []string{
-		"BTC",
-		"QTUM",
-		"LTC",
-		"ETH",
-		"NAS",
-		"TRX",
-		"BCH",
-		"ONT",
-		"VSYS",
+		//"BTC",
+		//"QTUM",
+		//"LTC",
+		//"ETH",
+		//"NAS",
+		//"TRX",
+		//"BCH",
+		//"ONT",
+		//"VSYS",
 		//"EOS",
-		"TRUE",
+		//"TRUE",
 	}
 
 	return NewWalletManager(tc)
@@ -200,7 +200,7 @@ func TestWalletManager_GetAddressList(t *testing.T) {
 	tm := testInitWalletManager()
 
 	walletID := "WMTUzB3LWaSKNKEQw9Sn73FjkEoYGHEp4B"
-	accountID := "8pLC7mRGWy968bRr3sQtYxAZjxJqC4QKH3H9VaKouArd"
+	accountID := "B7kiHeCH1FkuqG9kwyWbqSU96oMBgU9DRJdLqH1jaguh"
 	list, err := tm.GetAddressList(testApp, walletID, accountID, 0, -1, false)
 	if err != nil {
 		log.Error("unexpected error:", err)
