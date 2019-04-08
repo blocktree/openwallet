@@ -67,7 +67,7 @@ $ xgo -h
 
 ```
 
-## wmd--多币种钱包维护工具
+## wmd--多币种钱包维护工具(Deprecated, please use go-openw-cli)
 
 ### 特点
 
@@ -159,24 +159,4 @@ $ ./wmd wallet config -s [symbol] -i
 
 ```
 
-#### 商户相关
-
-```shell
-
-# 查看通信的客户端和服务端公钥，没有自动创建客户端密钥对
-$ ./wmd merchant keychain
-
-# 重新创建客户端密钥对
-$ ./wmd merchant keychain -i
-
-# 根据配置文件中的相关商户设置信息，连接到商户服务
-$ ./wmd merchant join
-
-# 查看./merchant_data/merchant.ini文件中与商户相关的配置信息
-$ ./wmd merchant config
-
-# 执行重新初始化商户配置
-$ ./wmd merchant config  -i
-
-```
 
