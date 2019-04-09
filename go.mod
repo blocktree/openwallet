@@ -9,8 +9,8 @@ require (
 	github.com/Sereal/Sereal v0.0.0-20190408200019-e0834539921c // indirect
 	github.com/asdine/storm v2.1.2+incompatible
 	github.com/astaxie/beego v1.11.1
-	github.com/blocktree/go-owcdrivers v0.0.0-20190408033658-f85da0fa2917
-	github.com/blocktree/go-owcrypt v0.0.0-20190409023833-5afac4a737d3
+	github.com/blocktree/go-owcdrivers v1.0.0
+	github.com/blocktree/go-owcrypt v1.0.0
 	github.com/bndr/gotabulate v1.1.2
 	github.com/bradfitz/gomemcache v0.0.0-20190329173943-551aad21a668
 	github.com/btcsuite/btcd v0.0.0-20190315201642-aa6e0f35703c
@@ -18,7 +18,6 @@ require (
 	github.com/bwmarrin/snowflake v0.0.0-20180412010544-68117e6bbede
 	github.com/codegangsta/inject v0.0.0-20150114235600-33e0aa1cb7c0 // indirect
 	github.com/codeskyblue/go-sh v0.0.0-20190328095946-f4ce45e7999e
-	github.com/coreos/bbolt v1.3.2
 	github.com/couchbase/go-couchbase v0.0.0-20190401022532-e1757383bdca
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/go-connections v0.4.0
