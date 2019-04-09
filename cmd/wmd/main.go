@@ -45,7 +45,7 @@ func init() {
 	app.Version = version
 	app.Commands = []cli.Command{
 		commands.CmdWallet,
-		commands.CmdNode,
+		//commands.CmdNode,
 		//commands.CmdConfig,
 		//commands.CmdMerchant,
 	}
