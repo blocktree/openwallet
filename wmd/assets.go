@@ -17,20 +17,13 @@ package wmd
 
 import (
 	"github.com/blocktree/openwallet/assets"
-	"github.com/blocktree/openwallet/assets/bitcoin"
-	"github.com/blocktree/openwallet/assets/bitcoincash"
 	"github.com/blocktree/openwallet/assets/bytom"
 	"github.com/blocktree/openwallet/assets/cardano"
 	"github.com/blocktree/openwallet/assets/decred"
-	"github.com/blocktree/openwallet/assets/ethereum"
 	"github.com/blocktree/openwallet/assets/hypercash"
 	"github.com/blocktree/openwallet/assets/icon"
-	"github.com/blocktree/openwallet/assets/iota"
-	"github.com/blocktree/openwallet/assets/litecoin"
 	"github.com/blocktree/openwallet/assets/luxapla"
-	"github.com/blocktree/openwallet/assets/nebulasio"
 	"github.com/blocktree/openwallet/assets/obyte"
-	"github.com/blocktree/openwallet/assets/qtum"
 	"github.com/blocktree/openwallet/assets/sia"
 	"github.com/blocktree/openwallet/assets/tezos"
 	"github.com/blocktree/openwallet/log"
@@ -95,19 +88,11 @@ func init() {
 	log.Notice("Wallet Manager Driver Load Successfully.")
 	assets.RegAssets(cardano.Symbol, cardano.NewWalletManager())
 	assets.RegAssets(bytom.Symbol, &bytom.WalletManager{})
-	//RegWMD(strings.ToLower(bopo.Symbol), &bopo.WalletManager{})
-	assets.RegAssets(bitcoincash.Symbol, &bitcoincash.WalletManager{})
 	assets.RegAssets(sia.Symbol, &sia.WalletManager{})
-	assets.RegAssets(ethereum.Symbol, ethereum.NewWalletManager())
-	assets.RegAssets(bitcoin.Symbol, bitcoin.NewWalletManager())
 	assets.RegAssets(hypercash.Symbol, hypercash.NewWalletManager())
-	assets.RegAssets(iota.Symbol, &iota.WalletManager{})
+	//assets.RegAssets(iota.Symbol, &iota.WalletManager{})
 	assets.RegAssets(tezos.Symbol, tezos.NewWalletManager())
-	assets.RegAssets(litecoin.Symbol, litecoin.NewWalletManager())
-	assets.RegAssets(qtum.Symbol, qtum.NewWalletManager())
 	assets.RegAssets(decred.Symbol, decred.NewWalletManager())
-	//assets.RegAssets(tron.Symbol, tron.NewWalletManager())
-	assets.RegAssets(nebulasio.Symbol, nebulasio.NewWalletManager())
 	assets.RegAssets(icon.Symbol, icon.NewWalletManager())
 	assets.RegAssets(obyte.Symbol, obyte.NewWalletManager())
 	assets.RegAssets(luxapla.Symbol, luxapla.NewWalletManager())

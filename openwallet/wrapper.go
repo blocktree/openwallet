@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/asdine/storm"
-	"github.com/coreos/bbolt"
+	bolt "go.etcd.io/bbolt"
 )
 
 type WrapperSourceFile string
