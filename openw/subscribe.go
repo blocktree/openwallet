@@ -40,7 +40,7 @@ func (wm *WalletManager) BlockScanNotify(header *openwallet.BlockHeader) error {
 				return err
 			}
 
-			txWrapper := openwallet.NewTransactionWrapper(wrapper)
+			txWrapper := NewTransactionWrapper(wrapper)
 			err = txWrapper.DeleteBlockDataByHeight(header.Height)
 			if err != nil {
 				return err
@@ -74,7 +74,7 @@ func (wm *WalletManager) BlockExtractDataNotify(sourceKey string, data *openwall
 		return err
 	}
 
-	txWrapper := openwallet.NewTransactionWrapper(wrapper)
+	txWrapper := NewTransactionWrapper(wrapper)
 	err = txWrapper.SaveBlockExtractData(accountID, data)
 	if err != nil {
 		return err
@@ -114,7 +114,7 @@ func (wm *WalletManager) DeleteRechargesByHeight(height uint64) error {
 			return err
 		}
 
-		txWrapper := openwallet.NewTransactionWrapper(wrapper)
+		txWrapper := NewTransactionWrapper(wrapper)
 		err = txWrapper.DeleteBlockDataByHeight(height)
 		if err != nil {
 			return err

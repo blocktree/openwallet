@@ -25,7 +25,7 @@ require (
 	github.com/ethereum/go-ethereum v1.8.24
 	github.com/go-redis/redis v6.15.2+incompatible
 	github.com/go-sql-driver/mysql v1.4.1
-	github.com/golang/protobuf v1.3.1
+	github.com/golang/protobuf v1.3.1 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/gorilla/websocket v1.4.0
 	github.com/graarh/golang-socketio v0.0.0-20170510162725-2c44953b9b5f

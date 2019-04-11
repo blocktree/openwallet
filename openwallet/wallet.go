@@ -29,7 +29,6 @@ import (
 	"github.com/blocktree/openwallet/common/file"
 	"github.com/blocktree/openwallet/hdkeystore"
 	"github.com/blocktree/openwallet/log"
-	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
 	"time"
 )
@@ -99,6 +98,7 @@ func (base *WalletDAIBase) GetAddressList(offset, limit int, cols ...interface{}
 func (base *WalletDAIBase) SetAddressExtParam(address string, key string, val interface{}) error {
 	return fmt.Errorf("not implement")
 }
+
 //获取地址的扩展字段
 func (base *WalletDAIBase) GetAddressExtParam(address string, key string) (interface{}, error) {
 	return nil, fmt.Errorf("not implement")
@@ -113,35 +113,25 @@ func (base *WalletDAIBase) HDKey(password ...string) (*hdkeystore.HDKey, error) 
 }
 
 type Wallet struct {
-	AppID        string `json:"appID"`
-	WalletID     string `json:"walletID"  storm:"id"`
-	Alias        string `json:"alias"`
-	Password     string `json:"password"`
-	RootPub      string `json:"rootpub"` //弃用
-	RootPath     string `json:"rootPath"`
-	KeyFile      string `json:"keyFile"`      //钱包的密钥文件
-	DBFile       string `json:"dbFile"`       //钱包的数据库文件
-	WatchOnly    bool   `json:"watchOnly"`    //创建watchonly的钱包，没有私钥文件，只有db文件
-	IsTrust      bool   `json:"isTrust"`      //是否托管密钥
-	AccountIndex int    `json:"accountIndex"` //账户索引数，-1代表未创建账户
-	ExtParam     string `json:"extParam"`     //扩展参数，用于调用智能合约，json结构
-
-	key      *hdkeystore.HDKey
-	fileName string              //钱包文件命名，所有与钱包相关的都以这个filename命名
-	core     interface{}         //核心钱包指针
-	unlocked map[string]unlocked // 已解锁的钱包，集合（钱包地址, 钱包私钥）
+	AppID        string              `json:"appID"`
+	WalletID     string              `json:"walletID"  storm:"id"`
+	Alias        string              `json:"alias"`
+	Password     string              `json:"password"`
+	RootPub      string              `json:"rootpub"` //弃用
+	RootPath     string              `json:"rootPath"`
+	KeyFile      string              `json:"keyFile"`      //钱包的密钥文件
+	DBFile       string              `json:"dbFile"`       //钱包的数据库文件
+	WatchOnly    bool                `json:"watchOnly"`    //创建watchonly的钱包，没有私钥文件，只有db文件
+	IsTrust      bool                `json:"isTrust"`      //是否托管密钥
+	AccountIndex int                 `json:"accountIndex"` //账户索引数，-1代表未创建账户
+	ExtParam     string              `json:"extParam"`     //扩展参数，用于调用智能合约，json结构
+	key          *hdkeystore.HDKey   //Deprecated
+	fileName     string              //钱包文件命名，所有与钱包相关的都以这个filename命名
+	core         interface{}         //核心钱包指针 Deprecated
+	unlocked     map[string]unlocked // 已解锁的钱包，集合（钱包地址, 钱包私钥）Deprecated
 }
 
-func NewHDWallet(key *hdkeystore.HDKey) (*Wallet, error) {
-
-	return nil, nil
-}
-
-func NewWalletID() uuid.UUID {
-	id := uuid.NewRandom()
-	return id
-}
-
+//Deprecated
 func NewWallet(walletID string, symbol string) *Wallet {
 
 	dbDir := GetDBDir(symbol)
@@ -170,7 +160,7 @@ func NewWallet(walletID string, symbol string) *Wallet {
 
 }
 
-//NewWatchOnlyWallet 只读钱包，用于观察冷钱包
+//NewWatchOnlyWallet 只读钱包，用于观察冷钱包 Deprecated
 func NewWatchOnlyWallet(walletID string, symbol string) *Wallet {
 
 	dbDir := GetDBDir(symbol)
@@ -466,68 +456,4 @@ func ReadWalletByKey(keyPath string) *Wallet {
 	}
 
 	return &Wallet{WalletID: key.KeyID, Alias: key.Alias}
-}
-
-/*
-//NewWallet 创建钱包
-func NewWallet(publickeys []Bytes, users []*User, required uint, creator *User) (*Wallet, error) {
-
-	var (
-		owner    = make(map[string]string, 0)
-		firstApp *App
-	)
-
-	//检查公钥和用户数量是否相等
-	if len(publickeys) != len(users) {
-		return nil, errors.New("PublicKey count is not equal Users count")
-	}
-
-	for i, pk := range publickeys {
-
-		if i == 0 {
-			firstApp = users[i].App
-		}
-
-		//检查公钥长度是否正确
-
-		//检查用户key是否为空
-		if len(users[i].UserKey) == 0 {
-			return nil, errors.New("User's userkey is empty")
-		}
-
-		//检查用户的应用方是否一致
-		if firstApp != nil && firstApp != users[i].App {
-			return nil, errors.New("User's Application is not unified")
-		}
-
-		pkHex := common.Bytes2Hex(pk)
-		owner[pkHex] = users[i].UserKey
-	}
-
-	w := &Wallet{
-		PublicKeys: publickeys,
-		Required:  required,
-		Owners:    owner,
-	}
-
-	return w, nil
-}
-*/
-
-////GetUserByPublicKey 通过公钥获取用户
-//func (w *Wallet) GetUserByPublicKey(publickey PublicKey) *User {
-//
-//	pkHex := common.Bytes2Hex(publickey)
-//
-//	user := &User{
-//		UserKey: w.Owners[pkHex],
-//	}
-//
-//	return user
-//}
-
-//WalletWrapper 返回一个钱包包装器
-func (w *Wallet) WalletWrapper() *WalletWrapper {
-	wrapper := NewWalletWrapper(w, w.DBFile, w.KeyFile)
-	return wrapper
 }
