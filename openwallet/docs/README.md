@@ -1,13 +1,6 @@
-# OpenWallet Package
+# openwallet document
 
-本包提供基于openwallet钱包体系下的基本类型和接口，本包不涉及钱包体系的数据持久化。
+openwallet包定义了规范化的钱包体系模型和协议。
 
-## Wallet
-
-## Account
-
-## Address
-
-## Assets
-
-## SmartContract
+- [区块链资产适配器开发教程](./assets.md)。
+- [钱包管理模型开发教程](./wallet.md)。

@@ -45,29 +45,34 @@ const (
 )
 
 type Error struct {
-	Code int64
-	Err  string
+	code int64
+	err  string
 }
 
 //Error 错误信息
 func (err *Error) Error() string {
-	return fmt.Sprintf("[%d]%s", err.Code, err.Err)
+	return fmt.Sprintf("[%d]%s", err.code, err.err)
+}
+
+//Error 错误信息
+func (err *Error) Code() int64 {
+	return err.code
 }
 
 //ConvertError error转OWError
 func ConvertError(err error) *Error {
-	owerr, ok := err.(*Error)
+	owErr, ok := err.(*Error)
 	if !ok {
-		return &Error{Code: ErrUnknownException, Err: err.Error()}
+		return &Error{code: ErrUnknownException, err: err.Error()}
 	}
-	return owerr
+	return owErr
 }
 
 //Errorf 生成OWError
 func Errorf(code int64, format string, a ...interface{}) error {
 	err := &Error{
-		Code: code,
-		Err:  fmt.Sprintf(format, a...),
+		code: code,
+		err:  fmt.Sprintf(format, a...),
 	}
 	return err
 }
@@ -75,8 +80,8 @@ func Errorf(code int64, format string, a ...interface{}) error {
 //NewError 生成OWError
 func NewError(code int64, text string) error {
 	err := &Error{
-		Code: code,
-		Err:  text,
+		code: code,
+		err:  text,
 	}
 	return err
 }
