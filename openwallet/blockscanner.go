@@ -25,17 +25,34 @@ import (
 	"github.com/blocktree/openwallet/timer"
 )
 
+//deprecated
 // BlockScanAddressFunc 扫描地址是否存在算法
 // @return 地址所属源标识，是否存在
 type BlockScanAddressFunc func(address string) (string, bool)
+
+// BlockScanTargetFunc 扫描对象是否存在算法
+// @return 对象所属源标识，是否存在
+type BlockScanTargetFunc func(target ScanTarget) (string, bool)
+
+type ScanTarget struct {
+	Address          string           //地址字符串
+	PublicKey        string           //地址公钥
+	Alias            string           //地址别名，可绑定用户别名
+	Symbol           string           //币种类别
+	BalanceModelType BalanceModelType //余额模型类别
+}
 
 // BlockScanner 区块扫描器
 // 负责扫描新区块，给观察者推送订阅地址的新交易单。
 type BlockScanner interface {
 
-	//SetBlockScanAddressFunc 设置区块扫描过程，查找地址过程方法
-	//@required
+	//deprecated
+	//Deprecated SetBlockScanAddressFunc 设置区块扫描过程，查找地址过程方法
 	SetBlockScanAddressFunc(scanAddressFunc BlockScanAddressFunc) error
+
+	//SetBlockScanTargetFunc 设置区块扫描过程，查找扫描对象过程方法
+	//@required
+	SetBlockScanTargetFunc(scanTargetFunc BlockScanTargetFunc) error
 
 	//AddObserver 添加观测者
 	AddObserver(obj BlockScanNotificationObject) error
@@ -142,6 +159,7 @@ type BlockScannerBase struct {
 	Scanning          bool                                 //是否扫描中
 	PeriodOfTask      time.Duration
 	ScanAddressFunc   BlockScanAddressFunc //区块扫描查询地址算法
+	ScanTargetFunc    BlockScanTargetFunc  //区块扫描查询地址算法
 	blockProducer     chan interface{}
 	blockConsumer     chan interface{}
 	isClose           bool //是否已关闭
@@ -173,21 +191,29 @@ func (bs *BlockScannerBase) InitBlockScanner() error {
 	return nil
 }
 
+//deprecated
 //SetBlockScanAddressFunc 设置区块扫描过程，查找地址过程方法
-//@required
 func (bs *BlockScannerBase) SetBlockScanAddressFunc(scanAddressFunc BlockScanAddressFunc) error {
 	bs.ScanAddressFunc = scanAddressFunc
 	return nil
 }
 
-//IsExistWallet 指定账户的钱包是否已登记扫描
-//func (bs *BlockScannerBase) IsExistWallet(accountID string) bool {
-//	bs.Mu.RLock()
-//	defer bs.Mu.RUnlock()
-//
-//	_, exist := bs.WalletInScanning[accountID]
-//	return exist
-//}
+//SetBlockScanTargetFunc 设置区块扫描过程，查找扫描对象过程方法
+//@required
+func (bs *BlockScannerBase) SetBlockScanTargetFunc(scanTargetFunc BlockScanTargetFunc) error {
+	bs.ScanTargetFunc = scanTargetFunc
+
+	//兼容已弃用的SetBlockScanAddressFunc
+	scanAddressFunc := func(address string) (string, bool) {
+		scanTarget := ScanTarget{
+			Address: address,
+			BalanceModelType: BalanceModelTypeAddress,
+		}
+		return bs.ScanTargetFunc(scanTarget)
+	}
+	bs.SetBlockScanAddressFunc(scanAddressFunc)
+	return nil
+}
 
 //AddObserver 添加观测者
 func (bs *BlockScannerBase) AddObserver(obj BlockScanNotificationObject) error {
