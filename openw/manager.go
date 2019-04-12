@@ -49,7 +49,7 @@ type NotificationObject interface {
 
 //WalletManager OpenWallet钱包管理器
 type WalletManager struct {
-	appDB             map[string]*openwallet.StormDB
+	appDB             map[string]*StormDB
 	cfg               *Config
 	initialized       bool
 	mu                sync.RWMutex
@@ -82,7 +82,7 @@ func (wm *WalletManager) Init() {
 	file.MkdirAll(wm.cfg.KeyDir)
 
 	wm.observers = make(map[NotificationObject]bool)
-	wm.appDB = make(map[string]*openwallet.StormDB)
+	wm.appDB = make(map[string]*StormDB)
 	wm.AddressInScanning = make(map[string]string)
 
 	wm.initialized = true
@@ -130,10 +130,10 @@ func (wm *WalletManager) DBFile(appID string) string {
 }
 
 //OpenDB 打开应用数据库文件
-func (wm *WalletManager) OpenDB(appID string) (*openwallet.StormDB, error) {
+func (wm *WalletManager) OpenDB(appID string) (*StormDB, error) {
 
 	var (
-		db  *openwallet.StormDB
+		db  *StormDB
 		err error
 		ok  bool
 	)
@@ -156,7 +156,7 @@ func (wm *WalletManager) OpenDB(appID string) (*openwallet.StormDB, error) {
 
 	}
 
-	db, err = openwallet.OpenStormDB(
+	db, err = OpenStormDB(
 		wm.DBFile(appID),
 		storm.Batch(),
 		storm.BoltOptions(0600, &bolt.Options{Timeout: 3 * time.Second}),
@@ -291,9 +291,9 @@ func (wm *WalletManager) initSupportAssetsAdapter() error {
 }
 
 //newWalletWrapper 创建App专用的包装器
-func (wm *WalletManager) newWalletWrapper(appID, walletID string) (*openwallet.WalletWrapper, error) {
+func (wm *WalletManager) newWalletWrapper(appID, walletID string) (*WalletWrapper, error) {
 
-	var walletWrapper *openwallet.WalletWrapper
+	var walletWrapper *WalletWrapper
 
 	//打开数据库
 	db, err := wm.OpenDB(appID)
@@ -301,9 +301,9 @@ func (wm *WalletManager) newWalletWrapper(appID, walletID string) (*openwallet.W
 		return nil, err
 	}
 
-	dbFile := openwallet.WalletDBFile(wm.DBFile(appID))
-	wrapperAppID := openwallet.WalletDBFile(appID)
-	wrapper := openwallet.NewAppWrapper(wrapperAppID, dbFile, db)
+	dbFile := WalletDBFile(wm.DBFile(appID))
+	wrapperAppID := WalletDBFile(appID)
+	wrapper := NewAppWrapper(wrapperAppID, dbFile, db)
 
 	if len(walletID) > 0 {
 
@@ -312,11 +312,11 @@ func (wm *WalletManager) newWalletWrapper(appID, walletID string) (*openwallet.W
 			return nil, fmt.Errorf("wallet not exist")
 		}
 
-		keyFile := openwallet.WalletKeyFile(wallet.KeyFile)
-		walletWrapper = openwallet.NewWalletWrapper(wallet, keyFile, wrapper)
+		keyFile := WalletKeyFile(wallet.KeyFile)
+		walletWrapper = NewWalletWrapper(wallet, keyFile, wrapper)
 
 	} else {
-		walletWrapper = openwallet.NewWalletWrapper(wrapper)
+		walletWrapper = NewWalletWrapper(wrapper)
 	}
 
 	return walletWrapper, nil

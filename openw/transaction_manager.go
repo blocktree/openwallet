@@ -452,7 +452,7 @@ func (wm *WalletManager) GetTransactions(appID string, offset, limit int, cols .
 		return nil, err
 	}
 
-	txWrapper := openwallet.NewTransactionWrapper(wrapper)
+	txWrapper := NewTransactionWrapper(wrapper)
 	trx, err := txWrapper.GetTransactions(offset, limit, cols...)
 	if err != nil {
 		return nil, err
@@ -469,7 +469,7 @@ func (wm *WalletManager) GetTransactionByWxID(appID, wxID string) (*openwallet.T
 		return nil, err
 	}
 
-	txWrapper := openwallet.NewTransactionWrapper(wrapper)
+	txWrapper := NewTransactionWrapper(wrapper)
 	trx, err := txWrapper.GetTransactions(0, -1, "WxID", wxID)
 	if err != nil || len(trx) == 0 {
 		return nil, err
@@ -486,7 +486,7 @@ func (wm *WalletManager) GetTxUnspent(appID string, offset, limit int, cols ...i
 		return nil, err
 	}
 
-	txWrapper := openwallet.NewTransactionWrapper(wrapper)
+	txWrapper := NewTransactionWrapper(wrapper)
 	trx, err := txWrapper.GetTxOutputs(offset, limit, cols...)
 	if err != nil {
 		return nil, err
@@ -503,7 +503,7 @@ func (wm *WalletManager) GetTxSpent(appID string, offset, limit int, cols ...int
 		return nil, err
 	}
 
-	txWrapper := openwallet.NewTransactionWrapper(wrapper)
+	txWrapper := NewTransactionWrapper(wrapper)
 	trx, err := txWrapper.GetTxInputs(offset, limit, cols...)
 	if err != nil {
 		return nil, err
