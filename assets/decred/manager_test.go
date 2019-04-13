@@ -34,10 +34,10 @@ func init() {
 
 	tw = NewWalletManager()
 
-	tw.config.walletAPI = "https://192.168.2.193:10066"
-	tw.config.chainAPI = "https://192.168.2.193:10065"
-	tw.config.rpcUser = "walletdcr"
-	tw.config.rpcPassword = "walletdcr"
+	tw.config.walletAPI = ""
+	tw.config.chainAPI = ""
+	tw.config.rpcUser = ""
+	tw.config.rpcPassword = ""
 	token := basicAuth(tw.config.rpcUser, tw.config.rpcPassword)
 	tw.walletClient = NewClient(tw.config.walletAPI, token, true)
 	tw.dcrdClient = NewClient(tw.config.chainAPI, token, false)

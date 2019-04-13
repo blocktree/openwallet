@@ -25,7 +25,7 @@ func testNewWalletManager() *WalletManager {
 
 	tw := NewWalletManager()
 
-	tw.Config.ServerAPI = "http://47.106.102.2:10015"
+	tw.Config.ServerAPI = ""
 	tw.WalletClient = NewClient(tw.Config.ServerAPI, "", true)
 
 	return tw

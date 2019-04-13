@@ -23,8 +23,7 @@ import (
 )
 
 func init() {
-	//serverAPI = "http://192.168.2.224:10056"
-	serverAPI = "http://47.106.34.230:10031"
+	serverAPI = ""
 	client = &Client{
 		BaseURL:     serverAPI,
 		Debug:       false,

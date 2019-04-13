@@ -30,8 +30,7 @@ var wm *WalletManager
 func init() {
 	wm = NewWalletManager()
 	wm.InitConfigFlow()
-	//wm.Config.ServerAPI = "https://test-ctz.solidwallet.io/api/v3"
-	wm.Config.ServerAPI = "http://47.106.102.2:10025/api/v3"
+	wm.Config.ServerAPI = "https://test-ctz.solidwallet.io/api/v3"
 	wm.Config.minTransfer = decimal.Zero
 	wm.Config.fees, _ = decimal.NewFromString("0.001")
 	wm.WalletClient = NewClient(wm.Config.ServerAPI, false)

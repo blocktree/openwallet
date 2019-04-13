@@ -26,11 +26,11 @@ import (
 
 func init() {
 	//serverAPI = "http://192.168.2.224:10056"
-	serverAPI = "http://192.168.2.193:10051"
+	serverAPI = ""
 	client = &Client{
 		BaseURL: serverAPI,
 		Debug:   true,
-		Auth:    "123",
+		Auth:    "",
 	}
 }
 
