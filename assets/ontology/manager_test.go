@@ -22,7 +22,7 @@ var (
 func init() {
 
 	tw = NewWalletManager()
-	//tw.Config.ServerAPI = "http://127.0.0.1:20336"
+	//tw.Config.ServerAPI = ""
 	tw.Config.RpcUser = ""
 	tw.Config.RpcPassword = ""
 	// restURL := "http://localhost:20336"

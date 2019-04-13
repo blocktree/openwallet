@@ -34,17 +34,17 @@ func init() {
 
 	tw = NewWalletManager()
 
-	tw.config.walletAPI = "https://192.168.2.193:10128"
-	tw.config.chainAPI = "https://192.168.2.193:10127"
-	tw.config.rpcUser = "wallethcd"
-	tw.config.rpcPassword = "wallethcdpw"
+	tw.config.walletAPI = ""
+	tw.config.chainAPI = ""
+	tw.config.rpcUser = ""
+	tw.config.rpcPassword = ""
 	token := basicAuth(tw.config.rpcUser, tw.config.rpcPassword)
 	tw.walletClient = NewClient(tw.config.walletAPI, token, true)
 	tw.hcdClient = NewClient(tw.config.chainAPI, token, false)
 }
 
 func TestCreateNewWallet(t *testing.T) {
-	_, _, err := tw.CreateNewWallet("ZBP", "123")
+	_, _, err := tw.CreateNewWallet("", "")
 	if err != nil {
 		t.Errorf("CreateNewWallet failed unexpected error: %v\n", err)
 		return
