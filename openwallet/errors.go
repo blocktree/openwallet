@@ -45,7 +45,7 @@ const (
 )
 
 type Error struct {
-	code int64
+	code uint64
 	err  string
 }
 
@@ -55,7 +55,7 @@ func (err *Error) Error() string {
 }
 
 //Error 错误信息
-func (err *Error) Code() int64 {
+func (err *Error) Code() uint64 {
 	return err.code
 }
 
@@ -69,7 +69,7 @@ func ConvertError(err error) *Error {
 }
 
 //Errorf 生成OWError
-func Errorf(code int64, format string, a ...interface{}) error {
+func Errorf(code uint64, format string, a ...interface{}) error {
 	err := &Error{
 		code: code,
 		err:  fmt.Sprintf(format, a...),
@@ -78,7 +78,7 @@ func Errorf(code int64, format string, a ...interface{}) error {
 }
 
 //NewError 生成OWError
-func NewError(code int64, text string) error {
+func NewError(code uint64, text string) error {
 	err := &Error{
 		code: code,
 		err:  text,
