@@ -78,7 +78,7 @@ func Errorf(code uint64, format string, a ...interface{}) error {
 }
 
 //NewError 生成OWError
-func NewError(code uint64, text string) error {
+func NewError(code uint64, text string) Error {
 	err := &Error{
 		code: code,
 		err:  text,
