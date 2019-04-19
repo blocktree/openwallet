@@ -103,7 +103,7 @@ type BlockScanner interface {
 
 	//ExtractTransactionData 提取交易单数据
 	//@required
-	ExtractTransactionData(txid string, scanAddressFunc BlockScanAddressFunc) (map[string][]*TxExtractData, error)
+	ExtractTransactionData(txid string, scanTargetFunc BlockScanTargetFunc) (map[string][]*TxExtractData, error)
 
 	//GetBalanceByAddress 查询地址余额
 	GetBalanceByAddress(address ...string) ([]*Balance, error)
@@ -347,7 +347,7 @@ func (bs *BlockScannerBase) GetScannedBlockHeight() uint64 {
 	return 0
 }
 
-func (bs *BlockScannerBase) ExtractTransactionData(txid string, scanAddressFunc BlockScanAddressFunc) (map[string][]*TxExtractData, error) {
+func (bs *BlockScannerBase) ExtractTransactionData(txid string, scanTargetFunc BlockScanTargetFunc) (map[string][]*TxExtractData, error) {
 	return nil, fmt.Errorf("ExtractTransactionData is not implemented")
 }
 
