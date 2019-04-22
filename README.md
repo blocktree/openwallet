@@ -6,7 +6,7 @@
 
 - [Introduction](#Introduction)
 - [Features](#Features)
-- [Quick Start]
+- [Protocol](./openwallet/docs/README.md)
 - [Resources](#Resources)
 - [Contributing](#Contributing)
 - [Sponsors](#Sponsors)
@@ -27,6 +27,22 @@ openwallet框架，未来将进化成为一个去中心化系统开发框架，�
 - **OWTP通信协议**。openwallet定义自己的加密通信协议，内置SM2协商密码机制，可以在非https环境下开启加密通信。
 
 ## Resources
+
+### Assets-Adapter 区块链资产适配器
+
+- [bitcoin-adapter](https://github.com/blocktree/bitcoin-adapter)
+- [litecoin-adapter](https://github.com/blocktree/litecoin-adapter)（继承bitcoin-adapter）
+- [ethereum-adapter](https://github.com/blocktree/ethereum-adapter)
+- [truechain-adapter](https://github.com/blocktree/truechain-adapter)（继承ethereum-adapter-adapter）
+- [qtum-adapter](https://github.com/blocktree/qtum-adapter)
+- [tron-adapter](https://github.com/blocktree/tron-adapter)
+- [more...](https://github.com/blocktree?utf8=%E2%9C%93&q=adapter)
+
+### 钱包开发者平台
+
+- [openwallet钱包服务开放平台](https://www.openwallet.cn)
+- [go-openw-sdk](https://github.com/blocktree/go-openw-sdk)
+- [go-openw-cli](https://github.com/blocktree/go-openw-cli)
 
 ## Contributing
 
