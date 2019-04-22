@@ -74,6 +74,7 @@ type SmartContractRawTransaction struct {
 
 //SmartContractDecoder 智能合约解析器
 type SmartContractDecoder interface {
+	ABIDAI
 
 	//GetTokenBalanceByAddress 查询地址token余额列表
 	GetTokenBalanceByAddress(contract SmartContract, address ...string) ([]*TokenBalance, error)
@@ -87,7 +88,6 @@ type SmartContractDecoder interface {
 }
 
 type SmartContractDecoderBase struct {
-	ABIDAI
 }
 
 func (decoder *SmartContractDecoderBase) GetTokenBalanceByAddress(contract SmartContract, address ...string) ([]*TokenBalance, error) {
