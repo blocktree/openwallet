@@ -96,8 +96,8 @@ func (decoder *SmartContractDecoderBase) GetTokenBalanceByAddress(contract Smart
 // ABIDAI abi data access interface
 type ABIDAI interface {
 	//@require
-	Get(address string) ABIInfo
-	Set(address string, abi ABIInfo) error
+	GetABIInfo(address string) ABIInfo
+	SetABIInfo(address string, abi ABIInfo) error
 }
 
 // ABIInfo abi model
