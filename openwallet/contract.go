@@ -87,16 +87,22 @@ type SmartContractDecoder interface {
 }
 
 type SmartContractDecoderBase struct {
+	ABIDAI
 }
 
 func (decoder *SmartContractDecoderBase) GetTokenBalanceByAddress(contract SmartContract, address ...string) ([]*TokenBalance, error) {
 	return nil, fmt.Errorf("GetTokenBalanceByAddress not implement")
 }
 
+func (decoder *SmartContractDecoderBase) GetABIInfo(address string) *ABIInfo {
+	fmt.Errorf("GetABIInfo not implement")
+	return nil
+}
+
 // ABIDAI abi data access interface
 type ABIDAI interface {
 	//@require
-	GetABIInfo(address string) ABIInfo
+	GetABIInfo(address string) *ABIInfo
 	SetABIInfo(address string, abi ABIInfo) error
 }
 
