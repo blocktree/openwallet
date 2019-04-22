@@ -114,6 +114,6 @@ type ABIDAI interface {
 
 // ABIInfo abi model
 type ABIInfo struct {
-	address string
-	abi     interface{}
+	Address string
+	ABI     interface{}
 }
