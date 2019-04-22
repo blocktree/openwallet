@@ -18,8 +18,9 @@ package openwallet
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/blocktree/openwallet/crypto"
 	"strings"
+
+	"github.com/blocktree/openwallet/crypto"
 )
 
 type SmartContract struct {
@@ -48,7 +49,7 @@ type SmartContractRawTransaction struct {
 	RawHex      string          `json:"rawHex"`     //区块链协议构造的交易原生数据
 	Account     *AssetsAccount  `json:"account"`    //@required 创建交易单的账户
 	Fees        string          `json:"fees"`       //手续费
-	Signatures  []*KeySignature `json:"signatures"`   //拥有者accountID: []未花签名
+	Signatures  []*KeySignature `json:"signatures"` //拥有者accountID: []未花签名
 	IsBuilt     bool            `json:"isBuilt"`    //是否完成构建建议单
 	IsCompleted bool            `json:"isComplete"` //是否完成所有签名
 	IsSubmit    bool            `json:"isSubmit"`   //是否已广播
@@ -86,9 +87,21 @@ type SmartContractDecoder interface {
 }
 
 type SmartContractDecoderBase struct {
-
 }
 
 func (decoder *SmartContractDecoderBase) GetTokenBalanceByAddress(contract SmartContract, address ...string) ([]*TokenBalance, error) {
 	return nil, fmt.Errorf("GetTokenBalanceByAddress not implement")
+}
+
+// ABIDAI abi data access interface
+type ABIDAI interface {
+	//@require
+	GetABIInfo(address string) ABIInfo
+	SetABIInfo(address string, abi ABIInfo) error
+}
+
+// ABIInfo abi model
+type ABIInfo struct {
+	address string
+	abi     string
 }
