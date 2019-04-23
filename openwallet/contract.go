@@ -74,6 +74,7 @@ type SmartContractRawTransaction struct {
 
 //SmartContractDecoder 智能合约解析器
 type SmartContractDecoder interface {
+	ABIDAI
 
 	//GetTokenBalanceByAddress 查询地址token余额列表
 	GetTokenBalanceByAddress(contract SmartContract, address ...string) ([]*TokenBalance, error)
@@ -93,15 +94,26 @@ func (decoder *SmartContractDecoderBase) GetTokenBalanceByAddress(contract Smart
 	return nil, fmt.Errorf("GetTokenBalanceByAddress not implement")
 }
 
+// GetABIInfo get abi
+func (decoder *SmartContractDecoderBase) GetABIInfo(address string) (*ABIInfo, error) {
+	return nil, fmt.Errorf("GetABIInfo not implement")
+}
+
+// SetABIInfo set abi
+func (decoder *SmartContractDecoderBase) SetABIInfo(address string, abi ABIInfo) error {
+	return fmt.Errorf("GetABIInfo not implement")
+}
+
 // ABIDAI abi data access interface
 type ABIDAI interface {
 	//@require
-	GetABIInfo(address string) ABIInfo
+	GetABIInfo(address string) (*ABIInfo, error)
+	//@require
 	SetABIInfo(address string, abi ABIInfo) error
 }
 
 // ABIInfo abi model
 type ABIInfo struct {
-	address string
-	abi     string
+	Address string
+	ABI     interface{}
 }
