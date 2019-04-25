@@ -16,6 +16,7 @@
 package icon
 
 import (
+	"encoding/hex"
 	"github.com/blocktree/openwallet/log"
 	"testing"
 	"github.com/blocktree/openwallet/openwallet"
@@ -329,4 +330,19 @@ func TestWalletManager_GetLastBlock(t *testing.T) {
 		return
 	}
 	log.Infof("block: %+v", block)
+}
+
+
+func TestWalletManager_TransferBigNum(t *testing.T) {
+
+	from := "hx2006f91de4cd0b9ce74cb00a06e66eaeb44c70b1"
+	to := "hxb12addba58c934ff924aa87ee65d06ee20f89eb8"
+	value := "48369.25576"
+	prv, _ := hex.DecodeString("00000000000000000000000000000001")
+
+	ret, err := wm.Transfer(prv, from, to, value, 100000, 100)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(ret)
 }

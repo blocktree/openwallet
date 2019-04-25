@@ -9,8 +9,8 @@ require (
 	github.com/Sereal/Sereal v0.0.0-20190408200019-e0834539921c // indirect
 	github.com/asdine/storm v2.1.2+incompatible
 	github.com/astaxie/beego v1.11.1
-	github.com/blocktree/go-owcdrivers v1.0.0
-	github.com/blocktree/go-owcrypt v1.0.0
+	github.com/blocktree/go-owcdrivers v1.0.4
+	github.com/blocktree/go-owcrypt v1.0.1
 	github.com/bndr/gotabulate v1.1.2
 	github.com/bradfitz/gomemcache v0.0.0-20190329173943-551aad21a668
 	github.com/btcsuite/btcd v0.0.0-20190315201642-aa6e0f35703c
@@ -41,10 +41,7 @@ require (
 	github.com/siddontang/ledisdb v0.0.0-20190202134119-8ceb77e66a92
 	github.com/ssdb/gossdb v0.0.0-20180723034631-88f6b59b84ec
 	github.com/streadway/amqp v0.0.0-20190404075320-75d898a42a94
-	github.com/stretchr/testify v1.3.0 // indirect
 	github.com/tidwall/gjson v1.2.1
-	github.com/tidwall/match v1.0.1 // indirect
-	github.com/tidwall/pretty v0.0.0-20190325153808-1166b9ac2b65 // indirect
 	github.com/tyler-smith/go-bip39 v1.0.0
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
 	go.etcd.io/bbolt v1.3.2
