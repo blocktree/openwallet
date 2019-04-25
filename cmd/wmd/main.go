@@ -26,14 +26,11 @@ import (
 
 const (
 	clientIdentifier = "wmd" // Client identifier to advertise over the network
-	version          = "0.3.0"
 )
 
 var (
-	// Git SHA1 commit hash of the release (set via linker flags)
-	gitCommit = ""
 	// The app that holds all commands and flags.
-	app = utils.NewApp(gitCommit, "the Wallet Manager Driver command line interface")
+	app = utils.NewApp(commands.GitRev, "the Wallet Manager Driver command line interface")
 )
 
 func init() {
@@ -41,10 +38,11 @@ func init() {
 	app.Name = "wmd"
 	app.Action = wmd
 	app.HideVersion = true // we have a command to print the version
-	app.Copyright = "Copyright 2018 The openwallet Authors"
-	app.Version = version
+	app.Copyright = "Copyright 2019 The openwallet Authors"
+	app.Version = commands.Version
 	app.Commands = []cli.Command{
 		commands.CmdWallet,
+		commands.CmdVersion,
 		//commands.CmdNode,
 		//commands.CmdConfig,
 		//commands.CmdMerchant,

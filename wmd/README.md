@@ -13,13 +13,15 @@ The requirements to build openwallet are:
 
 ### 安装xgo（支持跨平台编译C代码）
 
-[官方github](https://github.com/karalabe/xgo)
+[官方github（目前还不支持go module）](https://github.com/karalabe/xgo)
+[支持go module的xgo fork](https://github.com/gythialy/xgo)
 
 xgo的使用依赖docker。并且把要跨平台编译的项目文件加入到File sharing。
 
 ```shell
 
-$ go get github.com/karalabe/xgo
+# 官方的目前还不支持go module编译，所以我们用了别人改造后能够给支持的fork版
+$ go get -u github.com/gythialy/xgo
 ...
 $ xgo -h
 ...
@@ -42,14 +44,11 @@ wmd为了实现对多币种的钱包操作，规范了以下接口：
 
 ```shell
 
-# 进入目录
-$ $GOPATH/src/github.com/blocktree/openwallet/cmd/wmd
+# 本地系统编译
+$ make clean build
 
-# 全部平台版本编译
-$ xgo .
-
-# 或自编译某个系统的版本
-$ xgo --targets=linux/amd64 .
+# 跨平台编译wmd，更多可选平台可修改Makefile的$TARGETS变量
+$ make clean wmd
 
 ```
 

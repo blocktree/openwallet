@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/tidwall/gjson"
+	"math/big"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -114,9 +115,18 @@ func (wm *WalletManager) CalculateTxHash(from, to, value string, stepLimit, nonc
 	tx_temp["to"] = to
 
 	vd, _ := decimal.NewFromString(value)
-	v := vd.Mul(coinDecimal).IntPart()
-	hvalue := fmt.Sprintf("%x", v)
+	//v := vd.Mul(coinDecimal).IntPart()
+	vstr := vd.Mul(coinDecimal).String()
+	bigVal := new(big.Int)
+	bigVal.SetString(vstr, 10)
+	hvalue := fmt.Sprintf("%x", bigVal)
 	tx_temp["value"] = "0x" + hvalue
+
+	//bigVal2 := new(big.Int)
+	//bigVal2.SetString(hvalue, 16)
+	//dec2 := decimal.NewFromBigInt(bigVal2, 0)
+	//dec2str := dec2.String()
+	//fmt.Println(dec2str)
 
 	//把key 按首字母升序排序，否则交易hash就不对，导致address match错误
 	var keys []string

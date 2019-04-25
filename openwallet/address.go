@@ -16,8 +16,17 @@
 package openwallet
 
 import (
+	"fmt"
 	"github.com/tidwall/gjson"
 )
+
+//AddressDecoderV2
+type AddressDecoderV2 interface {
+	//AddressDecode 地址解析
+	AddressDecode(addr string, opts ...interface{}) ([]byte, error)
+	//AddressEncode 地址编码
+	AddressEncode(pub []byte, opts ...interface{}) (string, error)
+}
 
 type AddressDecoder interface {
 
@@ -33,22 +42,22 @@ type AddressDecoder interface {
 
 //Address OpenWallet地址
 type Address struct {
-	AccountID   string    `json:"accountID" storm:"index"` //钱包ID
-	Address     string    `json:"address" storm:"id"`      //地址字符串
-	PublicKey   string    `json:"publicKey"`               //地址公钥/赎回脚本
-	Alias       string    `json:"alias"`                   //地址别名，可绑定用户
-	Tag         string    `json:"tag"`                     //标签
-	Index       uint64    `json:"index"`                   //账户ID，索引位
-	HDPath      string    `json:"hdPath"`                  //地址公钥根路径
-	WatchOnly   bool      `json:"watchOnly"`               //是否观察地址，true的时候，Index，RootPath，Alias都没有。
-	Symbol      string    `json:"symbol"`                  //币种类别
-	Balance     string    `json:"balance"`                 //余额
-	IsMemo      bool      `json:"isMemo"`                  //是否备注
-	Memo        string    `json:"memo"`                    //备注
+	AccountID string `json:"accountID" storm:"index"` //钱包ID
+	Address   string `json:"address" storm:"id"`      //地址字符串
+	PublicKey string `json:"publicKey"`               //地址公钥/赎回脚本
+	Alias     string `json:"alias"`                   //地址别名，可绑定用户
+	Tag       string `json:"tag"`                     //标签
+	Index     uint64 `json:"index"`                   //账户ID，索引位
+	HDPath    string `json:"hdPath"`                  //地址公钥根路径
+	WatchOnly bool   `json:"watchOnly"`               //是否观察地址，true的时候，Index，RootPath，Alias都没有。
+	Symbol    string `json:"symbol"`                  //币种类别
+	Balance   string `json:"balance"`                 //余额
+	IsMemo    bool   `json:"isMemo"`                  //是否备注
+	Memo      string `json:"memo"`                    //备注
 	//CreateAt    time.Time `json:"createdAt"`//创建时间
-	CreatedTime int64     `json:"createdTime"` //创建时间
-	IsChange    bool      `json:"isChange"`  //是否找零地址
-	ExtParam    string    `json:"extParam"`  //扩展参数，用于调用智能合约，json结构
+	CreatedTime int64  `json:"createdTime"` //创建时间
+	IsChange    bool   `json:"isChange"`    //是否找零地址
+	ExtParam    string `json:"extParam"`    //扩展参数，用于调用智能合约，json结构
 
 	//核心地址指针
 	Core interface{}
@@ -74,4 +83,18 @@ func NewAddress(json gjson.Result) *Address {
 //ImportAddress 待导入的地址记录
 type ImportAddress struct {
 	Address `storm:"inline"`
+}
+
+//AddressDecoderV2
+type AddressDecoderV2Base struct {
+}
+
+//AddressDecode 地址解析
+func (dec *AddressDecoderV2Base) AddressDecode(addr string, opts ...interface{}) ([]byte, error) {
+	return nil, fmt.Errorf("AddressDecode not implement")
+}
+
+//AddressEncode 地址编码
+func (dec *AddressDecoderV2Base) AddressEncode(pub []byte, opts ...interface{}) (string, error) {
+	return "", fmt.Errorf("AddressEncode not implement")
 }
