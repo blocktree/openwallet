@@ -19,14 +19,15 @@ import "fmt"
 
 const (
 	/* 交易类别 */
-	ErrInsufficientBalanceOfAccount = 2001 //账户余额不足
-	ErrInsufficientBalanceOfAddress = 2002 //地址余额不足
-	ErrInsufficientFees             = 2003 //手续费不足
-	ErrDustLimit                    = 2004 //限制粉尘攻击
-	ErrCreateRawTransactionFailed   = 2005 //创建原始交易单失败
-	ErrSignRawTransactionFailed     = 2006 //签名原始交易单失败
-	ErrVerifyRawTransactionFailed   = 2007 //验证原始交易单失败
-	ErrSubmitRawTransactionFailed   = 2008 //广播原始交易单失败
+	ErrInsufficientBalanceOfAccount      = 2001 //账户余额不足
+	ErrInsufficientBalanceOfAddress      = 2002 //地址余额不足
+	ErrInsufficientFees                  = 2003 //手续费不足
+	ErrDustLimit                         = 2004 //限制粉尘攻击
+	ErrCreateRawTransactionFailed        = 2005 //创建原始交易单失败
+	ErrSignRawTransactionFailed          = 2006 //签名原始交易单失败
+	ErrVerifyRawTransactionFailed        = 2007 //验证原始交易单失败
+	ErrSubmitRawTransactionFailed        = 2008 //广播原始交易单失败
+	ErrInsufficientTokenBalanceOfAddress = 2009 //地址代币余额不足
 
 	/* 账户类别 */
 	ErrAccountNotFound    = 3001 //账户不存在
@@ -61,6 +62,11 @@ func (err *Error) Code() uint64 {
 
 //ConvertError error转OWError
 func ConvertError(err error) *Error {
+
+	if err == nil {
+		return nil
+	}
+
 	owErr, ok := err.(*Error)
 	if !ok {
 		return &Error{code: ErrUnknownException, err: err.Error()}
@@ -69,7 +75,7 @@ func ConvertError(err error) *Error {
 }
 
 //Errorf 生成OWError
-func Errorf(code uint64, format string, a ...interface{}) error {
+func Errorf(code uint64, format string, a ...interface{}) *Error {
 	err := &Error{
 		code: code,
 		err:  fmt.Sprintf(format, a...),
@@ -78,8 +84,8 @@ func Errorf(code uint64, format string, a ...interface{}) error {
 }
 
 //NewError 生成OWError
-func NewError(code uint64, text string) Error {
-	err := Error{
+func NewError(code uint64, text string) *Error {
+	err := &Error{
 		code: code,
 		err:  text,
 	}

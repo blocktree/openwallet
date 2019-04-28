@@ -24,58 +24,6 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-//TransactionDecoder 交易单解析器
-type TransactionDecoder interface {
-	//SendRawTransaction 广播交易单
-	//SendTransaction func(amount, feeRate string, to []string, wallet *Wallet, account *AssetsAccount) (*RawTransaction, error)
-	//CreateRawTransaction 创建交易单
-	CreateRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error
-	//SignRawTransaction 签名交易单
-	SignRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error
-	//SubmitRawTransaction 广播交易单
-	SubmitRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) (*Transaction, error)
-	//VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
-	VerifyRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error
-	//GetRawTransactionFeeRate 获取交易单的费率
-	GetRawTransactionFeeRate() (feeRate string, unit string, err error)
-	//CreateSummaryRawTransaction 创建汇总交易，返回原始交易单数组
-	CreateSummaryRawTransaction(wrapper WalletDAI, sumRawTx *SummaryRawTransaction) ([]*RawTransaction, error)
-}
-
-//TransactionDecoderBase 实现TransactionDecoder的基类
-type TransactionDecoderBase struct {
-}
-
-//CreateRawTransaction 创建交易单
-func (decoder *TransactionDecoderBase) CreateRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error {
-	return fmt.Errorf("not implement")
-}
-
-//SignRawTransaction 签名交易单
-func (decoder *TransactionDecoderBase) SignRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error {
-	return fmt.Errorf("not implement")
-}
-
-//SendRawTransaction 广播交易单
-func (decoder *TransactionDecoderBase) SubmitRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) (*Transaction, error) {
-	return nil, fmt.Errorf("not implement")
-}
-
-//VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
-func (decoder *TransactionDecoderBase) VerifyRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error {
-	return fmt.Errorf("not implement")
-}
-
-//GetRawTransactionFeeRate 获取交易单的费率
-func (decoder *TransactionDecoderBase) GetRawTransactionFeeRate() (feeRate string, unit string, err error) {
-	return "", "", fmt.Errorf("not implement")
-}
-
-//CreateSummaryRawTransaction 创建汇总交易
-func (decoder *TransactionDecoderBase) CreateSummaryRawTransaction(wrapper WalletDAI, sumRawTx *SummaryRawTransaction) ([]*RawTransaction, error) {
-	return nil, fmt.Errorf("CreateSummaryRawTransaction not implement")
-}
-
 //RawTransaction 原始交易单
 //
 // Workflow：
@@ -196,16 +144,16 @@ func (tx *Transaction) GetExtParam() gjson.Result {
 
 //SummaryRawTransaction 汇总交易
 type SummaryRawTransaction struct {
-	Coin              Coin           `json:"coin"`              //@required 区块链类型标识
-	FeeRate           string         `json:"feeRate"`           //自定义费率
-	SummaryAddress    string         `json:"summaryAddress"`    //@required 目的地址:转账数量
-	MinTransfer       string         `json:"minTransfer"`       //最低转账额，默认0
-	RetainedBalance   string         `json:"retainedBalance"`   //账户的地址保留余额，默认0
-	Account           *AssetsAccount `json:"account"`           //@required 创建交易单的账户
-	AddressStartIndex int            `json:"addressStartIndex"` //汇总账户地址开始位置
-	AddressLimit      int            `json:"addressLimit"`      //汇总账户地址控制数量
-	Confirms          uint64         `json:"confirms"`          //汇总的未花交易大于确认数
-	//IgnoreAddresses   []string       `json:"ignoreAddresses"`   //要忽略的地址
+	Coin               Coin                `json:"coin"`               //@required 区块链类型标识
+	FeeRate            string              `json:"feeRate"`            //自定义费率
+	SummaryAddress     string              `json:"summaryAddress"`     //@required 目的地址:转账数量
+	MinTransfer        string              `json:"minTransfer"`        //最低转账额，默认0
+	RetainedBalance    string              `json:"retainedBalance"`    //账户的地址保留余额，默认0
+	Account            *AssetsAccount      `json:"account"`            //@required 创建交易单的账户
+	AddressStartIndex  int                 `json:"addressStartIndex"`  //汇总账户地址开始位置
+	AddressLimit       int                 `json:"addressLimit"`       //汇总账户地址控制数量
+	Confirms           uint64              `json:"confirms"`           //汇总的未花交易大于确认数
+	FeesSupportAccount *FeesSupportAccount `json:"feesSupportAccount"` //手续费支持账户
 }
 
 //GenTransactionWxID 生成交易单的WxID，格式为 base64(sha1(tx_{txID}_{symbol}_contractID}))
@@ -334,4 +282,15 @@ func NewWithdraw(json gjson.Result) *Withdraw {
 	w.Memo = gjson.Get(json.Raw, "memo").String()
 	w.Password = gjson.Get(json.Raw, "password").String()
 	return w
+}
+
+type RawTransactionWithError struct {
+	RawTx *RawTransaction `json:"rawTx"`
+	Error *Error          `json:"error"`
+}
+
+type FeesSupportAccount struct {
+	AccountID        string `json:"accountID"`        //提供手续费支持的账户
+	FixSupportAmount string `json:"fixSupportAmount"` //每次转账固定数量
+	FeesSupportScale string `json:"feesScale"`        //每次转账消耗手续费的倍率
 }
