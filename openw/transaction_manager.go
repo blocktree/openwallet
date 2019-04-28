@@ -594,3 +594,72 @@ func (wm *WalletManager) CreateSummaryTransaction(
 
 	return rawTxArray, nil
 }
+
+// CreateSummaryTransaction
+func (wm *WalletManager) CreateSummaryRawTransactionWithError(
+	appID, walletID, accountID, summaryAddress, minTransfer, retainedBalance, feeRate string,
+	start, limit int,
+	contract *openwallet.SmartContract,
+	feeSupportAccount *openwallet.FeesSupportAccount,
+) ([]*openwallet.RawTransactionWithError, error) {
+
+	var (
+		coin openwallet.Coin
+	)
+
+	wrapper, err := wm.newWalletWrapper(appID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := wrapper.GetAssetsAccountInfo(accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	assetsMgr, err := GetAssetsAdapter(account.Symbol)
+	if err != nil {
+		return nil, err
+	}
+
+	if contract != nil {
+		coin = openwallet.Coin{
+			Symbol:     account.Symbol,
+			ContractID: contract.ContractID,
+			IsContract: true,
+			Contract:   *contract,
+		}
+	} else {
+		coin = openwallet.Coin{
+			Symbol:     account.Symbol,
+			ContractID: "",
+			IsContract: false,
+		}
+	}
+
+	sumTx := openwallet.SummaryRawTransaction{
+		Coin:               coin,
+		Account:            account,
+		FeeRate:            feeRate,
+		SummaryAddress:     summaryAddress,
+		MinTransfer:        minTransfer,
+		RetainedBalance:    retainedBalance,
+		AddressStartIndex:  start,
+		AddressLimit:       limit,
+		FeesSupportAccount: feeSupportAccount,
+	}
+
+	txdecoder := assetsMgr.GetTransactionDecoder()
+	if txdecoder == nil {
+		return nil, fmt.Errorf("[%s] is not support transaction. ", account.Symbol)
+	}
+
+	rawTxArray, err := txdecoder.CreateSummaryRawTransactionWithError(wrapper, &sumTx)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Debug("transaction has been created successfully")
+
+	return rawTxArray, nil
+}
