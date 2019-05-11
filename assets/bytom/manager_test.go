@@ -16,18 +16,15 @@
 package bytom
 
 import (
+	"fmt"
 	"github.com/shopspring/decimal"
-	"testing"
-	"path/filepath"
 	"io/ioutil"
+	"path/filepath"
+	"testing"
 )
 
 func init() {
-	serverAPI = ""
-	client = &Client{
-		BaseURL:     serverAPI,
-		Debug:       false,
-	}
+	loadConfig()
 }
 
 func TestCreateNewWallet(t *testing.T) {
@@ -261,7 +258,6 @@ func TestBackupWallet(t *testing.T) {
 	}
 }
 
-
 func TestGetWalletList(t *testing.T) {
 	accounts, err := GetWalletList(assetsID_btm)
 	if err != nil {
@@ -277,26 +273,26 @@ func TestGetWalletList(t *testing.T) {
 func TestSignMessage(t *testing.T) {
 	tests := []struct {
 		accountAlias string
-		message    string
-		password    string
+		message      string
+		password     string
 		tag          string
 	}{
 		{
 			accountAlias: "rocky",
-			message:    "this is a test message",
-			password:    "12345678",
+			message:      "this is a test message",
+			password:     "12345678",
 			tag:          "valid",
 		},
 		{
 			accountAlias: "bytom",
-			message:    "hello world",
-			password:    "12345",
+			message:      "hello world",
+			password:     "12345",
 			tag:          "invalid",
 		},
 		{
 			accountAlias: "john",
-			message:    "hello world",
-			password:    "12345",
+			message:      "hello world",
+			password:     "12345",
 			tag:          "not test account",
 		},
 	}
@@ -329,4 +325,29 @@ func TestRestoreWallet(t *testing.T) {
 	} else {
 		t.Logf("RestoreWallet success")
 	}
+}
+
+func TestListUnspent(t *testing.T) {
+	utxos, err := ListUnspent("", 0, 1000)
+	if err != nil {
+		t.Errorf("ListUnspent failed unexpected error: %v\n", err)
+		return
+	}
+
+	for _, utxo := range utxos {
+		fmt.Printf("utxo: %+v \n", utxo)
+	}
+}
+
+func TestSendSummaryTransaction(t *testing.T) {
+	txid, err := SendSummaryTransaction(
+		"",
+		"",
+		assetsID_btm,
+		"")
+	if err != nil {
+		t.Errorf("SendSummaryTransaction failed unexpected error: %v\n", err)
+		return
+	}
+	fmt.Printf("txid: %+v \n", txid)
 }
