@@ -16,13 +16,13 @@
 package bytom
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/astaxie/beego/config"
+	"github.com/blocktree/openwallet/common/file"
 	"path/filepath"
 	"strings"
-	"github.com/astaxie/beego/config"
-	"encoding/json"
-	"github.com/blocktree/openwallet/common/file"
-	"fmt"
-	"errors"
 )
 
 /*
@@ -83,10 +83,10 @@ func newConfigFile(
 
 	//	生成配置
 	configMap := map[string]interface{}{
-		"apiURL":        apiURL,
+		"apiURL": apiURL,
 		//"walletPath":    walletPath,
-		"sumAddress":    sumAddress,
-		"threshold":     threshold,
+		"sumAddress": sumAddress,
+		"threshold":  threshold,
 	}
 
 	filepath.Join()
@@ -119,12 +119,12 @@ func newNodeConfigFile(
 
 	//	生成配置
 	configMap := map[string]interface{}{
-		"hostPort":        hostPort,
-		"hostDatadir":     hostDatadir,
-		"dockerDatadir":   dockerDatadir,
-		"containerName":   containerName,
-		"imageName":       imageName,
-		"dockerfilePath":  dockerfilePath,
+		"hostPort":       hostPort,
+		"hostDatadir":    hostDatadir,
+		"dockerDatadir":  dockerDatadir,
+		"containerName":  containerName,
+		"imageName":      imageName,
+		"dockerfilePath": dockerfilePath,
 	}
 
 	filepath.Join()
@@ -190,12 +190,11 @@ func printNodeConfig() error {
 		return errors.New("config file not create，please run: wmd config -s <symbol> ")
 	}
 
-
-	hostPort       := c.String("hostPort")
-	hostDatadir    := c.String("hostDatadir")
-	dockerDatadir  := c.String("dockerDatadir")
-	containerName  := c.String("containerName")
-	imageName      := c.String("imageName")
+	hostPort := c.String("hostPort")
+	hostDatadir := c.String("hostDatadir")
+	dockerDatadir := c.String("dockerDatadir")
+	containerName := c.String("containerName")
+	imageName := c.String("imageName")
 	dockerfilePath := c.String("dockerfilePath")
 
 	fmt.Printf("-----------------------------------------------------------\n")
@@ -210,4 +209,3 @@ func printNodeConfig() error {
 	return nil
 
 }
-

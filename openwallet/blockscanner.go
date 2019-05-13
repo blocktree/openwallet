@@ -252,12 +252,19 @@ func (bs *BlockScannerBase) SetRescanBlockHeight(height uint64) error {
 //SetTask
 func (bs *BlockScannerBase) SetTask(task func()) {
 
-	if bs.scanTask == nil {
-		//创建定时器
-		task := timer.NewTask(bs.PeriodOfTask, task)
-		bs.scanTask = task
-	}
+	//if bs.scanTask == nil {
+	//	//创建定时器
+	//	task := timer.NewTask(bs.PeriodOfTask, task)
+	//	bs.scanTask = task
+	//}
 
+	//运行中先关闭定时器
+	if bs.scanTask != nil && bs.scanTask.Running() {
+		bs.scanTask.Stop()
+		bs.scanTask = nil
+	}
+	taskTimer := timer.NewTask(bs.PeriodOfTask, task)
+	bs.scanTask = taskTimer
 }
 
 //Run 运行

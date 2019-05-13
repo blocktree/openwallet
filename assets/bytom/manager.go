@@ -28,6 +28,7 @@ import (
 	"github.com/tidwall/gjson"
 	"log"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -56,6 +57,8 @@ var (
 	cycleSeconds = time.Second * 10
 	// 节点客户端
 	client *Client
+	//使用utxo限制
+	unspentLimit = 50
 )
 
 var (
@@ -431,12 +434,12 @@ func SummaryWallets() {
 				//避免临界值的错误，减去1个
 				//balance = balance.Sub(coinDecimal)
 
-				txID, err := SendTransaction(w.AccountID, sumAddress, assetsID_btm, uint64(balance.IntPart()), wallet.Password, false)
+				txIDs, err := SendSummaryTransaction(w.AccountID, sumAddress, assetsID_btm, wallet.Password)
 				if err != nil {
 					log.Printf("Summary account[%s]unexpected error: %v\n", w.AccountID, err)
 					continue
 				} else {
-					log.Printf("Summary account[%s]successfully，Received Address[%s], TXID：%s\n", w.AccountID, sumAddress, txID)
+					log.Printf("Summary account[%s]successfully，Received Address[%s], TXID：%s\n", w.AccountID, sumAddress, strings.Join(txIDs, ","))
 				}
 			} else {
 				log.Printf("Wallet Account[%s]-[%s]Current Balance: %v，below threshold: %v\n", w.Alias, w.AccountID, balance.Div(coinDecimal), threshold.Div(coinDecimal))
@@ -507,6 +510,71 @@ func BuildTransaction(from, to, assetsID string, amount, fees uint64) (string, e
 				"type": "control_address",
 			},
 		}, 1, 0, false}
+
+	result, err := client.Call("build-transaction", request)
+	if err != nil {
+		return "", err
+	}
+
+	err = isError(result)
+	if err != nil {
+		return "", err
+	}
+
+	tx := gjson.GetBytes(result, "data").Raw
+
+	return tx, err
+
+}
+
+//BuildSummaryTransaction 创建汇总交易单
+func BuildSummaryTransaction(to, assetsID string, amount uint64, utxo []*Unspent) (string, error) {
+
+	/*
+		{
+		    "base_transaction": null,
+		    "actions": [
+		        {
+		            "type": "spend_account_unspent_output",
+		            "output_id": "01c6ccc6f522228cd4518bba87e9c43fbf55fdf7eb17f5aa300a037db7dca0cb"
+		        },
+		        {
+		            "amount": 41243000000,
+		            "asset_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+		            "address": "sm1qmw8c5s29zlexknfahrze3ghvlqrtn2huuntvpn",
+		            "type": "control_address"
+		        }
+		    ],
+		    "ttl": 0,
+		    "time_range": 0
+		}
+	*/
+
+	actions := make([]map[string]interface{}, 0)
+
+	//utxo作为输入
+	for _, u := range utxo {
+		actions = append(actions, map[string]interface{}{
+			"output_id": u.Id,
+			"type":      "spend_account_unspent_output",
+		})
+	}
+
+	//输出地址
+	actions = append(actions, map[string]interface{}{
+		"amount":   amount,
+		"asset_id": assetsID,
+		"address":  to,
+		"type":     "control_address",
+	})
+
+	request := struct {
+		BaseTransaction interface{}              `json:"base_transaction"`
+		Actions         []map[string]interface{} `json:"actions"`
+		TTL             uint64                   `json:"ttl"`
+		TimeRange       uint64                   `json:"time_range"`
+		UseUnconfirmed  bool                     `json:"use_unconfirmed"`
+	}{nil, actions, 1, 0, false}
 
 	result, err := client.Call("build-transaction", request)
 	if err != nil {
@@ -612,12 +680,11 @@ func SendTransaction(accountID, to, assetsID string, amount uint64, password str
 		amount = amount - totalFees
 	}
 
-	//添加手续重新建立交易单
-	txAddFees, err := BuildTransaction(accountID, to, assetsID, amount, totalFees * 2)
-	if err != nil {
-		return "", err
-	}
+	//第一次build会把utxo锁定，所以等待1秒，后解锁
+	time.Sleep(1 * time.Second)
 
+	//添加手续重新建立交易单
+	txAddFees, err := BuildTransaction(accountID, to, assetsID, amount, totalFees*2)
 	if err != nil {
 		return "", err
 	}
@@ -650,6 +717,100 @@ func SendTransaction(accountID, to, assetsID string, amount uint64, password str
 	fmt.Printf("Submit Transaction Successfully\n")
 
 	return txID, nil
+}
+
+func SendSummaryTransaction(accountID, to, assetsID string, password string) ([]string, error) {
+
+	var (
+		offset         = 0
+		txids     = make([]string, 0)
+		totalSent = uint64(0)
+		amount    = uint64(0)
+	)
+
+	for {
+
+		amount = uint64(0)
+
+		//查找账户的utxo
+		unspents, err := ListUnspent(accountID, offset, unspentLimit)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		if len(unspents) == 0 {
+			//end
+			break
+		}
+
+		offset = offset + unspentLimit
+
+		for _, u := range unspents {
+			amount = amount + u.Amount
+		}
+
+		//建立交易单
+		tx, err := BuildSummaryTransaction(to, assetsID, amount, unspents)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		totalFees, err := EstimateTransactionGas(tx)
+
+		//减去2倍手续费
+		amount = amount - totalFees*2
+
+		//第一次build会把utxo锁定，所以等待1秒，后解锁
+		time.Sleep(1 * time.Second)
+
+		//添加手续重新建立交易单
+		txAddFees, err := BuildSummaryTransaction(to, assetsID, amount, unspents)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		fmt.Printf("Build Transaction Successfully\n")
+
+		fmt.Printf("-----------------------------------------------\n")
+		fmt.Printf("From AccountID: %s\n", accountID)
+		fmt.Printf("To Address: %s\n", to)
+		fmt.Printf("Send: %v\n", decimal.New(int64(amount), 0).Div(coinDecimal).String())
+		fmt.Printf("Fees: %v\n", decimal.New(int64(totalFees), 0).Div(coinDecimal).String())
+		fmt.Printf("Receive: %v\n", decimal.New(int64(amount), 0).Div(coinDecimal).String())
+		fmt.Printf("-----------------------------------------------\n")
+
+		//签名交易单
+		signTx, err := SignTransaction(txAddFees, password)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		fmt.Printf("Sign Transaction Successfully\n")
+
+		//广播交易单
+		txRaw := gjson.Get(signTx, "transaction.raw_transaction").String()
+		txID, err := SubmitTransaction(txRaw)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		//fmt.Printf("signTx: %v \n", signTx)
+		//txID := ""
+
+		totalSent = totalSent + amount
+
+		txids = append(txids, txID)
+
+		fmt.Printf("Submit Transaction Successfully\n")
+
+	}
+
+	fmt.Printf("Total summary amount: %s\n", decimal.New(int64(totalSent), 0).Div(coinDecimal).String())
+
+	return txids, nil
 }
 
 //GetTransactions 获取交易列表
@@ -781,6 +942,40 @@ func SignMessage(address, message, password string) (string, error) {
 	return signature, nil
 }
 
+//ListUnspent 获取指定账户的utxo
+func ListUnspent(accountID string, from, count int) ([]*Unspent, error) {
+
+	var (
+		utxo = make([]*Unspent, 0)
+	)
+
+	request := struct {
+		Unconfirmed    bool   `json:"unconfirmed"`
+		Smart_contract bool   `json:"smart_contract"`
+		From           int    `json:"from"`
+		Count          int    `json:"count"`
+		Account_id     string `json:"account_id"`
+	}{false, false, from, count, accountID}
+
+	result, err := client.Call("list-unspent-outputs", request)
+	if err != nil {
+		return nil, err
+	}
+
+	err = isError(result)
+	if err != nil {
+		return nil, err
+	}
+
+	array := gjson.GetBytes(result, "data").Array()
+	for _, a := range array {
+		utxo = append(utxo, NewUnspent(a))
+	}
+
+	return utxo, nil
+
+}
+
 //exportWalletToFile 导出钱包到文件
 func exportKeystoreToFile(content []byte) (string, error) {
 
@@ -853,11 +1048,18 @@ func loadConfig() error {
 	walletPath = c.String("walletPath")
 	threshold, _ = decimal.NewFromString(c.String("threshold"))
 	threshold = threshold.Mul(coinDecimal)
+	unspentLimit, _ = c.Int("unspentLimit")
 	//minSendAmount, _ = decimal.NewFromString(c.String("minSendAmount"))
 	//minSendAmount = minSendAmount.Mul(coinDecimal)
 	//minFees, _ = decimal.NewFromString(c.String("minFees"))
 	//minFees = minFees.Mul(coinDecimal)
 	sumAddress = c.String("sumAddress")
+	cyclesec := c.String("cycleSeconds")
+	if cyclesec == "" {
+		cyclesec = "15s"
+	}
+
+	cycleSeconds, _ = time.ParseDuration(cyclesec)
 
 	client = &Client{
 		BaseURL: serverAPI,

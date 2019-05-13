@@ -16,10 +16,10 @@
 package bytom
 
 import (
-	"github.com/blocktree/openwallet/common"
-	"github.com/tidwall/gjson"
 	"github.com/asdine/storm"
+	"github.com/blocktree/openwallet/common"
 	"github.com/blocktree/openwallet/common/file"
+	"github.com/tidwall/gjson"
 	"path/filepath"
 )
 
@@ -89,10 +89,9 @@ func (a *Account) OpenDB() (*storm.DB, error) {
 }
 
 //FileName 该钱包定义的文件名规则
-func (w *Account)FileName() string {
-	return w.Alias+"-"+w.ID
+func (w *Account) FileName() string {
+	return w.Alias + "-" + w.ID
 }
-
 
 // AccountBalance account balance
 type AccountBalance struct {
@@ -155,6 +154,60 @@ func NewAddress(accountID, alias string, json gjson.Result) *Address {
 	} else {
 		a.Alias = alias
 	}
+
+	return a
+}
+
+type Unspent struct {
+	AccountId           string
+	Address             string
+	Amount              uint64
+	AssetId             string
+	Change              bool
+	ControlProgramIndex uint64
+	Id                  string
+	Program             string
+	SourceId            string
+	SourcePos           uint64
+	ValidHeight         uint64
+
+	/*
+
+		{
+		  "account_alias": "alice",
+		  "account_id": "0BKBR6VR00A06",
+		  "address": "bm1qv3htuvug7qdv46ywcvvzytrwrsyg0swltfa0dm",
+		  "amount": 2000,
+		  "asset_alias": "GOLD",
+		  "asset_id": "1883cce6aab82cf9af8cd085a3115dd4a92cdb8e6a9152acd73d7ae4adb9030a",
+		  "change": false,
+		  "control_program_index": 2,
+		  "id": "58f29f0f85f7bd2a91088bcbe536dee41cd0642dfb1480d3a88589bdbfd642d9",
+		  "program": "0014646ebe3388f01acae88ec318222c6e1c0887c1df",
+		  "source_id": "5988c1630c1f325e69bb92cb4b19af14286aa107311bc64b8f1a54629a33e0f4",
+		  "source_pos": 2,
+		  "valid_height": 0
+		}
+
+	*/
+}
+
+func NewUnspent(json gjson.Result) *Unspent {
+
+	a := &Unspent{}
+	//解析json
+	a.AccountId = gjson.Get(json.Raw, "account_id").String()
+	a.Address = gjson.Get(json.Raw, "address").String()
+	a.Amount = gjson.Get(json.Raw, "amount").Uint()
+	a.AssetId = gjson.Get(json.Raw, "asset_id").String()
+	a.Change = gjson.Get(json.Raw, "change").Bool()
+	a.ControlProgramIndex = gjson.Get(json.Raw, "control_program_index").Uint()
+	a.Id = gjson.Get(json.Raw, "id").String()
+	a.Program = gjson.Get(json.Raw, "program").String()
+	a.SourceId = gjson.Get(json.Raw, "source_id").String()
+	a.SourcePos = gjson.Get(json.Raw, "source_pos").Uint()
+	a.ValidHeight = gjson.Get(json.Raw, "valid_height").Uint()
+
 
 	return a
 }
