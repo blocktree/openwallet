@@ -172,6 +172,10 @@ func (wm *WalletManager) CreateTransaction(appID, walletID, accountID, amount, a
 		Required: 1,
 	}
 
+	if len(memo) > 0 {
+		rawTx.SetExtParam("memo", memo)
+	}
+
 	txdecoder := assetsMgr.GetTransactionDecoder()
 	if txdecoder == nil {
 		return nil, fmt.Errorf("[%s] is not support transaction. ", account.Symbol)
