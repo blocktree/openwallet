@@ -328,7 +328,7 @@ func TestRestoreWallet(t *testing.T) {
 }
 
 func TestListUnspent(t *testing.T) {
-	utxos, err := ListUnspent("", 0, 1000)
+	utxos, err := ListUnspent("0GB1T7RG00A02", 0, 1000)
 	if err != nil {
 		t.Errorf("ListUnspent failed unexpected error: %v\n", err)
 		return
@@ -341,10 +341,10 @@ func TestListUnspent(t *testing.T) {
 
 func TestSendSummaryTransaction(t *testing.T) {
 	txid, err := SendSummaryTransaction(
-		"",
-		"",
+		"0GB1T7RG00A02",
+		"bm1qjf6v463sj3w04zyk8vq0aefjrzug0jtwz62mz0",
 		assetsID_btm,
-		"")
+		"2256191mai")
 	if err != nil {
 		t.Errorf("SendSummaryTransaction failed unexpected error: %v\n", err)
 		return

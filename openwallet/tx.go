@@ -65,6 +65,36 @@ type KeySignature struct {
 	Message   string   `json:"msg"`     //被签消息
 }
 
+//SetExtParam
+func (rawtx *RawTransaction) SetExtParam(key string, value interface{}) error {
+	var ext map[string]interface{}
+
+	if len(rawtx.ExtParam) == 0 {
+		ext = make(map[string]interface{})
+	} else {
+		err := json.Unmarshal([]byte(rawtx.ExtParam), &ext)
+		if err != nil {
+			return err
+		}
+	}
+
+	ext[key] = value
+
+	json, err := json.Marshal(ext)
+	if err != nil {
+		return err
+	}
+	rawtx.ExtParam = string(json)
+
+	return nil
+}
+
+//GetExtParam
+func (rawtx *RawTransaction) GetExtParam() gjson.Result {
+	//如果param没有值，使用inputs初始化
+	return gjson.ParseBytes([]byte(rawtx.ExtParam))
+}
+
 //交易单状态
 const (
 	TxStatusSuccess = "1" //成功
@@ -87,7 +117,7 @@ type Transaction struct {
 	BlockHash   string   `json:"blockHash"`   //@required
 	BlockHeight uint64   `json:"blockHeight"` //@required
 	IsMemo      bool     `json:"isMemo"`
-	Memo        string   `json:"memo"`
+	Memo        string   `json:"memo"` //deprecated, 使用ExtParam扩展
 	Fees        string   `json:"fees"` //@required
 	Received    bool     `json:"received"`
 	SubmitTime  int64    `json:"submitTime"`  //@required
@@ -154,6 +184,37 @@ type SummaryRawTransaction struct {
 	AddressLimit       int                 `json:"addressLimit"`       //汇总账户地址控制数量
 	Confirms           uint64              `json:"confirms"`           //汇总的未花交易大于确认数
 	FeesSupportAccount *FeesSupportAccount `json:"feesSupportAccount"` //手续费支持账户
+	ExtParam           string              `json:"extParam"`           //扩展参数，用于调用智能合约，json结构
+}
+
+//SetExtParam
+func (sumRawtx *SummaryRawTransaction) SetExtParam(key string, value interface{}) error {
+	var ext map[string]interface{}
+
+	if len(sumRawtx.ExtParam) == 0 {
+		ext = make(map[string]interface{})
+	} else {
+		err := json.Unmarshal([]byte(sumRawtx.ExtParam), &ext)
+		if err != nil {
+			return err
+		}
+	}
+
+	ext[key] = value
+
+	json, err := json.Marshal(ext)
+	if err != nil {
+		return err
+	}
+	sumRawtx.ExtParam = string(json)
+
+	return nil
+}
+
+//GetExtParam
+func (sumRawtx *SummaryRawTransaction) GetExtParam() gjson.Result {
+	//如果param没有值，使用inputs初始化
+	return gjson.ParseBytes([]byte(sumRawtx.ExtParam))
 }
 
 //GenTransactionWxID 生成交易单的WxID，格式为 base64(sha1(tx_{txID}_{symbol}_contractID}))
@@ -189,7 +250,7 @@ type Recharge struct {
 	BlockHash   string `json:"blockHash"`                 //@required
 	BlockHeight uint64 `json:"blockHeight" storm:"index"` //@required
 	IsMemo      bool   `json:"isMemo"`
-	Memo        string `json:"memo"`
+	Memo        string `json:"memo"`  //deprecated, 使用ExtParam扩展
 	Index       uint64 `json:"index"` //@required
 	Received    bool
 	CreateAt    int64 `json:"createdAt"` //@required
