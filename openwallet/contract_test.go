@@ -15,10 +15,15 @@
 
 package openwallet
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestGenContractID(t *testing.T) {
-	address := "f2033ede578e17fa6231047265010445bca8cf1c"
+	address := "1234QWER"
+	address = strings.ToLower(address)
+	t.Logf("lower addr 1: %v", address)
 	symbol := "qtum"
 	ID := GenContractID(symbol, address)
 	t.Logf("ID 1: %v", ID)
