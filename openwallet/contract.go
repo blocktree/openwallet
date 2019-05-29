@@ -38,8 +38,6 @@ func GenContractID(symbol, address string) string {
 	if !strings.HasPrefix(address, "0x") {
 		address = "0x" + address
 	}
-	//强制小写
-	address = strings.ToLower(address)
 	return base64.StdEncoding.EncodeToString(crypto.SHA256([]byte(fmt.Sprintf("%v_%v", symbol, address))))
 }
 
