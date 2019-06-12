@@ -282,12 +282,50 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 		return nil, err
 	}
 
-	addrs, err := wrapper.CreateAddress(accountID, count, assetsMgr.GetAddressDecode(), false, false)
+	addrs, err := openwallet.BatchCreateAddressByAccount(account, assetsMgr.GetAddressDecode(), int64(count), 20)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Debug("addrs:", addrs)
+	//打开数据库
+	db, err := wrapper.OpenStormDB()
+	if err != nil {
+		return nil, err
+	}
+	defer wrapper.CloseDB()
+
+	tx, err := db.Begin(true)
+	if err != nil {
+		return nil, err
+	}
+
+	defer tx.Rollback()
+
+	for _, addr := range addrs {
+		err = tx.Save(addr)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	account.AddressIndex = account.AddressIndex + int(count)
+
+	err = tx.Save(account)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	//addrs, err := wrapper.CreateAddress(accountID, count, assetsMgr.GetAddressDecode(), false, false)
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	//log.Debug("addrs:", addrs)
 	//导入地址到核心钱包中
 	//go func() {
 	//
@@ -303,7 +341,7 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 		wm.AddAddressForBlockScan(address.Address, key)
 	}
 
-	log.Debug("new addresses create success:", addrs)
+	//log.Debug("new addresses create success:", addrs)
 
 	return addrs, nil
 }
