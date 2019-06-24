@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/blocktree/openwallet/common"
 	"github.com/blocktree/go-owcdrivers/owkeychain"
+	"github.com/blocktree/openwallet/log"
 )
 
 type AddressCreateResult struct {
@@ -66,6 +67,7 @@ func BatchCreateAddressByAccount(account *AssetsAccount, decoder AddressDecoder,
 				addressArr = append(addressArr, gets.Address)
 			} else {
 				failed++ //标记生成失败数
+				log.Errorf("create address failed: %v", gets.Err)
 			}
 
 			//累计完成的线程数

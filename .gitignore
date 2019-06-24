@@ -38,4 +38,7 @@ openw-btc
 openw-qtum1
 openw-*
 build
+assets/cardano/certs
+log/logs
+openw/openw_data
 .vscode/

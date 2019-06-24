@@ -943,7 +943,7 @@ func (node *OWTPNode) handleKeyAgreementForResponse(peer Peer, packet *DataPacke
 			}
 
 			//本地还没完成生成协商密码
-			if len(ka.SA) == 0 || len(ka.Key) == 0 {
+			if len(ka.SA) == 0 || len(ka.Key) == 0 || ka.SB != packet.SecretData.SB {
 
 				//加载响应方的协商密码参数
 				ka.PublicKeyResponder = packet.SecretData.PublicKeyResponder

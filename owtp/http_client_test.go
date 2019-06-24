@@ -3,9 +3,9 @@ package owtp
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/blocktree/go-owcrypt"
 	"github.com/blocktree/openwallet/log"
 	"github.com/blocktree/openwallet/session"
-	"github.com/blocktree/go-owcrypt"
 	"github.com/imroc/req"
 	"github.com/mr-tron/base58/base58"
 	"sync"
@@ -14,9 +14,11 @@ import (
 )
 
 var (
-	httpHost       *OWTPNode
-	httpClient     *OWTPNode
+	httpHost   *OWTPNode
+	httpClient *OWTPNode
+	listenPort = ":8422"
 	httpURL        = "0.0.0.0:8422"
+	//httpURL        = "api.blocktree.com"
 	httpHostPrv    = "FSomdQBZYzgu9YYuuSr3qXd8sP1sgQyk4rhLFo6gyi32"
 	httpHostNodeID = "54dZTdotBmE9geGJmJcj7Qzm6fzNrEUJ2NcDwZYp2QEp"
 	globalSessions *SessionManager
@@ -73,7 +75,7 @@ func testMakeHTTPCall(httpClient *OWTPNode) {
 	//})
 
 	if err != nil {
-		log.Error("unexcepted error: %v", err)
+		log.Errorf("unexcepted error: %v", err)
 		return
 	}
 }
@@ -83,13 +85,13 @@ func TestHTTPHostRun(t *testing.T) {
 	var (
 		endRunning = make(chan bool, 1)
 	)
-
-	cert, _ := NewCertificate(httpHostPrv, "aes")
+	cert := NewRandomCertificate()
+	//cert, _ := NewCertificate(httpHostPrv)
 	httpHost = NewOWTPNode(cert, 0, 0)
 	httpHost.SetPeerstore(globalSessions)
 	fmt.Printf("nodeID = %s \n", httpHost.NodeID())
 	config := ConnectConfig{}
-	config.Address = httpURL
+	config.Address = listenPort
 	config.ConnectType = HTTP
 	//config["enableSignature"] = "1"
 	httpHost.HandleFunc("getInfo", getInfo)
@@ -137,7 +139,6 @@ func TestHTTPClientCall(t *testing.T) {
 	testMakeHTTPCall(httpClient)
 }
 
-
 func TestHTTPClientContinueCall(t *testing.T) {
 
 	var (
@@ -157,20 +158,20 @@ func TestHTTPClientContinueCall(t *testing.T) {
 	prv, pub := httpClient.Certificate().KeyPair()
 	log.Info("pub:", pub)
 	log.Info("prv:", prv)
-	//err := httpClient.Connect(httpHostNodeID, config)
-	//if err != nil {
-	//	t.Errorf("Connect unexcepted error: %v", err)
-	//	return
-	//}
-	//err = httpClient.KeyAgreement(httpHostNodeID, "aes")
-	//if err != nil {
-	//	t.Errorf("KeyAgreement unexcepted error: %v", err)
-	//	return
-	//}
+	err := httpClient.Connect(httpHostNodeID, config)
+	if err != nil {
+		t.Errorf("Connect unexcepted error: %v", err)
+		return
+	}
+	err = httpClient.KeyAgreement(httpHostNodeID, "aes")
+	if err != nil {
+		t.Errorf("KeyAgreement unexcepted error: %v", err)
+		return
+	}
 
-	for i := 0;i<500000;i++ {
+	for i := 0; i < 500000; i++ {
 		testMakeHTTPCall(httpClient)
-
+		time.Sleep(2 * time.Second)
 	}
 
 	<-endRunning
