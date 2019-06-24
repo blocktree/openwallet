@@ -85,8 +85,8 @@ func TestHTTPHostRun(t *testing.T) {
 	var (
 		endRunning = make(chan bool, 1)
 	)
-	//cert := NewRandomCertificate()
-	cert, _ := NewCertificate(httpHostPrv)
+	cert := NewRandomCertificate()
+	//cert, _ := NewCertificate(httpHostPrv)
 	httpHost = NewOWTPNode(cert, 0, 0)
 	httpHost.SetPeerstore(globalSessions)
 	fmt.Printf("nodeID = %s \n", httpHost.NodeID())
