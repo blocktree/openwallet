@@ -41,3 +41,4 @@ build
 assets/cardano/certs
 log/logs
 openw/openw_data
+.vscode/
