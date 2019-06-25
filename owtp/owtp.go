@@ -561,25 +561,25 @@ func (node *OWTPNode) ConnectAndCall(
 	sync bool,
 	reqFunc RequestFunc) error {
 
-		if sync {
+	if sync {
+		peer, err := node.connect(pid, config) //重新连接
+		if err != nil {
+			return err
+		}
+
+		return node.Call(peer.PID(), method, params, sync, reqFunc)
+	} else {
+		go func() {
 			peer, err := node.connect(pid, config) //重新连接
 			if err != nil {
-				return err
+				return
 			}
 
-			return node.Call(peer.PID(), method, params, sync, reqFunc)
-		} else {
-			go func() {
-				peer, err := node.connect(pid, config) //重新连接
-				if err != nil {
-					return
-				}
+			node.Call(peer.PID(), method, params, sync, reqFunc)
+		}()
 
-				node.Call(peer.PID(), method, params, sync, reqFunc)
-			}()
-
-			return nil
-		}
+		return nil
+	}
 }
 
 //CallSync 同步请求
@@ -666,7 +666,14 @@ func (node *OWTPNode) Call(
 			PublicKeyInitiator:    ka.PublicKeyInitiator,
 			TmpPublicKeyInitiator: ka.TmpPublicKeyInitiator,
 			EncryptType:           ka.EncryptType,
-			SA:                    ka.SA,
+		}
+
+		if peer.IsHost() {
+			//对方是服务端
+			packet.SecretData.SA = ka.SA
+		} else {
+			//对方是客户端
+			packet.SecretData.S2 = ka.S2
 		}
 	}
 
@@ -879,7 +886,15 @@ func (node *OWTPNode) handleKeyAgreementForRequest(peer Peer, packet *DataPacket
 		}
 
 		//发起方的请求协商密码的参数
-		ka.SA = packet.SecretData.SA
+
+		if peer.IsHost() {
+			//对方是服务端，请求带SecretData.S2
+			ka.S2 = packet.SecretData.S2
+		} else {
+			//对方是客户端，请求带SecretData.SA
+			ka.SA = packet.SecretData.SA
+		}
+
 		ka.PublicKeyInitiator = packet.SecretData.PublicKeyInitiator
 		ka.TmpPublicKeyInitiator = packet.SecretData.TmpPublicKeyInitiator
 
@@ -943,6 +958,7 @@ func (node *OWTPNode) handleKeyAgreementForResponse(peer Peer, packet *DataPacke
 			}
 
 			//本地还没完成生成协商密码
+			//if len(ka.SA) == 0 || len(ka.Key) == 0  {
 			if len(ka.SA) == 0 || len(ka.Key) == 0 || ka.SB != packet.SecretData.SB {
 
 				//加载响应方的协商密码参数
