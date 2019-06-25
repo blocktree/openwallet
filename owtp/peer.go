@@ -61,6 +61,7 @@ type SecretData struct {
 	TmpPublicKeyResponder string `json:"tpo"` //响应方临时公钥
 	SB                    string `json:"sb"`  //响应方发送给发起方的校验值
 	SA                    string `json:"sa"`  //发起方发送给响应方的校验值
+	S2                    string `json:"s2"`  //响应方协商密码计算的校验值
 }
 
 //NewDataPacket 通过 gjson转为DataPacket
@@ -78,10 +79,11 @@ func NewDataPacket(json gjson.Result) *DataPacket {
 	dp.SecretData.PublicKeyInitiator = json.Get("k.pk").String()
 	dp.SecretData.TmpPublicKeyInitiator = json.Get("k.tpk").String()
 	dp.SecretData.EncryptType = json.Get("k.et").String()
-	dp.SecretData.PublicKeyResponder = json.Get("k.tpo").String()
+	dp.SecretData.PublicKeyResponder = json.Get("k.pko").String()
 	dp.SecretData.TmpPublicKeyResponder = json.Get("k.tpo").String()
 	dp.SecretData.SB = json.Get("k.sb").String()
 	dp.SecretData.SA = json.Get("k.sa").String()
+	dp.SecretData.S2 = json.Get("k.s2").String()
 
 	//兼容旧版本
 	if json.Get("z").Exists() {

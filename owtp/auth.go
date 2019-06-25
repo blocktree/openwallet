@@ -391,7 +391,7 @@ func (auth *OWTPAuth) VerifyKeyAgreement(keyAgreement *KeyAgreement) bool {
 	}
 
 	//auth.isConsult = true
-
+	
 	if len(keyAgreement.S2) == 0 {
 		return false
 	}
