@@ -111,8 +111,9 @@ type Transaction struct {
 	From        []string `json:"from"` //@required 格式："地址":"数量"
 	To          []string `json:"to"`   //@required 格式："地址":"数量"
 	Amount      string   `json:"amount"`
-	Decimal     int32    `json:"decimal"` //@required
-	TxType      uint64   `json:"txType"`  // 0:未知，1:主币转账，2:合约调用
+	Decimal     int32    `json:"decimal"`  //@required
+	TxType      uint64   `json:"txType"`   // @required 0:转账，1:合约调用(发生于主链)
+	TxAction    string   `json:"txAction"` // 执行事件, 例如：合约的Transfer事件
 	Confirm     int64    `json:"confirm"`
 	BlockHash   string   `json:"blockHash"`   //@required
 	BlockHeight uint64   `json:"blockHeight"` //@required
@@ -244,8 +245,8 @@ type Recharge struct {
 	AccountID   string `json:"accountID"`
 	Address     string `json:"address"` //@required
 	Symbol      string `json:"symbol"`  //Deprecated: use Coin
-	Coin        Coin   //@required 区块链类型标识
-	Amount      string `json:"amount"` //@required
+	Coin        Coin   `json:"coin"`    //@required 区块链类型标识
+	Amount      string `json:"amount"`  //@required
 	Confirm     int64  `json:"confirm"`
 	BlockHash   string `json:"blockHash"`                 //@required
 	BlockHeight uint64 `json:"blockHeight" storm:"index"` //@required
@@ -255,6 +256,7 @@ type Recharge struct {
 	Received    bool
 	CreateAt    int64 `json:"createdAt"` //@required
 	Delete      bool
+	TxType      uint64 `json:"txType"` // @required 0:转账，1:合约调用(发生于主链)
 }
 
 //GenRechargeSID
