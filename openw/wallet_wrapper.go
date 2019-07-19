@@ -41,7 +41,7 @@ type WalletKeyFile string
 type WalletWrapper struct {
 	*AppWrapper
 	wallet  *openwallet.Wallet //需要包装的钱包
-	keyFile string  //钱包密钥文件路径
+	keyFile string             //钱包密钥文件路径
 	key     *hdkeystore.HDKey
 }
 

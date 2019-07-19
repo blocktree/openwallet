@@ -294,6 +294,17 @@ func (wm *WalletManager) SubmitTransaction(appID, walletID, accountID string, ra
 	log.Debug("transaction has been submitted successfully")
 
 	log.Info("Save new transaction data successfully")
+	db, err := wrapper.OpenStormDB()
+	if err != nil {
+		return tx, nil
+	}
+	defer wrapper.CloseDB()
+
+	//保存账户相关的记录
+	err = db.Save(tx)
+	if err != nil {
+		return tx, nil
+	}
 
 	return tx, nil
 	//return perfectTx, nil
