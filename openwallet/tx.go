@@ -112,7 +112,7 @@ type Transaction struct {
 	To          []string `json:"to"`   //@required 格式："地址":"数量"
 	Amount      string   `json:"amount"`
 	Decimal     int32    `json:"decimal"`  //@required
-	TxType      uint64   `json:"txType"`   // @required 0:转账，1:合约调用(发生于主链)
+	TxType      uint64   `json:"txType"`   // @required 0:转账, 1:合约调用(发生于主链), >100: 自定义，可以在TxAction填说明
 	TxAction    string   `json:"txAction"` // 执行事件, 例如：合约的Transfer事件
 	Confirm     int64    `json:"confirm"`
 	BlockHash   string   `json:"blockHash"`   //@required

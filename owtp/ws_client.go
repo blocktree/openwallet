@@ -186,37 +186,6 @@ func NewWSClient(pid string, conn *websocket.Conn, handler PeerHandler, auth Aut
 	return client, nil
 }
 
-//VerifyHeaderSignature 校验签名，若验证错误，可更新错误信息到DataPacket中
-func VerifyHeaderSignature(header http.Header, publicKey []byte) bool {
-
-	a := header.Get("a")
-	n := header.Get("n")
-	t := header.Get("t")
-	s := header.Get("s")
-
-	if len(a) == 0 || len(s) == 0 || len(t) == 0 || len(n) == 0 {
-		return false
-	}
-
-	plainText := fmt.Sprintf("%s%s%s", a, n, t)
-	//log.Debug("VerifySignature plainText: ", plainText)
-	hash := owcrypt.Hash([]byte(plainText), 0, owcrypt.HASh_ALG_DOUBLE_SHA256)
-	//log.Debug("VerifySignature hash: ", hex.EncodeToString(hash))
-	nodeID := owcrypt.Hash(publicKey, 0, owcrypt.HASH_ALG_SHA256)
-	//log.Debug("VerifySignature remotePublicKey: ", hex.EncodeToString(auth.remotePublicKey))
-	//log.Debug("VerifySignature nodeID: ", hex.EncodeToString(nodeID))
-	signature, err := base58.Decode(s)
-	if err != nil {
-		return false
-	}
-	ret := owcrypt.Verify(publicKey, nodeID, 32, hash, 32, signature, owcrypt.ECC_CURVE_SM2_STANDARD)
-	if ret != owcrypt.SUCCESS {
-		return false
-	}
-
-	return true
-}
-
 func (c *WSClient) PID() string {
 	return c.pid
 }

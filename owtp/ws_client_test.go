@@ -131,6 +131,9 @@ func TestWSHostRun(t *testing.T) {
 	wsHost.SetOpenHandler(func(n *OWTPNode, peer PeerInfo) {
 		log.Infof("peer[%s] connected", peer.ID)
 		log.Infof("peer[%+v] config", peer.Config)
+		//n.Call(peer.ID, "hello", nil, true, func(resp Response) {
+		//	log.Infof("resp: %v", resp)
+		//})
 		//n.ClosePeer(peer.ID)
 	})
 
