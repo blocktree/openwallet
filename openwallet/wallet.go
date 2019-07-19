@@ -60,6 +60,9 @@ type WalletDAI interface {
 	UnlockWallet(password string, time time.Duration) error
 	//获取钱包HDKey
 	HDKey(password ...string) (*hdkeystore.HDKey, error)
+
+	//获取钱包所创建的交易单
+	GetTransactionByTxID(txid, symbol string) (*Transaction, error)
 }
 
 //TransactionDecoderBase 实现TransactionDecoder的基类
@@ -110,6 +113,11 @@ func (base *WalletDAIBase) UnlockWallet(password string, time time.Duration) err
 
 func (base *WalletDAIBase) HDKey(password ...string) (*hdkeystore.HDKey, error) {
 	return nil, fmt.Errorf("not implement")
+}
+
+//获取钱包所创建的交易单
+func (base *WalletDAIBase) GetTransactionByTxID(txid, symbol string) (*Transaction, error) {
+	return nil, fmt.Errorf("GetTransactionByTxID not implement")
 }
 
 type Wallet struct {

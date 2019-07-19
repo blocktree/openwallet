@@ -55,9 +55,11 @@ type BlockScanner interface {
 	SetBlockScanTargetFunc(scanTargetFunc BlockScanTargetFunc) error
 
 	//AddObserver 添加观测者
+	//@optional
 	AddObserver(obj BlockScanNotificationObject) error
 
 	//RemoveObserver 移除观测者
+	//@optional
 	RemoveObserver(obj BlockScanNotificationObject) error
 
 	//SetRescanBlockHeight 重置区块链扫描高度
@@ -65,21 +67,27 @@ type BlockScanner interface {
 	SetRescanBlockHeight(height uint64) error
 
 	//Run 运行
+	//@optional
 	Run() error
 
 	//Stop 停止扫描
+	//@optional
 	Stop() error
 
 	//Pause 暂停扫描
+	//@optional
 	Pause() error
 
 	//Restart 继续扫描
+	//@optional
 	Restart() error
 
 	//InitBlockScanner 初始化扫描器
+	//@optional
 	InitBlockScanner() error
 
 	//CloseBlockScanner 关闭扫描器
+	//@optional
 	CloseBlockScanner() error
 
 	//ScanBlock 扫描指定高度的区块
@@ -87,6 +95,7 @@ type BlockScanner interface {
 	ScanBlock(height uint64) error
 
 	//NewBlockNotify 新区块通知
+	//@optional
 	NewBlockNotify(header *BlockHeader) error
 
 	//GetCurrentBlockHeight 获取当前区块高度
@@ -94,7 +103,7 @@ type BlockScanner interface {
 	GetCurrentBlockHeader() (*BlockHeader, error)
 
 	//GetGlobalMaxBlockHeight 获取区块链全网最大高度
-	//@required
+	//@optional
 	GetGlobalMaxBlockHeight() uint64
 
 	//GetScannedBlockHeight 获取已扫区块高度
@@ -106,11 +115,17 @@ type BlockScanner interface {
 	ExtractTransactionData(txid string, scanTargetFunc BlockScanTargetFunc) (map[string][]*TxExtractData, error)
 
 	//GetBalanceByAddress 查询地址余额
+	//@required
 	GetBalanceByAddress(address ...string) ([]*Balance, error)
 
 	//GetTransactionsByAddress 查询基于账户的交易记录，通过账户关系的地址
 	//返回的交易记录以资产账户为集合的结果，转账数量以基于账户来计算
+	//@optional
 	GetTransactionsByAddress(offset, limit int, coin Coin, address ...string) ([]*TxExtractData, error)
+
+	//SetBlockScanWalletDAI 设置区块扫描过程，上层提供一个钱包数据接口
+	//@optional
+	SetBlockScanWalletDAI(dai WalletDAI) error
 }
 
 //BlockScanNotificationObject 扫描被通知对象
@@ -206,7 +221,7 @@ func (bs *BlockScannerBase) SetBlockScanTargetFunc(scanTargetFunc BlockScanTarge
 	//兼容已弃用的SetBlockScanAddressFunc
 	scanAddressFunc := func(address string) (string, bool) {
 		scanTarget := ScanTarget{
-			Address: address,
+			Address:          address,
 			BalanceModelType: BalanceModelTypeAddress,
 		}
 		return bs.ScanTargetFunc(scanTarget)
@@ -372,6 +387,12 @@ func (bs *BlockScannerBase) GetBalanceByAddress(address ...string) ([]*Balance, 
 //返回的交易记录以资产账户为集合的结果，转账数量以基于账户来计算
 func (bs *BlockScannerBase) GetTransactionsByAddress(offset, limit int, coin Coin, address ...string) ([]*TxExtractData, error) {
 	return nil, fmt.Errorf("GetTransactionsByAddress is not implemented")
+}
+
+//SetBlockScanWalletDAI 设置区块扫描过程，上层提供一个钱包数据接口
+//@optional
+func (bs *BlockScannerBase) SetBlockScanWalletDAI(dai WalletDAI) error {
+	return fmt.Errorf("SetBlockScanWalletDAI is not implemented")
 }
 
 //NewBlockNotify 获得新区块后，发送到通知通道
