@@ -178,7 +178,7 @@ type BlockScannerBase struct {
 	blockProducer     chan interface{}
 	blockConsumer     chan interface{}
 	isClose           bool //是否已关闭
-	//closeOnce         sync.Once
+	walletDAI         WalletDAI
 }
 
 //NewBTCBlockScanner 创建区块链扫描器
@@ -392,7 +392,8 @@ func (bs *BlockScannerBase) GetTransactionsByAddress(offset, limit int, coin Coi
 //SetBlockScanWalletDAI 设置区块扫描过程，上层提供一个钱包数据接口
 //@optional
 func (bs *BlockScannerBase) SetBlockScanWalletDAI(dai WalletDAI) error {
-	return fmt.Errorf("SetBlockScanWalletDAI is not implemented")
+	bs.walletDAI = dai
+	return nil
 }
 
 //NewBlockNotify 获得新区块后，发送到通知通道
