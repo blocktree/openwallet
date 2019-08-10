@@ -19,9 +19,8 @@ func GetMD5(str string) (md5str string) {
 
 //MD5 加密
 func MD5(data []byte) []byte {
-	hash := md5.New()
-	md := hash.Sum(nil)
-	return md
+	md := md5.Sum(data)
+	return md[:]
 }
 
 //SHA1 加密
