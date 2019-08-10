@@ -59,3 +59,11 @@ func TestEncryptJSON(t *testing.T) {
 	raw, _ :=AESDecrypt(enbase, key)
 	fmt.Printf("raw = %s\n", string(raw))
 }
+
+func TestMD5(t *testing.T) {
+	hash := MD5([]byte("skaljfls2"))
+	fmt.Println(hex.EncodeToString(hash))
+
+	hash2 := GetMD5("skaljfls2")
+	fmt.Println(hash2)
+}
