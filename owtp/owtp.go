@@ -356,7 +356,7 @@ func (node *OWTPNode) connect(pid string, config ConnectConfig) (Peer, error) {
 	}
 
 	if len(addr) == 0 {
-		return nil, fmt.Errorf("address must contain by config")
+		return nil, fmt.Errorf("pid: %s, address must contain by config", pid)
 	}
 
 	auth, err := NewOWTPAuthWithCertificate(node.cert, enableSignature)
