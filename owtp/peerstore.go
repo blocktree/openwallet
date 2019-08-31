@@ -17,6 +17,7 @@ package owtp
 
 import (
 	"encoding/json"
+	"github.com/blocktree/openwallet/log"
 	"sync"
 )
 
@@ -82,7 +83,10 @@ func (store *owtpPeerstore) PeerInfo(id string) PeerInfo {
 	var config ConnectConfig
 	b, ok := store.Get(id, id).(string)
 	if ok {
-		json.Unmarshal([]byte(b), &config)
+		err := json.Unmarshal([]byte(b), &config)
+		if err != nil {
+			log.Errorf("json.Unmarshal PeerInfo failed")
+		}
 	}
 	return PeerInfo{
 		ID:     id,
