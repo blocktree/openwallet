@@ -228,7 +228,7 @@ func (wm *WalletManager) initSupportAssetsAdapter() error {
 
 	for _, appID := range appIDs {
 
-		wrapper, err := wm.newWalletWrapper(appID, "")
+		wrapper, err := wm.NewWalletWrapper(appID, "")
 		if err != nil {
 			log.Error("wallet manager init unexpected error:", err)
 			continue
@@ -290,8 +290,8 @@ func (wm *WalletManager) initSupportAssetsAdapter() error {
 	return nil
 }
 
-//newWalletWrapper 创建App专用的包装器
-func (wm *WalletManager) newWalletWrapper(appID, walletID string) (*WalletWrapper, error) {
+//NewWalletWrapper 创建App专用的包装器
+func (wm *WalletManager) NewWalletWrapper(appID, walletID string) (*WalletWrapper, error) {
 
 	var walletWrapper *WalletWrapper
 

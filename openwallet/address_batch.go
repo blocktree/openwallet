@@ -18,8 +18,8 @@ package openwallet
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/blocktree/openwallet/common"
 	"github.com/blocktree/go-owcdrivers/owkeychain"
+	"github.com/blocktree/openwallet/common"
 	"github.com/blocktree/openwallet/log"
 )
 
@@ -35,7 +35,7 @@ type AddressCreateResult struct {
 // @conf 环境配置
 // @count 连续创建数量
 // @workerSize 并行线程数。建议20条，并行执行5000条大约8.22秒。
-func BatchCreateAddressByAccount(account *AssetsAccount, decoder AddressDecoder, count int64, workerSize int) ([]*Address, error) {
+func BatchCreateAddressByAccount(account *AssetsAccount, adapter AssetsAdapter, count int64, workerSize int) ([]*Address, error) {
 
 	var (
 		quit         = make(chan struct{})
@@ -80,19 +80,19 @@ func BatchCreateAddressByAccount(account *AssetsAccount, decoder AddressDecoder,
 	}
 
 	//生产工作
-	produceWork := func(eAccount *AssetsAccount, eDecoder AddressDecoder, eCount int64, eProducer chan AddressCreateResult) {
+	produceWork := func(eAccount *AssetsAccount, eAdapter AssetsAdapter, eCount int64, eProducer chan AddressCreateResult) {
 		addrIndex := eAccount.AddressIndex
 		for i := uint64(0); i < uint64(eCount); i++ {
 			workPermitCH <- struct{}{}
 			addrIndex++
-			go func(mAccount *AssetsAccount, mDecoder AddressDecoder, newIndex int, end chan struct{}, mProducer chan<- AddressCreateResult) {
+			go func(mAccount *AssetsAccount, mAdapter AssetsAdapter, newIndex int, end chan struct{}, mProducer chan<- AddressCreateResult) {
 
 				//生成地址
-				mProducer <- CreateAddressByAccountWithIndex(mAccount, mDecoder, newIndex, 0)
+				mProducer <- CreateAddressByAccountWithIndex(mAccount, mAdapter, newIndex, 0)
 				//释放
 				<-end
 
-			}(eAccount, eDecoder, addrIndex, workPermitCH, eProducer)
+			}(eAccount, eAdapter, addrIndex, workPermitCH, eProducer)
 		}
 	}
 
@@ -100,7 +100,7 @@ func BatchCreateAddressByAccount(account *AssetsAccount, decoder AddressDecoder,
 	go consumeWork(worker)
 
 	//独立线程运行生产
-	go produceWork(account, decoder, count, producer)
+	go produceWork(account, adapter, count, producer)
 
 	//以下使用生产消费模式
 	batchCreateAddressRuntime(producer, worker, quit)
@@ -146,10 +146,38 @@ func batchCreateAddressRuntime(producer chan AddressCreateResult, worker chan Ad
 
 }
 
-func CreateAddressByAccountWithIndex(account *AssetsAccount, decoder AddressDecoder, addrIndex int, addrIsChange int64) AddressCreateResult {
+func CreateAddressByAccountWithIndex(account *AssetsAccount, adapter AssetsAdapter, addrIndex int, addrIsChange int64) AddressCreateResult {
 
 	result := AddressCreateResult{
 		Success: true,
+	}
+
+	decoderV1 := adapter.GetAddressDecode()
+	decoderV2 := adapter.GetAddressDecoderV2()
+
+	//AddressDecoder尝试强转为AddressDecoderV2
+	if decoderV2 != nil {
+
+		//支持自定义创建地址
+		if decoderV2.SupportCustomCreateAddressFunction() {
+			newAddr, err := decoderV2.CustomCreateAddress(account, uint64(addrIndex))
+			if err != nil {
+				result.Success = false
+				result.Err = err
+				return result
+			}
+
+			result.Success = true
+			result.Address = newAddr
+
+			return result
+		}
+	}
+
+	if decoderV1 == nil {
+		result.Success = false
+		result.Err = fmt.Errorf("assets-adapter not support AddressDecoder interface")
+		return result
 	}
 
 	if len(account.HDPath) == 0 {
@@ -175,22 +203,20 @@ func CreateAddressByAccountWithIndex(account *AssetsAccount, decoder AddressDeco
 	}
 	var err error
 	var address, publicKey string
-	if len(newKeys) > 1 {
-		address, err = decoder.RedeemScriptToAddress(newKeys, uint64(account.Required), false)
-		if err != nil {
-			result.Success = false
-			result.Err = err
-			return result
-		}
+
+	if decoderV2 != nil {
+		address, err = decoderV2.AddressEncode(newKeys[0])
 	} else {
-		address, err = decoder.PublicKeyToAddress(newKeys[0], false)
-		if err != nil {
-			result.Success = false
-			result.Err = err
-			return result
-		}
-		publicKey = hex.EncodeToString(newKeys[0])
+		address, err = decoderV1.PublicKeyToAddress(newKeys[0], false)
 	}
+	//address, err = decoder.PublicKeyToAddress(newKeys[0], false)
+	if err != nil {
+		result.Success = false
+		result.Err = err
+		return result
+	}
+	publicKey = hex.EncodeToString(newKeys[0])
+
 	if len(address) == 0 {
 		result.Success = false
 		result.Err = fmt.Errorf("create address content error")
@@ -199,7 +225,7 @@ func CreateAddressByAccountWithIndex(account *AssetsAccount, decoder AddressDeco
 	newAddr := &Address{
 		AccountID: account.AccountID,
 		Symbol:    account.Symbol,
-		Index: uint64(addrIndex),
+		Index:     uint64(addrIndex),
 		Address:   address,
 		Balance:   "0",
 		WatchOnly: false,

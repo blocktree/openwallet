@@ -22,10 +22,16 @@ import (
 
 //AddressDecoderV2
 type AddressDecoderV2 interface {
-	//AddressDecode 地址解析
+	AddressDecoder
+
+	// AddressDecode 地址解析
 	AddressDecode(addr string, opts ...interface{}) ([]byte, error)
-	//AddressEncode 地址编码
+	// AddressEncode 地址编码
 	AddressEncode(pub []byte, opts ...interface{}) (string, error)
+	// CustomCreateAddress 自主实现创建账户地址
+	CustomCreateAddress(account *AssetsAccount, newIndex uint64) (*Address, error)
+	// SupportCustomCreateAddressFunction 支持创建地址实现
+	SupportCustomCreateAddressFunction() bool
 }
 
 type AddressDecoder interface {
@@ -80,21 +86,51 @@ func NewAddress(json gjson.Result) *Address {
 	return obj
 }
 
-//ImportAddress 待导入的地址记录
+// ImportAddress 待导入的地址记录
 type ImportAddress struct {
 	Address `storm:"inline"`
 }
 
-//AddressDecoderV2
+// AddressDecoderV2
 type AddressDecoderV2Base struct {
 }
 
-//AddressDecode 地址解析
+//PrivateKeyToWIF 私钥转WIF
+func (dec *AddressDecoderV2Base) PrivateKeyToWIF(priv []byte, isTestnet bool) (string, error) {
+	return "", fmt.Errorf("PrivateKeyToWIF not implement")
+}
+
+//PublicKeyToAddress 公钥转地址
+func (dec *AddressDecoderV2Base) PublicKeyToAddress(pub []byte, isTestnet bool) (string, error) {
+	return "", fmt.Errorf("PublicKeyToAddress not implement")
+}
+
+//WIFToPrivateKey WIF转私钥
+func (dec *AddressDecoderV2Base) WIFToPrivateKey(wif string, isTestnet bool) ([]byte, error) {
+	return nil, fmt.Errorf("WIFToPrivateKey not implement")
+}
+
+//RedeemScriptToAddress 多重签名赎回脚本转地址
+func (dec *AddressDecoderV2Base) RedeemScriptToAddress(pubs [][]byte, required uint64, isTestnet bool) (string, error) {
+	return "", fmt.Errorf("RedeemScriptToAddress not implement")
+}
+
+// AddressDecode 地址解析
 func (dec *AddressDecoderV2Base) AddressDecode(addr string, opts ...interface{}) ([]byte, error) {
 	return nil, fmt.Errorf("AddressDecode not implement")
 }
 
-//AddressEncode 地址编码
+// AddressEncode 地址编码
 func (dec *AddressDecoderV2Base) AddressEncode(pub []byte, opts ...interface{}) (string, error) {
 	return "", fmt.Errorf("AddressEncode not implement")
+}
+
+// CustomCreateAddress 创建账户地址
+func (dec *AddressDecoderV2Base) CustomCreateAddress(account *AssetsAccount, newIndex uint64) (*Address, error) {
+	return nil, fmt.Errorf("CreateAddressByAccount not implement")
+}
+
+// SupportCustomCreateAddressFunction 支持创建地址实现
+func (dec *AddressDecoderV2Base) SupportCustomCreateAddressFunction() bool {
+	return false
 }

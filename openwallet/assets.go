@@ -39,7 +39,13 @@ type AssetsAdapter interface {
 	//@required
 	AssetsConfig
 
+	//GetAddressDecodeV2 地址解析器V2
+	//如果实现了AddressDecoderV2，就无需实现AddressDecoder
+	//@required
+	GetAddressDecoderV2() AddressDecoderV2
+
 	//GetAddressDecode 地址解析器
+	//如果实现了AddressDecoderV2，就无需实现AddressDecoder
 	//@required
 	GetAddressDecode() AddressDecoder
 
@@ -71,7 +77,14 @@ func (a *AssetsAdapterBase) InitAssetsAdapter() error {
 }
 
 //GetAddressDecode 地址解析器
+//如果实现了AddressDecoderV2，就无需实现AddressDecoder
 func (a *AssetsAdapterBase) GetAddressDecode() AddressDecoder {
+	return nil
+}
+
+//GetAddressDecode 地址解析器
+//如果实现了AddressDecoderV2，就无需实现AddressDecoder
+func (a *AssetsAdapterBase) GetAddressDecoderV2() AddressDecoderV2 {
 	return nil
 }
 

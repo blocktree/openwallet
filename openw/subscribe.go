@@ -35,7 +35,7 @@ func (wm *WalletManager) BlockScanNotify(header *openwallet.BlockHeader) error {
 		//分叉的区块，删除提出记录
 		for _, appID := range appIDs {
 
-			wrapper, err := wm.newWalletWrapper(appID, "")
+			wrapper, err := wm.NewWalletWrapper(appID, "")
 			if err != nil {
 				return err
 			}
@@ -69,7 +69,7 @@ func (wm *WalletManager) BlockExtractDataNotify(sourceKey string, data *openwall
 
 	log.Debug("NewBlockExtractData:", appID, accountID)
 
-	wrapper, err := wm.newWalletWrapper(appID, "")
+	wrapper, err := wm.NewWalletWrapper(appID, "")
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,7 @@ func (wm *WalletManager) DeleteRechargesByHeight(height uint64) error {
 
 	for _, appID := range appIDs {
 
-		wrapper, err := wm.newWalletWrapper(appID, "")
+		wrapper, err := wm.NewWalletWrapper(appID, "")
 		if err != nil {
 			return err
 		}
