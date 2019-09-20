@@ -34,7 +34,7 @@ openwallet框架，未来将进化成为一个去中心化系统开发框架，�
 - [bitcoin-adapter](https://github.com/blocktree/bitcoin-adapter)
 - [litecoin-adapter](https://github.com/blocktree/litecoin-adapter)（继承bitcoin-adapter）
 - [ethereum-adapter](https://github.com/blocktree/ethereum-adapter)
-- [truechain-adapter](https://github.com/blocktree/truechain-adapter)（继承ethereum-adapter-adapter）
+- [truechain-adapter](https://github.com/blocktree/truechain-adapter)（继承ethereum-adapter）
 - [qtum-adapter](https://github.com/blocktree/qtum-adapter)
 - [tron-adapter](https://github.com/blocktree/tron-adapter)
 - [more...](https://github.com/blocktree?utf8=%E2%9C%93&q=adapter)
