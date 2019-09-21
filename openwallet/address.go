@@ -28,6 +28,8 @@ type AddressDecoderV2 interface {
 	AddressDecode(addr string, opts ...interface{}) ([]byte, error)
 	// AddressEncode 地址编码
 	AddressEncode(pub []byte, opts ...interface{}) (string, error)
+	// AddressVerify 地址校验
+	AddressVerify(address string, opts ...interface{}) bool
 	// CustomCreateAddress 自主实现创建账户地址
 	CustomCreateAddress(account *AssetsAccount, newIndex uint64) (*Address, error)
 	// SupportCustomCreateAddressFunction 支持创建地址实现
@@ -123,6 +125,11 @@ func (dec *AddressDecoderV2Base) AddressDecode(addr string, opts ...interface{})
 // AddressEncode 地址编码
 func (dec *AddressDecoderV2Base) AddressEncode(pub []byte, opts ...interface{}) (string, error) {
 	return "", fmt.Errorf("AddressEncode not implement")
+}
+
+// AddressVerify 地址校验
+func (dec *AddressDecoderV2Base) AddressVerify(address string, opts ...interface{}) bool {
+	return true
 }
 
 // CustomCreateAddress 创建账户地址
