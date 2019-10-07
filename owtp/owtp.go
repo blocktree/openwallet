@@ -46,7 +46,7 @@ const (
 	ErrNotFoundMethod uint64 = 404
 	//重放攻击
 	ErrReplayAttack uint64 = 409
-	//重放攻击
+	//请求超时
 	ErrRequestTimeout uint64 = 408
 	//网络断开
 	ErrNetworkDisconnected uint64 = 430
@@ -642,6 +642,7 @@ func (node *OWTPNode) Call(
 		Nonce:     nonce,
 		Timestamp: time,
 		Data:      params,
+		Version:   CurrentDataPacketVersion,
 	}
 
 	//如果开启了协商密码，添加协商密码参数
@@ -712,24 +713,39 @@ func (node *OWTPNode) encryptPacket(peer Peer, packet *DataPacket, key string) e
 		return nil
 	}
 
-	enc, encErr := json.Marshal(packet.Data)
-	if encErr != nil {
-		return fmt.Errorf("json.Marshal data failed")
-	}
+	//var jsonByte []byte
+	//
+	//if encStr, ok := packet.Data.(string); ok {
+	//	//无需转换为json
+	//	jsonByte = []byte(encStr)
+	//} else {
+	//	enc, encErr := json.Marshal(packet.Data)
+	//	if encErr != nil {
+	//		return fmt.Errorf("json.Marshal data failed")
+	//	}
+	//	jsonByte = enc
+	//}
 
-	//fmt.Printf("plainText hex(%d): %s\n", len(enc), hex.EncodeToString(enc))
-	//加载到授权中
 	secretKey, decErr := base58.Decode(key)
 	if decErr != nil {
 		return decErr
 	}
-	chipText, chipErr := peer.auth().EncryptData(enc, secretKey)
+
+	chipErr := peer.auth().EncryptDataPacket(packet, secretKey)
 	if chipErr != nil {
 		return fmt.Errorf("encrypt data failed")
 	}
 
+	//fmt.Printf("plainText hex(%d): %s\n", len(enc), hex.EncodeToString(enc))
+	//加载到授权中
+
+	//chipText, chipErr := peer.auth().EncryptData(jsonByte, secretKey)
+	//if chipErr != nil {
+	//	return fmt.Errorf("encrypt data failed")
+	//}
+
 	//fmt.Printf("chipText hex(%d): %s\n", len(chipText), hex.EncodeToString(chipText))
-	packet.Data = string(chipText)
+	//packet.Data = string(chipText)
 
 	return nil
 }
@@ -811,7 +827,7 @@ func (node *OWTPNode) keyAgreement(ctx *Context) {
 func (node *OWTPNode) wrapDataPacketForResponse(peer Peer, ctx *Context) *DataPacket {
 
 	packet := &DataPacket{}
-
+	packet.Version = ctx.Version
 	packet.Method = ctx.Method
 	packet.Nonce = ctx.nonce
 
@@ -1048,17 +1064,18 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 			return
 		}
 
-		rawData, ok := packet.Data.(string)
-		if !ok {
-			packet.Req = WSResponse
-			packet.Data = responseError("data parse failed", ErrBadRequest)
-			packet.Timestamp = time.Now().Unix()
-			packet.SecretData = SecretData{}
-			peer.send(*packet)
-			return
-		}
+		//rawData, ok := packet.Data.(string)
+		//if !ok {
+		//	packet.Req = WSResponse
+		//	packet.Data = responseError("data parse failed", ErrBadRequest)
+		//	packet.Timestamp = time.Now().Unix()
+		//	packet.SecretData = SecretData{}
+		//	peer.send(*packet)
+		//	return
+		//}
 		//log.Debug("rawData:", rawData)
-		decryptData, cryptErr := peer.auth().DecryptData([]byte(rawData), secretKey)
+		//decryptData, cryptErr := peer.auth().DecryptData([]byte(rawData), secretKey)
+		cryptErr := peer.auth().DecryptDataPacket(packet, secretKey)
 		//log.Debug("decryptData:", string(decryptData))
 
 		if cryptErr != nil {
@@ -1073,11 +1090,12 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 
 		//创建上下面指针，处理请求参数
 		ctx := Context{
+			Version:       packet.Version,
 			PID:           peer.PID(),
 			Req:           packet.Req,
 			RemoteAddress: peer.RemoteAddr().String(),
 			nonce:         packet.Nonce,
-			inputs:        decryptData,
+			inputs:        packet.Data,
 			Method:        packet.Method,
 			peerstore:     node.Peerstore(),
 			Peer:          peer,
@@ -1094,6 +1112,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 		var resp Response
 
 		ctx := Context{
+			Version:       packet.Version,
 			Req:           packet.Req,
 			RemoteAddress: peer.RemoteAddr().String(),
 			nonce:         packet.Nonce,
@@ -1114,18 +1133,18 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 			return
 		}
 
-		rawData, ok := packet.Data.(string)
-		if !ok {
-			log.Critical("Data type error")
-			resp = responseError("Data type error", ErrBadRequest)
-			ctx.Resp = resp
-			node.serveMux.ServeOWTP(peer.PID(), &ctx)
-			return
-		}
+		//rawData, ok := packet.Data.(string)
+		//if !ok {
+		//	log.Critical("Data type error")
+		//	resp = responseError("Data type error", ErrBadRequest)
+		//	ctx.Resp = resp
+		//	node.serveMux.ServeOWTP(peer.PID(), &ctx)
+		//	return
+		//}
 		//log.Debug("rawData:", rawData)
-		decryptData, cryptErr := peer.auth().DecryptData([]byte(rawData), secretKey)
+		//decryptData, cryptErr := peer.auth().DecryptData([]byte(rawData), secretKey)
 		//log.Debug("decryptData:", string(decryptData))
-
+		cryptErr := peer.auth().DecryptDataPacket(packet, secretKey)
 		if cryptErr != nil {
 			log.Critical("OWTP: DecryptData failed")
 			resp = responseError("Decrypt data error", ErrKeyAgreementFailed)
@@ -1134,6 +1153,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 			return
 		}
 
+		decryptData := packet.Data.([]byte)
 		runErr := json.Unmarshal(decryptData, &resp)
 		//runErr := mapstructure.Decode(decryptData, &resp)
 		if runErr != nil {

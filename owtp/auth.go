@@ -16,14 +16,18 @@
 package owtp
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"github.com/blocktree/go-owcrypt"
 	"github.com/blocktree/openwallet/common"
 	"github.com/blocktree/openwallet/crypto"
 	"github.com/blocktree/openwallet/log"
-	"github.com/blocktree/go-owcrypt"
 	"github.com/mr-tron/base58/base58"
+	"math/big"
 )
 
 //KeyAgreement 协商密码
@@ -69,6 +73,10 @@ type Authorization interface {
 	EncryptData(data []byte, key []byte) ([]byte, error)
 	//DecryptData 解密数据
 	DecryptData(data []byte, key []byte) ([]byte, error)
+	//EncryptDataPacket 加密数据
+	EncryptDataPacket(data *DataPacket, key []byte) error
+	//DecryptDataPacket 解密数据
+	DecryptDataPacket(data *DataPacket, key []byte) error
 }
 
 type AuthorizationBase struct{}
@@ -121,6 +129,15 @@ func (base *AuthorizationBase) EncryptData(data []byte, key []byte) ([]byte, err
 //DecryptData 解密数据
 func (base *AuthorizationBase) DecryptData(data []byte, key []byte) ([]byte, error) {
 	return nil, fmt.Errorf("DecryptData is not implemented")
+}
+
+//EncryptDataPacket 加密数据
+func (base *AuthorizationBase) EncryptDataPacket(data *DataPacket, key []byte) error {
+	return fmt.Errorf("EncryptDataPacket is not implemented")
+}
+//DecryptDataPacket 解密数据
+func (base *AuthorizationBase) DecryptDataPacket(data *DataPacket, key []byte) error {
+	return fmt.Errorf("DecryptDataPacket is not implemented")
 }
 
 type Certificate struct {
@@ -342,6 +359,85 @@ func (auth *OWTPAuth) DecryptData(data []byte, key []byte) ([]byte, error) {
 
 	return data, nil
 }
+
+
+//EncryptDataPacket 加密数据
+func (auth *OWTPAuth) EncryptDataPacket(packet *DataPacket, key []byte) error {
+
+	var dataByte []byte
+
+	if encStr, ok := packet.Data.(string); ok {
+		//无需转换为json
+		dataByte = []byte(encStr)
+	} else {
+		enc, encErr := json.Marshal(packet.Data)
+		if encErr != nil {
+			return fmt.Errorf("json.Marshal data failed")
+		}
+		dataByte = enc
+	}
+
+	//使用协商密钥加密数据
+	if auth.EnableKeyAgreement() && len(key) > 0 && len(dataByte) > 0 {
+
+		//DataPacket = 1时，使用新的加密方案
+		if packet.Version == DataPacketVersionV1 {
+			//把nonce作为salt
+			nonceBit := big.NewInt(int64(packet.Nonce)).Bytes()
+			h := hmac.New(sha256.New, nonceBit)
+			h.Write(key)
+			md := h.Sum(nil)
+			key = md
+		}
+
+		encD, err := crypto.AESEncrypt(dataByte, key)
+		if err != nil {
+			return err
+		}
+		chipText := base64.StdEncoding.EncodeToString(encD)
+		packet.Data = chipText
+	} else {
+		packet.Data = string(dataByte)
+	}
+
+	return nil
+}
+//DecryptDataPacket 解密数据
+func (auth *OWTPAuth) DecryptDataPacket(packet *DataPacket, key []byte) error {
+
+	rawData, ok := packet.Data.(string)
+	if !ok {
+		return fmt.Errorf("data parse failed")
+	}
+	//使用协商密钥解密数据
+	if auth.EnableKeyAgreement() && len(key) > 0 && len(rawData) > 0 {
+
+		//DataPacket = 1时，使用新的加密方案
+		if packet.Version == DataPacketVersionV1 {
+			//把nonce作为salt
+			nonceBit := big.NewInt(int64(packet.Nonce)).Bytes()
+			h := hmac.New(sha256.New, nonceBit)
+			h.Write(key)
+			md := h.Sum(nil)
+			key = md
+		}
+
+		encD, err := base64.StdEncoding.DecodeString(rawData)
+		if err != nil {
+			return err
+		}
+		decD, err := crypto.AESDecrypt(encD, key)
+		if err != nil {
+			return err
+		}
+		packet.Data = decD
+	} else {
+		packet.Data = []byte(rawData)
+	}
+
+	return nil
+}
+
 
 //AuthHeader 返回授权头
 func (auth *OWTPAuth) HTTPAuthHeader() map[string]string {

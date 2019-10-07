@@ -16,7 +16,10 @@
 package owtp
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/hex"
+	"github.com/blocktree/openwallet/common"
 	"github.com/blocktree/openwallet/log"
 	"github.com/mr-tron/base58/base58"
 	"testing"
@@ -65,4 +68,20 @@ func TestBase58(t *testing.T) {
 	pubbs, _ := hex.DecodeString("038EA1AF7C58F2FC1BF1BF7C04075513D9B6FFF4517D84F53B2D04E179D1054810F4C27C24AB9A54F962E2892A067B4E83BEF7C53A145C2EDC6BFB83852EDD77")
 
 	log.Info("pub encode:", base58.Encode(pubbs))
+}
+
+
+func TestEncryptData(t *testing.T) {
+	nonce := 1181076977457565696
+	log.Infof("nonce: %d", nonce)
+	b58 := "CKv1vLjKGCp9uSGhLmXFgn2TLRdvEiiqRCfvmW6qwWJQ"
+	key, _ := base58.Decode(b58)
+	log.Infof("key: %s", hex.EncodeToString(key))
+	//把nonce作为salt
+	nonceBit := []byte(common.NewString(nonce).String())
+	h := hmac.New(sha256.New, nonceBit)
+	h.Write(key)
+	md := h.Sum(nil)
+	newkey := md
+	log.Infof("key: %s", hex.EncodeToString(newkey))
 }

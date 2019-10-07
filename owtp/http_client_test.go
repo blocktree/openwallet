@@ -243,7 +243,7 @@ func TestConcurrentHTTPConnect(t *testing.T) {
 	config := ConnectConfig{}
 	config.Address = httpURL
 	config.ConnectType = HTTP
-	//config["enableSignature"] = "1"
+	config.EnableSignature = false
 	for i := 0; i < 100; i++ {
 		wait.Add(100)
 		go func() {

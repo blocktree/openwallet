@@ -20,6 +20,12 @@ import (
 	"net"
 )
 
+const (
+	DataPacketVersionV1 = 1 //数据包版本v1
+
+	CurrentDataPacketVersion = DataPacketVersionV1 //当前的数据包版本
+)
+
 //DataPacket 数据包
 type DataPacket struct {
 	/*
@@ -29,7 +35,7 @@ type DataPacket struct {
 		| 参数名 | 类型   | 示例             | 描述                                                                                |
 		|--------|--------|------------------|-----------------------------------------------------------------------------------|
 		| r      | uint8  | 1                | 传输类型，1：请求，2：响应                                                              |
-		| v      | string | 1                | 版本号                                                                              |
+		| v      | int64  | 1                | 版本号                                                                              |
 		| m      | string | subscribe        | 方法名，对应接口方法定义                                                             |
 		| n      | uint32 | 123              | 请求序号。为了保证请求对应响应按序执行，并防御重放攻击，序号可以为随机数，但不可重复。   |
 		| t      | uint32 | 1528520843       | 时间戳。限制请求在特定时间范围内有效，如10分钟。                                       |
@@ -46,10 +52,7 @@ type DataPacket struct {
 	Data       interface{} `json:"d"`
 	Signature  string      `json:"s"`
 	SecretData SecretData  `json:"k"`
-	//CheckCode string      `json:"z"`
-	//Version   string      `json:"v"`
-	//PublicKey   string      `json:"a"`
-
+	Version    int64       `json:"v"`
 }
 
 //KeyAgreement 协商密码
@@ -73,7 +76,7 @@ func NewDataPacket(json gjson.Result) *DataPacket {
 	dp.Timestamp = json.Get("t").Int()
 	dp.Data = json.Get("d").String()
 	dp.Signature = json.Get("s").String()
-	//dp.CheckCode = json.Get("z").String()
+	dp.Version = json.Get("v").Int()
 
 	dp.SecretData = SecretData{}
 	dp.SecretData.PublicKeyInitiator = json.Get("k.pk").String()
@@ -89,9 +92,6 @@ func NewDataPacket(json gjson.Result) *DataPacket {
 	if json.Get("z").Exists() {
 		dp.SecretData.SA = json.Get("z").String()
 	}
-
-	//dp.Version = json.Get("v").String()
-	//dp.PublicKey = json.Get("a").String()
 
 	return dp
 }
