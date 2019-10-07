@@ -97,6 +97,8 @@ type Context struct {
 	stop bool
 	//节点指针
 	Peer Peer
+	//数据包版本
+	Version int64
 }
 
 //NewContext
@@ -340,40 +342,41 @@ func (mux *ServeMux) ServeOWTP(pid string, ctx *Context) {
 			log.Error("nonce duplicate: ", ctx)
 		} else {
 			f, ok := mux.m[ctx.Method]
-			if ok {
-				//执行准备处理方法
-				if prepareFunc, exist := mux.m[PrepareMethod]; exist {
-					//内置方法不执行prepare
-					if !f.inner {
-						prepareFunc.h(ctx)
-					}
 
+			//执行准备处理方法
+			if prepareFunc, exist := mux.m[PrepareMethod]; exist {
+				//内置方法不执行prepare
+				if !f.inner {
+					prepareFunc.h(ctx)
 				}
+			}
 
-				if !ctx.stop {
+			if !ctx.stop {
+				//路由方法存在
+				if ok {
 					//执行路由方法
 					f.h(ctx)
-				}
 
-				if !ctx.stop {
-					//执行结束处理方法
-					if finishFunc, exist := mux.m[FinishMethod]; exist {
-						//内置方法不执行finish
-						if !f.inner {
-							finishFunc.h(ctx)
-						}
+				} else {
+					//找不到方法的处理
+					ctx.Resp = responseError("can not find method", ErrNotFoundMethod)
+				}
+			}
+
+			if !ctx.stop {
+				//执行结束处理方法
+				if finishFunc, exist := mux.m[FinishMethod]; exist {
+					//内置方法不执行finish
+					if !f.inner {
+						finishFunc.h(ctx)
 					}
 				}
-
-				//添加已完成的请求
-				mux.completeRequest(ctx)
-
-
-			} else {
-				//找不到方法的处理
-				ctx.Resp = responseError("can not find method", ErrNotFoundMethod)
 			}
 		}
+
+		//添加已完成的请求
+		mux.completeRequest(ctx)
+
 	case WSResponse: //我方请求后，对方响应返回
 		mux.mu.Lock()
 
