@@ -84,6 +84,7 @@ func TestHTTPHostRun(t *testing.T) {
 
 	var (
 		endRunning = make(chan bool, 1)
+		callCount = 0
 	)
 	cert := NewRandomCertificate()
 	//cert, _ := NewCertificate(httpHostPrv)
@@ -99,11 +100,17 @@ func TestHTTPHostRun(t *testing.T) {
 		log.Notice("remoteAddress:", ctx.RemoteAddress)
 		log.Notice("prepare")
 		//ctx.ResponseStopRun(nil, StatusSuccess, "success")
+		callCount++
 	})
 	httpHost.HandleFinishFunc(func(ctx *Context) {
 		username := ctx.GetSession("username")
 		log.Notice("username:", username)
 		log.Notice("finish")
+		if callCount % 10 == 0 {
+			log.Notice("close peer: ", ctx.PID)
+			httpHost.ClosePeer(ctx.PID)
+		}
+
 	})
 	httpHost.Listen(config)
 
@@ -115,6 +122,7 @@ func TestHTTPClientCall(t *testing.T) {
 	config := ConnectConfig{}
 	config.Address = httpURL
 	config.ConnectType = HTTP
+	config.EnableKeyAgreement = true
 	//config["enableSignature"] = "1"
 	cert, _ := NewCertificate("E3cQTqKZfVVL6cQvyrSgbjmkVnnbkBuoqt7ed9wQLjgz", "aes")
 	//httpClient := RandomOWTPNode()
@@ -125,18 +133,59 @@ func TestHTTPClientCall(t *testing.T) {
 	prv, pub := httpClient.Certificate().KeyPair()
 	log.Info("pub:", pub)
 	log.Info("prv:", prv)
-	err := httpClient.Connect(httpHostNodeID, config)
+	_, err := httpClient.Connect(httpHostNodeID, config)
 	if err != nil {
 		t.Errorf("Connect unexcepted error: %v", err)
 		return
 	}
-	err = httpClient.KeyAgreement(httpHostNodeID, "aes")
-	if err != nil {
-		t.Errorf("KeyAgreement unexcepted error: %v", err)
-		return
-	}
+	//err = httpClient.KeyAgreement(httpHostNodeID, "aes")
+	//if err != nil {
+	//	t.Errorf("KeyAgreement unexcepted error: %v", err)
+	//	return
+	//}
 
 	testMakeHTTPCall(httpClient)
+}
+
+
+func TestHTTPClientConnectAndCall(t *testing.T) {
+
+	config := ConnectConfig{}
+	config.Address = httpURL
+	config.ConnectType = HTTP
+	config.EnableKeyAgreement = true
+	//config["enableSignature"] = "1"
+	cert, _ := NewCertificate("E3cQTqKZfVVL6cQvyrSgbjmkVnnbkBuoqt7ed9wQLjgz", "aes")
+	//httpClient := RandomOWTPNode()
+	httpClient := NewNode(NodeConfig{
+		Cert: cert,
+	})
+	httpClient.SetPeerstore(globalSessions)
+
+	params := map[string]interface{}{
+		"name": "chance",
+		"age":  18,
+	}
+
+	httpClient.ConnectAndCall(httpHostNodeID, config,"getInfo", params, true, func(resp Response) {
+		if resp.Status == StatusSuccess {
+			result := resp.JsonData()
+			symbols := result.Get("symbols")
+			fmt.Printf("symbols: %v\n", symbols)
+		} else {
+			log.Error(resp)
+		}
+
+	})
+
+
+	httpClient.ConnectAndCall(httpHostNodeID, config, "getInfo", params, true, func(resp Response) {
+
+		result := resp.JsonData()
+		symbols := result.Get("symbols")
+		fmt.Printf("symbols: %v\n", symbols)
+	})
+
 }
 
 func TestHTTPClientContinueCall(t *testing.T) {
@@ -148,6 +197,7 @@ func TestHTTPClientContinueCall(t *testing.T) {
 	config := ConnectConfig{}
 	config.Address = httpURL
 	config.ConnectType = HTTP
+	config.EnableKeyAgreement = true
 	//config["enableSignature"] = "1"
 	cert, _ := NewCertificate("E3cQTqKZfVVL6cQvyrSgbjmkVnnbkBuoqt7ed9wQLjgz", "aes")
 	//httpClient := RandomOWTPNode()
@@ -158,20 +208,21 @@ func TestHTTPClientContinueCall(t *testing.T) {
 	prv, pub := httpClient.Certificate().KeyPair()
 	log.Info("pub:", pub)
 	log.Info("prv:", prv)
-	err := httpClient.Connect(httpHostNodeID, config)
+	_, err := httpClient.Connect(httpHostNodeID, config)
 	if err != nil {
 		t.Errorf("Connect unexcepted error: %v", err)
 		return
 	}
-	err = httpClient.KeyAgreement(httpHostNodeID, "aes")
-	if err != nil {
-		t.Errorf("KeyAgreement unexcepted error: %v", err)
-		return
-	}
+	//err = httpClient.KeyAgreement(httpHostNodeID, "aes")
+	//if err != nil {
+	//	t.Errorf("KeyAgreement unexcepted error: %v", err)
+	//	return
+	//}
 
-	for i := 0; i < 500000; i++ {
+	for i := 0; i < 500; i++ {
+		log.Notice("call Num: ", i)
 		testMakeHTTPCall(httpClient)
-		time.Sleep(2 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 
 	<-endRunning
@@ -249,7 +300,7 @@ func TestConcurrentHTTPConnect(t *testing.T) {
 		go func() {
 
 			httpClient := RandomOWTPNode()
-			err := httpClient.Connect(httpHostNodeID, config)
+			_, err := httpClient.Connect(httpHostNodeID, config)
 			if err != nil {
 				t.Errorf("Connect unexcepted error: %v", err)
 				return

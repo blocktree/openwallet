@@ -98,7 +98,7 @@ func TestWSHostRun(t *testing.T) {
 	config := ConnectConfig{}
 	config.Address = wsURL
 	config.ConnectType = Websocket
-	config.EnableSignature = true
+	//config.EnableSignature = true
 	wsHost.HandleFunc("getInfo", getInfo)
 	wsHost.HandlePrepareFunc(func(ctx *Context) {
 		log.Notice("remoteAddress:", ctx.RemoteAddress)
@@ -152,13 +152,13 @@ func TestWSClientCall(t *testing.T) {
 	config := ConnectConfig{}
 	config.Address = wsURL
 	config.ConnectType = Websocket
-	config.EnableSignature = true
+	config.EnableKeyAgreement = true
 	wsClient := RandomOWTPNode()
 	wsClient.SetPeerstore(wsGlobalSessions)
 	//_, pub := httpClient.Certificate().KeyPair()
 	//log.Info("pub:", pub)
 	wsClient.HandleFunc("getInfo", getInfo)
-	err := wsClient.Connect(wsHostNodeID, config)
+	_, err := wsClient.Connect(wsHostNodeID, config)
 	if err != nil {
 		t.Errorf("Connect unexcepted error: %v", err)
 		return
@@ -175,11 +175,11 @@ func TestWSClientCall(t *testing.T) {
 		log.Infof("client: peer[%s] disconnected", peer.ID)
 	})
 
-	err = wsClient.KeyAgreement(httpHostNodeID, "aes")
-	if err != nil {
-		t.Errorf("KeyAgreement unexcepted error: %v", err)
-		return
-	}
+	//err = wsClient.KeyAgreement(httpHostNodeID, "aes")
+	//if err != nil {
+	//	t.Errorf("KeyAgreement unexcepted error: %v", err)
+	//	return
+	//}
 
 	params := map[string]interface{}{
 		"name": "chance",
@@ -206,7 +206,7 @@ func TestWSClientConnectAndCall(t *testing.T) {
 	config := ConnectConfig{}
 	config.Address = wsURL
 	config.ConnectType = Websocket
-	config.EnableSignature = true
+	config.EnableKeyAgreement = true
 	wsClient := RandomOWTPNode()
 	wsClient.SetPeerstore(wsGlobalSessions)
 	wsClient.HandleFunc("getInfo", getInfo)
@@ -226,9 +226,9 @@ func TestWSClientConnectAndCall(t *testing.T) {
 		"name": "chance",
 		"age":  18,
 	}
-
-	for i := 0;i<100;i++ {
-		//err = wsClient.Connect(wsHostNodeID, config)
+	//wsClient.Connect(wsHostNodeID, config)
+	for i := 0;i<300;i++ {
+		//err := wsClient.Call(wsHostNodeID, "getInfo", params, false, func(resp Response) {
 		err := wsClient.ConnectAndCall(wsHostNodeID, config, "getInfo", params, false, func(resp Response) {
 
 			result := resp.JsonData()
