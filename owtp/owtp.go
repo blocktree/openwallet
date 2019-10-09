@@ -92,17 +92,18 @@ var (
 
 //节点主配置 作为json解析工具
 type ConnectConfig struct {
-	Address         string `json:"address"`         //@required 连接IP地址
-	ConnectType     string `json:"connectType"`     //@required 连接方式
-	EnableSignature bool   `json:"enableSignature"` //是否开启owtp协议内签名，防重放
-	Account         string `json:"account"`         //mq账户名
-	Password        string `json:"password"`        //mq账户密码
-	Exchange        string `json:"exchange"`        //mq需要字段
-	WriteQueueName  string `json:"writeQueueName"`  //mq写入通道名
-	ReadQueueName   string `json:"readQueueName"`   //mq读取通道名
-	EnableSSL       bool   `json:"enableSSL"`       //是否开启链接SSL，https，wss
-	ReadBufferSize  int    `json:"readBufferSize"`  //socket读取缓存
-	WriteBufferSize int    `json:"writeBufferSize"` //socket写入缓存
+	Address            string `json:"address"`            //@required 连接IP地址
+	ConnectType        string `json:"connectType"`        //@required 连接方式
+	EnableSignature    bool   `json:"enableSignature"`    //是否开启owtp协议内签名，防重放
+	Account            string `json:"account"`            //mq账户名
+	Password           string `json:"password"`           //mq账户密码
+	Exchange           string `json:"exchange"`           //mq需要字段
+	WriteQueueName     string `json:"writeQueueName"`     //mq写入通道名
+	ReadQueueName      string `json:"readQueueName"`      //mq读取通道名
+	EnableSSL          bool   `json:"enableSSL"`          //是否开启链接SSL，https，wss
+	ReadBufferSize     int    `json:"readBufferSize"`     //socket读取缓存
+	WriteBufferSize    int    `json:"writeBufferSize"`    //socket写入缓存
+	EnableKeyAgreement bool   `json:"enableKeyAgreement"` //是否开启协商密码
 }
 
 //节点主配置 作为json解析工具
@@ -320,11 +321,27 @@ func (node *OWTPNode) CloseListener(connectType string) {
 }
 
 //Connect 建立长连接
-func (node *OWTPNode) Connect(pid string, config ConnectConfig) error {
+func (node *OWTPNode) Connect(pid string, config ConnectConfig) (Peer, error) {
 
-	_, err := node.connect(pid, config)
+	peer, err := node.connect(pid, config)
+	if err != nil {
+		return nil, err
+	}
 
-	return err
+	//连接配置EnableKeyAgreement = true，进行协商密码
+	if config.EnableKeyAgreement {
+
+		//该节点未开启，首先请求开启协商密码
+		if peer != nil && peer.auth().EnableKeyAgreement() == false {
+			log.Debugf("first connect to call KeyAgreement request")
+			err = node.KeyAgreement(pid, "aes")
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return peer, nil
 }
 
 //connect 建立长连接，内部调用
@@ -562,7 +579,7 @@ func (node *OWTPNode) ConnectAndCall(
 	reqFunc RequestFunc) error {
 
 	if sync {
-		peer, err := node.connect(pid, config) //重新连接
+		peer, err := node.Connect(pid, config) //重新连接
 		if err != nil {
 			return err
 		}
@@ -570,7 +587,7 @@ func (node *OWTPNode) ConnectAndCall(
 		return node.Call(peer.PID(), method, params, sync, reqFunc)
 	} else {
 		go func() {
-			peer, err := node.connect(pid, config) //重新连接
+			peer, err := node.Connect(pid, config) //重新连接
 			if err != nil {
 				return
 			}
@@ -625,7 +642,7 @@ func (node *OWTPNode) Call(
 
 		peerInfo := node.peerstore.PeerInfo(pid)
 
-		peer, err = node.connect(pid, peerInfo.Config) //重新连接
+		peer, err = node.Connect(pid, peerInfo.Config) //重新连接
 		if err != nil {
 			return err
 		}

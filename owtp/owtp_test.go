@@ -31,7 +31,7 @@ var (
 )
 
 func init() {
-	Debug = false
+	Debug = true
 }
 
 func getInfo(ctx *Context) {
@@ -145,7 +145,7 @@ func TestOtherMQConnectNode(t *testing.T) {
 	config.Password = "admin"
 	nodeA := RandomOWTPNode()
 	nodeA.HandleFunc("getInfo", getInfo)
-	err := nodeA.Connect("dasda", config)
+	_, err := nodeA.Connect("dasda", config)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
@@ -170,7 +170,7 @@ func TestMQConnectNode(t *testing.T) {
 	//客户端
 	nodeA := RandomOWTPNode()
 	nodeA.HandleFunc("getInfo", getInfo)
-	err := nodeA.Connect("dasda", config)
+	_, err := nodeA.Connect("dasda", config)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
@@ -180,7 +180,7 @@ func TestMQConnectNode(t *testing.T) {
 
 	nodeB := RandomOWTPNode()
 	nodeB.HandleFunc("getInfo", getInfo)
-	err = nodeB.Connect("dasda", config)
+	_, err = nodeB.Connect("dasda", config)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
@@ -190,7 +190,7 @@ func TestMQConnectNode(t *testing.T) {
 
 	nodeC := RandomOWTPNode()
 	nodeC.HandleFunc("getWallegetInfotInfo", getInfo)
-	err = nodeC.Connect("dasda", config)
+	_, err = nodeC.Connect("dasda", config)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
@@ -263,7 +263,7 @@ func TestMQtNode(t *testing.T) {
 	transferConfig.Password = "admin"
 
 	//中转连接主机
-	err := transfer.Connect("dasda", transferConfig)
+	_, err := transfer.Connect("dasda", transferConfig)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
@@ -320,7 +320,7 @@ func TestConnectNode(t *testing.T) {
 	transferConfig.Password = "admin"
 
 	//中转连接主机
-	err = transfer.Connect("dasda", transferConfig)
+	_, err = transfer.Connect("dasda", transferConfig)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
@@ -331,7 +331,7 @@ func TestConnectNode(t *testing.T) {
 	config2.ConnectType = Websocket
 
 	//A连接中转
-	err = nodeA.Connect(transfer.NodeID(), config2)
+	_, err = nodeA.Connect(transfer.NodeID(), config2)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
@@ -340,7 +340,7 @@ func TestConnectNode(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	//B连接中转
-	err = nodeB.Connect(transfer.NodeID(), config)
+	_, err = nodeB.Connect(transfer.NodeID(), config)
 	if err != nil {
 		t.Errorf("Connect failed unexpected error: %v", err)
 		return
@@ -394,7 +394,7 @@ func TestConcurrentConnect(t *testing.T) {
 
 			//客户端
 			node := createClient()
-			err := node.Connect(host.NodeID(), config)
+			_, err := node.Connect(host.NodeID(), config)
 			if err != nil {
 				t.Errorf("Connect failed unexpected error: %v", err)
 				return
@@ -439,7 +439,7 @@ func TestSubscribeConnectNode(t *testing.T) {
 			addr := ctx.Params().Get("address").String()
 			connectType := ctx.Params().Get("connectType").String()
 			log.Infof("host connecting client: %s", addr)
-			errConnect := host.Connect(subscribeNid, ConnectConfig{
+			_, errConnect := host.Connect(subscribeNid, ConnectConfig{
 				Address:     addr,
 				ConnectType: connectType,
 			})
@@ -470,7 +470,7 @@ func TestSubscribeConnectNode(t *testing.T) {
 
 		//连接主机
 		log.Info("client connecting host")
-		err := client.Connect(host.NodeID(), hostConnectConfig)
+		_, err := client.Connect(host.NodeID(), hostConnectConfig)
 		if err != nil {
 			t.Errorf("client connect failed unexpected error: %v", err)
 			return

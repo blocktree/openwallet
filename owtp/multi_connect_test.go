@@ -92,7 +92,7 @@ func TestMultiConnectClientCall(t *testing.T) {
 
 			client := RandomOWTPNode()
 			client.HandleFunc("getInfo", getInfo)
-			err := client.Connect(multiConnectHostNodeID, ConnectConfig{
+			_, err := client.Connect(multiConnectHostNodeID, ConnectConfig{
 				Address:     addr,
 				ConnectType: connectType,
 			})
