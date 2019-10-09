@@ -328,12 +328,12 @@ func (node *OWTPNode) Connect(pid string, config ConnectConfig) (Peer, error) {
 		return nil, err
 	}
 
-	//TODO：进行协商密码
+	//连接配置EnableKeyAgreement = true，进行协商密码
 	if config.EnableKeyAgreement {
 
-		//未开启的话，连接后向节点协商密码
+		//该节点未开启，首先请求开启协商密码
 		if peer != nil && peer.auth().EnableKeyAgreement() == false {
-			log.Debugf("first connect do keyagreement ")
+			log.Debugf("first connect to call KeyAgreement request")
 			err = node.KeyAgreement(pid, "aes")
 			if err != nil {
 				return nil, err

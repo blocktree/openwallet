@@ -226,10 +226,10 @@ func TestWSClientConnectAndCall(t *testing.T) {
 		"name": "chance",
 		"age":  18,
 	}
-	//wsClient.Connect(wsHostNodeID, config)
+	wsClient.Connect(wsHostNodeID, config)
 	for i := 0;i<300;i++ {
-		//err := wsClient.Call(wsHostNodeID, "getInfo", params, false, func(resp Response) {
-		err := wsClient.ConnectAndCall(wsHostNodeID, config, "getInfo", params, false, func(resp Response) {
+		err := wsClient.Call(wsHostNodeID, "getInfo", params, true, func(resp Response) {
+		//err := wsClient.ConnectAndCall(wsHostNodeID, config, "getInfo", params, true, func(resp Response) {
 
 			result := resp.JsonData()
 			symbols := result.Get("symbols")
@@ -237,8 +237,8 @@ func TestWSClientConnectAndCall(t *testing.T) {
 		})
 
 		if err != nil {
-			t.Errorf("unexcepted error: %v", err)
-			return
+			log.Errorf("ConnectAndCall failed, unexcepted error: %v", err)
+			//return
 		}
 		time.Sleep(1 * time.Second)
 	}
