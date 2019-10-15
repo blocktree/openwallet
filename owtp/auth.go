@@ -135,6 +135,7 @@ func (base *AuthorizationBase) DecryptData(data []byte, key []byte) ([]byte, err
 func (base *AuthorizationBase) EncryptDataPacket(data *DataPacket, key []byte) error {
 	return fmt.Errorf("EncryptDataPacket is not implemented")
 }
+
 //DecryptDataPacket 解密数据
 func (base *AuthorizationBase) DecryptDataPacket(data *DataPacket, key []byte) error {
 	return fmt.Errorf("DecryptDataPacket is not implemented")
@@ -309,11 +310,17 @@ func (auth *OWTPAuth) VerifySignature(data *DataPacket) bool {
 		//log.Debug("VerifySignature hash: ", hex.EncodeToString(hash))
 		nodeID := owcrypt.Hash(publickey, 0, owcrypt.HASH_ALG_SHA256)
 		//log.Debug("VerifySignature remotePublicKey: ", hex.EncodeToString(auth.remotePublicKey))
-		//log.Debug("VerifySignature nodeID: ", hex.EncodeToString(nodeID))
+		//log.Debug("VerifySignature nodeID: ", base58.Encode(nodeID))
+		//log.Debug("VerifySignature remotePID: ", auth.RemotePID())
 		signature, err := base58.Decode(data.Signature)
 		if err != nil {
 			return false
 		}
+
+		if base58.Encode(nodeID) != auth.RemotePID() {
+			return false
+		}
+
 		ret := owcrypt.Verify(publickey, nodeID, 32, hash, 32, signature, owcrypt.ECC_CURVE_SM2_STANDARD)
 		if ret != owcrypt.SUCCESS {
 			return false
@@ -360,7 +367,6 @@ func (auth *OWTPAuth) DecryptData(data []byte, key []byte) ([]byte, error) {
 	return data, nil
 }
 
-
 //EncryptDataPacket 加密数据
 func (auth *OWTPAuth) EncryptDataPacket(packet *DataPacket, key []byte) error {
 
@@ -402,6 +408,7 @@ func (auth *OWTPAuth) EncryptDataPacket(packet *DataPacket, key []byte) error {
 
 	return nil
 }
+
 //DecryptDataPacket 解密数据
 func (auth *OWTPAuth) DecryptDataPacket(packet *DataPacket, key []byte) error {
 
@@ -437,7 +444,6 @@ func (auth *OWTPAuth) DecryptDataPacket(packet *DataPacket, key []byte) error {
 
 	return nil
 }
-
 
 //AuthHeader 返回授权头
 func (auth *OWTPAuth) HTTPAuthHeader() map[string]string {
@@ -487,7 +493,7 @@ func (auth *OWTPAuth) VerifyKeyAgreement(keyAgreement *KeyAgreement) bool {
 	}
 
 	//auth.isConsult = true
-	
+
 	if len(keyAgreement.S2) == 0 {
 		return false
 	}

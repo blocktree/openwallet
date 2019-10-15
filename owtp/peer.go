@@ -114,6 +114,7 @@ type Peer interface {
 	LocalAddr() net.Addr          //本地节点地址
 	RemoteAddr() net.Addr         //远程节点地址
 	ConnectConfig() ConnectConfig // 返回配置信息
+	EnableKeyAgreement() bool     //EnableKeyAgreement 开启密码协商
 
 	/* 内部方法 */
 

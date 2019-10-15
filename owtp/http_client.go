@@ -185,6 +185,10 @@ func (c *HTTPClient) PID() string {
 	return c.pid
 }
 
+func (c *HTTPClient) EnableKeyAgreement() bool  {
+	return c._auth.EnableKeyAgreement()
+}
+
 func (c *HTTPClient) auth() Authorization {
 
 	return c._auth
