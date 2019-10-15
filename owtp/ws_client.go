@@ -190,6 +190,10 @@ func (c *WSClient) PID() string {
 	return c.pid
 }
 
+func (c *WSClient) EnableKeyAgreement() bool  {
+	return c._auth.EnableKeyAgreement()
+}
+
 func (c *WSClient) auth() Authorization {
 
 	return c._auth

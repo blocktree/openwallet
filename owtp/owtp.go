@@ -1070,41 +1070,6 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 			return
 		}
 
-		//授权检查，只检查请求过来的签名
-		if !peer.auth().VerifySignature(packet) {
-			log.Errorf("auth failed: %+v", packet)
-			packet.Req = WSResponse
-			packet.Data = responseError("verify signature failed, unauthorized", ErrUnauthorized)
-			packet.Timestamp = time.Now().Unix()
-			packet.SecretData = SecretData{}
-			peer.send(*packet) //发送验证失败结果
-			return
-		}
-
-		//rawData, ok := packet.Data.(string)
-		//if !ok {
-		//	packet.Req = WSResponse
-		//	packet.Data = responseError("data parse failed", ErrBadRequest)
-		//	packet.Timestamp = time.Now().Unix()
-		//	packet.SecretData = SecretData{}
-		//	peer.send(*packet)
-		//	return
-		//}
-		//log.Debug("rawData:", rawData)
-		//decryptData, cryptErr := peer.auth().DecryptData([]byte(rawData), secretKey)
-		cryptErr := peer.auth().DecryptDataPacket(packet, secretKey)
-		//log.Debug("decryptData:", string(decryptData))
-
-		if cryptErr != nil {
-			log.Critical("OWTP: DecryptData failed, unexpected err:", cryptErr)
-			//packet.Req = WSResponse
-			//packet.Data = responseError("secret key is invalid", ErrSecretKeyInvalid)
-			//packet.Timestamp = time.Now().Unix()
-			//packet.SecretData = SecretData{}
-			//peer.send(*packet)
-			//return
-		}
-
 		//创建上下面指针，处理请求参数
 		ctx := Context{
 			Version:       packet.Version,
@@ -1112,11 +1077,24 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 			Req:           packet.Req,
 			RemoteAddress: peer.RemoteAddr().String(),
 			nonce:         packet.Nonce,
-			inputs:        packet.Data,
 			Method:        packet.Method,
 			peerstore:     node.Peerstore(),
 			Peer:          peer,
 		}
+
+		//授权检查，只检查请求过来的签名
+		verfifySigned := peer.auth().VerifySignature(packet)
+		if !verfifySigned {
+			//终止路由方法
+			ctx.ResponseStopRun(nil, ErrUnauthorized, "verify signature failed, unauthorized")
+		}
+
+		cryptErr := peer.auth().DecryptDataPacket(packet, secretKey)
+		if cryptErr != nil {
+			log.Critical("OWTP: DecryptData failed, unexpected err:", cryptErr)
+		}
+		//解密后填充到输入参数
+		ctx.inputs = packet.Data
 
 		node.serveMux.ServeOWTP(peer.PID(), &ctx)
 

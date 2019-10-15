@@ -108,6 +108,10 @@ func (c *MQClient) PID() string {
 	return c.pid
 }
 
+func (c *MQClient) EnableKeyAgreement() bool  {
+	return c._auth.EnableKeyAgreement()
+}
+
 func (c *MQClient) auth() Authorization {
 
 	return c._auth

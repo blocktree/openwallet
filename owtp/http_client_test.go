@@ -94,10 +94,11 @@ func TestHTTPHostRun(t *testing.T) {
 	config := ConnectConfig{}
 	config.Address = listenPort
 	config.ConnectType = HTTP
-	//config["enableSignature"] = "1"
+	config.EnableSignature = true
 	httpHost.HandleFunc("getInfo", getInfo)
 	httpHost.HandlePrepareFunc(func(ctx *Context) {
 		log.Notice("remoteAddress:", ctx.RemoteAddress)
+		log.Notice("enableKeyAgreement:", ctx.Peer.EnableKeyAgreement())
 		log.Notice("prepare")
 		//ctx.ResponseStopRun(nil, StatusSuccess, "success")
 		callCount++
@@ -122,8 +123,8 @@ func TestHTTPClientCall(t *testing.T) {
 	config := ConnectConfig{}
 	config.Address = httpURL
 	config.ConnectType = HTTP
-	config.EnableKeyAgreement = true
-	//config["enableSignature"] = "1"
+	config.EnableKeyAgreement = false
+	config.EnableSignature = true
 	cert, _ := NewCertificate("E3cQTqKZfVVL6cQvyrSgbjmkVnnbkBuoqt7ed9wQLjgz", "aes")
 	//httpClient := RandomOWTPNode()
 	httpClient := NewNode(NodeConfig{

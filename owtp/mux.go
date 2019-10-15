@@ -343,11 +343,13 @@ func (mux *ServeMux) ServeOWTP(pid string, ctx *Context) {
 		} else {
 			f, ok := mux.m[ctx.Method]
 
-			//执行准备处理方法
-			if prepareFunc, exist := mux.m[PrepareMethod]; exist {
-				//内置方法不执行prepare
-				if !f.inner {
-					prepareFunc.h(ctx)
+			if !ctx.stop {
+				//执行准备处理方法
+				if prepareFunc, exist := mux.m[PrepareMethod]; exist {
+					//内置方法不执行prepare
+					if !f.inner {
+						prepareFunc.h(ctx)
+					}
 				}
 			}
 
