@@ -94,7 +94,7 @@ func TestHTTPHostRun(t *testing.T) {
 	config := ConnectConfig{}
 	config.Address = listenPort
 	config.ConnectType = HTTP
-	config.EnableSignature = true
+	config.EnableSignature = false
 	httpHost.HandleFunc("getInfo", getInfo)
 	httpHost.HandlePrepareFunc(func(ctx *Context) {
 		log.Notice("remoteAddress:", ctx.RemoteAddress)
@@ -123,7 +123,7 @@ func TestHTTPClientCall(t *testing.T) {
 	config := ConnectConfig{}
 	config.Address = httpURL
 	config.ConnectType = HTTP
-	config.EnableKeyAgreement = false
+	config.EnableKeyAgreement = true
 	config.EnableSignature = true
 	cert, _ := NewCertificate("E3cQTqKZfVVL6cQvyrSgbjmkVnnbkBuoqt7ed9wQLjgz", "aes")
 	//httpClient := RandomOWTPNode()

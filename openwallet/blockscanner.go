@@ -126,6 +126,14 @@ type BlockScanner interface {
 	//SetBlockScanWalletDAI 设置区块扫描过程，上层提供一个钱包数据接口
 	//@optional
 	SetBlockScanWalletDAI(dai WalletDAI) error
+
+	//SetBlockchainDAI 设置区块链数据访问接口，读取持久化的区块数据
+	//@optional
+	SetBlockchainDAI(dai BlockchainDAI) error
+
+	//SupportBlockchainDAI 支持外部设置区块链数据访问接口
+	//@optional
+	SupportBlockchainDAI() bool
 }
 
 //BlockScanNotificationObject 扫描被通知对象
@@ -179,6 +187,7 @@ type BlockScannerBase struct {
 	blockConsumer     chan interface{}
 	isClose           bool //是否已关闭
 	WalletDAI         WalletDAI
+	BlockchainDAI     BlockchainDAI
 }
 
 //NewBTCBlockScanner 创建区块链扫描器
@@ -393,6 +402,19 @@ func (bs *BlockScannerBase) GetTransactionsByAddress(offset, limit int, coin Coi
 //@optional
 func (bs *BlockScannerBase) SetBlockScanWalletDAI(dai WalletDAI) error {
 	bs.WalletDAI = dai
+	return nil
+}
+
+//SupportBlockchainDAI 支持外部设置区块链数据访问接口
+//@optional
+func (bs *BlockScannerBase) SupportBlockchainDAI() bool {
+	return false
+}
+
+//SetBlockchainDAI 设置区块链数据访问接口，读取持久化的区块数据
+//@optional
+func (bs *BlockScannerBase) SetBlockchainDAI(dai BlockchainDAI) error {
+	bs.BlockchainDAI = dai
 	return nil
 }
 

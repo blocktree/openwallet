@@ -1139,6 +1139,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 		//log.Debug("rawData:", rawData)
 		//decryptData, cryptErr := peer.auth().DecryptData([]byte(rawData), secretKey)
 		//log.Debug("decryptData:", string(decryptData))
+
 		cryptErr := peer.auth().DecryptDataPacket(packet, secretKey)
 		if cryptErr != nil {
 			log.Critical("OWTP: DecryptData failed")
