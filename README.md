@@ -1,7 +1,7 @@
 # OpenWallet
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square)](https://www.gnu.org/licenses/gpl-3.0)
-[![Slack](https://img.shields.io/badge/Slack-blocktree-green.svg?style=flat-square)](https://join.slack.com/t/blocktreeworkspace/shared_invite/enQtNjE1NzU3OTkyNjYzLTUxNGM4NGVlYmM4OGM1MmRmMDMwMDdhMzQxYTVkMzU0YmUzZDgzYTY4MzdmNmRkYzRlMzFmYzc4NTAzNzA4ODk)
+[![Slack](https://img.shields.io/badge/Slack-blocktree-green.svg?style=flat-square)](https://join.slack.com/t/blocktreeworkspace/shared_invite/enQtODE0OTY1ODA5MjM3LTIwNDJjNDA2ZDYyMjE1YTRiMDUyYTg5NDljMTU0NTY4NmE5ZDM2ZGI3NjcxYzMzN2NiZTZjNzIyMjVjYmRiY2E)
 
 ## Contents
 
