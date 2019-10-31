@@ -25,10 +25,10 @@ func (wm *WalletManager) AddAddressForBlockScan(address, sourceKey string) error
 	defer wm.mu.Unlock()
 	wm.AddressInScanning[address] = sourceKey
 	return nil
-	//if _, exist := wm.WalletInScanning[sourceKey]; exist {
-	//	return
-	//}
-	//wm.WalletInScanning[sourceKey] = wrapper
+//if _, exist := wm.WalletInScanning[sourceKey]; exist {
+//	return
+//}
+//wm.WalletInScanning[sourceKey] = wrapper
 }
 
 //IsExistAddressForBlockScan 指定地址是否已登记扫描

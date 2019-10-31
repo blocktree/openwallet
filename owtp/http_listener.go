@@ -58,7 +58,7 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	//HTTP是短连接，接收到数据，节点马上处理，无需像websocket那样管理连接
 	err = peer.HandleRequest()
 	if err != nil {
-		log.Error("HandleRequest unexpected error:", err)
+		//log.Error("HandleRequest unexpected error:", err)
 		http.Error(w, err.Error(), 400)
 		return
 	}

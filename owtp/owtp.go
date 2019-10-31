@@ -858,7 +858,8 @@ func (node *OWTPNode) wrapDataPacketForResponse(peer Peer, ctx *Context) *DataPa
 
 		value := node.Peerstore().Get(peer.PID(), keyAgreementCipher)
 		if value == nil {
-			packet.Data = responseError("keyAgreement is enabled, but cipher is empty", ErrKeyAgreementFailed)
+			errMsg := fmt.Sprintf("keyAgreement is enabled, but pid: %s cipher is empty", peer.PID())
+			packet.Data = responseError(errMsg, ErrKeyAgreementFailed)
 			return packet
 		}
 
@@ -1139,6 +1140,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 		//log.Debug("rawData:", rawData)
 		//decryptData, cryptErr := peer.auth().DecryptData([]byte(rawData), secretKey)
 		//log.Debug("decryptData:", string(decryptData))
+
 		cryptErr := peer.auth().DecryptDataPacket(packet, secretKey)
 		if cryptErr != nil {
 			log.Critical("OWTP: DecryptData failed")

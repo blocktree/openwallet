@@ -67,6 +67,7 @@ type WalletDAI interface {
 
 //TransactionDecoderBase 实现TransactionDecoder的基类
 type WalletDAIBase struct {
+
 }
 
 func (base *WalletDAIBase) GetWallet() *Wallet {
