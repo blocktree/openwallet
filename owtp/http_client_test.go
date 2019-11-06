@@ -17,7 +17,7 @@ var (
 	httpHost   *OWTPNode
 	httpClient *OWTPNode
 	listenPort = ":8422"
-	httpURL        = "0.0.0.0:8422"
+	httpURL    = "0.0.0.0:8422"
 	//httpURL        = "api.blocktree.com"
 	httpHostPrv    = "FSomdQBZYzgu9YYuuSr3qXd8sP1sgQyk4rhLFo6gyi32"
 	httpHostNodeID = "54dZTdotBmE9geGJmJcj7Qzm6fzNrEUJ2NcDwZYp2QEp"
@@ -84,7 +84,7 @@ func TestHTTPHostRun(t *testing.T) {
 
 	var (
 		endRunning = make(chan bool, 1)
-		callCount = 0
+		callCount  = 0
 	)
 	cert := NewRandomCertificate()
 	//cert, _ := NewCertificate(httpHostPrv)
@@ -107,7 +107,7 @@ func TestHTTPHostRun(t *testing.T) {
 		username := ctx.GetSession("username")
 		log.Notice("username:", username)
 		log.Notice("finish")
-		if callCount % 10 == 0 {
+		if callCount%10 == 0 {
 			log.Notice("close peer: ", ctx.PID)
 			httpHost.ClosePeer(ctx.PID)
 		}
@@ -148,7 +148,6 @@ func TestHTTPClientCall(t *testing.T) {
 	testMakeHTTPCall(httpClient)
 }
 
-
 func TestHTTPClientConnectAndCall(t *testing.T) {
 
 	config := ConnectConfig{}
@@ -168,7 +167,7 @@ func TestHTTPClientConnectAndCall(t *testing.T) {
 		"age":  18,
 	}
 
-	httpClient.ConnectAndCall(httpHostNodeID, config,"getInfo", params, true, func(resp Response) {
+	httpClient.ConnectAndCall(httpHostNodeID, config, "getInfo", params, true, func(resp Response) {
 		if resp.Status == StatusSuccess {
 			result := resp.JsonData()
 			symbols := result.Get("symbols")
@@ -178,7 +177,6 @@ func TestHTTPClientConnectAndCall(t *testing.T) {
 		}
 
 	})
-
 
 	httpClient.ConnectAndCall(httpHostNodeID, config, "getInfo", params, true, func(resp Response) {
 
