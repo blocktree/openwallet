@@ -178,7 +178,7 @@ func NewNode(config NodeConfig) *OWTPNode {
 	if config.Cert.ID() == "" {
 		cert, err := NewCertificate(RandomPrivateKey(), "")
 		if err != nil {
-			return nil
+			return err
 		}
 		node.cert = cert
 	} else {
