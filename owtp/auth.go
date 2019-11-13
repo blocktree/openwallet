@@ -28,6 +28,7 @@ import (
 	"github.com/blocktree/openwallet/log"
 	"github.com/mr-tron/base58/base58"
 	"math/big"
+	"errors"
 )
 
 //KeyAgreement 协商密码
@@ -171,7 +172,7 @@ func NewRandomCertificate() Certificate {
 func NewCertificate(privateKey string, consultType ...string) (Certificate, error) {
 
 	if len(privateKey) == 0 {
-		return Certificate{}, nil
+		return Certificate{}, errors.New("private key is empty")
 	}
 
 	priKey, err := base58.Decode(privateKey)
@@ -197,6 +198,9 @@ func (cert *Certificate) KeyPair() (priv string, pub string) {
 }
 
 func (cert *Certificate) ID() string {
+	if len(cert.publicKeyBytes) == 0 {
+		return ""
+	}
 	nodeID := owcrypt.Hash(cert.publicKeyBytes, 0, owcrypt.HASH_ALG_SHA256)
 	return base58.Encode(nodeID)
 }
