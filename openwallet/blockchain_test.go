@@ -16,6 +16,7 @@
 package openwallet
 
 import (
+	"fmt"
 	"github.com/blocktree/openwallet/common/file"
 	"github.com/blocktree/openwallet/log"
 	"path/filepath"
@@ -119,7 +120,7 @@ func TestBlockchainDAIBase_GetUnscanRecords(t *testing.T) {
 	if base == nil {
 		return
 	}
-	list, err := base.GetUnscanRecords()
+	list, err := base.GetUnscanRecords("")
 	if err != nil {
 		t.Errorf("GetUnscanRecords err: %v", err)
 		return
@@ -154,4 +155,46 @@ func TestBlockchainDAIBase_DeleteUnscanRecordByID(t *testing.T) {
 		t.Errorf("DeleteUnscanRecordByID err: %v", err)
 		return
 	}
+}
+
+
+func TestBlockchainDAIBase_BatchSaveLocalBlockHead(t *testing.T) {
+	base := testBlockchainLocal
+	if base == nil {
+		return
+	}
+
+	for i := 1; i<1000000000; i++ {
+		header := &BlockHeader{
+			Hash:              fmt.Sprintf("hash_%d", i),
+			Confirmations:     0,
+			Merkleroot:        "",
+			Previousblockhash: "",
+			Height:            uint64(i),
+			Version:           0,
+			Time:              0,
+			Fork:              false,
+			Symbol:            "BTC",
+		}
+		err := base.SaveLocalBlockHead(header)
+		if err != nil {
+			t.Errorf("SaveLocalBlockHead err: %v", err)
+			return
+		}
+	}
+}
+
+
+func TestBlockchainDAIBase_GetLocalBlockHeadByHeight(t *testing.T) {
+	base := testBlockchainLocal
+	if base == nil {
+		return
+	}
+
+	current, err := base.GetLocalBlockHeadByHeight(8525, "btc")
+	if err != nil {
+		t.Errorf("GetLocalBlockHeadByHeight err: %v", err)
+		return
+	}
+	log.Infof("Get height: %d, hash: %s", current.Height, current.Hash)
 }
