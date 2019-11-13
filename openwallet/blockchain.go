@@ -76,6 +76,7 @@ type BlockchainDAI interface {
 	DeleteUnscanRecordByID(id string, symbol string) error
 	GetTransactionsByTxID(txid, symbol string) ([]*Transaction, error)
 	GetUnscanRecords(symbol string) ([]*UnscanRecord, error)
+	SetMaxBlockCache(max uint64, symbol string) error
 }
 
 //BlockchainDAIBase 区块链数据访问接口基本实现
@@ -117,16 +118,25 @@ func (base *BlockchainDAIBase) GetUnscanRecords(symbol string) ([]*UnscanRecord,
 	return nil, fmt.Errorf("GetUnscanRecords is not implemented")
 }
 
+func (base *BlockchainDAIBase) SetMaxBlockCache(size uint64, symbol string) error {
+	return fmt.Errorf("SetMaxBlockCache is not implemented")
+}
+
 const (
-	blockchainBucket      = "blockchain"
-	CurrentBlockHeaderKey = "current_block_header"
+	blockchainBucket             = "blockchain"
+	CurrentBlockHeaderKey        = "current_block_header"
+	CurrentBlockIncreaseIndexKey = "current_block_increase_index"
+	BlockCacheIndexKey           = "block_cache_index"
+	blockIndexBucket             = "block_index_bucket"
+	blockCacheBucket             = "block_cache_bucket"
 )
 
 //BlockchainLocal 区块链数据访问本地数据库实现
 type BlockchainLocal struct {
 	blockchainDB     *storm.DB //区块链数据库
-	blockchainDBFile string
-	keepOpen         bool //保持打开状态
+	blockchainDBFile string    //区块db文件
+	keepOpen         bool      //保持打开状态
+	blockCacheSize   uint64    //区块缓存数量
 }
 
 // NewBlockchainLocal 加载区块链数据库
@@ -143,6 +153,9 @@ func NewBlockchainLocal(dbFile string, keepOpen bool) (*BlockchainLocal, error) 
 		}
 		base.blockchainDB = blockchaindb
 	}
+
+	//默认缓存1000个区块
+	base.SetMaxBlockCache(1000, "")
 	return base, nil
 }
 
@@ -195,7 +208,69 @@ func (base *BlockchainLocal) SaveLocalBlockHead(header *BlockHeader) error {
 		return err
 	}
 	defer base.closeDB()
-	return db.Save(header)
+
+	tx, err := db.Begin(true)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback()
+
+	//查询当前记录的索引位
+	var increaseIndex uint64
+	tx.Get(blockIndexBucket, CurrentBlockIncreaseIndexKey, &increaseIndex)
+
+	if increaseIndex >= base.blockCacheSize {
+		increaseIndex = 0
+	}
+
+	//递增索引
+	increaseIndex++
+	tx.Set(blockIndexBucket, CurrentBlockIncreaseIndexKey, increaseIndex)
+
+	//查询该索引位已存在的高度
+	key := fmt.Sprintf("%s_%d", BlockCacheIndexKey, increaseIndex)
+	var delHeight uint64
+	tx.Get(blockIndexBucket, key, &delHeight)
+
+	//移除该记录的高度
+	if delHeight > 0 {
+		delKey := fmt.Sprintf("%d", delHeight)
+		tx.Delete(blockCacheBucket, delKey)
+	}
+
+	//记录新高度的区块信息
+	saveKey := fmt.Sprintf("%d", header.Height)
+	tx.Set(blockCacheBucket, saveKey, header)
+
+	//记录改索引位的新高度
+	tx.Set(blockIndexBucket, key, header.Height)
+
+	//total, _ := tx.Count(&BlockHeader{})
+	//if total > 500 {
+	//	log.Debugf("blocks total = %d", total)
+	//	err = tx.Drop("BlockHeader")
+	//	if err != nil {
+	//		return err
+	//	}
+	//}
+
+	//lower := header.Height - 500
+	//if lower > 0 {
+	//	var blocks []*BlockHeader
+	//	tx.Select(q.Lte("Height", lower)).Find(&blocks)
+	//	log.Debugf("blocks count = %d", len(blocks))
+	//	for _, b := range blocks {
+	//		tx.DeleteStruct(b)
+	//	}
+	//}
+
+	//err = tx.Save(header)
+	//if err != nil {
+	//	return err
+	//}
+
+	return tx.Commit()
 }
 
 func (base *BlockchainLocal) GetLocalBlockHeadByHeight(height uint64, symbol string) (*BlockHeader, error) {
@@ -209,7 +284,16 @@ func (base *BlockchainLocal) GetLocalBlockHeadByHeight(height uint64, symbol str
 		return nil, err
 	}
 	defer base.closeDB()
-	err = db.One("Height", height, &blockHeader)
+
+	//err = db.One("Height", height, &blockHeader)
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	//return &blockHeader, nil
+
+	key := fmt.Sprintf("%d", height)
+	err = db.Get(blockCacheBucket, key, &blockHeader)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +310,7 @@ func (base *BlockchainLocal) SaveUnscanRecord(record *UnscanRecord) error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer base.closeDB()
 	return db.Save(record)
 }
 
@@ -235,7 +319,7 @@ func (base *BlockchainLocal) DeleteUnscanRecordByHeight(height uint64, symbol st
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer base.closeDB()
 
 	var list []*UnscanRecord
 	err = db.Find("BlockHeight", height, &list)
@@ -253,13 +337,14 @@ func (base *BlockchainLocal) DeleteUnscanRecordByID(id string, symbol string) er
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer base.closeDB()
 
 	var r UnscanRecord
 	err = db.One("ID", id, &r)
 	if err != nil {
 		return err
 	}
+
 	return db.DeleteStruct(&r)
 }
 
@@ -272,7 +357,7 @@ func (base *BlockchainLocal) GetUnscanRecords(symbol string) ([]*UnscanRecord, e
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
+	defer base.closeDB()
 
 	var list []*UnscanRecord
 	err = db.All(&list)
@@ -280,4 +365,9 @@ func (base *BlockchainLocal) GetUnscanRecords(symbol string) ([]*UnscanRecord, e
 		return nil, err
 	}
 	return list, nil
+}
+
+func (base *BlockchainLocal) SetMaxBlockCache(size uint64, symbol string) error {
+	base.blockCacheSize = size
+	return nil
 }
