@@ -43,18 +43,16 @@ func GenContractID(symbol, address string) string {
 
 // SmartContractRawTransaction 智能合约原始交易单
 type SmartContractRawTransaction struct {
-	Symbol      string          `json:"symbol"`     //@required 区块链类型标识
-	TxID        string          `json:"txID"`       //交易单ID，广播后会生成
-	Sid         string          `json:"sid"`        //业务订单号，保证业务不重复交易而用
-	RawHex      string          `json:"rawHex"`     //区块链协议构造的交易原生数据
-	Account     *AssetsAccount  `json:"account"`    //@required 创建交易单的账户
-	Fees        string          `json:"fees"`       //手续费
-	Signatures  []*KeySignature `json:"signatures"` //拥有者accountID: []未花签名
-	IsBuilt     bool            `json:"isBuilt"`    //是否完成构建建议单
-	IsCompleted bool            `json:"isComplete"` //是否完成所有签名
-	IsSubmit    bool            `json:"isSubmit"`   //是否已广播
-	TxAmount    string          `json:"txAmount"`   //交易单实际对账户发生的数量变化
-	ExtParam    string          `json:"extParam"`   //扩展参数，用于调用智能合约，json结构
+	Symbol      string                     `json:"symbol"`     //@required 区块链类型标识
+	TxID        string                     `json:"txID"`       //交易单ID，广播后会生成
+	Sid         string                     `json:"sid"`        //@required 业务订单号，保证业务不重复交易而用
+	RawHex      string                     `json:"rawHex"`     //@required 区块链协议构造的交易原生数据
+	Account     *AssetsAccount             `json:"account"`    //@required 创建交易单的账户
+	Signatures  map[string][]*KeySignature `json:"signatures"` //拥有者accountID: []未花签名
+	IsBuilt     bool                       `json:"isBuilt"`    //是否完成构建建议单
+	IsCompleted bool                       `json:"isComplete"` //是否完成所有签名
+	IsSubmit    bool                       `json:"isSubmit"`   //是否已广播
+	CallParam   string                     `json:"callParam"`  //调用参数，用于调用智能合约，json结构
 
 	/*
 		ExtParam 根据不同区块链协议，对智能合约的调用，提供灵活可变的参数。
@@ -72,6 +70,25 @@ type SmartContractRawTransaction struct {
 	*/
 }
 
+type SmartContractTransaction struct {
+	WxID        string                 `json:"wxid" storm:"id"` //@required 通过GenTransactionWxID计算
+	TxID        string                 `json:"txid"`            //@required
+	AccountID   string                 `json:"accountID"`       //@required 创建交易单的账户
+	Actions     []*SmartContractAction `json:"actions"`         //@required 执行事件, 例如：合约的Transfer事件
+	BlockHash   string                 `json:"blockHash"`       //@required
+	BlockHeight uint64                 `json:"blockHeight"`     //@required
+	SubmitTime  int64                  `json:"submitTime"`      //@required
+	ConfirmTime int64                  `json:"confirmTime"`     //@required
+	Status      string                 `json:"status"`          //链上状态，0：失败，1：成功
+	Reason      string                 `json:"reason"`          //失败原因，失败状态码
+	CallParam   string                 `json:"callParam"`       //调用参数，用于调用智能合约，json结构
+}
+
+type SmartContractAction struct {
+	Method string `json:"method"` //执行方法
+	Raw    string `json:"raw"`    //结果参数
+}
+
 //SmartContractDecoder 智能合约解析器
 type SmartContractDecoder interface {
 	ABIDAI
@@ -82,9 +99,6 @@ type SmartContractDecoder interface {
 	//GetSmartContractInfo 获取智能合约信息
 	//GetSmartContractInfo(contractAddress string) (*SmartContract, error)
 
-	//TODO:创建多重签名合约
-
-	//TODO:通过交易单号查询部署的智能合约地址
 }
 
 type SmartContractDecoderBase struct {
@@ -114,6 +128,6 @@ type ABIDAI interface {
 
 // ABIInfo abi model
 type ABIInfo struct {
-	Address string
-	ABI     interface{}
+	Address string      `json:"address"`
+	ABI     interface{} `json:"abi"`
 }
