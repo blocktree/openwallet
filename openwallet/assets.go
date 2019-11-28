@@ -64,6 +64,10 @@ type AssetsAdapter interface {
 	//GetAssetsLogger 获取资产日志工具
 	//@optional
 	GetAssetsLogger() *log.OWLogger
+
+	//GetJsonRPCEndpoint 获取全节点服务的JSON-RPC客户端
+	//@optional
+	GetJsonRPCEndpoint() JsonRPCEndpoint
 }
 
 type AssetsAdapterBase struct {
@@ -105,5 +109,11 @@ func (a *AssetsAdapterBase) GetSmartContractDecoder() SmartContractDecoder {
 
 //GetAssetsLogger 获取资产账户日志工具
 func (a *AssetsAdapterBase) GetAssetsLogger() *log.OWLogger {
+	return nil
+}
+
+//GetJsonRPCEndpoint 获取全节点服务的JSON-RPC客户端
+//@optional
+func (a *AssetsAdapterBase) GetJsonRPCEndpoint() JsonRPCEndpoint {
 	return nil
 }
