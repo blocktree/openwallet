@@ -16,6 +16,7 @@
 package openwallet
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/blocktree/openwallet/log"
 	"testing"
@@ -26,9 +27,13 @@ func TestConvertError(t *testing.T) {
 	log.Infof("err: %v", err)
 	owerr := ConvertError(err)
 	log.Infof("owerr: %v", owerr)
+	jerr, _ := json.Marshal(owerr)
+	log.Infof("jerr: %v", string(jerr))
 
 	err2 := fmt.Errorf("[%s] have not addresses", "zzz")
 	log.Infof("err2: %v", err2)
 	owerr2 := ConvertError(err2)
 	log.Infof("owerr2: %v", owerr2)
+	jerr2, _ := json.Marshal(owerr2)
+	log.Infof("jerr2: %v", string(jerr2))
 }

@@ -63,6 +63,7 @@ type KeySignature struct {
 	Address   *Address `json:"address"` //提供签名的地址
 	Signature string   `json:"signed"`  //未花签名
 	Message   string   `json:"msg"`     //被签消息
+	RSV       bool     `json:"rsv"`     //签名是否需要合并V
 }
 
 //SetExtParam
