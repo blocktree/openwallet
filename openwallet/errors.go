@@ -15,7 +15,10 @@
 
 package openwallet
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 const (
 	/* 交易类别 */
@@ -40,9 +43,11 @@ const (
 
 	/* 网络类型 */
 	ErrCallFullNodeAPIFailed = 4001 //全节点API无法访问
+	ErrNetworkRequestFailed  = 4002 //网络请求失败
 
 	/* 其他 */
 	ErrUnknownException = 9001 //未知异常情况
+	ErrSystemException  = 9002 //系统程序异常情况
 )
 
 type Error struct {
@@ -50,12 +55,12 @@ type Error struct {
 	err  string
 }
 
-//Error 错误信息
+// Error 错误信息
 func (err *Error) Error() string {
 	return fmt.Sprintf("[%d]%s", err.code, err.err)
 }
 
-//Error 错误信息
+// Code 错误编号
 func (err *Error) Code() uint64 {
 	return err.code
 }
@@ -90,4 +95,26 @@ func NewError(code uint64, text string) *Error {
 		err:  text,
 	}
 	return err
+}
+
+// Json 错误信息JSON输出
+func (err *Error) MarshalJSON() ([]byte, error) {
+	obj := map[string]interface{}{
+		"code": err.code,
+		"msg":  err.err,
+	}
+	return json.Marshal(obj)
+}
+
+func (err *Error) UnmarshalJSON(b []byte) error {
+	var obj map[string]interface{}
+	e := json.Unmarshal(b, &obj)
+	if e != nil {
+		return e
+	}
+
+	err.err = obj["msg"].(string)
+	err.code = obj["code"].(uint64)
+
+	return nil
 }

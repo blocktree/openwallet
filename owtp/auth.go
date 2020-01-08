@@ -275,9 +275,9 @@ func (auth *OWTPAuth) GenerateSignature(data *DataPacket) bool {
 		//给数据包生成签名
 		dataString := common.NewString(data.Data)
 		plainText := fmt.Sprintf("%d%s%d%d%s", data.Req, data.Method, data.Nonce, data.Timestamp, dataString)
-		hash := owcrypt.Hash([]byte(plainText), 0, owcrypt.HASh_ALG_DOUBLE_SHA256)
+		hash := owcrypt.Hash([]byte(plainText), 0, owcrypt.HASH_ALG_DOUBLE_SHA256)
 		nodeID := owcrypt.Hash(auth.localPublicKey, 0, owcrypt.HASH_ALG_SHA256)
-		signature, ret := owcrypt.Signature(auth.localPrivateKey, nodeID, 32, hash, 32, owcrypt.ECC_CURVE_SM2_STANDARD)
+		signature, _, ret := owcrypt.Signature(auth.localPrivateKey, nodeID, hash, owcrypt.ECC_CURVE_SM2_STANDARD)
 		if ret != owcrypt.SUCCESS {
 			return false
 		}
@@ -309,7 +309,7 @@ func (auth *OWTPAuth) VerifySignature(data *DataPacket) bool {
 		dataString := data.Data.(string)
 		plainText := fmt.Sprintf("%d%s%d%d%s", data.Req, data.Method, data.Nonce, data.Timestamp, dataString)
 		//log.Debug("VerifySignature plainText: ", plainText)
-		hash := owcrypt.Hash([]byte(plainText), 0, owcrypt.HASh_ALG_DOUBLE_SHA256)
+		hash := owcrypt.Hash([]byte(plainText), 0, owcrypt.HASH_ALG_DOUBLE_SHA256)
 		//log.Debug("VerifySignature hash: ", hex.EncodeToString(hash))
 		nodeID := owcrypt.Hash(publickey, 0, owcrypt.HASH_ALG_SHA256)
 		//log.Debug("VerifySignature remotePublicKey: ", hex.EncodeToString(auth.remotePublicKey))
@@ -324,7 +324,7 @@ func (auth *OWTPAuth) VerifySignature(data *DataPacket) bool {
 			return false
 		}
 
-		ret := owcrypt.Verify(publickey, nodeID, 32, hash, 32, signature, owcrypt.ECC_CURVE_SM2_STANDARD)
+		ret := owcrypt.Verify(publickey, nodeID, hash, signature, owcrypt.ECC_CURVE_SM2_STANDARD)
 		if ret != owcrypt.SUCCESS {
 			return false
 		}
@@ -662,9 +662,7 @@ func (auth *OWTPAuth) requestKeyAgreement(
 
 	key, tmpPubkeyResponder, S2, SB, ret := owcrypt.KeyAgreement_responder_ElGamal_step1(
 		IDinitiator,
-		32,
 		IDresponder,
-		32,
 		privkeyResponderBytes,
 		pubkeyResponderBytes,
 		pubkeyInitiatorBytes,
@@ -688,9 +686,7 @@ func (auth *OWTPAuth) responseKeyAgreement(pubkeyResponder, tmpPubkeyResponder, 
 
 	retA, SA, ret := owcrypt.KeyAgreement_initiator_step2(
 		IDinitiator,
-		32,
 		IDresponder,
-		32,
 		auth.localPrivateKey,
 		auth.localPublicKey,
 		pubkeyResponder,
