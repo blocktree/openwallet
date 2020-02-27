@@ -19,8 +19,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/blocktree/go-owcdrivers/owkeychain"
-	"github.com/blocktree/openwallet/common"
-	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/v2/common"
+	"github.com/blocktree/openwallet/v2/log"
 )
 
 type AddressCreateResult struct {
@@ -174,7 +174,7 @@ func CreateAddressByAccountWithIndex(account *AssetsAccount, adapter AssetsAdapt
 		}
 	}
 
-	if decoderV1 == nil {
+	if decoderV1 == nil && decoderV2 == nil {
 		result.Success = false
 		result.Err = fmt.Errorf("assets-adapter not support AddressDecoder interface")
 		return result

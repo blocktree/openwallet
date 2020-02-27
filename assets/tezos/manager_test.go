@@ -16,8 +16,8 @@
 package tezos
 
 import (
+	"github.com/blocktree/openwallet/v2/openwallet"
 	"testing"
-	"github.com/blocktree/openwallet/openwallet"
 )
 
 var wm *WalletManager
@@ -86,7 +86,7 @@ func TestWalletConfig_PrintConfig(t *testing.T) {
 
 func TestWalletManager_CreateBatchAddress(t *testing.T) {
 	var addrs []*openwallet.Address
-	fpath, addrs, err := wm.CreateBatchAddress("VyXcihm3vcXxv7nnBsFxq7TRNYcdBmFoPW", "jinxin", 20000)
+	fpath, addrs, err := wm.CreateBatchAddress("W7nQCzsbEBtSS7U4Vgz82s4RDnwoS6vYqd", "jinxin", 1)
 	if err != nil {
 		t.Error(err.Error())
 		return
@@ -130,10 +130,10 @@ func TestWalletManager_getBanlance(t *testing.T) {
 	}
 
 	var addrs []*openwallet.Address
-	balance, addrs , _ := wm.getWalletBalance(w)
+	balance, addrs, _ := wm.getWalletBalance(w)
 	t.Log(balance)
 
-	for _, a := range(addrs) {
+	for _, a := range addrs {
 		if a.Balance != "0" {
 			t.Logf("addresss: %s  balance:%s", a.Address, a.Balance)
 		}
@@ -148,8 +148,8 @@ func TestWalletManager_getWalletBalance(t *testing.T) {
 	}
 	addrs := wm.printWalletList(wallets, true)
 
-	for _, addr := range(addrs) {
-		for _, a := range(addr) {
+	for _, addr := range addrs {
+		for _, a := range addr {
 			if a.Balance != "0" {
 				t.Logf("addresss: %s  balance:%s", a.Address, a.Balance)
 			}
@@ -233,7 +233,7 @@ func Test_Sign(t *testing.T) {
 
 	sign, _, _ := wm.signTransaction(str, key.PrivateKey, watermark["generic"])
 	t.Log(sign)
-	}
+}
 
 /*
 	manager_test.go:121: tz1NGveHiqsNEjUUGqkUHRfp69PkGyNaq8Ax

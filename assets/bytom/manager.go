@@ -21,8 +21,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/astaxie/beego/config"
-	"github.com/blocktree/openwallet/common"
-	"github.com/blocktree/openwallet/common/file"
+	"github.com/blocktree/openwallet/v2/common"
+	"github.com/blocktree/openwallet/v2/common/file"
 	"github.com/bndr/gotabulate"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
@@ -722,7 +722,7 @@ func SendTransaction(accountID, to, assetsID string, amount uint64, password str
 func SendSummaryTransaction(accountID, to, assetsID string, password string) ([]string, error) {
 
 	var (
-		offset         = 0
+		offset    = 0
 		txids     = make([]string, 0)
 		totalSent = uint64(0)
 		amount    = uint64(0)

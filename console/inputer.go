@@ -17,8 +17,8 @@ package console
 
 import (
 	"fmt"
-	"github.com/blocktree/openwallet/common"
-	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/v2/common"
+	"github.com/blocktree/openwallet/v2/log"
 )
 
 //PasswordPrompt 提示输入密码

@@ -18,9 +18,9 @@ package obyte
 import (
 	"fmt"
 	"github.com/astaxie/beego/config"
-	"github.com/blocktree/openwallet/console"
-	"github.com/blocktree/openwallet/log"
-	"github.com/blocktree/openwallet/timer"
+	"github.com/blocktree/openwallet/v2/console"
+	"github.com/blocktree/openwallet/v2/log"
+	"github.com/blocktree/openwallet/v2/timer"
 	"github.com/shopspring/decimal"
 	"path/filepath"
 	"strings"

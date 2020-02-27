@@ -26,12 +26,12 @@ import (
 
 	"github.com/asdine/storm/q"
 	"github.com/astaxie/beego/config"
-	"github.com/blocktree/openwallet/common"
-	"github.com/blocktree/openwallet/common/file"
-	"github.com/blocktree/openwallet/hdkeystore"
-	"github.com/blocktree/openwallet/log"
-	"github.com/blocktree/openwallet/openwallet"
-	"github.com/blocktree/openwallet/walletnode"
+	"github.com/blocktree/openwallet/v2/common"
+	"github.com/blocktree/openwallet/v2/common/file"
+	"github.com/blocktree/openwallet/v2/hdkeystore"
+	"github.com/blocktree/openwallet/v2/log"
+	"github.com/blocktree/openwallet/v2/openwallet"
+	"github.com/blocktree/openwallet/v2/walletnode"
 	"github.com/bndr/gotabulate"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/codeskyblue/go-sh"
@@ -147,13 +147,13 @@ func (wm *WalletManager) CreateNewAddress(key *hdkeystore.HDKey) (*openwallet.Ad
 	}
 
 	addr := openwallet.Address{
-		Address:   result.String(),
-		AccountID: key.KeyID,
-		HDPath:    "",
+		Address:     result.String(),
+		AccountID:   key.KeyID,
+		HDPath:      "",
 		CreatedTime: time.Now().Unix(),
-		Symbol:    wm.config.symbol,
-		Index:     0,
-		WatchOnly: false,
+		Symbol:      wm.config.symbol,
+		Index:       0,
+		WatchOnly:   false,
 	}
 
 	return &addr, err
@@ -173,13 +173,13 @@ func (wm *WalletManager) CreateNewChangeAddress(walletID string) (*openwallet.Ad
 	}
 
 	addr := openwallet.Address{
-		Address:   result.String(),
-		AccountID: walletID,
-		HDPath:    "",
+		Address:     result.String(),
+		AccountID:   walletID,
+		HDPath:      "",
 		CreatedTime: time.Now().Unix(),
-		Symbol:    wm.config.symbol,
-		Index:     0,
-		WatchOnly: false,
+		Symbol:      wm.config.symbol,
+		Index:       0,
+		WatchOnly:   false,
 	}
 
 	wallet, err := wm.GetWalletInfo(walletID)

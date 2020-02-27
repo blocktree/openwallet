@@ -16,8 +16,8 @@
 package bytom
 
 import (
-	"github.com/blocktree/openwallet/common/file"
-	"github.com/blocktree/openwallet/openwallet"
+	"github.com/blocktree/openwallet/v2/common/file"
+	"github.com/blocktree/openwallet/v2/openwallet"
 	"path/filepath"
 )
 
@@ -36,13 +36,13 @@ func (w *WalletManager) CreateMerchantWallet(alias string, password string) (*op
 	}
 
 	//创建钱包资源文件夹
-	walletDataFolder := filepath.Join(dbPath, account.FileName() + ".db")
+	walletDataFolder := filepath.Join(dbPath, account.FileName()+".db")
 	file.MkdirAll(walletDataFolder)
 
 	owWallet := openwallet.Wallet{
-		Alias:    account.Alias,
-		RootPub:  wallet.PublicKey,
-		DBFile:   walletDataFolder,
+		Alias:   account.Alias,
+		RootPub: wallet.PublicKey,
+		DBFile:  walletDataFolder,
 	}
 	return &owWallet, nil
 }

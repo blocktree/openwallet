@@ -22,7 +22,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/blocktree/openwallet/crypto"
+	"github.com/blocktree/openwallet/v2/crypto"
 )
 
 // String AT的字符串库

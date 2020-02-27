@@ -18,8 +18,8 @@ package owtp
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/blocktree/openwallet/log"
-	"github.com/blocktree/openwallet/session"
+	"github.com/blocktree/openwallet/v2/log"
+	"github.com/blocktree/openwallet/v2/session"
 	"testing"
 	"time"
 )
@@ -139,7 +139,7 @@ func TestWSHostRun(t *testing.T) {
 
 	//断开连接
 	wsHost.SetCloseHandler(func(n *OWTPNode, peer PeerInfo) {
-		
+
 	})
 
 	wsHost.Listen(config)
@@ -200,7 +200,6 @@ func TestWSClientCall(t *testing.T) {
 
 }
 
-
 func TestWSClientConnectAndCall(t *testing.T) {
 
 	config := ConnectConfig{}
@@ -227,9 +226,9 @@ func TestWSClientConnectAndCall(t *testing.T) {
 		"age":  18,
 	}
 	wsClient.Connect(wsHostNodeID, config)
-	for i := 0;i<300;i++ {
+	for i := 0; i < 300; i++ {
 		err := wsClient.Call(wsHostNodeID, "getInfo", params, true, func(resp Response) {
-		//err := wsClient.ConnectAndCall(wsHostNodeID, config, "getInfo", params, true, func(resp Response) {
+			//err := wsClient.ConnectAndCall(wsHostNodeID, config, "getInfo", params, true, func(resp Response) {
 
 			result := resp.JsonData()
 			symbols := result.Get("symbols")

@@ -17,8 +17,8 @@ package openwallet
 
 import (
 	"fmt"
-	"github.com/blocktree/openwallet/common/file"
-	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/v2/common/file"
+	"github.com/blocktree/openwallet/v2/log"
 	"path/filepath"
 	"testing"
 )
@@ -157,14 +157,13 @@ func TestBlockchainDAIBase_DeleteUnscanRecordByID(t *testing.T) {
 	}
 }
 
-
 func TestBlockchainDAIBase_BatchSaveLocalBlockHead(t *testing.T) {
 	base := testBlockchainLocal
 	if base == nil {
 		return
 	}
 
-	for i := 1; i<1000000000; i++ {
+	for i := 1; i < 1000000000; i++ {
 		header := &BlockHeader{
 			Hash:              fmt.Sprintf("hash_%d", i),
 			Confirmations:     0,
@@ -183,7 +182,6 @@ func TestBlockchainDAIBase_BatchSaveLocalBlockHead(t *testing.T) {
 		}
 	}
 }
-
 
 func TestBlockchainDAIBase_GetLocalBlockHeadByHeight(t *testing.T) {
 	base := testBlockchainLocal

@@ -16,15 +16,14 @@
 package openw
 
 import (
-	"github.com/blocktree/openwallet/log"
-	"github.com/blocktree/openwallet/openwallet"
+	"github.com/blocktree/openwallet/v2/log"
+	"github.com/blocktree/openwallet/v2/openwallet"
 )
 
 //blockScanNotify 区块扫描结果通知
 func (wm *WalletManager) BlockScanNotify(header *openwallet.BlockHeader) error {
 	//log.Debug("NewBlock:", header)
 	if header.Fork {
-
 
 		//加载已存在所有app
 		appIDs, err := wm.loadAllAppIDs()
@@ -95,6 +94,14 @@ func (wm *WalletManager) BlockExtractDataNotify(sourceKey string, data *openwall
 		o.BlockTxExtractDataNotify(account, data)
 	}
 
+	return nil
+}
+
+//BlockExtractSmartContractDataNotify 区块提取智能合约交易结果通知
+//@param sourceKey: 为contractID
+//@param data: 合约交易回执
+//@required
+func (wm *WalletManager) BlockExtractSmartContractDataNotify(sourceKey string, data *openwallet.SmartContractReceipt) error {
 	return nil
 }
 

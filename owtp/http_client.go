@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/blocktree/go-owcrypt"
-	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/v2/log"
 	"github.com/imroc/req"
 	"github.com/mr-tron/base58/base58"
 	"github.com/tidwall/gjson"
@@ -31,12 +31,10 @@ import (
 	"time"
 )
 
-
 const (
 	XForwardedFor = "X-Forwarded-For"
 	XRealIP       = "X-Real-IP"
 )
-
 
 //HTTPClient 基于http的通信服务端
 type HTTPClient struct {
@@ -192,7 +190,7 @@ func (c *HTTPClient) PID() string {
 	return c.pid
 }
 
-func (c *HTTPClient) EnableKeyAgreement() bool  {
+func (c *HTTPClient) EnableKeyAgreement() bool {
 	return c._auth.EnableKeyAgreement()
 }
 
@@ -367,7 +365,6 @@ func (c *HTTPClient) HandleRequest() error {
 	return nil
 
 }
-
 
 func ClientIP(req *http.Request) string {
 	remoteAddr := req.RemoteAddr

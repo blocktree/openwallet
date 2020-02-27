@@ -16,10 +16,9 @@
 package obyte
 
 import (
-	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/v2/log"
 	"testing"
 )
-
 
 func testNewWalletManager() *WalletManager {
 
@@ -70,7 +69,6 @@ func TestWalletManager_GetBalance(t *testing.T) {
 		log.Infof("GetBalance: %+v", b)
 	}
 }
-
 
 func TestWalletManager_SendToAddress(t *testing.T) {
 	tw := testNewWalletManager()

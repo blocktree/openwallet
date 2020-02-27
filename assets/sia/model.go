@@ -17,14 +17,13 @@ package sia
 
 import (
 	"github.com/asdine/storm"
-	"github.com/blocktree/openwallet/common/file"
+	"github.com/blocktree/openwallet/v2/common/file"
 	"github.com/tidwall/gjson"
 	"path/filepath"
 )
 
 //Wallet 钱包模型
 type Wallet struct {
-
 	WalletID string `json:"rootid"`
 	Alias    string `json:"alias"`
 	Balance  string `json:"balance"`
@@ -82,8 +81,8 @@ func (w *Wallet) OpenDB() (*storm.DB, error) {
 }
 
 //FileName 该钱包定义的文件名规则
-func (w *Wallet)FileName() string {
-	return w.Alias+"-"+w.WalletID
+func (w *Wallet) FileName() string {
+	return w.Alias + "-" + w.WalletID
 }
 
 type Account struct {
@@ -107,4 +106,3 @@ func NewAddress(json gjson.Result) *Address {
 	a.Address = gjson.Get(json.Raw, "address").String()
 	return a
 }
-

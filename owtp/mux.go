@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/astaxie/beego/cache"
-	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/v2/log"
 	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
 	"sync"

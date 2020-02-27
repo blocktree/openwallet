@@ -16,21 +16,20 @@
 package tezos
 
 import (
+	"encoding/hex"
+	"errors"
 	"fmt"
-	"github.com/blocktree/openwallet/common"
-	"github.com/blocktree/openwallet/common/file"
-	"github.com/blocktree/openwallet/console"
-	"github.com/blocktree/openwallet/timer"
+	"github.com/blocktree/openwallet/v2/common"
+	"github.com/blocktree/openwallet/v2/common/file"
+	"github.com/blocktree/openwallet/v2/console"
+	"github.com/blocktree/openwallet/v2/openwallet"
+	"github.com/blocktree/openwallet/v2/timer"
+	"github.com/shopspring/decimal"
 	"log"
 	"path/filepath"
-	"strings"
-	"errors"
-	"github.com/shopspring/decimal"
 	"strconv"
-	"github.com/blocktree/openwallet/openwallet"
-	"encoding/hex"
+	"strings"
 )
-
 
 //初始化配置流程
 func (wm *WalletManager) InitConfigFlow() error {
@@ -381,7 +380,7 @@ func (wm *WalletManager) TransferFlow() error {
 	if haveEnoughBalance {
 		for _, send := range sends {
 			txid, _ := wm.Transfer(*send.sednKeys, receiver, strconv.FormatInt(wm.Config.MinFee.IntPart(), 10), strconv.FormatInt(wm.Config.GasLimit.IntPart(), 10),
-				strconv.FormatInt(wm.Config.StorageLimit.IntPart(), 10),strconv.FormatInt(send.amount.IntPart(), 10))
+				strconv.FormatInt(wm.Config.StorageLimit.IntPart(), 10), strconv.FormatInt(send.amount.IntPart(), 10))
 			log.Printf("transfer address:%s, to address:%s, amount:%d, txid:%s\n", send.sednKeys.Address, wm.Config.SumAddress, send.amount.IntPart(), txid)
 		}
 	} else {
@@ -480,11 +479,10 @@ func (wm *WalletManager) GetWalletList() error {
 
 	fmt.Printf("Public key: %s\n", k.PublicKey)
 
-	fmt.Printf("Private key: %s\n", 	hex.EncodeToString(k.PrivateKey))
+	fmt.Printf("Private key: %s\n", hex.EncodeToString(k.PrivateKey))
 
 	return nil
 }
-
 
 //RestoreWalletFlow 恢复钱包
 func (w *WalletManager) RestoreWalletFlow() error {
@@ -529,4 +527,3 @@ func (w *WalletManager) RestoreWalletFlow() error {
 
 	return nil
 }
-

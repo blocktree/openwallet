@@ -18,7 +18,7 @@ package obyte
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/v2/log"
 	"github.com/imroc/req"
 	"github.com/tidwall/gjson"
 )

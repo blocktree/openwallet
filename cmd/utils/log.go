@@ -16,11 +16,11 @@
 package utils
 
 import (
-	"path/filepath"
 	"fmt"
 	"github.com/astaxie/beego/logs"
-	"github.com/blocktree/openwallet/common/file"
-	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/v2/common/file"
+	"github.com/blocktree/openwallet/v2/log"
+	"path/filepath"
 )
 
 //SetupLog 配置日志

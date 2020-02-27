@@ -27,12 +27,12 @@ import (
 
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/go-owcdrivers/addressEncoder"
-	"github.com/blocktree/openwallet/common"
-	"github.com/blocktree/openwallet/common/file"
-	"github.com/blocktree/openwallet/crypto/sha3"
-	"github.com/blocktree/openwallet/hdkeystore"
-	"github.com/blocktree/openwallet/log"
-	"github.com/blocktree/openwallet/openwallet"
+	"github.com/blocktree/openwallet/v2/common"
+	"github.com/blocktree/openwallet/v2/common/file"
+	"github.com/blocktree/openwallet/v2/crypto/sha3"
+	"github.com/blocktree/openwallet/v2/hdkeystore"
+	"github.com/blocktree/openwallet/v2/log"
+	"github.com/blocktree/openwallet/v2/openwallet"
 	"github.com/bndr/gotabulate"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/shopspring/decimal"
@@ -76,7 +76,9 @@ func NewWalletManager() *WalletManager {
 
 //签名交易
 func (wm *WalletManager) signTransaction(hash []byte, sk []byte) (string, error) {
-	s, _ := owcrypt.ICX_signature(sk[:], hash[:])
+	//s, _ := owcrypt.ICX_signature(sk[:], hash[:])
+	s, v, _ := owcrypt.Signature(sk[:], nil, hash[:], owcrypt.ECC_CURVE_SECP256K1)
+	s = append(s, v)
 	//s, _ := secp256k1.Sign(hash[:], sk[:])
 	es := base64.StdEncoding.EncodeToString(s)
 
@@ -280,7 +282,7 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 			//balances := <-addrs
 
 			for _, b := range balances {
-				addrB , _ := decimal.NewFromString(b.Balance)
+				addrB, _ := decimal.NewFromString(b.Balance)
 				balance = balance.Add(addrB)
 			}
 

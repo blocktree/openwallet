@@ -18,7 +18,7 @@ package openwallet
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/v2/log"
 	"testing"
 )
 

@@ -16,10 +16,10 @@
 package openw
 
 import (
-	"github.com/blocktree/openwallet/openwallet"
-	"github.com/blocktree/openwallet/hdkeystore"
 	"fmt"
-	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/v2/hdkeystore"
+	"github.com/blocktree/openwallet/v2/log"
+	"github.com/blocktree/openwallet/v2/openwallet"
 )
 
 // CreateWallet 创建钱包
@@ -47,7 +47,7 @@ func (wm *WalletManager) CreateWallet(appID string, wallet *openwallet.Wallet) (
 		if err != nil {
 			return nil, nil, err
 		}
-		wallet.Password = "" 			//clear password to save
+		wallet.Password = "" //clear password to save
 		wallet.KeyFile = filePath
 		wallet.WalletID = _key.KeyID
 		wallet.RootPath = _key.RootPath
@@ -105,4 +105,3 @@ func (wm *WalletManager) GetWalletList(appID string, offset, limit int) ([]*open
 	//
 	//return wallets, nil
 }
-

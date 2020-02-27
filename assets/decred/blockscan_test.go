@@ -16,11 +16,11 @@
 package decred
 
 import (
-	"github.com/pborman/uuid"
-	"testing"
 	"encoding/base64"
-	"github.com/blocktree/openwallet/openwallet"
+	"github.com/blocktree/openwallet/v2/openwallet"
+	"github.com/pborman/uuid"
 	"path/filepath"
+	"testing"
 )
 
 func TestGetBTCBlockHeight(t *testing.T) {
@@ -79,7 +79,7 @@ func TestGetBlock(t *testing.T) {
 }
 
 func TestGetTransaction(t *testing.T) {
-		raw, err := tw.GetTransaction("611081384086f2f7de1357858c03ce09391cef70918eac5295d646d7e78ffc87")
+	raw, err := tw.GetTransaction("611081384086f2f7de1357858c03ce09391cef70918eac5295d646d7e78ffc87")
 	if err != nil {
 		t.Errorf("GetTransaction failed unexpected error: %v\n", err)
 		return
@@ -101,7 +101,7 @@ func TestBTCBlockScanner_scanning(t *testing.T) {
 	accountID := "hccharge"
 	//address := "TsosMFZ2mwvRffkWY2fyyEqUiDeokDvCiek"
 
-	wallet := &openwallet.Wallet{WalletID: accountID, DBFile:filepath.Join(tw.config.dbPath, accountID + ".db")}
+	wallet := &openwallet.Wallet{WalletID: accountID, DBFile: filepath.Join(tw.config.dbPath, accountID+".db")}
 	//wallet, err := tw.GetWalletInfo(accountID)
 	//if err != nil {
 	//	t.Errorf("BTCBlockScanner_scanning failed unexpected error: %v\n", err)
@@ -142,8 +142,6 @@ func TestBTCBlockScanner_Run(t *testing.T) {
 	bs.DropRechargeRecords(accountID)
 
 	bs.SetRescanBlockHeight(10000)
-
-
 
 	bs.Run()
 
@@ -202,7 +200,6 @@ func TestBTCBlockScanner_DropRechargeRecords(t *testing.T) {
 	}
 
 	bs.AddWallet(accountID, wallet)
-
 
 	bs.DropRechargeRecords(accountID)
 }

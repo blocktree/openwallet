@@ -18,10 +18,10 @@ package sia
 import (
 	"errors"
 	"fmt"
-	"github.com/blocktree/openwallet/console"
+	"github.com/blocktree/openwallet/v2/console"
 	"log"
 	//"github.com/blocktree/openwallet/timer"
-	"github.com/blocktree/openwallet/timer"
+	"github.com/blocktree/openwallet/v2/timer"
 	"github.com/shopspring/decimal"
 	"path/filepath"
 )

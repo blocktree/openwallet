@@ -17,10 +17,10 @@ package obyte
 
 import (
 	"fmt"
-	"github.com/blocktree/openwallet/common"
-	"github.com/blocktree/openwallet/common/file"
-	"github.com/blocktree/openwallet/log"
-	"github.com/blocktree/openwallet/openwallet"
+	"github.com/blocktree/openwallet/v2/common"
+	"github.com/blocktree/openwallet/v2/common/file"
+	"github.com/blocktree/openwallet/v2/log"
+	"github.com/blocktree/openwallet/v2/openwallet"
 	"github.com/bndr/gotabulate"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
@@ -283,7 +283,6 @@ func (wm *WalletManager) BackupWallet() (string, error) {
 	} else {
 		dataPath = filepath.Join("/", "root", ".config", "lux-headless")
 	}
-
 
 	//创建备份文件夹
 	newBackupDir := filepath.Join(wm.Config.backupDir, common.TimeFormat("20060102150405"))

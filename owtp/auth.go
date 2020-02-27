@@ -23,9 +23,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/blocktree/go-owcrypt"
-	"github.com/blocktree/openwallet/common"
-	"github.com/blocktree/openwallet/crypto"
-	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/v2/common"
+	"github.com/blocktree/openwallet/v2/crypto"
+	"github.com/blocktree/openwallet/v2/log"
 	"github.com/mr-tron/base58/base58"
 	"math/big"
 )

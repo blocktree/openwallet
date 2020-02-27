@@ -17,13 +17,13 @@ package icon
 
 import (
 	"encoding/hex"
-	"github.com/blocktree/openwallet/log"
-	"testing"
-	"github.com/blocktree/openwallet/openwallet"
-	"time"
+	"github.com/blocktree/openwallet/v2/log"
+	"github.com/blocktree/openwallet/v2/openwallet"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"strconv"
 	"github.com/shopspring/decimal"
+	"strconv"
+	"testing"
+	"time"
 )
 
 var wm *WalletManager
@@ -132,10 +132,10 @@ func TestWalletManager_getBanlance(t *testing.T) {
 	}
 
 	var addrs []*openwallet.Address
-	balance, addrs , _ := wm.getWalletBalance(w)
+	balance, addrs, _ := wm.getWalletBalance(w)
 	t.Log(balance)
 
-	for _, a := range(addrs) {
+	for _, a := range addrs {
 		if a.Balance != "0" {
 			t.Logf("addresss: %s  balance:%s", a.Address, a.Balance)
 		}
@@ -150,8 +150,8 @@ func TestWalletManager_getWalletBalance(t *testing.T) {
 	}
 	addrs := wm.printWalletList(wallets, true)
 
-	for _, addr := range(addrs) {
-		for _, a := range(addr) {
+	for _, addr := range addrs {
+		for _, a := range addr {
 			if a.Balance != "0" {
 				t.Logf("addresss: %s  balance:%s", a.Address, a.Balance)
 			}
@@ -270,7 +270,7 @@ func Test_timeFormat(t *testing.T) {
 	mic := time.Now().UnixNano() / 1000
 	t.Log(mic)
 
-	tm := "0x" + strconv.FormatInt(time.Now().UnixNano() / 1000, 16)
+	tm := "0x" + strconv.FormatInt(time.Now().UnixNano()/1000, 16)
 	t.Log(tm)
 
 	hex := "d19c2ff547173c4"
@@ -288,27 +288,26 @@ func Test_timeFormat(t *testing.T) {
 
 }
 
+func TestClient_Call_icx_sendTransaction(t *testing.T) {
+	req := map[string]interface{}{
+		"version":   "0x3",
+		"from":      "hx2006f91de4cd0b9ce74cb00a06e66eaeb44c70b1",
+		"stepLimit": "0xf4240",
+		"timestamp": "0x5796c8f55c75e",
+		"nid":       "0x1",
+		"to":        "hxb12addba58c934ff924aa87ee65d06ee20f89eb8",
+		"value":     "0x8f0d180",
+		"nonce":     "0x64",
+		"signature": "q2TurzvpijxzXJlsWCGP6JbNm6MFu7XnDorD4jCbDgtywtg4tZ/IdBzhmDc4vBFQsGrUiyGvjWZIxfwYl5pCTAE=",
+	}
 
- func TestClient_Call_icx_sendTransaction(t *testing.T) {
-	 req := map[string]interface{}{
-	 	"version": "0x3",
-	 	"from": "hx2006f91de4cd0b9ce74cb00a06e66eaeb44c70b1",
-	 	"stepLimit": "0xf4240",
-	 	"timestamp": "0x5796c8f55c75e",
-	 	"nid": "0x1",
-	 	"to": "hxb12addba58c934ff924aa87ee65d06ee20f89eb8",
-	 	"value": "0x8f0d180",
-	 	"nonce": "0x64",
-	 	"signature": "q2TurzvpijxzXJlsWCGP6JbNm6MFu7XnDorD4jCbDgtywtg4tZ/IdBzhmDc4vBFQsGrUiyGvjWZIxfwYl5pCTAE=",
-	 }
-
-	 ret, err := wm.WalletClient.Call_icx_sendTransaction(req)
-	 if err != nil {
-	 	t.Log(err)
-	 	return
-	 }
-	 t.Log(ret)
- }
+	ret, err := wm.WalletClient.Call_icx_sendTransaction(req)
+	if err != nil {
+		t.Log(err)
+		return
+	}
+	t.Log(ret)
+}
 
 func Test_Decimal(t *testing.T) {
 	a := decimal.RequireFromString("1.2")
@@ -331,7 +330,6 @@ func TestWalletManager_GetLastBlock(t *testing.T) {
 	}
 	log.Infof("block: %+v", block)
 }
-
 
 func TestWalletManager_TransferBigNum(t *testing.T) {
 

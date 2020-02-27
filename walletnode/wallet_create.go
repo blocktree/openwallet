@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	s "strings"
 
-	"github.com/blocktree/openwallet/console"
+	"github.com/blocktree/openwallet/v2/console"
 )
 
 // Check <Symbol>.ini file, create new if not

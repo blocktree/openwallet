@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/blocktree/openwallet/log"
-	"github.com/blocktree/openwallet/openwallet"
+	"github.com/blocktree/openwallet/v2/log"
+	"github.com/blocktree/openwallet/v2/openwallet"
 	"github.com/shopspring/decimal"
 )
 
@@ -148,7 +148,7 @@ func (wm *WalletManager) CreateTransaction(appID, walletID, accountID, amount, a
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("contract:", contract)
+	//fmt.Println("contract:", contract)
 	if contract != nil {
 		coin = openwallet.Coin{
 			Symbol:     account.Symbol,

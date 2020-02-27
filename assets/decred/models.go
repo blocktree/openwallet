@@ -17,8 +17,8 @@ package decred
 
 import (
 	"fmt"
-	"github.com/blocktree/openwallet/crypto"
-	"github.com/blocktree/openwallet/openwallet"
+	"github.com/blocktree/openwallet/v2/crypto"
+	"github.com/blocktree/openwallet/v2/openwallet"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/tidwall/gjson"
 )
@@ -228,8 +228,6 @@ func NewUnscanRecord(height uint64, txID, reason string) *UnscanRecord {
 	obj.ID = common.Bytes2Hex(crypto.SHA256([]byte(fmt.Sprintf("%d_%s", height, txID))))
 	return &obj
 }
-
-
 
 type FloatStr string
 

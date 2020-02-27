@@ -16,10 +16,10 @@
 package commands
 
 import (
-	"github.com/blocktree/openwallet/assets"
-	"github.com/blocktree/openwallet/cmd/utils"
-	"github.com/blocktree/openwallet/log"
-	"github.com/blocktree/openwallet/wmd"
+	"github.com/blocktree/openwallet/v2/assets"
+	"github.com/blocktree/openwallet/v2/cmd/utils"
+	"github.com/blocktree/openwallet/v2/log"
+	"github.com/blocktree/openwallet/v2/wmd"
 	"gopkg.in/urfave/cli.v1"
 )
 

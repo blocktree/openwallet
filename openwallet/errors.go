@@ -45,6 +45,11 @@ const (
 	ErrCallFullNodeAPIFailed = 4001 //全节点API无法访问
 	ErrNetworkRequestFailed  = 4002 //网络请求失败
 
+	/* 智能合约类 */
+	ErrContractCallMsgInvalid                  = 5001 //合约调用参数无效
+	ErrCreateRawSmartContractTransactionFailed = 5002 //创建原始合约交易单失败
+	ErrSubmitRawSmartContractTransactionFailed = 5003 //广播原始合约交易单失败
+
 	/* 其他 */
 	ErrUnknownException = 9001 //未知异常情况
 	ErrSystemException  = 9002 //系统程序异常情况
