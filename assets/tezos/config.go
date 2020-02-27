@@ -41,7 +41,7 @@ const (
 	//币种
 	Symbol    = "XTZ"
 	MasterKey = "Tezos seed"
-	CurveType = owcrypt.ECC_CURVE_ED25519_NORMAL
+	CurveType = owcrypt.ECC_CURVE_ED25519
 )
 
 type WalletConfig struct {

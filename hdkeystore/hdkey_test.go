@@ -16,6 +16,7 @@
 package hdkeystore
 
 import (
+	"github.com/blocktree/go-owcrypt"
 	"testing"
 	"encoding/hex"
 )
@@ -69,4 +70,15 @@ func TestNewHDKey(t *testing.T) {
 		t.Logf("Key[%d] address = %s", i, key.KeyID)
 		t.Logf("Key[%d] seed = %s", i, hex.EncodeToString(key.Seed()))
 	}
+}
+
+func TestHDKey_DerivedKeyWithPath(t *testing.T) {
+	seed, _ := GenerateSeed(32)
+	key, _ := NewHDKey(seed, "hello", OpenwCoinTypePath)
+	childKey, err := key.DerivedKeyWithPath("m/44'/88'/1581919647/0", owcrypt.ECC_CURVE_ED25519_NORMAL)
+	if err != nil {
+		t.Fatalf("DerivedKeyWithPath failed unexpected error: %v", err)
+		return
+	}
+	t.Logf("child key: %s", hex.EncodeToString(childKey.GetPublicKeyBytes()))
 }

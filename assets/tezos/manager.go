@@ -97,7 +97,8 @@ func (wm *WalletManager) signTransaction(hash string, sk []byte, watermark []byt
 	ctx.Write(merbuf[:])
 	bb := ctx.Sum(nil)
 
-	sig, _ := owcrypt.Signature(sk[:], nil, 0, bb[:], uint16(len(bb)), owcrypt.ECC_CURVE_ED25519)
+	//sig, _ := owcrypt.Signature(sk[:], nil, 0, bb[:], uint16(len(bb)), owcrypt.ECC_CURVE_ED25519)
+	sig, _, _ := owcrypt.Signature(sk[:], nil, bb[:], owcrypt.ECC_CURVE_ED25519)
 	edsig := base58checkEncode(sig, prefix["edsig"])
 
 	sbyte := hash + hex.EncodeToString(sig[:])

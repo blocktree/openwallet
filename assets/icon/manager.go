@@ -76,7 +76,9 @@ func NewWalletManager() *WalletManager {
 
 //签名交易
 func (wm *WalletManager) signTransaction(hash []byte, sk []byte) (string, error) {
-	s, _ := owcrypt.ICX_signature(sk[:], hash[:])
+	//s, _ := owcrypt.ICX_signature(sk[:], hash[:])
+	s, v, _ := owcrypt.Signature(sk[:], nil, hash[:], owcrypt.ECC_CURVE_SECP256K1)
+	s = append(s, v)
 	//s, _ := secp256k1.Sign(hash[:], sk[:])
 	es := base64.StdEncoding.EncodeToString(s)
 

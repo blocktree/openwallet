@@ -63,11 +63,11 @@ type WalletDAI interface {
 
 	//获取钱包所创建的交易单
 	GetTransactionByTxID(txid, symbol string) ([]*Transaction, error)
+
 }
 
 //TransactionDecoderBase 实现TransactionDecoder的基类
 type WalletDAIBase struct {
-
 }
 
 func (base *WalletDAIBase) GetWallet() *Wallet {
@@ -75,51 +75,53 @@ func (base *WalletDAIBase) GetWallet() *Wallet {
 }
 
 func (base *WalletDAIBase) GetWalletByID(walletID string) (*Wallet, error) {
-	return nil, fmt.Errorf("not implement")
+	return nil, fmt.Errorf("GetWalletByID not implement")
 }
 
 func (base *WalletDAIBase) GetAssetsAccountInfo(accountID string) (*AssetsAccount, error) {
-	return nil, fmt.Errorf("not implement")
+	return nil, fmt.Errorf("GetAssetsAccountInfo not implement")
 }
 
 func (base *WalletDAIBase) GetAssetsAccountList(offset, limit int, cols ...interface{}) ([]*AssetsAccount, error) {
-	return nil, fmt.Errorf("not implement")
+	return nil, fmt.Errorf("GetAssetsAccountList not implement")
 }
 
 func (base *WalletDAIBase) GetAssetsAccountByAddress(address string) (*AssetsAccount, error) {
-	return nil, fmt.Errorf("not implement")
+	return nil, fmt.Errorf("GetAssetsAccountByAddress not implement")
 }
 
 func (base *WalletDAIBase) GetAddress(address string) (*Address, error) {
-	return nil, fmt.Errorf("not implement")
+	return nil, fmt.Errorf("GetAddress not implement")
 }
 
 func (base *WalletDAIBase) GetAddressList(offset, limit int, cols ...interface{}) ([]*Address, error) {
-	return nil, fmt.Errorf("not implement")
+	return nil, fmt.Errorf("GetAddressList not implement")
 }
 
 //设置地址的扩展字段
 func (base *WalletDAIBase) SetAddressExtParam(address string, key string, val interface{}) error {
-	return fmt.Errorf("not implement")
+	return fmt.Errorf("SetAddressExtParam not implement")
 }
 
 //获取地址的扩展字段
 func (base *WalletDAIBase) GetAddressExtParam(address string, key string) (interface{}, error) {
-	return nil, fmt.Errorf("not implement")
+	return nil, fmt.Errorf("GetAddressExtParam not implement")
 }
 
 func (base *WalletDAIBase) UnlockWallet(password string, time time.Duration) error {
-	return fmt.Errorf("not implement")
+	return fmt.Errorf("UnlockWallet not implement")
 }
 
 func (base *WalletDAIBase) HDKey(password ...string) (*hdkeystore.HDKey, error) {
-	return nil, fmt.Errorf("not implement")
+	return nil, fmt.Errorf("HDKey not implement")
 }
 
 //获取钱包所创建的交易单
 func (base *WalletDAIBase) GetTransactionByTxID(txid, symbol string) ([]*Transaction, error) {
 	return nil, fmt.Errorf("GetTransactionByTxID not implement")
 }
+
+
 
 type Wallet struct {
 	AppID        string              `json:"appID"`

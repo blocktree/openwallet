@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/shopspring/decimal"
 	"math/big"
+	"strings"
 )
 
 func StringNumToBigIntWithExp(amount string, exp int32) *big.Int {
@@ -50,6 +51,7 @@ func StringValueToBigInt(value string, base int) (*big.Int, error) {
 	if value == "" {
 		value = "0"
 	}
+	value = strings.TrimPrefix(value, "0x")
 
 	_, success = bigvalue.SetString(value, base)
 	if !success {

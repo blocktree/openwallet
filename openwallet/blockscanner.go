@@ -30,9 +30,14 @@ import (
 // @return 地址所属源标识，是否存在
 type BlockScanAddressFunc func(address string) (string, bool)
 
+//deprecated
 // BlockScanTargetFunc 扫描对象是否存在算法
 // @return 对象所属源标识，是否存在
 type BlockScanTargetFunc func(target ScanTarget) (string, bool)
+
+// BlockScanTargetFuncV2 扫描智能合约是否存在算法
+// @return 对象所属源标识，是否存在
+type BlockScanTargetFuncV2 func(target ScanTargetParam) ScanTargetResult
 
 type ScanTarget struct {
 	Address          string           //地址字符串
@@ -42,17 +47,51 @@ type ScanTarget struct {
 	BalanceModelType BalanceModelType //余额模型类别
 }
 
+// 扫描目标类型
+const (
+	ScanTargetTypeAccountAddress  = 0
+	ScanTargetTypeAccountAlias    = 1
+	ScanTargetTypeContractAddress = 2
+	ScanTargetTypeContractAlias   = 3
+	ScanTargetTypeAddressPubKey   = 4
+)
+
+// ScanTargetParam 扫描目标参数
+type ScanTargetParam struct {
+	ScanTarget     string //地址字符串
+	Symbol         string //主链类别
+	ScanTargetType uint64 // 0: 账户地址，1：账户别名，2：合约地址，3：合约别名，4：地址公钥
+}
+
+// ScanTargetResult 扫描结果
+type ScanTargetResult struct {
+	SourceKey string //关联键，地址关联的账户或ID等等
+	Exist     bool   //是否存在
+
+	//对象指针，对应ScanTargetType:
+	//0：openwallet.Address
+	//1：openwallet.Account
+	//2: openwallet SmartContract
+	//3: openwallet SmartContract
+	//4: openwallet Address
+	TargetInfo interface{}
+}
+
 // BlockScanner 区块扫描器
 // 负责扫描新区块，给观察者推送订阅地址的新交易单。
 type BlockScanner interface {
 
 	//deprecated
-	//Deprecated SetBlockScanAddressFunc 设置区块扫描过程，查找地址过程方法
+	// SetBlockScanAddressFunc 设置区块扫描过程，查找地址过程方法
 	SetBlockScanAddressFunc(scanAddressFunc BlockScanAddressFunc) error
 
-	//SetBlockScanTargetFunc 设置区块扫描过程，查找扫描对象过程方法
-	//@required
+	//deprecated
+	// SetBlockScanTargetFunc 设置区块扫描过程，查找扫描对象过程方法
 	SetBlockScanTargetFunc(scanTargetFunc BlockScanTargetFunc) error
+
+	//SetBlockScanTargetFuncV2 设置区块扫描过程，查找扫描对象过程方法
+	//@required
+	SetBlockScanTargetFuncV2(scanTargetFunc BlockScanTargetFuncV2) error
 
 	//AddObserver 添加观测者
 	//@optional
@@ -134,6 +173,10 @@ type BlockScanner interface {
 	//SupportBlockchainDAI 支持外部设置区块链数据访问接口
 	//@optional
 	SupportBlockchainDAI() bool
+
+	//ExtractTransactionAndReceiptData 提取交易单及交易回执数据
+	//@required
+	ExtractTransactionAndReceiptData(txid string, scanTargetFunc BlockScanTargetFuncV2) (map[string][]*TxExtractData, map[string]*SmartContractReceipt, error)
 }
 
 //BlockScanNotificationObject 扫描被通知对象
@@ -146,6 +189,12 @@ type BlockScanNotificationObject interface {
 	//BlockExtractDataNotify 区块提取结果通知
 	//@required
 	BlockExtractDataNotify(sourceKey string, data *TxExtractData) error
+
+	//BlockExtractSmartContractDataNotify 区块提取智能合约交易结果通知
+	//@param sourceKey: 为contractID
+	//@param data: 合约交易回执
+	//@required
+	BlockExtractSmartContractDataNotify(sourceKey string, data *SmartContractReceipt) error
 }
 
 //TxExtractData 区块扫描后的交易单提取结果，每笔交易单
@@ -181,8 +230,9 @@ type BlockScannerBase struct {
 	Observers         map[BlockScanNotificationObject]bool //观察者
 	Scanning          bool                                 //是否扫描中
 	PeriodOfTask      time.Duration
-	ScanAddressFunc   BlockScanAddressFunc //区块扫描查询地址算法
-	ScanTargetFunc    BlockScanTargetFunc  //区块扫描查询地址算法
+	ScanAddressFunc   BlockScanAddressFunc  //区块扫描查询地址算法
+	ScanTargetFunc    BlockScanTargetFunc   //区块扫描查询地址算法
+	ScanTargetFuncV2  BlockScanTargetFuncV2 //区块扫描查询地址算法
 	blockProducer     chan interface{}
 	blockConsumer     chan interface{}
 	isClose           bool //是否已关闭
@@ -222,6 +272,7 @@ func (bs *BlockScannerBase) SetBlockScanAddressFunc(scanAddressFunc BlockScanAdd
 	return nil
 }
 
+//deprecated
 //SetBlockScanTargetFunc 设置区块扫描过程，查找扫描对象过程方法
 //@required
 func (bs *BlockScannerBase) SetBlockScanTargetFunc(scanTargetFunc BlockScanTargetFunc) error {
@@ -236,6 +287,28 @@ func (bs *BlockScannerBase) SetBlockScanTargetFunc(scanTargetFunc BlockScanTarge
 		return bs.ScanTargetFunc(scanTarget)
 	}
 	bs.SetBlockScanAddressFunc(scanAddressFunc)
+	return nil
+}
+
+//SetBlockScanTargetFuncV2 设置区块扫描过程，查找扫描对象过程方法
+//@required
+func (bs *BlockScannerBase) SetBlockScanTargetFuncV2(scanTargetFuncV2 BlockScanTargetFuncV2) error {
+	bs.ScanTargetFuncV2 = scanTargetFuncV2
+
+	//兼容已弃用的SetBlockScanAddressFunc
+	scanTargetFunc := func(scanTarget ScanTarget) (string, bool) {
+		scanTargetParam := ScanTargetParam{Symbol: scanTarget.Symbol}
+		if scanTarget.BalanceModelType == BalanceModelTypeAddress {
+			scanTargetParam.ScanTarget = scanTarget.Address
+			scanTargetParam.ScanTargetType = ScanTargetTypeAccountAddress
+		} else {
+			scanTargetParam.ScanTarget = scanTarget.Alias
+			scanTargetParam.ScanTargetType = ScanTargetTypeAccountAlias
+		}
+		result := bs.ScanTargetFuncV2(scanTargetParam)
+		return result.SourceKey, result.Exist
+	}
+	bs.SetBlockScanTargetFunc(scanTargetFunc)
 	return nil
 }
 
@@ -381,6 +454,13 @@ func (bs *BlockScannerBase) GetScannedBlockHeight() uint64 {
 func (bs *BlockScannerBase) ExtractTransactionData(txid string, scanTargetFunc BlockScanTargetFunc) (map[string][]*TxExtractData, error) {
 	return nil, fmt.Errorf("ExtractTransactionData is not implemented")
 }
+
+//ExtractTransactionAndReceiptData 提取交易单及交易回执数据
+//@required
+func (bs *BlockScannerBase) ExtractTransactionAndReceiptData(txid string, scanTargetFunc BlockScanTargetFuncV2) (map[string][]*TxExtractData, map[string]*SmartContractReceipt, error) {
+	return nil, nil, fmt.Errorf("ExtractTransactionAndReceiptData is not implemented")
+}
+
 
 //GetBalanceByAddress 查询地址余额
 func (bs *BlockScannerBase) GetBalanceByAddress(address ...string) ([]*Balance, error) {

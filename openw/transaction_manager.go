@@ -148,7 +148,7 @@ func (wm *WalletManager) CreateTransaction(appID, walletID, accountID, amount, a
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("contract:", contract)
+	//fmt.Println("contract:", contract)
 	if contract != nil {
 		coin = openwallet.Coin{
 			Symbol:     account.Symbol,

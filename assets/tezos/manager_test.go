@@ -86,7 +86,7 @@ func TestWalletConfig_PrintConfig(t *testing.T) {
 
 func TestWalletManager_CreateBatchAddress(t *testing.T) {
 	var addrs []*openwallet.Address
-	fpath, addrs, err := wm.CreateBatchAddress("VyXcihm3vcXxv7nnBsFxq7TRNYcdBmFoPW", "jinxin", 20000)
+	fpath, addrs, err := wm.CreateBatchAddress("W7nQCzsbEBtSS7U4Vgz82s4RDnwoS6vYqd", "jinxin", 1)
 	if err != nil {
 		t.Error(err.Error())
 		return

@@ -174,7 +174,7 @@ func CreateAddressByAccountWithIndex(account *AssetsAccount, adapter AssetsAdapt
 		}
 	}
 
-	if decoderV1 == nil {
+	if decoderV1 == nil && decoderV2 == nil {
 		result.Success = false
 		result.Err = fmt.Errorf("assets-adapter not support AddressDecoder interface")
 		return result
