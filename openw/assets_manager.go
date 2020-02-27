@@ -18,8 +18,8 @@ package openw
 import (
 	"fmt"
 	"github.com/astaxie/beego/config"
-	"github.com/blocktree/openwallet/log"
-	"github.com/blocktree/openwallet/openwallet"
+	"github.com/blocktree/openwallet/v2/log"
+	"github.com/blocktree/openwallet/v2/openwallet"
 	"strings"
 )
 
@@ -43,7 +43,6 @@ func initAssetAdapter() {
 	//RegAssets(virtualeconomy.Symbol, virtualeconomy.NewWalletManager())
 	//RegAssets(eosio.Symbol, eosio.NewWalletManager())
 }
-
 
 //区块链适配器注册组
 var assetsAdapterManagers = make(map[string]interface{})

@@ -26,9 +26,9 @@ import (
 
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
-	"github.com/blocktree/openwallet/common/file"
-	"github.com/blocktree/openwallet/hdkeystore"
-	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/v2/common/file"
+	"github.com/blocktree/openwallet/v2/hdkeystore"
+	"github.com/blocktree/openwallet/v2/log"
 	"github.com/pkg/errors"
 	"time"
 )
@@ -63,7 +63,6 @@ type WalletDAI interface {
 
 	//获取钱包所创建的交易单
 	GetTransactionByTxID(txid, symbol string) ([]*Transaction, error)
-
 }
 
 //TransactionDecoderBase 实现TransactionDecoder的基类
@@ -120,8 +119,6 @@ func (base *WalletDAIBase) HDKey(password ...string) (*hdkeystore.HDKey, error) 
 func (base *WalletDAIBase) GetTransactionByTxID(txid, symbol string) ([]*Transaction, error) {
 	return nil, fmt.Errorf("GetTransactionByTxID not implement")
 }
-
-
 
 type Wallet struct {
 	AppID        string              `json:"appID"`

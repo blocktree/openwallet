@@ -16,8 +16,8 @@
 package luxapla
 
 import (
-	"github.com/blocktree/openwallet/assets/obyte"
-	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/v2/assets/obyte"
+	"github.com/blocktree/openwallet/v2/log"
 )
 
 const (

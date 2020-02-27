@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/blocktree/openwallet/crypto"
+	"github.com/blocktree/openwallet/v2/crypto"
 )
 
 type SmartContract struct {

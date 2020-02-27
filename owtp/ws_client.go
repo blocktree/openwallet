@@ -19,8 +19,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/blocktree/openwallet/log"
 	"github.com/blocktree/go-owcrypt"
+	"github.com/blocktree/openwallet/v2/log"
 	"github.com/gorilla/websocket"
 	"github.com/mr-tron/base58/base58"
 	"github.com/tidwall/gjson"
@@ -190,7 +190,7 @@ func (c *WSClient) PID() string {
 	return c.pid
 }
 
-func (c *WSClient) EnableKeyAgreement() bool  {
+func (c *WSClient) EnableKeyAgreement() bool {
 	return c._auth.EnableKeyAgreement()
 }
 

@@ -18,7 +18,7 @@ package walletnode
 import (
 	"errors"
 
-	"github.com/blocktree/openwallet/common/file"
+	"github.com/blocktree/openwallet/v2/common/file"
 	// "github.com/pkg/errors"
 	"path/filepath"
 	s "strings"

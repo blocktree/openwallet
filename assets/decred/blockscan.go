@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
-	"github.com/blocktree/openwallet/crypto"
-	"github.com/blocktree/openwallet/log"
-	"github.com/blocktree/openwallet/openwallet"
-	"github.com/blocktree/openwallet/timer"
+	"github.com/blocktree/openwallet/v2/crypto"
+	"github.com/blocktree/openwallet/v2/log"
+	"github.com/blocktree/openwallet/v2/openwallet"
+	"github.com/blocktree/openwallet/v2/timer"
 	"github.com/tidwall/gjson"
 	"path/filepath"
 	"strings"
@@ -919,8 +919,7 @@ func (bs *BTCBlockScanner) GetWalletByAddress(address string) (*openwallet.Walle
 
 //GetBlockHeight 获取区块链高度
 func (wm *WalletManager) GetBlockHeight() (uint64, error) {
-	request := []interface{}{
-	}
+	request := []interface{}{}
 
 	result, err := wm.dcrdClient.Call("getblockcount", request)
 	if err != nil {

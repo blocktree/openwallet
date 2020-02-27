@@ -20,16 +20,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/blocktree/openwallet/openwallet"
+	"github.com/blocktree/openwallet/v2/openwallet"
 	"io/ioutil"
 	"strings"
 	"time"
 
 	"github.com/asdine/storm/q"
 	"github.com/blocktree/go-owcdrivers/owkeychain"
-	"github.com/blocktree/openwallet/common"
-	"github.com/blocktree/openwallet/hdkeystore"
-	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/v2/common"
+	"github.com/blocktree/openwallet/v2/hdkeystore"
+	"github.com/blocktree/openwallet/v2/log"
 	"github.com/tidwall/gjson"
 )
 

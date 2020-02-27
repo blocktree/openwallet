@@ -17,8 +17,8 @@ package bytom
 
 import (
 	"github.com/asdine/storm"
-	"github.com/blocktree/openwallet/common"
-	"github.com/blocktree/openwallet/common/file"
+	"github.com/blocktree/openwallet/v2/common"
+	"github.com/blocktree/openwallet/v2/common/file"
 	"github.com/tidwall/gjson"
 	"path/filepath"
 )
@@ -207,7 +207,6 @@ func NewUnspent(json gjson.Result) *Unspent {
 	a.SourceId = gjson.Get(json.Raw, "source_id").String()
 	a.SourcePos = gjson.Get(json.Raw, "source_pos").Uint()
 	a.ValidHeight = gjson.Get(json.Raw, "valid_height").Uint()
-
 
 	return a
 }

@@ -27,12 +27,12 @@ import (
 
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/go-owcdrivers/addressEncoder"
-	"github.com/blocktree/openwallet/common"
-	"github.com/blocktree/openwallet/common/file"
-	"github.com/blocktree/openwallet/crypto/sha3"
-	"github.com/blocktree/openwallet/hdkeystore"
-	"github.com/blocktree/openwallet/log"
-	"github.com/blocktree/openwallet/openwallet"
+	"github.com/blocktree/openwallet/v2/common"
+	"github.com/blocktree/openwallet/v2/common/file"
+	"github.com/blocktree/openwallet/v2/crypto/sha3"
+	"github.com/blocktree/openwallet/v2/hdkeystore"
+	"github.com/blocktree/openwallet/v2/log"
+	"github.com/blocktree/openwallet/v2/openwallet"
 	"github.com/bndr/gotabulate"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/shopspring/decimal"
@@ -282,7 +282,7 @@ func (wm *WalletManager) getWalletBalance(wallet *openwallet.Wallet) (decimal.De
 			//balances := <-addrs
 
 			for _, b := range balances {
-				addrB , _ := decimal.NewFromString(b.Balance)
+				addrB, _ := decimal.NewFromString(b.Balance)
 				balance = balance.Add(addrB)
 			}
 

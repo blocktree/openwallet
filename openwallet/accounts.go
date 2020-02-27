@@ -17,8 +17,8 @@ package openwallet
 
 import (
 	"encoding/hex"
-	"github.com/blocktree/openwallet/crypto"
 	"github.com/blocktree/go-owcdrivers/owkeychain"
+	"github.com/blocktree/openwallet/v2/crypto"
 	"github.com/btcsuite/btcutil/hdkeychain"
 )
 

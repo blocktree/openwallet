@@ -16,7 +16,7 @@
 package openwallet
 
 import (
-	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/v2/log"
 )
 
 //Coin 币种信息

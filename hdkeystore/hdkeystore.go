@@ -22,7 +22,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/blocktree/openwallet/crypto/sha3"
+	"github.com/blocktree/openwallet/v2/crypto/sha3"
 )
 
 const (

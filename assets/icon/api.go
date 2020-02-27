@@ -16,27 +16,27 @@
 package icon
 
 import (
-	"github.com/imroc/req"
-	"github.com/tidwall/gjson"
-	"github.com/blocktree/openwallet/log"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/blocktree/openwallet/v2/log"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/imroc/req"
 	"github.com/shopspring/decimal"
+	"github.com/tidwall/gjson"
 )
 
 type Client struct {
-	BaseURL     string
-	Debug       bool
-	Client      *req.Req
-	Header      req.Header
+	BaseURL string
+	Debug   bool
+	Client  *req.Req
+	Header  req.Header
 }
 
 func NewClient(url string, debug bool) *Client {
 	c := Client{
-		BaseURL:     url,
-		Debug:       debug,
+		BaseURL: url,
+		Debug:   debug,
 	}
 
 	api := req.New()
@@ -57,7 +57,7 @@ func (c *Client) Call(path string, request map[string]interface{}) (*gjson.Resul
 	}
 
 	authHeader := req.Header{
-		"Accept":        "application/json",
+		"Accept": "application/json",
 	}
 
 	//json-rpc
@@ -136,8 +136,8 @@ func isError(result *gjson.Result) error {
 }
 
 func (c *Client) Call_icx_getBalance(address string) (string, error) {
-	request := map[string]interface{} {
-		"address":address,
+	request := map[string]interface{}{
+		"address": address,
 	}
 
 	ret, err := c.Call("icx_getBalance", request)
@@ -161,8 +161,8 @@ func (c *Client) Call_icx_sendTransaction(request map[string]interface{}) (strin
 }
 
 func (c *Client) Call_icx_getTransactionByHash(txhash string) (string, error) {
-	request := map[string]interface{} {
-		"txHash":txhash,
+	request := map[string]interface{}{
+		"txHash": txhash,
 	}
 
 	ret, err := c.Call("icx_getTransactionByHash", request)

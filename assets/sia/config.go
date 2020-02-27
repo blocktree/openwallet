@@ -16,12 +16,12 @@
 package sia
 
 import (
+	"encoding/json"
+	"fmt"
+	"github.com/astaxie/beego/config"
+	"github.com/blocktree/openwallet/v2/common/file"
 	"path/filepath"
 	"strings"
-	"github.com/astaxie/beego/config"
-	"encoding/json"
-	"github.com/blocktree/openwallet/common/file"
-	"fmt"
 )
 
 /*

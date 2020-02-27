@@ -21,8 +21,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/astaxie/beego/config"
-	"github.com/blocktree/openwallet/common"
-	"github.com/blocktree/openwallet/common/file"
+	"github.com/blocktree/openwallet/v2/common"
+	"github.com/blocktree/openwallet/v2/common/file"
 	"github.com/bndr/gotabulate"
 	"github.com/codeskyblue/go-sh"
 	"github.com/imroc/req"
@@ -175,7 +175,7 @@ func RestoreWallet(dbFile string) error {
 			//删除当前钱包文件
 			//file.Delete(currentWDFile)
 			fmt.Printf("Restore original wallet.data... \n")
-			tmpData := filepath.Join(tmpWalletData,"wallet.db")
+			tmpData := filepath.Join(tmpWalletData, "wallet.db")
 			file.Copy(tmpData, walletDataPath)
 			return err
 
@@ -350,7 +350,7 @@ func CreateBatchAddress(count uint64) (string, error) {
 			if errRun != nil {
 				continue
 			}
-			onlyAddress := gjson.GetBytes(address,"address").String()
+			onlyAddress := gjson.GetBytes(address, "address").String()
 			runAddress = append(runAddress, onlyAddress)
 
 		}
@@ -577,7 +577,7 @@ func SendTransaction(amount string, destination string) (string, error) {
 
 	fmt.Printf("Send Transaction Successfully\n")
 
-	txID := gjson.GetBytes(txIDs,"transactionids").String()
+	txID := gjson.GetBytes(txIDs, "transactionids").String()
 	return txID, nil
 }
 
@@ -604,7 +604,7 @@ func SummaryWallets() {
 		//如果余额大于阀值，汇总的地址
 		if balance.GreaterThan(threshold) {
 			//如果钱包正在执行转账，需要等待转账完毕才能继续进行汇总
-			if wallets[0].OutgoingSC == "0"{
+			if wallets[0].OutgoingSC == "0" {
 				log.Printf("Summary balance = %v \n", balance.Div(coinDecimal))
 				log.Printf("Summary Start Send Transaction\n")
 
@@ -617,9 +617,9 @@ func SummaryWallets() {
 				if err != nil {
 					log.Printf("Summary unexpected error: %v\n", err)
 				} else {
-					log.Printf("Summary successfully，Received Address[%s], Transaction ID:%s", sumAddress,txID)
+					log.Printf("Summary successfully，Received Address[%s], Transaction ID:%s", sumAddress, txID)
 				}
-			}else {
+			} else {
 				log.Printf("wallet has coins spent in incomplete transaction, summaryWallets will begin after it finish...")
 			}
 		} else {
@@ -691,7 +691,7 @@ func printWalletList(list []*Wallet) {
 		balance, _ := decimal.NewFromString(w.ConfirmBalance)
 		balance = balance.Div(coinDecimal)
 		tableInfo = append(tableInfo, []interface{}{
-			i,  w.Encrypted, w.Rescanning, w.Unlocked, balance,
+			i, w.Encrypted, w.Rescanning, w.Unlocked, balance,
 		})
 	}
 

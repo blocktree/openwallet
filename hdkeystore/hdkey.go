@@ -33,8 +33,8 @@ import (
 
 	"github.com/blocktree/go-owcdrivers/owkeychain"
 	"github.com/blocktree/go-owcrypt"
-	"github.com/blocktree/openwallet/crypto"
-	"github.com/blocktree/openwallet/crypto/sha3"
+	"github.com/blocktree/openwallet/v2/crypto"
+	"github.com/blocktree/openwallet/v2/crypto/sha3"
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/scrypt"
 )

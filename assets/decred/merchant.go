@@ -17,11 +17,11 @@ package decred
 
 import (
 	"errors"
-	"github.com/blocktree/openwallet/openwallet"
-	"github.com/shopspring/decimal"
-	"github.com/blocktree/openwallet/log"
-	"strings"
 	"fmt"
+	"github.com/blocktree/openwallet/v2/log"
+	"github.com/blocktree/openwallet/v2/openwallet"
+	"github.com/shopspring/decimal"
+	"strings"
 	"time"
 )
 
@@ -230,7 +230,7 @@ func (wm *WalletManager) GetBlockchainInfo() (*openwallet.Blockchain, error) {
 	}
 
 	info := openwallet.Blockchain{
-		Blocks: height,
+		Blocks:     height,
 		ScanHeight: localHeight,
 	}
 
@@ -277,7 +277,7 @@ func (wm *WalletManager) SetMerchantRescanBlockHeight(height uint64) error {
 func (wm *WalletManager) MerchantRescanBlockHeight(startHeight uint64, endHeight uint64) error {
 
 	if startHeight <= endHeight {
-		for i := startHeight;i<=endHeight;i++ {
+		for i := startHeight; i <= endHeight; i++ {
 			err := wm.blockscanner.ScanBlock(i)
 			if err != nil {
 				continue

@@ -19,8 +19,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/blocktree/go-owcrypt"
-	"github.com/blocktree/openwallet/log"
-	"github.com/blocktree/openwallet/openwallet"
+	"github.com/blocktree/openwallet/v2/log"
+	"github.com/blocktree/openwallet/v2/openwallet"
 	"time"
 )
 
@@ -233,7 +233,7 @@ func (wm *WalletManager) SignSmartContractTransaction(appID, walletID, accountID
 
 				signature, v, sigErr := owcrypt.Signature(keyBytes, nil, txHash, keySignature.EccType)
 				if sigErr != owcrypt.SUCCESS {
-					return nil, openwallet.Errorf(openwallet.ErrSystemException,"transaction hash sign failed")
+					return nil, openwallet.Errorf(openwallet.ErrSystemException, "transaction hash sign failed")
 				}
 
 				if keySignature.RSV {

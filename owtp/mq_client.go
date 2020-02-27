@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/blocktree/openwallet/log"
+	"github.com/blocktree/openwallet/v2/log"
 	"github.com/gorilla/websocket"
 	"github.com/streadway/amqp"
 	"github.com/tidwall/gjson"
@@ -108,7 +108,7 @@ func (c *MQClient) PID() string {
 	return c.pid
 }
 
-func (c *MQClient) EnableKeyAgreement() bool  {
+func (c *MQClient) EnableKeyAgreement() bool {
 	return c._auth.EnableKeyAgreement()
 }
 

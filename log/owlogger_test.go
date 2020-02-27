@@ -18,7 +18,7 @@ package log
 import (
 	"fmt"
 	"github.com/astaxie/beego/logs"
-	"github.com/blocktree/openwallet/common/file"
+	"github.com/blocktree/openwallet/v2/common/file"
 	"path/filepath"
 	"sync"
 	"testing"

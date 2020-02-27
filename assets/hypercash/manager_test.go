@@ -16,14 +16,14 @@
 package hypercash
 
 import (
+	"github.com/asdine/storm"
+	"github.com/asdine/storm/q"
+	"github.com/blocktree/openwallet/v2/openwallet"
 	"github.com/codeskyblue/go-sh"
 	"github.com/shopspring/decimal"
 	"math"
-	"testing"
-	"github.com/blocktree/openwallet/openwallet"
-	"github.com/asdine/storm/q"
-	"github.com/asdine/storm"
 	"path/filepath"
+	"testing"
 )
 
 var (
@@ -50,7 +50,6 @@ func TestCreateNewWallet(t *testing.T) {
 		return
 	}
 }
-
 
 func TestGetAddressesByAccount(t *testing.T) {
 	addresses, err := tw.GetAddressesByAccount("default")
@@ -122,7 +121,6 @@ func TestGetWallets(t *testing.T) {
 		t.Logf("GetWallets wallet[%d] = %v", i, w)
 	}
 }
-
 
 func TestGetWalletList(t *testing.T) {
 	err := tw.GetWalletList()
@@ -255,7 +253,7 @@ func TestListUnspent(t *testing.T) {
 
 func TestGetAddressesFromLocalDB(t *testing.T) {
 	//wallet, _ := tw.GetWalletInfo("W3K2C9q4tM4PDiRQfwz3FbsZcH2AMfpqH6")
-	addresses, err := tw.GetAddressesFromLocalDB("hccharge", false,0, -1)
+	addresses, err := tw.GetAddressesFromLocalDB("hccharge", false, 0, -1)
 	if err != nil {
 		t.Errorf("GetAddressesFromLocalDB failed unexpected error: %v\n", err)
 		return
@@ -271,7 +269,6 @@ func TestGetAddressesFromLocalDB(t *testing.T) {
 
 //GetAddressesFromLocalDB 从本地数据库
 func TestGetAddressesFromLocalDBPath(t *testing.T) {
-
 
 	db, err := storm.Open(filepath.Join(tw.config.dbPath, "hccharge.db"))
 	if err != nil {

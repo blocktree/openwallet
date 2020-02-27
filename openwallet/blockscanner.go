@@ -17,12 +17,12 @@ package openwallet
 
 import (
 	"fmt"
-	"github.com/blocktree/openwallet/concurrent"
+	"github.com/blocktree/openwallet/v2/concurrent"
 	"sync"
 	"time"
 
-	"github.com/blocktree/openwallet/log"
-	"github.com/blocktree/openwallet/timer"
+	"github.com/blocktree/openwallet/v2/log"
+	"github.com/blocktree/openwallet/v2/timer"
 )
 
 //deprecated
@@ -460,7 +460,6 @@ func (bs *BlockScannerBase) ExtractTransactionData(txid string, scanTargetFunc B
 func (bs *BlockScannerBase) ExtractTransactionAndReceiptData(txid string, scanTargetFunc BlockScanTargetFuncV2) (map[string][]*TxExtractData, map[string]*SmartContractReceipt, error) {
 	return nil, nil, fmt.Errorf("ExtractTransactionAndReceiptData is not implemented")
 }
-
 
 //GetBalanceByAddress 查询地址余额
 func (bs *BlockScannerBase) GetBalanceByAddress(address ...string) ([]*Balance, error) {

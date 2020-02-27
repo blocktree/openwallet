@@ -20,15 +20,15 @@ import (
 	"errors"
 	"fmt"
 	"github.com/astaxie/beego/config"
-	"github.com/blocktree/openwallet/common"
-	"github.com/blocktree/openwallet/common/file"
-	"github.com/blocktree/openwallet/console"
+	"github.com/blocktree/openwallet/v2/common"
+	"github.com/blocktree/openwallet/v2/common/file"
+	"github.com/blocktree/openwallet/v2/console"
+	"github.com/bndr/gotabulate"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
 	"github.com/tyler-smith/go-bip39"
 	"log"
 	"path/filepath"
-	"github.com/bndr/gotabulate"
 	"time"
 )
 
@@ -42,8 +42,8 @@ var (
 )
 
 type WalletManager struct {
-	WalletClient *Client                       // 节点客户端
-	Config       *WalletConfig                 //钱包管理配置
+	WalletClient *Client            // 节点客户端
+	Config       *WalletConfig      //钱包管理配置
 	WalletsInSum map[string]*Wallet //参与汇总的钱包
 }
 
@@ -68,7 +68,7 @@ func (wm *WalletManager) GetWalletInfo(wid ...string) ([]*Wallet, error) {
 
 	//调用服务
 	result := wm.WalletClient.callGetWalletAPI(wid...)
-	if err = isError(result); err !=nil {
+	if err = isError(result); err != nil {
 		return nil, err
 	}
 
@@ -207,7 +207,7 @@ func (wm *WalletManager) CreateBatchAddress(wid string, aid int64, password stri
 
 //http获取地址
 func (wm *WalletManager) getAddressWrok(wid string, aid int64, passphrase string, producer chan *Address, err error) {
-	result := wm.WalletClient.callCreateNewAddressAPI(wid, aid , passphrase)
+	result := wm.WalletClient.callCreateNewAddressAPI(wid, aid, passphrase)
 	if err = isError(result); err != nil {
 		log.Print(err)
 		return

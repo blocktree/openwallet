@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/blocktree/openwallet/crypto"
+	"github.com/blocktree/openwallet/v2/crypto"
 	"github.com/tidwall/gjson"
 )
 

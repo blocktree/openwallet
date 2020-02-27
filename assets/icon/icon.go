@@ -16,20 +16,19 @@
 package icon
 
 import (
+	"encoding/hex"
+	"errors"
 	"fmt"
-	"github.com/blocktree/openwallet/common"
-	"github.com/blocktree/openwallet/common/file"
-	"github.com/blocktree/openwallet/console"
-	"github.com/blocktree/openwallet/timer"
+	"github.com/blocktree/openwallet/v2/common"
+	"github.com/blocktree/openwallet/v2/common/file"
+	"github.com/blocktree/openwallet/v2/console"
+	"github.com/blocktree/openwallet/v2/openwallet"
+	"github.com/blocktree/openwallet/v2/timer"
+	"github.com/shopspring/decimal"
 	"log"
 	"path/filepath"
 	"strings"
-	"errors"
-	"github.com/shopspring/decimal"
-	"github.com/blocktree/openwallet/openwallet"
-	"encoding/hex"
 )
-
 
 //初始化配置流程
 func (wm *WalletManager) InitConfigFlow() error {
@@ -352,7 +351,6 @@ func (wm *WalletManager) TransferFlow() error {
 			continue
 		}
 
-
 		if resultSub.LessThanOrEqual(amount) {
 			send := sendStruct{k, resultSub}
 			sends = append(sends, send)
@@ -367,9 +365,9 @@ func (wm *WalletManager) TransferFlow() error {
 
 	if haveEnoughBalance {
 		for _, send := range sends {
-				txid, _ :=wm.Transfer(send.sednKeys.PrivateKey, send.sednKeys.Address, receiver, send.amount.String(), wm.Config.StepLimit, 100)
+			txid, _ := wm.Transfer(send.sednKeys.PrivateKey, send.sednKeys.Address, receiver, send.amount.String(), wm.Config.StepLimit, 100)
 
-				log.Printf("transfer from address:%s, to address:%s, amount:%s, txid:%s\n", send.sednKeys.Address, receiver, send.amount.String(), txid)
+			log.Printf("transfer from address:%s, to address:%s, amount:%s, txid:%s\n", send.sednKeys.Address, receiver, send.amount.String(), txid)
 		}
 	} else {
 		log.Printf("not enough balance\n")
@@ -467,11 +465,10 @@ func (wm *WalletManager) GetWalletList() error {
 
 	fmt.Printf("Public key: %s\n", k.PublicKey)
 
-	fmt.Printf("Private key: %s\n", 	hex.EncodeToString(k.PrivateKey))
+	fmt.Printf("Private key: %s\n", hex.EncodeToString(k.PrivateKey))
 
 	return nil
 }
-
 
 //RestoreWalletFlow 恢复钱包
 func (w *WalletManager) RestoreWalletFlow() error {
@@ -516,4 +513,3 @@ func (w *WalletManager) RestoreWalletFlow() error {
 
 	return nil
 }
-

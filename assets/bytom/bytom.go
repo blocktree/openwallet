@@ -18,9 +18,9 @@ package bytom
 import (
 	"errors"
 	"fmt"
-	"github.com/blocktree/openwallet/common"
-	"github.com/blocktree/openwallet/console"
-	"github.com/blocktree/openwallet/timer"
+	"github.com/blocktree/openwallet/v2/common"
+	"github.com/blocktree/openwallet/v2/console"
+	"github.com/blocktree/openwallet/v2/timer"
 	"github.com/shopspring/decimal"
 	"io/ioutil"
 	"log"
@@ -461,7 +461,7 @@ func (w *WalletManager) GetWalletList() error {
 func (w *WalletManager) RestoreWalletFlow() error {
 
 	var (
-		err        error
+		err      error
 		filename string
 	)
 
@@ -491,12 +491,11 @@ func (w *WalletManager) RestoreWalletFlow() error {
 
 }
 
-
 func (w *WalletManager) InitNodeConfig() error {
 
 	var (
 		err            error
-		hostPort       string 
+		hostPort       string
 		hostDatadir    string
 		dockerDatadir  string
 		containerName  string
@@ -514,18 +513,15 @@ func (w *WalletManager) InitNodeConfig() error {
 			return err
 		}
 
-
 		hostDatadir, err = console.InputText("Set host workspace datadir: ", false)
 		if err != nil {
 			return err
 		}
 
-	
 		dockerDatadir, err = console.InputText("Set dcoker datadir: ", true)
 		if err != nil {
 			return err
 		}
-
 
 		containerName, err = console.InputText("Set container name: ", true)
 		if err != nil {
@@ -584,94 +580,92 @@ func (w *WalletManager) InitNodeConfig() error {
 func (w *WalletManager) BuildImage() error {
 
 	var (
-		err      error
-		cmd      *exec.Cmd
-		result   []byte
+		err    error
+		cmd    *exec.Cmd
+		result []byte
 	)
 
 	bulil_image := "docker build -t " + imageName + " -f " + dockerfilePath
 	cmd = exec.Command(bulil_image)
-    if result, err = cmd.Output(); err != nil {
-        fmt.Println(err)
-        return err
-    }
-    // 默认输出有一个换行
-    fmt.Println(string(result))
+	if result, err = cmd.Output(); err != nil {
+		fmt.Println(err)
+		return err
+	}
+	// 默认输出有一个换行
+	fmt.Println(string(result))
 
-    return nil
+	return nil
 }
 
-
 //创建容器
-func (w *WalletManager)RunContainer() error {
+func (w *WalletManager) RunContainer() error {
 	var (
-		err      error
-		cmd      *exec.Cmd
-		result   []byte
+		err    error
+		cmd    *exec.Cmd
+		result []byte
 	)
 
 	create_container := "docker run --privileged=true -d -it -p " + hostPort + ":9888" + " -v " + hostDatadir + ":" + dockerDatadir + " --name " + containerName + " " + imageName
 	cmd = exec.Command(create_container)
-    if result, err = cmd.Output(); err != nil {
-        fmt.Println(err)
-        return err
-    }
-    // 默认输出有一个换行
-    fmt.Println(string(result))
+	if result, err = cmd.Output(); err != nil {
+		fmt.Println(err)
+		return err
+	}
+	// 默认输出有一个换行
+	fmt.Println(string(result))
 
-    return nil
+	return nil
 }
-	
 
 //运行节点
-func (w *WalletManager)RunFullNode() error {
+func (w *WalletManager) RunFullNode() error {
 	var (
-		err      error
-		cmd      *exec.Cmd
-		result   []byte
+		err    error
+		cmd    *exec.Cmd
+		result []byte
 	)
 
 	init_node := "docker exec -it " + containerName + " /bin/sh" + " bytomd init --chain_id mainnet"
 	run_node := "docker exec -it " + containerName + " /bin/sh" + " bytomd node --home " + dockerDatadir + " --auth.disable"
 
 	cmd = exec.Command(init_node)
-    if result, err = cmd.Output(); err != nil {
-        fmt.Println(err)
-        return err
-    }
-    // 默认输出有一个换行
-    fmt.Println(string(result))
+	if result, err = cmd.Output(); err != nil {
+		fmt.Println(err)
+		return err
+	}
+	// 默认输出有一个换行
+	fmt.Println(string(result))
 
-    cmd = exec.Command(run_node)
-    if result, err = cmd.Output(); err != nil {
-        fmt.Println(err)
-        return err
-    }
-    // 默认输出有一个换行
-    fmt.Println(string(result))
+	cmd = exec.Command(run_node)
+	if result, err = cmd.Output(); err != nil {
+		fmt.Println(err)
+		return err
+	}
+	// 默认输出有一个换行
+	fmt.Println(string(result))
 
-    return nil
-}	
+	return nil
+}
 
 //登录容器
-func (w *WalletManager)LoginContainer() error {
+func (w *WalletManager) LoginContainer() error {
 	var (
-		err      error
-		cmd      *exec.Cmd
-		result   []byte
+		err    error
+		cmd    *exec.Cmd
+		result []byte
 	)
 
 	login := "docker exec -it " + containerName + " /bin/sh"
 
 	cmd = exec.Command(login)
-    if result, err = cmd.Output(); err != nil {
-        fmt.Println(err)
-        return err
-    }
-    // 默认输出有一个换行
-    fmt.Println(string(result))
+	if result, err = cmd.Output(); err != nil {
+		fmt.Println(err)
+		return err
+	}
+	// 默认输出有一个换行
+	fmt.Println(string(result))
 
-    return nil
+	return nil
 }
 
 //SetConfigFlow 初始化配置流程

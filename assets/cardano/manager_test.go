@@ -16,10 +16,10 @@
 package cardano
 
 import (
-	"github.com/blocktree/openwallet/common"
-	"testing"
-	"log"
+	"github.com/blocktree/openwallet/v2/common"
 	"github.com/tidwall/gjson"
+	"log"
+	"testing"
 )
 
 var wm *WalletManager
@@ -42,7 +42,6 @@ func TestGetWalletInfo(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-
 
 	//打印钱包列表
 	wm.printWalletList(list)
@@ -127,7 +126,7 @@ func TestCreateBatchAddress(t *testing.T) {
 	password := common.NewString("1234qwer").SHA256()
 
 	tests := []struct {
-		wid string
+		wid   string
 		aid   int64
 		count uint
 	}{
@@ -137,8 +136,8 @@ func TestCreateBatchAddress(t *testing.T) {
 		//	count: 10,
 		//},
 		{
-			wid: "Ae2tdPwUPEZEL7DHjYaZBH4T4fXkrvpryAeGbjmqLy62pPXg6aLapS9xJom",
-			aid: 3669395481,
+			wid:   "Ae2tdPwUPEZEL7DHjYaZBH4T4fXkrvpryAeGbjmqLy62pPXg6aLapS9xJom",
+			aid:   3669395481,
 			count: 10,
 		},
 	}
@@ -157,7 +156,6 @@ func TestCreateBatchAddress(t *testing.T) {
 	}
 }
 
-
 func TestGetAddressInfo(t *testing.T) {
 
 	tests := []struct {
@@ -168,7 +166,6 @@ func TestGetAddressInfo(t *testing.T) {
 			wid: "Ae2tdPwUPEZEL7DHjYaZBH4T4fXkrvpryAeGbjmqLy62pPXg6aLapS9xJom",
 			aid: "3669395481",
 		},
-
 	}
 
 	for i, test := range tests {
@@ -247,9 +244,7 @@ func TestEstimateFees(t *testing.T) {
 		log.Printf("fees %s\n", fees.String())
 	}
 
-
 }
-
 
 func TestDeleteWallet(t *testing.T) {
 	wid := "Ae2tdPwUPEZMYbseGswFLCyN1vG6CjyGNcAvNujB3JXbuovD6GVc535GTtB"
