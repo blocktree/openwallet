@@ -69,7 +69,7 @@ type SmartContractRawTransaction struct {
 	IsBuilt     bool                       `json:"isBuilt"`    //是否完成构建建议单
 	IsCompleted bool                       `json:"isComplete"` //是否完成所有签名
 	IsSubmit    bool                       `json:"isSubmit"`   //是否已广播
-	Raw         string                     `json:"Raw"`        //交易单调用参数，根据RawType填充数据
+	Raw         string                     `json:"raw"`        //交易单调用参数，根据RawType填充数据
 	RawType     uint64                     `json:"rawType"`    // 0：hex字符串，1：json字符串，2：base64字符串
 	ABIParam    []string                   `json:"abiParam"`   //abi调用参数，[method, arg1, arg2, args...]
 	Value       string                     `json:"value"`      //主币数量
@@ -119,7 +119,7 @@ func (tx *SmartContractReceipt) GenWxID() {
 type SmartContractEvent struct {
 	Contract *SmartContract `json:"contract"` //合约
 	Event    string         `json:"event"`    //记录事件
-	Value    string         `json:"Value"`    //结果参数，json字符串
+	Value    string         `json:"value"`    //结果参数，json字符串
 }
 
 const (
@@ -130,7 +130,7 @@ const (
 // SmartContractCallResult 调用结果，不产生交易
 type SmartContractCallResult struct {
 	Method    string `json:"method"`    //调用方法
-	Value     string `json:"Value"`     //json结果
+	Value     string `json:"value"`     //json结果
 	RawHex    string `json:"rawHex"`    //16进制字符串结果
 	Status    uint64 `json:"status"`    //0：成功，1：失败
 	Exception string `json:"exception"` //异常错误

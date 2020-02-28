@@ -37,12 +37,17 @@ openwallet框架，未来将进化成为一个去中心化系统开发框架，�
 
 v2版本完全兼容v1版本，只需在go.mod中依赖v2最新版本
 
+```go script
+
 require (
     github.com/blocktree/openwallet/v2 latest
     ....
 )
 
-已依赖v1库的项目代，可以安装[Mod](https://github.com/marwan-at-work/mod/)
+```
+
+
+已依赖v1库的项目，可以安装[Mod](https://github.com/marwan-at-work/mod/)
 
 ```shell script
 
