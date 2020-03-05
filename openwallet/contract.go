@@ -88,7 +88,7 @@ type SmartContractReceipt struct {
 	Value       string                `json:"value"`           //主币数量
 	Fees        string                `json:"fees"`            //手续费
 	RawReceipt  string                `json:"rawReceipt"`      //@required 原始交易回执，一般为json
-	Events      []*SmartContractEvent `json:"actions"`         //@required 执行事件, 例如：event Transfer
+	Events      []*SmartContractEvent `json:"events"`         //@required 执行事件, 例如：event Transfer
 	BlockHash   string                `json:"blockHash"`       //@required
 	BlockHeight uint64                `json:"blockHeight"`     //@required
 	ConfirmTime int64                 `json:"confirmTime"`     //@required
