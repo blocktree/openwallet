@@ -2,12 +2,14 @@ package owtp
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/blocktree/go-owcrypt"
 	"github.com/blocktree/openwallet/v2/log"
 	"github.com/blocktree/openwallet/v2/session"
 	"github.com/imroc/req"
 	"github.com/mr-tron/base58/base58"
+	"io/ioutil"
 	"sync"
 	"testing"
 	"time"
@@ -45,6 +47,20 @@ func testMakeHTTPCall(httpClient *OWTPNode) {
 		"name": "chance",
 		"age":  18,
 	}
+
+	//var params map[string]interface{}
+	//paramJSON, err := ioutil.ReadFile("test.json")
+	//if err != nil {
+	//	log.Errorf("ioutil.ReadFile error: %v", err)
+	//	return
+	//}
+	//
+	//err = json.Unmarshal(paramJSON, &params)
+	//if err != nil {
+	//	log.Errorf("json.Unmarshal error: %v", err)
+	//	return
+	//}
+
 	//err = httpClient.Connect(httpHostNodeID, config)
 	//err := httpClient.ConnectAndCall(httpHostNodeID, config,"getInfo", params, false, func(resp Response) {
 	//	if resp.Status == StatusSuccess {
@@ -56,7 +72,7 @@ func testMakeHTTPCall(httpClient *OWTPNode) {
 	//	}
 	//
 	//})
-	err := httpClient.Call(httpHostNodeID, "getInfo", params, true, func(resp Response) {
+	err = httpClient.Call(httpHostNodeID, "getInfo", params, true, func(resp Response) {
 		if resp.Status == StatusSuccess {
 			result := resp.JsonData()
 			symbols := result.Get("symbols")
@@ -94,7 +110,7 @@ func TestHTTPHostRun(t *testing.T) {
 	config := ConnectConfig{}
 	config.Address = listenPort
 	config.ConnectType = HTTP
-	config.EnableSignature = false
+	config.EnableSignature = true
 	httpHost.HandleFunc("getInfo", getInfo)
 	httpHost.HandlePrepareFunc(func(ctx *Context) {
 		log.Notice("remoteAddress:", ctx.RemoteAddress)

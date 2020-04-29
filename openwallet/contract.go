@@ -61,22 +61,23 @@ const (
 
 // SmartContractRawTransaction 智能合约原始交易单
 type SmartContractRawTransaction struct {
-	Coin        Coin                       `json:"coin"`       //@required 区块链类型标识
-	TxID        string                     `json:"txID"`       //交易单ID，广播后会生成
-	Sid         string                     `json:"sid"`        //@required 业务订单号，保证业务不重复交易而用
-	Account     *AssetsAccount             `json:"account"`    //@required 创建交易单的账户
-	Signatures  map[string][]*KeySignature `json:"signatures"` //拥有者accountID: []未花签名
-	IsBuilt     bool                       `json:"isBuilt"`    //是否完成构建建议单
-	IsCompleted bool                       `json:"isComplete"` //是否完成所有签名
-	IsSubmit    bool                       `json:"isSubmit"`   //是否已广播
-	Raw         string                     `json:"raw"`        //交易单调用参数，根据RawType填充数据
-	RawType     uint64                     `json:"rawType"`    // 0：hex字符串，1：json字符串，2：base64字符串
-	ABIParam    []string                   `json:"abiParam"`   //abi调用参数，[method, arg1, arg2, args...]
-	Value       string                     `json:"value"`      //主币数量
-	FeeRate     string                     `json:"feeRate"`    //自定义费率
-	Fees        string                     `json:"fees"`       //手续费
-	TxFrom      string                     `json:"txFrom"`     //调用地址
-	TxTo        string                     `json:"txTo"`       //调用地址，与合约地址一致
+	Coin        Coin                       `json:"coin"`        //@required 区块链类型标识
+	TxID        string                     `json:"txID"`        //交易单ID，广播后会生成
+	Sid         string                     `json:"sid"`         //@required 业务订单号，保证业务不重复交易而用
+	Account     *AssetsAccount             `json:"account"`     //@required 创建交易单的账户
+	Signatures  map[string][]*KeySignature `json:"signatures"`  //拥有者accountID: []未花签名
+	IsBuilt     bool                       `json:"isBuilt"`     //是否完成构建建议单
+	IsCompleted bool                       `json:"isComplete"`  //是否完成所有签名
+	IsSubmit    bool                       `json:"isSubmit"`    //是否已广播
+	Raw         string                     `json:"raw"`         //交易单调用参数，根据RawType填充数据
+	RawType     uint64                     `json:"rawType"`     // 0：hex字符串，1：json字符串，2：base64字符串
+	ABIParam    []string                   `json:"abiParam"`    //abi调用参数，[method, arg1, arg2, args...]
+	Value       string                     `json:"value"`       //主币数量
+	FeeRate     string                     `json:"feeRate"`     //自定义费率
+	Fees        string                     `json:"fees"`        //手续费
+	TxFrom      string                     `json:"txFrom"`      //调用地址
+	TxTo        string                     `json:"txTo"`        //调用地址，与合约地址一致
+	AwaitResult bool                       `json:"awaitResult"` //是否广播后同时等待结果
 }
 
 type SmartContractReceipt struct {
@@ -88,7 +89,7 @@ type SmartContractReceipt struct {
 	Value       string                `json:"value"`           //主币数量
 	Fees        string                `json:"fees"`            //手续费
 	RawReceipt  string                `json:"rawReceipt"`      //@required 原始交易回执，一般为json
-	Events      []*SmartContractEvent `json:"events"`         //@required 执行事件, 例如：event Transfer
+	Events      []*SmartContractEvent `json:"events"`          //@required 执行事件, 例如：event Transfer
 	BlockHash   string                `json:"blockHash"`       //@required
 	BlockHeight uint64                `json:"blockHeight"`     //@required
 	ConfirmTime int64                 `json:"confirmTime"`     //@required
