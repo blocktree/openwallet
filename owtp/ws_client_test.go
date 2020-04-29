@@ -98,7 +98,7 @@ func TestWSHostRun(t *testing.T) {
 	config := ConnectConfig{}
 	config.Address = wsURL
 	config.ConnectType = Websocket
-	//config.EnableSignature = true
+	config.EnableSignature = true
 	wsHost.HandleFunc("getInfo", getInfo)
 	wsHost.HandlePrepareFunc(func(ctx *Context) {
 		log.Notice("remoteAddress:", ctx.RemoteAddress)
@@ -153,6 +153,7 @@ func TestWSClientCall(t *testing.T) {
 	config.Address = wsURL
 	config.ConnectType = Websocket
 	config.EnableKeyAgreement = true
+	config.EnableSignature = true
 	wsClient := RandomOWTPNode()
 	wsClient.SetPeerstore(wsGlobalSessions)
 	//_, pub := httpClient.Certificate().KeyPair()
@@ -185,6 +186,20 @@ func TestWSClientCall(t *testing.T) {
 		"name": "chance",
 		"age":  18,
 	}
+
+	//var params map[string]interface{}
+	//paramJSON, err := ioutil.ReadFile("test.json")
+	//if err != nil {
+	//	log.Errorf("ioutil.ReadFile error: %v", err)
+	//	return
+	//}
+	//
+	//err = json.Unmarshal(paramJSON, &params)
+	//if err != nil {
+	//	log.Errorf("json.Unmarshal error: %v", err)
+	//	return
+	//}
+
 	//err = wsClient.Connect(wsHostNodeID, config)
 	err = wsClient.Call(wsHostNodeID, "getInfo", params, true, func(resp Response) {
 
