@@ -21,6 +21,7 @@ import (
 	"github.com/blocktree/go-owcdrivers/owkeychain"
 	"github.com/blocktree/openwallet/common"
 	"github.com/blocktree/openwallet/log"
+	"sync"
 )
 
 type AddressCreateResult struct {
@@ -35,8 +36,8 @@ type AddressCreateResult struct {
 // @conf 环境配置
 // @count 连续创建数量
 // @workerSize 并行线程数。建议20条，并行执行5000条大约8.22秒。
-func BatchCreateAddressByAccount(account *AssetsAccount, adapter AssetsAdapter, count int64, workerSize int) ([]*Address, error) {
-
+func BatchCreateAddressByAccount(account *AssetsAccount, adapter AssetsAdapter, count int64, workerSize int) ([]*Address, int, error) {
+	
 	var (
 		quit         = make(chan struct{})
 		done         = int64(0) //完成标记
@@ -46,30 +47,35 @@ func BatchCreateAddressByAccount(account *AssetsAccount, adapter AssetsAdapter, 
 		workPermitCH = make(chan struct{}, workerSize) //工作令牌
 		producer     = make(chan AddressCreateResult)  //生产通道
 		worker       = make(chan AddressCreateResult)  //消费通道
+		finalIndex   = account.AddressIndex            // 最终地址索引
 	)
-
+	
 	defer func() {
 		close(workPermitCH)
 		close(producer)
 		close(worker)
 	}()
-
+	
 	if count == 0 {
-		return nil, fmt.Errorf("create address count is zero")
+		return nil, finalIndex, fmt.Errorf("create address count is zero")
 	}
-
+	
 	//消费工作
 	consumeWork := func(result chan AddressCreateResult) {
 		//回收创建的地址
 		for gets := range result {
-
+			
 			if gets.Success {
+				// 替换地址最终的索引
+				if int(gets.Address.Index) > finalIndex {
+					finalIndex = int(gets.Address.Index)
+				}
 				addressArr = append(addressArr, gets.Address)
 			} else {
 				failed++ //标记生成失败数
 				log.Errorf("create address failed: %v", gets.Err)
 			}
-
+			
 			//累计完成的线程数
 			done++
 			if done == shouldDone {
@@ -78,61 +84,83 @@ func BatchCreateAddressByAccount(account *AssetsAccount, adapter AssetsAdapter, 
 			}
 		}
 	}
-
+	
 	//生产工作
 	produceWork := func(eAccount *AssetsAccount, eAdapter AssetsAdapter, eCount int64, eProducer chan AddressCreateResult) {
-		addrIndex := eAccount.AddressIndex
-		for i := uint64(0); i < uint64(eCount); i++ {
+		var (
+			addrIndex  = account.AddressIndex
+			retryLimit = 10
+			mu         sync.Mutex
+		)
+		for i := uint64(0); i < uint64(count); i++ {
 			workPermitCH <- struct{}{}
 			addrIndex++
 			go func(mAccount *AssetsAccount, mAdapter AssetsAdapter, newIndex int, end chan struct{}, mProducer chan<- AddressCreateResult) {
-
-				//生成地址
-				mProducer <- CreateAddressByAccountWithIndex(mAccount, mAdapter, newIndex, 0)
+				index := newIndex
+				retryTime := 0
+			RETRY:
+				retryTime++
+				result := CreateAddressByAccountWithIndex(mAccount, mAdapter, index, 0)
+				
+				if result.Err != nil {
+					if retryTime >= retryLimit {
+						//生成地址
+						mProducer <- result
+						//释放
+						<-end
+						return
+					}
+					mu.Lock()
+					addrIndex++
+					index = addrIndex
+					mu.Unlock()
+					goto RETRY
+				}
+				
+				mProducer <- result
 				//释放
 				<-end
-
-			}(eAccount, eAdapter, addrIndex, workPermitCH, eProducer)
+			}(account, adapter, addrIndex, workPermitCH, producer)
 		}
 	}
-
+	
 	//独立线程运行消费
 	go consumeWork(worker)
-
+	
 	//独立线程运行生产
 	go produceWork(account, adapter, count, producer)
-
+	
 	//以下使用生产消费模式
 	batchCreateAddressRuntime(producer, worker, quit)
-
+	
 	if failed > 0 {
-		return nil, fmt.Errorf("create address failed")
+		return nil, finalIndex, fmt.Errorf("create address failed")
 	} else {
-		return addressArr, nil
+		return addressArr, finalIndex, nil
 	}
 }
 
 //batchCreateAddressRuntime 运行时
 func batchCreateAddressRuntime(producer chan AddressCreateResult, worker chan AddressCreateResult, quit chan struct{}) {
-
+	
 	var (
 		values = make([]AddressCreateResult, 0)
 	)
-
+	
 	for {
-
+		
 		var activeWorker chan<- AddressCreateResult
 		var activeValue AddressCreateResult
-
+		
 		//当数据队列有数据时，释放顶部，传输给消费者
 		if len(values) > 0 {
 			activeWorker = worker
 			activeValue = values[0]
-
+			
 		}
-
+		
 		select {
-
+		
 		//生成者不断生成数据，插入到数据队列尾部
 		case pa := <-producer:
 			values = append(values, pa)
@@ -143,21 +171,21 @@ func batchCreateAddressRuntime(producer chan AddressCreateResult, worker chan Ad
 			values = values[1:]
 		}
 	}
-
+	
 }
 
 func CreateAddressByAccountWithIndex(account *AssetsAccount, adapter AssetsAdapter, addrIndex int, addrIsChange int64) AddressCreateResult {
-
+	
 	result := AddressCreateResult{
 		Success: true,
 	}
-
+	
 	decoderV1 := adapter.GetAddressDecode()
 	decoderV2 := adapter.GetAddressDecoderV2()
-
+	
 	//AddressDecoder尝试强转为AddressDecoderV2
 	if decoderV2 != nil {
-
+		
 		//支持自定义创建地址
 		if decoderV2.SupportCustomCreateAddressFunction() {
 			newAddr, err := decoderV2.CustomCreateAddress(account, uint64(addrIndex))
@@ -166,20 +194,20 @@ func CreateAddressByAccountWithIndex(account *AssetsAccount, adapter AssetsAdapt
 				result.Err = err
 				return result
 			}
-
+			
 			result.Success = true
 			result.Address = newAddr
-
+			
 			return result
 		}
 	}
-
+	
 	if decoderV1 == nil {
 		result.Success = false
 		result.Err = fmt.Errorf("assets-adapter not support AddressDecoder interface")
 		return result
 	}
-
+	
 	if len(account.HDPath) == 0 {
 		result.Success = false
 		result.Err = fmt.Errorf("hdPath is empty")
@@ -203,7 +231,7 @@ func CreateAddressByAccountWithIndex(account *AssetsAccount, adapter AssetsAdapt
 	}
 	var err error
 	var address, publicKey string
-
+	
 	if decoderV2 != nil {
 		address, err = decoderV2.AddressEncode(newKeys[0])
 	} else {
@@ -216,7 +244,7 @@ func CreateAddressByAccountWithIndex(account *AssetsAccount, adapter AssetsAdapt
 		return result
 	}
 	publicKey = hex.EncodeToString(newKeys[0])
-
+	
 	if len(address) == 0 {
 		result.Success = false
 		result.Err = fmt.Errorf("create address content error")
@@ -235,9 +263,9 @@ func CreateAddressByAccountWithIndex(account *AssetsAccount, adapter AssetsAdapt
 		HDPath:    hdPath,
 		IsChange:  common.NewString(addrIsChange).Bool(),
 	}
-
+	
 	result.Success = true
 	result.Address = newAddr
-
+	
 	return result
 }

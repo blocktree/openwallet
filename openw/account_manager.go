@@ -282,7 +282,7 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 		return nil, err
 	}
 
-	addrs, err := openwallet.BatchCreateAddressByAccount(account, assetsMgr, int64(count), 20)
+	addrs, finalIndex, err := openwallet.BatchCreateAddressByAccount(account, assetsMgr, int64(count), 20)
 	if err != nil {
 		return nil, err
 	}
@@ -308,7 +308,7 @@ func (wm *WalletManager) CreateAddress(appID, walletID string, accountID string,
 		}
 	}
 
-	account.AddressIndex = account.AddressIndex + int(count)
+	account.AddressIndex = finalIndex
 
 	err = tx.Save(account)
 	if err != nil {

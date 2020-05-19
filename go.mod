@@ -1,5 +1,7 @@
 module github.com/blocktree/openwallet
 
+go 1.14
+
 require (
 	docker.io/go-docker v1.0.0
 	github.com/DataDog/zstd v1.4.0 // indirect
