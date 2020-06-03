@@ -20,6 +20,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/blocktree/go-owcrypt"
@@ -300,6 +301,7 @@ func (auth *OWTPAuth) VerifySignature(data *DataPacket) bool {
 		}
 
 		if len(publickey) == 0 {
+			log.Errorf("OWTPAuth: publickey is empty")
 			return false
 		}
 
@@ -317,15 +319,23 @@ func (auth *OWTPAuth) VerifySignature(data *DataPacket) bool {
 		//log.Debug("VerifySignature remotePID: ", auth.RemotePID())
 		signature, err := base58.Decode(data.Signature)
 		if err != nil {
+			log.Errorf("OWTPAuth: base58 decode signature failed")
 			return false
 		}
 
-		if base58.Encode(nodeID) != auth.RemotePID() {
+		encNodeID := base58.Encode(nodeID)
+		if encNodeID != auth.RemotePID() {
+			log.Errorf("OWTPAuth: nodeID is different of remotePID (%s != %s)", encNodeID, auth.RemotePID())
 			return false
 		}
 
 		ret := owcrypt.Verify(publickey, nodeID, hash, signature, owcrypt.ECC_CURVE_SM2_STANDARD)
 		if ret != owcrypt.SUCCESS {
+			log.Errorf("OWTPAuth: signature verify invalid", encNodeID, auth.RemotePID())
+			log.Errorf("OWTPAuth: publickey: ", hex.EncodeToString(publickey))
+			log.Errorf("OWTPAuth: nodeID: ", hex.EncodeToString(nodeID))
+			log.Errorf("OWTPAuth: hash: ", hex.EncodeToString(hash))
+			log.Errorf("OWTPAuth: signature: ", hex.EncodeToString(signature))
 			return false
 		}
 	}

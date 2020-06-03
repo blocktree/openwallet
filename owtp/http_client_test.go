@@ -2,14 +2,12 @@ package owtp
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/blocktree/go-owcrypt"
 	"github.com/blocktree/openwallet/v2/log"
 	"github.com/blocktree/openwallet/v2/session"
 	"github.com/imroc/req"
 	"github.com/mr-tron/base58/base58"
-	"io/ioutil"
 	"sync"
 	"testing"
 	"time"
@@ -72,7 +70,7 @@ func testMakeHTTPCall(httpClient *OWTPNode) {
 	//	}
 	//
 	//})
-	err = httpClient.Call(httpHostNodeID, "getInfo", params, true, func(resp Response) {
+	err := httpClient.Call(httpHostNodeID, "getInfo", params, true, func(resp Response) {
 		if resp.Status == StatusSuccess {
 			result := resp.JsonData()
 			symbols := result.Get("symbols")
@@ -374,4 +372,34 @@ func TestHTTPNormalCall(t *testing.T) {
 	}
 
 	log.Infof("res: +%v", res)
+}
+
+
+func TestConcurrentHTTPConnect2(t *testing.T) {
+
+	var wait sync.WaitGroup
+
+	config := ConnectConfig{}
+	config.Address = httpURL
+	config.ConnectType = HTTP
+	config.EnableSignature = true
+	config.EnableKeyAgreement = true
+
+	httpClient := RandomOWTPNode()
+	_, err := httpClient.Connect(httpHostNodeID, config)
+	if err != nil {
+		t.Errorf("Connect unexcepted error: %v", err)
+		return
+	}
+
+	for i := 0; i < 10; i++ {
+		wait.Add(1)
+		go func() {
+			testMakeHTTPCall(httpClient)
+			wait.Done()
+		}()
+	}
+
+	wait.Wait()
+
 }
