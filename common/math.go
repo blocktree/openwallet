@@ -59,3 +59,12 @@ func StringValueToBigInt(value string, base int) (*big.Int, error) {
 	}
 	return bigvalue, nil
 }
+
+func BytesToDecimals(bits []byte, decimals int32) decimal.Decimal {
+	if bits == nil {
+		return decimal.Zero
+	}
+	amount := new(big.Int)
+	amount.SetBytes(bits)
+	return decimal.NewFromBigInt(amount, 0).Shift(-decimals)
+}

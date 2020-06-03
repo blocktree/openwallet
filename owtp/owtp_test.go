@@ -37,7 +37,7 @@ func init() {
 func getInfo(ctx *Context) {
 	log.Info("param:", ctx.Params())
 	ctx.SetSession("username", "kiiik")
-
+	//time.Sleep(10 * time.Second)
 	ctx.Resp = Response{
 		Status: StatusSuccess,
 		Msg:    "success",
