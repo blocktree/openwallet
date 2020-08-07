@@ -16,6 +16,7 @@
 package openw
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -128,7 +129,7 @@ func (wm *WalletManager) CreateQrc20TokenTransaction(appID, walletID, accountID,
 }
 
 // CreateTransaction
-func (wm *WalletManager) CreateTransaction(appID, walletID, accountID, amount, address, feeRate, memo string, contract *openwallet.SmartContract) (*openwallet.RawTransaction, error) {
+func (wm *WalletManager) CreateTransaction(appID, walletID, accountID, amount, address, feeRate, memo string, contract *openwallet.SmartContract, extParam map[string]interface{},) (*openwallet.RawTransaction, error) {
 
 	var (
 		coin openwallet.Coin
@@ -170,6 +171,11 @@ func (wm *WalletManager) CreateTransaction(appID, walletID, accountID, amount, a
 		FeeRate:  feeRate,
 		To:       map[string]string{address: amount},
 		Required: 1,
+	}
+
+	if extParam != nil {
+		extString, _ := json.Marshal(extParam)
+		rawTx.ExtParam = string(extString)
 	}
 
 	if len(memo) > 0 {
