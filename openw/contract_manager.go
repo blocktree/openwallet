@@ -78,7 +78,7 @@ func (wm *WalletManager) CallSmartContractABI(appID, walletID, accountID string,
 }
 
 // CreateSmartContractTransaction
-func (wm *WalletManager) CreateSmartContractTransaction(appID, walletID, accountID, amount, feeRate string, contract *openwallet.SmartContract, abiParam []string) (*openwallet.SmartContractRawTransaction, *openwallet.Error) {
+func (wm *WalletManager) CreateSmartContractTransaction(appID, walletID, accountID, amount, feeRate string, contract *openwallet.SmartContract, abiParam []string, raw string, rawType uint64) (*openwallet.SmartContractRawTransaction, *openwallet.Error) {
 
 	var (
 		coin openwallet.Coin
@@ -117,6 +117,8 @@ func (wm *WalletManager) CreateSmartContractTransaction(appID, walletID, account
 		FeeRate:  feeRate,
 		Value:    amount,
 		ABIParam: abiParam,
+		Raw:      raw,
+		RawType:  rawType,
 	}
 
 	scDecoder := assetsMgr.GetSmartContractDecoder()
