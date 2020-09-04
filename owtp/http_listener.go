@@ -51,7 +51,8 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	peer, err := NewHTTPClientWithHeader(w, r, l.handler, l.enableSignature)
 	if err != nil {
 		log.Error("NewClient unexpected error:", err)
-		http.Error(w, "authorization not passed", 400)
+		//http.Error(w, "authorization not passed", 400)
+		HttpError(w, err.Error(), http.StatusOK)
 		return
 	}
 
@@ -59,9 +60,17 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err = peer.HandleRequest()
 	if err != nil {
 		//log.Error("HandleRequest unexpected error:", err)
-		http.Error(w, err.Error(), 400)
+		HttpError(w, err.Error(), http.StatusOK)
 		return
 	}
+}
+
+// HttpError 错误
+func HttpError(w http.ResponseWriter, error string, code int) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.WriteHeader(code)
+	fmt.Fprintln(w, error)
 }
 
 //Accept 接收新节点链接，线程阻塞
