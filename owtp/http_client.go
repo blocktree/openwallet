@@ -333,6 +333,8 @@ func (c *HTTPClient) writeResponse(data DataPacket) error {
 	}
 	w := c.responseWriter
 	w.Header().Set("Content-type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
 	_, err = w.Write(respBytes)
 	if err != nil {
 		return fmt.Errorf("responseWriter is close")
