@@ -67,8 +67,8 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // HttpError 错误
 func HttpError(w http.ResponseWriter, error string, code int) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "*")
+	//w.Header().Set("Access-Control-Allow-Origin", "*")
+	//w.Header().Set("Access-Control-Allow-Headers", "*")
 	w.WriteHeader(code)
 	fmt.Fprintln(w, error)
 }
