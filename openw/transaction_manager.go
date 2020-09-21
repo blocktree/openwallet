@@ -130,6 +130,11 @@ func (wm *WalletManager) CreateQrc20TokenTransaction(appID, walletID, accountID,
 
 // CreateTransaction
 func (wm *WalletManager) CreateTransaction(appID, walletID, accountID, amount, address, feeRate, memo string, contract *openwallet.SmartContract, extParam map[string]interface{},) (*openwallet.RawTransaction, error) {
+	return wm.CreateBatchTransaction(appID, walletID, accountID, feeRate, memo, map[string]string{address: amount}, contract, extParam)
+}
+
+// CreateBatchTransaction
+func (wm *WalletManager) CreateBatchTransaction(appID, walletID, accountID, feeRate, memo string, to map[string]string, contract *openwallet.SmartContract, extParam map[string]interface{},) (*openwallet.RawTransaction, error) {
 
 	var (
 		coin openwallet.Coin
@@ -169,7 +174,7 @@ func (wm *WalletManager) CreateTransaction(appID, walletID, accountID, amount, a
 		Coin:     coin,
 		Account:  account,
 		FeeRate:  feeRate,
-		To:       map[string]string{address: amount},
+		To:       to,
 		Required: 1,
 	}
 
