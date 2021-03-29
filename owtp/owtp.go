@@ -149,6 +149,8 @@ type OWTPNode struct {
 	timeoutSEC int
 	//通道的读写缓存大小
 	//ReadBufferSize, WriteBufferSize int
+	//重新加载节点连接信息
+	reloadPeerInfoHandler func(n *OWTPNode, peerID string) PeerInfo
 }
 
 //RandomOWTPNode 创建随机密钥节点
@@ -323,6 +325,14 @@ func (node *OWTPNode) CloseListener(connectType string) {
 //Connect 建立长连接
 func (node *OWTPNode) Connect(pid string, config ConnectConfig) (Peer, error) {
 
+	if len(config.Address) == 0 {
+		//连接信息已丢失，需要重新加载
+		if node.reloadPeerInfoHandler != nil {
+			peerInfo := node.reloadPeerInfoHandler(node, pid)
+			config = peerInfo.Config
+		}
+	}
+
 	peer, err := node.connect(pid, config)
 	if err != nil {
 		return nil, err
@@ -463,7 +473,7 @@ func (node *OWTPNode) connect(pid string, config ConnectConfig) (Peer, error) {
 	return peer, nil
 }
 
-//SetCloseHandler 设置关闭连接时的回调
+//SetOpenHandler 设置开启连接时的回调
 func (node *OWTPNode) SetOpenHandler(h func(n *OWTPNode, peer PeerInfo)) {
 	node.connectHandler = h
 }
@@ -471,6 +481,11 @@ func (node *OWTPNode) SetOpenHandler(h func(n *OWTPNode, peer PeerInfo)) {
 //SetCloseHandler 设置关闭连接时的回调
 func (node *OWTPNode) SetCloseHandler(h func(n *OWTPNode, peer PeerInfo)) {
 	node.disconnectHandler = h
+}
+
+// SetReloadPeerInfoHandler 设置重新加载节点信息回调
+func (node *OWTPNode) SetReloadPeerInfoHandler(h func(n *OWTPNode, peerID string) PeerInfo) {
+	node.reloadPeerInfoHandler = h
 }
 
 // Run 运行,go Run运行一条线程
