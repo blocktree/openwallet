@@ -84,6 +84,9 @@ func (store *SessionManager) GetProvider() session.Provider {
 
 // SaveAddr 保存节点
 func (store *SessionManager) SavePeer(peer Peer) {
+	if peer == nil {
+		return
+	}
 
 	config := peer.ConnectConfig()
 

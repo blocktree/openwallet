@@ -37,9 +37,9 @@ func init() {
 
 func testMakeHTTPCall(httpClient *OWTPNode) {
 
-	config := ConnectConfig{}
-	config.Address = httpURL
-	config.ConnectType = HTTP
+	//config := ConnectConfig{}
+	//config.Address = httpURL
+	//config.ConnectType = HTTP
 
 	params := map[string]interface{}{
 		"name": "chance",
@@ -402,4 +402,20 @@ func TestConcurrentHTTPConnect2(t *testing.T) {
 
 	wait.Wait()
 
+}
+
+func Test_ReloadPeerInfoHandler(t *testing.T) {
+	httpClient := RandomOWTPNode()
+	httpClient.SetReloadPeerInfoHandler(func(n *OWTPNode, peerID string) PeerInfo {
+		config := ConnectConfig{}
+		config.Address = httpURL
+		config.ConnectType = HTTP
+		config.EnableKeyAgreement = true
+		config.EnableSignature = true
+		return PeerInfo{
+			ID:     peerID,
+			Config: config,
+		}
+	})
+	testMakeHTTPCall(httpClient)
 }

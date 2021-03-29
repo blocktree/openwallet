@@ -68,6 +68,9 @@ func NewOWTPPeerstore() *owtpPeerstore {
 
 // SaveAddr 保存节点
 func (store *owtpPeerstore) SavePeer(peer Peer) {
+	if peer == nil {
+		return
+	}
 
 	config := peer.ConnectConfig()
 
