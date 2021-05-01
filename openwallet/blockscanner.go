@@ -54,13 +54,14 @@ const (
 	ScanTargetTypeContractAddress = 2
 	ScanTargetTypeContractAlias   = 3
 	ScanTargetTypeAddressPubKey   = 4
+	ScanTargetTypeAddressMemo     = 5
 )
 
 // ScanTargetParam 扫描目标参数
 type ScanTargetParam struct {
 	ScanTarget     string //地址字符串
 	Symbol         string //主链类别
-	ScanTargetType uint64 // 0: 账户地址，1：账户别名，2：合约地址，3：合约别名，4：地址公钥
+	ScanTargetType uint64 // 0: 账户地址，1：账户别名，2：合约地址，3：合约别名，4：地址公钥，5：地址备注
 }
 
 // ScanTargetResult 扫描结果
@@ -74,6 +75,7 @@ type ScanTargetResult struct {
 	//2: openwallet SmartContract
 	//3: openwallet SmartContract
 	//4: openwallet Address
+	//5: openwallet Address
 	TargetInfo interface{}
 }
 
