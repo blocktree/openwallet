@@ -77,6 +77,7 @@ type BlockchainDAI interface {
 	GetTransactionsByTxID(txid, symbol string) ([]*Transaction, error)
 	GetUnscanRecords(symbol string) ([]*UnscanRecord, error)
 	SetMaxBlockCache(max uint64, symbol string) error
+	SaveTransaction(tx *Transaction) error
 }
 
 //BlockchainDAIBase 区块链数据访问接口基本实现
@@ -122,6 +123,10 @@ func (base *BlockchainDAIBase) SetMaxBlockCache(size uint64, symbol string) erro
 	return fmt.Errorf("SetMaxBlockCache is not implemented")
 }
 
+func (base *BlockchainDAIBase) SaveTransaction(tx *Transaction) error {
+	return fmt.Errorf("SaveTransaction is not implemented")
+}
+
 const (
 	blockchainBucket             = "blockchain"
 	CurrentBlockHeaderKey        = "current_block_header"
@@ -133,6 +138,7 @@ const (
 
 //BlockchainLocal 区块链数据访问本地数据库实现
 type BlockchainLocal struct {
+	BlockchainDAIBase
 	blockchainDB     *storm.DB //区块链数据库
 	blockchainDBFile string    //区块db文件
 	keepOpen         bool      //保持打开状态
@@ -349,7 +355,18 @@ func (base *BlockchainLocal) DeleteUnscanRecordByID(id string, symbol string) er
 }
 
 func (base *BlockchainLocal) GetTransactionsByTxID(txid, symbol string) ([]*Transaction, error) {
-	return nil, fmt.Errorf("GetTransactionsByTxID is not implemented")
+	db, err := base.getDB()
+	if err != nil {
+		return nil, err
+	}
+	defer base.closeDB()
+
+	var list []*Transaction
+	err = db.Find("TxID", txid, &list)
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
 }
 
 func (base *BlockchainLocal) GetUnscanRecords(symbol string) ([]*UnscanRecord, error) {
@@ -370,4 +387,16 @@ func (base *BlockchainLocal) GetUnscanRecords(symbol string) ([]*UnscanRecord, e
 func (base *BlockchainLocal) SetMaxBlockCache(size uint64, symbol string) error {
 	base.blockCacheSize = size
 	return nil
+}
+
+func (base *BlockchainLocal) SaveTransaction(tx *Transaction) error {
+	if tx == nil {
+		return fmt.Errorf("the transaction to save is nil")
+	}
+	db, err := base.getDB()
+	if err != nil {
+		return err
+	}
+	defer base.closeDB()
+	return db.Save(tx)
 }

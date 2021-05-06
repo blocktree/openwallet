@@ -196,3 +196,33 @@ func TestBlockchainDAIBase_GetLocalBlockHeadByHeight(t *testing.T) {
 	}
 	log.Infof("Get height: %d, hash: %s", current.Height, current.Hash)
 }
+
+func TestBlockchainBase_SaveTransaction(t *testing.T) {
+	base := testBlockchainLocal
+	if base == nil {
+		return
+	}
+	tx := &Transaction{
+		WxID:        "w1234456",
+		TxID:        "tx1234567",
+		AccountID:   "myaccount",
+		Coin:        Coin{Symbol:     "BTC"},
+		Amount:      "123",
+	}
+	base.SaveTransaction(tx)
+}
+
+func TestBlockchainBase_GetTransactionsByTxID(t *testing.T) {
+	base := testBlockchainLocal
+	if base == nil {
+		return
+	}
+	list, err := base.GetTransactionsByTxID("tx1234567", "")
+	if err != nil {
+		t.Errorf("GetTransactionsByTxID err: %v", err)
+		return
+	}
+	for _, r := range list {
+		log.Infof("transaction record: %+v", r)
+	}
+}
