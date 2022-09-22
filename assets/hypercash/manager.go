@@ -33,7 +33,7 @@ import (
 	"github.com/blocktree/openwallet/v2/openwallet"
 	"github.com/blocktree/openwallet/v2/walletnode"
 	"github.com/bndr/gotabulate"
-	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/codeskyblue/go-sh"
 	"github.com/shopspring/decimal"
 )
