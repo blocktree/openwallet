@@ -21,12 +21,22 @@ type NFT struct {
 	Token    string `json:"token"` //@required NFT的symbol
 	Protocol string `json:"protocol"`
 	Name     string `json:"name"`
-	TokenID  string `json:"tokenID"` //@required
+	TokenID  string `json:"tokenID"`
 }
 
 type NFTBalance struct {
-	Contract *NFT
-	Balance  *string
+	NFT     *NFT
+	Balance string
+}
+
+type NFTOwner struct {
+	NFT   *NFT
+	Owner string
+}
+
+type NFTMetaData struct {
+	NFT *NFT
+	URI string
 }
 
 // NFTEventType
@@ -55,34 +65,42 @@ type NFTApproval struct {
 //NFTContractDecoder NFT智能合约解析器
 type NFTContractDecoder interface {
 	//GetNFTBalanceByAddress 查询地址NFT余额列表
-	GetNFTBalanceByAddress(contract []*NFT, owner []string) ([]*NFTBalance, *Error)
+	GetNFTBalanceByAddress(nft *NFT, owner string) (*NFTBalance, *Error)
+	// GetNFTBalanceByAddressBatch 查询地址NFT余额列表
+	GetNFTBalanceByAddressBatch(nft []*NFT, owner []string) ([]*NFTBalance, *Error)
 	//GetNFTOwnerByTokenID 查询地址token的拥有者
-	GetNFTOwnerByTokenID(contract *NFT) (string, *Error)
+	GetNFTOwnerByTokenID(nft *NFT) (*NFTOwner, *Error)
 	//GetMetaDataOfNFT 查询NFT的MetaData
-	GetMetaDataOfNFT(contract *NFT) (string, *Error)
+	GetMetaDataOfNFT(nft *NFT) (*NFTMetaData, *Error)
 	//GetNFTTransfer 从event解析NFT转账信息
-	GetNFTTransfer(event *SmartContractEvent) (*NFTTransfer, *Error)
+	GetNFTTransfer(event *SmartContractEvent) ([]*NFTTransfer, *Error)
 }
 
 type NFTContractDecoderBase struct {
 }
 
-//GetNFTBalanceByAddress 查询地址NFT余额列表
-func (decoder *NFTContractDecoderBase) GetNFTBalanceByAddress(contract []*NFT, owner []string) ([]*NFTBalance, *Error) {
+// GetNFTBalanceByAddress 查询地址NFT余额列表
+// NFT.TokenID为空则查询合约下拥有者所NFT数量。
+func (decoder *NFTContractDecoderBase) GetNFTBalanceByAddress(nft *NFT, owner string) (*NFTBalance, *Error) {
 	return nil, Errorf(ErrSystemException, "GetNFTBalanceByAddress not implement")
+}
+
+// GetNFTBalanceByAddressBatch 查询地址NFT余额列表
+func (decoder *NFTContractDecoderBase) GetNFTBalanceByAddressBatch(nft []*NFT, owner []string) ([]*NFTBalance, *Error) {
+	return nil, Errorf(ErrSystemException, "GetNFTBalanceByAddressBatch not implement")
 }
 
 //GetNFTOwnerByTokenID 查询地址token的拥有者
-func (decoder *NFTContractDecoderBase) GetNFTOwnerByTokenID(contract *NFT) (string, *Error) {
-	return "", Errorf(ErrSystemException, "GetNFTBalanceByAddress not implement")
+func (decoder *NFTContractDecoderBase) GetNFTOwnerByTokenID(nft *NFT) (*NFTOwner, *Error) {
+	return nil, Errorf(ErrSystemException, "GetNFTOwnerByTokenID not implement")
 }
 
 //GetMetaDataOfNFT 查询NFT的MetaData
-func (decoder *NFTContractDecoderBase) GetMetaDataOfNFT(contract *NFT) (string, *Error) {
-	return "", Errorf(ErrSystemException, "GetNFTBalanceByAddress not implement")
+func (decoder *NFTContractDecoderBase) GetMetaDataOfNFT(nft *NFT) (*NFTMetaData, *Error) {
+	return nil, Errorf(ErrSystemException, "GetMetaDataOfNFT not implement")
 }
 
 //GetNFTTransfer 从event解析NFT转账信息
-func (decoder *NFTContractDecoderBase) GetNFTTransfer(event *SmartContractEvent) (*NFTTransfer, *Error) {
-	return nil, Errorf(ErrSystemException, "GetNFTBalanceByAddress not implement")
+func (decoder *NFTContractDecoderBase) GetNFTTransfer(event *SmartContractEvent) ([]*NFTTransfer, *Error) {
+	return nil, Errorf(ErrSystemException, "GetNFTTransfer not implement")
 }
