@@ -32,7 +32,7 @@ import (
 	"github.com/blocktree/openwallet/v2/log"
 	"github.com/blocktree/openwallet/v2/openwallet"
 	"github.com/bndr/gotabulate"
-	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/shopspring/decimal"
 	"github.com/tidwall/gjson"
 	"golang.org/x/crypto/blake2b"

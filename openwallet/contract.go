@@ -23,6 +23,14 @@ import (
 	"github.com/blocktree/openwallet/v2/crypto"
 )
 
+const (
+	// 0：未知协议，1：ERC20协议，2：ERC721协议，3：ERC1155协议
+	InterfaceTypeUnknown = ""
+	InterfaceTypeERC20   = "erc20"
+	InterfaceTypeERC721  = "erc721"
+	InterfaceTypeERC1155 = "erc1155"
+)
+
 type SmartContract struct {
 	ContractID string `json:"contractID" storm:"id"` //计算ID：base64(sha256({symbol}_{address})) 主链symbol
 	Symbol     string `json:"symbol"`                //主币的symbol
@@ -97,20 +105,6 @@ type SmartContractReceipt struct {
 	Status      string                `json:"status"`          //@required 链上状态，0：失败，1：成功
 	Reason      string                `json:"reason"`          //失败原因，失败状态码
 	ExtParam    string                `json:"extParam"`        //扩展参数，用于调用智能合约，json结构
-
-	/*
-		例如：ETH 智能合约调用参数
-		{
-			"gasPrice": "0.000002",  						//自定义费率
-			"gasLimit": "50000000",  						//自定义燃料上限
-			"gasUsed": "32234",  							//实际使用燃料数
-			"senderAddress": "0x1234567abcdeffdcba4321", 	//支付交易单的地址
-			"contractAddress": "0xdeffdcba43211234567abc", 	//合约地址
-			"amount": "0.001", 								//转入合约主币数量
-			"callData": "deffdcba43211234567abc", 			//调用方法的ABI编码
-			"nonce": 1,  									//地址账户交易序号
-		}
-	*/
 }
 
 func (tx *SmartContractReceipt) GenWxID() {

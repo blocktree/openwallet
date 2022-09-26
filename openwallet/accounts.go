@@ -19,7 +19,7 @@ import (
 	"encoding/hex"
 	"github.com/blocktree/go-owcdrivers/owkeychain"
 	"github.com/blocktree/openwallet/v2/crypto"
-	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 )
 
 var (

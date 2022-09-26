@@ -1,6 +1,7 @@
 package crypto
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -42,7 +43,7 @@ func TestEncryptJSON(t *testing.T) {
 
 	params := map[string]interface{}{
 		"name": "chance",
-		"age": 18,
+		"age":  18,
 	}
 
 	plainText, _ := json.Marshal(params)
@@ -57,7 +58,7 @@ func TestEncryptJSON(t *testing.T) {
 	//1bf9d9ff6bbaf559e6b74479b0e770b480de59c5aa9ff044478834a0b1ec6986
 	enbase, _ := base58.Decode(base)
 	fmt.Printf("enbase hex(%d): %s\n", len(enbase), hex.EncodeToString(enbase))
-	raw, _ :=AESDecrypt(enbase, key)
+	raw, _ := AESDecrypt(enbase, key)
 	fmt.Printf("raw = %s\n", string(raw))
 }
 
@@ -77,7 +78,7 @@ func TestHmac(t *testing.T) {
 }
 
 func TestBlake2b(t *testing.T) {
-	data, _ := hex.DecodeString("0500000000000000010200000000000000393000002e16000094260000000b000000000000000000000001000000000020000000")
+	data, _ := hex.DecodeString("")
 	hash := owcrypt.Hash(data, 32, owcrypt.HASH_ALG_BLAKE2B)
 	fmt.Printf("hash: %s\n", hex.EncodeToString(hash))
 	//ca2cc09e84e78d7bbcd58004721aec0526904e0379508e1e87716d85597e1862
@@ -85,10 +86,33 @@ func TestBlake2b(t *testing.T) {
 }
 
 func TestED25519(t *testing.T) {
-	key, _ := hex.DecodeString("1ece69a7de1136e08bdf48e972ae79b06ea86b502fea4a959aa3401e7af977af")
+	key, _ := hex.DecodeString("")
 	pubkey, _ := owcrypt.GenPubkey(key, owcrypt.ECC_CURVE_ED25519_NORMAL)
-	signature, _:= hex.DecodeString("4f024f27d1b5e54356744fda6e9474c29907d8431a4b9918b6ff1a7dfd1361ad60947a9b09aa9756a99c5165d42f7f4637ec8cfb5bbdf7d5a35052c204ae720e")
+	signature, _ := hex.DecodeString("")
+	msg, _ := hex.DecodeString("")
 	fmt.Printf("pubkey: %s \n", hex.EncodeToString(pubkey))
-	flag := owcrypt.Verify(pubkey, nil, []byte("hello word"), signature, owcrypt.ECC_CURVE_ED25519_NORMAL)
+	flag := owcrypt.Verify(pubkey, nil, msg, signature, owcrypt.ECC_CURVE_ED25519_NORMAL)
 	fmt.Printf("flag: %d \n", flag)
+}
+
+func TestBase64(t *testing.T) {
+	base64Str := ""
+	bs, err := base64.StdEncoding.DecodeString(base64Str)
+	if err != nil {
+		t.Errorf("base64 decode failed")
+		return
+	}
+	prv := bs[16:]
+	fmt.Printf("hex: %s \n", hex.EncodeToString(prv))
+}
+
+func TestSECP256R1(t *testing.T) {
+	key, _ := hex.DecodeString("")
+	pubkey, _ := owcrypt.GenPubkey(key, owcrypt.ECC_CURVE_SECP256R1)
+	pubkey = owcrypt.PointCompress(pubkey, owcrypt.ECC_CURVE_SECP256R1)
+	fmt.Printf("pubkey: %s \n", hex.EncodeToString(pubkey))
+	msg, _ := hex.DecodeString("111111111111111111111111111111111111111111111111")
+	sig, _, ret := owcrypt.Signature(key, nil, msg, owcrypt.ECC_CURVE_SECP256R1)
+	fmt.Printf("ret: %d \n", ret)
+	fmt.Printf("sig: %s \n", hex.EncodeToString(sig))
 }

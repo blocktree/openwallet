@@ -34,7 +34,7 @@ import (
 	"github.com/blocktree/openwallet/v2/log"
 	"github.com/blocktree/openwallet/v2/openwallet"
 	"github.com/bndr/gotabulate"
-	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/shopspring/decimal"
 
 	//"github.com/go-ethereum/crypto/secp256k1"
@@ -49,7 +49,7 @@ const (
 
 var (
 	coinDecimal         = decimal.New(10, 17)
-	coinDecimal_float64 = 1E18
+	coinDecimal_float64 = 1e18
 )
 
 type WalletManager struct {

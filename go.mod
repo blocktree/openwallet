@@ -11,8 +11,8 @@ require (
 	github.com/blocktree/go-owcrypt v1.1.1
 	github.com/bndr/gotabulate v1.1.2
 	github.com/bradfitz/gomemcache v0.0.0-20190913173617-a41fca850d0b
-	github.com/btcsuite/btcd v0.20.1-beta // indirect
-	github.com/btcsuite/btcutil v0.0.0-20191219182022-e17c9730c422
+	github.com/btcsuite/btcd v0.23.1 // indirect
+	github.com/btcsuite/btcd/btcutil v1.1.0
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/codeskyblue/go-sh v0.0.0-20190412065543-76bd3d59ff27
 	github.com/couchbase/go-couchbase v0.0.0-20191217190632-b2754d72cc98

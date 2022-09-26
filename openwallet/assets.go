@@ -68,6 +68,10 @@ type AssetsAdapter interface {
 	//GetJsonRPCEndpoint 获取全节点服务的JSON-RPC客户端
 	//@optional
 	GetJsonRPCEndpoint() JsonRPCEndpoint
+
+	//GetNFTContractDecoder 获取NFT智能合约解析器
+	//@optional
+	GetNFTContractDecoder() NFTContractDecoder
 }
 
 type AssetsAdapterBase struct {
@@ -115,5 +119,11 @@ func (a *AssetsAdapterBase) GetAssetsLogger() *log.OWLogger {
 //GetJsonRPCEndpoint 获取全节点服务的JSON-RPC客户端
 //@optional
 func (a *AssetsAdapterBase) GetJsonRPCEndpoint() JsonRPCEndpoint {
+	return nil
+}
+
+//GetNFTContractDecoder 获取NFT智能合约解析器
+//@optional
+func (a *AssetsAdapterBase) GetNFTContractDecoder() NFTContractDecoder {
 	return nil
 }
