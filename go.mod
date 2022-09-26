@@ -33,7 +33,7 @@ require (
 	github.com/siddontang/ledisdb v0.0.0-20190202134119-8ceb77e66a92
 	github.com/ssdb/gossdb v0.0.0-20180723034631-88f6b59b84ec
 	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271
-	github.com/tidwall/gjson v1.3.5
+	github.com/tidwall/gjson v1.9.3
 	github.com/tyler-smith/go-bip39 v1.0.2
 	go.etcd.io/bbolt v1.3.3
 	golang.org/x/crypto v0.0.0-20191227163750-53104e6ec876
