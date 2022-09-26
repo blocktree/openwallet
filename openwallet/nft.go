@@ -73,7 +73,7 @@ type NFTContractDecoder interface {
 	//GetMetaDataOfNFT 查询NFT的MetaData
 	GetMetaDataOfNFT(nft *NFT) (*NFTMetaData, *Error)
 	//GetNFTTransfer 从event解析NFT转账信息
-	GetNFTTransfer(event *SmartContractEvent) ([]*NFTTransfer, *Error)
+	GetNFTTransfer(event *SmartContractEvent) (*NFTTransfer, *Error)
 }
 
 type NFTContractDecoderBase struct {
@@ -101,6 +101,6 @@ func (decoder *NFTContractDecoderBase) GetMetaDataOfNFT(nft *NFT) (*NFTMetaData,
 }
 
 //GetNFTTransfer 从event解析NFT转账信息
-func (decoder *NFTContractDecoderBase) GetNFTTransfer(event *SmartContractEvent) ([]*NFTTransfer, *Error) {
+func (decoder *NFTContractDecoderBase) GetNFTTransfer(event *SmartContractEvent) (*NFTTransfer, *Error) {
 	return nil, Errorf(ErrSystemException, "GetNFTTransfer not implement")
 }
