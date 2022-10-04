@@ -56,7 +56,7 @@ type NFTTransfer struct {
 }
 
 type NFTApproval struct {
-	Token    *NFT   `json:"token"`    //@required nft
+	Token    NFT    `json:"token"`    //@required nft
 	Owner    string `json:"owner"`    //@required nft拥有者
 	Operator string `json:"operator"` //required 被授权的操作者
 	IsAll    bool   `json:"isAll"`    //@required 是否全部NFT，true：token = null，false，token = *NFT
