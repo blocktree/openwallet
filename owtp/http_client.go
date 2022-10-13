@@ -19,16 +19,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/blocktree/go-owcrypt"
-	"github.com/blocktree/openwallet/v2/log"
-	"github.com/imroc/req"
-	"github.com/mr-tron/base58/base58"
-	"github.com/tidwall/gjson"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/blocktree/go-owcrypt"
+	"github.com/blocktree/openwallet/v2/log"
+	"github.com/imroc/req"
+	"github.com/mr-tron/base58/base58"
+	"github.com/tidwall/gjson"
 )
 
 const (
@@ -36,7 +37,7 @@ const (
 	XRealIP       = "X-Real-IP"
 )
 
-//HTTPClient 基于http的通信服务端
+// HTTPClient 基于http的通信服务端
 type HTTPClient struct {
 	responseWriter  http.ResponseWriter
 	request         *http.Request
@@ -216,7 +217,7 @@ func (c *HTTPClient) ConnectConfig() ConnectConfig {
 	return c.config
 }
 
-//Close 关闭连接
+// Close 关闭连接
 func (c *HTTPClient) close() error {
 	var err error
 	//保证节点只关闭一次
@@ -232,7 +233,7 @@ func (c *HTTPClient) close() error {
 	return err
 }
 
-//LocalAddr 本地节点地址
+// LocalAddr 本地节点地址
 func (c *HTTPClient) LocalAddr() net.Addr {
 	if c.request == nil {
 		return nil
@@ -243,7 +244,7 @@ func (c *HTTPClient) LocalAddr() net.Addr {
 	return addr
 }
 
-//RemoteAddr 远程节点地址
+// RemoteAddr 远程节点地址
 func (c *HTTPClient) RemoteAddr() net.Addr {
 
 	if c.isHost {
@@ -264,7 +265,7 @@ func (c *HTTPClient) RemoteAddr() net.Addr {
 
 }
 
-//Send 发送消息
+// Send 发送消息
 func (c *HTTPClient) send(data DataPacket) error {
 
 	if c.isHost {
@@ -274,7 +275,7 @@ func (c *HTTPClient) send(data DataPacket) error {
 	}
 }
 
-//sendHTTPRequest 发送HTTP请求
+// sendHTTPRequest 发送HTTP请求
 func (c *HTTPClient) sendHTTPRequest(data DataPacket) error {
 
 	if c.httpClient == nil {
@@ -309,7 +310,7 @@ func (c *HTTPClient) sendHTTPRequest(data DataPacket) error {
 	return nil
 }
 
-//OpenPipe 打开通道
+// OpenPipe 打开通道
 func (c *HTTPClient) openPipe() error {
 
 	//HTTP不需要打开长连接通道
@@ -333,10 +334,9 @@ func (c *HTTPClient) writeResponse(data DataPacket) error {
 	}
 	w := c.responseWriter
 	w.Header().Set("Content-type", "application/json")
-	//w.Header().Set("Access-Control-Allow-Headers", "*")
-	//if w.Header().Get("Access-Control-Allow-Origin") == "" {
-	//	w.Header().Set("Access-Control-Allow-Origin", "*")
-	//}
+	w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	
 	_, err = w.Write(respBytes)
 	if err != nil {
 		return fmt.Errorf("responseWriter is close")

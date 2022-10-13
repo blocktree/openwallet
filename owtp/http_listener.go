@@ -17,13 +17,14 @@ package owtp
 
 import (
 	"fmt"
-	"github.com/blocktree/openwallet/v2/log"
-	"github.com/pkg/errors"
 	"net"
 	"net/http"
+
+	"github.com/blocktree/openwallet/v2/log"
+	"github.com/pkg/errors"
 )
 
-//owtp监听器
+// owtp监听器
 type httpListener struct {
 	net.Listener
 	handler         PeerHandler
@@ -32,7 +33,7 @@ type httpListener struct {
 	enableSignature bool
 }
 
-//serve 监听服务
+// serve 监听服务
 func (l *httpListener) serve() error {
 
 	if l.Listener == nil {
@@ -44,7 +45,7 @@ func (l *httpListener) serve() error {
 	return nil
 }
 
-//ServeHTTP 实现HTTP服务监听
+// ServeHTTP 实现HTTP服务监听
 func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	//建立节点
@@ -67,18 +68,18 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // HttpError 错误
 func HttpError(w http.ResponseWriter, error string, code int) {
-	//w.Header().Set("Access-Control-Allow-Origin", "*")
-	//w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
 	w.WriteHeader(code)
 	fmt.Fprintln(w, error)
 }
 
-//Accept 接收新节点链接，线程阻塞
+// Accept 接收新节点链接，线程阻塞
 func (l *httpListener) Accept() (Peer, error) {
 	return nil, fmt.Errorf("http do not implement")
 }
 
-//ListenAddr 创建OWTP协议通信监听
+// ListenAddr 创建OWTP协议通信监听
 func HttpListenAddr(addr string, enableSignature bool, handler PeerHandler) (*httpListener, error) {
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
