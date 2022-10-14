@@ -17,6 +17,7 @@
 package owtp
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -63,14 +64,14 @@ const (
 	ErrCustomError uint64 = 600
 )
 
-//连接方式
+// 连接方式
 const (
 	Websocket string = "ws"
 	MQ        string = "mq"
 	HTTP      string = "http"
 )
 
-//内置方法
+// 内置方法
 const (
 
 	//校验协商结果
@@ -90,7 +91,7 @@ var (
 	Debug = false
 )
 
-//节点主配置 作为json解析工具
+// 节点主配置 作为json解析工具
 type ConnectConfig struct {
 	Address            string `json:"address"`            //@required 连接IP地址
 	ConnectType        string `json:"connectType"`        //@required 连接方式
@@ -106,14 +107,14 @@ type ConnectConfig struct {
 	EnableKeyAgreement bool   `json:"enableKeyAgreement"` //是否开启协商密码
 }
 
-//节点主配置 作为json解析工具
+// 节点主配置 作为json解析工具
 type NodeConfig struct {
 	TimeoutSEC int         `json:"timeoutSEC"` //超时时间
 	Cert       Certificate `json:"cert"`       //证书
 	Peerstore  Peerstore   //会话缓存
 }
 
-//OWTPNode 实现OWTP协议的节点
+// OWTPNode 实现OWTP协议的节点
 type OWTPNode struct {
 	//nonce生成器
 	nonceGen *snowflake.Node
@@ -153,7 +154,7 @@ type OWTPNode struct {
 	reloadPeerInfoHandler func(n *OWTPNode, peerID string) PeerInfo
 }
 
-//RandomOWTPNode 创建随机密钥节点
+// RandomOWTPNode 创建随机密钥节点
 func RandomOWTPNode(consultType ...string) *OWTPNode {
 	c := ""
 	if len(consultType) > 0 {
@@ -172,7 +173,7 @@ func RandomOWTPNode(consultType ...string) *OWTPNode {
 	return node
 }
 
-//NewNode 创建OWTP协议节点
+// NewNode 创建OWTP协议节点
 func NewNode(config NodeConfig) *OWTPNode {
 
 	node := &OWTPNode{}
@@ -217,7 +218,7 @@ func NewNode(config NodeConfig) *OWTPNode {
 	return node
 }
 
-//NewOWTPNode 创建OWTP协议节点
+// NewOWTPNode 创建OWTP协议节点
 func NewOWTPNode(cert Certificate, readBufferSize, writeBufferSize int) *OWTPNode {
 
 	node := &OWTPNode{}
@@ -242,27 +243,27 @@ func NewOWTPNode(cert Certificate, readBufferSize, writeBufferSize int) *OWTPNod
 	return node
 }
 
-//Certificate 节点证书
+// Certificate 节点证书
 func (node *OWTPNode) Certificate() *Certificate {
 	return &node.cert
 }
 
-//NodeID 节点的ID
+// NodeID 节点的ID
 func (node *OWTPNode) NodeID() string {
 	return node.cert.ID()
 }
 
-//SetPeerstore 设置一个Peerstore指针
+// SetPeerstore 设置一个Peerstore指针
 func (node *OWTPNode) SetPeerstore(store Peerstore) {
 	node.peerstore = store
 }
 
-//Peerstore 节点存储器
+// Peerstore 节点存储器
 func (node *OWTPNode) Peerstore() Peerstore {
 	return node.peerstore
 }
 
-//Listen 监听TCP地址
+// Listen 监听TCP地址
 func (node *OWTPNode) Listen(config ConnectConfig) error {
 
 	addr := config.Address
@@ -306,13 +307,13 @@ func (node *OWTPNode) Listen(config ConnectConfig) error {
 	return nil
 }
 
-//listening 是否监听中
+// listening 是否监听中
 func (node *OWTPNode) Listening(connectType string) bool {
 	_, exist := node.listeners[connectType]
 	return exist
 }
 
-//CloseListener 关闭监听
+// CloseListener 关闭监听
 func (node *OWTPNode) CloseListener(connectType string) {
 	if l, exist := node.listeners[connectType]; exist {
 		l.Close()
@@ -322,7 +323,7 @@ func (node *OWTPNode) CloseListener(connectType string) {
 	}
 }
 
-//Connect 建立长连接
+// Connect 建立长连接
 func (node *OWTPNode) Connect(pid string, config ConnectConfig) (Peer, error) {
 
 	if len(config.Address) == 0 {
@@ -354,7 +355,7 @@ func (node *OWTPNode) Connect(pid string, config ConnectConfig) (Peer, error) {
 	return peer, nil
 }
 
-//connect 建立长连接，内部调用
+// connect 建立长连接，内部调用
 func (node *OWTPNode) connect(pid string, config ConnectConfig) (Peer, error) {
 
 	var (
@@ -473,12 +474,12 @@ func (node *OWTPNode) connect(pid string, config ConnectConfig) (Peer, error) {
 	return peer, nil
 }
 
-//SetOpenHandler 设置开启连接时的回调
+// SetOpenHandler 设置开启连接时的回调
 func (node *OWTPNode) SetOpenHandler(h func(n *OWTPNode, peer PeerInfo)) {
 	node.connectHandler = h
 }
 
-//SetCloseHandler 设置关闭连接时的回调
+// SetCloseHandler 设置关闭连接时的回调
 func (node *OWTPNode) SetCloseHandler(h func(n *OWTPNode, peer PeerInfo)) {
 	node.disconnectHandler = h
 }
@@ -545,7 +546,7 @@ func (node *OWTPNode) Run() error {
 	return nil
 }
 
-//IsConnectPeer 是否连接某个节点
+// IsConnectPeer 是否连接某个节点
 func (node *OWTPNode) IsConnectPeer(pid string) bool {
 	peer := node.GetOnlinePeer(pid)
 	if peer == nil {
@@ -554,7 +555,7 @@ func (node *OWTPNode) IsConnectPeer(pid string) bool {
 	return peer.IsConnected()
 }
 
-//ClosePeer 断开连接节点
+// ClosePeer 断开连接节点
 func (node *OWTPNode) ClosePeer(pid string) {
 
 	//检查是否已经连接服务
@@ -565,7 +566,7 @@ func (node *OWTPNode) ClosePeer(pid string) {
 	peer.close()
 }
 
-//Close 关闭节点
+// Close 关闭节点
 func (node *OWTPNode) Close() {
 
 	for _, listener := range node.listeners {
@@ -584,7 +585,7 @@ func (node *OWTPNode) Close() {
 	//node.client.close()
 }
 
-//ConnectAndCall 通过连接配置并直接请求，如果节点在线使用当前连接请求
+// ConnectAndCall 通过连接配置并直接请求，如果节点在线使用当前连接请求
 func (node *OWTPNode) ConnectAndCall(
 	pid string,
 	config ConnectConfig,
@@ -614,7 +615,7 @@ func (node *OWTPNode) ConnectAndCall(
 	}
 }
 
-//CallSync 同步请求
+// CallSync 同步请求
 func (node *OWTPNode) CallSync(
 	pid string,
 	method string,
@@ -638,7 +639,7 @@ func (node *OWTPNode) CallSync(
 	return &response, nil
 }
 
-//Call 向对方节点进行调用
+// Call 向对方节点进行调用
 func (node *OWTPNode) Call(
 	pid string,
 	method string,
@@ -737,7 +738,7 @@ func (node *OWTPNode) Call(
 	return nil
 }
 
-//encryptPacket 加密数据包
+// encryptPacket 加密数据包
 func (node *OWTPNode) encryptPacket(peer Peer, packet *DataPacket, key string) error {
 
 	//没有密钥不加密
@@ -782,23 +783,23 @@ func (node *OWTPNode) encryptPacket(peer Peer, packet *DataPacket, key string) e
 	return nil
 }
 
-//HandleFunc 绑定路由器方法
+// HandleFunc 绑定路由器方法
 func (node *OWTPNode) HandleFunc(method string, handler HandlerFunc) {
 	node.serveMux.HandleFunc(method, handler)
 }
 
-//HandlePrepareFunc 绑定准备前的处理方法
+// HandlePrepareFunc 绑定准备前的处理方法
 func (node *OWTPNode) HandlePrepareFunc(handler HandlerFunc) {
 	node.serveMux.HandleFunc(PrepareMethod, handler)
 }
 
-//HandleFinishFunc 绑定结束后的处理方法
+// HandleFinishFunc 绑定结束后的处理方法
 func (node *OWTPNode) HandleFinishFunc(handler HandlerFunc) {
 	node.serveMux.HandleFunc(FinishMethod, handler)
 }
 
-//KeyAgreement 发起协商请求
-//这是一个同步请求
+// KeyAgreement 发起协商请求
+// 这是一个同步请求
 func (node *OWTPNode) KeyAgreement(pid string, consultType string) error {
 	//检查是否已经连接服务
 	peer := node.GetOnlinePeer(pid)
@@ -808,7 +809,7 @@ func (node *OWTPNode) KeyAgreement(pid string, consultType string) error {
 	return node.callKeyAgreement(peer, consultType)
 }
 
-//callKeyAgreement 发起协商计算
+// callKeyAgreement 发起协商计算
 func (node *OWTPNode) callKeyAgreement(peer Peer, consultType string) error {
 
 	var (
@@ -848,14 +849,14 @@ func (node *OWTPNode) callKeyAgreement(peer Peer, consultType string) error {
 	return err
 }
 
-//keyAgreement 协商密钥
+// keyAgreement 协商密钥
 func (node *OWTPNode) keyAgreement(ctx *Context) {
 
 	ctx.Response(nil, StatusSuccess, "success")
 
 }
 
-//wrapDataPacketForResponse 封装响应的数据包
+// wrapDataPacketForResponse 封装响应的数据包
 func (node *OWTPNode) wrapDataPacketForResponse(peer Peer, ctx *Context) *DataPacket {
 
 	packet := &DataPacket{}
@@ -902,7 +903,7 @@ func (node *OWTPNode) wrapDataPacketForResponse(peer Peer, ctx *Context) *DataPa
 	return packet
 }
 
-//handleKeyAgreementForRequest 处理请求的协商密码，获得密钥
+// handleKeyAgreementForRequest 处理请求的协商密码，获得密钥
 func (node *OWTPNode) handleKeyAgreementForRequest(peer Peer, packet *DataPacket) ([]byte, error) {
 	var (
 		//协商密码
@@ -982,7 +983,7 @@ func (node *OWTPNode) handleKeyAgreementForRequest(peer Peer, packet *DataPacket
 	return secretKey, nil
 }
 
-//handleKeyAgreementForResponse 处理协商密码的响应方结果
+// handleKeyAgreementForResponse 处理协商密码的响应方结果
 func (node *OWTPNode) handleKeyAgreementForResponse(peer Peer, packet *DataPacket) ([]byte, error) {
 	var (
 		//协商密码
@@ -1047,17 +1048,17 @@ func (node *OWTPNode) PutValueForPeer(peer Peer, key string, val interface{}) er
 	return node.Peerstore().Put(peer.PID(), key, val)
 }
 
-//OnPeerOpen 节点连接成功
+// OnPeerOpen 节点连接成功
 func (node *OWTPNode) OnPeerOpen(peer Peer) {
 	node.Join <- peer
 }
 
-//OnPeerClose 节点关闭
+// OnPeerClose 节点关闭
 func (node *OWTPNode) OnPeerClose(peer Peer, reason string) {
 	node.Leave <- peer
 }
 
-//OnPeerNewDataPacketReceived 节点获取新数据包
+// OnPeerNewDataPacketReceived 节点获取新数据包
 func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket) {
 
 	////重复攻击检查
@@ -1166,7 +1167,7 @@ func (node *OWTPNode) OnPeerNewDataPacketReceived(peer Peer, packet *DataPacket)
 		}
 
 		decryptData := packet.Data.([]byte)
-		runErr := json.Unmarshal(decryptData, &resp)
+		runErr := JsonUnmarshal(decryptData, &resp)
 		//runErr := mapstructure.Decode(decryptData, &resp)
 		if runErr != nil {
 			log.Error("Response decode error: ", runErr)
@@ -1214,7 +1215,7 @@ func (node *OWTPNode) AddOnlinePeer(peer Peer) {
 	node.onlinePeers[peer.PID()] = peer
 }
 
-//RemoveOfflinePeer 移除不在线的节点
+// RemoveOfflinePeer 移除不在线的节点
 func (node *OWTPNode) RemoveOfflinePeer(id string) {
 	node.mu.Lock()
 	defer node.mu.Unlock()
@@ -1224,7 +1225,7 @@ func (node *OWTPNode) RemoveOfflinePeer(id string) {
 	delete(node.onlinePeers, id)
 }
 
-//GenerateRangeNum 生成范围内的随机整数
+// GenerateRangeNum 生成范围内的随机整数
 func GenerateRangeNum(min, max int) int {
 	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
 	randNum := rand.Intn(max-min) + min
@@ -1280,7 +1281,7 @@ func (node *OWTPNode) checkNonceReplayReason(data *DataPacket) (uint64, string) 
 }
 */
 
-//responseError 返回一个错误数据包
+// responseError 返回一个错误数据包
 func responseError(err string, status uint64) Response {
 
 	resp := Response{
@@ -1290,4 +1291,14 @@ func responseError(err string, status uint64) Response {
 	}
 
 	return resp
+}
+
+// JsonUnmarshal json decode
+func JsonUnmarshal(data []byte, v interface{}) error {
+	if data == nil || len(data) == 0 {
+		return nil
+	}
+	d := json.NewDecoder(bytes.NewBuffer(data))
+	d.UseNumber()
+	return d.Decode(v)
 }

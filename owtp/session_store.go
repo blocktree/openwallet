@@ -96,13 +96,13 @@ func (store *SessionManager) SavePeer(peer Peer) {
 	}
 }
 
-//PeerInfo 节点信息
+// PeerInfo 节点信息
 func (store *SessionManager) PeerInfo(id string) PeerInfo {
 
 	var config ConnectConfig
 	b, ok := store.Get(id, id).(string)
 	if ok {
-		json.Unmarshal([]byte(b), &config)
+		JsonUnmarshal([]byte(b), &config)
 	}
 	return PeerInfo{
 		ID:     id,
@@ -140,7 +140,7 @@ func (store *SessionManager) Put(id string, key string, val interface{}) error {
 	return session.Set(key, val)
 }
 
-//Delete
+// Delete
 func (store *SessionManager) Delete(id string, key string) error {
 	session, err := store.GetSessionStore(id)
 	if err != nil {
@@ -149,7 +149,7 @@ func (store *SessionManager) Delete(id string, key string) error {
 	return session.Delete(key)
 }
 
-//Destroy
+// Destroy
 func (store *SessionManager) Destroy(id string) error {
 	session, err := store.GetSessionStore(id)
 	if err != nil {
