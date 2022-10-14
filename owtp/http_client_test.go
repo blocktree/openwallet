@@ -3,14 +3,15 @@ package owtp
 import (
 	"encoding/hex"
 	"fmt"
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/blocktree/go-owcrypt"
 	"github.com/blocktree/openwallet/v2/log"
 	"github.com/blocktree/openwallet/v2/session"
 	"github.com/imroc/req"
 	"github.com/mr-tron/base58/base58"
-	"sync"
-	"testing"
-	"time"
 )
 
 var (
@@ -373,7 +374,6 @@ func TestHTTPNormalCall(t *testing.T) {
 
 	log.Infof("res: +%v", res)
 }
-
 
 func TestConcurrentHTTPConnect2(t *testing.T) {
 

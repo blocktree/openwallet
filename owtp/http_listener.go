@@ -53,7 +53,7 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Error("NewClient unexpected error:", err)
 		//http.Error(w, "authorization not passed", 400)
-		HttpError(w, err.Error(), http.StatusOK)
+		HttpError(w, r, err.Error(), http.StatusOK)
 		return
 	}
 
@@ -61,14 +61,14 @@ func (l *httpListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err = peer.HandleRequest()
 	if err != nil {
 		//log.Error("HandleRequest unexpected error:", err)
-		HttpError(w, err.Error(), http.StatusOK)
+		HttpError(w, r, err.Error(), http.StatusOK)
 		return
 	}
 }
 
 // HttpError 错误
-func HttpError(w http.ResponseWriter, error string, code int) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+func HttpError(w http.ResponseWriter, r *http.Request, error string, code int) {
+	w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
 	w.Header().Set("Access-Control-Allow-Headers", "*")
 	w.WriteHeader(code)
 	fmt.Fprintln(w, error)
