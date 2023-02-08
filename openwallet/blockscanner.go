@@ -25,12 +25,12 @@ import (
 	"github.com/blocktree/openwallet/v2/timer"
 )
 
-//deprecated
+// deprecated
 // BlockScanAddressFunc 扫描地址是否存在算法
 // @return 地址所属源标识，是否存在
 type BlockScanAddressFunc func(address string) (string, bool)
 
-//deprecated
+// deprecated
 // BlockScanTargetFunc 扫描对象是否存在算法
 // @return 对象所属源标识，是否存在
 type BlockScanTargetFunc func(target ScanTarget) (string, bool)
@@ -77,6 +77,12 @@ type ScanTargetResult struct {
 	//4: openwallet Address
 	//5: openwallet Address
 	TargetInfo interface{}
+}
+
+type BlockchainSyncStatus struct {
+	NetworkBlockHeight uint64
+	CurrentBlockHeight uint64
+	Syncing            bool
 }
 
 // BlockScanner 区块扫描器
@@ -179,9 +185,13 @@ type BlockScanner interface {
 	//ExtractTransactionAndReceiptData 提取交易单及交易回执数据
 	//@required
 	ExtractTransactionAndReceiptData(txid string, scanTargetFunc BlockScanTargetFuncV2) (map[string][]*TxExtractData, map[string]*SmartContractReceipt, error)
+
+	//GetBlockchainSyncStatus 获取当前区块链同步状态
+	//@optional
+	GetBlockchainSyncStatus() (*BlockchainSyncStatus, error)
 }
 
-//BlockScanNotificationObject 扫描被通知对象
+// BlockScanNotificationObject 扫描被通知对象
 type BlockScanNotificationObject interface {
 
 	//BlockScanNotify 新区块扫描完成通知
@@ -199,7 +209,7 @@ type BlockScanNotificationObject interface {
 	BlockExtractSmartContractDataNotify(sourceKey string, data *SmartContractReceipt) error
 }
 
-//TxExtractData 区块扫描后的交易单提取结果，每笔交易单
+// TxExtractData 区块扫描后的交易单提取结果，每笔交易单
 type TxExtractData struct {
 
 	//消费记录，交易单输入部分
@@ -224,7 +234,7 @@ const (
 	periodOfTask = 5 * time.Second //定时任务执行隔间
 )
 
-//BlockScannerBase 区块链扫描器基本结构实现
+// BlockScannerBase 区块链扫描器基本结构实现
 type BlockScannerBase struct {
 	AddressInScanning map[string]string                    //加入扫描的地址
 	scanTask          *timer.TaskTimer                     //扫描定时器
@@ -242,7 +252,7 @@ type BlockScannerBase struct {
 	BlockchainDAI     BlockchainDAI
 }
 
-//NewBTCBlockScanner 创建区块链扫描器
+// NewBTCBlockScanner 创建区块链扫描器
 func NewBlockScannerBase() *BlockScannerBase {
 	bs := BlockScannerBase{}
 	bs.AddressInScanning = make(map[string]string)
@@ -253,7 +263,7 @@ func NewBlockScannerBase() *BlockScannerBase {
 	return &bs
 }
 
-//InitBlockScanner
+// InitBlockScanner
 func (bs *BlockScannerBase) InitBlockScanner() error {
 
 	bs.blockProducer = make(chan interface{})
@@ -267,16 +277,16 @@ func (bs *BlockScannerBase) InitBlockScanner() error {
 	return nil
 }
 
-//deprecated
-//SetBlockScanAddressFunc 设置区块扫描过程，查找地址过程方法
+// deprecated
+// SetBlockScanAddressFunc 设置区块扫描过程，查找地址过程方法
 func (bs *BlockScannerBase) SetBlockScanAddressFunc(scanAddressFunc BlockScanAddressFunc) error {
 	bs.ScanAddressFunc = scanAddressFunc
 	return nil
 }
 
-//deprecated
-//SetBlockScanTargetFunc 设置区块扫描过程，查找扫描对象过程方法
-//@required
+// deprecated
+// SetBlockScanTargetFunc 设置区块扫描过程，查找扫描对象过程方法
+// @required
 func (bs *BlockScannerBase) SetBlockScanTargetFunc(scanTargetFunc BlockScanTargetFunc) error {
 	bs.ScanTargetFunc = scanTargetFunc
 
@@ -292,8 +302,8 @@ func (bs *BlockScannerBase) SetBlockScanTargetFunc(scanTargetFunc BlockScanTarge
 	return nil
 }
 
-//SetBlockScanTargetFuncV2 设置区块扫描过程，查找扫描对象过程方法
-//@required
+// SetBlockScanTargetFuncV2 设置区块扫描过程，查找扫描对象过程方法
+// @required
 func (bs *BlockScannerBase) SetBlockScanTargetFuncV2(scanTargetFuncV2 BlockScanTargetFuncV2) error {
 	bs.ScanTargetFuncV2 = scanTargetFuncV2
 
@@ -314,7 +324,7 @@ func (bs *BlockScannerBase) SetBlockScanTargetFuncV2(scanTargetFuncV2 BlockScanT
 	return nil
 }
 
-//AddObserver 添加观测者
+// AddObserver 添加观测者
 func (bs *BlockScannerBase) AddObserver(obj BlockScanNotificationObject) error {
 	bs.Mu.Lock()
 
@@ -333,7 +343,7 @@ func (bs *BlockScannerBase) AddObserver(obj BlockScanNotificationObject) error {
 	return nil
 }
 
-//RemoveObserver 移除观测者
+// RemoveObserver 移除观测者
 func (bs *BlockScannerBase) RemoveObserver(obj BlockScanNotificationObject) error {
 	bs.Mu.Lock()
 	defer bs.Mu.Unlock()
@@ -343,12 +353,12 @@ func (bs *BlockScannerBase) RemoveObserver(obj BlockScanNotificationObject) erro
 	return nil
 }
 
-//SetRescanBlockHeight 重置区块链扫描高度
+// SetRescanBlockHeight 重置区块链扫描高度
 func (bs *BlockScannerBase) SetRescanBlockHeight(height uint64) error {
 	return nil
 }
 
-//SetTask
+// SetTask
 func (bs *BlockScannerBase) SetTask(task func()) {
 
 	//if bs.scanTask == nil {
@@ -366,7 +376,7 @@ func (bs *BlockScannerBase) SetTask(task func()) {
 	bs.scanTask = taskTimer
 }
 
-//Run 运行
+// Run 运行
 func (bs *BlockScannerBase) Run() error {
 
 	if bs.IsClose() {
@@ -390,7 +400,7 @@ func (bs *BlockScannerBase) Run() error {
 	return nil
 }
 
-//Stop 停止扫描
+// Stop 停止扫描
 func (bs *BlockScannerBase) Stop() error {
 
 	if bs.IsClose() {
@@ -402,7 +412,7 @@ func (bs *BlockScannerBase) Stop() error {
 	return nil
 }
 
-//Pause 暂停扫描
+// Pause 暂停扫描
 func (bs *BlockScannerBase) Pause() error {
 
 	if bs.IsClose() {
@@ -414,7 +424,7 @@ func (bs *BlockScannerBase) Pause() error {
 	return nil
 }
 
-//Restart 继续扫描
+// Restart 继续扫描
 func (bs *BlockScannerBase) Restart() error {
 
 	if bs.IsClose() {
@@ -426,29 +436,29 @@ func (bs *BlockScannerBase) Restart() error {
 	return nil
 }
 
-//IsClose 是否已经关闭
+// IsClose 是否已经关闭
 func (bs *BlockScannerBase) IsClose() bool {
 	return bs.isClose
 }
 
-//ScanBlock 扫描指定高度区块
+// ScanBlock 扫描指定高度区块
 func (bs *BlockScannerBase) ScanBlock(height uint64) error {
 	//扫描指定高度区块
 	return fmt.Errorf("ScanBlock is not implemented")
 }
 
-//GetCurrentBlockHeight 获取当前区块高度
+// GetCurrentBlockHeight 获取当前区块高度
 func (bs *BlockScannerBase) GetCurrentBlockHeader() (*BlockHeader, error) {
 	return nil, fmt.Errorf("GetCurrentBlockHeader is not implemented")
 }
 
-//GetGlobalMaxBlockHeight 获取区块链全网最大高度
-//@required
+// GetGlobalMaxBlockHeight 获取区块链全网最大高度
+// @required
 func (bs *BlockScannerBase) GetGlobalMaxBlockHeight() uint64 {
 	return 0
 }
 
-//GetScannedBlockHeight 获取已扫区块高度
+// GetScannedBlockHeight 获取已扫区块高度
 func (bs *BlockScannerBase) GetScannedBlockHeight() uint64 {
 	return 0
 }
@@ -457,13 +467,13 @@ func (bs *BlockScannerBase) ExtractTransactionData(txid string, scanTargetFunc B
 	return nil, fmt.Errorf("ExtractTransactionData is not implemented")
 }
 
-//ExtractTransactionAndReceiptData 提取交易单及交易回执数据
-//@required
+// ExtractTransactionAndReceiptData 提取交易单及交易回执数据
+// @required
 func (bs *BlockScannerBase) ExtractTransactionAndReceiptData(txid string, scanTargetFunc BlockScanTargetFuncV2) (map[string][]*TxExtractData, map[string]*SmartContractReceipt, error) {
 	return nil, nil, fmt.Errorf("ExtractTransactionAndReceiptData is not implemented")
 }
 
-//GetBalanceByAddress 查询地址余额
+// GetBalanceByAddress 查询地址余额
 func (bs *BlockScannerBase) GetBalanceByAddress(address ...string) ([]*Balance, error) {
 	return nil, fmt.Errorf("GetBalanceByAddress is not implemented")
 }
@@ -473,33 +483,33 @@ func (bs *BlockScannerBase) GetBalanceByAddress(address ...string) ([]*Balance, 
 //	return nil, nil
 //}
 
-//GetTransactionsByAddress 查询基于账户的交易记录，通过账户关系的地址
-//返回的交易记录以资产账户为集合的结果，转账数量以基于账户来计算
+// GetTransactionsByAddress 查询基于账户的交易记录，通过账户关系的地址
+// 返回的交易记录以资产账户为集合的结果，转账数量以基于账户来计算
 func (bs *BlockScannerBase) GetTransactionsByAddress(offset, limit int, coin Coin, address ...string) ([]*TxExtractData, error) {
 	return nil, fmt.Errorf("GetTransactionsByAddress is not implemented")
 }
 
-//SetBlockScanWalletDAI 设置区块扫描过程，上层提供一个钱包数据接口
-//@optional
+// SetBlockScanWalletDAI 设置区块扫描过程，上层提供一个钱包数据接口
+// @optional
 func (bs *BlockScannerBase) SetBlockScanWalletDAI(dai WalletDAI) error {
 	bs.WalletDAI = dai
 	return nil
 }
 
-//SupportBlockchainDAI 支持外部设置区块链数据访问接口
-//@optional
+// SupportBlockchainDAI 支持外部设置区块链数据访问接口
+// @optional
 func (bs *BlockScannerBase) SupportBlockchainDAI() bool {
 	return false
 }
 
-//SetBlockchainDAI 设置区块链数据访问接口，读取持久化的区块数据
-//@optional
+// SetBlockchainDAI 设置区块链数据访问接口，读取持久化的区块数据
+// @optional
 func (bs *BlockScannerBase) SetBlockchainDAI(dai BlockchainDAI) error {
 	bs.BlockchainDAI = dai
 	return nil
 }
 
-//NewBlockNotify 获得新区块后，发送到通知通道
+// NewBlockNotify 获得新区块后，发送到通知通道
 func (bs *BlockScannerBase) NewBlockNotify(block *BlockHeader) error {
 	bs.Mu.RLock()
 	defer bs.Mu.RUnlock()
@@ -510,7 +520,7 @@ func (bs *BlockScannerBase) NewBlockNotify(block *BlockHeader) error {
 	return nil
 }
 
-//CloseBlockScanner 关闭扫描器
+// CloseBlockScanner 关闭扫描器
 func (bs *BlockScannerBase) CloseBlockScanner() error {
 
 	//保证只关闭一次
@@ -527,7 +537,7 @@ func (bs *BlockScannerBase) CloseBlockScanner() error {
 	return nil
 }
 
-//newBlockNotifyConsume
+// newBlockNotifyConsume
 func (bs *BlockScannerBase) newBlockNotifyConsume() {
 
 	for {
@@ -546,4 +556,10 @@ func (bs *BlockScannerBase) newBlockNotifyConsume() {
 		}
 
 	}
+}
+
+// GetBlockchainSyncStatus 获取当前区块链同步状态
+// @optional
+func (bs *BlockScannerBase) GetBlockchainSyncStatus() (*BlockchainSyncStatus, error) {
+	return nil, fmt.Errorf("GetBlockchainSyncStatus is not implemented")
 }

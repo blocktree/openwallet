@@ -8,7 +8,7 @@ require (
 	github.com/asdine/storm v2.1.2+incompatible
 	github.com/astaxie/beego v1.12.0
 	github.com/blocktree/go-owcdrivers v1.2.0
-	github.com/blocktree/go-owcrypt v1.1.1
+	github.com/blocktree/go-owcrypt v1.1.9
 	github.com/bndr/gotabulate v1.1.2
 	github.com/bradfitz/gomemcache v0.0.0-20190913173617-a41fca850d0b
 	github.com/btcsuite/btcd v0.23.1 // indirect
