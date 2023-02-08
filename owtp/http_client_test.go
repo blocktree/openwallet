@@ -143,7 +143,8 @@ func TestHTTPClientCall(t *testing.T) {
 	cert, _ := NewCertificate("E3cQTqKZfVVL6cQvyrSgbjmkVnnbkBuoqt7ed9wQLjgz", "aes")
 	//httpClient := RandomOWTPNode()
 	httpClient := NewNode(NodeConfig{
-		Cert: cert,
+		TimeoutSEC: 1000,
+		Cert:       cert,
 	})
 	httpClient.SetPeerstore(globalSessions)
 	prv, pub := httpClient.Certificate().KeyPair()

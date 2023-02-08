@@ -21,10 +21,10 @@ import (
 )
 
 func TestGenContractID(t *testing.T) {
-	address := "1234QWER"
+	address := ""
 	address = strings.ToLower(address)
 	t.Logf("lower addr 1: %v", address)
-	symbol := "qtum"
+	symbol := "MATIC"
 	ID := GenContractID(symbol, address)
 	t.Logf("ID 1: %v", ID)
 	ID = GenContractID(symbol, address)
