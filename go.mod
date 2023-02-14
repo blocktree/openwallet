@@ -6,7 +6,7 @@ require (
 	docker.io/go-docker v1.0.0
 	github.com/NebulousLabs/entropy-mnemonics v0.0.0-20181203154559-bc7e13c5ccd8
 	github.com/asdine/storm v2.1.2+incompatible
-	github.com/astaxie/beego v1.12.0
+	github.com/astaxie/beego v1.12.2
 	github.com/blocktree/go-owcdrivers v1.2.0
 	github.com/blocktree/go-owcrypt v1.1.9
 	github.com/bndr/gotabulate v1.1.2
@@ -15,7 +15,7 @@ require (
 	github.com/btcsuite/btcd/btcutil v1.1.0
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/codeskyblue/go-sh v0.0.0-20190412065543-76bd3d59ff27
-	github.com/couchbase/go-couchbase v0.0.0-20191217190632-b2754d72cc98
+	github.com/couchbase/go-couchbase v0.0.0-20200519150804-63f3cdb75e0d
 	github.com/docker/go-connections v0.4.0
 	github.com/ethereum/go-ethereum v1.10.17
 	github.com/go-redis/redis v6.15.6+incompatible
@@ -28,7 +28,6 @@ require (
 	github.com/pborman/uuid v1.2.0
 	github.com/peterh/liner v1.1.1-0.20190123174540-a2c9a5303de7
 	github.com/pkg/errors v0.9.1
-	github.com/shiena/ansicolor v0.0.0-20151119151921-a422bbe96644 // indirect
 	github.com/shopspring/decimal v0.0.0-20200105231215-408a2507e114
 	github.com/siddontang/ledisdb v0.0.0-20190202134119-8ceb77e66a92
 	github.com/ssdb/gossdb v0.0.0-20180723034631-88f6b59b84ec
