@@ -52,7 +52,7 @@ func (contract *SmartContract) SetABI(abiJson string) {
 	contract.abi = abiJson
 }
 
-//GenContractID 合约ID
+// GenContractID 合约ID
 func GenContractID(symbol, address string) string {
 	if !strings.HasPrefix(address, "0x") {
 		address = "0x" + address
@@ -132,7 +132,7 @@ type SmartContractCallResult struct {
 	Exception string `json:"exception"` //异常错误
 }
 
-//SmartContractDecoder 智能合约解析器
+// SmartContractDecoder 智能合约解析器
 type SmartContractDecoder interface {
 	ABIDAI
 
@@ -144,6 +144,8 @@ type SmartContractDecoder interface {
 	CreateSmartContractRawTransaction(wrapper WalletDAI, rawTx *SmartContractRawTransaction) *Error
 	//SubmitRawTransaction 广播交易单
 	SubmitSmartContractRawTransaction(wrapper WalletDAI, rawTx *SmartContractRawTransaction) (*SmartContractReceipt, *Error)
+	//GetTokenMetadata 根据合约地址查询token元数据
+	GetTokenMetadata(contract string) (*SmartContract, error)
 }
 
 type SmartContractDecoderBase struct {
@@ -153,17 +155,17 @@ func (decoder *SmartContractDecoderBase) GetTokenBalanceByAddress(contract Smart
 	return nil, fmt.Errorf("GetTokenBalanceByAddress not implement")
 }
 
-//调用合约ABI方法
+// 调用合约ABI方法
 func (decoder *SmartContractDecoderBase) CallSmartContractABI(wrapper WalletDAI, rawTx *SmartContractRawTransaction) (*SmartContractCallResult, *Error) {
 	return nil, Errorf(ErrSystemException, "CallSmartContractABI not implement")
 }
 
-//创建原始交易单
+// 创建原始交易单
 func (decoder *SmartContractDecoderBase) CreateSmartContractRawTransaction(wrapper WalletDAI, rawTx *SmartContractRawTransaction) *Error {
 	return Errorf(ErrSystemException, "CreateSmartContractRawTransaction not implement")
 }
 
-//SubmitRawTransaction 广播交易单
+// SubmitRawTransaction 广播交易单
 func (decoder *SmartContractDecoderBase) SubmitSmartContractRawTransaction(wrapper WalletDAI, rawTx *SmartContractRawTransaction) (*SmartContractReceipt, *Error) {
 	return nil, Errorf(ErrSystemException, "SubmitSmartContractRawTransaction not implement")
 }
@@ -176,6 +178,11 @@ func (decoder *SmartContractDecoderBase) GetABIInfo(address string) (*ABIInfo, e
 // SetABIInfo set abi
 func (decoder *SmartContractDecoderBase) SetABIInfo(address string, abi ABIInfo) error {
 	return fmt.Errorf("GetABIInfo not implement")
+}
+
+// GetTokenMetadata 根据合约地址查询token元数据
+func (decoder *SmartContractDecoderBase) GetTokenMetadata(contract string) (*SmartContract, error) {
+	return nil, fmt.Errorf("GetTokenMetadata not implement")
 }
 
 // ABIDAI abi data access interface
