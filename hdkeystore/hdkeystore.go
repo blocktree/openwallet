@@ -26,6 +26,12 @@ import (
 )
 
 const (
+	CipherAes256CBC = "aes-256-cbc"
+
+	CipherAes256CTR = "aes-256-ctr"
+
+	CipherAes128CTR = "aes-128-ctr"
+
 	keyHeaderKDF = "scrypt"
 
 	// StandardScryptN is the N parameter of Scrypt encryption algorithm, using 256MB
@@ -64,17 +70,24 @@ type HDKeystore struct {
 	//MasterKey   string
 	scryptN int
 	scryptP int
+	cipher  string
 }
 
 // NewHDKeystore 实例化HDKeystore
-func NewHDKeystore(keydir string, scryptN, scryptP int) *HDKeystore {
+func NewHDKeystore(keydir string, scryptN, scryptP int, cipher ...string) *HDKeystore {
 	keydir, _ = filepath.Abs(keydir)
-	ks := &HDKeystore{keydir, scryptN, scryptP}
+	ks := &HDKeystore{}
+	ks.keysDirPath = keydir
+	ks.scryptN = scryptN
+	ks.scryptP = scryptP
+	if len(cipher) > 0 {
+		ks.cipher = cipher[0]
+	}
 	return ks
 }
 
 // StoreHDKey 创建HDKey
-func StoreHDKey(dir, alias, auth string, scryptN, scryptP int) (*HDKey, string, error) {
+func StoreHDKey(dir, alias, auth string, scryptN, scryptP int, cipher ...string) (*HDKey, string, error) {
 
 	seed, err := GenerateSeed(SeedLen)
 	if err != nil {
@@ -86,12 +99,13 @@ func StoreHDKey(dir, alias, auth string, scryptN, scryptP int) (*HDKey, string, 
 	//	return "", err
 	//}
 
-	return StoreHDKeyWithSeed(dir, alias, auth, seed, scryptN, scryptP)
+	return StoreHDKeyWithSeed(dir, alias, auth, seed, scryptN, scryptP, cipher...)
 }
 
 // StoreHDKey 创建HDKey
-func StoreHDKeyWithSeed(dir, alias, auth string, seed []byte, scryptN, scryptP int) (*HDKey, string, error) {
-	key, filePath, err := storeNewKey(&HDKeystore{dir, scryptN, scryptP}, alias, auth, seed)
+func StoreHDKeyWithSeed(dir, alias, auth string, seed []byte, scryptN, scryptP int, cipher ...string) (*HDKey, string, error) {
+	ks := NewHDKeystore(dir, scryptN, scryptP, cipher...)
+	key, filePath, err := storeNewKey(ks, alias, auth, seed)
 	return key, filePath, err
 }
 
@@ -115,9 +129,29 @@ func (ks HDKeystore) GetKey(rootId, filename, auth string) (*HDKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	key, err := DecryptHDKey(keyjson, auth)
-	if err != nil {
-		return nil, err
+
+	var key *HDKey
+	if ks.cipher == CipherAes256CBC {
+		key, err = DecryptHDKeyByAes256CBC(keyjson, auth)
+		if err != nil {
+			return nil, err
+		}
+	} else if ks.cipher == CipherAes256CTR {
+		// nothing
+	} else if ks.cipher == CipherAes128CTR {
+		key, err = DecryptHDKey(keyjson, auth)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		key, err = DecryptHDKey(keyjson, auth)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if key == nil || len(key.KeyID) == 0 {
+		return nil, errors.New("HDKey decrypt invalid")
 	}
 
 	if len(rootId) > 0 {
@@ -132,10 +166,28 @@ func (ks HDKeystore) GetKey(rootId, filename, auth string) (*HDKey, error) {
 
 // StoreKey 把HDKey重写加密写入到文件中
 func (ks *HDKeystore) StoreKey(filename string, key *HDKey, auth string) error {
-	keyjson, err := EncryptKey(key, auth, ks.scryptN, ks.scryptP)
-	if err != nil {
-		return err
+	var keyjson []byte
+	var err error
+	if ks.cipher == CipherAes256CBC {
+		keyjson, err = EncryptKeyByAes256CBC(key, auth, ks.scryptN, ks.scryptP)
+		if err != nil {
+			return err
+		}
+		return writeKeyFile(filename, keyjson)
+	} else if ks.cipher == CipherAes256CTR {
+		// nothing
+	} else if ks.cipher == CipherAes128CTR {
+		keyjson, err = EncryptKey(key, auth, ks.scryptN, ks.scryptP)
+		if err != nil {
+			return err
+		}
+	} else {
+		keyjson, err = EncryptKey(key, auth, ks.scryptN, ks.scryptP)
+		if err != nil {
+			return err
+		}
 	}
+
 	return writeKeyFile(filename, keyjson)
 }
 
@@ -166,59 +218,4 @@ func GetExtendSeed(seed []byte, masterKey string) ([]byte, error) {
 	hmac256.Write(seed)
 	ext := hmac256.Sum(nil)
 	return ext, nil
-}
-
-// ---------------------------- HdKey By AES-256-CBC (PKCS7) ----------------------------
-
-// StoreHDKey2 创建HDKey
-func StoreHDKey2(dir, alias, auth string, scryptN, scryptP int) (*HDKey, string, error) {
-	seed, err := GenerateSeed(SeedLen)
-	if err != nil {
-		return nil, "", err
-	}
-	return StoreHDKeyWithSeed2(dir, alias, auth, seed, scryptN, scryptP)
-}
-
-func StoreHDKeyWithSeed2(dir, alias, auth string, seed []byte, scryptN, scryptP int) (*HDKey, string, error) {
-	key, filePath, err := storeNewKey2(&HDKeystore{dir, scryptN, scryptP}, alias, auth, seed)
-	return key, filePath, err
-}
-
-// storeNewKey 用随机种子生成HDKey
-func storeNewKey2(ks *HDKeystore, alias, auth string, seed []byte) (*HDKey, string, error) {
-	key, err := NewHDKey(seed, alias, OpenwCoinTypePath)
-	if err != nil {
-		return nil, "", err
-	}
-	filePath := ks.JoinPath(KeyFileName(key.Alias, key.KeyID) + ".key")
-	ks.StoreKey2(filePath, key, auth)
-	return key, filePath, err
-}
-
-// GetKey2 通过accountId读取钥匙
-func (ks HDKeystore) GetKey2(rootId, filename, auth string) (*HDKey, error) {
-	keyPath := ks.JoinPath(filename)
-	keyjson, err := ioutil.ReadFile(keyPath)
-	if err != nil {
-		return nil, err
-	}
-	key, err := DecryptHDKeyByAes256CBC(keyjson, auth)
-	if err != nil {
-		return nil, err
-	}
-	if len(rootId) > 0 {
-		if key.KeyID != rootId {
-			return nil, fmt.Errorf("key content mismatch: have account %s, want %s", key.KeyID, rootId)
-		}
-	}
-	return key, nil
-}
-
-// StoreKey2 把HDKey重写加密写入到文件中
-func (ks *HDKeystore) StoreKey2(filename string, key *HDKey, auth string) error {
-	keyjson, err := EncryptKeyByAes256CBC(key, auth, ks.scryptN, ks.scryptP)
-	if err != nil {
-		return err
-	}
-	return writeKeyFile(filename, keyjson)
 }
