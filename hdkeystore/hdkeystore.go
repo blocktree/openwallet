@@ -58,7 +58,7 @@ var (
 	ErrDecrypt = errors.New("could not decrypt key with given passphrase")
 )
 
-//HDKeystore HDKey的存粗工具类
+// HDKeystore HDKey的存粗工具类
 type HDKeystore struct {
 	keysDirPath string
 	//MasterKey   string
@@ -95,7 +95,7 @@ func StoreHDKeyWithSeed(dir, alias, auth string, seed []byte, scryptN, scryptP i
 	return key, filePath, err
 }
 
-//storeNewKey 用随机种子生成HDKey
+// storeNewKey 用随机种子生成HDKey
 func storeNewKey(ks *HDKeystore, alias, auth string, seed []byte) (*HDKey, string, error) {
 
 	key, err := NewHDKey(seed, alias, OpenwCoinTypePath)
@@ -107,7 +107,7 @@ func storeNewKey(ks *HDKeystore, alias, auth string, seed []byte) (*HDKey, strin
 	return key, filePath, err
 }
 
-//GetKey 通过accountId读取钥匙
+// GetKey 通过accountId读取钥匙
 func (ks HDKeystore) GetKey(rootId, filename, auth string) (*HDKey, error) {
 	// Load the key from the keystore and decrypt its contents
 	keyPath := ks.JoinPath(filename)
@@ -130,7 +130,7 @@ func (ks HDKeystore) GetKey(rootId, filename, auth string) (*HDKey, error) {
 	return key, nil
 }
 
-//StoreKey 把HDKey重写加密写入到文件中
+// StoreKey 把HDKey重写加密写入到文件中
 func (ks *HDKeystore) StoreKey(filename string, key *HDKey, auth string) error {
 	keyjson, err := EncryptKey(key, auth, ks.scryptN, ks.scryptP)
 	if err != nil {
@@ -139,7 +139,7 @@ func (ks *HDKeystore) StoreKey(filename string, key *HDKey, auth string) error {
 	return writeKeyFile(filename, keyjson)
 }
 
-//JoinPath 文件路径组合
+// JoinPath 文件路径组合
 func (ks *HDKeystore) JoinPath(filename string) string {
 	if filepath.IsAbs(filename) {
 		return filename
@@ -148,14 +148,14 @@ func (ks *HDKeystore) JoinPath(filename string) string {
 	}
 }
 
-//getDecryptedKey 获取解密后的钥匙
+// getDecryptedKey 获取解密后的钥匙
 func (ks *HDKeystore) getDecryptedKey(alias, rootId, auth string) (*HDKey, error) {
 	path := ks.JoinPath(KeyFileName(alias, rootId) + ".key")
 	key, err := ks.GetKey(rootId, path, auth)
 	return key, err
 }
 
-//GetExtendSeed 获得某个币种的扩展种子
+// GetExtendSeed 获得某个币种的扩展种子
 func GetExtendSeed(seed []byte, masterKey string) ([]byte, error) {
 
 	if len(seed) < MinSeedBytes || len(seed) > MaxSeedBytes {
@@ -166,4 +166,59 @@ func GetExtendSeed(seed []byte, masterKey string) ([]byte, error) {
 	hmac256.Write(seed)
 	ext := hmac256.Sum(nil)
 	return ext, nil
+}
+
+// ---------------------------- HdKey By AES-256-CBC (PKCS7) ----------------------------
+
+// StoreHDKey2 创建HDKey
+func StoreHDKey2(dir, alias, auth string, scryptN, scryptP int) (*HDKey, string, error) {
+	seed, err := GenerateSeed(SeedLen)
+	if err != nil {
+		return nil, "", err
+	}
+	return StoreHDKeyWithSeed2(dir, alias, auth, seed, scryptN, scryptP)
+}
+
+func StoreHDKeyWithSeed2(dir, alias, auth string, seed []byte, scryptN, scryptP int) (*HDKey, string, error) {
+	key, filePath, err := storeNewKey2(&HDKeystore{dir, scryptN, scryptP}, alias, auth, seed)
+	return key, filePath, err
+}
+
+// storeNewKey 用随机种子生成HDKey
+func storeNewKey2(ks *HDKeystore, alias, auth string, seed []byte) (*HDKey, string, error) {
+	key, err := NewHDKey(seed, alias, OpenwCoinTypePath)
+	if err != nil {
+		return nil, "", err
+	}
+	filePath := ks.JoinPath(KeyFileName(key.Alias, key.KeyID) + ".key")
+	ks.StoreKey2(filePath, key, auth)
+	return key, filePath, err
+}
+
+// GetKey2 通过accountId读取钥匙
+func (ks HDKeystore) GetKey2(rootId, filename, auth string) (*HDKey, error) {
+	keyPath := ks.JoinPath(filename)
+	keyjson, err := ioutil.ReadFile(keyPath)
+	if err != nil {
+		return nil, err
+	}
+	key, err := DecryptHDKeyByAes256CBC(keyjson, auth)
+	if err != nil {
+		return nil, err
+	}
+	if len(rootId) > 0 {
+		if key.KeyID != rootId {
+			return nil, fmt.Errorf("key content mismatch: have account %s, want %s", key.KeyID, rootId)
+		}
+	}
+	return key, nil
+}
+
+// StoreKey2 把HDKey重写加密写入到文件中
+func (ks *HDKeystore) StoreKey2(filename string, key *HDKey, auth string) error {
+	keyjson, err := EncryptKeyByAes256CBC(key, auth, ks.scryptN, ks.scryptP)
+	if err != nil {
+		return err
+	}
+	return writeKeyFile(filename, keyjson)
 }
