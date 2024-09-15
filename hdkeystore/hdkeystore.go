@@ -17,8 +17,11 @@ package hdkeystore
 
 import (
 	"crypto/hmac"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"path/filepath"
 
@@ -62,6 +65,9 @@ var (
 	ErrNoMatch = errors.New("no key for given address or file")
 	//ErrDecrypt 机密出错
 	ErrDecrypt = errors.New("could not decrypt key with given passphrase")
+	randomKey  = map[string][]byte{
+		hex.EncodeToString(randomBytes(SeedLen / 2)): randomBytes(SeedLen),
+	}
 )
 
 // HDKeystore HDKey的存粗工具类
@@ -71,6 +77,36 @@ type HDKeystore struct {
 	scryptN int
 	scryptP int
 	cipher  string
+}
+
+func randomBytes(l int) []byte {
+	bs := make([]byte, l)
+	if _, err := io.ReadFull(rand.Reader, bs); err != nil {
+		panic("reading from crypto/rand failed: " + err.Error())
+	}
+	return bs
+}
+
+func encryptSeed(seed []byte) []byte {
+	if len(seed) > SeedLen {
+		return seed
+	}
+	for i, key := range randomKey {
+		iv, _ := hex.DecodeString(i)
+		return Aes256CBCEncrypt(seed, key, iv)
+	}
+	return nil
+}
+
+func decryptSeed(seed []byte) []byte {
+	if len(seed) <= SeedLen {
+		return seed
+	}
+	for i, key := range randomKey {
+		iv, _ := hex.DecodeString(i)
+		return Aes256CBCDecrypt(seed, key, iv)
+	}
+	return nil
 }
 
 // NewHDKeystore 实例化HDKeystore
@@ -160,6 +196,8 @@ func (ks HDKeystore) GetKey(rootId, filename, auth string) (*HDKey, error) {
 			return nil, fmt.Errorf("key content mismatch: have account %s, want %s", key.KeyID, rootId)
 		}
 	}
+
+	key.seed = encryptSeed(key.seed)
 
 	return key, nil
 }

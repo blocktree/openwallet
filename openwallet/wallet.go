@@ -33,7 +33,16 @@ import (
 	"time"
 )
 
-//WalletDAI 钱包数据访问接口
+// QueryParam GetAssetsAccountList/GetAddressList作为第三个参数传入判定
+type QueryParam struct {
+	Offset    int64 // 普通分页索引
+	PrevId    int64
+	LastID    int64         // 快速分页索引 AssetsAccount/Address的关联systemID
+	Limit     int64         // 截取条数
+	Condition []interface{} // 替换原本的cols ...interface参数
+}
+
+// WalletDAI 钱包数据访问接口
 type WalletDAI interface {
 	//获取当前钱包
 	GetWallet() *Wallet
@@ -65,7 +74,7 @@ type WalletDAI interface {
 	GetTransactionByTxID(txid, symbol string) ([]*Transaction, error)
 }
 
-//TransactionDecoderBase 实现TransactionDecoder的基类
+// TransactionDecoderBase 实现TransactionDecoder的基类
 type WalletDAIBase struct {
 }
 
@@ -97,12 +106,12 @@ func (base *WalletDAIBase) GetAddressList(offset, limit int, cols ...interface{}
 	return nil, fmt.Errorf("GetAddressList not implement")
 }
 
-//设置地址的扩展字段
+// 设置地址的扩展字段
 func (base *WalletDAIBase) SetAddressExtParam(address string, key string, val interface{}) error {
 	return fmt.Errorf("SetAddressExtParam not implement")
 }
 
-//获取地址的扩展字段
+// 获取地址的扩展字段
 func (base *WalletDAIBase) GetAddressExtParam(address string, key string) (interface{}, error) {
 	return nil, fmt.Errorf("GetAddressExtParam not implement")
 }
@@ -115,7 +124,7 @@ func (base *WalletDAIBase) HDKey(password ...string) (*hdkeystore.HDKey, error) 
 	return nil, fmt.Errorf("HDKey not implement")
 }
 
-//获取钱包所创建的交易单
+// 获取钱包所创建的交易单
 func (base *WalletDAIBase) GetTransactionByTxID(txid, symbol string) ([]*Transaction, error) {
 	return nil, fmt.Errorf("GetTransactionByTxID not implement")
 }
@@ -139,7 +148,7 @@ type Wallet struct {
 	unlocked     map[string]unlocked // 已解锁的钱包，集合（钱包地址, 钱包私钥）Deprecated
 }
 
-//Deprecated
+// Deprecated
 func NewWallet(walletID string, symbol string) *Wallet {
 
 	dbDir := GetDBDir(symbol)
@@ -168,7 +177,7 @@ func NewWallet(walletID string, symbol string) *Wallet {
 
 }
 
-//NewWatchOnlyWallet 只读钱包，用于观察冷钱包 Deprecated
+// NewWatchOnlyWallet 只读钱包，用于观察冷钱包 Deprecated
 func NewWatchOnlyWallet(walletID string, symbol string) *Wallet {
 
 	dbDir := GetDBDir(symbol)
@@ -187,7 +196,7 @@ func NewWatchOnlyWallet(walletID string, symbol string) *Wallet {
 	return &w
 }
 
-//HDKey 获取钱包密钥，需要密码
+// HDKey 获取钱包密钥，需要密码
 func (w *Wallet) HDKey(password ...string) (*hdkeystore.HDKey, error) {
 
 	pw := ""
@@ -217,7 +226,7 @@ func (w *Wallet) HDKey(password ...string) (*hdkeystore.HDKey, error) {
 	return key, err
 }
 
-//FileName 钱包文件名
+// FileName 钱包文件名
 func (w *Wallet) FileName() string {
 	return w.fileName
 }
@@ -228,7 +237,7 @@ func (w *Wallet) OpenDB() (*storm.DB, error) {
 	return storm.Open(abspath)
 }
 
-//SaveToDB 保存到数据库
+// SaveToDB 保存到数据库
 func (w *Wallet) SaveToDB() error {
 	db, err := w.OpenDB()
 	if err != nil {
@@ -238,12 +247,12 @@ func (w *Wallet) SaveToDB() error {
 	return db.Save(w)
 }
 
-//GetAssetsAccounts 获取某种区块链的全部资产账户
+// GetAssetsAccounts 获取某种区块链的全部资产账户
 func (w *Wallet) GetAssetsAccounts(symbol string) []*AssetsAccount {
 	return nil
 }
 
-//GetAddress 通过地址字符串获取地址对象
+// GetAddress 通过地址字符串获取地址对象
 func (w *Wallet) GetAddress(address string) *Address {
 	db, err := w.OpenDB()
 	if err != nil {
@@ -261,7 +270,7 @@ func (w *Wallet) GetAddress(address string) *Address {
 	return &obj
 }
 
-//GetAddressesByAccountID 通过账户ID获取地址列表
+// GetAddressesByAccountID 通过账户ID获取地址列表
 func (w *Wallet) GetAddressesByAccount(accountID string) []*Address {
 	db, err := w.OpenDB()
 	if err != nil {
@@ -274,7 +283,7 @@ func (w *Wallet) GetAddressesByAccount(accountID string) []*Address {
 	return obj
 }
 
-//SingleAssetsAccount 把钱包作为一个单资产账户来使用
+// SingleAssetsAccount 把钱包作为一个单资产账户来使用
 func (w *Wallet) SingleAssetsAccount(symbol string) *AssetsAccount {
 	a := AssetsAccount{
 		WalletID:  w.WalletID,
@@ -290,7 +299,7 @@ func (w *Wallet) SingleAssetsAccount(symbol string) *AssetsAccount {
 	return &a
 }
 
-//SaveRecharge 保存交易记录
+// SaveRecharge 保存交易记录
 func (w *Wallet) SaveRecharge(tx *Recharge) error {
 	db, err := w.OpenDB()
 	if err != nil {
@@ -305,7 +314,7 @@ func (w *Wallet) SaveRecharge(tx *Recharge) error {
 	return nil
 }
 
-//SaveUnreceivedRecharge 保存未提交的充值记录
+// SaveUnreceivedRecharge 保存未提交的充值记录
 func (w *Wallet) SaveUnreceivedRecharge(tx *Recharge) error {
 	db, err := w.OpenDB()
 	if err != nil {
@@ -333,7 +342,7 @@ func (w *Wallet) SaveUnreceivedRecharge(tx *Recharge) error {
 	return nil
 }
 
-//DropRecharge 删除充值记录表
+// DropRecharge 删除充值记录表
 func (w *Wallet) DropRecharge() error {
 	db, err := w.OpenDB()
 	if err != nil {
@@ -344,7 +353,7 @@ func (w *Wallet) DropRecharge() error {
 	//return db.Save(tx)
 }
 
-//GetRecharges 获取钱包相关的充值记录
+// GetRecharges 获取钱包相关的充值记录
 func (w *Wallet) GetRecharges(received bool, height ...uint64) ([]*Recharge, error) {
 
 	var (
@@ -375,7 +384,7 @@ func (w *Wallet) GetRecharges(received bool, height ...uint64) ([]*Recharge, err
 	return list, nil
 }
 
-//GetUnconfrimRecharges
+// GetUnconfrimRecharges
 func (w *Wallet) GetUnconfrimRecharges(limitTime int64) ([]*Recharge, error) {
 	var (
 		list []*Recharge
@@ -400,7 +409,7 @@ func (w *Wallet) GetUnconfrimRecharges(limitTime int64) ([]*Recharge, error) {
 	return list, nil
 }
 
-//GetWalletsByKeyDir 通过给定的文件路径加载keystore文件得到钱包列表
+// GetWalletsByKeyDir 通过给定的文件路径加载keystore文件得到钱包列表
 func GetWalletsByKeyDir(dir string) ([]*Wallet, error) {
 
 	var (
@@ -437,7 +446,7 @@ func GetWalletsByKeyDir(dir string) ([]*Wallet, error) {
 
 }
 
-//ReadWalletByKey 加载文件，实例化钱包
+// ReadWalletByKey 加载文件，实例化钱包
 func ReadWalletByKey(keyPath string) *Wallet {
 
 	var (

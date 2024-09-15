@@ -152,7 +152,7 @@ type miningJSON struct {
 // ECC_CURVE_SECP256R1
 // ECC_CURVE_ED25519
 func (k *HDKey) DerivedKeyWithPath(path string, curveType uint32) (*owkeychain.ExtendedKey, error) {
-	return owkeychain.DerivedPrivateKeyWithPath(k.seed, path, curveType)
+	return owkeychain.DerivedPrivateKeyWithPath(k.Seed(), path, curveType)
 }
 
 //func (k *HDKey) DerivedKeyWithPath2(path string, curveType  uint32) (*hdkeychain.ExtendedKey, error) {
@@ -262,7 +262,7 @@ func (k *HDKey) FileName() string {
 
 // Seed 密钥种子
 func (k *HDKey) Seed() []byte {
-	return k.seed
+	return decryptSeed(k.seed)
 }
 
 // EncryptKey encrypts a key using the specified scrypt parameters into a json
@@ -281,7 +281,7 @@ func EncryptKey(hdkey *HDKey, auth string, scryptN, scryptP int) ([]byte, error)
 	}
 	encryptKey := derivedKey[:16]
 
-	keyBytes := hdkey.seed
+	keyBytes := hdkey.Seed()
 
 	iv := make([]byte, aes.BlockSize) // 16
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
@@ -352,7 +352,7 @@ func DecryptHDKey(keyjson []byte, auth string) (*HDKey, error) {
 		Alias:    k.Alias,
 		KeyID:    keyID,
 		RootPath: k.RootPath,
-		seed:     seed,
+		seed:     encryptSeed(seed),
 	}, nil
 }
 
@@ -445,7 +445,7 @@ func NewHDKey(seed []byte, alias, rootPath string) (*HDKey, error) {
 		Alias:    alias,
 		KeyID:    keyID,
 		RootPath: rootPath,
-		seed:     seed,
+		seed:     encryptSeed(seed),
 	}
 
 	return hdkey, nil
@@ -586,7 +586,7 @@ func EncryptKeyByAes256CBC(hdkey *HDKey, auth string, scryptN, scryptP int) ([]b
 	}
 	encryptKey := derivedKey[:32] // 32
 
-	keyBytes := hdkey.seed
+	keyBytes := hdkey.Seed()
 
 	iv := make([]byte, aes.BlockSize) // 16
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
@@ -657,7 +657,7 @@ func DecryptHDKeyByAes256CBC(keyjson []byte, auth string) (*HDKey, error) {
 		Alias:    k.Alias,
 		KeyID:    keyID,
 		RootPath: k.RootPath,
-		seed:     seed,
+		seed:     encryptSeed(seed),
 	}, nil
 }
 

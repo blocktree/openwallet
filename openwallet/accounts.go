@@ -27,18 +27,19 @@ var (
 	AccountIDVer = []byte{0x09}
 )
 
-//解锁的密钥
+// 解锁的密钥
 type unlocked struct {
 	Key   *hdkeychain.ExtendedKey
 	abort chan struct{}
 }
 
-//AccountOwner 账户拥有者接口
+// AccountOwner 账户拥有者接口
 type AccountOwner interface {
 }
 
-//AssetsAccount 千张包资产账户
+// AssetsAccount 钱包资产账户
 type AssetsAccount struct {
+	SystemID  int64    `json:"systemID"`             //系统ID
 	WalletID  string   `json:"walletID"`             //钱包ID
 	Alias     string   `json:"alias"`                //别名
 	AccountID string   `json:"accountID" storm:"id"` //账户ID，合成地址
@@ -64,7 +65,7 @@ func NewMultiSigAccount(wallets []*Wallet, required uint, creator *Wallet) (*Ass
 	return nil, nil
 }
 
-//NewUserAccount 创建账户
+// NewUserAccount 创建账户
 func NewUserAccount() *AssetsAccount {
 	account := &AssetsAccount{}
 	return account
@@ -74,7 +75,7 @@ func (a *AssetsAccount) GetOwners() []AccountOwner {
 	return nil
 }
 
-//GetAccountID 计算AccountID
+// GetAccountID 计算AccountID
 func (a *AssetsAccount) GetAccountID() string {
 
 	if len(a.AccountID) > 0 {
@@ -86,8 +87,8 @@ func (a *AssetsAccount) GetAccountID() string {
 	return a.AccountID
 }
 
-//GenAccountID 计算publicKey的AccountID
-//publickey为OW编码后
+// GenAccountID 计算publicKey的AccountID
+// publickey为OW编码后
 func GenAccountID(publicKey string) string {
 
 	pub, err := owkeychain.OWDecode(publicKey)
@@ -98,8 +99,8 @@ func GenAccountID(publicKey string) string {
 	return genAccountID(pub.GetPublicKeyBytes())
 }
 
-//GenAccountIDByHex 计算publicKey的AccountID
-//publickey为HEX传
+// GenAccountIDByHex 计算publicKey的AccountID
+// publickey为HEX传
 func GenAccountIDByHex(publicKeyHex string) string {
 
 	pub, err := hex.DecodeString(publicKeyHex)

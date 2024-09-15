@@ -20,7 +20,7 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-//AddressDecoderV2
+// AddressDecoderV2
 type AddressDecoderV2 interface {
 	AddressDecoder
 
@@ -48,8 +48,9 @@ type AddressDecoder interface {
 	RedeemScriptToAddress(pubs [][]byte, required uint64, isTestnet bool) (string, error)
 }
 
-//Address OpenWallet地址
+// Address OpenWallet地址
 type Address struct {
+	SystemID  int64  `json:"systemID"`                //系统ID
 	AccountID string `json:"accountID" storm:"index"` //钱包ID
 	Address   string `json:"address" storm:"id"`      //地址字符串
 	PublicKey string `json:"publicKey"`               //地址公钥/赎回脚本
@@ -97,22 +98,22 @@ type ImportAddress struct {
 type AddressDecoderV2Base struct {
 }
 
-//PrivateKeyToWIF 私钥转WIF
+// PrivateKeyToWIF 私钥转WIF
 func (dec *AddressDecoderV2Base) PrivateKeyToWIF(priv []byte, isTestnet bool) (string, error) {
 	return "", fmt.Errorf("PrivateKeyToWIF not implement")
 }
 
-//PublicKeyToAddress 公钥转地址
+// PublicKeyToAddress 公钥转地址
 func (dec *AddressDecoderV2Base) PublicKeyToAddress(pub []byte, isTestnet bool) (string, error) {
 	return "", fmt.Errorf("PublicKeyToAddress not implement")
 }
 
-//WIFToPrivateKey WIF转私钥
+// WIFToPrivateKey WIF转私钥
 func (dec *AddressDecoderV2Base) WIFToPrivateKey(wif string, isTestnet bool) ([]byte, error) {
 	return nil, fmt.Errorf("WIFToPrivateKey not implement")
 }
 
-//RedeemScriptToAddress 多重签名赎回脚本转地址
+// RedeemScriptToAddress 多重签名赎回脚本转地址
 func (dec *AddressDecoderV2Base) RedeemScriptToAddress(pubs [][]byte, required uint64, isTestnet bool) (string, error) {
 	return "", fmt.Errorf("RedeemScriptToAddress not implement")
 }
