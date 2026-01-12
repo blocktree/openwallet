@@ -33,6 +33,17 @@ func TestStoreHDKey(t *testing.T) {
 	fmt.Println("seed:", hex.EncodeToString(key.Seed()))
 }
 
+func TestStoreHDKeyGCM(t *testing.T) {
+	path := filepath.Join(".", "keys")
+	key, rootId, err := StoreHDKey(path, "sogosdfo", "123TestGCM", StandardScryptN, StandardScryptP, CipherAes256GCM)
+	if err != nil {
+		t.Errorf("StoreHDKey failed unexpected error: %v", err)
+	} else {
+		t.Logf("StoreHDKey root id = %s", rootId)
+	}
+	fmt.Println("seed:", hex.EncodeToString(key.Seed()))
+}
+
 func TestGetKey(t *testing.T) {
 	path := filepath.Join(".", "keys")
 	ks := &HDKeystore{path, StandardScryptN, StandardScryptP, CipherAes128CTR}
@@ -62,7 +73,21 @@ func TestGetKey2(t *testing.T) {
 	path := filepath.Join(".", "keys")
 	ks := &HDKeystore{path, StandardScryptN, StandardScryptP, CipherAes256CBC}
 
-	key, err := ks.GetKey("WMNBkZavNC36jaVtCGTX8fPnjX9Ffkuhhs", "sogosdfo123-WMNBkZavNC36jaVtCGTX8fPnjX9Ffkuhhs.key", "")
+	key, err := ks.GetKey("W52HTazdFjbzMMpXP1hk41ehb16ReXF22N", "sogosdfo123-W52HTazdFjbzMMpXP1hk41ehb16ReXF22N.key", "")
+
+	if err != nil {
+		t.Errorf("GetKey failed unexpected error: %v\n", err)
+	} else {
+		t.Logf("GetKey root id = %s", key.KeyID)
+	}
+	fmt.Println("seed: ", hex.EncodeToString(key.Seed()))
+}
+
+func TestGetKeyGCM(t *testing.T) {
+	path := filepath.Join(".", "keys")
+	ks := &HDKeystore{path, StandardScryptN, StandardScryptP, CipherAes256GCM}
+
+	key, err := ks.GetKey("WFP5vVY1tNEedemEEre6CGgAa6U9w2xS9R", "sogosdfo-WFP5vVY1tNEedemEEre6CGgAa6U9w2xS9R.key", "123TestGCM")
 
 	if err != nil {
 		t.Errorf("GetKey failed unexpected error: %v\n", err)

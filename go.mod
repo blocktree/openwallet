@@ -8,7 +8,7 @@ require (
 	github.com/asdine/storm v2.1.2+incompatible
 	github.com/astaxie/beego v1.12.0
 	github.com/blocktree/go-owcdrivers v1.2.0
-	github.com/blocktree/go-owcrypt v1.1.9
+	github.com/blocktree/go-owcrypt v1.1.13
 	github.com/bndr/gotabulate v1.1.2
 	github.com/bradfitz/gomemcache v0.0.0-20190913173617-a41fca850d0b
 	github.com/btcsuite/btcd v0.23.1 // indirect
@@ -23,6 +23,7 @@ require (
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/gorilla/websocket v1.4.2
 	github.com/imroc/req v0.2.4
+	github.com/kilic/bls12-381 v0.0.0-20200820230200-6b2c19996391 // indirect
 	github.com/lib/pq v1.3.0
 	github.com/mr-tron/base58 v1.1.3
 	github.com/pborman/uuid v1.2.0
@@ -39,3 +40,7 @@ require (
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	gopkg.in/urfave/cli.v1 v1.20.0
 )
+
+replace github.com/blocktree/go-owcdrivers => ../go-owcdrivers
+
+replace github.com/blocktree/go-owcrypt => ../go-owcrypt

@@ -18,6 +18,7 @@ package hdkeystore
 import (
 	"crypto/hmac"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -30,6 +31,8 @@ import (
 
 const (
 	CipherAes256CBC = "aes-256-cbc"
+
+	CipherAes256GCM = "aes-256-gcm"
 
 	CipherAes256CTR = "aes-256-ctr"
 
@@ -57,7 +60,7 @@ const (
 	scryptDKLen = 32
 
 	//种子长度
-	SeedLen = 32
+	SeedLen = 64
 )
 
 var (
@@ -93,7 +96,7 @@ func encryptSeed(seed []byte) []byte {
 	}
 	for i, key := range randomKey {
 		iv, _ := hex.DecodeString(i)
-		return Aes256CBCEncrypt(seed, key, iv)
+		return Aes256CBCEncrypt(seed, key[:32], iv[:16])
 	}
 	return nil
 }
@@ -104,7 +107,7 @@ func decryptSeed(seed []byte) []byte {
 	}
 	for i, key := range randomKey {
 		iv, _ := hex.DecodeString(i)
-		return Aes256CBCDecrypt(seed, key, iv)
+		return Aes256CBCDecrypt(seed, key[:32], iv[:16])
 	}
 	return nil
 }
@@ -165,10 +168,24 @@ func (ks HDKeystore) GetKey(rootId, filename, auth string) (*HDKey, error) {
 	if err != nil {
 		return nil, err
 	}
+	return ks.GetKeyFromBase64(rootId, base64.StdEncoding.EncodeToString(keyjson), auth)
+}
+
+func (ks HDKeystore) GetKeyFromBase64(rootId, keyJsonB64, auth string) (*HDKey, error) {
+	// Load the key from the keystore and decrypt its contents
+	keyjson, err := base64.StdEncoding.DecodeString(keyJsonB64)
+	if err != nil {
+		return nil, err
+	}
 
 	var key *HDKey
 	if ks.cipher == CipherAes256CBC {
 		key, err = DecryptHDKeyByAes256CBC(keyjson, auth)
+		if err != nil {
+			return nil, err
+		}
+	} else if ks.cipher == CipherAes256GCM {
+		key, err = DecryptHDKeyByAes256GCM(keyjson, auth)
 		if err != nil {
 			return nil, err
 		}
@@ -208,6 +225,12 @@ func (ks *HDKeystore) StoreKey(filename string, key *HDKey, auth string) error {
 	var err error
 	if ks.cipher == CipherAes256CBC {
 		keyjson, err = EncryptKeyByAes256CBC(key, auth, ks.scryptN, ks.scryptP)
+		if err != nil {
+			return err
+		}
+		return writeKeyFile(filename, keyjson)
+	} else if ks.cipher == CipherAes256GCM {
+		keyjson, err = EncryptKeyByAes256GCM(key, auth, ks.scryptN, ks.scryptP)
 		if err != nil {
 			return err
 		}

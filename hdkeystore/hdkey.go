@@ -645,7 +645,7 @@ func DecryptHDKeyByAes256CBC(keyjson []byte, auth string) (*HDKey, error) {
 		return nil, err
 	}
 
-	seed, err = aesDecryptHDKey(k, auth)
+	seed, err = aesCBCDecryptHDKey(k, auth)
 	// Handle any decryption errors and return the key
 	if err != nil {
 		return nil, err
@@ -661,109 +661,104 @@ func DecryptHDKeyByAes256CBC(keyjson []byte, auth string) (*HDKey, error) {
 	}, nil
 }
 
-// decryptHDKey 解密HDKey的文件内容
-func aesDecryptHDKey(keyProtected *encryptedHDKeyJSON, auth string) (keyBytes []byte, err error) {
+// EncryptKeyByAes256GCM encrypts a key using the specified scrypt parameters into a json
+// blob that can be decrypted later on.
+func EncryptKeyByAes256GCM(hdkey *HDKey, auth string, scryptN, scryptP int) ([]byte, error) {
 
-	if keyProtected.Crypto.Cipher != "aes-256-cbc" {
-		return nil, fmt.Errorf("Cipher not supported: %v", keyProtected.Crypto.Cipher)
+	authArray := []byte(auth)
+
+	saltBytes := make([]byte, 32)
+	if _, err := io.ReadFull(rand.Reader, saltBytes); err != nil {
+		panic("reading from crypto/rand failed: " + err.Error())
+	}
+	derivedKey, err := scrypt.Key(authArray, saltBytes, scryptN, scryptR, scryptP, scryptDKLen)
+	if err != nil {
+		return nil, err
+	}
+	encryptKey := derivedKey[:32] // 32
+
+	keyBytes := hdkey.Seed()
+	salt := hex.EncodeToString(saltBytes)
+
+	aadStr := fmt.Sprintf(
+		"keyid:%s|rootpath:%s|version:%d|cipher:%s|scrypt_n:%d|scrypt_r:%d|scrypt_p:%d|scrypt_dklen:%d|scrypt_salt:%s",
+		hdkey.KeyID,     // 保留：钱包唯一标识（不可改）
+		hdkey.RootPath,  // 保留：钱包路径（不可改）
+		version,         // 保留：版本号
+		CipherAes256GCM, // 保留：加密算法
+		scryptN,         // 保留：scrypt参数
+		scryptR,         // 保留：scrypt参数
+		scryptP,         // 保留：scrypt参数
+		scryptDKLen,     // 保留：scrypt参数
+		salt,            // 保留：scrypt盐
+		// 可选：若Alias不可改，添加 |alias:%s", hdkey.Alias
+	)
+
+	cipherText, err := AesGCMEncrypt(keyBytes, encryptKey, []byte(aadStr))
+	if len(cipherText) == 0 {
+		return nil, errors.New("aes encrypt result invalid")
+	}
+	mac := crypto.Keccak256(derivedKey[16:32], cipherText)
+
+	scryptParamsJSON := make(map[string]interface{}, 5)
+	scryptParamsJSON["n"] = scryptN
+	scryptParamsJSON["r"] = scryptR
+	scryptParamsJSON["p"] = scryptP
+	scryptParamsJSON["dklen"] = scryptDKLen
+	scryptParamsJSON["salt"] = salt
+
+	//cipherParamsJSON := cipherparamsJSON{
+	//	IV: hex.EncodeToString(iv),
+	//}
+
+	cryptoStruct := cryptoJSON{
+		Cipher:     CipherAes256GCM,
+		CipherText: hex.EncodeToString(cipherText),
+		//CipherParams: cipherParamsJSON,
+		KDF:       keyHeaderKDF,
+		KDFParams: scryptParamsJSON,
+		MAC:       hex.EncodeToString(mac),
 	}
 
-	mac, err := hex.DecodeString(keyProtected.Crypto.MAC)
+	encryptedHDKeyJSON := encryptedHDKeyJSON{
+		Alias:    hdkey.Alias,
+		KeyID:    hdkey.KeyID,
+		Crypto:   cryptoStruct,
+		RootPath: hdkey.RootPath,
+		Version:  version,
+	}
+	return json.MarshalIndent(encryptedHDKeyJSON, "", "\t")
+}
+
+// DecryptHDKeyByAes256GCM decrypts a key from a json blob, returning the private key itself.
+func DecryptHDKeyByAes256GCM(keyjson []byte, auth string) (*HDKey, error) {
+	// Parse the json into a simple map to fetch the key version
+	m := make(map[string]interface{})
+	if err := json.Unmarshal(keyjson, &m); err != nil {
+		return nil, err
+	}
+	// Depending on the version try to parse one way or another
+	var (
+		seed []byte
+		err  error
+	)
+	k := new(encryptedHDKeyJSON)
+	if err := json.Unmarshal(keyjson, k); err != nil {
+		return nil, err
+	}
+
+	seed, err = aesGCMDecryptHDKey(k, auth)
+	// Handle any decryption errors and return the key
 	if err != nil {
 		return nil, err
 	}
 
-	iv, err := hex.DecodeString(keyProtected.Crypto.CipherParams.IV)
-	if err != nil {
-		return nil, err
-	}
+	keyID := computeKeyID(seed)
 
-	cipherText, err := hex.DecodeString(keyProtected.Crypto.CipherText)
-	if err != nil {
-		return nil, err
-	}
-
-	derivedKey, err := getKDFKey(keyProtected.Crypto, auth)
-	if err != nil {
-		return nil, err
-	}
-
-	calculatedMAC := crypto.Keccak256(derivedKey[16:32], cipherText)
-	if !bytes.Equal(calculatedMAC, mac) {
-		return nil, ErrDecrypt
-	}
-
-	plainText := Aes256CBCDecrypt(cipherText, derivedKey[:32], iv)
-	if len(plainText) == 0 {
-		return nil, errors.New("aes decrypt invalid")
-	}
-
-	return plainText, nil
-}
-
-func PKCS7Padding(ciphertext []byte, blockSize int) []byte {
-	padding := blockSize - len(ciphertext)%blockSize
-	padText := bytes.Repeat([]byte{byte(padding)}, padding)
-	return append(ciphertext, padText...)
-}
-
-func PKCS7UnPadding(plantText []byte, blockSize int) []byte {
-	if plantText == nil || len(plantText) == 0 {
-		return nil
-	}
-	length := len(plantText)
-	unPadding := int(plantText[length-1])
-	if length-unPadding <= 0 {
-		return nil
-	}
-	return plantText[:(length - unPadding)]
-}
-
-func Aes256CBCEncrypt(plantText, key, iv []byte) []byte {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recovered from panic:", r)
-		}
-	}()
-	if len(key) != 32 {
-		return nil
-	}
-	if len(iv) != 16 {
-		return nil
-	}
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil
-	}
-	plantText = PKCS7Padding(plantText, block.BlockSize())
-	blockModel := cipher.NewCBCEncrypter(block, iv)
-	ciphertext := make([]byte, len(plantText))
-	blockModel.CryptBlocks(ciphertext, plantText)
-	return ciphertext
-}
-
-func Aes256CBCDecrypt(ciphertext, key, iv []byte) []byte {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recovered from panic:", r)
-		}
-	}()
-	if len(key) != 32 {
-		return nil
-	}
-	if len(iv) != 16 {
-		return nil
-	}
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil
-	}
-	blockModel := cipher.NewCBCDecrypter(block, iv)
-	plantText := make([]byte, len(ciphertext))
-	blockModel.CryptBlocks(plantText, ciphertext)
-	plantText = PKCS7UnPadding(plantText, block.BlockSize())
-	if plantText == nil || len(plantText) == 0 {
-		return nil
-	}
-	return plantText
+	return &HDKey{
+		Alias:    k.Alias,
+		KeyID:    keyID,
+		RootPath: k.RootPath,
+		seed:     encryptSeed(seed),
+	}, nil
 }
