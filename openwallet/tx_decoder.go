@@ -17,16 +17,20 @@ package openwallet
 
 import "fmt"
 
-//TransactionDecoder 交易单解析器
+// TransactionDecoder 交易单解析器
 type TransactionDecoder interface {
 	//SendRawTransaction 广播交易单
 	//SendTransaction func(amount, feeRate string, to []string, wallet *Wallet, account *AssetsAccount) (*RawTransaction, error)
 	//CreateRawTransaction 创建交易单
 	CreateRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error
+	//CreateRawTransactionJSON 创建交易单，包含自定义签名
+	CreateRawTransactionJSON(wrapper WalletDAI, rawTx *RawTransaction) (*TxData, error)
 	//SignRawTransaction 签名交易单
 	SignRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error
 	//SubmitRawTransaction 广播交易单
 	SubmitRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) (*Transaction, error)
+	//SubmitRawTransactionJSON 广播交易单，包含自定义签名
+	SubmitRawTransactionJSON(wrapper WalletDAI, txData *TxData) (*Transaction, error)
 	//VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
 	VerifyRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error
 	//GetRawTransactionFeeRate 获取交易单的费率
@@ -39,46 +43,56 @@ type TransactionDecoder interface {
 	CreateSummaryRawTransactionWithError(wrapper WalletDAI, sumRawTx *SummaryRawTransaction) ([]*RawTransactionWithError, error)
 }
 
-//TransactionDecoderBase 实现TransactionDecoder的基类
+// TransactionDecoderBase 实现TransactionDecoder的基类
 type TransactionDecoderBase struct {
 }
 
-//CreateRawTransaction 创建交易单
+// CreateRawTransaction 创建交易单
 func (decoder *TransactionDecoderBase) CreateRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error {
 	return fmt.Errorf("not implement")
 }
 
-//SignRawTransaction 签名交易单
+// CreateRawTransactionJSON 创建交易单
+func (decoder *TransactionDecoderBase) CreateRawTransactionJSON(wrapper WalletDAI, rawTx *RawTransaction) (*TxData, error) {
+	return nil, fmt.Errorf("not implement")
+}
+
+// SignRawTransaction 签名交易单
 func (decoder *TransactionDecoderBase) SignRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error {
 	return fmt.Errorf("not implement")
 }
 
-//SendRawTransaction 广播交易单
+// SubmitRawTransactionJSON 广播交易单
+func (decoder *TransactionDecoderBase) SubmitRawTransactionJSON(wrapper WalletDAI, txData *TxData) (*Transaction, error) {
+	return nil, fmt.Errorf("not implement")
+}
+
+// SubmitRawTransaction 广播交易单
 func (decoder *TransactionDecoderBase) SubmitRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) (*Transaction, error) {
 	return nil, fmt.Errorf("not implement")
 }
 
-//VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
+// VerifyRawTransaction 验证交易单，验证交易单并返回加入签名后的交易单
 func (decoder *TransactionDecoderBase) VerifyRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error {
 	return fmt.Errorf("not implement")
 }
 
-//GetRawTransactionFeeRate 获取交易单的费率
+// GetRawTransactionFeeRate 获取交易单的费率
 func (decoder *TransactionDecoderBase) GetRawTransactionFeeRate() (feeRate string, unit string, err error) {
 	return "", "", fmt.Errorf("not implement")
 }
 
-//EstimateRawTransactionFee 预估手续费
+// EstimateRawTransactionFee 预估手续费
 func (decoder *TransactionDecoderBase) EstimateRawTransactionFee(wrapper WalletDAI, rawTx *RawTransaction) error {
 	return fmt.Errorf("EstimateRawTransactionFee not implement")
 }
 
-//CreateSummaryRawTransaction 创建汇总交易
+// CreateSummaryRawTransaction 创建汇总交易
 func (decoder *TransactionDecoderBase) CreateSummaryRawTransaction(wrapper WalletDAI, sumRawTx *SummaryRawTransaction) ([]*RawTransaction, error) {
 	return nil, fmt.Errorf("CreateSummaryRawTransaction not implement")
 }
 
-//CreateSummaryRawTransactionWithError 创建汇总交易，返回能原始交易单数组（包含带错误的原始交易单）
+// CreateSummaryRawTransactionWithError 创建汇总交易，返回能原始交易单数组（包含带错误的原始交易单）
 func (decoder *TransactionDecoderBase) CreateSummaryRawTransactionWithError(wrapper WalletDAI, sumRawTx *SummaryRawTransaction) ([]*RawTransactionWithError, error) {
 
 	//默认兼容CreateSummaryRawTransaction

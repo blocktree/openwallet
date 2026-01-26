@@ -24,29 +24,40 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-//RawTransaction 原始交易单
+type TxData struct {
+	Data       string            `json:"data"`
+	DataSign   string            `json:"dataSign"`
+	Code       string            `json:"code"`
+	Message    string            `json:"message"`
+	SignerList map[string]string `json:"signerList"`
+}
+
+// RawTransaction 原始交易单
 //
 // Workflow：
-// 	首先：App(openw-server)中，提供 Coin/To/Account 参数
-// 	其次：APP 调用 tx_decoder 需处理：
-// 		1. 第一步调用交易单构建：计算手续费/构建签名结构，给 RawHex，Fees，FeeRate，Signatures，IsBuilt = true 赋值
-// 		2. 第二步调用交易单签名：获取到 RawHex 完成签名，完成参数 Signatures
-// 		3. 第三步调用交易单广播：解析rawHex，合并签名，验证签名，广播交易, 设置参数 TxID，IsSubmit = true
+//
+//	首先：App(openw-server)中，提供 Coin/To/Account 参数
+//	其次：APP 调用 tx_decoder 需处理：
+//		1. 第一步调用交易单构建：计算手续费/构建签名结构，给 RawHex，Fees，FeeRate，Signatures，IsBuilt = true 赋值
+//		2. 第二步调用交易单签名：获取到 RawHex 完成签名，完成参数 Signatures
+//		3. 第三步调用交易单广播：解析rawHex，合并签名，验证签名，广播交易, 设置参数 TxID，IsSubmit = true
 type RawTransaction struct {
-	Coin        Coin                       `json:"coin"`       //@required 区块链类型标识
-	TxID        string                     `json:"txID"`       //交易单ID，广播后会生成
-	Sid         string                     `json:"sid"`        //业务订单号，保证业务不重复交易而用
-	RawHex      string                     `json:"rawHex"`     //区块链协议构造的交易原生数据
-	FeeRate     string                     `json:"feeRate"`    //自定义费率
-	To          map[string]string          `json:"to"`         //@required 目的地址:转账数量
-	Account     *AssetsAccount             `json:"account"`    //@required 创建交易单的账户
-	Signatures  map[string][]*KeySignature `json:"sigParts"`   //拥有者accountID: []未花签名
-	Required    uint64                     `json:"reqSigs"`    //必要签名
-	IsBuilt     bool                       `json:"isBuilt"`    //是否完成构建建议单
-	IsCompleted bool                       `json:"isComplete"` //是否完成所有签名
-	IsSubmit    bool                       `json:"isSubmit"`   //是否已广播
-	Change      *Address                   `json:"change"`     //找零地址
-	ExtParam    string                     `json:"extParam"`   //扩展参数，用于调用智能合约，json结构
+	Coin        Coin                       `json:"coin"`        //@required 区块链类型标识
+	TxID        string                     `json:"txID"`        //交易单ID，广播后会生成
+	Sid         string                     `json:"sid"`         //业务订单号，保证业务不重复交易而用
+	CreateTime  int64                      `json:"createTime"`  //业务交易单创建随机数保证数据签名唯一性
+	CreateNonce string                     `json:"createNonce"` //业务交易单创建时间保证数据签名唯一性
+	RawHex      string                     `json:"rawHex"`      //区块链协议构造的交易原生数据
+	FeeRate     string                     `json:"feeRate"`     //自定义费率
+	To          map[string]string          `json:"to"`          //@required 目的地址:转账数量
+	Account     *AssetsAccount             `json:"account"`     //@required 创建交易单的账户
+	Signatures  map[string][]*KeySignature `json:"sigParts"`    //拥有者accountID: []未花签名
+	Required    uint64                     `json:"reqSigs"`     //必要签名
+	IsBuilt     bool                       `json:"isBuilt"`     //是否完成构建建议单
+	IsCompleted bool                       `json:"isComplete"`  //是否完成所有签名
+	IsSubmit    bool                       `json:"isSubmit"`    //是否已广播
+	Change      *Address                   `json:"change"`      //找零地址
+	ExtParam    string                     `json:"extParam"`    //扩展参数，用于调用智能合约，json结构
 
 	/* 以下字段作为备注，实际生成Transaction时填充相关字段 */
 
@@ -56,7 +67,7 @@ type RawTransaction struct {
 	TxTo     []string `json:"txTo"`     //格式："地址":"数量"，备注订单使用
 }
 
-//KeySignature 签名信息
+// KeySignature 签名信息
 type KeySignature struct {
 	EccType   uint32   `json:"eccType"` //曲线类型
 	Nonce     string   `json:"nonce"`
@@ -66,7 +77,7 @@ type KeySignature struct {
 	RSV       bool     `json:"rsv"`     //签名是否需要合并V
 }
 
-//SetExtParam
+// SetExtParam
 func (rawtx *RawTransaction) SetExtParam(key string, value interface{}) error {
 	var ext map[string]interface{}
 
@@ -90,13 +101,13 @@ func (rawtx *RawTransaction) SetExtParam(key string, value interface{}) error {
 	return nil
 }
 
-//GetExtParam
+// GetExtParam
 func (rawtx *RawTransaction) GetExtParam() gjson.Result {
 	//如果param没有值，使用inputs初始化
 	return gjson.ParseBytes([]byte(rawtx.ExtParam))
 }
 
-//交易单状态
+// 交易单状态
 const (
 	TxStatusSuccess = "1" //成功
 	TxStatusFail    = "0" //失败
@@ -144,7 +155,7 @@ type Transaction struct {
 	*/
 }
 
-//SetExtParam
+// SetExtParam
 func (tx *Transaction) SetExtParam(key string, value interface{}) error {
 	var ext map[string]interface{}
 
@@ -168,13 +179,13 @@ func (tx *Transaction) SetExtParam(key string, value interface{}) error {
 	return nil
 }
 
-//GetExtParam
+// GetExtParam
 func (tx *Transaction) GetExtParam() gjson.Result {
 	//如果param没有值，使用inputs初始化
 	return gjson.ParseBytes([]byte(tx.ExtParam))
 }
 
-//SummaryRawTransaction 汇总交易
+// SummaryRawTransaction 汇总交易
 type SummaryRawTransaction struct {
 	Coin               Coin                `json:"coin"`               //@required 区块链类型标识
 	FeeRate            string              `json:"feeRate"`            //自定义费率
@@ -189,7 +200,7 @@ type SummaryRawTransaction struct {
 	ExtParam           string              `json:"extParam"`           //扩展参数，用于调用智能合约，json结构
 }
 
-//SetExtParam
+// SetExtParam
 func (sumRawtx *SummaryRawTransaction) SetExtParam(key string, value interface{}) error {
 	var ext map[string]interface{}
 
@@ -213,7 +224,7 @@ func (sumRawtx *SummaryRawTransaction) SetExtParam(key string, value interface{}
 	return nil
 }
 
-//GetExtParam
+// GetExtParam
 func (sumRawtx *SummaryRawTransaction) GetExtParam() gjson.Result {
 	//如果param没有值，使用inputs初始化
 	return gjson.ParseBytes([]byte(sumRawtx.ExtParam))
@@ -260,7 +271,7 @@ type Recharge struct {
 	TxType      uint64 `json:"txType"` // @required 0:转账，1:合约调用(发生于主链)
 }
 
-//GenRechargeSID
+// GenRechargeSID
 func GenRechargeSID(txid string, coinsymbol string, contractId string, n uint64, prefix string) string {
 	//txid := tx.TxID
 	symbol := coinsymbol + "_" + contractId
@@ -291,7 +302,7 @@ func GenTxOutPutSID(txid string, coinsymbol string, contractId string, n uint64)
 	return GenRechargeSID(txid, coinsymbol, contractId, n, "output")
 }
 
-//SetExtParam
+// SetExtParam
 func (txOut *TxOutPut) SetExtParam(key string, value interface{}) error {
 	var ext map[string]interface{}
 
@@ -315,7 +326,7 @@ func (txOut *TxOutPut) SetExtParam(key string, value interface{}) error {
 	return nil
 }
 
-//GetExtParam
+// GetExtParam
 func (txOut *TxOutPut) GetExtParam() gjson.Result {
 	//如果param没有值，使用inputs初始化
 	return gjson.ParseBytes([]byte(txOut.ExtParam))
@@ -333,7 +344,7 @@ type Withdraw struct {
 	TxID     string `json:"txid"`
 }
 
-//NewWithdraw 创建提现单
+// NewWithdraw 创建提现单
 func NewWithdraw(json gjson.Result) *Withdraw {
 	w := &Withdraw{}
 	//解析json
