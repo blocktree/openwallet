@@ -187,6 +187,7 @@ func (tx *Transaction) GetExtParam() gjson.Result {
 
 // SummaryRawTransaction 汇总交易
 type SummaryRawTransaction struct {
+	Sid                string              `json:"sid"`
 	Coin               Coin                `json:"coin"`               //@required 区块链类型标识
 	FeeRate            string              `json:"feeRate"`            //自定义费率
 	SummaryAddress     string              `json:"summaryAddress"`     //@required 目的地址:转账数量

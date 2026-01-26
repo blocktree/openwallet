@@ -15,7 +15,9 @@
 
 package openwallet
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // TransactionDecoder 交易单解析器
 type TransactionDecoder interface {
@@ -37,6 +39,8 @@ type TransactionDecoder interface {
 	GetRawTransactionFeeRate() (feeRate string, unit string, err error)
 	//CreateSummaryRawTransaction 创建汇总交易，返回原始交易单数组
 	CreateSummaryRawTransaction(wrapper WalletDAI, sumRawTx *SummaryRawTransaction) ([]*RawTransaction, error)
+	//CreateSummaryRawTransactionJSON 创建汇总交易，返回原始交易单数组
+	CreateSummaryRawTransactionJSON(wrapper WalletDAI, sumRawTx *SummaryRawTransaction) ([]*TxData, error)
 	//EstimateRawTransactionFee 预估手续费
 	EstimateRawTransactionFee(wrapper WalletDAI, rawTx *RawTransaction) error
 	//CreateSummaryRawTransactionWithError 创建汇总交易，返回能原始交易单数组（包含带错误的原始交易单）
@@ -52,19 +56,9 @@ func (decoder *TransactionDecoderBase) CreateRawTransaction(wrapper WalletDAI, r
 	return fmt.Errorf("not implement")
 }
 
-// CreateRawTransactionJSON 创建交易单
-func (decoder *TransactionDecoderBase) CreateRawTransactionJSON(wrapper WalletDAI, rawTx *RawTransaction) (*TxData, error) {
-	return nil, fmt.Errorf("not implement")
-}
-
 // SignRawTransaction 签名交易单
 func (decoder *TransactionDecoderBase) SignRawTransaction(wrapper WalletDAI, rawTx *RawTransaction) error {
 	return fmt.Errorf("not implement")
-}
-
-// SubmitRawTransactionJSON 广播交易单
-func (decoder *TransactionDecoderBase) SubmitRawTransactionJSON(wrapper WalletDAI, txData *TxData) (*Transaction, error) {
-	return nil, fmt.Errorf("not implement")
 }
 
 // SubmitRawTransaction 广播交易单
@@ -108,4 +102,21 @@ func (decoder *TransactionDecoderBase) CreateSummaryRawTransactionWithError(wrap
 		}
 	}
 	return rawTxArrayWithErr, err
+}
+
+// *********************************** 安全链路构建交易单 ***********************************
+
+// CreateRawTransactionJSON 创建交易单
+func (decoder *TransactionDecoderBase) CreateRawTransactionJSON(wrapper WalletDAI, rawTx *RawTransaction) (*TxData, error) {
+	return nil, fmt.Errorf("CreateRawTransactionJSON not implement")
+}
+
+// SubmitRawTransactionJSON 广播交易单
+func (decoder *TransactionDecoderBase) SubmitRawTransactionJSON(wrapper WalletDAI, txData *TxData) (*Transaction, error) {
+	return nil, fmt.Errorf("SubmitRawTransactionJSON not implement")
+}
+
+// CreateSummaryRawTransactionJSON 创建汇总交易
+func (decoder *TransactionDecoderBase) CreateSummaryRawTransactionJSON(wrapper WalletDAI, sumRawTx *SummaryRawTransaction) ([]*TxData, error) {
+	return nil, fmt.Errorf("CreateSummaryRawTransactionJSON not implement")
 }
