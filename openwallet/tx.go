@@ -25,11 +25,11 @@ import (
 )
 
 type TxData struct {
-	Data       string            `json:"data"`
-	DataSign   string            `json:"dataSign"`
-	Code       string            `json:"code"`
-	Message    string            `json:"message"`
-	SignerList map[string]string `json:"signerList"`
+	Data       string            `json:"data"`       // RawTransaction对象JSON字符串
+	DataSign   string            `json:"dataSign"`   // RawTransaction对象JSON字符串签名
+	Code       string            `json:"code"`       // 错误代码
+	Message    string            `json:"message"`    // 错误信息
+	SignerList map[string]string `json:"signerList"` // 签名集合
 }
 
 // RawTransaction 原始交易单

@@ -40,11 +40,14 @@ func SendTransaction(decoder TransactionDecoder, wrapper WalletDAI, txData *TxDa
 	if txData.DataSign == "" {
 		return nil, errors.New("txData.dataSign is nil")
 	}
+	if len(txData.SignerList) == 0 {
+		return nil, errors.New("txData.SignerList is nil")
+	}
 	key, err := wrapper.GetTradeKey()
 	if err != nil {
 		return nil, err
 	}
-	txJSON := []byte(txData.DataSign)
+	txJSON := []byte(txData.Data)
 	if hex.EncodeToString(HmacSHA256(txJSON, key)) != txData.DataSign {
 		return nil, errors.New("txData.dataSign invalid")
 	}
@@ -52,6 +55,19 @@ func SendTransaction(decoder TransactionDecoder, wrapper WalletDAI, txData *TxDa
 	if err := json.Unmarshal(txJSON, rawTx); err != nil {
 		return nil, errors.New("rawTx json error: " + err.Error())
 	}
+	for accountID, keySignatures := range rawTx.Signatures {
+		if keySignatures != nil {
+			for k, keySignature := range keySignatures {
+				keySignature.Signature = txData.SignerList[fmt.Sprintf("%s-%d", accountID, k)]
+			}
+		}
+		rawTx.Signatures[accountID] = keySignatures
+	}
+
+	if err := decoder.VerifyRawTransaction(wrapper, rawTx); err != nil {
+		return nil, err
+	}
+
 	return decoder.SubmitRawTransaction(wrapper, rawTx)
 }
 
