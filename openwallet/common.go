@@ -90,7 +90,7 @@ func BuildTransaction(decoder TransactionDecoder, wrapper WalletDAI, rawTx *RawT
 	if err != nil {
 		return nil, err
 	}
-	return &TxData{Data: string(txJSON), DataSign: hex.EncodeToString(HmacSHA256(txJSON, key))}, nil
+	return &TxData{Sid: rawTx.Sid, Data: string(txJSON), DataSign: hex.EncodeToString(HmacSHA256(txJSON, key))}, nil
 }
 
 // BuildSummaryTransaction 构建汇总交易单列表
@@ -126,7 +126,7 @@ func BuildSummaryTransaction(decoder TransactionDecoder, wrapper WalletDAI, sumR
 			code = strconv.FormatUint(v.Error.code, 10)
 			message = v.Error.Error()
 		}
-		txData = append(txData, &TxData{Data: string(txJSON), DataSign: hex.EncodeToString(HmacSHA256(txJSON, key)), Code: code, Message: message})
+		txData = append(txData, &TxData{Sid: rawTx.Sid, Data: string(txJSON), DataSign: hex.EncodeToString(HmacSHA256(txJSON, key)), Code: code, Message: message})
 	}
 	return txData, nil
 }
