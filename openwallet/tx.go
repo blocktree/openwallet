@@ -27,7 +27,8 @@ import (
 type TxData struct {
 	Sid        string            `json:"sid"`        // 业务绑定唯一ID
 	Data       string            `json:"data"`       // RawTransaction对象JSON字符串
-	DataSign   string            `json:"dataSign"`   // RawTransaction对象JSON字符串签名
+	DataSign   string            `json:"dataSign"`   // JSON字符串业务系统签名
+	TradeSign  string            `json:"tradeSign"`  // JSON字符串交易系统签名
 	Code       string            `json:"code"`       // 错误代码
 	Message    string            `json:"message"`    // 错误信息
 	SignerList map[string]string `json:"signerList"` // 签名集合

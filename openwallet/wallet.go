@@ -73,8 +73,8 @@ type WalletDAI interface {
 	//获取钱包所创建的交易单
 	GetTransactionByTxID(txid, symbol string) ([]*Transaction, error)
 
-	//获取交易单创建广播密钥
-	GetTradeKey() ([]byte, error)
+	//签名交易单JSON数据
+	SignTxData(txJSON []byte) (*TxData, error)
 }
 
 // TransactionDecoderBase 实现TransactionDecoder的基类
@@ -128,13 +128,13 @@ func (base *WalletDAIBase) HDKey(password ...string) (*hdkeystore.HDKey, error) 
 }
 
 // 获取钱包所创建的交易单
-func (base *WalletDAIBase) GetTradeKey() ([]byte, error) {
+func (base *WalletDAIBase) GetTransactionByTxID(txid, symbol string) ([]*Transaction, error) {
 	return nil, fmt.Errorf("GetTransactionByTxID not implement")
 }
 
-// 获取钱包所创建的交易单
-func (base *WalletDAIBase) GetTransactionByTxID(txid, symbol string) ([]*Transaction, error) {
-	return nil, fmt.Errorf("GetTransactionByTxID not implement")
+// 签名交易单JSON数据
+func (base *WalletDAIBase) SignTxData(txJSON []byte) (*TxData, error) {
+	return nil, fmt.Errorf("SignTxData not implement")
 }
 
 type Wallet struct {

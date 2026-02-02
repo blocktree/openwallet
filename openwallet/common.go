@@ -29,54 +29,8 @@ func HmacSHA256(data, key []byte) []byte {
 	return h.Sum([]byte(nil))
 }
 
-// SendTransaction 广播交易单
-func SendTransaction(decoder TransactionDecoder, wrapper WalletDAI, txData *TxData) (*Transaction, error) {
-	if txData == nil {
-		return nil, errors.New("txData is nil")
-	}
-	if txData.Data == "" {
-		return nil, errors.New("txData.data is nil")
-	}
-	if txData.DataSign == "" {
-		return nil, errors.New("txData.dataSign is nil")
-	}
-	if len(txData.SignerList) == 0 {
-		return nil, errors.New("txData.SignerList is nil")
-	}
-	key, err := wrapper.GetTradeKey()
-	if err != nil {
-		return nil, err
-	}
-	txJSON := []byte(txData.Data)
-	if hex.EncodeToString(HmacSHA256(txJSON, key)) != txData.DataSign {
-		return nil, errors.New("txData.dataSign invalid")
-	}
-	rawTx := &RawTransaction{}
-	if err := json.Unmarshal(txJSON, rawTx); err != nil {
-		return nil, errors.New("rawTx json error: " + err.Error())
-	}
-	for accountID, keySignatures := range rawTx.Signatures {
-		if keySignatures != nil {
-			for k, keySignature := range keySignatures {
-				keySignature.Signature = txData.SignerList[fmt.Sprintf("%s-%d", accountID, k)]
-			}
-		}
-		rawTx.Signatures[accountID] = keySignatures
-	}
-
-	if err := decoder.VerifyRawTransaction(wrapper, rawTx); err != nil {
-		return nil, err
-	}
-
-	return decoder.SubmitRawTransaction(wrapper, rawTx)
-}
-
 // BuildTransaction 构建普通交易单
 func BuildTransaction(decoder TransactionDecoder, wrapper WalletDAI, rawTx *RawTransaction) (*TxData, error) {
-	key, err := wrapper.GetTradeKey()
-	if err != nil {
-		return nil, err
-	}
 	if err := decoder.CreateRawTransaction(wrapper, rawTx); err != nil {
 		return nil, err
 	}
@@ -90,15 +44,18 @@ func BuildTransaction(decoder TransactionDecoder, wrapper WalletDAI, rawTx *RawT
 	if err != nil {
 		return nil, err
 	}
-	return &TxData{Sid: rawTx.Sid, Data: string(txJSON), DataSign: hex.EncodeToString(HmacSHA256(txJSON, key))}, nil
+	originalTxJSON := string(txJSON) // 重要必须：获得副本可无视回调函数修改txJSON交易单
+	signData, err := wrapper.SignTxData(txJSON)
+	if err != nil {
+		return nil, err
+	}
+	signData.Data = originalTxJSON
+	signData.Sid = rawTx.Sid
+	return signData, nil
 }
 
 // BuildSummaryTransaction 构建汇总交易单列表
 func BuildSummaryTransaction(decoder TransactionDecoder, wrapper WalletDAI, sumRawTx *SummaryRawTransaction) ([]*TxData, error) {
-	key, err := wrapper.GetTradeKey()
-	if err != nil {
-		return nil, err
-	}
 	rawTxArray, err := decoder.CreateSummaryRawTransactionWithError(wrapper, sumRawTx)
 	if err != nil {
 		return nil, fmt.Errorf("CreateSummaryRawTransactionJSON error: %s", err.Error())
@@ -121,12 +78,62 @@ func BuildSummaryTransaction(decoder TransactionDecoder, wrapper WalletDAI, sumR
 		if err != nil {
 			return nil, err
 		}
-		var code, message string
-		if v.Error != nil {
-			code = strconv.FormatUint(v.Error.code, 10)
-			message = v.Error.Error()
+		originalTxJSON := string(txJSON) // 重要必须：获得副本可无视回调函数修改txJSON交易单
+		signData, err := wrapper.SignTxData(txJSON)
+		if err != nil {
+			return nil, err
 		}
-		txData = append(txData, &TxData{Sid: rawTx.Sid, Data: string(txJSON), DataSign: hex.EncodeToString(HmacSHA256(txJSON, key)), Code: code, Message: message})
+		signData.Data = originalTxJSON
+		signData.Sid = rawTx.Sid
+		if v.Error != nil {
+			signData.Code = strconv.FormatUint(v.Error.code, 10)
+			signData.Message = v.Error.Error()
+		}
+		txData = append(txData, signData)
 	}
 	return txData, nil
+}
+
+// SendTransaction 广播交易单
+func SendTransaction(decoder TransactionDecoder, wrapper WalletDAI, txData *TxData) (*Transaction, error) {
+	if txData == nil {
+		return nil, errors.New("txData is nil")
+	}
+	if txData.Data == "" {
+		return nil, errors.New("txData.data is nil")
+	}
+	if txData.DataSign == "" {
+		return nil, errors.New("txData.dataSign is nil")
+	}
+	if txData.TradeSign == "" {
+		return nil, errors.New("txData.tradeSign is nil")
+	}
+	if len(txData.SignerList) == 0 {
+		return nil, errors.New("txData.SignerList is nil")
+	}
+	checkData, err := wrapper.SignTxData([]byte(txData.Data))
+	if err != nil {
+		return nil, err
+	}
+	if checkData.DataSign != txData.DataSign || checkData.TradeSign != txData.TradeSign {
+		return nil, errors.New("txData.dataSign or txData.tradeSign invalid")
+	}
+	rawTx := &RawTransaction{}
+	if err := json.Unmarshal([]byte(txData.Data), rawTx); err != nil {
+		return nil, errors.New("rawTx json error: " + err.Error())
+	}
+	for accountID, keySignatures := range rawTx.Signatures {
+		if keySignatures != nil {
+			for k, keySignature := range keySignatures {
+				keySignature.Signature = txData.SignerList[fmt.Sprintf("%s-%d", accountID, k)]
+			}
+		}
+		rawTx.Signatures[accountID] = keySignatures
+	}
+
+	if err := decoder.VerifyRawTransaction(wrapper, rawTx); err != nil {
+		return nil, err
+	}
+
+	return decoder.SubmitRawTransaction(wrapper, rawTx)
 }
