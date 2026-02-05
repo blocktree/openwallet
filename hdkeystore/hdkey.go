@@ -19,7 +19,6 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -35,7 +34,6 @@ import (
 	"github.com/blocktree/go-owcdrivers/owkeychain"
 	"github.com/blocktree/go-owcrypt"
 	"github.com/blocktree/openwallet/v2/crypto"
-	"github.com/blocktree/openwallet/v2/crypto/sha3"
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/scrypt"
 )
@@ -95,10 +93,12 @@ type HDKey struct {
 	Alias string
 	//账户路径
 	RootPath string
-	// 账户的扩展ID
+	//账户的扩展ID
 	KeyID string
-	//种子，加密保存
-	seed []byte
+	//种子，只用于生成钱包文件临时使用
+	//seed []byte
+	//锁定内存的加密种子对象, 写入钱包文件的时候会作为临时locker使用
+	encryptedSeed *memguard.LockedBuffer
 }
 
 // 加密后的HDKey的JSON结构
@@ -152,8 +152,17 @@ type miningJSON struct {
 // ECC_CURVE_SECP256K1
 // ECC_CURVE_SECP256R1
 // ECC_CURVE_ED25519
+// DerivedKeyWithPath 安全地派生子密钥
 func (k *HDKey) DerivedKeyWithPath(path string, curveType uint32) (*owkeychain.ExtendedKey, error) {
-	return owkeychain.DerivedPrivateKeyWithPath(k.Seed(), path, curveType)
+	var derivedKey *owkeychain.ExtendedKey
+
+	err := k.Seed(func(seed []byte) error {
+		var err error
+		derivedKey, err = owkeychain.DerivedPrivateKeyWithPath(seed, path, curveType)
+		return err
+	})
+
+	return derivedKey, err
 }
 
 //func (k *HDKey) DerivedKeyWithPath2(path string, curveType  uint32) (*hdkeychain.ExtendedKey, error) {
@@ -261,15 +270,30 @@ func (k *HDKey) FileName() string {
 	return KeyFileName(k.Alias, k.KeyID)
 }
 
-// Seed 密钥种子，解密出种子使用后请立刻清空防止，具体方法参考以下示例
-// 创建锁定的 32 字节缓冲区
-// seedBuff := memguard.NewBufferFromBytes(seed)
-// if err != nil {
-// panic(err)
-// }
-// defer seedBuff.Destroy() // 自动 mlock + munlock + 清零
-func (k *HDKey) Seed() []byte {
-	return decryptSeed(k.seed)
+// Seed 密钥种子，该方法应该不允许再使用
+//func (k *HDKey) Seed() []byte {
+//	return decryptSeed(k.encryptedSeed.Data())
+//}
+
+// Seed 安全地提供种子访问，通过回调确保明文及时清零
+func (k *HDKey) Seed(fn func(seed []byte) error) error {
+	// 1. 复制加密数据
+	encrypted := make([]byte, k.encryptedSeed.Size())
+	copy(encrypted, k.encryptedSeed.Data())
+	defer ClearData(encrypted) // 使用 defer 确保清零
+
+	// 2. 创建临时锁定缓冲区存储明文种子
+	seedBuf := memguard.NewBuffer(SeedLen) // 根据实际 seed 长度调整
+
+	defer seedBuf.Destroy()
+
+	// 3. 直接解密到锁定内存
+	if err := decryptSeedTo(seedBuf.Data(), encrypted); err != nil {
+		return err
+	}
+
+	// 4. 调用回调
+	return fn(seedBuf.Data())
 }
 
 // EncryptKey encrypts a key using the specified scrypt parameters into a json
@@ -288,7 +312,7 @@ func EncryptKey(hdkey *HDKey, auth string, scryptN, scryptP int) ([]byte, error)
 	}
 	encryptKey := derivedKey[:16]
 
-	keyBytes := hdkey.seed
+	keyBytes := hdkey.encryptedSeed.Data()
 
 	iv := make([]byte, aes.BlockSize) // 16
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
@@ -359,7 +383,7 @@ func DecryptHDKey(keyjson []byte, auth string) (*HDKey, error) {
 		Alias:    k.Alias,
 		KeyID:    keyID,
 		RootPath: k.RootPath,
-		seed:     encryptSeed(seed),
+		//seed:     encryptSeed(seed),
 	}, nil
 }
 
@@ -452,7 +476,22 @@ func NewHDKey(seed []byte, alias, rootPath string) (*HDKey, error) {
 		Alias:    alias,
 		KeyID:    keyID,
 		RootPath: rootPath,
-		seed:     seed,
+		//seed:     seed,
+	}
+
+	return hdkey, nil
+}
+
+func NewLockerHDKey(seed *memguard.LockedBuffer, alias, rootPath string) (*HDKey, error) {
+
+	keyID := computeKeyID(seed.Data())
+
+	//实例化密钥
+	hdkey := &HDKey{
+		Alias:         alias,
+		KeyID:         keyID,
+		RootPath:      rootPath,
+		encryptedSeed: seed,
 	}
 
 	return hdkey, nil
@@ -479,6 +518,20 @@ func GenerateSeed(length uint8) ([]byte, error) {
 	return buf, nil
 }
 
+// GenerateLockedSeed 生成种子并直接放入锁定内存
+func GenerateLockedSeed(size int) (*memguard.LockedBuffer, error) {
+	buf := memguard.NewBuffer(size)
+	if buf.Size() == 0 {
+		return nil, errors.New("failed to allocate secure buffer")
+	}
+	// 使用加密安全 RNG 填充
+	if _, err := rand.Read(buf.Data()); err != nil {
+		buf.Destroy()
+		return nil, fmt.Errorf("failed to generate seed: %w", err)
+	}
+	return buf, nil
+}
+
 // writeKeyFile 写入HDKey结构内容到文件
 func writeKeyFile(file string, content []byte) error {
 	// Create the keystore directory with appropriate permissions
@@ -502,22 +555,35 @@ func writeKeyFile(file string, content []byte) error {
 	return os.Rename(f.Name(), file)
 }
 
-// computeKeyID 计算HDKey的KeyID
+// computeKeyID 计算HDKey的KeyID, 这个版本有加入masterKey可能造成确定性破坏攻击
+//func computeKeyID(seed []byte) string {
+//
+//	//seed 通过hmac-sha256 两次 RIPEMD160 一次 得到keyID
+//
+//	hmac256 := hmac.New(sha3.New256, masterKey)
+//	hmac256.Write(seed)
+//	keyID := hmac256.Sum(nil)
+//
+//	hmac256 = hmac.New(sha3.New256, masterKey)
+//	hmac256.Write(keyID)
+//	keyID = hmac256.Sum(nil)
+//
+//	keyID = owcrypt.Hash(keyID, 0, owcrypt.HASH_ALG_RIPEMD160)
+//
+//	return owkeychain.Base58checkEncode(keyID, KeyIDVer)
+//}
+
+// computeKeyID 从种子生成唯一、不可逆、抗碰撞的钱包标识符
+// 算法：RIPEMD160(SHA256(seed)) → Base58Check(version + hash)
 func computeKeyID(seed []byte) string {
+	// Step 1: SHA256(seed)
+	sha256Hash := sha256.Sum256(seed)
 
-	//seed 通过hmac-sha256 两次 RIPEMD160 一次 得到keyID
+	// Step 2: RIPEMD160(SHA256(seed))
+	ripemd160Hash := owcrypt.Hash(sha256Hash[:], 0, owcrypt.HASH_ALG_RIPEMD160)
 
-	hmac256 := hmac.New(sha3.New256, masterKey)
-	hmac256.Write(seed)
-	keyID := hmac256.Sum(nil)
-
-	hmac256 = hmac.New(sha3.New256, masterKey)
-	hmac256.Write(keyID)
-	keyID = hmac256.Sum(nil)
-
-	keyID = owcrypt.Hash(keyID, 0, owcrypt.HASH_ALG_RIPEMD160)
-
-	return owkeychain.Base58checkEncode(keyID, KeyIDVer)
+	// Step 3: Base58Check 编码（带版本字节）
+	return owkeychain.Base58checkEncode(ripemd160Hash, KeyIDVer)
 }
 
 // keyFileName implements the naming convention for keyfiles:
@@ -576,23 +642,21 @@ func pkcs7Unpad(in []byte) []byte {
 }
 
 // ClearData 最终清空底层数组的函数
-func ClearData(arr ...[]byte) {
-	for _, b := range arr {
-		if len(b) == 0 {
-			return
-		}
-		// 覆盖所有已使用的底层数组元素（len(s)是当前切片的长度）
-		for i := 0; i < len(b); i++ {
-			b[i] = 0 // 用0填充，彻底清除
+func ClearData(slices ...[]byte) {
+	for _, s := range slices {
+		for i := range s { // range 自动处理 len=0 的情况
+			s[i] = 0
 		}
 	}
 }
 
 // EncryptKeyByAes256GCM encrypts a key using the specified scrypt parameters into a json
 // blob that can be decrypted later on.
-func EncryptKeyByAes256GCM(hdkey *HDKey, auth string, scryptN, scryptP int) ([]byte, error) {
+func EncryptKeyByAes256GCM(hdkey *HDKey, plainSeed []byte, auth string, scryptN, scryptP int) ([]byte, error) {
 
 	authArray := []byte(auth)
+
+	defer ClearData(authArray)
 
 	saltBytes := make([]byte, 32)
 	if _, err := io.ReadFull(rand.Reader, saltBytes); err != nil {
@@ -602,19 +666,8 @@ func EncryptKeyByAes256GCM(hdkey *HDKey, auth string, scryptN, scryptP int) ([]b
 	if err != nil {
 		return nil, err
 	}
-	//创建锁定的 32 字节缓冲区
-	seedBuff := memguard.NewBufferFromBytes(hdkey.seed)
-	if err != nil {
-		panic(err)
-	}
-	defer seedBuff.Destroy() // 自动 mlock + munlock + 清零
 
-	//创建锁定的 32 字节缓冲区
-	derivedKeyBuff := memguard.NewBufferFromBytes(derivedKey)
-	if err != nil {
-		panic(err)
-	}
-	defer derivedKeyBuff.Destroy() // 自动 mlock + munlock + 清零
+	defer ClearData(derivedKey, saltBytes)
 
 	salt := hex.EncodeToString(saltBytes)
 
@@ -632,11 +685,14 @@ func EncryptKeyByAes256GCM(hdkey *HDKey, auth string, scryptN, scryptP int) ([]b
 		// 可选：若Alias不可改，添加 |alias:%s", hdkey.Alias
 	)
 
-	cipherText, err := AesGCMEncrypt(seedBuff.Data(), derivedKeyBuff.Data(), []byte(aadStr))
+	cipherText, err := AesGCMEncrypt(plainSeed, derivedKey, []byte(aadStr))
+	if err != nil {
+		return nil, err
+	}
 	if len(cipherText) == 0 {
 		return nil, errors.New("aes encrypt result invalid")
 	}
-	mac := crypto.Keccak256(derivedKeyBuff.Data()[16:32], cipherText)
+	mac := crypto.Keccak256(derivedKey[16:32], cipherText)
 
 	scryptParamsJSON := make(map[string]interface{}, 5)
 	scryptParamsJSON["n"] = scryptN
@@ -665,40 +721,32 @@ func EncryptKeyByAes256GCM(hdkey *HDKey, auth string, scryptN, scryptP int) ([]b
 
 // DecryptHDKeyByAes256GCM decrypts a key from a json blob, returning the private key itself.
 func DecryptHDKeyByAes256GCM(keyjson []byte, auth string) (*HDKey, error) {
-	// Parse the json into a simple map to fetch the key version
-	m := make(map[string]interface{})
-	if err := json.Unmarshal(keyjson, &m); err != nil {
-		return nil, err
-	}
-	// Depending on the version try to parse one way or another
-	var (
-		seed []byte
-		err  error
-	)
-	k := new(encryptedHDKeyJSON)
-	if err := json.Unmarshal(keyjson, k); err != nil {
+	var k encryptedHDKeyJSON
+	if err := json.Unmarshal(keyjson, &k); err != nil {
 		return nil, err
 	}
 
-	seed, err = aesGCMDecryptHDKey(k, auth)
-	// Handle any decryption errors and return the key
+	// 1. 解密得到明文 seed
+	seed, err := aesGCMDecryptHDKey(&k, auth)
 	if err != nil {
 		return nil, err
 	}
 
-	//创建锁定的 32 字节缓冲区
-	seedBuff := memguard.NewBufferFromBytes(seed)
-	if err != nil {
-		panic(err)
-	}
-	defer seedBuff.Destroy() // 自动 mlock + munlock + 清零
+	// 2. 立即使用 seed（在清零前）
+	keyID := computeKeyID(seed)
+	encrypted := encryptSeed(seed)
 
-	keyID := computeKeyID(seedBuff.Data())
+	// 3. 将加密后的种子放入锁定内存
+	locker := memguard.NewBufferFromBytes(encrypted)
 
+	// 4. 立即清零临时敏感数据
+	ClearData(seed, encrypted)
+
+	// 5. 返回安全的 HDKey
 	return &HDKey{
-		Alias:    k.Alias,
-		KeyID:    keyID,
-		RootPath: k.RootPath,
-		seed:     encryptSeed(seedBuff.Data()),
+		Alias:         k.Alias,
+		RootPath:      k.RootPath,
+		KeyID:         keyID,
+		encryptedSeed: locker,
 	}, nil
 }

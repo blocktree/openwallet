@@ -21,6 +21,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/awnumar/memguard"
 	"io"
 	"io/ioutil"
 	"path/filepath"
@@ -63,8 +64,8 @@ var (
 	ErrNoMatch = errors.New("no key for given address or file")
 	//ErrDecrypt 机密出错
 	ErrDecrypt = errors.New("could not decrypt key with given passphrase")
-	randomKey  = randomBytes(32)
-	randomAAD  = randomBytes(32)
+	runtimeKey = getRuntimeKey()
+	runtimeAAD = getRuntimeAAD()
 )
 
 // HDKeystore HDKey的存粗工具类
@@ -73,7 +74,18 @@ type HDKeystore struct {
 	//MasterKey   string
 	scryptN int
 	scryptP int
-	cipher  string
+}
+
+func getRuntimeKey() *memguard.LockedBuffer {
+	b := randomBytes(32)
+	defer ClearData(b)
+	return memguard.NewBufferFromBytes(b)
+}
+
+func getRuntimeAAD() *memguard.LockedBuffer {
+	b := randomBytes(32)
+	defer ClearData(b)
+	return memguard.NewBufferFromBytes(b)
 }
 
 func randomBytes(l int) []byte {
@@ -85,7 +97,7 @@ func randomBytes(l int) []byte {
 }
 
 func encryptSeed(seed []byte) []byte {
-	encrypted, err := AesGCMEncrypt(seed, randomKey, randomAAD)
+	encrypted, err := AesGCMEncrypt(seed, runtimeKey.Data(), runtimeAAD.Data())
 	if err != nil {
 		panic(err)
 	}
@@ -93,28 +105,30 @@ func encryptSeed(seed []byte) []byte {
 }
 
 func decryptSeed(seed []byte) []byte {
-	decrypted, err := AesGCMDecrypt(seed, randomKey, randomAAD)
+	decrypted, err := AesGCMDecrypt(seed, runtimeKey.Data(), runtimeAAD.Data())
 	if err != nil {
 		panic(err)
 	}
 	return decrypted
 }
 
+// decryptSeedTo 将解密结果直接写入目标 buffer（不返回明文 slice）
+func decryptSeedTo(dst []byte, encrypted []byte) error {
+	return AesGCMDecryptToLocker(dst, encrypted, runtimeKey.Data(), runtimeAAD.Data())
+}
+
 // NewHDKeystore 实例化HDKeystore
-func NewHDKeystore(keydir string, scryptN, scryptP int, cipher ...string) *HDKeystore {
+func NewHDKeystore(keydir string, scryptN, scryptP int) *HDKeystore {
 	keydir, _ = filepath.Abs(keydir)
 	ks := &HDKeystore{}
 	ks.keysDirPath = keydir
 	ks.scryptN = scryptN
 	ks.scryptP = scryptP
-	if len(cipher) > 0 {
-		ks.cipher = cipher[0]
-	}
 	return ks
 }
 
 // StoreHDKey 创建HDKey
-func StoreHDKey(dir, alias, auth string, scryptN, scryptP int, cipher ...string) (*HDKey, string, error) {
+func StoreHDKey(dir, alias, auth string, scryptN, scryptP int) (*HDKey, string, error) {
 
 	seed, err := GenerateSeed(SeedLen)
 	if err != nil {
@@ -126,12 +140,58 @@ func StoreHDKey(dir, alias, auth string, scryptN, scryptP int, cipher ...string)
 	//	return "", err
 	//}
 
-	return StoreHDKeyWithSeed(dir, alias, auth, seed, scryptN, scryptP, cipher...)
+	return StoreHDKeyWithSeed(dir, alias, auth, seed, scryptN, scryptP)
 }
 
-// StoreHDKey 创建HDKey
-func StoreHDKeyWithSeed(dir, alias, auth string, seed []byte, scryptN, scryptP int, cipher ...string) (*HDKey, string, error) {
-	ks := NewHDKeystore(dir, scryptN, scryptP, cipher...)
+// StoreLockerHDKey 重要：当前版本只使用这个创建钱包文件入口，使用AES-256-GCM保存文件
+func StoreLockerHDKey(dir, alias, auth string, scryptN, scryptP int) (string, error) {
+	seed, err := GenerateLockedSeed(SeedLen)
+	if err != nil {
+		return "", err
+	}
+	defer seed.Destroy()
+
+	// 2. 计算 KeyID（需明文）
+	keyID := computeKeyID(seed.Data())
+
+	// 3. 创建 keystore
+	ks := NewHDKeystore(dir, scryptN, scryptP)
+
+	// 4. 构造 HDKey 元数据（不含明文种子！）
+	hdkeyMeta := &HDKey{
+		Alias:    alias,
+		KeyID:    keyID,
+		RootPath: OpenwCoinTypePath,
+		// 注意：encryptedSeed 暂不设置（或设为 nil）
+	}
+
+	// 5. 直接用 seed.Data() 加密并存储
+	filePath := ks.JoinPath(KeyFileName(alias, keyID) + ".key")
+	if err := ks.StoreLockerKeyWithSeed(filePath, hdkeyMeta, seed.Data(), auth); err != nil {
+		return "", fmt.Errorf("failed to store key: %w", err)
+	}
+
+	return keyID, nil
+}
+
+// StoreLockerKeyWithSeed 接收明文 seed（仅在锁定内存中有效）
+func (ks *HDKeystore) StoreLockerKeyWithSeed(
+	filename string,
+	meta *HDKey,
+	plainSeed []byte, // 来自 LockedBuffer.Data()
+	auth string,
+) error {
+	// 调用你现有的 EncryptKeyByAes256GCM，但传入 plainSeed
+	keyJSON, err := EncryptKeyByAes256GCM(meta, plainSeed, auth, ks.scryptN, ks.scryptP)
+	if err != nil {
+		return err
+	}
+	return writeKeyFile(filename, keyJSON)
+}
+
+// StoreHDKeyWithSeed 创建HDKey
+func StoreHDKeyWithSeed(dir, alias, auth string, seed []byte, scryptN, scryptP int) (*HDKey, string, error) {
+	ks := NewHDKeystore(dir, scryptN, scryptP)
 	key, filePath, err := storeNewKey(ks, alias, auth, seed)
 	return key, filePath, err
 }
@@ -166,23 +226,28 @@ func (ks HDKeystore) GetKeyFromBase64(rootId, keyJsonB64, auth string) (*HDKey, 
 		return nil, err
 	}
 
-	var key *HDKey
-	if ks.cipher == CipherAes256GCM {
-		key, err = DecryptHDKeyByAes256GCM(keyjson, auth)
-		if err != nil {
-			return nil, err
-		}
-	} else if ks.cipher == CipherAes128CTR {
-		key, err = DecryptHDKey(keyjson, auth)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		key, err = DecryptHDKey(keyjson, auth)
-		if err != nil {
-			return nil, err
-		}
+	key, err := DecryptHDKeyByAes256GCM(keyjson, auth)
+	if err != nil {
+		return nil, err
 	}
+
+	//var key *HDKey
+	//if ks.cipher == CipherAes256GCM {
+	//	key, err = DecryptHDKeyByAes256GCM(keyjson, auth)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//} else if ks.cipher == CipherAes128CTR {
+	//	key, err = DecryptHDKey(keyjson, auth)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//} else {
+	//	key, err = DecryptHDKey(keyjson, auth)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//}
 
 	if key == nil || len(key.KeyID) == 0 {
 		return nil, errors.New("HDKey decrypt invalid")
@@ -202,24 +267,10 @@ func (ks HDKeystore) GetKeyFromBase64(rootId, keyJsonB64, auth string) (*HDKey, 
 func (ks *HDKeystore) StoreKey(filename string, key *HDKey, auth string) error {
 	var keyjson []byte
 	var err error
-	if ks.cipher == CipherAes256GCM {
-		keyjson, err = EncryptKeyByAes256GCM(key, auth, ks.scryptN, ks.scryptP)
-		if err != nil {
-			return err
-		}
-		return writeKeyFile(filename, keyjson)
-	} else if ks.cipher == CipherAes128CTR {
-		keyjson, err = EncryptKey(key, auth, ks.scryptN, ks.scryptP)
-		if err != nil {
-			return err
-		}
-	} else {
-		keyjson, err = EncryptKey(key, auth, ks.scryptN, ks.scryptP)
-		if err != nil {
-			return err
-		}
+	keyjson, err = EncryptKey(key, auth, ks.scryptN, ks.scryptP)
+	if err != nil {
+		return err
 	}
-
 	return writeKeyFile(filename, keyjson)
 }
 

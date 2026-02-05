@@ -16,17 +16,17 @@
 package hdkeystore
 
 import (
+	"encoding/hex"
 	"github.com/blocktree/go-owcrypt"
 	"testing"
-	"encoding/hex"
 )
 
 func TestGenerateSeed(t *testing.T) {
 
-	for i:= 0; i<30;i++ {
+	for i := 0; i < 30; i++ {
 		seed, err := GenerateSeed(32)
 		if err != nil {
-			t.Fatalf("GenerateSeed failed unexpected error: %v",err)
+			t.Fatalf("GenerateSeed failed unexpected error: %v", err)
 			return
 		}
 
@@ -45,18 +45,18 @@ func TestNewHDKey(t *testing.T) {
 
 	tests := []struct {
 		accountId string
-		seed   string
-		startPath 	string
+		seed      string
+		startPath string
 	}{
 		{
-			accountId:   "hello",
-			seed: "4b68b20a5d3ac671a61e6e94b4de309530a12439b7c3ee548d20966674696656",
-			startPath:   "m/44'/88",
+			accountId: "hello",
+			seed:      "4b68b20a5d3ac671a61e6e94b4de309530a12439b7c3ee548d20966674696656",
+			startPath: "m/44'/88",
 		},
 		{
-			accountId:   "hello2",
-			seed: "dfac3098fd7c3cd9b9cdf44e3e1ae912e3d2ce05795a857a53ebff6111b1580b",
-			startPath:   "m/44'/88'",
+			accountId: "hello2",
+			seed:      "dfac3098fd7c3cd9b9cdf44e3e1ae912e3d2ce05795a857a53ebff6111b1580b",
+			startPath: "m/44'/88'",
 		},
 	}
 
@@ -68,7 +68,10 @@ func TestNewHDKey(t *testing.T) {
 		}
 		//t.Logf("Key[%d] Mnemonic = %s", i, key.Mnemonic())
 		t.Logf("Key[%d] address = %s", i, key.KeyID)
-		t.Logf("Key[%d] seed = %s", i, hex.EncodeToString(key.Seed()))
+		_ = key.Seed(func(seed []byte) error {
+			t.Logf("Key[%d] seed = %s", i, hex.EncodeToString(seed))
+			return nil
+		})
 	}
 }
 

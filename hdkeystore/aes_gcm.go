@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/awnumar/memguard"
 	"github.com/blocktree/openwallet/v2/crypto"
 	"io"
 )
@@ -119,6 +118,50 @@ func AesGCMDecrypt(encryptedData, key, additionalData []byte) ([]byte, error) {
 	return plaintext, nil
 }
 
+// AesGCMDecryptToLocker 安全解密，将明文直接写入 dst，避免临时分配
+// dst 必须足够大以容纳明文（最大 len(encryptedData) - 12 - 16）
+func AesGCMDecryptToLocker(dst, encryptedData, key, additionalData []byte) error {
+	// 1. 输入验证
+	if len(key) != 32 {
+		return errors.New("key must be 32 bytes for AES-256")
+	}
+	if encryptedData == nil {
+		return errors.New("encrypted data is nil")
+	}
+
+	// 2. 创建 AES 解密器
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return fmt.Errorf("failed to create cipher: %w", err)
+	}
+
+	// 3. 创建 GCM 模式
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return fmt.Errorf("failed to create GCM: %w", err)
+	}
+
+	// 4. 检查长度
+	nonceSize := gcm.NonceSize()
+	overhead := gcm.Overhead() // 通常是 16 字节（AuthTag）
+	if len(encryptedData) < nonceSize+overhead {
+		return errors.New("encrypted data too short")
+	}
+
+	// 5. 分离 Nonce 和 Ciphertext+Tag
+	nonce := encryptedData[:nonceSize]
+	ciphertextWithTag := encryptedData[nonceSize:]
+
+	// 6. 关键：使用 dst 作为输出缓冲区
+	// gcm.Open(dst[:0], ...) 会将明文追加到 dst 起始位置
+	_, err = gcm.Open(dst[:0], nonce, ciphertextWithTag, additionalData)
+	if err != nil {
+		return fmt.Errorf("authentication failed - data may be tampered: %w", err)
+	}
+
+	return nil
+}
+
 // aesGCMDecryptHDKey 解密HDKey的文件内容
 func aesGCMDecryptHDKey(keyProtected *encryptedHDKeyJSON, auth string) (keyBytes []byte, err error) {
 
@@ -141,14 +184,9 @@ func aesGCMDecryptHDKey(keyProtected *encryptedHDKeyJSON, auth string) (keyBytes
 		return nil, err
 	}
 
-	//创建锁定的 32 字节缓冲区
-	derivedKeyBuff := memguard.NewBufferFromBytes(derivedKey)
-	if err != nil {
-		panic(err)
-	}
-	defer derivedKeyBuff.Destroy() // 自动 mlock + munlock + 清零
+	defer ClearData(derivedKey)
 
-	calculatedMAC := crypto.Keccak256(derivedKeyBuff.Data()[16:32], cipherText)
+	calculatedMAC := crypto.Keccak256(derivedKey[16:32], cipherText)
 	if !bytes.Equal(calculatedMAC, mac) {
 		return nil, ErrDecrypt
 	}
@@ -183,7 +221,7 @@ func aesGCMDecryptHDKey(keyProtected *encryptedHDKeyJSON, auth string) (keyBytes
 		// 可选：若Alias不可改，添加 |alias:%s", hdkey.Alias
 	)
 
-	plainText, err := AesGCMDecrypt(cipherText, derivedKeyBuff.Data(), []byte(aadStr))
+	plainText, err := AesGCMDecrypt(cipherText, derivedKey, []byte(aadStr))
 	if err != nil {
 		return nil, err
 	}
