@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/awnumar/memguard"
 	"github.com/blocktree/openwallet/v2/crypto"
 	"io"
 )
@@ -130,11 +131,6 @@ func aesGCMDecryptHDKey(keyProtected *encryptedHDKeyJSON, auth string) (keyBytes
 		return nil, err
 	}
 
-	//iv, err := hex.DecodeString(keyProtected.Crypto.CipherParams.IV)
-	//if err != nil {
-	//	return nil, err
-	//}
-
 	cipherText, err := hex.DecodeString(keyProtected.Crypto.CipherText)
 	if err != nil {
 		return nil, err
@@ -145,7 +141,14 @@ func aesGCMDecryptHDKey(keyProtected *encryptedHDKeyJSON, auth string) (keyBytes
 		return nil, err
 	}
 
-	calculatedMAC := crypto.Keccak256(derivedKey[16:32], cipherText)
+	//创建锁定的 32 字节缓冲区
+	derivedKeyBuff := memguard.NewBufferFromBytes(derivedKey)
+	if err != nil {
+		panic(err)
+	}
+	defer derivedKeyBuff.Destroy() // 自动 mlock + munlock + 清零
+
+	calculatedMAC := crypto.Keccak256(derivedKeyBuff.Data()[16:32], cipherText)
 	if !bytes.Equal(calculatedMAC, mac) {
 		return nil, ErrDecrypt
 	}
@@ -180,12 +183,12 @@ func aesGCMDecryptHDKey(keyProtected *encryptedHDKeyJSON, auth string) (keyBytes
 		// 可选：若Alias不可改，添加 |alias:%s", hdkey.Alias
 	)
 
-	plainText, err := AesGCMDecrypt(cipherText, derivedKey[:32], []byte(aadStr))
+	plainText, err := AesGCMDecrypt(cipherText, derivedKeyBuff.Data(), []byte(aadStr))
 	if err != nil {
 		return nil, err
 	}
 	if len(plainText) == 0 {
-		return nil, errors.New("aes decrypt invalid")
+		return nil, errors.New("aes gcm decrypt invalid")
 	}
 
 	return plainText, nil

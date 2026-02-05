@@ -19,7 +19,6 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -30,11 +29,7 @@ import (
 )
 
 const (
-	CipherAes256CBC = "aes-256-cbc"
-
 	CipherAes256GCM = "aes-256-gcm"
-
-	CipherAes256CTR = "aes-256-ctr"
 
 	CipherAes128CTR = "aes-128-ctr"
 
@@ -68,9 +63,8 @@ var (
 	ErrNoMatch = errors.New("no key for given address or file")
 	//ErrDecrypt 机密出错
 	ErrDecrypt = errors.New("could not decrypt key with given passphrase")
-	randomKey  = map[string][]byte{
-		hex.EncodeToString(randomBytes(SeedLen / 2)): randomBytes(SeedLen),
-	}
+	randomKey  = randomBytes(32)
+	randomAAD  = randomBytes(32)
 )
 
 // HDKeystore HDKey的存粗工具类
@@ -91,25 +85,19 @@ func randomBytes(l int) []byte {
 }
 
 func encryptSeed(seed []byte) []byte {
-	if len(seed) > SeedLen {
-		return seed
+	encrypted, err := AesGCMEncrypt(seed, randomKey, randomAAD)
+	if err != nil {
+		panic(err)
 	}
-	for i, key := range randomKey {
-		iv, _ := hex.DecodeString(i)
-		return Aes256CBCEncrypt(seed, key[:32], iv[:16])
-	}
-	return nil
+	return encrypted
 }
 
 func decryptSeed(seed []byte) []byte {
-	if len(seed) <= SeedLen {
-		return seed
+	decrypted, err := AesGCMDecrypt(seed, randomKey, randomAAD)
+	if err != nil {
+		panic(err)
 	}
-	for i, key := range randomKey {
-		iv, _ := hex.DecodeString(i)
-		return Aes256CBCDecrypt(seed, key[:32], iv[:16])
-	}
-	return nil
+	return decrypted
 }
 
 // NewHDKeystore 实例化HDKeystore
@@ -179,18 +167,11 @@ func (ks HDKeystore) GetKeyFromBase64(rootId, keyJsonB64, auth string) (*HDKey, 
 	}
 
 	var key *HDKey
-	if ks.cipher == CipherAes256CBC {
-		key, err = DecryptHDKeyByAes256CBC(keyjson, auth)
-		if err != nil {
-			return nil, err
-		}
-	} else if ks.cipher == CipherAes256GCM {
+	if ks.cipher == CipherAes256GCM {
 		key, err = DecryptHDKeyByAes256GCM(keyjson, auth)
 		if err != nil {
 			return nil, err
 		}
-	} else if ks.cipher == CipherAes256CTR {
-		// nothing
 	} else if ks.cipher == CipherAes128CTR {
 		key, err = DecryptHDKey(keyjson, auth)
 		if err != nil {
@@ -214,8 +195,6 @@ func (ks HDKeystore) GetKeyFromBase64(rootId, keyJsonB64, auth string) (*HDKey, 
 		}
 	}
 
-	key.seed = encryptSeed(key.seed)
-
 	return key, nil
 }
 
@@ -223,20 +202,12 @@ func (ks HDKeystore) GetKeyFromBase64(rootId, keyJsonB64, auth string) (*HDKey, 
 func (ks *HDKeystore) StoreKey(filename string, key *HDKey, auth string) error {
 	var keyjson []byte
 	var err error
-	if ks.cipher == CipherAes256CBC {
-		keyjson, err = EncryptKeyByAes256CBC(key, auth, ks.scryptN, ks.scryptP)
-		if err != nil {
-			return err
-		}
-		return writeKeyFile(filename, keyjson)
-	} else if ks.cipher == CipherAes256GCM {
+	if ks.cipher == CipherAes256GCM {
 		keyjson, err = EncryptKeyByAes256GCM(key, auth, ks.scryptN, ks.scryptP)
 		if err != nil {
 			return err
 		}
 		return writeKeyFile(filename, keyjson)
-	} else if ks.cipher == CipherAes256CTR {
-		// nothing
 	} else if ks.cipher == CipherAes128CTR {
 		keyjson, err = EncryptKey(key, auth, ks.scryptN, ks.scryptP)
 		if err != nil {

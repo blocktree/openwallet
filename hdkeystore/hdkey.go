@@ -26,6 +26,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/awnumar/memguard"
 	"io"
 	"io/ioutil"
 	"os"
@@ -260,7 +261,13 @@ func (k *HDKey) FileName() string {
 	return KeyFileName(k.Alias, k.KeyID)
 }
 
-// Seed 密钥种子
+// Seed 密钥种子，解密出种子使用后请立刻清空防止，具体方法参考以下示例
+// 创建锁定的 32 字节缓冲区
+// seedBuff := memguard.NewBufferFromBytes(seed)
+// if err != nil {
+// panic(err)
+// }
+// defer seedBuff.Destroy() // 自动 mlock + munlock + 清零
 func (k *HDKey) Seed() []byte {
 	return decryptSeed(k.seed)
 }
@@ -281,7 +288,7 @@ func EncryptKey(hdkey *HDKey, auth string, scryptN, scryptP int) ([]byte, error)
 	}
 	encryptKey := derivedKey[:16]
 
-	keyBytes := hdkey.Seed()
+	keyBytes := hdkey.seed
 
 	iv := make([]byte, aes.BlockSize) // 16
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
@@ -323,7 +330,7 @@ func EncryptKey(hdkey *HDKey, auth string, scryptN, scryptP int) ([]byte, error)
 	return json.MarshalIndent(encryptedHDKeyJSON, "", "\t")
 }
 
-// DecryptKey decrypts a key from a json blob, returning the private key itself.
+// DecryptHDKey decrypts a key from a json blob, returning the private key itself.
 func DecryptHDKey(keyjson []byte, auth string) (*HDKey, error) {
 	// Parse the json into a simple map to fetch the key version
 	m := make(map[string]interface{})
@@ -445,7 +452,7 @@ func NewHDKey(seed []byte, alias, rootPath string) (*HDKey, error) {
 		Alias:    alias,
 		KeyID:    keyID,
 		RootPath: rootPath,
-		seed:     encryptSeed(seed),
+		seed:     seed,
 	}
 
 	return hdkey, nil
@@ -568,97 +575,17 @@ func pkcs7Unpad(in []byte) []byte {
 	return in[:len(in)-int(padding)]
 }
 
-// ---------------------------- AES-256-CBC (PKCS7) ----------------------------
-
-// EncryptKeyByAes256CBC encrypts a key using the specified scrypt parameters into a json
-// blob that can be decrypted later on.
-func EncryptKeyByAes256CBC(hdkey *HDKey, auth string, scryptN, scryptP int) ([]byte, error) {
-
-	authArray := []byte(auth)
-
-	salt := make([]byte, 32)
-	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
-		panic("reading from crypto/rand failed: " + err.Error())
+// ClearData 最终清空底层数组的函数
+func ClearData(arr ...[]byte) {
+	for _, b := range arr {
+		if len(b) == 0 {
+			return
+		}
+		// 覆盖所有已使用的底层数组元素（len(s)是当前切片的长度）
+		for i := 0; i < len(b); i++ {
+			b[i] = 0 // 用0填充，彻底清除
+		}
 	}
-	derivedKey, err := scrypt.Key(authArray, salt, scryptN, scryptR, scryptP, scryptDKLen)
-	if err != nil {
-		return nil, err
-	}
-	encryptKey := derivedKey[:32] // 32
-
-	keyBytes := hdkey.Seed()
-
-	iv := make([]byte, aes.BlockSize) // 16
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		panic("reading from crypto/rand failed: " + err.Error())
-	}
-	cipherText := Aes256CBCEncrypt(keyBytes, encryptKey, iv)
-	if len(cipherText) == 0 {
-		return nil, errors.New("aes encrypt result invalid")
-	}
-	mac := crypto.Keccak256(derivedKey[16:32], cipherText)
-
-	scryptParamsJSON := make(map[string]interface{}, 5)
-	scryptParamsJSON["n"] = scryptN
-	scryptParamsJSON["r"] = scryptR
-	scryptParamsJSON["p"] = scryptP
-	scryptParamsJSON["dklen"] = scryptDKLen
-	scryptParamsJSON["salt"] = hex.EncodeToString(salt)
-
-	cipherParamsJSON := cipherparamsJSON{
-		IV: hex.EncodeToString(iv),
-	}
-
-	cryptoStruct := cryptoJSON{
-		Cipher:       "aes-256-cbc",
-		CipherText:   hex.EncodeToString(cipherText),
-		CipherParams: cipherParamsJSON,
-		KDF:          keyHeaderKDF,
-		KDFParams:    scryptParamsJSON,
-		MAC:          hex.EncodeToString(mac),
-	}
-
-	encryptedHDKeyJSON := encryptedHDKeyJSON{
-		Alias:    hdkey.Alias,
-		KeyID:    hdkey.KeyID,
-		Crypto:   cryptoStruct,
-		RootPath: hdkey.RootPath,
-		Version:  version,
-	}
-	return json.MarshalIndent(encryptedHDKeyJSON, "", "\t")
-}
-
-// DecryptHDKeyByAes256CBC decrypts a key from a json blob, returning the private key itself.
-func DecryptHDKeyByAes256CBC(keyjson []byte, auth string) (*HDKey, error) {
-	// Parse the json into a simple map to fetch the key version
-	m := make(map[string]interface{})
-	if err := json.Unmarshal(keyjson, &m); err != nil {
-		return nil, err
-	}
-	// Depending on the version try to parse one way or another
-	var (
-		seed []byte
-		err  error
-	)
-	k := new(encryptedHDKeyJSON)
-	if err := json.Unmarshal(keyjson, k); err != nil {
-		return nil, err
-	}
-
-	seed, err = aesCBCDecryptHDKey(k, auth)
-	// Handle any decryption errors and return the key
-	if err != nil {
-		return nil, err
-	}
-
-	keyID := computeKeyID(seed)
-
-	return &HDKey{
-		Alias:    k.Alias,
-		KeyID:    keyID,
-		RootPath: k.RootPath,
-		seed:     encryptSeed(seed),
-	}, nil
 }
 
 // EncryptKeyByAes256GCM encrypts a key using the specified scrypt parameters into a json
@@ -675,9 +602,20 @@ func EncryptKeyByAes256GCM(hdkey *HDKey, auth string, scryptN, scryptP int) ([]b
 	if err != nil {
 		return nil, err
 	}
-	encryptKey := derivedKey[:32] // 32
+	//创建锁定的 32 字节缓冲区
+	seedBuff := memguard.NewBufferFromBytes(hdkey.seed)
+	if err != nil {
+		panic(err)
+	}
+	defer seedBuff.Destroy() // 自动 mlock + munlock + 清零
 
-	keyBytes := hdkey.Seed()
+	//创建锁定的 32 字节缓冲区
+	derivedKeyBuff := memguard.NewBufferFromBytes(derivedKey)
+	if err != nil {
+		panic(err)
+	}
+	defer derivedKeyBuff.Destroy() // 自动 mlock + munlock + 清零
+
 	salt := hex.EncodeToString(saltBytes)
 
 	aadStr := fmt.Sprintf(
@@ -694,11 +632,11 @@ func EncryptKeyByAes256GCM(hdkey *HDKey, auth string, scryptN, scryptP int) ([]b
 		// 可选：若Alias不可改，添加 |alias:%s", hdkey.Alias
 	)
 
-	cipherText, err := AesGCMEncrypt(keyBytes, encryptKey, []byte(aadStr))
+	cipherText, err := AesGCMEncrypt(seedBuff.Data(), derivedKeyBuff.Data(), []byte(aadStr))
 	if len(cipherText) == 0 {
 		return nil, errors.New("aes encrypt result invalid")
 	}
-	mac := crypto.Keccak256(derivedKey[16:32], cipherText)
+	mac := crypto.Keccak256(derivedKeyBuff.Data()[16:32], cipherText)
 
 	scryptParamsJSON := make(map[string]interface{}, 5)
 	scryptParamsJSON["n"] = scryptN
@@ -707,17 +645,12 @@ func EncryptKeyByAes256GCM(hdkey *HDKey, auth string, scryptN, scryptP int) ([]b
 	scryptParamsJSON["dklen"] = scryptDKLen
 	scryptParamsJSON["salt"] = salt
 
-	//cipherParamsJSON := cipherparamsJSON{
-	//	IV: hex.EncodeToString(iv),
-	//}
-
 	cryptoStruct := cryptoJSON{
 		Cipher:     CipherAes256GCM,
 		CipherText: hex.EncodeToString(cipherText),
-		//CipherParams: cipherParamsJSON,
-		KDF:       keyHeaderKDF,
-		KDFParams: scryptParamsJSON,
-		MAC:       hex.EncodeToString(mac),
+		KDF:        keyHeaderKDF,
+		KDFParams:  scryptParamsJSON,
+		MAC:        hex.EncodeToString(mac),
 	}
 
 	encryptedHDKeyJSON := encryptedHDKeyJSON{
@@ -753,12 +686,19 @@ func DecryptHDKeyByAes256GCM(keyjson []byte, auth string) (*HDKey, error) {
 		return nil, err
 	}
 
-	keyID := computeKeyID(seed)
+	//创建锁定的 32 字节缓冲区
+	seedBuff := memguard.NewBufferFromBytes(seed)
+	if err != nil {
+		panic(err)
+	}
+	defer seedBuff.Destroy() // 自动 mlock + munlock + 清零
+
+	keyID := computeKeyID(seedBuff.Data())
 
 	return &HDKey{
 		Alias:    k.Alias,
 		KeyID:    keyID,
 		RootPath: k.RootPath,
-		seed:     encryptSeed(seed),
+		seed:     encryptSeed(seedBuff.Data()),
 	}, nil
 }
