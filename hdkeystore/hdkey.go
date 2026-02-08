@@ -16,7 +16,6 @@
 package hdkeystore
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -34,7 +33,6 @@ import (
 	"github.com/blocktree/go-owcdrivers/owkeychain"
 	"github.com/blocktree/go-owcrypt"
 	"github.com/blocktree/openwallet/v2/crypto"
-	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/scrypt"
 )
 
@@ -68,19 +66,8 @@ const (
 
 var (
 
-	// masterKey is the master key used along with a random seed used to generate
-	// the master node in the hierarchical tree.
-	masterKey = []byte("openwallet seed")
-
 	//KeyID首字节的标识
 	KeyIDVer = []byte{0x48}
-
-	//Derived路径错误
-	ErrInvalidDerivedPath = errors.New("Invalid DerivedPath")
-
-	//错误的HDPath
-	ErrInvalidHDPath = errors.New("Invalid HDPath")
-
 	// ErrInvalidSeedLen describes an error in which the provided seed or
 	// seed length is not in the allowed range.
 	ErrInvalidSeedLen = fmt.Errorf("seed length must be between %d and %d "+
@@ -112,23 +99,19 @@ type encryptedHDKeyJSON struct {
 
 // 加密内容的JSON结构
 type cryptoJSON struct {
-	Cipher       string                 `json:"cipher"`
-	CipherText   string                 `json:"ciphertext"`
-	CipherParams cipherparamsJSON       `json:"cipherparams"`
-	KDF          string                 `json:"kdf"`
-	KDFParams    map[string]interface{} `json:"kdfparams"`
-	MAC          string                 `json:"mac"`
+	Cipher     string      `json:"cipher"`
+	CipherText string      `json:"ciphertext"`
+	KDF        string      `json:"kdf"`
+	KDFParams  interface{} `json:"kdfparams"`
+	MAC        string      `json:"mac"`
 }
 
-// 加密初始向量IV
-type cipherparamsJSON struct {
-	IV string `json:"iv"`
-}
-
-type miningJSON struct {
-	Cycle     uint   `json:"cycle"`
-	Algorithm string `json:"algorithm"`
-	Delay     uint   `json:"delay"`
+type argon2KDFParam struct {
+	Memory  uint32 `json:"memory"`
+	Time    uint32 `json:"time"`
+	Threads uint8  `json:"threads"`
+	Keylen  uint32 `json:"keylen"`
+	Salt    string `json:"salt"`
 }
 
 // DerivedKeyWithPath 根据BIP32的规则获取子密钥，例如：m/<purpose>'/*
@@ -296,176 +279,6 @@ func (k *HDKey) Seed(fn func(seed []byte) error) error {
 	return fn(seedBuf.Data())
 }
 
-// EncryptKey encrypts a key using the specified scrypt parameters into a json
-// blob that can be decrypted later on.
-func EncryptKey(hdkey *HDKey, auth string, scryptN, scryptP int) ([]byte, error) {
-
-	authArray := []byte(auth)
-
-	salt := make([]byte, 32)
-	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
-		panic("reading from crypto/rand failed: " + err.Error())
-	}
-	derivedKey, err := scrypt.Key(authArray, salt, scryptN, scryptR, scryptP, scryptDKLen)
-	if err != nil {
-		return nil, err
-	}
-	encryptKey := derivedKey[:16]
-
-	keyBytes := hdkey.encryptedSeed.Data()
-
-	iv := make([]byte, aes.BlockSize) // 16
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		panic("reading from crypto/rand failed: " + err.Error())
-	}
-	cipherText, err := aesCTRXOR(encryptKey, keyBytes, iv)
-	if err != nil {
-		return nil, err
-	}
-	mac := crypto.Keccak256(derivedKey[16:32], cipherText)
-
-	scryptParamsJSON := make(map[string]interface{}, 5)
-	scryptParamsJSON["n"] = scryptN
-	scryptParamsJSON["r"] = scryptR
-	scryptParamsJSON["p"] = scryptP
-	scryptParamsJSON["dklen"] = scryptDKLen
-	scryptParamsJSON["salt"] = hex.EncodeToString(salt)
-
-	cipherParamsJSON := cipherparamsJSON{
-		IV: hex.EncodeToString(iv),
-	}
-
-	cryptoStruct := cryptoJSON{
-		Cipher:       "aes-128-ctr",
-		CipherText:   hex.EncodeToString(cipherText),
-		CipherParams: cipherParamsJSON,
-		KDF:          keyHeaderKDF,
-		KDFParams:    scryptParamsJSON,
-		MAC:          hex.EncodeToString(mac),
-	}
-
-	encryptedHDKeyJSON := encryptedHDKeyJSON{
-		Alias:    hdkey.Alias,
-		KeyID:    hdkey.KeyID,
-		Crypto:   cryptoStruct,
-		RootPath: hdkey.RootPath,
-		Version:  version,
-	}
-	return json.MarshalIndent(encryptedHDKeyJSON, "", "\t")
-}
-
-// DecryptHDKey decrypts a key from a json blob, returning the private key itself.
-func DecryptHDKey(keyjson []byte, auth string) (*HDKey, error) {
-	// Parse the json into a simple map to fetch the key version
-	m := make(map[string]interface{})
-	if err := json.Unmarshal(keyjson, &m); err != nil {
-		return nil, err
-	}
-	// Depending on the version try to parse one way or another
-	var (
-		seed []byte
-		err  error
-	)
-	k := new(encryptedHDKeyJSON)
-	if err := json.Unmarshal(keyjson, k); err != nil {
-		return nil, err
-	}
-
-	seed, err = decryptHDKey(k, auth)
-	// Handle any decryption errors and return the key
-	if err != nil {
-		return nil, err
-	}
-
-	keyID := computeKeyID(seed)
-
-	return &HDKey{
-		Alias:    k.Alias,
-		KeyID:    keyID,
-		RootPath: k.RootPath,
-		//seed:     encryptSeed(seed),
-	}, nil
-}
-
-// decryptHDKey 解密HDKey的文件内容
-func decryptHDKey(keyProtected *encryptedHDKeyJSON, auth string) (keyBytes []byte, err error) {
-
-	if keyProtected.Crypto.Cipher != "aes-128-ctr" {
-		return nil, fmt.Errorf("Cipher not supported: %v", keyProtected.Crypto.Cipher)
-	}
-
-	mac, err := hex.DecodeString(keyProtected.Crypto.MAC)
-	if err != nil {
-		return nil, err
-	}
-
-	iv, err := hex.DecodeString(keyProtected.Crypto.CipherParams.IV)
-	if err != nil {
-		return nil, err
-	}
-
-	cipherText, err := hex.DecodeString(keyProtected.Crypto.CipherText)
-	if err != nil {
-		return nil, err
-	}
-
-	derivedKey, err := getKDFKey(keyProtected.Crypto, auth)
-	if err != nil {
-		return nil, err
-	}
-
-	calculatedMAC := crypto.Keccak256(derivedKey[16:32], cipherText)
-	if !bytes.Equal(calculatedMAC, mac) {
-		return nil, ErrDecrypt
-	}
-
-	plainText, err := aesCTRXOR(derivedKey[:16], cipherText, iv)
-	if err != nil {
-		return nil, err
-	}
-
-	return plainText, err
-}
-
-// getKDFKey
-func getKDFKey(cryptoJSON cryptoJSON, auth string) ([]byte, error) {
-	authArray := []byte(auth)
-	salt, err := hex.DecodeString(cryptoJSON.KDFParams["salt"].(string))
-	if err != nil {
-		return nil, err
-	}
-	dkLen := ensureInt(cryptoJSON.KDFParams["dklen"])
-
-	if cryptoJSON.KDF == keyHeaderKDF {
-		n := ensureInt(cryptoJSON.KDFParams["n"])
-		r := ensureInt(cryptoJSON.KDFParams["r"])
-		p := ensureInt(cryptoJSON.KDFParams["p"])
-		return scrypt.Key(authArray, salt, n, r, p, dkLen)
-
-	} else if cryptoJSON.KDF == "pbkdf2" {
-		c := ensureInt(cryptoJSON.KDFParams["c"])
-		prf := cryptoJSON.KDFParams["prf"].(string)
-		if prf != "hmac-sha256" {
-			return nil, fmt.Errorf("Unsupported PBKDF2 PRF: %s", prf)
-		}
-		key := pbkdf2.Key(authArray, salt, c, dkLen, sha256.New)
-		return key, nil
-	}
-
-	return nil, fmt.Errorf("Unsupported KDF: %s", cryptoJSON.KDF)
-}
-
-// TODO: can we do without this when unmarshalling dynamic JSON?
-// why do integers in KDF params end up as float64 and not int after
-// unmarshal?
-func ensureInt(x interface{}) int {
-	res, ok := x.(int)
-	if !ok {
-		res = int(x.(float64))
-	}
-	return res
-}
-
 // NewHDKey 通过userkey，私钥种子，根私钥标识符，账户路径，创建HDKey
 func NewHDKey(seed []byte, alias, rootPath string) (*HDKey, error) {
 
@@ -477,21 +290,6 @@ func NewHDKey(seed []byte, alias, rootPath string) (*HDKey, error) {
 		KeyID:    keyID,
 		RootPath: rootPath,
 		//seed:     seed,
-	}
-
-	return hdkey, nil
-}
-
-func NewLockerHDKey(seed *memguard.LockedBuffer, alias, rootPath string) (*HDKey, error) {
-
-	keyID := computeKeyID(seed.Data())
-
-	//实例化密钥
-	hdkey := &HDKey{
-		Alias:         alias,
-		KeyID:         keyID,
-		RootPath:      rootPath,
-		encryptedSeed: seed,
 	}
 
 	return hdkey, nil
@@ -717,36 +515,4 @@ func EncryptKeyByAes256GCM(hdkey *HDKey, plainSeed []byte, auth string, scryptN,
 		Version:  version,
 	}
 	return json.MarshalIndent(encryptedHDKeyJSON, "", "\t")
-}
-
-// DecryptHDKeyByAes256GCM decrypts a key from a json blob, returning the private key itself.
-func DecryptHDKeyByAes256GCM(keyjson []byte, auth string) (*HDKey, error) {
-	var k encryptedHDKeyJSON
-	if err := json.Unmarshal(keyjson, &k); err != nil {
-		return nil, err
-	}
-
-	// 1. 解密得到明文 seed
-	seed, err := aesGCMDecryptHDKey(&k, auth)
-	if err != nil {
-		return nil, err
-	}
-
-	// 2. 立即使用 seed（在清零前）
-	keyID := computeKeyID(seed)
-	encrypted := encryptSeed(seed)
-
-	// 3. 将加密后的种子放入锁定内存
-	locker := memguard.NewBufferFromBytes(encrypted)
-
-	// 4. 立即清零临时敏感数据
-	ClearData(seed, encrypted)
-
-	// 5. 返回安全的 HDKey
-	return &HDKey{
-		Alias:         k.Alias,
-		RootPath:      k.RootPath,
-		KeyID:         keyID,
-		encryptedSeed: locker,
-	}, nil
 }

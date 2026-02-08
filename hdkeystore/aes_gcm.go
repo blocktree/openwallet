@@ -12,6 +12,22 @@ import (
 	"io"
 )
 
+func BuildAAD(keyID, rootPath, salt string, version, memory, time, threads, keyLen int) []byte {
+	aadStr := fmt.Sprintf(
+		"keyid:%s|rootpath:%s|version:%d|cipher:%s|argon2_memory:%d|argon2_time:%d|argon2_threads:%d|argon2_keylen:%d|argon2_salt:%s",
+		keyID,
+		rootPath,
+		version,
+		CipherAes256GCM,
+		memory,
+		time,
+		threads,
+		keyLen,
+		salt,
+	)
+	return []byte(aadStr)
+}
+
 // GetRandomSecure 使用加密安全的随机数生成器生成指定字节数组（推荐）
 func GetRandomSecure(l int) ([]byte, error) {
 	randomIV := make([]byte, l)
@@ -163,7 +179,7 @@ func AesGCMDecryptToLocker(dst, encryptedData, key, additionalData []byte) error
 }
 
 // aesGCMDecryptHDKey 解密HDKey的文件内容
-func aesGCMDecryptHDKey(keyProtected *encryptedHDKeyJSON, auth string) (keyBytes []byte, err error) {
+func aesGCMAndArgon2DecryptHDKey(keyProtected *encryptedHDKeyJSON, auth string) (keyBytes []byte, err error) {
 
 	if keyProtected.Crypto.Cipher != CipherAes256GCM {
 		return nil, fmt.Errorf("cipher not supported: %v", keyProtected.Crypto.Cipher)
@@ -179,49 +195,21 @@ func aesGCMDecryptHDKey(keyProtected *encryptedHDKeyJSON, auth string) (keyBytes
 		return nil, err
 	}
 
-	derivedKey, err := getKDFKey(keyProtected.Crypto, auth)
+	derivedKey, kdfParams, err := getArgon2KDFKey(keyProtected.Crypto, auth)
 	if err != nil {
 		return nil, err
 	}
 
-	defer ClearData(derivedKey)
+	kec := derivedKey[16:32]
 
-	calculatedMAC := crypto.Keccak256(derivedKey[16:32], cipherText)
+	defer ClearData(derivedKey, kec)
+
+	calculatedMAC := crypto.Keccak256(kec, cipherText)
 	if !bytes.Equal(calculatedMAC, mac) {
 		return nil, ErrDecrypt
 	}
 
-	scryptN := keyProtected.Crypto.KDFParams["n"]
-	scryptP := keyProtected.Crypto.KDFParams["p"]
-	salt := keyProtected.Crypto.KDFParams["salt"]
-
-	if _, b := scryptN.(float64); !b {
-		return nil, errors.New("scrypt n invalid")
-	}
-
-	if _, b := scryptP.(float64); !b {
-		return nil, errors.New("scrypt p invalid")
-	}
-
-	if _, b := salt.(string); !b {
-		return nil, errors.New("scrypt salt invalid")
-	}
-
-	aadStr := fmt.Sprintf(
-		"keyid:%s|rootpath:%s|version:%d|cipher:%s|scrypt_n:%d|scrypt_r:%d|scrypt_p:%d|scrypt_dklen:%d|scrypt_salt:%s",
-		keyProtected.KeyID,     // 保留：钱包唯一标识（不可改）
-		keyProtected.RootPath,  // 保留：钱包路径（不可改）
-		keyProtected.Version,   // 保留：版本号
-		CipherAes256GCM,        // 保留：加密算法
-		int(scryptN.(float64)), // 保留：scrypt参数
-		scryptR,                // 保留：scrypt参数
-		int(scryptP.(float64)), // 保留：scrypt参数
-		scryptDKLen,            // 保留：scrypt参数
-		salt,                   // 保留：scrypt盐
-		// 可选：若Alias不可改，添加 |alias:%s", hdkey.Alias
-	)
-
-	plainText, err := AesGCMDecrypt(cipherText, derivedKey, []byte(aadStr))
+	plainText, err := AesGCMDecrypt(cipherText, derivedKey, BuildAAD(keyProtected.KeyID, keyProtected.RootPath, kdfParams.Salt, keyProtected.Version, int(kdfParams.Memory), int(kdfParams.Time), int(kdfParams.Threads), int(kdfParams.Keylen)))
 	if err != nil {
 		return nil, err
 	}

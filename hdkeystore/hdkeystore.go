@@ -32,13 +32,17 @@ import (
 const (
 	CipherAes256GCM = "aes-256-gcm"
 
-	CipherAes128CTR = "aes-128-ctr"
-
 	keyHeaderKDF = "scrypt"
+
+	keyHeaderArgon2KDF = "argon2"
 
 	// StandardScryptN is the N parameter of Scrypt encryption algorithm, using 256MB
 	// memory and taking approximately 1s CPU time on a modern processor.
 	StandardScryptN = 1 << 18
+
+	// HighSecurityScryptN is the N parameter for Scrypt with higher security,
+	// using approximately 1GB memory and taking a few seconds on a modern CPU.
+	HighSecurityScryptN = 1 << 20
 
 	// StandardScryptP is the P parameter of Scrypt encryption algorithm, using 256MB
 	// memory and taking approximately 1s CPU time on a modern processor.
@@ -104,14 +108,6 @@ func encryptSeed(seed []byte) []byte {
 	return encrypted
 }
 
-func decryptSeed(seed []byte) []byte {
-	decrypted, err := AesGCMDecrypt(seed, runtimeKey.Data(), runtimeAAD.Data())
-	if err != nil {
-		panic(err)
-	}
-	return decrypted
-}
-
 // decryptSeedTo 将解密结果直接写入目标 buffer（不返回明文 slice）
 func decryptSeedTo(dst []byte, encrypted []byte) error {
 	return AesGCMDecryptToLocker(dst, encrypted, runtimeKey.Data(), runtimeAAD.Data())
@@ -127,24 +123,8 @@ func NewHDKeystore(keydir string, scryptN, scryptP int) *HDKeystore {
 	return ks
 }
 
-// StoreHDKey 创建HDKey
-func StoreHDKey(dir, alias, auth string, scryptN, scryptP int) (*HDKey, string, error) {
-
-	seed, err := GenerateSeed(SeedLen)
-	if err != nil {
-		return nil, "", err
-	}
-
-	//extSeed, err := GetExtendSeed(seed, masterKey)
-	//if err != nil {
-	//	return "", err
-	//}
-
-	return StoreHDKeyWithSeed(dir, alias, auth, seed, scryptN, scryptP)
-}
-
 // StoreLockerHDKey 重要：当前版本只使用这个创建钱包文件入口，使用AES-256-GCM保存文件
-func StoreLockerHDKey(dir, alias, auth string, scryptN, scryptP int) (string, error) {
+func StoreLockerHDKey(dir, alias, auth string) (string, error) {
 	seed, err := GenerateLockedSeed(SeedLen)
 	if err != nil {
 		return "", err
@@ -155,7 +135,7 @@ func StoreLockerHDKey(dir, alias, auth string, scryptN, scryptP int) (string, er
 	keyID := computeKeyID(seed.Data())
 
 	// 3. 创建 keystore
-	ks := NewHDKeystore(dir, scryptN, scryptP)
+	ks := NewHDKeystore(dir, 0, 0)
 
 	// 4. 构造 HDKey 元数据（不含明文种子！）
 	hdkeyMeta := &HDKey{
@@ -181,8 +161,8 @@ func (ks *HDKeystore) StoreLockerKeyWithSeed(
 	plainSeed []byte, // 来自 LockedBuffer.Data()
 	auth string,
 ) error {
-	// 调用你现有的 EncryptKeyByAes256GCM，但传入 plainSeed
-	keyJSON, err := EncryptKeyByAes256GCM(meta, plainSeed, auth, ks.scryptN, ks.scryptP)
+	// mode=0默认的argon2派生密钥
+	keyJSON, err := EncryptKeyByAes256GCMAndArgon2(meta, plainSeed, auth)
 	if err != nil {
 		return err
 	}
@@ -190,23 +170,23 @@ func (ks *HDKeystore) StoreLockerKeyWithSeed(
 }
 
 // StoreHDKeyWithSeed 创建HDKey
-func StoreHDKeyWithSeed(dir, alias, auth string, seed []byte, scryptN, scryptP int) (*HDKey, string, error) {
-	ks := NewHDKeystore(dir, scryptN, scryptP)
-	key, filePath, err := storeNewKey(ks, alias, auth, seed)
-	return key, filePath, err
-}
-
-// storeNewKey 用随机种子生成HDKey
-func storeNewKey(ks *HDKeystore, alias, auth string, seed []byte) (*HDKey, string, error) {
-
-	key, err := NewHDKey(seed, alias, OpenwCoinTypePath)
-	if err != nil {
-		return nil, "", err
-	}
-	filePath := ks.JoinPath(KeyFileName(key.Alias, key.KeyID) + ".key")
-	ks.StoreKey(filePath, key, auth)
-	return key, filePath, err
-}
+//func StoreHDKeyWithSeed(dir, alias, auth string, seed []byte, scryptN, scryptP int) (*HDKey, string, error) {
+//	ks := NewHDKeystore(dir, scryptN, scryptP)
+//	key, filePath, err := storeNewKey(ks, alias, auth, seed)
+//	return key, filePath, err
+//}
+//
+//// storeNewKey 用随机种子生成HDKey
+//func storeNewKey(ks *HDKeystore, alias, auth string, seed []byte) (*HDKey, string, error) {
+//
+//	key, err := NewHDKey(seed, alias, OpenwCoinTypePath)
+//	if err != nil {
+//		return nil, "", err
+//	}
+//	filePath := ks.JoinPath(KeyFileName(key.Alias, key.KeyID) + ".key")
+//	ks.StoreKey(filePath, key, auth)
+//	return key, filePath, err
+//}
 
 // GetKey 通过accountId读取钥匙
 func (ks HDKeystore) GetKey(rootId, filename, auth string) (*HDKey, error) {
@@ -226,28 +206,10 @@ func (ks HDKeystore) GetKeyFromBase64(rootId, keyJsonB64, auth string) (*HDKey, 
 		return nil, err
 	}
 
-	key, err := DecryptHDKeyByAes256GCM(keyjson, auth)
+	key, err := DecryptHDKeyByAes256GCMAndArgon2(keyjson, auth)
 	if err != nil {
 		return nil, err
 	}
-
-	//var key *HDKey
-	//if ks.cipher == CipherAes256GCM {
-	//	key, err = DecryptHDKeyByAes256GCM(keyjson, auth)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//} else if ks.cipher == CipherAes128CTR {
-	//	key, err = DecryptHDKey(keyjson, auth)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//} else {
-	//	key, err = DecryptHDKey(keyjson, auth)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//}
 
 	if key == nil || len(key.KeyID) == 0 {
 		return nil, errors.New("HDKey decrypt invalid")
@@ -261,17 +223,6 @@ func (ks HDKeystore) GetKeyFromBase64(rootId, keyJsonB64, auth string) (*HDKey, 
 	}
 
 	return key, nil
-}
-
-// StoreKey 把HDKey重写加密写入到文件中
-func (ks *HDKeystore) StoreKey(filename string, key *HDKey, auth string) error {
-	var keyjson []byte
-	var err error
-	keyjson, err = EncryptKey(key, auth, ks.scryptN, ks.scryptP)
-	if err != nil {
-		return err
-	}
-	return writeKeyFile(filename, keyjson)
 }
 
 // JoinPath 文件路径组合

@@ -9,7 +9,7 @@ require (
 	github.com/NebulousLabs/entropy-mnemonics v0.0.0-20181203154559-bc7e13c5ccd8
 	github.com/asdine/storm v2.1.2+incompatible
 	github.com/astaxie/beego v1.12.0
-	github.com/awnumar/memguard v0.23.0
+	github.com/awnumar/memguard v0.22.5
 	github.com/blocktree/go-owcdrivers v1.2.0
 	github.com/blocktree/go-owcrypt v1.1.13
 	github.com/bndr/gotabulate v1.1.2
@@ -37,7 +37,7 @@ require (
 	github.com/tidwall/gjson v1.9.3
 	github.com/tyler-smith/go-bip39 v1.0.2
 	go.etcd.io/bbolt v1.3.3
-	golang.org/x/crypto v0.41.0
+	golang.org/x/crypto v0.33.0
 	gopkg.in/urfave/cli.v1 v1.20.0
 )
 
@@ -70,7 +70,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
-	golang.org/x/net v0.42.0 // indirect
+	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
 )

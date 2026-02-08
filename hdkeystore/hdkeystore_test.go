@@ -24,7 +24,7 @@ import (
 
 func TestStoreHDKeyGCM(t *testing.T) {
 	path := filepath.Join(".", "keys")
-	rootId, err := StoreLockerHDKey(path, "sogosdfo456", "123TestGCM", StandardScryptN, StandardScryptP)
+	rootId, err := StoreLockerHDKey(path, "sogosdfo456", "123TestGCM")
 	if err != nil {
 		t.Errorf("StoreHDKey failed unexpected error: %v", err)
 	} else {
@@ -36,7 +36,7 @@ func TestGetKeyGCM(t *testing.T) {
 	path := filepath.Join(".", "keys")
 	ks := &HDKeystore{path, StandardScryptN, StandardScryptP}
 
-	key, err := ks.GetKey("WAeeR9gwARFWkfGgeJU86mR2E831FD5Q66", "sogosdfo456-WAeeR9gwARFWkfGgeJU86mR2E831FD5Q66.key", "123TestGCM")
+	key, err := ks.GetKey("W4sXXZ14R3L7WB7qo5usrgKovpCPn63ibr", "sogosdfo456-W4sXXZ14R3L7WB7qo5usrgKovpCPn63ibr.key", "123TestGCM")
 
 	if err != nil {
 		t.Errorf("GetKey failed unexpected error: %v\n", err)
