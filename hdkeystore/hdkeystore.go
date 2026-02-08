@@ -123,29 +123,33 @@ func NewHDKeystore(keydir string, scryptN, scryptP int) *HDKeystore {
 
 // StoreLockerHDKey 重要：当前版本只使用这个创建钱包文件入口，使用AES-256-GCM保存文件
 func StoreLockerHDKey(dir, alias, auth string) (string, error) {
-	seed, err := GenerateLockedSeed(SeedLen)
+	seedBuf, err := GenerateLockedSeed(SeedLen)
 	if err != nil {
 		return "", err
 	}
-	defer seed.Destroy()
+	defer seedBuf.Destroy()
 
-	// 2. 计算 KeyID（需明文）
-	keyID := computeKeyID(seed.Data())
+	// 在单一作用域内使用明文
+	var keyID string
+	err = func() error {
+		seed := seedBuf.Data() // ← 只调用一次！
 
-	// 3. 创建 keystore
-	ks := NewHDKeystore(dir, 0, 0)
+		// 1. 计算 KeyID
+		keyID = computeKeyID(seed)
 
-	// 4. 构造 HDKey 元数据（不含明文种子！）
-	hdkeyMeta := &HDKey{
-		Alias:    alias,
-		KeyID:    keyID,
-		RootPath: OpenwCoinTypePath,
-		// 注意：encryptedSeed 暂不设置（或设为 nil）
-	}
+		// 2. 构造元数据
+		hdkeyMeta := &HDKey{
+			Alias:    alias,
+			KeyID:    keyID,
+			RootPath: OpenwCoinTypePath,
+		}
 
-	// 5. 直接用 seed.Data() 加密并存储
-	filePath := ks.JoinPath(KeyFileName(alias, keyID) + ".key")
-	if err := ks.StoreLockerKeyWithSeed(filePath, hdkeyMeta, seed.Data(), auth); err != nil {
+		// 3. 存储（传入 seed）
+		ks := NewHDKeystore(dir, 0, 0)
+		filePath := ks.JoinPath(KeyFileName(alias, keyID) + ".key")
+		return ks.StoreLockerKeyWithSeed(filePath, hdkeyMeta, seed, auth)
+	}()
+	if err != nil {
 		return "", fmt.Errorf("failed to store key: %w", err)
 	}
 

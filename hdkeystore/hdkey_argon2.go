@@ -86,11 +86,6 @@ func EncryptKeyByAes256GCMAndArgon2(hdkey *HDKey, plainSeed []byte, auth string)
 		return nil, errors.New("aes encrypt result invalid")
 	}
 
-	//kec := derivedKey[16:32]
-	//defer ClearData(kec)
-	//
-	//mac := crypto.Keccak256(kec, cipherText)
-
 	kdfParam := argon2KDFParam{
 		Memory:  argon2Memory,
 		Time:    argon2Time,
