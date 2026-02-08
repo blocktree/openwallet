@@ -1,14 +1,12 @@
 package hdkeystore
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/blocktree/openwallet/v2/crypto"
 	"io"
 )
 
@@ -76,7 +74,6 @@ func AesGCMEncrypt(plaintext, key, additionalData []byte) ([]byte, error) {
 	// 6. 拼接：Nonce + Ciphertext + AuthTag
 	result := append(nonce, ciphertext...)
 
-	// 7. Base64 编码
 	return result, nil
 }
 
@@ -94,7 +91,7 @@ func AesGCMDecrypt(encryptedData, key, additionalData []byte) ([]byte, error) {
 	// 2. 解码 Base64
 	data := encryptedData
 	if data == nil {
-		return nil, errors.New("base64 decode failed")
+		return nil, errors.New("encrypted data is nil")
 	}
 
 	// 3. 创建 AES 加密器
@@ -185,11 +182,6 @@ func aesGCMAndArgon2DecryptHDKey(keyProtected *encryptedHDKeyJSON, auth string) 
 		return nil, fmt.Errorf("cipher not supported: %v", keyProtected.Crypto.Cipher)
 	}
 
-	mac, err := hex.DecodeString(keyProtected.Crypto.MAC)
-	if err != nil {
-		return nil, err
-	}
-
 	cipherText, err := hex.DecodeString(keyProtected.Crypto.CipherText)
 	if err != nil {
 		return nil, err
@@ -200,16 +192,7 @@ func aesGCMAndArgon2DecryptHDKey(keyProtected *encryptedHDKeyJSON, auth string) 
 		return nil, err
 	}
 
-	kec := derivedKey[16:32]
-
-	defer ClearData(derivedKey, kec)
-
-	calculatedMAC := crypto.Keccak256(kec, cipherText)
-	if !bytes.Equal(calculatedMAC, mac) {
-		return nil, ErrDecrypt
-	}
-
-	plainText, err := AesGCMDecrypt(cipherText, derivedKey, BuildAAD(keyProtected.KeyID, keyProtected.RootPath, kdfParams.Salt, keyProtected.Version, int(kdfParams.Memory), int(kdfParams.Time), int(kdfParams.Threads), int(kdfParams.Keylen)))
+	plainText, err := AesGCMDecrypt(cipherText, derivedKey, BuildAAD(keyProtected.KeyID, keyProtected.RootPath, kdfParams.Salt, keyProtected.Version, kdfParams.Memory, kdfParams.Time, kdfParams.Threads, kdfParams.Keylen))
 	if err != nil {
 		return nil, err
 	}

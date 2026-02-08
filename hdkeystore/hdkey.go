@@ -20,20 +20,15 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/awnumar/memguard"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	"github.com/blocktree/go-owcdrivers/owkeychain"
 	"github.com/blocktree/go-owcrypt"
-	"github.com/blocktree/openwallet/v2/crypto"
-	"golang.org/x/crypto/scrypt"
 )
 
 const (
@@ -107,10 +102,10 @@ type cryptoJSON struct {
 }
 
 type argon2KDFParam struct {
-	Memory  uint32 `json:"memory"`
-	Time    uint32 `json:"time"`
-	Threads uint8  `json:"threads"`
-	Keylen  uint32 `json:"keylen"`
+	Memory  int    `json:"memory"`
+	Time    int    `json:"time"`
+	Threads int    `json:"threads"`
+	Keylen  int    `json:"keylen"`
 	Salt    string `json:"salt"`
 }
 
@@ -446,73 +441,4 @@ func ClearData(slices ...[]byte) {
 			s[i] = 0
 		}
 	}
-}
-
-// EncryptKeyByAes256GCM encrypts a key using the specified scrypt parameters into a json
-// blob that can be decrypted later on.
-func EncryptKeyByAes256GCM(hdkey *HDKey, plainSeed []byte, auth string, scryptN, scryptP int) ([]byte, error) {
-
-	authArray := []byte(auth)
-
-	defer ClearData(authArray)
-
-	saltBytes := make([]byte, 32)
-	if _, err := io.ReadFull(rand.Reader, saltBytes); err != nil {
-		panic("reading from crypto/rand failed: " + err.Error())
-	}
-	derivedKey, err := scrypt.Key(authArray, saltBytes, scryptN, scryptR, scryptP, scryptDKLen)
-	if err != nil {
-		return nil, err
-	}
-
-	defer ClearData(derivedKey, saltBytes)
-
-	salt := hex.EncodeToString(saltBytes)
-
-	aadStr := fmt.Sprintf(
-		"keyid:%s|rootpath:%s|version:%d|cipher:%s|scrypt_n:%d|scrypt_r:%d|scrypt_p:%d|scrypt_dklen:%d|scrypt_salt:%s",
-		hdkey.KeyID,     // 保留：钱包唯一标识（不可改）
-		hdkey.RootPath,  // 保留：钱包路径（不可改）
-		version,         // 保留：版本号
-		CipherAes256GCM, // 保留：加密算法
-		scryptN,         // 保留：scrypt参数
-		scryptR,         // 保留：scrypt参数
-		scryptP,         // 保留：scrypt参数
-		scryptDKLen,     // 保留：scrypt参数
-		salt,            // 保留：scrypt盐
-		// 可选：若Alias不可改，添加 |alias:%s", hdkey.Alias
-	)
-
-	cipherText, err := AesGCMEncrypt(plainSeed, derivedKey, []byte(aadStr))
-	if err != nil {
-		return nil, err
-	}
-	if len(cipherText) == 0 {
-		return nil, errors.New("aes encrypt result invalid")
-	}
-	mac := crypto.Keccak256(derivedKey[16:32], cipherText)
-
-	scryptParamsJSON := make(map[string]interface{}, 5)
-	scryptParamsJSON["n"] = scryptN
-	scryptParamsJSON["r"] = scryptR
-	scryptParamsJSON["p"] = scryptP
-	scryptParamsJSON["dklen"] = scryptDKLen
-	scryptParamsJSON["salt"] = salt
-
-	cryptoStruct := cryptoJSON{
-		Cipher:     CipherAes256GCM,
-		CipherText: hex.EncodeToString(cipherText),
-		KDF:        keyHeaderKDF,
-		KDFParams:  scryptParamsJSON,
-		MAC:        hex.EncodeToString(mac),
-	}
-
-	encryptedHDKeyJSON := encryptedHDKeyJSON{
-		Alias:    hdkey.Alias,
-		KeyID:    hdkey.KeyID,
-		Crypto:   cryptoStruct,
-		RootPath: hdkey.RootPath,
-		Version:  version,
-	}
-	return json.MarshalIndent(encryptedHDKeyJSON, "", "\t")
 }

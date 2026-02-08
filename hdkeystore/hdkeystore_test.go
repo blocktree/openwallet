@@ -36,7 +36,7 @@ func TestGetKeyGCM(t *testing.T) {
 	path := filepath.Join(".", "keys")
 	ks := &HDKeystore{path, StandardScryptN, StandardScryptP}
 
-	key, err := ks.GetKey("W4sXXZ14R3L7WB7qo5usrgKovpCPn63ibr", "sogosdfo456-W4sXXZ14R3L7WB7qo5usrgKovpCPn63ibr.key", "123TestGCM")
+	key, err := ks.GetKey("W3AsFTarKFKkMkDmQVKKCGrAL178mLCT68", "sogosdfo456-W3AsFTarKFKkMkDmQVKKCGrAL178mLCT68.key", "123TestGCM")
 
 	if err != nil {
 		t.Errorf("GetKey failed unexpected error: %v\n", err)

@@ -17,6 +17,7 @@ package hdkeystore
 
 import (
 	"encoding/hex"
+	"github.com/awnumar/memguard"
 	"github.com/blocktree/go-owcrypt"
 	"testing"
 )
@@ -66,19 +67,38 @@ func TestNewHDKey(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewHDKey failed unexpected error: %v", err)
 		}
-		//t.Logf("Key[%d] Mnemonic = %s", i, key.Mnemonic())
 		t.Logf("Key[%d] address = %s", i, key.KeyID)
-		_ = key.Seed(func(seed []byte) error {
-			t.Logf("Key[%d] seed = %s", i, hex.EncodeToString(seed))
-			return nil
-		})
+
+		// Verify KeyID is computed correctly
+		expectedKeyID := computeKeyID(seed)
+		if key.KeyID != expectedKeyID {
+			t.Errorf("KeyID mismatch: expected %s, got %s", expectedKeyID, key.KeyID)
+		}
+
+		// Note: NewHDKey creates HDKey without encrypted seed
+		// Seed access is only available after decryption from keystore
 	}
 }
 
 func TestHDKey_DerivedKeyWithPath(t *testing.T) {
+	// Generate a seed
 	seed, _ := GenerateSeed(32)
-	key, _ := NewHDKey(seed, "hello", OpenwCoinTypePath)
-	childKey, err := key.DerivedKeyWithPath("m/44'/88'/1581919647/0", owcrypt.ECC_CURVE_ED25519_NORMAL)
+
+	// Encrypt the seed for testing
+	encryptedSeed := encryptSeed(seed)
+	defer ClearData(seed)
+
+	// Create HDKey with encrypted seed (simulating decryption from keystore)
+	key := &HDKey{
+		Alias:         "test",
+		KeyID:         computeKeyID(seed),
+		RootPath:      OpenwCoinTypePath,
+		encryptedSeed: memguard.NewBufferFromBytes(encryptedSeed),
+	}
+	defer key.encryptedSeed.Destroy()
+
+	// Test derivation
+	childKey, err := key.DerivedKeyWithPath("m/44'/88'/0'/0/0", owcrypt.ECC_CURVE_ED25519_NORMAL)
 	if err != nil {
 		t.Fatalf("DerivedKeyWithPath failed unexpected error: %v", err)
 		return

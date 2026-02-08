@@ -5,7 +5,7 @@ import "golang.org/x/crypto/argon2"
 // 推荐参数（机构级安全）：
 const (
 	argon2Time    = 12              // 迭代次数（增加计算深度）
-	argon2Memory  = 1 * 1024 * 1024 // 1 GB 内存（单位：KB）
+	argon2Memory  = 1 * 1024 * 1024 // 1 GB 内存
 	argon2Threads = 4               // 利用多核，但不过度
 	argon2KeyLen  = 32              // 256 位密钥
 )

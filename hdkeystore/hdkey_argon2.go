@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/awnumar/memguard"
-	"github.com/blocktree/openwallet/v2/crypto"
 	"io"
 )
 
@@ -31,7 +30,7 @@ func getArgon2KDFKey(cryptoJSON cryptoJSON, auth string) ([]byte, *argon2KDFPara
 
 	argonParams := &argon2KDFParam{}
 
-	if cryptoJSON.KDF == "argon2" { // 根据你存储的 kdf 字段值调整
+	if cryptoJSON.KDF == keyHeaderArgon2IDKDF { // 根据你存储的 kdf 字段值调整
 		paramsBytes, err := json.Marshal(cryptoJSON.KDFParams)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to marshal KDFParams: %w", err)
@@ -52,7 +51,7 @@ func getArgon2KDFKey(cryptoJSON cryptoJSON, auth string) ([]byte, *argon2KDFPara
 		return nil, nil, err
 	}
 
-	return deriveKeyArgon2idDefault(authBytes, salt, argonParams.Time, argonParams.Memory, argonParams.Keylen, argonParams.Threads), argonParams, nil
+	return deriveKeyArgon2idDefault(authBytes, salt, uint32(argonParams.Time), uint32(argonParams.Memory), uint32(argonParams.Keylen), uint8(argonParams.Threads)), argonParams, nil
 }
 
 // EncryptKeyByAes256GCMAndArgon2 encrypts a key using the specified scrypt parameters into a json
@@ -87,10 +86,10 @@ func EncryptKeyByAes256GCMAndArgon2(hdkey *HDKey, plainSeed []byte, auth string)
 		return nil, errors.New("aes encrypt result invalid")
 	}
 
-	kec := derivedKey[16:32]
-	defer ClearData(kec)
-
-	mac := crypto.Keccak256(kec, cipherText)
+	//kec := derivedKey[16:32]
+	//defer ClearData(kec)
+	//
+	//mac := crypto.Keccak256(kec, cipherText)
 
 	kdfParam := argon2KDFParam{
 		Memory:  argon2Memory,
@@ -103,9 +102,9 @@ func EncryptKeyByAes256GCMAndArgon2(hdkey *HDKey, plainSeed []byte, auth string)
 	cryptoStruct := cryptoJSON{
 		Cipher:     CipherAes256GCM,
 		CipherText: hex.EncodeToString(cipherText),
-		KDF:        keyHeaderArgon2KDF,
+		KDF:        keyHeaderArgon2IDKDF,
 		KDFParams:  kdfParam,
-		MAC:        hex.EncodeToString(mac),
+		//MAC:        hex.EncodeToString(mac),
 	}
 
 	encryptedHDKeyJSON := encryptedHDKeyJSON{
@@ -133,6 +132,12 @@ func DecryptHDKeyByAes256GCMAndArgon2(keyjson []byte, auth string) (*HDKey, erro
 
 	// 2. 立即使用 seed（在清零前）
 	keyID := computeKeyID(seed)
+
+	if keyID != k.KeyID {
+		ClearData(seed)
+		return nil, errors.New("key ID mismatch after decryption")
+	}
+
 	encrypted := encryptSeed(seed)
 
 	// 3. 将加密后的种子放入锁定内存

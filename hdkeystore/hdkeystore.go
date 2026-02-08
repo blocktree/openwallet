@@ -34,7 +34,7 @@ const (
 
 	keyHeaderKDF = "scrypt"
 
-	keyHeaderArgon2KDF = "argon2"
+	keyHeaderArgon2IDKDF = "argon2id"
 
 	// StandardScryptN is the N parameter of Scrypt encryption algorithm, using 256MB
 	// memory and taking approximately 1s CPU time on a modern processor.
