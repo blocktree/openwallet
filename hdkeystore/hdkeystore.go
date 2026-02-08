@@ -17,12 +17,10 @@ package hdkeystore
 
 import (
 	"crypto/hmac"
-	"crypto/rand"
 	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/awnumar/memguard"
-	"io"
 	"io/ioutil"
 	"path/filepath"
 
@@ -34,7 +32,7 @@ const (
 
 	keyHeaderKDF = "scrypt"
 
-	keyHeaderArgon2IDKDF = "argon2id"
+	keyHeaderArgon2idKDF = "argon2id"
 
 	// StandardScryptN is the N parameter of Scrypt encryption algorithm, using 256MB
 	// memory and taking approximately 1s CPU time on a modern processor.
@@ -81,31 +79,31 @@ type HDKeystore struct {
 }
 
 func getRuntimeKey() *memguard.LockedBuffer {
-	b := randomBytes(32)
+	b, _ := GetRandomSecure(32)
 	defer ClearData(b)
 	return memguard.NewBufferFromBytes(b)
 }
 
 func getRuntimeAAD() *memguard.LockedBuffer {
-	b := randomBytes(32)
+	b, _ := GetRandomSecure(32)
 	defer ClearData(b)
 	return memguard.NewBufferFromBytes(b)
 }
 
-func randomBytes(l int) []byte {
-	bs := make([]byte, l)
-	if _, err := io.ReadFull(rand.Reader, bs); err != nil {
-		panic("reading from crypto/rand failed: " + err.Error())
-	}
-	return bs
-}
-
-func encryptSeed(seed []byte) []byte {
+func encryptSeed(seed []byte) (*memguard.LockedBuffer, error) {
+	// 1. 执行加密（得到普通 []byte）
 	encrypted, err := AesGCMEncrypt(seed, runtimeKey.Data(), runtimeAAD.Data())
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return encrypted
+
+	// 2. 立即将其移入 LockedBuffer
+	locker := memguard.NewBufferFromBytes(encrypted)
+
+	// 3. 尽力清零临时密文（虽不能 100% 保证，但好习惯）
+	ClearData(encrypted)
+
+	return locker, nil
 }
 
 // decryptSeedTo 将解密结果直接写入目标 buffer（不返回明文 slice）
@@ -232,13 +230,6 @@ func (ks *HDKeystore) JoinPath(filename string) string {
 	} else {
 		return filepath.Join(ks.keysDirPath, filename)
 	}
-}
-
-// getDecryptedKey 获取解密后的钥匙
-func (ks *HDKeystore) getDecryptedKey(alias, rootId, auth string) (*HDKey, error) {
-	path := ks.JoinPath(KeyFileName(alias, rootId) + ".key")
-	key, err := ks.GetKey(rootId, path, auth)
-	return key, err
 }
 
 // GetExtendSeed 获得某个币种的扩展种子

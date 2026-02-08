@@ -17,7 +17,6 @@ package hdkeystore
 
 import (
 	"encoding/hex"
-	"github.com/awnumar/memguard"
 	"github.com/blocktree/go-owcrypt"
 	"testing"
 )
@@ -85,7 +84,7 @@ func TestHDKey_DerivedKeyWithPath(t *testing.T) {
 	seed, _ := GenerateSeed(32)
 
 	// Encrypt the seed for testing
-	encryptedSeed := encryptSeed(seed)
+	encryptedSeed, _ := encryptSeed(seed)
 	defer ClearData(seed)
 
 	// Create HDKey with encrypted seed (simulating decryption from keystore)
@@ -93,7 +92,7 @@ func TestHDKey_DerivedKeyWithPath(t *testing.T) {
 		Alias:         "test",
 		KeyID:         computeKeyID(seed),
 		RootPath:      OpenwCoinTypePath,
-		encryptedSeed: memguard.NewBufferFromBytes(encryptedSeed),
+		encryptedSeed: encryptedSeed,
 	}
 	defer key.encryptedSeed.Destroy()
 

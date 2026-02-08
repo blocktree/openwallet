@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/awnumar/memguard"
 	"io"
 )
 
@@ -176,7 +177,7 @@ func AesGCMDecryptToLocker(dst, encryptedData, key, additionalData []byte) error
 }
 
 // aesGCMDecryptHDKey 解密HDKey的文件内容
-func aesGCMAndArgon2DecryptHDKey(keyProtected *encryptedHDKeyJSON, auth string) (keyBytes []byte, err error) {
+func aesGCMAndArgon2DecryptHDKey(keyProtected *encryptedHDKeyJSON, auth string) (*memguard.LockedBuffer, error) {
 
 	if keyProtected.Crypto.Cipher != CipherAes256GCM {
 		return nil, fmt.Errorf("cipher not supported: %v", keyProtected.Crypto.Cipher)
@@ -192,13 +193,10 @@ func aesGCMAndArgon2DecryptHDKey(keyProtected *encryptedHDKeyJSON, auth string) 
 		return nil, err
 	}
 
-	plainText, err := AesGCMDecrypt(cipherText, derivedKey, BuildAAD(keyProtected.KeyID, keyProtected.RootPath, kdfParams.Salt, keyProtected.Version, kdfParams.Memory, kdfParams.Time, kdfParams.Threads, kdfParams.Keylen))
-	if err != nil {
+	seed := memguard.NewBuffer(SeedLen) // 根据实际 seed 长度调整
+	if err := AesGCMDecryptToLocker(seed.Data(), cipherText, derivedKey, BuildAAD(keyProtected.KeyID, keyProtected.RootPath, kdfParams.Salt, keyProtected.Version, kdfParams.Memory, kdfParams.Time, kdfParams.Threads, kdfParams.Keylen)); err != nil {
 		return nil, err
 	}
-	if len(plainText) == 0 {
-		return nil, errors.New("aes gcm decrypt invalid")
-	}
 
-	return plainText, nil
+	return seed, nil
 }

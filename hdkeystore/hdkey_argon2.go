@@ -30,7 +30,7 @@ func getArgon2KDFKey(cryptoJSON cryptoJSON, auth string) ([]byte, *argon2KDFPara
 
 	argonParams := &argon2KDFParam{}
 
-	if cryptoJSON.KDF == keyHeaderArgon2IDKDF { // 根据你存储的 kdf 字段值调整
+	if cryptoJSON.KDF == keyHeaderArgon2idKDF { // 根据你存储的 kdf 字段值调整
 		paramsBytes, err := json.Marshal(cryptoJSON.KDFParams)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to marshal KDFParams: %w", err)
@@ -102,7 +102,7 @@ func EncryptKeyByAes256GCMAndArgon2(hdkey *HDKey, plainSeed []byte, auth string)
 	cryptoStruct := cryptoJSON{
 		Cipher:     CipherAes256GCM,
 		CipherText: hex.EncodeToString(cipherText),
-		KDF:        keyHeaderArgon2IDKDF,
+		KDF:        keyHeaderArgon2idKDF,
 		KDFParams:  kdfParam,
 		//MAC:        hex.EncodeToString(mac),
 	}
@@ -124,33 +124,40 @@ func DecryptHDKeyByAes256GCMAndArgon2(keyjson []byte, auth string) (*HDKey, erro
 		return nil, err
 	}
 
-	// 1. 解密得到明文 seed
-	seed, err := aesGCMAndArgon2DecryptHDKey(&k, auth)
+	// 1. 解密得到 seed（在 LockedBuffer 中）
+	seedBuf, err := aesGCMAndArgon2DecryptHDKey(&k, auth)
+	if err != nil {
+		return nil, err
+	}
+	defer seedBuf.Destroy()
+
+	// 2. 在单一回调中完成所有明文操作（最佳实践）
+	var (
+		keyID        string
+		encryptedBuf *memguard.LockedBuffer
+	)
+
+	err = func() error {
+		seed := seedBuf.Data() // 仅在此作用域内使用
+
+		// 验证 KeyID
+		keyID = computeKeyID(seed)
+		if keyID != k.KeyID {
+			return errors.New("key ID mismatch after decryption")
+		}
+
+		var err error
+		encryptedBuf, err = encryptSeed(seed)
+		return err
+	}()
 	if err != nil {
 		return nil, err
 	}
 
-	// 2. 立即使用 seed（在清零前）
-	keyID := computeKeyID(seed)
-
-	if keyID != k.KeyID {
-		ClearData(seed)
-		return nil, errors.New("key ID mismatch after decryption")
-	}
-
-	encrypted := encryptSeed(seed)
-
-	// 3. 将加密后的种子放入锁定内存
-	locker := memguard.NewBufferFromBytes(encrypted)
-
-	// 4. 立即清零临时敏感数据
-	ClearData(seed, encrypted)
-
-	// 5. 返回安全的 HDKey
 	return &HDKey{
 		Alias:         k.Alias,
 		RootPath:      k.RootPath,
 		KeyID:         keyID,
-		encryptedSeed: locker,
+		encryptedSeed: encryptedBuf, // ← 直接赋值
 	}, nil
 }
