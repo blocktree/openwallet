@@ -81,6 +81,7 @@ type HDKey struct {
 	//seed []byte
 	//锁定内存的加密种子对象, 写入钱包文件的时候会作为临时locker使用
 	encryptedSeed *memguard.LockedBuffer
+	aadCall       AADCall
 }
 
 // 加密后的HDKey的JSON结构
@@ -141,6 +142,10 @@ func (k *HDKey) DerivedKeyWithPath(path string, curveType uint32) (*owkeychain.E
 	})
 
 	return derivedKey, err
+}
+
+func (k *HDKey) SetAADCall(call AADCall) {
+	k.aadCall = call
 }
 
 //func (k *HDKey) DerivedKeyWithPath2(path string, curveType  uint32) (*hdkeychain.ExtendedKey, error) {
@@ -266,7 +271,7 @@ func (k *HDKey) Seed(fn func(seed []byte) error) error {
 	defer seedBuf.Destroy()
 
 	// 3. 直接解密到锁定内存
-	if err := decryptSeedTo(seedBuf.Data(), encrypted); err != nil {
+	if err := decryptSeedTo(seedBuf.Data(), encrypted, k.KeyID, k.aadCall); err != nil {
 		return err
 	}
 

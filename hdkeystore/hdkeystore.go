@@ -90,25 +90,57 @@ func getRuntimeAAD() *memguard.LockedBuffer {
 	return memguard.NewBufferFromBytes(b)
 }
 
-func encryptSeed(seed []byte) (*memguard.LockedBuffer, error) {
-	// 1. 执行加密（得到普通 []byte）
-	encrypted, err := AesGCMEncrypt(seed, runtimeKey.Data(), runtimeAAD.Data())
-	if err != nil {
-		return nil, err
+func encryptSeed(seed []byte, aadCall AADCall) (*memguard.LockedBuffer, error) {
+	// 1. 计算 KeyID（只算一次）
+	keyID := computeKeyID(seed)
+
+	var aad []byte
+	var err error
+
+	// 2. 获取 AAD
+	if aadCall != nil {
+		aad, err = aadCall(keyID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate AAD: %w", err)
+		}
+		if len(aad) == 0 {
+			return nil, errors.New("AAD must not be empty")
+		}
+	} else {
+		aad = runtimeAAD.Data() // 注意：runtimeAAD 必须是 LockedBuffer
 	}
 
-	// 2. 立即将其移入 LockedBuffer
+	// 3. 执行加密
+	encrypted, err := AesGCMEncrypt(seed, runtimeKey.Data(), aad)
+	if err != nil {
+		return nil, fmt.Errorf("encryption failed: %w", err)
+	}
+	defer ClearData(encrypted)
+
+	// 4. 移入 LockedBuffer
 	locker := memguard.NewBufferFromBytes(encrypted)
-
-	// 3. 尽力清零临时密文（虽不能 100% 保证，但好习惯）
-	ClearData(encrypted)
-
 	return locker, nil
 }
 
-// decryptSeedTo 将解密结果直接写入目标 buffer（不返回明文 slice）
-func decryptSeedTo(dst []byte, encrypted []byte) error {
-	return AesGCMDecryptToLocker(dst, encrypted, runtimeKey.Data(), runtimeAAD.Data())
+// decryptSeedTo 将解密结果直接写入 dst。
+// keyID 用于重建 AAD；aadCall 可为 nil，表示使用默认 runtimeAAD。
+func decryptSeedTo(dst []byte, encrypted []byte, keyID string, aadCall AADCall) error {
+	var aad []byte
+	var err error
+
+	if aadCall != nil {
+		aad, err = aadCall(keyID)
+		if err != nil {
+			return fmt.Errorf("failed to generate AAD for decryption: %w", err)
+		}
+		if len(aad) == 0 {
+			return errors.New("AAD must not be empty")
+		}
+	} else {
+		aad = runtimeAAD.Data()
+	}
+
+	return AesGCMDecryptToLocker(dst, encrypted, runtimeKey.Data(), aad)
 }
 
 // NewHDKeystore 实例化HDKeystore
@@ -198,17 +230,27 @@ func (ks HDKeystore) GetKey(rootId, filename, auth string) (*HDKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ks.GetKeyFromBase64(rootId, base64.StdEncoding.EncodeToString(keyjson), auth)
+	return ks.GetKeyFromBase64(rootId, base64.StdEncoding.EncodeToString(keyjson), auth, nil)
 }
 
-func (ks HDKeystore) GetKeyFromBase64(rootId, keyJsonB64, auth string) (*HDKey, error) {
+// GetLockerKey 通过accountId读取钥匙
+func (ks HDKeystore) GetLockerKey(rootId, path, auth string, aadCall AADCall) (*HDKey, error) {
+	// Load the key from the keystore and decrypt its contents
+	keyjson, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return ks.GetKeyFromBase64(rootId, base64.StdEncoding.EncodeToString(keyjson), auth, aadCall)
+}
+
+func (ks HDKeystore) GetKeyFromBase64(rootId, keyJsonB64, auth string, aadCall AADCall) (*HDKey, error) {
 	// Load the key from the keystore and decrypt its contents
 	keyjson, err := base64.StdEncoding.DecodeString(keyJsonB64)
 	if err != nil {
 		return nil, err
 	}
 
-	key, err := DecryptHDKeyByAes256GCMAndArgon2(keyjson, auth)
+	key, err := DecryptHDKeyByAes256GCMAndArgon2(keyjson, auth, aadCall)
 	if err != nil {
 		return nil, err
 	}
@@ -233,6 +275,14 @@ func (ks *HDKeystore) JoinPath(filename string) string {
 		return filename
 	} else {
 		return filepath.Join(ks.keysDirPath, filename)
+	}
+}
+
+func (ks *HDKeystore) JoinDirPath(dir, filename string) string {
+	if filepath.IsAbs(filename) {
+		return filename
+	} else {
+		return filepath.Join(dir, filename)
 	}
 }
 

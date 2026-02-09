@@ -84,7 +84,7 @@ func TestHDKey_DerivedKeyWithPath(t *testing.T) {
 	seed, _ := GenerateSeed(32)
 
 	// Encrypt the seed for testing
-	encryptedSeed, _ := encryptSeed(seed)
+	encryptedSeed, _ := encryptSeed(seed, nil)
 	defer ClearData(seed)
 
 	// Create HDKey with encrypted seed (simulating decryption from keystore)

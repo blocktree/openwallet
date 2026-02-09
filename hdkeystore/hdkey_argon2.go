@@ -113,7 +113,7 @@ func EncryptKeyByAes256GCMAndArgon2(hdkey *HDKey, plainSeed []byte, auth string)
 }
 
 // DecryptHDKeyByAes256GCMAndArgon2 decrypts a key from a json blob, returning the private key itself.
-func DecryptHDKeyByAes256GCMAndArgon2(keyjson []byte, auth string) (*HDKey, error) {
+func DecryptHDKeyByAes256GCMAndArgon2(keyjson []byte, auth string, aadCall AADCall) (*HDKey, error) {
 	var k encryptedHDKeyJSON
 	if err := json.Unmarshal(keyjson, &k); err != nil {
 		return nil, err
@@ -142,7 +142,7 @@ func DecryptHDKeyByAes256GCMAndArgon2(keyjson []byte, auth string) (*HDKey, erro
 		}
 
 		var err error
-		encryptedBuf, err = encryptSeed(seed)
+		encryptedBuf, err = encryptSeed(seed, aadCall)
 		return err
 	}()
 	if err != nil {
@@ -154,5 +154,6 @@ func DecryptHDKeyByAes256GCMAndArgon2(keyjson []byte, auth string) (*HDKey, erro
 		RootPath:      k.RootPath,
 		KeyID:         keyID,
 		encryptedSeed: encryptedBuf, // ← 直接赋值
+		aadCall:       aadCall,
 	}, nil
 }

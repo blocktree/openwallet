@@ -11,6 +11,8 @@ import (
 	"io"
 )
 
+type AADCall func(keyID string) ([]byte, error)
+
 func BuildAAD(keyID, rootPath, salt string, version, memory, time, threads, keyLen int) []byte {
 	aadStr := fmt.Sprintf(
 		"keyid:%s|rootpath:%s|version:%d|cipher:%s|argon2_memory:%d|argon2_time:%d|argon2_threads:%d|argon2_keylen:%d|argon2_salt:%s",

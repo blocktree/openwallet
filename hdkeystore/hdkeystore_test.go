@@ -33,10 +33,18 @@ func TestStoreHDKeyGCM(t *testing.T) {
 }
 
 func TestGetKeyGCM(t *testing.T) {
-	path := filepath.Join(".", "keys")
-	ks := &HDKeystore{path, StandardScryptN, StandardScryptP}
+	alias := "sogosdfo456"
+	rootID := "W1K5X7Au8E5L2NXGW6DJN4Ziy8V5JuvhJ1"
+	ks := &HDKeystore{}
+	path := ks.JoinDirPath(filepath.Join(".", "keys"), fmt.Sprintf("%s-%s.key", alias, rootID))
 
-	key, err := ks.GetKey("VzPvEVCRXM4EvkNwJFVmDRSepvXRjDJcXh", "sogosdfo456-VzPvEVCRXM4EvkNwJFVmDRSepvXRjDJcXh.key", "123TestGCM")
+	aad, _ := GetRandomSecure(32)
+
+	aadCall := func(keyID string) ([]byte, error) {
+		return aad, nil
+	}
+
+	key, err := ks.GetLockerKey(rootID, path, "123TestGCM", aadCall)
 
 	if err != nil {
 		t.Errorf("GetKey failed unexpected error: %v\n", err)
