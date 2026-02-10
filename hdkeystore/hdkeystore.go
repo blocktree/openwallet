@@ -154,7 +154,7 @@ func NewHDKeystore(keydir string, scryptN, scryptP int) *HDKeystore {
 }
 
 // StoreLockerHDKey 重要：当前版本只使用这个创建钱包文件入口，使用AES-256-GCM保存文件
-func StoreLockerHDKey(dir, alias, auth string) (string, error) {
+func StoreLockerHDKey(dir, alias string, auth *memguard.LockedBuffer) (string, error) {
 	seedBuf, err := GenerateLockedSeed(SeedLen)
 	if err != nil {
 		return "", err
@@ -193,7 +193,7 @@ func (ks *HDKeystore) StoreLockerKeyWithSeed(
 	filename string,
 	meta *HDKey,
 	plainSeed []byte, // 来自 LockedBuffer.Data()
-	auth string,
+	auth *memguard.LockedBuffer,
 ) error {
 	// mode=0默认的argon2派生密钥
 	keyJSON, err := EncryptKeyByAes256GCMAndArgon2(meta, plainSeed, auth)
@@ -223,7 +223,7 @@ func (ks *HDKeystore) StoreLockerKeyWithSeed(
 //}
 
 // GetKey 通过accountId读取钥匙
-func (ks HDKeystore) GetKey(rootId, filename, auth string) (*HDKey, error) {
+func (ks HDKeystore) GetKey(rootId, filename string, auth *memguard.LockedBuffer) (*HDKey, error) {
 	// Load the key from the keystore and decrypt its contents
 	keyPath := ks.JoinPath(filename)
 	keyjson, err := ioutil.ReadFile(keyPath)
@@ -234,7 +234,7 @@ func (ks HDKeystore) GetKey(rootId, filename, auth string) (*HDKey, error) {
 }
 
 // GetLockerKey 通过accountId读取钥匙
-func (ks HDKeystore) GetLockerKey(rootId, path, auth string, aadCall AADCall) (*HDKey, error) {
+func (ks HDKeystore) GetLockerKey(rootId, path string, auth *memguard.LockedBuffer, aadCall AADCall) (*HDKey, error) {
 	// Load the key from the keystore and decrypt its contents
 	keyjson, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -243,7 +243,7 @@ func (ks HDKeystore) GetLockerKey(rootId, path, auth string, aadCall AADCall) (*
 	return ks.GetKeyFromBase64(rootId, base64.StdEncoding.EncodeToString(keyjson), auth, aadCall)
 }
 
-func (ks HDKeystore) GetKeyFromBase64(rootId, keyJsonB64, auth string, aadCall AADCall) (*HDKey, error) {
+func (ks HDKeystore) GetKeyFromBase64(rootId, keyJsonB64 string, auth *memguard.LockedBuffer, aadCall AADCall) (*HDKey, error) {
 	// Load the key from the keystore and decrypt its contents
 	keyjson, err := base64.StdEncoding.DecodeString(keyJsonB64)
 	if err != nil {

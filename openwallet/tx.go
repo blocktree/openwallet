@@ -44,29 +44,30 @@ type TxData struct {
 //		2. 第二步调用交易单签名：获取到 RawHex 完成签名，完成参数 Signatures
 //		3. 第三步调用交易单广播：解析rawHex，合并签名，验证签名，广播交易, 设置参数 TxID，IsSubmit = true
 type RawTransaction struct {
-	Coin        Coin                       `json:"coin"`        //@required 区块链类型标识
-	TxID        string                     `json:"txID"`        //交易单ID，广播后会生成
-	Sid         string                     `json:"sid"`         //业务订单号，保证业务不重复交易而用
-	CreateTime  int64                      `json:"createTime"`  //业务交易单创建随机数保证数据签名唯一性
-	CreateNonce string                     `json:"createNonce"` //业务交易单创建时间保证数据签名唯一性
-	RawHex      string                     `json:"rawHex"`      //区块链协议构造的交易原生数据
-	FeeRate     string                     `json:"feeRate"`     //自定义费率
-	To          map[string]string          `json:"to"`          //@required 目的地址:转账数量
-	Account     *AssetsAccount             `json:"account"`     //@required 创建交易单的账户
-	Signatures  map[string][]*KeySignature `json:"sigParts"`    //拥有者accountID: []未花签名
-	Required    uint64                     `json:"reqSigs"`     //必要签名
-	IsBuilt     bool                       `json:"isBuilt"`     //是否完成构建建议单
-	IsCompleted bool                       `json:"isComplete"`  //是否完成所有签名
-	IsSubmit    bool                       `json:"isSubmit"`    //是否已广播
-	Change      *Address                   `json:"change"`      //找零地址
-	ExtParam    string                     `json:"extParam"`    //扩展参数，用于调用智能合约，json结构
+	Coin        Coin                       `json:"coin"`       //@required 区块链类型标识
+	TxID        string                     `json:"txID"`       //交易单ID，广播后会生成
+	RawHex      string                     `json:"rawHex"`     //区块链协议构造的交易原生数据
+	FeeRate     string                     `json:"feeRate"`    //自定义费率
+	To          map[string]string          `json:"to"`         //@required 目的地址:转账数量
+	Account     *AssetsAccount             `json:"account"`    //@required 创建交易单的账户
+	Signatures  map[string][]*KeySignature `json:"sigParts"`   //拥有者accountID: []未花签名
+	Required    uint64                     `json:"reqSigs"`    //必要签名
+	IsBuilt     bool                       `json:"isBuilt"`    //是否完成构建建议单
+	IsCompleted bool                       `json:"isComplete"` //是否完成所有签名
+	IsSubmit    bool                       `json:"isSubmit"`   //是否已广播
+	Change      *Address                   `json:"change"`     //找零地址
+	ExtParam    string                     `json:"extParam"`   //扩展参数，用于调用智能合约，json结构
 
 	/* 以下字段作为备注，实际生成Transaction时填充相关字段 */
 
-	Fees     string   `json:"fees"`     //手续费
-	TxAmount string   `json:"txAmount"` //交易单实际对账户发生的数量变化
-	TxFrom   []string `json:"txFrom"`   //格式："地址":"数量"，备注订单使用
-	TxTo     []string `json:"txTo"`     //格式："地址":"数量"，备注订单使用
+	Sid         string   `json:"sid"`         //业务订单号，保证业务不重复交易而用
+	CreateTime  int64    `json:"createTime"`  //业务交易单创建随机数保证数据签名唯一性
+	CreateNonce string   `json:"createNonce"` //业务交易单创建时间保证数据签名唯一性
+	TxType      int64    `json:"txType"`      //业务交易类型 0.普通交易单 1.汇总交易单
+	Fees        string   `json:"fees"`        //手续费
+	TxAmount    string   `json:"txAmount"`    //交易单实际对账户发生的数量变化
+	TxFrom      []string `json:"txFrom"`      //格式："地址":"数量"，备注订单使用
+	TxTo        []string `json:"txTo"`        //格式："地址":"数量"，备注订单使用
 }
 
 // KeySignature 签名信息

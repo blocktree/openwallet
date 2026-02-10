@@ -18,23 +18,29 @@ package hdkeystore
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/awnumar/memguard"
 	"path/filepath"
 	"testing"
 )
 
 func TestStoreHDKeyGCM(t *testing.T) {
+
+	auth := memguard.NewBufferFromBytes([]byte("123TestGCM"))
+
+	defer auth.Destroy()
+
 	path := filepath.Join(".", "keys")
-	rootId, err := StoreLockerHDKey(path, "sogosdfo456", "123TestGCM")
+	rootID, err := StoreLockerHDKey(path, "sogosdfo456", auth)
 	if err != nil {
 		t.Errorf("StoreHDKey failed unexpected error: %v", err)
 	} else {
-		t.Logf("StoreHDKey root id = %s", rootId)
+		t.Logf("StoreHDKey root id = %s", rootID)
 	}
 }
 
 func TestGetKeyGCM(t *testing.T) {
 	alias := "sogosdfo456"
-	rootID := "W1K5X7Au8E5L2NXGW6DJN4Ziy8V5JuvhJ1"
+	rootID := "W4HPZzRupuc5aRw1odC7QcYT5D1s8JRY9z"
 	ks := &HDKeystore{}
 	path := ks.JoinDirPath(filepath.Join(".", "keys"), fmt.Sprintf("%s-%s.key", alias, rootID))
 
@@ -44,7 +50,11 @@ func TestGetKeyGCM(t *testing.T) {
 		return aad, nil
 	}
 
-	key, err := ks.GetLockerKey(rootID, path, "123TestGCM", aadCall)
+	auth := memguard.NewBufferFromBytes([]byte("123TestGCM"))
+
+	defer auth.Destroy()
+
+	key, err := ks.GetLockerKey(rootID, path, auth, aadCall)
 
 	if err != nil {
 		t.Errorf("GetKey failed unexpected error: %v\n", err)

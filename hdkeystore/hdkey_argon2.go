@@ -26,7 +26,7 @@ import (
 )
 
 // getArgon2KDFKey
-func getArgon2KDFKey(cryptoJSON cryptoJSON, auth string) ([]byte, *argon2KDFParam, error) {
+func getArgon2KDFKey(cryptoJSON cryptoJSON, auth *memguard.LockedBuffer) ([]byte, *argon2KDFParam, error) {
 
 	argonParams := &argon2KDFParam{}
 
@@ -42,23 +42,19 @@ func getArgon2KDFKey(cryptoJSON cryptoJSON, auth string) ([]byte, *argon2KDFPara
 		return nil, nil, fmt.Errorf("unsupported KDF: %s", cryptoJSON.KDF)
 	}
 
-	authBytes := []byte(auth)
-
-	defer ClearData(authBytes)
-
 	salt, err := hex.DecodeString(argonParams.Salt)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return deriveKeyArgon2idDefault(authBytes, salt, uint32(argonParams.Time), uint32(argonParams.Memory), uint32(argonParams.Keylen), uint8(argonParams.Threads)), argonParams, nil
+	return deriveKeyArgon2idDefault(auth.Data(), salt, uint32(argonParams.Time), uint32(argonParams.Memory), uint32(argonParams.Keylen), uint8(argonParams.Threads)), argonParams, nil
 }
 
 // EncryptKeyByAes256GCMAndArgon2 encrypts a key using the specified scrypt parameters into a json
 // blob that can be decrypted later on.
-func EncryptKeyByAes256GCMAndArgon2(hdkey *HDKey, plainSeed []byte, auth string) ([]byte, error) {
+func EncryptKeyByAes256GCMAndArgon2(hdkey *HDKey, plainSeed []byte, auth *memguard.LockedBuffer) ([]byte, error) {
 
-	authBytes := []byte(auth)
+	authBytes := auth.Data()
 
 	saltBytes := make([]byte, 32)
 	if _, err := io.ReadFull(rand.Reader, saltBytes); err != nil {
@@ -74,7 +70,7 @@ func EncryptKeyByAes256GCMAndArgon2(hdkey *HDKey, plainSeed []byte, auth string)
 	// 使用新版本的argon2算法
 	derivedKey := DeriveKeyArgon2id(authBytes, saltBytes)
 
-	defer ClearData(derivedKey, saltBytes, authBytes)
+	defer ClearData(derivedKey, saltBytes)
 
 	salt := hex.EncodeToString(saltBytes)
 
@@ -113,7 +109,7 @@ func EncryptKeyByAes256GCMAndArgon2(hdkey *HDKey, plainSeed []byte, auth string)
 }
 
 // DecryptHDKeyByAes256GCMAndArgon2 decrypts a key from a json blob, returning the private key itself.
-func DecryptHDKeyByAes256GCMAndArgon2(keyjson []byte, auth string, aadCall AADCall) (*HDKey, error) {
+func DecryptHDKeyByAes256GCMAndArgon2(keyjson []byte, auth *memguard.LockedBuffer, aadCall AADCall) (*HDKey, error) {
 	var k encryptedHDKeyJSON
 	if err := json.Unmarshal(keyjson, &k); err != nil {
 		return nil, err

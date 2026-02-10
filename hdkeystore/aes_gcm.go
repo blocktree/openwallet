@@ -179,7 +179,7 @@ func AesGCMDecryptToLocker(dst, encryptedData, key, additionalData []byte) error
 }
 
 // aesGCMDecryptHDKey 解密HDKey的文件内容
-func aesGCMAndArgon2DecryptHDKey(keyProtected *encryptedHDKeyJSON, auth string) (*memguard.LockedBuffer, error) {
+func aesGCMAndArgon2DecryptHDKey(keyProtected *encryptedHDKeyJSON, auth *memguard.LockedBuffer) (*memguard.LockedBuffer, error) {
 
 	if keyProtected.Crypto.Cipher != CipherAes256GCM {
 		return nil, fmt.Errorf("cipher not supported: %v", keyProtected.Crypto.Cipher)

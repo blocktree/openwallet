@@ -40,6 +40,7 @@ func BuildTransaction(decoder TransactionDecoder, wrapper WalletDAI, rawTx *RawT
 	}
 	rawTx.CreateTime = time.Now().UnixMilli()
 	rawTx.CreateNonce = hex.EncodeToString(nonce)
+	rawTx.TxType = 0
 	txJSON, err := json.Marshal(rawTx)
 	if err != nil {
 		return nil, err
@@ -74,6 +75,7 @@ func BuildSummaryTransaction(decoder TransactionDecoder, wrapper WalletDAI, sumR
 		rawTx.Sid = fmt.Sprintf("%s#%d", sumRawTx.Sid, k)
 		rawTx.CreateTime = now
 		rawTx.CreateNonce = hex.EncodeToString(nonce)
+		rawTx.TxType = 1
 		txJSON, err := json.Marshal(v)
 		if err != nil {
 			return nil, err
