@@ -29,7 +29,6 @@ import (
 	"github.com/blocktree/openwallet/v2/common/file"
 	"github.com/blocktree/openwallet/v2/hdkeystore"
 	"github.com/blocktree/openwallet/v2/log"
-	"github.com/pkg/errors"
 	"time"
 )
 
@@ -207,31 +206,32 @@ func NewWatchOnlyWallet(walletID string, symbol string) *Wallet {
 // HDKey 获取钱包密钥，需要密码
 func (w *Wallet) HDKey(password ...string) (*hdkeystore.HDKey, error) {
 
-	pw := ""
-
-	if len(password) > 0 {
-		pw = password[0]
-	} else {
-		pw = w.Password
-	}
-
-	if len(pw) == 0 {
-		return nil, fmt.Errorf("password is empty")
-	}
-
-	if len(w.KeyFile) == 0 {
-		return nil, errors.New("Wallet key is not exist!")
-	}
-
-	keyjson, err := ioutil.ReadFile(w.KeyFile)
-	if err != nil {
-		return nil, err
-	}
-	key, err := hdkeystore.DecryptHDKey(keyjson, pw)
-	if err != nil {
-		return nil, err
-	}
-	return key, err
+	//pw := ""
+	//
+	//if len(password) > 0 {
+	//	pw = password[0]
+	//} else {
+	//	pw = w.Password
+	//}
+	//
+	//if len(pw) == 0 {
+	//	return nil, fmt.Errorf("password is empty")
+	//}
+	//
+	//if len(w.KeyFile) == 0 {
+	//	return nil, errors.New("Wallet key is not exist!")
+	//}
+	//
+	//keyjson, err := ioutil.ReadFile(w.KeyFile)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//key, err := hdkeystore.DecryptHDKey(keyjson, pw)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//return key, err
+	return nil, nil
 }
 
 // FileName 钱包文件名

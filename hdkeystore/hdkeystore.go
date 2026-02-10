@@ -230,20 +230,20 @@ func (ks HDKeystore) GetKey(rootId, filename string, auth *memguard.LockedBuffer
 	if err != nil {
 		return nil, err
 	}
-	return ks.GetKeyFromBase64(rootId, base64.StdEncoding.EncodeToString(keyjson), auth, nil)
+	return ks.GetKeyFromBase64(base64.StdEncoding.EncodeToString(keyjson), auth, nil)
 }
 
 // GetLockerKey 通过accountId读取钥匙
-func (ks HDKeystore) GetLockerKey(rootId, path string, auth *memguard.LockedBuffer, aadCall AADCall) (*HDKey, error) {
+func (ks HDKeystore) GetLockerKey(path string, auth *memguard.LockedBuffer, aadCall AADCall) (*HDKey, error) {
 	// Load the key from the keystore and decrypt its contents
 	keyjson, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	return ks.GetKeyFromBase64(rootId, base64.StdEncoding.EncodeToString(keyjson), auth, aadCall)
+	return ks.GetKeyFromBase64(base64.StdEncoding.EncodeToString(keyjson), auth, aadCall)
 }
 
-func (ks HDKeystore) GetKeyFromBase64(rootId, keyJsonB64 string, auth *memguard.LockedBuffer, aadCall AADCall) (*HDKey, error) {
+func (ks HDKeystore) GetKeyFromBase64(keyJsonB64 string, auth *memguard.LockedBuffer, aadCall AADCall) (*HDKey, error) {
 	// Load the key from the keystore and decrypt its contents
 	keyjson, err := base64.StdEncoding.DecodeString(keyJsonB64)
 	if err != nil {
@@ -257,13 +257,6 @@ func (ks HDKeystore) GetKeyFromBase64(rootId, keyJsonB64 string, auth *memguard.
 
 	if key == nil || len(key.KeyID) == 0 {
 		return nil, errors.New("HDKey decrypt invalid")
-	}
-
-	if len(rootId) > 0 {
-		// Make sure we're really operating on the requested key (no swap attacks)
-		if key.KeyID != rootId {
-			return nil, fmt.Errorf("key content mismatch: have account %s, want %s", key.KeyID, rootId)
-		}
 	}
 
 	return key, nil
