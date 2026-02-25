@@ -279,6 +279,11 @@ func (k *HDKey) Seed(fn func(seed []byte) error) error {
 	return fn(seedBuf.Data())
 }
 
+// DestroySeed 主动清零加密内存的种子数据
+func (k *HDKey) DestroySeed() {
+	k.encryptedSeed.Destroy()
+}
+
 // NewHDKey 通过userkey，私钥种子，根私钥标识符，账户路径，创建HDKey
 func NewHDKey(seed []byte, alias, rootPath string) (*HDKey, error) {
 
