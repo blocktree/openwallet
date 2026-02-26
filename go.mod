@@ -11,7 +11,7 @@ require (
 	github.com/astaxie/beego v1.12.0
 	github.com/awnumar/memguard v0.22.5
 	github.com/blocktree/go-owcdrivers v1.2.0
-	github.com/blocktree/go-owcrypt v1.1.13
+	github.com/blocktree/go-owcrypt v1.1.14
 	github.com/bndr/gotabulate v1.1.2
 	github.com/bradfitz/gomemcache v0.0.0-20190913173617-a41fca850d0b
 	github.com/btcsuite/btcd/btcutil v1.1.0
