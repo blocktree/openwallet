@@ -75,6 +75,6 @@ require (
 	golang.org/x/text v0.28.0 // indirect
 )
 
-replace github.com/blocktree/go-owcdrivers => ../go-owcdrivers
-
-replace github.com/blocktree/go-owcrypt => ../go-owcrypt
+//replace github.com/blocktree/go-owcdrivers => ../go-owcdrivers
+//
+//replace github.com/blocktree/go-owcrypt => ../go-owcrypt
