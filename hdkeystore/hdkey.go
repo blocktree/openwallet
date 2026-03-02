@@ -20,12 +20,12 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
-	"errors"
 	"fmt"
-	"github.com/awnumar/memguard"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/awnumar/memguard"
 
 	"github.com/blocktree/go-owcdrivers/owkeychain"
 	"github.com/blocktree/go-owcrypt"
@@ -323,16 +323,7 @@ func GenerateSeed(length uint8) ([]byte, error) {
 
 // GenerateLockedSeed 生成种子并直接放入锁定内存
 func GenerateLockedSeed(size int) (*memguard.LockedBuffer, error) {
-	buf := memguard.NewBuffer(size)
-	if buf.Size() == 0 {
-		return nil, errors.New("failed to allocate secure buffer")
-	}
-	// 使用加密安全 RNG 填充
-	if _, err := rand.Read(buf.Data()); err != nil {
-		buf.Destroy()
-		return nil, fmt.Errorf("failed to generate seed: %w", err)
-	}
-	return buf, nil
+	return memguard.NewBufferRandom(size), nil
 }
 
 // writeKeyFile 写入HDKey结构内容到文件

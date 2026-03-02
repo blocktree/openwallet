@@ -20,9 +20,10 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/awnumar/memguard"
 	"io/ioutil"
 	"path/filepath"
+
+	"github.com/awnumar/memguard"
 
 	"github.com/blocktree/openwallet/v2/crypto/sha3"
 )
@@ -79,15 +80,11 @@ type HDKeystore struct {
 }
 
 func getRuntimeKey() *memguard.LockedBuffer {
-	b, _ := GetRandomSecure(32)
-	defer ClearData(b)
-	return memguard.NewBufferFromBytes(b)
+	return memguard.NewBufferRandom(32)
 }
 
 func getRuntimeAAD() *memguard.LockedBuffer {
-	b, _ := GetRandomSecure(32)
-	defer ClearData(b)
-	return memguard.NewBufferFromBytes(b)
+	return memguard.NewBufferRandom(32)
 }
 
 func encryptSeed(seed []byte, aadCall AADCall) (*memguard.LockedBuffer, error) {
