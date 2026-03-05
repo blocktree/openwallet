@@ -7,8 +7,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/awnumar/memguard"
 	"io"
+
+	"github.com/awnumar/memguard"
 )
 
 type AADCall func(keyID string) ([]byte, error)
@@ -196,7 +197,7 @@ func aesGCMAndArgon2DecryptHDKey(keyProtected *encryptedHDKeyJSON, auth *memguar
 	}
 
 	seed := memguard.NewBuffer(SeedLen) // 根据实际 seed 长度调整
-	if err := AesGCMDecryptToLocker(seed.Data(), cipherText, derivedKey, BuildAAD(keyProtected.KeyID, keyProtected.RootPath, kdfParams.Salt, keyProtected.Version, kdfParams.Memory, kdfParams.Time, kdfParams.Threads, kdfParams.Keylen)); err != nil {
+	if err := AesGCMDecryptToLocker(seed.Bytes(), cipherText, derivedKey, BuildAAD(keyProtected.KeyID, keyProtected.RootPath, kdfParams.Salt, keyProtected.Version, kdfParams.Memory, kdfParams.Time, kdfParams.Threads, kdfParams.Keylen)); err != nil {
 		return nil, err
 	}
 

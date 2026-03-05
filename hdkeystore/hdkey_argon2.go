@@ -21,8 +21,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/awnumar/memguard"
 	"io"
+
+	"github.com/awnumar/memguard"
 )
 
 // getArgon2KDFKey
@@ -47,14 +48,14 @@ func getArgon2KDFKey(cryptoJSON cryptoJSON, auth *memguard.LockedBuffer) ([]byte
 		return nil, nil, err
 	}
 
-	return deriveKeyArgon2idDefault(auth.Data(), salt, uint32(argonParams.Time), uint32(argonParams.Memory), uint32(argonParams.Keylen), uint8(argonParams.Threads)), argonParams, nil
+	return deriveKeyArgon2idDefault(auth.Bytes(), salt, uint32(argonParams.Time), uint32(argonParams.Memory), uint32(argonParams.Keylen), uint8(argonParams.Threads)), argonParams, nil
 }
 
 // EncryptKeyByAes256GCMAndArgon2 encrypts a key using the specified scrypt parameters into a json
 // blob that can be decrypted later on.
 func EncryptKeyByAes256GCMAndArgon2(hdkey *HDKey, plainSeed []byte, auth *memguard.LockedBuffer) ([]byte, error) {
 
-	authBytes := auth.Data()
+	authBytes := auth.Bytes()
 
 	saltBytes := make([]byte, 32)
 	if _, err := io.ReadFull(rand.Reader, saltBytes); err != nil {
@@ -129,7 +130,7 @@ func DecryptHDKeyByAes256GCMAndArgon2(keyjson []byte, auth *memguard.LockedBuffe
 	)
 
 	err = func() error {
-		seed := seedBuf.Data() // 仅在此作用域内使用
+		seed := seedBuf.Bytes() // 仅在此作用域内使用
 
 		// 验证 KeyID
 		keyID = computeKeyID(seed)

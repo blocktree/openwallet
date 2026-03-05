@@ -104,11 +104,11 @@ func encryptSeed(seed []byte, aadCall AADCall) (*memguard.LockedBuffer, error) {
 			return nil, errors.New("AAD must not be empty")
 		}
 	} else {
-		aad = runtimeAAD.Data() // 注意：runtimeAAD 必须是 LockedBuffer
+		aad = runtimeAAD.Bytes() // 注意：runtimeAAD 必须是 LockedBuffer
 	}
 
 	// 3. 执行加密
-	encrypted, err := AesGCMEncrypt(seed, runtimeKey.Data(), aad)
+	encrypted, err := AesGCMEncrypt(seed, runtimeKey.Bytes(), aad)
 	if err != nil {
 		return nil, fmt.Errorf("encryption failed: %w", err)
 	}
@@ -134,10 +134,10 @@ func decryptSeedTo(dst []byte, encrypted []byte, keyID string, aadCall AADCall) 
 			return errors.New("AAD must not be empty")
 		}
 	} else {
-		aad = runtimeAAD.Data()
+		aad = runtimeAAD.Bytes()
 	}
 
-	return AesGCMDecryptToLocker(dst, encrypted, runtimeKey.Data(), aad)
+	return AesGCMDecryptToLocker(dst, encrypted, runtimeKey.Bytes(), aad)
 }
 
 // NewHDKeystore 实例化HDKeystore
@@ -161,7 +161,7 @@ func StoreLockerHDKey(dir, alias string, auth *memguard.LockedBuffer) (string, e
 	// 在单一作用域内使用明文
 	var keyID string
 	err = func() error {
-		seed := seedBuf.Data() // ← 只调用一次！
+		seed := seedBuf.Bytes() // ← 只调用一次！
 
 		// 1. 计算 KeyID
 		keyID = computeKeyID(seed)
@@ -189,7 +189,7 @@ func StoreLockerHDKey(dir, alias string, auth *memguard.LockedBuffer) (string, e
 func (ks *HDKeystore) StoreLockerKeyWithSeed(
 	filename string,
 	meta *HDKey,
-	plainSeed []byte, // 来自 LockedBuffer.Data()
+	plainSeed []byte, // 来自 LockedBuffer.Bytes()
 	auth *memguard.LockedBuffer,
 ) error {
 	// mode=0默认的argon2派生密钥

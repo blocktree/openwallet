@@ -144,6 +144,23 @@ func (k *HDKey) DerivedKeyWithPath(path string, curveType uint32) (*owkeychain.E
 	return derivedKey, err
 }
 
+func DerivedLockerKeyWithPath(seed *memguard.LockedBuffer, path string, curveType uint32) (*memguard.LockedBuffer, error) {
+	derivedKey, err := owkeychain.DerivedPrivateKeyWithPath(seed.Bytes(), path, curveType)
+	if err != nil {
+		return nil, err
+	}
+	defer seed.Destroy()
+	prkBytes, err := derivedKey.GetPrivateKeyBytes()
+	if err != nil {
+		return nil, err
+	}
+	// 创建安全 buffer
+	result := memguard.NewBufferFromBytes(prkBytes)
+	// 安全清零临时明文（逐字节）
+	ClearData(prkBytes)
+	return result, err
+}
+
 func (k *HDKey) SetAADCall(call AADCall) {
 	k.aadCall = call
 }
@@ -255,14 +272,14 @@ func (k *HDKey) FileName() string {
 
 // Seed 密钥种子，该方法应该不允许再使用
 //func (k *HDKey) Seed() []byte {
-//	return decryptSeed(k.encryptedSeed.Data())
+//	return decryptSeed(k.encryptedSeed.Bytes())
 //}
 
 // Seed 安全地提供种子访问，通过回调确保明文及时清零
 func (k *HDKey) Seed(fn func(seed []byte) error) error {
 	// 1. 复制加密数据
 	encrypted := make([]byte, k.encryptedSeed.Size())
-	copy(encrypted, k.encryptedSeed.Data())
+	copy(encrypted, k.encryptedSeed.Bytes())
 	defer ClearData(encrypted) // 使用 defer 确保清零
 
 	// 2. 创建临时锁定缓冲区存储明文种子
@@ -271,12 +288,12 @@ func (k *HDKey) Seed(fn func(seed []byte) error) error {
 	defer seedBuf.Destroy()
 
 	// 3. 直接解密到锁定内存
-	if err := decryptSeedTo(seedBuf.Data(), encrypted, k.KeyID, k.aadCall); err != nil {
+	if err := decryptSeedTo(seedBuf.Bytes(), encrypted, k.KeyID, k.aadCall); err != nil {
 		return err
 	}
 
 	// 4. 调用回调
-	return fn(seedBuf.Data())
+	return fn(seedBuf.Bytes())
 }
 
 // DestroySeed 主动清零加密内存的种子数据
