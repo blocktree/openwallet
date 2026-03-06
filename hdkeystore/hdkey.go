@@ -149,7 +149,6 @@ func DerivedLockerKeyWithPath(seed *memguard.LockedBuffer, path string, curveTyp
 	if err != nil {
 		return nil, err
 	}
-	defer seed.Destroy()
 	prkBytes, err := derivedKey.GetPrivateKeyBytes()
 	if err != nil {
 		return nil, err
