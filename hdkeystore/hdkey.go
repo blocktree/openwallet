@@ -396,6 +396,10 @@ func computeKeyID(seed []byte) string {
 	return owkeychain.Base58checkEncode(ripemd160Hash, KeyIDVer)
 }
 
+func ComputeKeyID(seed []byte) string {
+	return computeKeyID(seed)
+}
+
 // keyFileName implements the naming convention for keyfiles:
 // wallet--<alias>-<rootId>
 func KeyFileName(alias, rootId string) string {
